@@ -121,11 +121,33 @@ TEST_CASE("File handle construction", "[file_handle][construction]") {
             FAIL("Failed to open file descriptor");
         }
 
-        // Create file handle from FD
-        file_handle handle(fd, true);  // Take ownership
+        // Create file handle from FD (always takes ownership)
+        file_handle handle(fd);
 
         REQUIRE(handle.is_valid());
     }
+
+    SECTION("File handle reference construction from file descriptor") {
+        // Open file descriptor
+        int fd = open(temp_file_path_.c_str(), O_RDWR | O_DIRECT);
+        if (fd < 0) {
+            fd = open(temp_file_path_.c_str(), O_RDWR);  // Fallback without O_DIRECT
+        }
+
+        if (fd < 0) {
+            FAIL("Failed to open file descriptor");
+        }
+
+        // Create file handle reference from FD (doesn't take ownership)
+        file_handle_ref handle_ref(fd);
+
+        REQUIRE(handle_ref.is_valid());
+
+        // Clean up manually since file_handle_ref doesn't own the fd
+        close(fd);
+    }
+
+
 
     cleanup_test_environment();
 }
@@ -204,6 +226,43 @@ TEST_CASE("Synchronous I/O operations", "[file_handle][sync_io]") {
 
         // Verify data matches
         REQUIRE(::std::memcmp(host_buffer.get(), test_data_.data(), test_size_) == 0);
+    }
+
+    SECTION("File handle reference synchronous read") {
+        // Open file descriptor manually
+        int fd = open(temp_file_path_.c_str(), O_RDONLY | O_DIRECT);
+        if (fd < 0) {
+            fd = open(temp_file_path_.c_str(), O_RDONLY);  // Fallback without O_DIRECT
+        }
+
+        if (fd < 0) {
+            FAIL("Failed to open file descriptor");
+        }
+
+        // Create non-owning reference from fd
+        file_handle_ref handle_ref(fd);
+
+        // Allocate GPU buffer
+        test_utils::GPUMemoryRAII gpu_buffer(test_size_);
+
+        // Create span from GPU buffer
+        cuda::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
+
+        // Test span-based synchronous read using reference
+        size_t bytes_read = handle_ref.read(buffer_span);
+
+        // Verify read operation
+        REQUIRE(bytes_read == test_size_);
+
+        // Copy data back to host to verify
+        ::std::vector<char> host_buffer(test_size_);
+        cudaMemcpy(host_buffer.data(), gpu_buffer.get(), test_size_, cudaMemcpyDeviceToHost);
+
+        // Verify data matches
+        REQUIRE(host_buffer == test_data_);
+
+        // Clean up manually since file_handle_ref doesn't close the fd
+        close(fd);
     }
 
     cleanup_test_environment();
@@ -313,6 +372,137 @@ TEST_CASE("Asynchronous I/O operations", "[file_handle][async_io]") {
         } catch (const ::std::exception& e) {
             FAIL("Failed asynchronous write test: " << e.what());
         }
+    }
+
+    cleanup_test_environment();
+}
+
+TEST_CASE("File handle reference operations", "[file_handle_ref][io]") {
+    if (!test_utils::is_cuda_available()) {
+        SKIP("CUDA not available");
+    }
+
+    setup_test_environment();
+
+    SECTION("File handle reference synchronous write") {
+        // Create a temporary write file
+        ::std::filesystem::path write_path = ::std::filesystem::temp_directory_path() / "cufile_ref_write_test.tmp";
+
+        // Open file descriptor for writing
+        int fd = open(write_path.c_str(), O_WRONLY | O_CREAT | O_DIRECT, 0644);
+        if (fd < 0) {
+            fd = open(write_path.c_str(), O_WRONLY | O_CREAT, 0644);  // Fallback without O_DIRECT
+        }
+
+        if (fd < 0) {
+            FAIL("Failed to open file descriptor for writing");
+        }
+
+        // Create non-owning reference from fd
+        file_handle_ref handle_ref(fd);
+
+        // Allocate GPU buffer and copy test data
+        test_utils::GPUMemoryRAII gpu_buffer(test_size_);
+        cudaMemcpy(gpu_buffer.get(), test_data_.data(), test_size_, cudaMemcpyHostToDevice);
+
+        // Create span from GPU buffer
+        cuda::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
+
+        // Test span-based synchronous write
+        size_t bytes_written = handle_ref.write(buffer_span);
+
+        // Verify write operation
+        REQUIRE(bytes_written == test_size_);
+
+        // Clean up manually since file_handle_ref doesn't close the fd
+        close(fd);
+        ::std::filesystem::remove(write_path);
+    }
+
+    SECTION("File handle reference asynchronous read") {
+        try {
+            // Open file descriptor manually
+            int fd = open(temp_file_path_.c_str(), O_RDONLY | O_DIRECT);
+            if (fd < 0) {
+                fd = open(temp_file_path_.c_str(), O_RDONLY);  // Fallback without O_DIRECT
+            }
+
+            if (fd < 0) {
+                FAIL("Failed to open file descriptor");
+            }
+
+            // Create non-owning reference from fd
+            file_handle_ref handle_ref(fd);
+
+            // Allocate GPU buffer
+            test_utils::GPUMemoryRAII gpu_buffer(test_size_);
+
+            // Create CUDA stream
+            cudaStream_t stream;
+            cudaStreamCreate(&stream);
+
+            // Create span from GPU buffer
+            cuda::std::span<char> buffer_span(static_cast<char*>(gpu_buffer.get()), test_size_);
+
+            // Prepare async parameters
+            off_t file_offset = 0;
+            off_t buffer_offset = 0;
+            ssize_t bytes_read = 0;
+
+            // Test asynchronous read
+            handle_ref.read_async(cuda::stream_ref{stream}, buffer_span, file_offset, buffer_offset, bytes_read);
+
+            // Synchronize stream
+            cudaStreamSynchronize(stream);
+
+            // Check the result - the bindings should handle compatibility mode internally
+            if (bytes_read < 0) {
+                // Error -5 typically means async not supported, which is a valid system limitation
+                if (bytes_read == -5) {
+                    SKIP("Async operations not supported on this system (error: " << bytes_read << ")");
+                } else {
+                    FAIL("Async read failed with error: " << bytes_read);
+                }
+            }
+
+            // Verify result
+            REQUIRE(bytes_read == static_cast<ssize_t>(test_size_));
+
+            // Clean up
+            cudaStreamDestroy(stream);
+            close(fd);
+
+        } catch (const ::std::exception& e) {
+            FAIL("Failed asynchronous read test: " << e.what());
+        }
+    }
+
+    SECTION("File handle reference validity checks") {
+        // Open file descriptor manually
+        int fd = open(temp_file_path_.c_str(), O_RDONLY | O_DIRECT);
+        if (fd < 0) {
+            fd = open(temp_file_path_.c_str(), O_RDONLY);  // Fallback without O_DIRECT
+        }
+
+        if (fd < 0) {
+            FAIL("Failed to open file descriptor");
+        }
+
+        // Create non-owning reference from fd
+        file_handle_ref handle_ref(fd);
+
+        // Test validity
+        REQUIRE(handle_ref.is_valid());
+
+        // Test native handle access
+        CUfileHandle_t native = handle_ref.native_handle();
+        REQUIRE(native != nullptr);
+
+        // Test file descriptor access
+        REQUIRE(handle_ref.get_fd() == fd);
+
+        // Clean up manually since file_handle_ref doesn't close the fd
+        close(fd);
     }
 
     cleanup_test_environment();
