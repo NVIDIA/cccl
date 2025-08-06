@@ -350,7 +350,6 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   struct bulk_copy_policy_base
   {
   private:
-    // TODO(bgruber): should we just use max_bulk_copy_alignment here? Would simplify the code
     static constexpr int alignment = bulk_copy_alignment(PtxVersion);
     using async_policy             = async_copy_policy_t<AsyncBlockSize, alignment>;
     // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
