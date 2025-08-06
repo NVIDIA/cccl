@@ -24,6 +24,7 @@ dependencies = [
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
   "pynvjitlink-cu12>=0.2.4",
+  "numba-cuda",
 ]
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
