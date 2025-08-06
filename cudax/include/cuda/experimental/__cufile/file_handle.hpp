@@ -27,14 +27,15 @@
 
 namespace cuda::experimental::cufile {
 
+// Forward declarations
+class file_handle;
+
 /**
- * @brief RAII file handle for cuFILE operations
+ * @brief Base class for file handle operations
  */
-class file_handle {
-private:
+class file_handle_base {
+protected:
     int fd_;
-    bool owns_fd_;
-    ::std::string path_;
     detail::raii_resource<CUfileHandle_t, ::std::function<void(CUfileHandle_t)>> cufile_handle_;
 
     static int convert_ios_mode(::std::ios_base::openmode mode);
@@ -42,23 +43,9 @@ private:
 
 public:
     /**
-     * @brief Open file for cuFILE operations
-     * @param path File path
-     * @param mode STL-compatible open mode flags
+     * @brief Get file descriptor
      */
-    explicit file_handle(const ::std::string& path,
-                        ::std::ios_base::openmode mode = ::std::ios_base::in);
-
-    /**
-     * @brief Create from existing file descriptor
-     * @param fd File descriptor (should be opened with O_DIRECT)
-     * @param take_ownership Whether to close fd in destructor
-     */
-    explicit file_handle(int fd, bool take_ownership = false);
-
-    file_handle(file_handle&& other) noexcept;
-    file_handle& operator=(file_handle&& other) noexcept;
-    ~file_handle() noexcept;
+    int get_fd() const noexcept { return fd_; }
 
     /**
      * @brief Read data from file using span
@@ -119,17 +106,54 @@ public:
      */
     CUfileHandle_t native_handle() const noexcept;
 
-    /**
-     * @brief Get file path
-     */
-    const ::std::string& path() const noexcept;
+
 
     /**
      * @brief Check if the handle owns a valid resource
      */
     bool is_valid() const noexcept;
+};
 
+/**
+ * @brief Non-owning reference to a file handle for cuFILE operations
+ */
+class file_handle_ref : public file_handle_base {
+public:
+    /**
+     * @brief Create from existing file descriptor (non-owning)
+     * @param fd File descriptor (should be opened with O_DIRECT)
+     */
+    explicit file_handle_ref(int fd);
 
+    file_handle_ref(const file_handle_ref&) = delete;
+    file_handle_ref& operator=(const file_handle_ref&) = delete;
+    file_handle_ref(file_handle_ref&&) = delete;
+    file_handle_ref& operator=(file_handle_ref&&) = delete;
+    ~file_handle_ref() = default;
+};
+
+/**
+ * @brief RAII file handle for cuFILE operations (owning)
+ */
+class file_handle : public file_handle_base {
+public:
+    /**
+     * @brief Open file for cuFILE operations
+     * @param path File path
+     * @param mode STL-compatible open mode flags
+     */
+    explicit file_handle(const ::std::string& path,
+                        ::std::ios_base::openmode mode = ::std::ios_base::in);
+
+    /**
+     * @brief Create from existing file descriptor (owning)
+     * @param fd File descriptor (should be opened with O_DIRECT)
+     */
+    explicit file_handle(int fd);
+
+    file_handle(file_handle&& other) noexcept;
+    file_handle& operator=(file_handle&& other) noexcept;
+    ~file_handle() noexcept;
 };
 
 } // namespace cuda::experimental::cufile

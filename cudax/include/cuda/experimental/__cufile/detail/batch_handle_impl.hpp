@@ -8,7 +8,7 @@
 namespace cuda::experimental::cufile {
 
 // Forward declaration to avoid including file_handle.hpp in batch_handle.hpp
-class file_handle;
+class file_handle_base;
 
 // batch_io_params_span constructor implementation
 template<typename T>
@@ -106,7 +106,7 @@ inline bool batch_handle::is_valid() const noexcept {
 // Template method implementations that require complete file_handle definition
 
 template<typename T>
-void batch_handle::submit(const file_handle& file_handle_ref,
+void batch_handle::submit(const file_handle_base& file_handle_ref,
                          cuda::std::span<const batch_io_params_span<T>> operations,
                          unsigned int flags) {
     ::std::vector<CUfileIOParams_t> cufile_ops;
