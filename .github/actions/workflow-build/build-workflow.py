@@ -434,9 +434,8 @@ def generate_dispatch_job_runner(matrix_job, job_type):
         # Use smaller 4-core runners for build jobs if we can
         if job_type == "build":
             # ClangCUDA, MSVC, and NVHPC should use 16-core runners
-            if (
-                ("clang" not in matrix_job["cudacxx"])
-                and ("msvc" not in matrix_job["cxx"])
+            if ("clang" not in matrix_job["cudacxx"]) and (
+                "msvc" not in matrix_job["cxx"]
             ):
                 return f"{runner_os}-{cpu}-cpu8"
         return f"{runner_os}-{cpu}-cpu16"
