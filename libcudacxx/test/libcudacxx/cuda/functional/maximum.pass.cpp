@@ -38,7 +38,7 @@ __host__ __device__ constexpr bool test()
   test<double>(1.0, 2.0, 2.0);
 #if _CCCL_HAS_FLOAT128()
   test<__float128>(__float128(1.0f), __float128(2.0f), __float128(2.0f));
-#endif
+#endif // _CCCL_HAS_FLOAT128()
   return true;
 }
 
