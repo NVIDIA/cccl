@@ -131,6 +131,49 @@ gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
 Make sure that the key is uploaded to 'Signing Keys', not just 'Authentication Keys'.
 The same key may be used for both.
 
+## Artifact Scripts: ci/util/artifacts/
+
+These scripts can be used to upload/download artifacts from CI job runners.
+They are meant to be used from Github Actions jobs launched via `ci/matrix.yaml`.
+They can be run locally using `ci/create_mock_job_env.sh` to fake the environment of a single job of a specific CI run.
+
+Note that uploading doesn't immediately upload anything, but rather stages the files and adds the artifact information to a registry.
+The registry is parsed once the job completes and all registered artifacts are uploaded at once.
+This approach is used to work around a lack of convenient artifact uploading options provided by github.
+
+The `stage.sh` and `unstage.sh` scripts may be used to build up a set of files that will be uploaded as a single artifact.
+All calls to these scripts for a particular artifact must be made from the same working directory and specify relative paths to artifact files in subdirectories of the working directory.
+
+The upload scripts with `stage` in the name will pull files from an existing stage, rather than the command line.
+Non-`stage` upload scripts are convenience wrappers meant for simpler artifacts that don't require intricate staging.
+
+The `packed` upload and download scripts are best for large artifacts that are not meant to be used outside of the workflow.
+They store an archive inside of a zip wrapper, and the double archive is inconvenient, but useful for large artifacts.
+They are intended for temporary artifacts, such as passing test executables from build to test jobs, while the non-`packed` versions offer a more convenient raw-zip file downloads for things like python wheels.
+
+For best performance of the `packed` variants of the scripts, install `pbzip2` prior to packing anything.
+This can reduce the compression time from minutes to seconds for very large artifacts.
+
+- `stage.sh` / `unstage.sh` are useful for uploading a partial set of files from a filesystem directory.
+- `upload[_stage]_packed.sh` / `download_packed.sh` are good for large test artifacts that are ephemeral and only used by another job in this workflow.
+- `upload[_stage].sh` / `download.sh` are good for small artifacts that users/developers may want download for use/debugging somewhat regularly, like python wheels or installation archives.
+
+## Workflow job lookup scripts: ci/util/workflow/
+
+These scripts can be used to query information about a CI job's current workflow.
+They are meant to only be used from Github Actions jobs launched via `ci/matrix.yaml`.
+They can be run locally using `ci/create_mock_job_env.sh` to fake the environment of a single job of a specific CI run.
+
+These scripts interact with the `workflow` artifact uploaded by the `build-workflow` github action.
+This artifact holds files containing details about all `ci/matrix.yaml` jobs launched in the current workflow run.
+
+Of particular use are the queries for producer and consumer information.
+These can be used to determine which, if any, test artifacts need to be built/uploaded by producers.
+Consumers can query their producer's ID to locate the test artifacts the need to use.
+
+The `get_wheel_artifact_name.sh` script queries the workflow definitions to get detailed information about the current job.
+It's a good example of how these scripts can be used to carry out other packaging, etc related tasks.
+
 ## Troubleshooting CI Failures
 
 1. **Review CI logs**: Examine CI logs for specific error messages (see [Viewing CI Workflow Results](#viewing-ci-workflow-results))

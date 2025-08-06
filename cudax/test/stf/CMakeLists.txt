@@ -20,6 +20,7 @@ set(stf_test_sources
   error_checks/non_managed_data.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
+  examples/cuda_kernels_driver.cu
   examples/05-stencil-no-copy.cu
   examples/05-stencil-places.cu
   examples/05-stencil.cu
@@ -33,6 +34,8 @@ set(stf_test_sources
   graph/static_graph_ctx.cu
   hashtable/test.cu
   interface/cuda_kernel_chain-add_deps.cu
+  interface/cuda_kernel_chain-add_deps_low_level.cu
+  interface/cuda_kernel_empty_args.cu
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu

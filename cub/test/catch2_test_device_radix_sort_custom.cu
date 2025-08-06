@@ -60,7 +60,7 @@ using value = std::size_t;
 struct key_decomposer_t
 {
   template <template <typename> class... Ps>
-  __host__ __device__ ::cuda::std::tuple<std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
+  __host__ __device__ cuda::std::tuple<std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
   {
     return {key.key};
   }
@@ -69,7 +69,7 @@ struct key_decomposer_t
 struct pair_decomposer_t
 {
   template <template <typename> class... Ps>
-  __host__ __device__ ::cuda::std::tuple<std::size_t&, std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
+  __host__ __device__ cuda::std::tuple<std::size_t&, std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
   {
     return {key.key, key.val};
   }
@@ -516,7 +516,7 @@ struct custom_t
 
 struct decomposer_t
 {
-  __host__ __device__ ::cuda::std::tuple<float&, long long int&> operator()(custom_t& key) const
+  __host__ __device__ cuda::std::tuple<float&, long long int&> operator()(custom_t& key) const
   {
     return {key.f, key.lli};
   }

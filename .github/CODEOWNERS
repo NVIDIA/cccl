@@ -19,6 +19,8 @@ c2h/ @nvidia/cccl-infra-codeowners
 # cmake
 **/CMakeLists.txt @nvidia/cccl-cmake-codeowners
 **/cmake/ @nvidia/cccl-cmake-codeowners
+# make an exception for the cudax test cmake file
+cudax/test/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 
 # benchmarks
 benchmarks/ @nvidia/cccl-benchmark-codeowners
