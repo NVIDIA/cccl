@@ -29,18 +29,18 @@ _CCCL_DEVICE static inline void clusterlaunchcontrol_try_cancel(void* __addr, _C
 
 /*
 // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 [addr],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_101a template <typename = void>
+[smem_bar]; // PTX ISA 86, SM_100a, SM_110a template <typename = void>
 __device__ static inline void clusterlaunchcontrol_try_cancel_multicast(
   void* addr,
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_clusterlaunchcontrol_try_cancel_multicast_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_clusterlaunchcontrol_try_cancel_multicast_is_not_supported_before_SM_100a_SM_110a__();
 template <typename = void>
 _CCCL_DEVICE static inline void clusterlaunchcontrol_try_cancel_multicast(void* __addr, _CUDA_VSTD::uint64_t* __smem_bar)
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   asm("clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 "
       "[%0], [%1];"
       :
@@ -48,7 +48,7 @@ _CCCL_DEVICE static inline void clusterlaunchcontrol_try_cancel_multicast(void* 
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_clusterlaunchcontrol_try_cancel_multicast_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_clusterlaunchcontrol_try_cancel_multicast_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

@@ -152,15 +152,15 @@
 #    endif
 #  endif // !NV_HAS_FEATURE_SM_100a
 
-// missing SM_101a
-#  ifndef NV_HAS_FEATURE_SM_101a
-#    define NV_HAS_FEATURE_SM_101a __NV_HAS_FEATURE_SM_101a
-#    if __CUDA_ARCH__ >= 1010 && defined(__CUDA_ARCH_FEAT_SM101_ALL)
-#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 1
-#    else // ^^^ SM101a ^^^ / vvv !SM101a vvv
-#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 0
+// missing SM_110a
+#  ifndef NV_HAS_FEATURE_SM_110a
+#    define NV_HAS_FEATURE_SM_110a __NV_HAS_FEATURE_SM_110a
+#    if __CUDA_ARCH__ >= 1100 && defined(__CUDA_ARCH_FEAT_SM110_ALL)
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 1
+#    else // ^^^ SM_110a ^^^ / vvv !SM_110a vvv
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 0
 #    endif
-#  endif // NV_HAS_FEATURE_SM_101a
+#  endif // NV_HAS_FEATURE_SM_110a
 
 // missing SM_120a
 #  ifndef NV_HAS_FEATURE_SM_120a

@@ -34,7 +34,7 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(void*, uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
         // [addr], [smem_bar];
