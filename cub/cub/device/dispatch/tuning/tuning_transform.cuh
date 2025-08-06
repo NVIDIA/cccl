@@ -209,16 +209,6 @@ _CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-// Because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
-// namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
-// different alignment based on the template parameters (i.e. the iterator value types). We settle on using 128 as
-// alignment, since it's the maximum bulk copy alignment to handle Hopper and should cover must overaligned types as
-// well (we don't expect many types with alignment > 128 bytes).
-//
-// Due to runtime implementation details, the alignment of dynamic shared memory effects the required *static* shared
-// memory of *every* other kernel that is generated into the same TU (translation unit) as the transform kernel here. So
-// we try not to pick a large alignment, because it may reduce the occupancy of *any* other kernel in the same TU as
-// ours. More internal information: https://github.com/NVIDIA/cccl_private/wiki/Dynamic-shared-memory-alignment
 inline constexpr int max_bulk_copy_alignment = 128;
 
 constexpr int bulk_copy_size_multiple = 16;
@@ -244,11 +234,7 @@ bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignment
   }
   const int tile_padding = max_alignment > bulk_copy_align ? max_bulk_copy_alignment : bulk_copy_align;
 
-  // dynamic SMEM comes after static shared memory (which contains the 8-byte barrier) and is at least 16 bytes aligned.
-  // So let's start at offset 16. This also hits the worst case scenario for types with alignment larger than 16,
-  // needing the most padding before the first tile. From observation, dynamic shared memory starts at address 0x408
-  // within the shared memory window of the current CTA.
-  int smem_size = ::cuda::round_up(int{sizeof(uint64_t)}, 16);
+  int smem_size = max_bulk_copy_alignment; // for the barrier and padding
   for (auto&& [vt_size, _] : it_value_sizes_alignments)
   {
     smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;

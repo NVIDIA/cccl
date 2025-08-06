@@ -614,13 +614,6 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 }
 
-[[maybe_unused]] _CCCL_DEVICE inline auto round_up_smem_ptr(char* p) -> char*
-{
-  uint32_t smem32 = __cvta_generic_to_shared(p);
-  smem32          = ::cuda::round_up(smem32, max_bulk_copy_alignment);
-  return static_cast<char*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__cvta_shared_to_generic(smem32), max_bulk_copy_alignment));
-}
-
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items, int num_elem_per_thread, F f, RandomAccessIteratorOut out, aligned_base_ptr<InTs>... aligned_ptrs)
@@ -638,26 +631,27 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   constexpr int max_alignment = ::cuda::std::max({alignof(InTs)...});
   constexpr int tile_padding  = max_alignment > bulk_copy_alignment ? max_bulk_copy_alignment : bulk_copy_alignment;
 
-  __shared__ uint64_t bar;
+  // Because extern (__shared__) variables are injected from inside a function (template) scope into the enclosing
+  // namespace scope they must have the same type and (alignment) attributes for the same name. So we cannot specify a
+  // different alignment based on the template parameters (i.e. the iterator value types). We settle on using 128 as
+  // alignment, since it's the maximum bulk copy alignment to handle Hopper and should cover must overaligned types as
+  // well (we don't expect many types with alignment > 128 bytes).
+  //
+  // We could use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and
+  // fails for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR
+  // #5122. However, due to CUDA runtime implementation details, the alignment of dynamic shared memory effects the
+  // required *static* shared memory of *every* other kernel that is generated into the same TU (translation unit) as
+  // the transform kernel here. More internal information:
+  // https://github.com/NVIDIA/cccl_private/wiki/Dynamic-shared-memory-alignment. Because we put the barrier into the
+  // dynamic shared memory, we don't have any static shared memory, and the dynamic shared memory starts right at the
+  // beginning of the shared memory window, which usually has a high alignment (> 1KiB, depends on the GPU
+  // architecture). So we just rely in this fact and don't specify an attribute to not mess with other kernels. This is
+  // also what cutlass does.
 
-  // We use an attribute to align the shared memory. This is unfortunately not respected by nvcc in all cases and fails
-  // for example when compiling with -G or -rdc=true. See also NVBug 5093902, NVBug 5329745, and discussion in PR #5122.
-  extern __shared__ char __align__(max_bulk_copy_alignment) smem_hopefully_aligned[];
-  char* smem_base = smem_hopefully_aligned;
-
-  // dynamic shared memory is aligned to 16 by default, only ensure larger alignment when needed for correctness
-  if constexpr (max_alignment > 16)
-  {
-#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 2) && (__CUDACC_RDC__ || __CUDACC_DEBUG__)
-    // Manual alignment of the shared memory start address introduces about 7 additional SASS instructions at the start
-    // of the kernel. This does not outweigh the benefit of a faster bulk copy on Hopper, but is needed for correctness
-    // with overaligned types. So we only align in the pathological cases.
-    smem_base = round_up_smem_ptr(smem_base);
-    // keep NVVM from pulling the alignment code deeper into the kernel which is critical for performance
-    asm("" : "+l"(smem_base));
-#endif
-    _CCCL_ASSERT(::cuda::is_aligned(smem_base, max_bulk_copy_alignment), "");
-  }
+  extern __shared__ char /*__align__(max_bulk_copy_alignment)*/ smem_with_barrier[];
+  _CCCL_ASSERT(::cuda::is_aligned(smem_with_barrier, max_bulk_copy_alignment), "");
+  uint64_t& bar         = *reinterpret_cast<uint64_t*>(smem_with_barrier);
+  char* const smem_base = smem_with_barrier + max_bulk_copy_alignment;
 
   namespace ptx = ::cuda::ptx;
 
