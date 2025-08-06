@@ -649,7 +649,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // also what cutlass does.
 
   extern __shared__ char /*__align__(max_bulk_copy_alignment)*/ smem_with_barrier[];
-  _CCCL_ASSERT(::cuda::is_aligned(smem_with_barrier, max_bulk_copy_alignment), "");
+  _CCCL_ASSERT(::cuda::is_aligned(smem_with_barrier, max_bulk_copy_alignment),
+               "Dynamic shared memory is insufficiently aligned");
   uint64_t& bar         = *reinterpret_cast<uint64_t*>(smem_with_barrier);
   char* const smem_base = smem_with_barrier + max_bulk_copy_alignment;
 
