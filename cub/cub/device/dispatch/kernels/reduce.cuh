@@ -368,7 +368,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     ftype items[items_per_thread] = {};
     for (int j = 0; j < items_per_thread; j++)
     {
-      const offset_t idx = i + static_cast<offset_t>(j * block_threads);
+      const offset_t idx = i + static_cast<offset_t>(j) * n_threads;
       if (idx < num_items)
       {
         items[j] = transform_op(d_in[idx]);
