@@ -23,6 +23,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
+#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/to_underlying.h>
 
 #  include <nv/target>
@@ -42,14 +43,13 @@ enum class address_space
   __max,
 };
 
-[[nodiscard]] _CCCL_API constexpr bool __cccl_is_valid_address_space(address_space __space) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr bool __cccl_is_valid_address_space(address_space __space) noexcept
 {
   const auto __v = _CUDA_VSTD::to_underlying(__space);
   return __v >= 0 && __v < _CUDA_VSTD::to_underlying(address_space::__max);
 }
 
-[[nodiscard]] _CCCL_FORCEINLINE _CCCL_VISIBILITY_HIDDEN _CCCL_DEVICE bool
-is_address_from(address_space __space, const void* __ptr)
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space)
 {
   _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
   _CCCL_ASSERT(_CUDA_DEVICE::__cccl_is_valid_address_space(__space), "invalid address space");
@@ -57,24 +57,30 @@ is_address_from(address_space __space, const void* __ptr)
   switch (__space)
   {
     case address_space::global:
-      return ::__isGlobal(__ptr);
+      return static_cast<bool>(::__isGlobal(__ptr));
     case address_space::shared:
-      return ::__isShared(__ptr);
+      return static_cast<bool>(::__isShared(__ptr));
     case address_space::constant:
-      return ::__isConstant(__ptr);
+      return static_cast<bool>(::__isConstant(__ptr));
     case address_space::local:
-      return ::__isLocal(__ptr);
+      return static_cast<bool>(::__isLocal(__ptr));
     case address_space::grid_constant:
 #  if _CCCL_HAS_GRID_CONSTANT()
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return ::__isGridConstant(__ptr);), (return false;))
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return static_cast<bool>(::__isGridConstant(__ptr));), (return false;))
 #  else // ^^^ _CCCL_HAS_GRID_CONSTANT() ^^^ / vvv !_CCCL_HAS_GRID_CONSTANT() vvv
       return false;
 #  endif // ^^^ !_CCCL_HAS_GRID_CONSTANT() ^^^
     case address_space::cluster_shared:
-      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return ::__isClusterShared(__ptr);), (return false;))
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return static_cast<bool>(::__isClusterShared(__ptr));), (return false;))
     default:
       return false;
   }
+}
+
+template <typename T>
+[[nodiscard]] _CCCL_DEVICE_API inline bool is_object_from(T& __obj, address_space __space)
+{
+  return _CUDA_DEVICE::is_address_from(_CUDA_VSTD::addressof(__obj), __space);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE

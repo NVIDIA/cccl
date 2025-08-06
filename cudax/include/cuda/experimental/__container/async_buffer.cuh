@@ -550,18 +550,18 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(stream_ref __new_stream)
   {
-    __buf_.change_stream(__new_stream);
+    __buf_.set_stream(__new_stream);
   }
 
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(stream_ref __new_stream) noexcept
   {
-    __buf_.change_stream_unsynchronized(__new_stream);
+    __buf_.set_stream_unsynchronized(__new_stream);
   }
 
   //! @brief Move assignment operator
@@ -659,7 +659,7 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
@@ -680,7 +680,7 @@ async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_asy
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
@@ -698,7 +698,7 @@ make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, 
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
@@ -716,7 +716,7 @@ make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, 
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
@@ -734,7 +734,7 @@ async_buffer<_Tp, _Properties...> make_async_buffer(
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
@@ -753,7 +753,7 @@ make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, 
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
                  _CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last)
 {
@@ -772,7 +772,7 @@ async_buffer<_Tp, _Properties...> make_async_buffer(
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
@@ -791,7 +791,7 @@ make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, 
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Range)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
+_CCCL_REQUIRES(_CUDA_VMR::resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
                  _CUDA_VRANGES::forward_range<_Range>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range)
 {

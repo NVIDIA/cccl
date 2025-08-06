@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cstdint>
-#include <iostream> // std::cerr
 #include <optional> // std::optional
 #include <string>
 
@@ -20,7 +19,7 @@
 #include "test_util.h"
 #include <cccl/c/radix_sort.h>
 
-using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
+using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, double>;
 using item_t    = float;
 
 template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
@@ -44,10 +43,10 @@ struct TestParameters
 };
 
 using test_params_tuple =
-  std::tuple<TestParameters<std::tuple_element_t<0, key_types>, item_t, false, false>,
-             TestParameters<std::tuple_element_t<1, key_types>, item_t, true, false>,
-             TestParameters<std::tuple_element_t<2, key_types>, item_t, false, true>,
-             TestParameters<std::tuple_element_t<3, key_types>, item_t, true, true>>;
+  c2h::type_list<TestParameters<c2h::get<0, key_types>, item_t, false, false>,
+                 TestParameters<c2h::get<1, key_types>, item_t, true, false>,
+                 TestParameters<c2h::get<2, key_types>, item_t, false, true>,
+                 TestParameters<c2h::get<3, key_types>, item_t, true, true>>;
 
 using BuildResultT = cccl_device_radix_sort_build_result_t;
 
@@ -165,9 +164,9 @@ void radix_sort(
 }
 
 struct DeviceRadixSort_SortKeys_Fixture_Tag;
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
+C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
 {
-  using T     = TestType;
+  using T     = c2h::get<0, TestType>;
   using KeyT  = typename T::KeyT;
   using ItemT = typename T::ItemT;
 
@@ -198,7 +197,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", test_
 
   const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
-     KeyBuilder::type_as_key<TestType>(),
+     KeyBuilder::type_as_key<T>(),
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
@@ -235,9 +234,9 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", test_
 }
 
 struct DeviceRadixSort_SortPairs_Fixture_Tag;
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
+C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
 {
-  using T     = TestType;
+  using T     = c2h::get<0, TestType>;
   using KeyT  = typename T::KeyT;
   using ItemT = typename T::ItemT;
 

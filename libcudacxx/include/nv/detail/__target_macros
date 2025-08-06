@@ -281,7 +281,15 @@
 #define NV_HAS_FEATURE_SM_90a  NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_100a NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_101a NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_103a NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_120a NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_121a NV_NO_TARGET
+
+#define NV_HAS_FEATURE_SM_100f NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_103f NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_110f NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_120f NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_121f NV_NO_TARGET
 
 #define NV_IS_HOST   __NV_IS_HOST
 #define NV_IS_DEVICE __NV_IS_DEVICE
@@ -427,10 +435,21 @@
 #    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_120 0
 #  endif
 
+#  if (_NV_TARGET___NV_IS_EXACTLY_SM_121)
+#    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_121 1
+#  else
+#    define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_121 0
+#  endif
+
+//----------------------------------------------------------------------------------------------------------------------
+// family specific SM versions
+
 // Re-enable sm_90a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_90a
 #  define NV_HAS_FEATURE_SM_90a __NV_HAS_FEATURE_SM_90a
-#  if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && defined(__CUDA_ARCH_FEAT_SM90_ALL))
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) \
+    && (defined(__CUDA_ARCH_FEAT_SM90_ALL)             \
+        || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && __CUDA_ARCH_FAMILY_SPECIFIC__ == 900))
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_90a 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_90a 0
@@ -439,7 +458,9 @@
 // Re-enable sm_100a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_100a
 #  define NV_HAS_FEATURE_SM_100a __NV_HAS_FEATURE_SM_100a
-#  if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1000) && defined(__CUDA_ARCH_FEAT_SM100_ALL))
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1000) \
+    && (defined(__CUDA_ARCH_FEAT_SM100_ALL)             \
+        || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && __CUDA_ARCH_FAMILY_SPECIFIC__ == 1000))
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100a 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100a 0
@@ -448,19 +469,88 @@
 // Re-enable sm_101a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_101a
 #  define NV_HAS_FEATURE_SM_101a __NV_HAS_FEATURE_SM_101a
-#  if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1010) && defined(__CUDA_ARCH_FEAT_SM101_ALL))
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1010) \
+    && (defined(__CUDA_ARCH_FEAT_SM101_ALL)             \
+        || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && __CUDA_ARCH_FAMILY_SPECIFIC__ == 1010))
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 0
 #  endif
 
+// Re-enable sm_103a support in nvcc.
+#  undef NV_HAS_FEATURE_SM_103a
+#  define NV_HAS_FEATURE_SM_103a __NV_HAS_FEATURE_SM_103a
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1030) \
+    && (defined(__CUDA_ARCH_FEAT_SM103_ALL)             \
+        || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && __CUDA_ARCH_FAMILY_SPECIFIC__ == 1030))
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103a 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103a 0
+#  endif
+
 // Re-enable sm_120a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_120a
 #  define NV_HAS_FEATURE_SM_120a __NV_HAS_FEATURE_SM_120a
-#  if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1200) && defined(__CUDA_ARCH_FEAT_SM120_ALL))
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1200) \
+    && (defined(__CUDA_ARCH_FEAT_SM120_ALL)             \
+        || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && __CUDA_ARCH_FAMILY_SPECIFIC__ == 1200))
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 0
+#  endif
+
+// Re-enable sm_121a support in nvcc.
+#  undef NV_HAS_FEATURE_SM_121a
+#  define NV_HAS_FEATURE_SM_121a __NV_HAS_FEATURE_SM_121a
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1210) \
+    && (defined(__CUDA_ARCH_FEAT_SM121_ALL)             \
+        || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && __CUDA_ARCH_FAMILY_SPECIFIC__ == 1210))
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_121a 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_121a 0
+#  endif
+
+//----------------------------------------------------------------------------------------------------------------------
+// arch-specific SM versions
+
+// Re-enable sm_100f support in nvcc.
+#  undef NV_HAS_FEATURE_SM_100f
+#  define NV_HAS_FEATURE_SM_100f __NV_HAS_FEATURE_SM_100f
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 1000) && defined(__CUDA_ARCH_SPECIFIC__) \
+    && (__CUDA_ARCH_SPECIFIC__ == 1000)
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100f 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100f 0
+#  endif
+
+// Re-enable sm_103f support in nvcc.
+#  undef NV_HAS_FEATURE_SM_103f
+#  define NV_HAS_FEATURE_SM_103f __NV_HAS_FEATURE_SM_103f
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 1030) && defined(__CUDA_ARCH_SPECIFIC__) \
+    && (__CUDA_ARCH_SPECIFIC__ == 1030)
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103f 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103f 0
+#  endif
+
+// Re-enable sm_120f support in nvcc.
+#  undef NV_HAS_FEATURE_SM_120f
+#  define NV_HAS_FEATURE_SM_120f __NV_HAS_FEATURE_SM_120f
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 1200) && defined(__CUDA_ARCH_SPECIFIC__) \
+    && (__CUDA_ARCH_SPECIFIC__ == 1200)
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120f 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120f 0
+#  endif
+
+// Re-enable sm_121f support in nvcc.
+#  undef NV_HAS_FEATURE_SM_121f
+#  define NV_HAS_FEATURE_SM_121f __NV_HAS_FEATURE_SM_121f
+#  if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 1210) && defined(__CUDA_ARCH_SPECIFIC__) \
+    && (__CUDA_ARCH_SPECIFIC__ == 1210)
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_121f 1
+#  else
+#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_121f 0
 #  endif
 
 #  if (_NV_TARGET_IS_HOST)
@@ -600,6 +690,12 @@
 #    define _NV_TARGET_BOOL___NV_PROVIDES_SM_120 1
 #  else
 #    define _NV_TARGET_BOOL___NV_PROVIDES_SM_120 0
+#  endif
+
+#  if (_NV_TARGET___NV_PROVIDES_SM_121)
+#    define _NV_TARGET_BOOL___NV_PROVIDES_SM_121 1
+#  else
+#    define _NV_TARGET_BOOL___NV_PROVIDES_SM_121 0
 #  endif
 
 #  define _NV_ARCH_COND_CAT1(cond) _NV_TARGET_BOOL_##cond

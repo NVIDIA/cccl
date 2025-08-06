@@ -546,7 +546,8 @@ template <typename... Prev>
   }
   else
   {
-    return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous));
+    constexpr auto fn = &make_hierarchy<void, const Prev&...>;
+    return kernel_config(::cuda::std::apply(fn, previous));
   }
 }
 
@@ -564,7 +565,8 @@ __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& ar
     }
     else
     {
-      return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous), arg, rest...);
+      constexpr auto fn = make_hierarchy<void, const Prev&...>;
+      return kernel_config(::cuda::std::apply(fn, previous), arg, rest...);
     }
   }
   else

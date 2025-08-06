@@ -23,25 +23,30 @@ inputs:
   # This token must have the "read:enterprise" scope
   dist-token:
     description: "The token used to authenticate with the sccache-dist build cluster."
-  producer_id:
-    description: "The producer job's ID, if downloading a wheelhouse from a producer."
-    required: false
 
 runs:
   using: "composite"
   steps:
-    - name: Install dependencies
-      shell: sh
+    - name: Define and log job details
+      shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
       run: |
-        # Install script dependencies
-        alias retry="${{github.workspace}}/ci/util/retry.sh 5 30"
-        retry sudo apt update
-        retry sudo apt install -y --no-install-recommends tree git
-        if echo "$COMMAND" | grep -Eq '"./ci/.*_python.sh"'; then
-          echo "is_python=true" >> "$GITHUB_ENV"
-        fi
+        echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
+
+        echo "::group::️🔍 Job Inputs"
+        # Define the job input parameters as JOB_* environment variables that are visible in all steps:
+        echo "JOB_ID=${{inputs.id}}"               | tee -a $GITHUB_ENV
+        echo "JOB_RUNNER=${{inputs.runner}}"       | tee -a $GITHUB_ENV
+        echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
+        echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
+        echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
+        echo
+        echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
+        echo "::endgroup::"
+
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -52,19 +57,12 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-    - if: ${{ env.is_python == 'true' }}
-      name: Download wheelhouse artifact if it exists
-      uses: actions/download-artifact@v4
-      with:
-        name: wheelhouse-${{ inputs.producer_id || inputs.id }}
-        path: wheelhouse/
-      continue-on-error: true
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
+      id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        GH_TOKEN: ${{ github.token }}
         CI: true
-        RUNNER: "${{inputs.runner}}"
-        IMAGE: "${{inputs.image}}"
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
@@ -73,9 +71,11 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        cat <<"EOF" > ci.sh
+        cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
+
         set -euo pipefail
+
         ulimit -n $(ulimit -Hn)
         sccache --stop-server >/dev/null 2>&1
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
@@ -83,6 +83,7 @@ runs:
         echo -e "::group::️⚙️ \e[1;34mBuild cluster status:\e[0m"
         ./ci/sccache_dist_status.sh | sed 's/\"//g' | column -t -s,
         echo -e "::endgroup::"
+        echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
         exit_code=0
         eval "${COMMAND}" || exit_code=$?
@@ -99,8 +100,11 @@ runs:
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
           echo -e "::endgroup::"
-          exit $exit_code
         fi
+
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
+
+        exit $exit_code
         EOF
 
         chmod +x ci.sh
@@ -219,93 +223,56 @@ runs:
         fi
 
         # Explicitly pass which GPU to use if on a GPU runner
-        if [[ "${RUNNER}" = *"-gpu-"* ]]; then
+        if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
           extra_launch_args+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
 
         # If the image contains "cudaXX.Yext"...
-        if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
+        if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+ext ]]; then
           extra_launch_args+=(--cuda-ext)
         fi
 
+        # Initialize artifact paths, vars, etc shared with the devcontainer:
+        source ci/util/artifacts/common.sh
+        source ci/util/workflow/common.sh
+
         # Launch this container using the host's docker daemon
-        set -x
+        ( # Subshell to contain the set -x log
+          set -x
+          .devcontainer/launch.sh \
+            --docker \
+            --cuda $JOB_CUDA \
+            --host $JOB_HOST \
+            "${extra_launch_args[@]}" \
+            --env "AWS_ROLE_ARN=" \
+            --env "CI=$CI" \
+            --env "COMMAND=$COMMAND" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --env "GH_TOKEN=${{ github.token }}" \
+            --env "HOST_WORKSPACE=${{github.workspace}}" \
+            --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
+            --env "JOB_ID=$JOB_ID" \
+            --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
+            --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
+            --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
+            -- ./ci.sh
+        )
 
-        ${{github.workspace}}/.devcontainer/launch.sh \
-          --docker \
-          --cuda ${{inputs.cuda}} \
-          --host ${{inputs.host}} \
-          "${extra_launch_args[@]}" \
-          --env "CI=$CI" \
-          --env "AWS_ROLE_ARN=" \
-          --env "COMMAND=$COMMAND" \
-          --env "SCCACHE_IDLE_TIMEOUT=0" \
-          --env "GITHUB_ENV=$GITHUB_ENV" \
-          --env "GITHUB_SHA=$GITHUB_SHA" \
-          --env "GITHUB_PATH=$GITHUB_PATH" \
-          --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
-          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-          --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
-          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-          --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-          --env "HOST_WORKSPACE=${{github.workspace}}" \
-          --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
-          --volume "${{github.workspace}}/ci.sh:/ci.sh" \
-          -- /ci.sh
+        # Dump artifact matrix for upload step:
+        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
 
-    - if: ${{ always() }}
-      name: Create job artifact dir
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
-        echo "result_dir=$result_dir" >> "$GITHUB_ENV"
-
-    - if: ${{ success() }}
-      name: Record job success
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        touch "$result_dir/success"
-
-    - if: ${{ always() }}
-      name: Prepare job artifacts
-      shell: bash --noprofile --norc -euo pipefail {0}
-      run: |
-        echo "Prepare job artifacts"
-
-        # chmod all temp contents 777 so the runner can delete them
-        find "${{runner.temp}}/" -exec chmod 0777 {} \;
-
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          find . -maxdepth 4 -type f -name "$1" -print0 | xargs -0 -I% cp -v % "$result_dir/"
-        }
-
-        # Copy any artifacts we want to preserve out of the container
-        find_and_copy "sccache.log" || :
-        find_and_copy ".ninja_log" || :
-        find_and_copy "build.ninja" || :
-        find_and_copy "rules.ninja" || :
-        find_and_copy "sccache_stats.json" || :
-
-        echo "::group::Job artifacts"
-        tree "$result_dir"
-        echo "::endgroup::"
-
-    - if: ${{ always() }}
-      name: Upload job artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload job artifacts
+      if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
+      uses: ./.github/actions/upload-artifacts
       with:
-        name: jobs-${{inputs.id}}
-        path: jobs
-        compression-level: 0
-        include-hidden-files: true
-
-    - if: ${{ env.is_python == 'true' }}
-      name: Upload wheelhouse
-      uses: actions/upload-artifact@v4
-      with:
-        name: wheelhouse-${{inputs.id}}
-        path: wheelhouse/
-        compression-level: 0
+        artifacts: ${{ steps.run.outputs.ARTIFACTS }}

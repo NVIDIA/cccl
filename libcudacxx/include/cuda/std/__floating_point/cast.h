@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _To, class _From>
-[[nodiscard]] _CCCL_API inline _To __fp_cast(_From __v) noexcept
+[[nodiscard]] _CCCL_API inline constexpr _To __fp_cast(_From __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_same, _From, float))
   {
