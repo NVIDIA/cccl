@@ -143,7 +143,7 @@ runs:
         # Download new sccache binary
         mkdir -p "${{runner.temp}}/bin"
         curl -fsSL \
-          "https://github.com/rapidsai/sccache/releases/download/v0.10.0-rapids.35/sccache-v0.10.0-rapids.35-$(uname -m)-unknown-linux-musl.tar.gz" \
+          "https://github.com/rapidsai/sccache/releases/download/v0.10.0-rapids.52/sccache-v0.10.0-rapids.52-$(uname -m)-unknown-linux-musl.tar.gz" \
         | tar -C "${{runner.temp}}/bin" -zf - --wildcards --strip-components=1 -x '*/sccache'
 
         declare -a extra_launch_args=(
