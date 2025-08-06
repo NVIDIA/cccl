@@ -645,14 +645,22 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // https://github.com/NVIDIA/cccl_private/wiki/Dynamic-shared-memory-alignment. Because we put the barrier into the
   // dynamic shared memory, we don't have any static shared memory, and the dynamic shared memory starts right at the
   // beginning of the shared memory window, which usually has a high alignment (> 1KiB, depends on the GPU
-  // architecture). So we just rely in this fact and don't specify an attribute to not mess with other kernels. This is
-  // also what cutlass does.
+  // architecture). So we could just rely in this fact and don't specify an attribute to not mess with other kernels.
+  // This is also what cutlass does. But it is not guaranteed by CUDA. So let's align manually (this costs up to 5% on
+  // 2^16 problems on H200)
 
-  extern __shared__ char /*__align__(max_bulk_copy_alignment)*/ smem_with_barrier[];
-  _CCCL_ASSERT(::cuda::is_aligned(smem_with_barrier, max_bulk_copy_alignment),
-               "Dynamic shared memory is insufficiently aligned");
-  uint64_t& bar         = *reinterpret_cast<uint64_t*>(smem_with_barrier);
-  char* const smem_base = smem_with_barrier + max_bulk_copy_alignment;
+  extern __shared__ char smem_with_barrier_base[];
+  char* smem_with_barrier = smem_with_barrier_base;
+  if constexpr (max_alignment > 16) // we need to align for correctness
+  {
+    uint32_t smem32 = __cvta_generic_to_shared(smem_with_barrier);
+    smem32          = ::cuda::round_up(smem32, max_bulk_copy_alignment);
+    asm("" : "+r"(smem32)); // avoid NVVM pulling the alignment code into the kernel, gains up to 8.7% some runs on H200
+    smem_with_barrier = static_cast<char*>(__cvta_shared_to_generic(smem32));
+  }
+  uint64_t& bar   = *reinterpret_cast<uint64_t*>(smem_with_barrier);
+  char* smem_base = smem_with_barrier + max_bulk_copy_alignment;
+  _CCCL_ASSERT(::cuda::is_aligned(smem_with_barrier, max_bulk_copy_alignment), "");
 
   namespace ptx = ::cuda::ptx;
 
