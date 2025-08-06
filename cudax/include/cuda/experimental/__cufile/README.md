@@ -11,11 +11,28 @@ Modern C++ bindings for NVIDIA cuFILE (GPU Direct Storage) providing direct API 
 
 ## Core Components
 
+### File Handle Types
+
+The library provides two file handle types with different ownership semantics:
+
+- **`file_handle`** - Owning RAII handle that closes the file descriptor on destruction
+- **`file_handle_ref`** - Non-owning reference that doesn't close the file descriptor
+
+Both types inherit from `file_handle_base` and provide the same I/O operations.
+
 ### File Operations
 ```cpp
-auto file = cuda::io::file_handle{"data.bin", std::ios_base::in};
-size_t bytes = file.read(gpu_buffer, size, file_offset, buffer_offset);
-file.read_async(gpu_buffer, &size, &file_offset, &buffer_offset, &bytes_read, stream);
+// Owning file handle - closes file descriptor on destruction
+auto file = cuda::experimental::cufile::file_handle{"data.bin", std::ios_base::in};
+size_t bytes = file.read(gpu_buffer, file_offset, buffer_offset);
+file.read_async(stream, gpu_buffer, file_offset, buffer_offset);
+
+// Non-owning file handle reference - doesn't close file descriptor
+int fd = open("data.bin", O_RDONLY | O_DIRECT);
+auto file_ref = cuda::experimental::cufile::file_handle_ref{fd};
+size_t bytes = file_ref.read(gpu_buffer, file_offset, buffer_offset);
+// fd must be closed manually when done
+close(fd);
 ```
 
 ### Buffer Registration
@@ -52,19 +69,22 @@ cuda::io::driver_close();
 
 ### Basic Operations
 ```cpp
-#include <cuda/io/cufile.hpp>
+#include <cuda/experimental/cufile.h>
 
-// Check availability
-if (!cuda::io::is_cufile_available()) return 1;
-
-// Allocate and register GPU buffer
+// Allocate GPU buffer
 void* gpu_buffer;
 cudaMalloc(&gpu_buffer, size);
-auto buffer = cuda::io::buffer_handle{gpu_buffer, size};
 
-// File operations
-auto file = cuda::io::file_handle{"data.bin", std::ios_base::in};
-size_t bytes_read = file.read(gpu_buffer, size);
+// Owning file handle - automatically closes file descriptor
+auto file = cuda::experimental::cufile::file_handle{"data.bin", std::ios_base::in};
+cuda::std::span<char> buffer_span{static_cast<char*>(gpu_buffer), size};
+size_t bytes_read = file.read(buffer_span);
+
+// Non-owning file handle reference - for existing file descriptors
+int fd = open("another_file.bin", O_RDONLY | O_DIRECT);
+auto file_ref = cuda::experimental::cufile::file_handle_ref{fd};
+size_t bytes_read2 = file_ref.read(buffer_span);
+close(fd); // Manual cleanup required
 
 cudaFree(gpu_buffer);
 ```
@@ -73,27 +93,41 @@ cudaFree(gpu_buffer);
 ```cpp
 cudaStream_t stream;
 cudaStreamCreate(&stream);
-auto stream_handle = cuda::io::stream_handle{stream};
+cuda::stream_ref stream_ref{stream};
 
-size_t size = 1024 * 1024;
-off_t file_offset = 0, buffer_offset = 0;
-ssize_t bytes_read;
-
-file.read_async(gpu_buffer, &size, &file_offset, &buffer_offset, 
-                &bytes_read, stream);
+// Using owning file handle
+auto file = cuda::experimental::cufile::file_handle{"data.bin", std::ios_base::in};
+cuda::std::span<char> buffer_span{static_cast<char*>(gpu_buffer), size};
+file.read_async(stream_ref, buffer_span, file_offset, buffer_offset);
 cudaStreamSynchronize(stream);
+
+// Using non-owning file handle reference
+int fd = open("data.bin", O_RDONLY | O_DIRECT);
+auto file_ref = cuda::experimental::cufile::file_handle_ref{fd};
+file_ref.write_async(stream_ref, buffer_span, file_offset, buffer_offset);
+cudaStreamSynchronize(stream);
+close(fd);
 ```
 
 ### Batch Operations
 ```cpp
-auto batch = cuda::io::batch_handle{10};
-std::vector<cuda::io::batch_io_params> ops = {
-    {buffer1, 0, 0, size1, CUFILE_READ, nullptr},
-    {buffer2, size1, 0, size2, CUFILE_READ, nullptr}
+// Works with both file_handle and file_handle_ref
+auto file = cuda::experimental::cufile::file_handle{"data.bin", std::ios_base::in};
+
+auto batch = cuda::experimental::cufile::batch_handle{10};
+std::vector<cuda::experimental::cufile::batch_io_params_span<char>> ops = {
+    {buffer_span1, 0, 0, CUFILE_READ},
+    {buffer_span2, size1, 0, CUFILE_READ}
 };
 
 batch.submit(file, ops);
 auto results = batch.get_status(ops.size());
+
+// Can also use file_handle_ref with batch operations
+int fd = open("data.bin", O_RDONLY | O_DIRECT);
+auto file_ref = cuda::experimental::cufile::file_handle_ref{fd};
+batch.submit(file_ref, ops);
+close(fd);
 ```
 
 ## Key Features
@@ -101,4 +135,4 @@ auto results = batch.get_status(ops.size());
 - **Complete API Coverage**: All cuFILE functionality exposed
 - **Exception Safety**: RAII ensures no resource leaks
 - **Performance**: Direct API mapping with minimal overhead
-- **Compatibility**: Works with existing CUDA code 
+- **Compatibility**: Works with existing CUDA code
