@@ -6,11 +6,10 @@
 import numba
 import numpy as np
 from numba import cuda
-from pynvjitlink import patch
 
 import cuda.cccl.cooperative.experimental as coop
 
-patch.patch_numba_linker(lto=True)
+numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 # example-end imports
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0

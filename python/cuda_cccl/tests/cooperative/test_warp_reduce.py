@@ -7,14 +7,11 @@ import numpy as np
 import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
-from pynvjitlink import patch
 
 import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-
-patch.patch_numba_linker(lto=True)
+numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])

@@ -34,7 +34,6 @@ from numba.core.extending import (
     type_callable,
     typeof_impl,
 )
-from pynvjitlink import patch
 
 import cuda.cccl.cooperative.experimental as coop
 from cuda.cccl.cooperative.experimental.block._block_scan import (
@@ -42,9 +41,7 @@ from cuda.cccl.cooperative.experimental.block._block_scan import (
 )
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-# Patching the Numba linker to enable LTO as needed.
-patch.patch_numba_linker(lto=True)
+numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 
 class BlockPrefixCallbackOp:
