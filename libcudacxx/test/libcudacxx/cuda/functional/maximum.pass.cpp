@@ -44,14 +44,12 @@ __host__ __device__ constexpr bool test()
 
 __host__ __device__ bool runtime_test()
 {
-#if _CCCL_CTK_AT_LEAST(12, 2) // < CTK 12.2 does not support == operator for __half and __nv_bfloat16
-#  if _CCCL_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(__half(1.0f), __half(2.0f), __half(2.0f));
-#  endif
-#  if _CCCL_HAS_NVBF16()
+#endif
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>(__nv_bfloat16(1.0f), __nv_bfloat16(2.0f), __nv_bfloat16(2.0f));
-#  endif
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
+#endif
   return true;
 }
 
