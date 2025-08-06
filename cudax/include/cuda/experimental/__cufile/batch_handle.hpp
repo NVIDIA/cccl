@@ -20,7 +20,7 @@
 namespace cuda::experimental::cufile {
 
 // Forward declarations
-class file_handle;
+class file_handle_base;
 
 /**
  * @brief Batch I/O operation descriptor using span
@@ -78,7 +78,7 @@ public:
      * @param flags Additional flags (default: 0)
      */
     template<typename T>
-    void submit(const file_handle& file_handle_ref,
+    void submit(const file_handle_base& file_handle_ref,
                cuda::std::span<const batch_io_params_span<T>> operations,
                unsigned int flags = 0);
 
