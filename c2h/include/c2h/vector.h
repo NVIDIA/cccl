@@ -57,7 +57,8 @@ using THRUST_NS_QUALIFIER::host_vector;
 // We specialize how Catch2 prints ([signed|unsigned]) char vectors for better readability. Let's print them as numbers
 // instead of characters.
 template <typename T, typename A>
-struct Catch::StringMaker<THRUST_NS_QUALIFIER::detail::vector_base<T, A>, ::cuda::std::enable_if_t<sizeof(T) == 1>>
+struct Catch::StringMaker<THRUST_NS_QUALIFIER::detail::vector_base<T, A>,
+                          ::cuda::std::enable_if_t<sizeof(T) == 1 && ::cuda::std::is_fundamental_v<T>>>
 {
   // Copied from `rangeToString` in catch_tostring.hpp
   static auto convert(const THRUST_NS_QUALIFIER::detail::vector_base<T, A>& v) -> std::string
@@ -85,5 +86,5 @@ struct Catch::StringMaker<THRUST_NS_QUALIFIER::detail::vector_base<T, A>, ::cuda
 template <typename T, typename A>
 struct Catch::is_range<THRUST_NS_QUALIFIER::detail::vector_base<T, A>>
 {
-  static constexpr bool value = sizeof(T) != 1;
+  static constexpr bool value = !(sizeof(T) == 1 && ::cuda::std::is_fundamental_v<T>);
 };
