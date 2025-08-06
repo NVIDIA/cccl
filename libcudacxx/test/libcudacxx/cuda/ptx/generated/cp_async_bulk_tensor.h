@@ -65,7 +65,7 @@ __global__ void test_cp_async_bulk_tensor(void** fn_ptr)
                                    const int32_t (&)[1],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [dstMem],
         // [tensorMap, tensorCoords], [smem_bar];
@@ -149,7 +149,7 @@ __global__ void test_cp_async_bulk_tensor(void** fn_ptr)
                                    const int32_t (&)[2],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [dstMem],
         // [tensorMap, tensorCoords], [smem_bar];
@@ -233,7 +233,7 @@ __global__ void test_cp_async_bulk_tensor(void** fn_ptr)
                                    const int32_t (&)[3],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [dstMem],
         // [tensorMap, tensorCoords], [smem_bar];
@@ -317,7 +317,7 @@ __global__ void test_cp_async_bulk_tensor(void** fn_ptr)
                                    const int32_t (&)[4],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [dstMem],
         // [tensorMap, tensorCoords], [smem_bar];
@@ -401,7 +401,7 @@ __global__ void test_cp_async_bulk_tensor(void** fn_ptr)
                                    const int32_t (&)[5],
                                    uint64_t*)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [dstMem],
         // [tensorMap, tensorCoords], [smem_bar];
