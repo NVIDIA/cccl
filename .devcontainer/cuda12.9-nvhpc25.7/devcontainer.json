@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.08-cpp-nvhpc25.7",
+  "image": "rapidsai/devcontainers:25.10-cpp-nvhpc25.7",
   "hostRequirements": {
     "gpu": "optional"
   },
