@@ -26,7 +26,7 @@ Numeric
      - CUDA 13.1
 
    * - :ref:`cuda::overflow_result <libcudacxx-extended-api-numeric-overflow_result>`
-     - Performs addition with overflow checking
+     - Represents the result of arithmetic operations that may overflow
      - CCCL 3.0.0
      - CUDA 13.0
 
