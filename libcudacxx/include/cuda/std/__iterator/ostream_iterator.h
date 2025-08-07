@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -55,15 +55,15 @@ private:
   const char_type* __delim_;
 
 public:
-  _CCCL_API inline ostream_iterator(ostream_type& __s) noexcept
+  _CCCL_API ostream_iterator(ostream_type& __s) noexcept
       : __out_stream_(_CUDA_VSTD::addressof(__s))
       , __delim_(nullptr)
   {}
-  _CCCL_API inline ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
+  _CCCL_API ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
       : __out_stream_(_CUDA_VSTD::addressof(__s))
       , __delim_(__delimiter)
   {}
-  _CCCL_API inline ostream_iterator& operator=(const _Tp& __value)
+  _CCCL_API ostream_iterator& operator=(const _Tp& __value)
   {
     *__out_stream_ << __value;
     if (__delim_)
@@ -73,15 +73,15 @@ public:
     return *this;
   }
 
-  _CCCL_API inline ostream_iterator& operator*()
+  [[nodiscard]] _CCCL_API ostream_iterator& operator*() noexcept
   {
     return *this;
   }
-  _CCCL_API inline ostream_iterator& operator++()
+  _CCCL_API ostream_iterator& operator++() noexcept
   {
     return *this;
   }
-  _CCCL_API inline ostream_iterator& operator++(int)
+  _CCCL_API ostream_iterator& operator++(int) noexcept
   {
     return *this;
   }
