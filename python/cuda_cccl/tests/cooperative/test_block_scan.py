@@ -41,7 +41,6 @@ from cuda.cccl.cooperative.experimental.block._block_scan import (
 )
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 
 class BlockPrefixCallbackOp:

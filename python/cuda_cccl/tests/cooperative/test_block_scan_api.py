@@ -10,7 +10,6 @@ import cuda.cccl.cooperative.experimental as coop
 
 # example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 # example-end imports
 
 
