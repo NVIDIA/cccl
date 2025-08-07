@@ -10,8 +10,6 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/generators.h>
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
-
 using offset_types = c2h::type_list<int32_t, int64_t, uint32_t, uint64_t>;
 
 C2H_TEST("GridEvenShare handles edge cases (zero/negative items)", "[grid][even_share][edge_cases]", offset_types)
