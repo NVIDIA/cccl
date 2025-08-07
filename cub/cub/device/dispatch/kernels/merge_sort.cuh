@@ -221,8 +221,6 @@ __launch_bounds__(
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
-// TODO(bgruber): if we put a call to cudaTriggerProgrammaticLaunchCompletion inside this kernel, the tests fail with
-// cudaErrorIllegalAddress.
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   bool ping,
@@ -239,7 +237,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 
   if (partition_idx < num_partitions)
   {
-    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
+    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{
       ping,
       keys_ping,
       keys_pong,
@@ -249,9 +247,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
       compare_op,
       target_merged_tiles_number,
       items_per_tile,
-      num_partitions);
-
-    agent.Process();
+      num_partitions}
+      .Process();
   }
 }
 
