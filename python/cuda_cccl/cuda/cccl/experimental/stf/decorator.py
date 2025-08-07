@@ -2,7 +2,7 @@ from numba import cuda
 from cuda.cccl.experimental.stf import context, dep, exec_place
 
 
-class _CudaSTFKernel:
+class stf_kernel_decorator:
     def __init__(self, numba_kernel):
         self._nkern = numba_kernel
         self._launch_cfg = None  # (gridDim, blockDim, context, exec_place?)
@@ -24,7 +24,7 @@ class _CudaSTFKernel:
 
     def __call__(self, *args, **kwargs):
         if self._launch_cfg is None:
-            raise RuntimeError("launch configuration missing – use kernel[grid, block, ctx](…)")
+            raise RuntimeError("launch configuration missing – use kernel[grid, block, ctx](...)")
 
         gridDim, blockDim, ctx, exec_pl = self._launch_cfg
 
@@ -59,5 +59,5 @@ def jit(*jit_args, **jit_kwargs):
 
 def _build_kernel(pyfunc, jit_args, **jit_kwargs):
     numba_kernel = cuda.jit(*jit_args, **jit_kwargs)(pyfunc)
-    return _CudaSTFKernel(numba_kernel)
+    return stf_kernel_decorator(numba_kernel)
 
