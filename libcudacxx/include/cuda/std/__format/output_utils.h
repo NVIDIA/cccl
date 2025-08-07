@@ -82,10 +82,10 @@ __fmt_padding_size(size_t __size, size_t __width, __fmt_spec_alignment __align)
     case __fmt_spec_alignment::__default:
     case __fmt_spec_alignment::__right:
       return {__fill, 0};
+    case __fmt_spec_alignment::__zero_padding:
     default:
-      break;
+      _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 //! Copy wrapper.
