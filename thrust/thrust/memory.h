@@ -44,7 +44,7 @@ THRUST_NAMESPACE_BEGIN
 
 // define pointer for the purpose of Doxygenating it
 // it is actually defined elsewhere
-#if 0
+#if _CCCL_DOXYGEN_INVOKED
 /*! \p pointer stores a pointer to an object allocated in memory. Like \p device_ptr, this
  *  type ensures type safety when dispatching standard algorithms on ranges resident in memory.
  *
@@ -75,66 +75,57 @@ THRUST_NAMESPACE_BEGIN
  *  \see reference
  *  \see raw_pointer_cast
  */
-template<typename Element, typename Tag, typename Reference = thrust::use_default, typename Derived = thrust::use_default>
-  class pointer
+template <typename Element, typename Tag, typename Reference = thrust::use_default, typename Derived = thrust::use_default>
+class pointer
 {
-  public:
-    /*! The type of the raw pointer
-     */
-    using raw_pointer = typename super_t::base_type;
+public:
+  /*! The type of the raw pointer
+   */
+  using raw_pointer = typename super_t::base_type;
 
-    /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
-     */
-    _CCCL_HOST_DEVICE
-    pointer();
+  /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
+   */
+  _CCCL_HOST_DEVICE pointer();
 
-    /*! This constructor allows construction of a <tt>pointer<const T, ...></tt> from a <tt>T*</tt>.
-     *
-     *  \param ptr A raw pointer to copy from, presumed to point to a location in \p Tag's memory.
-     *  \tparam OtherElement \p OtherElement shall be convertible to \p Element.
-     */
-    template<typename OtherElement>
-    _CCCL_HOST_DEVICE
-    explicit pointer(OtherElement *ptr);
+  /*! This constructor allows construction of a <tt>pointer<const T, ...></tt> from a <tt>T*</tt>.
+   *
+   *  \param ptr A raw pointer to copy from, presumed to point to a location in \p Tag's memory.
+   *  \tparam OtherElement \p OtherElement shall be convertible to \p Element.
+   */
+  template <typename OtherElement>
+  _CCCL_HOST_DEVICE explicit pointer(OtherElement* ptr);
 
-    /*! This constructor allows initialization from another pointer-like object.
-     *
-     *  \param other The \p OtherPointer to copy.
-     *
-     *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
-     *                       and its element type shall be convertible to \p Element.
-     */
-    template<typename OtherPointer>
-    _CCCL_HOST_DEVICE
-    pointer(const OtherPointer &other,
-            typename thrust::detail::enable_if_pointer_is_convertible<
-              OtherPointer,
-              pointer<Element,Tag,Reference,Derived>
-            >::type * = 0);
+  /*! This constructor allows initialization from another pointer-like object.
+   *
+   *  \param other The \p OtherPointer to copy.
+   *
+   *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
+   *                       and its element type shall be convertible to \p Element.
+   */
+  template <typename OtherPointer>
+  _CCCL_HOST_DEVICE pointer(
+    const OtherPointer& other,
+    typename thrust::detail::enable_if_pointer_is_convertible<OtherPointer,
+                                                              pointer<Element, Tag, Reference, Derived>>::type* = 0);
 
-    /*! Assignment operator allows assigning from another pointer-like object whose element type
-     *  is convertible to \c Element.
-     *
-     *  \param other The other pointer-like object to assign from.
-     *  \return <tt>*this</tt>
-     *
-     *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
-     *                       and its element type shall be convertible to \p Element.
-     */
-    template<typename OtherPointer>
-    _CCCL_HOST_DEVICE
-    typename thrust::detail::enable_if_pointer_is_convertible<
-      OtherPointer,
-      pointer,
-      derived_type &
-    >::type
-    operator=(const OtherPointer &other);
+  /*! Assignment operator allows assigning from another pointer-like object whose element type
+   *  is convertible to \c Element.
+   *
+   *  \param other The other pointer-like object to assign from.
+   *  \return <tt>*this</tt>
+   *
+   *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
+   *                       and its element type shall be convertible to \p Element.
+   */
+  template <typename OtherPointer>
+  _CCCL_HOST_DEVICE
+  typename thrust::detail::enable_if_pointer_is_convertible<OtherPointer, pointer, derived_type&>::type
+  operator=(const OtherPointer& other);
 
-    /*! \p get returns this \p pointer's encapsulated raw pointer.
-     *  \return This \p pointer's raw pointer.
-     */
-    _CCCL_HOST_DEVICE
-    Element *get() const;
+  /*! \p get returns this \p pointer's encapsulated raw pointer.
+   *  \return This \p pointer's raw pointer.
+   */
+  _CCCL_HOST_DEVICE Element* get() const;
 };
 #endif
 
