@@ -28,8 +28,11 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/climits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -40,29 +43,12 @@ template <class _Tp, class _CharT, class _OutIt>
 {
   if constexpr (!is_same_v<_CharT, _Tp>)
   {
-    // cmp_less and cmp_greater can't be used for character types.
-    if constexpr (is_signed_v<_CharT> == is_signed_v<_Tp>)
+    using _CharInt = __make_nbit_int_t<sizeof(_CharT) * CHAR_BIT, is_signed_v<_CharT>>;
+    using _TpInt   = __make_nbit_int_t<sizeof(_Tp) * CHAR_BIT, is_signed_v<_Tp>>;
+
+    if (!_CUDA_VSTD::in_range<_CharInt>(static_cast<_TpInt>(__value)))
     {
-      if (__value < numeric_limits<_CharT>::min() || __value > numeric_limits<_CharT>::max())
-      {
-        _CUDA_VSTD::__throw_format_error("Integral value outside the range of the char type");
-      }
-    }
-    else if constexpr (is_signed_v<_CharT>)
-    {
-      // _CharT is signed _Tp is unsigned
-      if (__value > static_cast<make_unsigned_t<_CharT>>(numeric_limits<_CharT>::max()))
-      {
-        _CUDA_VSTD::__throw_format_error("Integral value outside the range of the char type");
-      }
-    }
-    else
-    {
-      // _CharT is unsigned _Tp is signed
-      if (__value < 0 || static_cast<make_unsigned_t<_Tp>>(__value) > numeric_limits<_CharT>::max())
-      {
-        _CUDA_VSTD::__throw_format_error("Integral value outside the range of the char type");
-      }
+      _CUDA_VSTD::__throw_format_error("Integral value outside the range of the char type");
     }
   }
   const auto __c = static_cast<_CharT>(__value);
