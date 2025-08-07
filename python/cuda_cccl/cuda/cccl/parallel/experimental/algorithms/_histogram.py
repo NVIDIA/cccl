@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import Union
+
 import numpy as np
 
 from .. import _bindings
@@ -177,8 +179,8 @@ def histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
     d_histogram: DeviceArrayLike,
     num_output_levels: int,
-    lower_level: np.floating | np.integer,
-    upper_level: np.floating | np.integer,
+    lower_level: Union[np.floating, np.integer],
+    upper_level: Union[np.floating, np.integer],
     num_samples: int,
     stream=None,
 ):
