@@ -63,107 +63,6 @@ struct __tuple_or_pair_impl<_Iterator1, _Iterator2>
 template <class... _Iterators>
 using __tuple_or_pair = typename __tuple_or_pair_impl<_Iterators...>::type;
 
-struct __zip_iter_functors
-{
-  // iterator functions
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tuple1, class _Tuple2, size_t... _Indices>
-  _CCCL_API static constexpr bool
-  __iter_op_eq(const _Tuple1& __tuple1, const _Tuple2& __tuple2, _CUDA_VSTD::index_sequence<_Indices...>) noexcept(
-    noexcept(((_CUDA_VSTD::get<_Indices>(__tuple1) == _CUDA_VSTD::get<_Indices>(__tuple2)) || ...)))
-  {
-    return ((_CUDA_VSTD::get<_Indices>(__tuple1) == _CUDA_VSTD::get<_Indices>(__tuple2)) || ...);
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tuple1, class _Tuple2>
-  _CCCL_API static constexpr bool
-  __iter_op_eq(const _Tuple1& __tuple1, const _Tuple2& __tuple2) noexcept(noexcept(__zip_iter_functors::__iter_op_eq(
-    __tuple1,
-    __tuple2,
-    _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::remove_cvref_t<_Tuple1>>>())))
-  {
-    return __zip_iter_functors::__iter_op_eq(
-      __tuple1,
-      __tuple2,
-      _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::remove_cvref_t<_Tuple1>>>());
-  }
-
-  struct __op_comp_abs
-  {
-    // abs in cstdlib is not constexpr
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _Diff>
-    [[nodiscard]] _CCCL_API static constexpr _Diff __abs(_Diff __t) noexcept(noexcept(__t < 0 ? -__t : __t))
-    {
-      return __t < 0 ? -__t : __t;
-    }
-
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _Diff>
-    [[nodiscard]] _CCCL_API constexpr bool operator()(const _Diff& __n, const _Diff& __y) const
-      noexcept(noexcept(__op_comp_abs::__abs(__n) < __op_comp_abs::__abs(__y)))
-    {
-      return __op_comp_abs::__abs(__n) < __op_comp_abs::__abs(__y);
-    }
-  };
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Diff, class _Tuple1, class _Tuple2, size_t _Zero, size_t... _Indices>
-  [[nodiscard]] _CCCL_API static constexpr _Diff
-  __iter_op_minus(const _Tuple1& __tuple1, const _Tuple2& __tuple2, _CUDA_VSTD::index_sequence<_Zero, _Indices...>) //
-    noexcept(noexcept(((_CUDA_VSTD::get<_Indices>(__tuple1) - _CUDA_VSTD::get<_Indices>(__tuple2)) && ...)))
-  {
-    const _Diff __first = _CUDA_VSTD::get<0>(__tuple1) - _CUDA_VSTD::get<0>(__tuple2);
-    if (__first == 0)
-    {
-      return __first;
-    }
-
-    const _Diff __temp[] = {__first, _CUDA_VSTD::get<_Indices>(__tuple1) - _CUDA_VSTD::get<_Indices>(__tuple2)...};
-    return *_CUDA_VRANGES::min_element(__temp, __op_comp_abs{});
-  }
-
-  template <class _Diff, class _Tuple1, class _Tuple2>
-  [[nodiscard]] _CCCL_API static constexpr _Diff
-  __iter_op_minus(const _Tuple1& __tuple1, const _Tuple2& __tuple2) noexcept(
-    noexcept(__zip_iter_functors::__iter_op_minus<_Diff>(
-      __tuple1,
-      __tuple2,
-      _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::remove_cvref_t<_Tuple1>>>())))
-  {
-    return __zip_iter_functors::__iter_op_minus<_Diff>(
-      __tuple1,
-      __tuple2,
-      _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::remove_cvref_t<_Tuple1>>>());
-  }
-
-  template <class _Tuple1, class _Tuple2, size_t... _Indices>
-  _CCCL_API static constexpr void
-  __iter_swap(_Tuple1&& __tuple1, _Tuple2&& __tuple2, _CUDA_VSTD::index_sequence<_Indices...>) noexcept(
-    _CUDA_VSTD::__all<noexcept(_CUDA_VRANGES::iter_swap(
-      _CUDA_VSTD::get<_Indices>(_CUDA_VSTD::declval<_Tuple1>()),
-      _CUDA_VSTD::get<_Indices>(_CUDA_VSTD::declval<_Tuple2>())))...>::value)
-  {
-    (_CUDA_VRANGES::iter_swap(_CUDA_VSTD::get<_Indices>(_CUDA_VSTD::forward<_Tuple1>(__tuple1)),
-                              _CUDA_VSTD::get<_Indices>(_CUDA_VSTD::forward<_Tuple2>(__tuple2))),
-     ...);
-  }
-
-  template <class _Tuple1, class _Tuple2>
-  _CCCL_API static constexpr void
-  __iter_swap(_Tuple1&& __tuple1, _Tuple2&& __tuple2) noexcept(noexcept(__zip_iter_functors::__iter_swap(
-    _CUDA_VSTD::forward<_Tuple1>(__tuple1),
-    _CUDA_VSTD::forward<_Tuple2>(__tuple2),
-    _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::tuple_size<_CUDA_VSTD::remove_cvref_t<_Tuple1>>::value>())))
-  {
-    return __zip_iter_functors::__iter_swap(
-      _CUDA_VSTD::forward<_Tuple1>(__tuple1),
-      _CUDA_VSTD::forward<_Tuple2>(__tuple2),
-      _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::tuple_size<_CUDA_VSTD::remove_cvref_t<_Tuple1>>::value>());
-  }
-};
-
 template <class... _Iterators>
 struct __zip_iter_constraints
 {
@@ -231,6 +130,16 @@ class zip_iterator : public __zv_iter_category_base<_Iterators...>
 
   template <class...>
   friend class zip_iterator;
+
+  template <class _Fn>
+  _CCCL_API static constexpr auto
+  __zip_apply(const _Fn& __fun,
+              const __tuple_or_pair<_Iterators...>& __tuple1,
+              const __tuple_or_pair<_Iterators...>& __tuple2) //
+    noexcept(noexcept(__fun(__tuple1, __tuple2, _CUDA_VSTD::make_index_sequence<sizeof...(_Iterators)>())))
+  {
+    return __fun(__tuple1, __tuple2, _CUDA_VSTD::make_index_sequence<sizeof...(_Iterators)>());
+  }
 
 public:
   _CCCL_API constexpr explicit zip_iterator(__tuple_or_pair<_Iterators...> __iters)
@@ -387,6 +296,19 @@ public:
     return _CUDA_VSTD::apply(__zip_op_index{__n}, __current_);
   }
 
+  struct __zip_op_eq
+  {
+    _CCCL_EXEC_CHECK_DISABLE
+    template <size_t... _Indices>
+    _CCCL_API constexpr bool operator()(const __tuple_or_pair<_Iterators...>& __iters1,
+                                        const __tuple_or_pair<_Iterators...>& __iters2,
+                                        _CUDA_VSTD::index_sequence<_Indices...>) const
+      noexcept(noexcept(((_CUDA_VSTD::get<_Indices>(__iters1) == _CUDA_VSTD::get<_Indices>(__iters2)) || ...)))
+    {
+      return ((_CUDA_VSTD::get<_Indices>(__iters1) == _CUDA_VSTD::get<_Indices>(__iters2)) || ...);
+    }
+  };
+
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator==(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
@@ -397,7 +319,7 @@ public:
     }
     else
     {
-      return __zip_iter_functors::__iter_op_eq(__n.__current_, __y.__current_);
+      return __zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
     }
     _CCCL_UNREACHABLE();
   }
@@ -413,7 +335,7 @@ public:
     }
     else
     {
-      return !__zip_iter_functors::__iter_op_eq(__n.__current_, __y.__current_);
+      return !__zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
     }
     _CCCL_UNREACHABLE();
   }
@@ -483,11 +405,52 @@ public:
     return __r;
   }
 
+  struct __zip_op_minus
+  {
+    struct __less_abs
+    {
+      // abs in cstdlib is not constexpr
+      _CCCL_EXEC_CHECK_DISABLE
+      [[nodiscard]] _CCCL_API static constexpr difference_type
+      __abs(difference_type __t) noexcept(noexcept(__t < 0 ? -__t : __t))
+      {
+        return __t < 0 ? -__t : __t;
+      }
+
+      _CCCL_EXEC_CHECK_DISABLE
+      [[nodiscard]] _CCCL_API constexpr bool operator()(difference_type __n, difference_type __y) const
+        noexcept(noexcept(__abs(__n) < __abs(__y)))
+      {
+        return __abs(__n) < __abs(__y);
+      }
+    };
+
+    _CCCL_EXEC_CHECK_DISABLE
+    template <size_t _Zero, size_t... _Indices>
+    [[nodiscard]] _CCCL_API constexpr difference_type
+    operator()(const __tuple_or_pair<_Iterators...>& __iters1,
+               const __tuple_or_pair<_Iterators...>& __iters2,
+               _CUDA_VSTD::index_sequence<_Zero, _Indices...>) const //
+      noexcept(noexcept(((_CUDA_VSTD::get<_Indices>(__iters1) - _CUDA_VSTD::get<_Indices>(__iters2)) && ...)))
+    {
+      const auto __first = static_cast<difference_type>(_CUDA_VSTD::get<0>(__iters1) - _CUDA_VSTD::get<0>(__iters2));
+      if (__first == 0)
+      {
+        return __first;
+      }
+
+      const difference_type __temp[] = {
+        __first,
+        static_cast<difference_type>(_CUDA_VSTD::get<_Indices>(__iters1) - _CUDA_VSTD::get<_Indices>(__iters2))...};
+      return *_CUDA_VRANGES::min_element(__temp, __zip_op_minus::__less_abs{});
+    }
+  };
+
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator-(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(difference_type)(_Constraints::__all_sized_sentinel)
   {
-    return __zip_iter_functors::__iter_op_minus<difference_type>(__n.__current_, __y.__current_);
+    return __zip_apply(__zip_op_minus{}, __n.__current_, __y.__current_);
   }
 
   using __iter_move_ret = __tuple_or_pair<_CUDA_VSTD::iter_rvalue_reference_t<_Iterators>...>;
@@ -506,12 +469,28 @@ public:
     return _CUDA_VSTD::apply(__zip_iter_move, __i.__current_);
   }
 
+  template <class... _OtherIterators>
+  static constexpr bool __all_nothrow_swappable =
+    (_CUDA_VSTD::__noexcept_swappable<_OtherIterators, _OtherIterators> && ...);
+
+  struct __zip_op_iter_swap
+  {
+    template <size_t... _Indices>
+    _CCCL_API constexpr void
+    operator()(const __tuple_or_pair<_Iterators...>& __iters1,
+               const __tuple_or_pair<_Iterators...>& __iters2,
+               _CUDA_VSTD::index_sequence<_Indices...>) const noexcept(__all_nothrow_swappable<_Iterators...>)
+    {
+      (_CUDA_VRANGES::iter_swap(_CUDA_VSTD::get<_Indices>(__iters1), _CUDA_VSTD::get<_Indices>(__iters2)), ...);
+    }
+  };
+
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto
   iter_swap(const zip_iterator& __l, const zip_iterator& __r) noexcept(_Constraints::__all_noexcept_swappable)
     _CCCL_TRAILING_REQUIRES(void)(_Constraints::__all_indirectly_swappable)
   {
-    return __zip_iter_functors::__iter_swap(__l.__current_, __r.__current_);
+    return __zip_apply(__zip_op_iter_swap{}, __l.__current_, __r.__current_);
   }
 };
 
