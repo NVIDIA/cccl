@@ -52,14 +52,29 @@ C2H_TEST("GridEvenShare works with num_items > 0", "[grid][even_share]", offset_
 
   cub::GridEvenShare<offset_t> grid_share;
 
-  const offset_t num_items = GENERATE_COPY(values({1, 20, 37, 100, 2000, 1 << 20}));
-  const int max_grid_size  = GENERATE_COPY(values({1, 20, 37, 100, 2000, 1 << 20}));
-  const int tile_items     = GENERATE_COPY(values({1, 20, 37, 100, 2000, 1 << 20}));
+  const offset_t num_items = GENERATE_COPY(values(
+    {offset_t{1},
+     offset_t{20},
+     offset_t{37},
+     offset_t{100},
+     offset_t{2000},
+     offset_t{1 << 20},
+     cuda::std::numeric_limits<offset_t>::max()}));
+  const int max_grid_size =
+    GENERATE_COPY(values({1, 20, 37, 100, 2000, 1 << 20, cuda::std::numeric_limits<int>::max()}));
+  const int tile_items = GENERATE_COPY(values({1, 20, 37, 100, 2000, 1 << 20, cuda::std::numeric_limits<int>::max()}));
 
   grid_share.DispatchInit(num_items, max_grid_size, tile_items);
 
+  int expected_grid_size = cuda::std::min(
+    max_grid_size,
+    static_cast<int>(
+      cuda::std::min(static_cast<offset_t>(INT_MAX), static_cast<offset_t>(cuda::ceil_div(num_items, tile_items)))));
+
   CHECK(grid_share.num_items == num_items);
-  CHECK(grid_share.grid_size == cuda::std::min(max_grid_size, static_cast<int>(cuda::ceil_div(num_items, tile_items))));
+  CHECK(grid_share.grid_size > 0);
+  CHECK(grid_share.grid_size <= max_grid_size);
+  CHECK(grid_share.grid_size == expected_grid_size);
   CHECK(grid_share.block_offset == num_items);
   CHECK(grid_share.block_end == num_items);
 }
