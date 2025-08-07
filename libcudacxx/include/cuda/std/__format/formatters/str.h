@@ -32,9 +32,20 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+//!
+//! \brief Formatter for string types.
+//!
+//! \tparam _CharT The character type used for formatting.
+//!
 template <class _CharT>
 struct __fmt_formatter_str
 {
+  //!
+  //! \brief Parses the formatting specifications for string types.
+  //!
+  //! \param __ctx The parsing context containing the format specification.
+  //! \return An iterator pointing to the end of the parsed format specification.
+  //!
   template <class _ParseCtx>
   _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
@@ -43,6 +54,13 @@ struct __fmt_formatter_str
     return __result;
   }
 
+  //!
+  //! \brief Formats a string value according to the parsed specifications.
+  //!
+  //! \param __value The string value to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _Tp, class _FmtCtx>
   _CCCL_API typename _FmtCtx::iterator format(_Tp __value, _FmtCtx& __ctx) const
   {
@@ -50,6 +68,9 @@ struct __fmt_formatter_str
   }
 
 private:
+  //!
+  //! \brief Creates a parser for string formatting specifications.
+  //!
   [[nodiscard]] _CCCL_API static constexpr __fmt_spec_parser<_CharT> __make_parser()
   {
     __fmt_spec_parser<_CharT> __parser{};
@@ -57,12 +78,26 @@ private:
     return __parser;
   }
 
+  //!
+  //! \brief Formats a C-string according to the parsed specifications.
+  //!
+  //! \param __str The C-string to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _FmtCtx>
   [[nodiscard]] _CCCL_API typename _FmtCtx::iterator __format(const _CharT* __str, _FmtCtx& __ctx) const
   {
     return __format(basic_string_view{__str}, __ctx);
   }
 
+  //!
+  //! \brief Formats a fixed-size array of characters according to the parsed specifications.
+  //!
+  //! \param __str The fixed-size array of characters to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _FmtCtx, size_t _Size>
   [[nodiscard]] _CCCL_API typename _FmtCtx::iterator __format(const _CharT (&__str)[_Size], _FmtCtx& __ctx) const
   {
@@ -71,6 +106,13 @@ private:
     return __format(basic_string_view{__str, static_cast<size_t>(__pzero - __str)}, __ctx);
   }
 
+  //!
+  //! \brief Formats a `basic_string_view` according to the parsed specifications.
+  //!
+  //! \param __str The `basic_string_view` to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _FmtCtx, class _Traits>
   [[nodiscard]] _CCCL_API typename _FmtCtx::iterator
   __format(basic_string_view<_CharT, _Traits> __str, _FmtCtx& __ctx) const
@@ -79,7 +121,7 @@ private:
     return _CUDA_VSTD::__fmt_write_string(__str2, __ctx.out(), __parser_.__get_parsed_std_spec(__ctx));
   }
 
-  __fmt_spec_parser<_CharT> __parser_ = __make_parser();
+  __fmt_spec_parser<_CharT> __parser_ = __make_parser(); //!< The parser for format specifications.
 };
 
 template <>

@@ -155,10 +155,10 @@ template <class _Context>
   return _CUDA_VSTD::visit_format_arg(__fmt_substitute_arg_id_visitor{}, __format_arg);
 }
 
-// These fields are a filter for which elements to parse.
-//
-// They default to false so when a new field is added it needs to be opted in
-// explicitly.
+//! These fields are a filter for which elements to parse.
+//!
+//! They default to false so when a new field is added it needs to be opted in
+//! explicitly.
 struct __fmt_spec_fields
 {
   uint16_t __sign_                 : 1;
@@ -312,10 +312,10 @@ struct __fmt_spec_chrono
   bool __month_name_                : 1;
 };
 
-// The fill UCS scalar value.
-//
-// This is always an array, with 1, 2, or 4 elements.
-// The size of the data structure is always 32-bits.
+//! The fill UCS scalar value.
+//!
+//! This is always an array, with 1, 2, or 4 elements.
+//! The size of the data structure is always 32-bits.
 template <class _CharT>
 struct __fmt_spec_code_point;
 
@@ -333,22 +333,22 @@ struct __fmt_spec_code_point<wchar_t>
 };
 #endif // _CCCL_HAS_WCHAR_T()
 
-// Contains the parsed formatting specifications.
-//
-// This contains information for both the std-format-spec and the
-// chrono-format-spec. This results in some unused members for both
-// specifications. However these unused members don't increase the size
-// of the structure.
-//
-// This struct doesn't cross ABI boundaries so its layout doesn't need to be
-// kept stable.
+//! Contains the parsed formatting specifications.
+//!
+//! This contains information for both the std-format-spec and the
+//! chrono-format-spec. This results in some unused members for both
+//! specifications. However these unused members don't increase the size
+//! of the structure.
+//!
+//! This struct doesn't cross ABI boundaries so its layout doesn't need to be
+//! kept stable.
 template <class _CharT>
 struct __fmt_parsed_spec
 {
   union
   {
     // The field __alignment_ is the first element in __std_ and __chrono_.
-    // This allows the code to always inspect this value regards which member
+    // This allows the code to always inspect this value regardless of which member
     // of the union is the active member [class.union.general]/2.
     //
     // This is needed since the generic output routines handle the alignment of
@@ -358,16 +358,16 @@ struct __fmt_parsed_spec
     __fmt_spec_chrono __chrono_;
   };
 
-  // The requested width.
-  //
-  // When the format-spec used an arg-id for this field it has already been
-  // replaced with the value of that arg-id.
+  //! The requested width.
+  //!
+  //! When the format-spec used an arg-id for this field it has already been
+  //! replaced with the value of that arg-id.
   int32_t __width_;
 
-  // The requested precision.
-  //
-  // When the format-spec used an arg-id for this field it has already been
-  // replaced with the value of that arg-id.
+  //! The requested precision.
+  //!
+  //! When the format-spec used an arg-id for this field it has already been
+  //! replaced with the value of that arg-id.
   int32_t __precision_;
 
   __fmt_spec_code_point<_CharT> __fill_;
@@ -392,31 +392,31 @@ static_assert(sizeof(__fmt_parsed_spec<wchar_t>) == 16);
 static_assert(is_trivially_copyable_v<__fmt_parsed_spec<wchar_t>>);
 #endif // _CCCL_HAS_WCHAR_T()
 
-// The parser for the std-format-spec.
-//
-// Note this class is a member of std::formatter specializations. It's
-// expected developers will create their own formatter specializations that
-// inherit from the std::formatter specializations. This means this class
-// must be ABI stable. To aid the stability the unused bits in the class are
-// set to zero. That way they can be repurposed if a future revision of the
-// Standards adds new fields to std-format-spec.
+//! The parser for the std-format-spec.
+//!
+//! Note this class is a member of std::formatter specializations. It's
+//! expected developers will create their own formatter specializations that
+//! inherit from the std::formatter specializations. This means this class
+//! must be ABI stable. To aid the stability the unused bits in the class are
+//! set to zero. That way they can be repurposed if a future revision of the
+//! Standards adds new fields to std-format-spec.
 template <class _CharT>
 class __fmt_spec_parser
 {
 public:
-  // Parses the format specification.
-  //
-  // Depending on whether the parsing is done compile-time or run-time
-  // the method slightly differs.
-  // - Only parses a field when it is in the __fields. Accepting all
-  //   fields and then validating the valid ones has a performance impact.
-  //   This is faster but gives slightly worse error messages.
-  // - At compile-time when a field is not accepted the parser will still
-  //   parse it and give an error when it's present. This gives a more
-  //   accurate error.
-  // The idea is that most times the format instead of the vformat
-  // functions are used. In that case the error will be detected during
-  // compilation and there is no need to pay for the run-time overhead.
+  //! Parses the format specification.
+  //!
+  //! Depending on whether the parsing is done compile-time or run-time
+  //! the method slightly differs.
+  //! - Only parses a field when it is in the __fields. Accepting all
+  //!   fields and then validating the valid ones has a performance impact.
+  //!   This is faster but gives slightly worse error messages.
+  //! - At compile-time when a field is not accepted the parser will still
+  //!   parse it and give an error when it's present. This gives a more
+  //!   accurate error.
+  //! The idea is that most times the format instead of the vformat
+  //! functions are used. In that case the error will be detected during
+  //! compilation and there is no need to pay for the run-time overhead.
   template <class _ParseContext>
   _CCCL_API constexpr typename _ParseContext::iterator __parse(_ParseContext& __ctx, __fmt_spec_fields __fields)
   {
@@ -527,36 +527,36 @@ public:
     return __begin;
   }
 
-  // Validates the selected the parsed data.
-  //
-  // The valid fields in the parser may depend on the display type
-  // selected. But the type is the last optional field, so by the time
-  // it's known an option can't be used, it already has been parsed.
-  // This does the validation again.
-  //
-  // For example an integral may have a sign, zero-padding, or alternate
-  // form when the type option is not 'c'. So the generic approach is:
-  //
-  // typename _ParseContext::iterator __result = __parser_.__parse(__ctx, __format_spec::__fields_integral);
-  // if (__parser.__type_ == __format_spec::__type::__char) {
-  //   __parser.__validate((__format_spec::__fields_bool, "an integer");
-  //   ... // more char adjustments
-  // } else {
-  //   ... // validate an integral type.
-  // }
-  //
-  // For some types all valid options need a second validation run, like
-  // boolean types.
-  //
-  // Depending on whether the validation is done at compile-time or
-  // run-time the error differs
-  // - run-time the exception is thrown and contains the type of field
-  //   being validated.
-  // - at compile-time the line with `std::__throw_format_error` is shown
-  //   in the output. In that case it's important for the error to be on one
-  //   line.
-  // Note future versions of C++ may allow better compile-time error
-  // reporting.
+  //! Validates the selected the parsed data.
+  //!
+  //! The valid fields in the parser may depend on the display type
+  //! selected. But the type is the last optional field, so by the time
+  //! it's known an option can't be used, it already has been parsed.
+  //! This does the validation again.
+  //!
+  //! For example an integral may have a sign, zero-padding, or alternate
+  //! form when the type option is not 'c'. So the generic approach is:
+  //!
+  //! typename _ParseContext::iterator __result = __parser_.__parse(__ctx, __format_spec::__fields_integral);
+  //! if (__parser.__type_ == __format_spec::__type::__char) {
+  //!   __parser.__validate((__format_spec::__fields_bool, "an integer");
+  //!   ... // more char adjustments
+  //! } else {
+  //!   ... // validate an integral type.
+  //! }
+  //!
+  //! For some types all valid options need a second validation run, like
+  //! boolean types.
+  //!
+  //! Depending on whether the validation is done at compile-time or
+  //! run-time the error differs
+  //! - run-time the exception is thrown and contains the type of field
+  //!   being validated.
+  //! - at compile-time the line with `std::__throw_format_error` is shown
+  //!   in the output. In that case it's important for the error to be on one
+  //!   line.
+  //! Note future versions of C++ may allow better compile-time error
+  //! reporting.
   template <size_t _IdSize>
   _CCCL_API constexpr void
   __validate(__fmt_spec_fields __fields, const char (&__id)[_IdSize], uint32_t __type_mask = ~uint32_t{0}) const
@@ -634,7 +634,7 @@ public:
     }
   }
 
-  // Returns the `__fmt_parsed_spec` with the resolved dynamic sizes..
+  //! Returns the `__fmt_parsed_spec` with the resolved dynamic sizes.
   template <class _Ctx>
   [[nodiscard]] _CCCL_API __fmt_parsed_spec<_CharT> __get_parsed_std_spec(_Ctx& __ctx) const
   {
@@ -650,6 +650,7 @@ public:
     return __ret;
   }
 
+  //! Returns the `__fmt_parsed_spec` with the resolved dynamic sizes.
   template <class _Ctx>
   [[nodiscard]] _CCCL_API __fmt_parsed_spec<_CharT> __get_parsed_chrono_spec(_Ctx& __ctx) const
   {
@@ -1161,15 +1162,15 @@ struct __fmt_column_width_result
 template <class _It>
 _CCCL_HOST_DEVICE __fmt_column_width_result(size_t, _It) -> __fmt_column_width_result<_It>;
 
-// Since a column width can be two it's possible that the requested column
-// width can't be achieved. Depending on the intended usage the policy can be
-// selected.
-// - When used as precision the maximum width may not be exceeded and the
-//   result should be "rounded down" to the previous boundary.
-// - When used as a width we're done once the minimum is reached, but
-//   exceeding is not an issue. Rounding down is an issue since that will
-//   result in writing fill characters. Therefore the result needs to be
-//   "rounded up".
+//! Since a column width can be two it's possible that the requested column
+//! width can't be achieved. Depending on the intended usage the policy can be
+//! selected.
+//! - When used as precision the maximum width may not be exceeded and the
+//!   result should be "rounded down" to the previous boundary.
+//! - When used as a width we're done once the minimum is reached, but
+//!   exceeding is not an issue. Rounding down is an issue since that will
+//!   result in writing fill characters. Therefore the result needs to be
+//!   "rounded up".
 enum class __fmt_column_width_rounding
 {
   __down,

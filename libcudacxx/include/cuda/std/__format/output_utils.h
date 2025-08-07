@@ -88,9 +88,9 @@ __fmt_padding_size(size_t __size, size_t __width, __fmt_spec_alignment __align)
   _CCCL_UNREACHABLE();
 }
 
-// Copy wrapper.
-//
-// This uses a "mass output function" of __format::__output_buffer when possible.
+//! Copy wrapper.
+//!
+//! This uses a "mass output function" of __format::__output_buffer when possible.
 template <class _CharT, class _OutCharT = _CharT, class _OutIt>
 [[nodiscard]] _CCCL_API _OutIt __fmt_copy(basic_string_view<_CharT> __str, _OutIt __out_it)
 {
@@ -110,9 +110,9 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
   return _CUDA_VSTD::__fmt_copy(basic_string_view{_CUDA_VSTD::to_address(__first), __n}, _CUDA_VSTD::move(__out_it));
 }
 
-// Transform wrapper.
-//
-// This uses a "mass output function" of __format::__output_buffer when possible.
+//! Transform wrapper.
+//!
+//! This uses a "mass output function" of __format::__output_buffer when possible.
 template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT, class _OutIt, class _UnaryOp>
 [[nodiscard]] _CCCL_API _OutIt __fmt_transform(_It __first, _It __last, _OutIt __out_it, _UnaryOp __operation)
 {
@@ -120,9 +120,9 @@ template <class _It, class _CharT = iter_value_t<_It>, class _OutCharT = _CharT,
   return _CUDA_VSTD::transform(__first, __last, _CUDA_VSTD::move(__out_it), __operation);
 }
 
-// Fill wrapper.
-//
-// This uses a "mass output function" of __format::__output_buffer when possible.
+//! Fill wrapper.
+//!
+//! This uses a "mass output function" of __format::__output_buffer when possible.
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_API _OutIt __fmt_fill(_OutIt __out_it, size_t __n, _CharT __value)
 {
@@ -136,27 +136,27 @@ template <class _CharT, class _OutIt>
   return _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __n, __value.__data[0]);
 }
 
-// Writes the input to the output with the required padding.
-//
-// Since the output column width is specified the function can be used for
-// ASCII and Unicode output.
-//
-// @pre \a __size <= \a __width. Using this function when this pre-condition
-//      doesn't hold incurs an unwanted overhead.
-//
-// @param __str       The string to write.
-// @param __out_it    The output iterator to write to.
-// @param __specs     The parsed formatting specifications.
-// @param __size      The (estimated) output column width. When the elements
-//                    to be written are ASCII the following condition holds
-//                    \a __size == \a __last - \a __first.
-//
-// @returns           An iterator pointing beyond the last element written.
-//
-// @note The type of the elements in range [\a __first, \a __last) can differ
-// from the type of \a __specs. Integer output uses \c std::to_chars for its
-// conversion, which means the [\a __first, \a __last) always contains elements
-// of the type \c char.
+//! Writes the input to the output with the required padding.
+//!
+//! Since the output column width is specified the function can be used for
+//! ASCII and Unicode output.
+//!
+//! @pre \a __size <= \a __width. Using this function when this pre-condition
+//!      doesn't hold incurs an unwanted overhead.
+//!
+//! @param __str       The string to write.
+//! @param __out_it    The output iterator to write to.
+//! @param __specs     The parsed formatting specifications.
+//! @param __size      The (estimated) output column width. When the elements
+//!                    to be written are ASCII the following condition holds
+//!                    \a __size == \a __last - \a __first.
+//!
+//! @returns           An iterator pointing beyond the last element written.
+//!
+//! @note The type of the elements in range [\a __first, \a __last) can differ
+//! from the type of \a __specs. Integer output uses \c std::to_chars for its
+//! conversion, which means the [\a __first, \a __last) always contains elements
+//! of the type \c char.
 template <class _CharT, class _ParserCharT, class _OutIt>
 [[nodiscard]] _CCCL_API _OutIt
 __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, ptrdiff_t __size)
@@ -206,11 +206,11 @@ template <class _It, class _CharT = iter_value_t<_It>, class _ParserCharT, class
   return _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__after_, __specs.__fill_);
 }
 
-// Writes a string using format's width estimation algorithm.
-//
-// @pre !__specs.__has_precision()
-//
-// @note When \c _LIBCPP_HAS_UNICODE is false the function assumes the input is ASCII.
+//! Writes a string using format's width estimation algorithm.
+//!
+//! @pre !__specs.__has_precision()
+//!
+//! @note When \c _LIBCPP_HAS_UNICODE is false the function assumes the input is ASCII.
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_API _OutIt
 __fmt_write_string_no_precision(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)
@@ -240,7 +240,7 @@ template <class _CharT>
   return __result.__width_;
 }
 
-// Writes a string using format's width estimation algorithm.
+//! Writes a string using format's width estimation algorithm.
 template <class _CharT, class _OutIt>
 [[nodiscard]] _CCCL_API _OutIt
 __fmt_write_string(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_CharT> __specs)

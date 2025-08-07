@@ -70,10 +70,10 @@ template <class _Tp, class _CharT, class _OutIt>
     _CUDA_VSTD::addressof(__c), _CUDA_VSTD::addressof(__c) + 1, _CUDA_VSTD::move(__out_it), __specs);
 }
 
-// Helper to determine the buffer size to output a an unsigned integer in Base @em x.
-//
-// There are several overloads for the supported bases. The function uses the
-// base as template argument so it can be used in a constant expression.
+//! Helper to determine the buffer size to output an unsigned integer in Base @em x.
+//!
+//! There are several overloads for the supported bases. The function uses the
+//! base as template argument so it can be used in a constant expression.
 template <class _Tp, int _Base>
 inline constexpr int __fmt_int_buffer_size_v = 0;
 template <class _Tp>

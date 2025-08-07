@@ -28,9 +28,20 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+//!
+//! \brief Formatter for boolean values.
+//!
+//! \tparam _CharT The character type used for formatting.
+//!
 template <class _CharT>
 struct __fmt_formatter_bool
 {
+  //!
+  //! \brief Parses the formatting specifications for boolean values.
+  //!
+  //! \param __ctx The parsing context containing the format specification.
+  //! \return An iterator pointing to the end of the parsed format specification.
+  //!
   template <class _ParseCtx>
   _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
@@ -39,6 +50,13 @@ struct __fmt_formatter_bool
     return __result;
   }
 
+  //!
+  //! \brief Formats a boolean value according to the parsed specifications.
+  //!
+  //! \param __value The boolean value to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _FmtCtx>
   _CCCL_API typename _FmtCtx::iterator format(bool __value, _FmtCtx& __ctx) const
   {
@@ -63,7 +81,7 @@ struct __fmt_formatter_bool
   }
 
 private:
-  __fmt_spec_parser<_CharT> __parser_;
+  __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 
 template <>

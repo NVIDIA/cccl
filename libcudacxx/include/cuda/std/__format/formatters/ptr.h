@@ -29,9 +29,20 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+//!
+//! \brief Formatter for pointer types.
+//!
+//! \tparam _CharT The character type used for formatting.
+//!
 template <class _CharT>
 struct __fmt_formatter_ptr
 {
+  //!
+  //! \brief Parses the formatting specifications for pointer types.
+  //!
+  //! \param __ctx The parsing context containing the format specification.
+  //! \return An iterator pointing to the end of the parsed format specification.
+  //!
   template <class _ParseCtx>
   _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
@@ -40,6 +51,13 @@ struct __fmt_formatter_ptr
     return __result;
   }
 
+  //!
+  //! \brief Formats a pointer value according to the parsed specifications.
+  //!
+  //! \param __value The pointer value to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _Tp, class _FmtCtx>
   _CCCL_API typename _FmtCtx::iterator format(_Tp __value, _FmtCtx& __ctx) const
   {
@@ -54,7 +72,7 @@ struct __fmt_formatter_ptr
   }
 
 private:
-  __fmt_spec_parser<_CharT> __parser_;
+  __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 
 template <>

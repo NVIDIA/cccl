@@ -39,19 +39,19 @@ struct __fmt_parse_number_result
 template <class _It>
 _CCCL_HOST_DEVICE __fmt_parse_number_result(_It, uint32_t) -> __fmt_parse_number_result<_It>;
 
-// The maximum value of a numeric argument.
-//
-// This is used for:
-// - arg-id
-// - width as value or arg-id.
-// - precision as value or arg-id.
-//
-// The value is compatible with the maximum formatting width and precision
-// using the `%*` syntax on a 32-bit system.
+//! The maximum value of a numeric argument.
+//!
+//! This is used for:
+//! - arg-id
+//! - width as value or arg-id.
+//! - precision as value or arg-id.
+//!
+//! The value is compatible with the maximum formatting width and precision
+//! using the `%*` syntax on a 32-bit system.
 inline constexpr uint32_t __fmt_number_max = static_cast<uint32_t>(numeric_limits<int32_t>::max());
 
-// Parses a number.
-// The number is used for the 31-bit values @em width and @em precision. This allows a maximum value of 2147483647.
+//! Parses a number.
+//! The number is used for the 31-bit values @em width and @em precision. This allows a maximum value of 2147483647.
 template <class _It>
 [[nodiscard]] _CCCL_API constexpr __fmt_parse_number_result<_It> __fmt_parse_number(_It __begin, _It __end_input)
 {
@@ -93,10 +93,10 @@ template <class _It>
   return {__begin, __value};
 }
 
-// Multiplexer for all parse functions.
-//
-// The parser will return a pointer beyond the last consumed character. This
-// should be the closing '}' of the arg-id.
+//! Multiplexer for all parse functions.
+//!
+//! The parser will return a pointer beyond the last consumed character. This
+//! should be the closing '}' of the arg-id.
 template <class _It, class _ParseCtx>
 [[nodiscard]] _CCCL_API constexpr __fmt_parse_number_result<_It>
 __fmt_parse_arg_id(_It __begin, _It __end, _ParseCtx& __parse_ctx)

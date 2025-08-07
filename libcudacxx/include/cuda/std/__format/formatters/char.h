@@ -31,9 +31,20 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+//!
+//! \brief Formatter for character types.
+//!
+//! \tparam _CharT The character type used for formatting.
+//!
 template <class _CharT>
 struct __fmt_formatter_char
 {
+  //!
+  //! \brief Parses the formatting specifications for character types.
+  //!
+  //! \param __ctx The parsing context containing the format specification.
+  //! \return An iterator pointing to the end of the parsed format specification.
+  //!
   template <class _ParseCtx>
   _CCCL_API constexpr typename _ParseCtx::iterator parse(_ParseCtx& __ctx)
   {
@@ -42,6 +53,13 @@ struct __fmt_formatter_char
     return __result;
   }
 
+  //!
+  //! \brief Formats a character value according to the parsed specifications.
+  //!
+  //! \param __value The character value to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
   template <class _FmtCtx>
   _CCCL_API typename _FmtCtx::iterator format(_CharT __value, _FmtCtx& __ctx) const
   {
@@ -65,6 +83,15 @@ struct __fmt_formatter_char
   }
 
 #if _CCCL_HAS_WCHAR_T()
+  //!
+  //! \brief Formats a character value as a wide character.
+  //!
+  //! \param __value The character value to format.
+  //! \param __ctx The formatting context where the formatted output will be stored.
+  //! \return An iterator pointing to the end of the formatted output.
+  //!
+  //! \details This overload allows formatting of a `char` type as a `wchar_t`.
+  //!
   _CCCL_TEMPLATE(class _FmtCtx, class _CharT2 = _CharT)
   _CCCL_REQUIRES(is_same_v<_CharT2, wchar_t>)
   _CCCL_API typename _FmtCtx::iterator format(char __value, _FmtCtx& __ctx) const
@@ -74,7 +101,7 @@ struct __fmt_formatter_char
 #endif // _CCCL_HAS_WCHAR_T()
 
 private:
-  __fmt_spec_parser<_CharT> __parser_;
+  __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 
 template <>

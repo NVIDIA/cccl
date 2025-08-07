@@ -27,6 +27,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+//! \brief A disabled formatter.
+//!
+//! This is used to disable formatting for types that are not supported.
 struct __fmt_disabled_formatter
 {
   __fmt_disabled_formatter()                                           = delete;
@@ -36,15 +39,15 @@ struct __fmt_disabled_formatter
   __fmt_disabled_formatter& operator=(__fmt_disabled_formatter&&)      = delete;
 };
 
-/// The default formatter template.
-///
-/// [format.formatter.spec]/5
-/// If F is a disabled specialization of formatter, these values are false:
-/// - is_default_constructible_v<F>,
-/// - is_copy_constructible_v<F>,
-/// - is_move_constructible_v<F>,
-/// - is_copy_assignable_v<F>, and
-/// - is_move_assignable_v<F>.
+//! @brief The default formatter template.
+//!
+//! [format.formatter.spec]/5
+//! If F is a disabled specialization of formatter, these values are false:
+//! - is_default_constructible_v<F>,
+//! - is_copy_constructible_v<F>,
+//! - is_move_constructible_v<F>,
+//! - is_copy_assignable_v<F>, and
+//! - is_move_assignable_v<F>.
 template <class _Tp, class _CharT = char>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter : __fmt_disabled_formatter
 {};
