@@ -21,8 +21,9 @@
 #include <c2h/generators.h>
 
 using float_type_list =
-  c2h::type_list<float,
+  c2h::type_list<float
 #if _CCCL_PTX_ARCH() >= 600
+                 ,
                  double
 #endif
                  >;
@@ -284,8 +285,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 using test_types =
   c2h::type_list<int32_t,
                  unsigned int,
-                 float,
+                 float
 #if _CCCL_PTX_ARCH() >= 600
+                 ,
                  double
 #endif
                  >;
