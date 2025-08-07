@@ -20,27 +20,27 @@
 
 void test_allocate()
 {
-  { // allocate(size)
+  { // allocate_sync(size)
     resource<cuda::mr::host_accessible> input{42};
     cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate(0, 0) == ref.allocate(0));
+    assert(input.allocate_sync(0, 0) == ref.allocate_sync(0));
 
     int expected_after_deallocate = 1337;
-    ref.deallocate(static_cast<void*>(&expected_after_deallocate), 0);
+    ref.deallocate_sync(static_cast<void*>(&expected_after_deallocate), 0);
     assert(input._val == expected_after_deallocate);
   }
 
-  { // allocate(size, alignment)
+  { // allocate_sync(size, alignment)
     resource<cuda::mr::host_accessible> input{42};
     cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate(0, 0) == ref.allocate(0, 0));
+    assert(input.allocate_sync(0, 0) == ref.allocate_sync(0, 0));
 
     int expected_after_deallocate = 1337;
-    ref.deallocate(static_cast<void*>(&expected_after_deallocate), 0, 0);
+    ref.deallocate_sync(static_cast<void*>(&expected_after_deallocate), 0, 0);
     assert(input._val == expected_after_deallocate);
   }
 }
