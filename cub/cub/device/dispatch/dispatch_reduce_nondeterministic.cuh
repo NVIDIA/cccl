@@ -190,7 +190,7 @@ struct DispatchReduceNondeterministic
     GridEvenShare<OffsetT> even_share;
     even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
     // Get grid size for nondeterministic_device_reduce_atomic_kernel
-    const int reduce_grid_size = even_share.grid_size;
+    const int reduce_grid_size = _CUDA_VSTD::max(1, even_share.grid_size);
 
     error = CubDebug(launcher_factory.MemsetAsync(d_out, 0, kernel_source.InitSize(), stream));
     if (cudaSuccess != error)
