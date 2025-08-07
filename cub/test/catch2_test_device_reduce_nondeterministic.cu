@@ -20,7 +20,12 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/generators.h>
 
-using float_type_list = c2h::type_list<float, double>;
+using float_type_list =
+  c2h::type_list<float,
+#if _CCCL_PTX_ARCH() >= 600
+                 double
+#endif
+                 >;
 
 template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
 struct AgentReducePolicy
@@ -202,7 +207,7 @@ struct square_t
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][nondeterministic]",
-         c2h::type_list<float, double>)
+         float_type_list)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -276,7 +281,14 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
-using test_types = c2h::type_list<int32_t, unsigned int, float, double>;
+using test_types =
+  c2h::type_list<int32_t,
+                 unsigned int,
+                 float,
+#if _CCCL_PTX_ARCH() >= 600
+                 double
+#endif
+                 >;
 
 C2H_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
          "[reduce][nondeterministic]",

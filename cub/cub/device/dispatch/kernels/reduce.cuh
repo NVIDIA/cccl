@@ -537,6 +537,11 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   InitT init,
                                                                   TransformOpT transform_op)
 {
+#if _CCCL_PTX_ARCH() < 600
+  static_assert(!cuda::std::is_same_v<AccumT, double>,
+                "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");
+#endif
+
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
   // Thread block type for reducing input tiles
@@ -564,10 +569,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
       NV_PROVIDES_SM_60,
       (::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]); atomic_target.fetch_add(
         blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate, ::cuda::memory_order_relaxed);),
-      (
-        if constexpr (::cuda::std::is_same_v<AccumT, double>) {
-          atomicAddEmulated(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);
-        } else { atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate); }));
+      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
   }
 }
 
