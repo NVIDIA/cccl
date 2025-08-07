@@ -45,6 +45,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -72,7 +73,8 @@ concept __move_iter_comparable = requires {
 };
 
 template <class _Iter>
-inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+inline constexpr bool __noexcept_move_iter_iter_move =
+  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<const _Iter&>()));
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -96,7 +98,8 @@ template <class _Iter, class _Sent>
 _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
-inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+inline constexpr bool __noexcept_move_iter_iter_move =
+  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<const _Iter&>()));
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
@@ -264,7 +267,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator-(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(__x.base() - __y.base())
+    -> decltype(_CUDA_VSTD::declval<const _Iter&>() - _CUDA_VSTD::declval<const _Iter2&>())
   {
     return __x.base() - __y.base();
   }
@@ -313,7 +316,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator==(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() == __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() == __y.base();
   }
@@ -322,7 +325,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() != __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() != _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() != __y.base();
   }
@@ -343,7 +346,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator<(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() < __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() < __y.base();
   }
@@ -351,7 +354,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator>(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() > __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() > _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() > __y.base();
   }
@@ -359,7 +362,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator<=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() <= __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() <= _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() <= __y.base();
   }
@@ -367,7 +370,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator>=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() >= __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() >= _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() >= __y.base();
   }

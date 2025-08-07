@@ -220,7 +220,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
-  operator-(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) -> decltype(__y.base() - __x.base())
+  operator-(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
+    -> decltype(_CUDA_VSTD::declval<const _Iter2&>() - _CUDA_VSTD::declval<const _Iter&>())
   {
     return __y.base() - __x.base();
   }
@@ -258,18 +259,20 @@ public:
   }
 
   template <class _Iter2>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator==(
-    const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(noexcept(bool(__x.base() == __y.base())))
-    -> decltype(static_cast<bool>(__x.base() == __y.base()))
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator==(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
+    noexcept(bool(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _Iter2&>())))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() == __y.base();
   }
 
 #if _CCCL_STD_VER <= 2017
   template <class _Iter2>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(
-    const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(noexcept(bool(__x.base() != __y.base())))
-    -> decltype(static_cast<bool>(__x.base() != __y.base()))
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator!=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
+    noexcept(bool(_CUDA_VSTD::declval<const _Iter&>() != _CUDA_VSTD::declval<const _Iter2&>())))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() != _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() != __y.base();
   }
@@ -289,7 +292,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() > __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() > _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() > __y.base();
   }
@@ -297,7 +300,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() < __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() < __y.base();
   }
@@ -305,7 +308,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() <= __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() <= _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() <= __y.base();
   }
@@ -313,7 +316,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(__x.base() >= __y.base()))
+    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() >= _CUDA_VSTD::declval<const _Iter2&>()))
   {
     return __x.base() >= __y.base();
   }
