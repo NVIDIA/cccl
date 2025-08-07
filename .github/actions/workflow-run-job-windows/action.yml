@@ -15,6 +15,154 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    # Needed for GPU runners:
+    - name: Install Git for Windows
+      shell: powershell
+      env:
+        GFW_EXE_URL: https://github.com/git-for-windows/git/releases/download/v2.49.0.windows.1/PortableGit-2.49.0-64-bit.7z.exe
+      run: |
+        if ((Get-Command git -ErrorAction SilentlyContinue) -and (Get-Command bash -ErrorAction SilentlyContinue)) {
+          Write-Host "Git and Bash are already installed."
+          exit 0
+        }
+        Invoke-WebRequest -Uri "$env:GFW_EXE_URL" -OutFile "PortableGit.7z.exe"
+        # Self-extracting, see https://gitforwindows.org/zip-archives-extracting-the-released-archives.html
+        Start-Process .\PortableGit.7z.exe -Wait -Verbose -ArgumentList '-y -gm2'
+        echo "$((Get-Location).Path)\\PortableGit\\bin" >> $env:GITHUB_PATH
+        $env:Path += ";$((Get-Location).Path)\\PortableGit\\bin"
+        git --version
+        bash --version
+
+    - name: Bootstrap winget if missing
+      shell: powershell
+      run: |
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+          Write-Host "Bootstrapping WinGet..."
+          # https://learn.microsoft.com/en-us/windows/package-manager/winget/
+          Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe
+          # Re-check availability:
+          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Write-Host "winget still not found after registration"
+            exit 1
+          }
+        }
+        Write-Host "winget OK: $(winget --version)"
+        # winget source remove --name msstore
+        winget source list
+        winget source update --disable-interactivity  # --accept-source-agreements --accept-package-agreements
+        winget source list
+
+    - name: Ensure Docker CLI installed
+      shell: powershell
+      run: |
+        if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+          Write-Host "Installing Docker CLI via WinGet..."
+          winget install --id Docker.DockerCLI --exact --disable-interactivity --accept-source-agreements --accept-package-agreements
+        } else {
+          Write-Host "Docker CLI already available."
+        }
+
+    - name: Setup docker path if needed
+      shell: powershell
+      run: |
+        if (Get-Command docker -ErrorAction SilentlyContinue) {
+          Write-Host "Docker CLI already in path."
+          exit 0
+        }
+
+        # We expect docker here:
+        $dockerPath = "C:\Program Files\Docker\Docker\resources\bin"
+        if (-not (Test-Path -Path $dockerPath)) {
+          Write-Host "Docker CLI installation failed, path not found: $dockerPath"
+          Write-Host "Path: $env:Path"
+          Write-Host "Locating docker executables for debugging:"
+          $patterns = @('docker*.exe')
+          Get-ChildItem -Path 'C:\' -Recurse -Include $patterns -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty FullName -Unique |
+              Sort-Object
+          exit 1
+        }
+        echo "$dockerPath" >> $env:GITHUB_PATH
+        $env:Path += ";$dockerPath"
+
+    - name: Test Docker...
+      shell: powershell
+      run: |
+        docker --version
+        docker info
+
+#    # Needed for GPU runners:
+#    - name: Update PowerShell
+#      shell: powershell
+#      run: |
+#        Write-Host "Detected PowerShell version: $($PSVersionTable.PSVersion)"
+#        if ($PSVersionTable.PSVersion.Major -ge 7) {
+#          Write-Host "PowerShell 7 or higher is already installed."
+#          exit 0
+#        }
+#        Write-Host "Installing newer PowerShell..."
+#        Invoke-WebRequest 'https://github.com/PowerShell/PowerShell/releases/download/v7.5.0/PowerShell-7.5.0-win-x64.msi' -OutFile pwsh7.5.msi
+#        Start-Process msiexec.exe -ArgumentList '/i pwsh7.5.msi /passive /norestart' -Wait
+#        echo "C:\Program Files\PowerShell\7" >> $env:GITHUB_PATH
+#        $env:Path = "C:\Program Files\PowerShell\7;$env:Path"
+#        # Create a symlink for powershell to point to pwsh
+#        New-Item -ItemType SymbolicLink -Path "C:\Program Files\PowerShell\7\powershell.exe" -Target "C:\Program Files\PowerShell\7\pwsh.exe" -Force
+#
+#    - name: "Verify PowerShell version"
+#      shell: powershell
+#      run: |
+#        Write-Host "Detected PowerShell version: $($PSVersionTable.PSVersion)"
+#
+#    - name: Enable Windows Containers feature
+#      shell: powershell
+#      run: |
+#        Enable-WindowsOptionalFeature -Online -FeatureName Containers -All
+#
+#    - name: Set up Docker
+#      uses: docker/setup-docker-action@v4
+
+#    # Needed for GPU runners:
+#    - name: Install Docker
+#      shell: powershell
+#      run: |
+#        if ((Get-Command docker -ErrorAction SilentlyContinue)) {
+#          Write-Host "Docker is already installed."
+#          exit 0
+#        }
+#        $dockerInstallerUrl = "https://download.docker.com/win/static/stable/x86_64/docker-28.3.3.zip"
+#        $dockerZipPath = "$env:TEMP\docker.zip"
+#        $dockerInstallPath = "C:\docker"
+#
+#        Write-Host "Downloading Docker from $dockerInstallerUrl to $dockerZipPath"
+#        Invoke-WebRequest -Uri "$dockerInstallerUrl" -OutFile "$dockerZipPath"
+#
+#        Write-Host "Extracting Docker to $dockerInstallPath"
+#        New-Item -ItemType Directory -Path "$dockerInstallPath" | Out-Null
+#        tar -C "$dockerInstallPath" --strip-components=1 -xf "$dockerZipPath"
+#
+#        echo "$dockerInstallPath" >> $env:GITHUB_PATH
+#        $env:Path += ";$dockerInstallPath"
+#        docker --version
+#
+#        & dockerd --validate
+#        if ($LastExitCode -ne 0) {
+#            Write-Error "Failed to validate configuration"
+#        }
+#        & dockerd --register-service
+#        if ($LastExitCode -ne 0) {
+#            Write-Error "Failed to register dockerd as a service."
+#        }
+#
+#        Write-Host "Starting docker service"
+#        Get-Service "docker"
+#        Start-Service "docker"
+#
+#        Start-Sleep -Seconds 2
+#        Write-Host "Checking docker service"
+#        Get-Service "docker"
+#        & docker info
+
     - name: Configure env
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
