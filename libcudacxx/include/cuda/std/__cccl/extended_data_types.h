@@ -29,14 +29,15 @@
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
-#define _CCCL_HAS_INT128()      0
-#define _CCCL_HAS_LONG_DOUBLE() 0
-#define _CCCL_HAS_NVFP4()       0
-#define _CCCL_HAS_NVFP6()       0
-#define _CCCL_HAS_NVFP8()       0
-#define _CCCL_HAS_NVFP16()      0
-#define _CCCL_HAS_NVBF16()      0
-#define _CCCL_HAS_FLOAT128()    0
+#define _CCCL_HAS_INT128()                  0
+#define _CCCL_HAS_LONG_DOUBLE()             0
+#define _CCCL_HAS_NVFP4()                   0
+#define _CCCL_HAS_NVFP6()                   0
+#define _CCCL_HAS_NVFP8()                   0
+#define _CCCL_HAS_NVFP16()                  0
+#define _CCCL_HAS_NVBF16()                  0
+#define _CCCL_HAS_FLOAT128()                0
+#define _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS() 0
 
 #define _CCCL_HAS_FLOAT128_LITERAL() _CCCL_HAS_FLOAT128()
 
@@ -104,6 +105,11 @@
 #    endif // !_CCCL_CUDA_COMPILATION()
 #  endif // Host compiler support
 #endif // !CCCL_DISABLE_FLOAT128_SUPPORT && _CCCL_OS(LINUX)
+
+#if _CCCL_HAS_FLOAT128() && _CCCL_HAS_INCLUDE(<crt/device_fp128_functions.h>)
+#  undef _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS
+#  define _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS() 1
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_HAS_INCLUDE(<crt/device_fp128_functions.h>)
 
 // gcc does not allow to use 'operator""q' when __STRICT_ANSI__ is defined, it may be allowed by
 // -fext-numeric-literals, but we have no way to detect it. However, from gcc 13, we can use 'operator""f128' and cast
