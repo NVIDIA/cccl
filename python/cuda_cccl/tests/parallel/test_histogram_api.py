@@ -16,24 +16,27 @@ def test_histogram_even():
     )
     d_samples = cp.asarray(h_samples)
     num_levels = 7
-    h_num_output_levels = np.array([num_levels], dtype="int32")
     d_histogram = cp.empty(num_levels - 1, dtype="int32")
-    h_lower_level = np.array([0], dtype="float64")
-    h_upper_level = np.array([12], dtype="float64")
+    lower_level = np.float64(0)
+    upper_level = np.float64(12)
 
     # Run histogram with automatic temp storage allocation
     parallel.histogram_even(
         d_samples,
         d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
+        num_levels,
+        lower_level,
+        upper_level,
         num_samples,
     )
 
     # Check the result is correct
     h_actual_histogram = cp.asnumpy(d_histogram)
-    h_expected_histogram = np.array([1, 5, 0, 3, 0, 0], dtype="int32")
+    # Calculate expected histogram using numpy
+    h_expected_histogram, _ = np.histogram(
+        h_samples, bins=num_levels - 1, range=(lower_level, upper_level)
+    )
+    h_expected_histogram = h_expected_histogram.astype("int32")
 
     np.testing.assert_array_equal(h_actual_histogram, h_expected_histogram)
     # example-end histogram-even

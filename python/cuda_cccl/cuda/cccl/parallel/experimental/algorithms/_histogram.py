@@ -176,12 +176,20 @@ def make_histogram_even(
 def histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
     d_histogram: DeviceArrayLike,
-    h_num_output_levels: np.ndarray,
-    h_lower_level: np.ndarray,
-    h_upper_level: np.ndarray,
+    num_output_levels: int,
+    lower_level: np.floating | np.integer,
+    upper_level: np.floating | np.integer,
     num_samples: int,
     stream=None,
 ):
+    # Histogram can accept multiple channels, with one value per channel for
+    # each of these parameters. The API only supports one channel for now but we
+    # pass arrays to make_histogram_even to support multiple channels in the
+    # future.
+    h_num_output_levels = np.array([num_output_levels], dtype=np.int32)
+    h_lower_level = np.array([lower_level], dtype=type(lower_level))
+    h_upper_level = np.array([upper_level], dtype=type(upper_level))
+
     histogram = make_histogram_even(
         d_samples,
         d_histogram,
