@@ -5,7 +5,7 @@
 
 /*
 // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask;
-// PTX ISA 80, SM_90a, SM_100a, SM_110a
+// PTX ISA 80, SM_90a, SM_100a, SM_101a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
 template <typename = void>
@@ -19,7 +19,7 @@ __device__ static inline void cp_async_bulk(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90a_SM_100a_SM_101a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk(
   space_cluster_t,
@@ -33,7 +33,7 @@ _CCCL_DEVICE static inline void cp_async_bulk(
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_global (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM90_ALL || __CUDA_ARCH_FEAT_SM100_ALL \
-    || __CUDA_ARCH_FEAT_SM110_ALL
+    || __CUDA_ARCH_FEAT_SM101_ALL
   asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [%0], [%1], %2, [%3], %4;"
       :
       : "r"(__as_ptr_smem(__dstMem)),
@@ -44,7 +44,7 @@ _CCCL_DEVICE static inline void cp_async_bulk(
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
+  __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90a_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 800

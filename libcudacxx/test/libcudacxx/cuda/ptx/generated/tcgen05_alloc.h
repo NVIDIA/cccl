@@ -27,7 +27,7 @@ __global__ void test_tcgen05_alloc(void** fn_ptr)
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::cta_group_2_t, uint32_t*, const uint32_t&)>(cuda::ptx::tcgen05_alloc));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
+    NV_HAS_FEATURE_SM_101a,
     (
         // tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32 [dst], nCols;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -48,7 +48,7 @@ __global__ void test_tcgen05_alloc(void** fn_ptr)
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::cta_group_2_t, uint32_t, const uint32_t&)>(cuda::ptx::tcgen05_dealloc));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
+    NV_HAS_FEATURE_SM_101a,
     (
         // tcgen05.dealloc.cta_group::1.sync.aligned.b32 taddr, nCols;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -69,7 +69,7 @@ __global__ void test_tcgen05_alloc(void** fn_ptr)
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::cta_group_2_t)>(cuda::ptx::tcgen05_relinquish_alloc_permit));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
+    NV_HAS_FEATURE_SM_101a,
     (
         // tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned;
         * fn_ptr++ = reinterpret_cast<void*>(

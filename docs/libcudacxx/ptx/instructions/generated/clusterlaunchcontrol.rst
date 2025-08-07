@@ -15,7 +15,7 @@ clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.m
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 [addr], [smem_bar]; // PTX ISA 86, SM_100a, SM_110a
+   // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 [addr], [smem_bar]; // PTX ISA 86, SM_100a, SM_101a
    template <typename = void>
    __device__ static inline void clusterlaunchcontrol_try_cancel_multicast(
      void* addr,

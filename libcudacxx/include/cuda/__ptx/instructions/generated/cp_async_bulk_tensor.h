@@ -83,7 +83,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 
 /*
 // cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_110a
+[smem_bar]; // PTX ISA 86, SM_100a, SM_101a
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -98,7 +98,7 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
@@ -112,7 +112,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.1d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2}], "
@@ -131,7 +131,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -260,7 +260,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 
 /*
 // cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_110a
+[smem_bar]; // PTX ISA 86, SM_100a, SM_101a
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -275,7 +275,7 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
@@ -289,7 +289,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.2d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, "
@@ -316,7 +316,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -447,7 +447,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 
 /*
 // cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_110a
+[smem_bar]; // PTX ISA 86, SM_100a, SM_101a
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -462,7 +462,7 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
@@ -476,7 +476,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.3d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
@@ -505,7 +505,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -643,7 +643,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 
 /*
 // cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_110a
+[smem_bar]; // PTX ISA 86, SM_100a, SM_101a
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -658,7 +658,7 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
@@ -672,7 +672,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.4d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
@@ -703,7 +703,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -845,7 +845,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 
 /*
 // cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords],
-[smem_bar]; // PTX ISA 86, SM_100a, SM_110a
+[smem_bar]; // PTX ISA 86, SM_100a, SM_101a
 // .dst       = { .shared::cta }
 // .src       = { .global }
 // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -860,7 +860,7 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
@@ -874,7 +874,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm("cp.async.bulk.tensor.5d.shared::cta.global.tile.mbarrier::complete_tx::bytes.cta_group::1 [%0], [%1, {%2, %3, "
@@ -907,7 +907,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

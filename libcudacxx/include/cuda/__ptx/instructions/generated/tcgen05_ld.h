@@ -4,163 +4,163 @@
 #define _CUDA_PTX_GENERATED_TCGEN05_LD_H_
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[1],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x1.b32 {%0}, [%1];" : "=r"(__out[0]) : "r"(__taddr) : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[1],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x1.pack::16b.b32 {%0}, [%1];" : "=r"(__out[0]) : "r"(__taddr) : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[2],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x2.b32 {%0, %1}, [%2];"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[2],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x2.pack::16b.b32 {%0, %1}, [%2];"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x4.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x4.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -174,25 +174,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[8], _CUDA_VSTD::
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -206,25 +206,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[8], _CU
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
       "[%16];"
       : "=r"(__out[0]),
@@ -247,25 +247,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[16], _CUDA_VSTD:
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x64b.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
       "%14, %15}, [%16];"
       : "=r"(__out[0]),
@@ -288,25 +288,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[16], _C
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x64b.x32.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -346,25 +346,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[32], _CUDA_VSTD:
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x64b.x32.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -404,25 +404,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[32], _C
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x64.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x64.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x64b.x64.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -496,25 +496,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[64], _CUDA_VSTD:
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x64.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x64.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x64b.x64.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -588,25 +588,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[64], _C
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x128.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x128.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x64b.x128.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -747,25 +747,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[128], _CUDA_VSTD
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x64b.x128.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x64b.x128.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x64b_pack_16b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x64b.x128.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -906,125 +906,125 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[128], _
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[2],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x1.b32 {%0, %1}, [%2];"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[2],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x1.pack::16b.b32 {%0, %1}, [%2];"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x2.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x2.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x4.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -1038,25 +1038,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[8], _CUDA_VSTD:
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x4.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -1070,25 +1070,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[8], _C
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
       "[%16];"
       : "=r"(__out[0]),
@@ -1111,25 +1111,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[16], _CUDA_VSTD
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x128b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
       "%14, %15}, [%16];"
       : "=r"(__out[0]),
@@ -1152,25 +1152,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[16], _
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x128b.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -1210,25 +1210,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[32], _CUDA_VSTD
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x128b.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -1268,25 +1268,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[32], _
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x128b.x32.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -1360,25 +1360,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[64], _CUDA_VSTD
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x128b.x32.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -1452,25 +1452,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[64], _
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x64.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x64.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x128b.x64.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -1611,25 +1611,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[128], _CUDA_VST
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x128b.x64.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x128b.x64.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x128b_pack_16b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x128b.x64.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -1770,75 +1770,75 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[128], 
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x256b.x1.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x256b.x1.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x256b.x2.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -1852,25 +1852,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[8], _CUDA_VSTD:
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x256b.x2.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -1884,25 +1884,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[8], _C
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x256b.x4.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
       "[%16];"
       : "=r"(__out[0]),
@@ -1925,25 +1925,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[16], _CUDA_VSTD
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x256b.x4.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
       "%14, %15}, [%16];"
       : "=r"(__out[0]),
@@ -1966,25 +1966,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[16], _
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x256b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -2024,25 +2024,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[32], _CUDA_VSTD
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x256b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -2082,25 +2082,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[32], _
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x256b.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -2174,25 +2174,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[64], _CUDA_VSTD
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x256b.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -2266,25 +2266,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[64], _
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x256b.x32.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -2425,25 +2425,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[128], _CUDA_VST
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x256b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x256b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_16x256b_pack_16b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x256b.x32.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -2584,169 +2584,169 @@ _CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[128], 
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x1.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[1],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x1.b32 {%0}, [%1];" : "=r"(__out[0]) : "r"(__taddr) : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x1.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[1],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x1.pack::16b.b32 {%0}, [%1];" : "=r"(__out[0]) : "r"(__taddr) : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x2.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[2],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x2.b32 {%0, %1}, [%2];"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x2.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[2],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x2.pack::16b.b32 {%0, %1}, [%2];"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x4.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x4.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x4.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[4],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x4.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x8.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -2760,25 +2760,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[8], _CUDA_VSTD::
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x8.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[8],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -2792,25 +2792,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[8], _CU
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x16.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
       "[%16];"
       : "=r"(__out[0]),
@@ -2833,25 +2833,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[16], _CUDA_VSTD:
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x16.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[16],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.32x32b.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
       "%14, %15}, [%16];"
       : "=r"(__out[0]),
@@ -2874,25 +2874,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[16], _C
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x32.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.32x32b.x32.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -2932,25 +2932,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[32], _CUDA_VSTD:
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x32.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[32],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.32x32b.x32.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32];"
@@ -2990,25 +2990,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[32], _C
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x64.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x64.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.32x32b.x64.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -3082,25 +3082,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[64], _CUDA_VSTD:
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x64.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x64.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[64],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.32x32b.x64.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -3174,25 +3174,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[64], _C
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x128.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x128.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.32x32b.x128.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -3333,25 +3333,25 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[128], _CUDA_VSTD
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.32x32b.x128.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.32x32b.x128.pack::16b.b32 out, [taddr]; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
 __device__ static inline void tcgen05_ld_32x32b_pack_16b(
   B32 (&out)[128],
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.32x32b.x128.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -3492,13 +3492,13 @@ _CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[128], _
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x1.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x1.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[1],
@@ -3506,26 +3506,26 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x1.b32 {%0}, [%1], %2;"
       : "=r"(__out[0])
       : "r"(__taddr), "n"(__immHalfSplitoff.value)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x1.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x1.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[1],
@@ -3533,26 +3533,26 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x1.pack::16b.b32 {%0}, [%1], %2;"
       : "=r"(__out[0])
       : "r"(__taddr), "n"(__immHalfSplitoff.value)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x2.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x2.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[2],
@@ -3560,26 +3560,26 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x2.b32 {%0, %1}, [%2], %3;"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr), "n"(__immHalfSplitoff.value)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x2.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x2.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[2],
@@ -3587,26 +3587,26 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x2.pack::16b.b32 {%0, %1}, [%2], %3;"
       : "=r"(__out[0]), "=r"(__out[1])
       : "r"(__taddr), "n"(__immHalfSplitoff.value)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x4.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x4.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[4],
@@ -3614,26 +3614,26 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x4.b32 {%0, %1, %2, %3}, [%4], %5;"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr), "n"(__immHalfSplitoff.value)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x4.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x4.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[4],
@@ -3641,26 +3641,26 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x4.pack::16b.b32 {%0, %1, %2, %3}, [%4], %5;"
       : "=r"(__out[0]), "=r"(__out[1]), "=r"(__out[2]), "=r"(__out[3])
       : "r"(__taddr), "n"(__immHalfSplitoff.value)
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x8.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x8.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[8],
@@ -3668,13 +3668,13 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8], %9;"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -3688,13 +3688,13 @@ tcgen05_ld_16x32bx2(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> 
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x8.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x8.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[8],
@@ -3702,13 +3702,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8], %9;"
       : "=r"(__out[0]),
         "=r"(__out[1]),
@@ -3722,13 +3722,13 @@ tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr, n32
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x16.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x16.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[16],
@@ -3736,13 +3736,13 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, "
       "%15}, [%16], %17;"
       : "=r"(__out[0]),
@@ -3765,13 +3765,13 @@ tcgen05_ld_16x32bx2(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32>
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x16.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x16.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[16],
@@ -3779,13 +3779,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm("tcgen05.ld.sync.aligned.16x32bx2.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
       "%14, %15}, [%16], %17;"
       : "=r"(__out[0]),
@@ -3808,13 +3808,13 @@ tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr, n3
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x32.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x32.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[32],
@@ -3822,13 +3822,13 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x32bx2.x32.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32], %33;"
@@ -3868,13 +3868,13 @@ tcgen05_ld_16x32bx2(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32>
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x32.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x32.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[32],
@@ -3882,13 +3882,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x32bx2.x32.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31}, [%32], %33;"
@@ -3928,13 +3928,13 @@ tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr, n3
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x64.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x64.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[64],
@@ -3942,13 +3942,13 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x32bx2.x64.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -4022,13 +4022,13 @@ tcgen05_ld_16x32bx2(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32>
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x64.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x64.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[64],
@@ -4036,13 +4036,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x32bx2.x64.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -4116,13 +4116,13 @@ tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr, n3
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x128.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x128.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2(
   B32 (&out)[128],
@@ -4130,13 +4130,13 @@ __device__ static inline void tcgen05_ld_16x32bx2(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x32bx2.x128.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, "
     "%16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, %36, %37, "
@@ -4277,13 +4277,13 @@ tcgen05_ld_16x32bx2(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.ld.sync.aligned.16x32bx2.x128.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.ld.sync.aligned.16x32bx2.x128.pack::16b.b32 out, [taddr], immHalfSplitoff; // PTX ISA 86, SM_100a, SM_101a
 template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true, int N32>
 __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   B32 (&out)[128],
@@ -4291,13 +4291,13 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
   cuda::ptx::n32_t<N32> immHalfSplitoff);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
 tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
   asm(
     "tcgen05.ld.sync.aligned.16x32bx2.x128.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
     "%14, %15, %16, %17, %18, %19, %20, %21, %22, %23, %24, %25, %26, %27, %28, %29, %30, %31, %32, %33, %34, %35, "
@@ -4438,7 +4438,7 @@ tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr, n
     : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_101a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

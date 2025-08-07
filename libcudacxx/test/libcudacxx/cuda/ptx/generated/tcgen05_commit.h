@@ -27,7 +27,7 @@ __global__ void test_tcgen05_commit(void** fn_ptr)
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::cta_group_2_t, uint64_t*)>(cuda::ptx::tcgen05_commit));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
+    NV_HAS_FEATURE_SM_101a,
     (
         // tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64 [smem_bar];
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -49,7 +49,7 @@ __global__ void test_tcgen05_commit(void** fn_ptr)
             * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::cta_group_2_t, uint64_t*, uint16_t)>(
               cuda::ptx::tcgen05_commit_multicast));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
+    NV_HAS_FEATURE_SM_101a,
     (
         // tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask;
         * fn_ptr++ = reinterpret_cast<void*>(
