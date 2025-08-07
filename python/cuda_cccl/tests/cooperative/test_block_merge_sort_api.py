@@ -8,7 +8,9 @@ from numba import cuda
 
 import cuda.cccl.cooperative.experimental as coop
 
+# example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+# example-end imports
 
 
 def test_block_merge_sort():
