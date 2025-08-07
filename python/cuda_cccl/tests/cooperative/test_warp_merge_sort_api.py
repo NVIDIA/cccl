@@ -8,6 +8,7 @@ from numba import cuda
 
 import cuda.cccl.cooperative.experimental as coop
 
+
 def test_warp_merge_sort():
     # example-begin merge-sort
     # Define comparison operator
