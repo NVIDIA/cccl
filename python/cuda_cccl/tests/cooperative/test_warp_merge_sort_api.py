@@ -8,11 +8,6 @@ from numba import cuda
 
 import cuda.cccl.cooperative.experimental as coop
 
-# example-begin imports
-numba.config.CUDA_ENABLE_PYNVJITLINK = 1
-# example-end imports
-
-
 def test_warp_merge_sort():
     # example-begin merge-sort
     # Define comparison operator

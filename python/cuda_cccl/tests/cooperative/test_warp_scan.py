@@ -11,8 +11,6 @@ from numba import cuda, types
 import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-numba.config.CUDA_ENABLE_PYNVJITLINK = 1
-
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_exclusive_sum(T):
