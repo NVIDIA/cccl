@@ -337,6 +337,29 @@ make_reverse_iterator(_Iter __i) noexcept(is_nothrow_copy_constructible_v<_Iter>
   return reverse_iterator<_Iter>{__i};
 }
 
+template <template <class> class _RevIter1, template <class> class _RevIter2, class _Iter>
+struct __unwrap_reverse_iter_impl
+{
+  using _UnwrappedIter  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(_CUDA_VSTD::declval<_Iter>()));
+  using _ReverseWrapper = _RevIter1<_RevIter2<_Iter>>;
+
+  _CCCL_API static constexpr _ReverseWrapper __rewrap(_ReverseWrapper __orig_iter, _UnwrappedIter __unwrapped_iter)
+  {
+    return _ReverseWrapper(
+      _RevIter2<_Iter>(__unwrap_iter_impl<_Iter>::__rewrap(__orig_iter.base().base(), __unwrapped_iter)));
+  }
+
+  _CCCL_API static constexpr _UnwrappedIter __unwrap(_ReverseWrapper __i) noexcept
+  {
+    return __unwrap_iter_impl<_Iter>::__unwrap(__i.base().base());
+  }
+};
+
+template <class _Iter, bool __b>
+struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, __b>
+    : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
+{};
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
