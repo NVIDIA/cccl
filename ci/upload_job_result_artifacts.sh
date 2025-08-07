@@ -51,6 +51,10 @@ find_and_copy_job_artifact_from() {
   cp -v "$filepath" "$job_artifacts/"
 }
 
+find_and_copy_job_artifact_from "sccache.log" ./ || : # Nonfatal if not found
 find_and_copy_job_artifact_from "sccache_stats.json" build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from ".ninja_log"  build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from "build.ninja"  build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from "rules.ninja"  build/ || : # Nonfatal if not found
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"

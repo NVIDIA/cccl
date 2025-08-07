@@ -1,9 +1,9 @@
 {
-  "image": "rapidsai/devcontainers:25.08-cpp-mambaforge-ubuntu22.04",
+  "image": "rapidsai/devcontainers:25.10-cpp-mambaforge",
   "runArgs": [
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.08-cuda12.9-conda"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda12.9-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {

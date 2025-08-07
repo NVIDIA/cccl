@@ -27,7 +27,6 @@
 
 #include <cuda/std/__random_>
 #include <cuda/std/cassert>
-#include <cuda/std/sstream>
 
 #include "test_macros.h"
 
