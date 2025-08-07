@@ -42,10 +42,10 @@ C2H_TEST("GridEvenShare handles edge cases (zero/negative items)", "[grid][even_
 
   grid_share.DispatchInit(num_items, max_grid_size, tile_items);
 
-  REQUIRE(grid_share.num_items == 0);
-  REQUIRE(grid_share.grid_size == 0);
-  REQUIRE(grid_share.block_offset == 0);
-  REQUIRE(grid_share.block_end == 0);
+  CHECK(grid_share.num_items == 0);
+  CHECK(grid_share.grid_size == 0);
+  CHECK(grid_share.block_offset == 0);
+  CHECK(grid_share.block_end == 0);
 }
 
 C2H_TEST("GridEvenShare works with num_items > 0", "[grid][even_share]", offset_types)
@@ -60,9 +60,8 @@ C2H_TEST("GridEvenShare works with num_items > 0", "[grid][even_share]", offset_
 
   grid_share.DispatchInit(num_items, max_grid_size, tile_items);
 
-  REQUIRE(grid_share.num_items == num_items);
-  REQUIRE(
-    grid_share.grid_size == cuda::std::min(max_grid_size, static_cast<int>(cuda::ceil_div(num_items, tile_items))));
-  REQUIRE(grid_share.block_offset == num_items);
-  REQUIRE(grid_share.block_end == num_items);
+  CHECK(grid_share.num_items == num_items);
+  CHECK(grid_share.grid_size == cuda::std::min(max_grid_size, static_cast<int>(cuda::ceil_div(num_items, tile_items))));
+  CHECK(grid_share.block_offset == num_items);
+  CHECK(grid_share.block_end == num_items);
 }
