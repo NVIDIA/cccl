@@ -9,9 +9,6 @@ from numba import cuda
 import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-# example-begin imports
-
-# example-end imports
 
 
 def test_block_radix_sort():
