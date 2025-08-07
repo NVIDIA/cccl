@@ -33,15 +33,15 @@ struct generate_random_integer
     }
     else if constexpr (::cuda::std::is_integral_v<T>)
     {
-      T const min = std::numeric_limits<T>::min();
-      T const max = std::numeric_limits<T>::max();
+      T const min = ::cuda::std::numeric_limits<T>::min();
+      T const max = ::cuda::std::numeric_limits<T>::max();
       THRUST_NS_QUALIFIER::uniform_int_distribution<T> dist(min, max);
       return static_cast<T>(dist(rng));
     }
     else if constexpr (::cuda::std::is_floating_point_v<T>)
     {
-      T const min = std::numeric_limits<T>::lowest();
-      T const max = std::numeric_limits<T>::max();
+      T const min = ::cuda::std::numeric_limits<T>::lowest();
+      T const max = ::cuda::std::numeric_limits<T>::max();
       THRUST_NS_QUALIFIER::uniform_real_distribution<T> dist(min, max);
       return static_cast<T>(dist(rng));
     }
@@ -69,8 +69,8 @@ THRUST_NS_QUALIFIER::host_vector<T> random_integers(const size_t N)
 {
   THRUST_NS_QUALIFIER::host_vector<T> vec(N);
   THRUST_NS_QUALIFIER::transform(
-    THRUST_NS_QUALIFIER::counting_iterator(static_cast<unsigned int>(0)),
-    THRUST_NS_QUALIFIER::counting_iterator(static_cast<unsigned int>(N)),
+    THRUST_NS_QUALIFIER::counting_iterator{0u},
+    THRUST_NS_QUALIFIER::counting_iterator{static_cast<unsigned int>(N)},
     vec.begin(),
     generate_random_integer<T>());
 
@@ -88,8 +88,8 @@ THRUST_NS_QUALIFIER::host_vector<T> random_samples(const size_t N)
 {
   THRUST_NS_QUALIFIER::host_vector<T> vec(N);
   THRUST_NS_QUALIFIER::transform(
-    THRUST_NS_QUALIFIER::counting_iterator(static_cast<unsigned int>(0)),
-    THRUST_NS_QUALIFIER::counting_iterator(static_cast<unsigned int>(N)),
+    THRUST_NS_QUALIFIER::counting_iterator{0u},
+    THRUST_NS_QUALIFIER::counting_iterator{static_cast<unsigned int>(N)},
     vec.begin(),
     generate_random_sample<T>());
 
