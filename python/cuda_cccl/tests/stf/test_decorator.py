@@ -24,6 +24,6 @@ lZ   = ctx.logical_data(Z)
 
 scale[32, 64, ctx](2.0, lX.rw())
 axpy[32, 64, ctx](2.0, lX.read(), lY.rw())                          # default device
-axpy[32, 64, ctx, exec_place.device(1)](2.0, lX.read(), lZ.rw())    # explicit exec place
-axpy[32, 64, ctx](2.0, lY.read(), lZ.rw(data_place.device(1)))      # per-dep placement override
+axpy[32, 64, ctx, cudastf.exec_place.device(0)](2.0, lX.read(), lZ.rw())    # explicit exec place
+axpy[32, 64, ctx](2.0, lY.read(), lZ.rw(cudastf.data_place.device(0)))      # per-dep placement override
 

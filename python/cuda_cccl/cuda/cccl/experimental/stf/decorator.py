@@ -1,6 +1,7 @@
 from numba import cuda
+import numba
 from cuda.cccl.experimental.stf import context, dep, exec_place
-
+numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 class stf_kernel_decorator:
     def __init__(self, pyfunc, jit_args, jit_kwargs):
@@ -52,7 +53,7 @@ class stf_kernel_decorator:
                 self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(self._pyfunc)
 
             nb_stream = cuda.external_stream(t.stream_ptr())
-            self._compiled_kernel[grid, block, stream](*dev_args, **kwargs)
+            self._compiled_kernel[gridDim, blockDim, nb_stream](*dev_args, **kwargs)
 
         return None
 
