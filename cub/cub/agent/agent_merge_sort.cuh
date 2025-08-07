@@ -355,6 +355,10 @@ struct AgentPartition
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }
+
+    // TODO(bgruber): looking at SASS triggering the next launch here just generates a lot of noise and the PRE-EXIT
+    // just ends of right before EXIT anyway. So let's omit it.
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 };
 
@@ -485,6 +489,8 @@ struct AgentMerge
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
     const OffsetT partition_beg = merge_partitions[tile_idx + 0];
     const OffsetT partition_end = merge_partitions[tile_idx + 1];
 
@@ -526,8 +532,6 @@ struct AgentMerge
     // number of keys per tile
     const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
-
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // load keys1 & keys2
     KeyT keys_local[ITEMS_PER_THREAD];
