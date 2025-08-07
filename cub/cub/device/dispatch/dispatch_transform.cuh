@@ -350,9 +350,9 @@ struct dispatch_t<StableAddress,
         items_per_thread,
         false,
         pred,
-      op,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
-      kernel_source.MakeAlignedBasePtrKernelArg(
+        op,
+        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
+        kernel_source.MakeAlignedBasePtrKernelArg(
           THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), alignment)...);
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
     }
