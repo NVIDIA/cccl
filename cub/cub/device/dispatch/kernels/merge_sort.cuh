@@ -239,7 +239,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 
   if (partition_idx < num_partitions)
   {
-    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
+    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{
       ping,
       keys_ping,
       keys_pong,
@@ -249,9 +249,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
       compare_op,
       target_merged_tiles_number,
       items_per_tile,
-      num_partitions);
-
-    agent.Process();
+      num_partitions}
+      .Process();
   }
 }
 

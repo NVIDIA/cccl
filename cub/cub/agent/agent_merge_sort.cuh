@@ -305,29 +305,6 @@ struct AgentPartition
   int items_per_tile;
   OffsetT num_partitions;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(
-    bool ping,
-    KeyIteratorT keys_ping,
-    KeyT* keys_pong,
-    OffsetT keys_count,
-    OffsetT partition_idx,
-    OffsetT* merge_partitions,
-    CompareOpT compare_op,
-    OffsetT target_merged_tiles_number,
-    int items_per_tile,
-    OffsetT num_partitions)
-      : ping(ping)
-      , keys_ping(keys_ping)
-      , keys_pong(keys_pong)
-      , keys_count(keys_count)
-      , partition_idx(partition_idx)
-      , merge_partitions(merge_partitions)
-      , compare_op(compare_op)
-      , target_merged_tiles_number(target_merged_tiles_number)
-      , items_per_tile(items_per_tile)
-      , num_partitions(num_partitions)
-  {}
-
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
