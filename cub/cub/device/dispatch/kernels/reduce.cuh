@@ -537,10 +537,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   InitT init,
                                                                   TransformOpT transform_op)
 {
-#if _CCCL_PTX_ARCH() < 600
-  static_assert(!cuda::std::is_same_v<AccumT, double>,
-                "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");
-#endif
+  NV_IF_TARGET(NV_PROVIDES_SM_60,
+               (),
+               (static_assert(!cuda::std::is_same_v<AccumT, double>,
+                              "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
 
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
