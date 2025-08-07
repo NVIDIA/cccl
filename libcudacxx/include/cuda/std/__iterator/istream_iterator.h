@@ -36,9 +36,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
 class _CCCL_TYPE_VISIBILITY_DEFAULT istream_iterator
-#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
-    : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
-#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
 public:
   using iterator_category = input_iterator_tag;
