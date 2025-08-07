@@ -16,14 +16,10 @@ from helpers import (
     row_major_tid,
 )
 from numba import cuda, types
-from pynvjitlink import patch
 
 import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-
-patch.patch_numba_linker(lto=True)
 
 
 @pytest.mark.parametrize(
