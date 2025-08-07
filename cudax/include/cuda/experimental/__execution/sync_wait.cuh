@@ -104,22 +104,17 @@ struct sync_wait_t
   template <class... _Ts>
   using __decayed_tuple = _CUDA_VSTD::tuple<_CUDA_VSTD::decay_t<_Ts>...>;
 
-  template <class _Sndr, class _Env>
+  template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
-    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
-    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
-    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
-
-    _CUDA_VSTD::optional<__values_t>* __values_;
-    __errors_t __errors_;
+    _CUDA_VSTD::optional<_Values>* __values_;
+    _Errors __errors_;
   };
 
-  template <class _Sndr, class _Env>
+  template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
-    using __values_t _CCCL_NODEBUG_ALIAS       = typename __state_t<_Sndr, _Env>::__values_t;
+    using receiver_concept = receiver_t;
 
     template <class... _As>
     _CCCL_API void set_value(_As&&... __as) noexcept
@@ -132,7 +127,7 @@ struct sync_wait_t
       { //
         // avoid ODR-using a call to __emplace(exception_ptr) if this code is
         // unreachable.
-        if constexpr (!__nothrow_constructible<__values_t, _As...>)
+        if constexpr (!__nothrow_constructible<_Values, _As...>)
         {
           __state_->__errors_.__emplace(::std::current_exception());
         }
@@ -157,7 +152,7 @@ struct sync_wait_t
       return __env_t<_Env>{__state_};
     }
 
-    __state_t<_Sndr, _Env>* __state_;
+    __state_t<_Values, _Errors, _Env>* __state_;
   };
 
   struct __throw_error_fn
@@ -202,14 +197,15 @@ public:
   template <class _Sndr, class _Env>
   _CCCL_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
   {
-    using __values_t _CCCL_NODEBUG_ALIAS = typename __state_t<_Sndr, _Env>::__values_t;
-    using __errors_t _CCCL_NODEBUG_ALIAS = typename __state_t<_Sndr, _Env>::__errors_t;
+    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
+    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
+    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
 
     _CUDA_VSTD::optional<__values_t> __result{};
-    __state_t<_Sndr, _Env> __state{{{}, static_cast<_Env&&>(__env)}, &__result, {}};
+    __state_t<__values_t, __errors_t, _Env> __state{{{}, static_cast<_Env&&>(__env)}, &__result, {}};
 
     // Launch the sender with a continuation that will fill in a variant
-    auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Sndr, _Env>{&__state});
+    auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<__values_t, __errors_t, _Env>{&__state});
     execution::start(__opstate);
 
     // While waiting for the variant to be filled in, process any work that may be
