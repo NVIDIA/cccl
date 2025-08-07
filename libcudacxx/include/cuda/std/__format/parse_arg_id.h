@@ -87,7 +87,7 @@ template <class _It>
     {
       _CUDA_VSTD::__throw_format_error("The numeric value of the format specifier is too large");
     }
-    __value = __v;
+    __value = static_cast<uint32_t>(__v);
   }
 
   return {__begin, __value};

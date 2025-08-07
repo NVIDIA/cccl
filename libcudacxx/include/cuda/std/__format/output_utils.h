@@ -161,7 +161,7 @@ template <class _CharT, class _ParserCharT, class _OutIt>
 [[nodiscard]] _CCCL_API _OutIt
 __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<_ParserCharT> __specs, ptrdiff_t __size)
 {
-  if (__size >= __specs.__width_)
+  if (__size >= static_cast<ptrdiff_t>(__specs.__width_))
   {
     return _CUDA_VSTD::__fmt_copy(__str, _CUDA_VSTD::move(__out_it));
   }
@@ -237,7 +237,7 @@ template <class _CharT>
   const auto __result =
     _CUDA_VSTD::__fmt_estimate_column_width(__str, __precision, __fmt_column_width_rounding::__down);
   __str = basic_string_view<_CharT>{__str.begin(), __result.__last_};
-  return __result.__width_;
+  return static_cast<int>(__result.__width_);
 }
 
 //! Writes a string using format's width estimation algorithm.
