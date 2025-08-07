@@ -23,7 +23,13 @@ class stf_kernel_decorator:
         if exec_pl and not isinstance(exec_pl, exec_place):
             raise TypeError("4th item must be an exec_place")
 
-        self._launch_cfg = (int(gridDim), int(blockDim), ctx, exec_pl)
+        self._launch_cfg = (
+            tuple(gridDim) if isinstance(gridDim, tuple) else (int(gridDim),),
+            tuple(blockDim) if isinstance(blockDim, tuple) else (int(blockDim),),
+            ctx,
+            exec_pl,
+        )
+
         return self
 
     def __call__(self, *args, **kwargs):
