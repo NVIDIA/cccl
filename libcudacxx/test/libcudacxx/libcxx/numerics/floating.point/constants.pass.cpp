@@ -71,6 +71,25 @@ __host__ __device__ void test_fp_storage()
     const auto ref = cuda::std::numeric_limits<T>::lowest();
     assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
   }
+
+  // test __fp_zero to be all zeros
+#if _CCCL_HAS_NVFP8_E8M0()
+  if constexpr (!cuda::std::is_same_v<T, __nv_fp8_e8m0>)
+#endif // _CCCL_HAS_NVFP8_E8M0()
+  {
+    const auto val = cuda::std::__fp_zero<T>();
+    const auto ref = cuda::std::__fp_storage_of_t<T>(0);
+    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+    assert(!cuda::std::signbit(val));
+  }
+
+  // test __fp_one for standard types only
+  if constexpr (cuda::std::__fp_is_native_type_v<T>)
+  {
+    const auto val = cuda::std::__fp_one<T>();
+    const auto ref = T{1};
+    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+  }
 }
 
 int main(int, char**)
