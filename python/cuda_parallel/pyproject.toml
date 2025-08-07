@@ -19,7 +19,9 @@ requires-python = ">=3.9"
 dependencies = [
   "cuda-cccl",
   "numba>=0.60.0",
-  "cuda-python==12.*",
+  "numpy",
+  "cuda-bindings>=12.9.1,<13.0.0",
+  "numba-cuda>=0.18.0",
   "cupy-cuda12x",
 ]
 dynamic = ["version"]

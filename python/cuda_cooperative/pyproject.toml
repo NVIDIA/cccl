@@ -20,8 +20,8 @@ dependencies = [
   "cuda-cccl",
   "numpy",
   "numba>=0.60.0",
-  "pynvjitlink-cu12>=0.2.4",
-  "cuda-python==12.*",
+  "cuda-bindings>=12.9.1,<13.0.0",
+  "numba-cuda>=0.18.0",
   "jinja2",
 ]
 dynamic = ["version", "readme"]
