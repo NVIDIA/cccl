@@ -15,9 +15,9 @@
 # https://github.com/NVIDIA/cuda-python/tree/main/cuda_pathfinder/cuda/pathfinder
 
 # type: ignore[import-not-found]
-from cuda.pathfinder import load_nvidia_dynamic_library
+from cuda.pathfinder import load_nvidia_dynamic_lib
 
 for libname in ("nvrtc", "nvJitLink"):
-    load_nvidia_dynamic_library(libname)
+    load_nvidia_dynamic_lib(libname)
 
 from ._bindings_impl import *  # noqa: E402 F403
