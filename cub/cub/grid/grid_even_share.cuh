@@ -129,10 +129,19 @@ public:
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_, int max_grid_size, int tile_items)
   {
+    if (num_items_ <= 0 || max_grid_size <= 0 || tile_items <= 0)
+    {
+      this->num_items    = 0;
+      this->grid_size    = 0;
+      this->block_offset = 0;
+      this->block_end    = 0;
+      return;
+    }
+
     this->block_offset      = num_items_; // Initialize past-the-end
     this->block_end         = num_items_; // Initialize past-the-end
     this->num_items         = num_items_;
-    this->total_tiles       = _CUDA_VSTD::max(1, static_cast<int>(::cuda::ceil_div(num_items_, tile_items)));
+    this->total_tiles       = static_cast<int>(::cuda::ceil_div(num_items_, tile_items));
     this->grid_size         = _CUDA_VSTD::min(total_tiles, max_grid_size);
     int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
