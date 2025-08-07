@@ -163,10 +163,10 @@ struct AgentBlockSort
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
-    auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
-    auto num_tiles    = static_cast<OffsetT>(gridDim.x);
-    auto tile_base    = tile_idx * ITEMS_PER_TILE;
-    int items_in_tile = (::cuda::std::min) (static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
+    const auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
+    const auto num_tiles    = static_cast<OffsetT>(gridDim.x);
+    const auto tile_base    = tile_idx * ITEMS_PER_TILE;
+    const int items_in_tile = (::cuda::std::min) (static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
 
     if (tile_idx < num_tiles - 1)
     {
