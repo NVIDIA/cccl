@@ -34,23 +34,31 @@ def unique_by_key_object_example():
         compare_op,
     )
 
+    d_input_keys_ptr = d_input_keys.data.ptr
+    d_input_values_ptr = d_input_values.data.ptr
+    d_output_keys_ptr = d_output_keys.data.ptr
+    d_output_values_ptr = d_output_values.data.ptr
+    d_num_selected_ptr = d_num_selected.data.ptr
+
     temp_storage_size = uniquer(
-        None,
-        d_input_keys,
-        d_input_values,
-        d_output_keys,
-        d_output_values,
-        d_num_selected,
+        0,
+        0,
+        d_input_keys_ptr,
+        d_input_values_ptr,
+        d_output_keys_ptr,
+        d_output_values_ptr,
+        d_num_selected_ptr,
         len(h_input_keys),
     )
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
     uniquer(
-        d_temp_storage,
-        d_input_keys,
-        d_input_values,
-        d_output_keys,
-        d_output_values,
-        d_num_selected,
+        d_temp_storage.data.ptr,
+        d_temp_storage.nbytes,
+        d_input_keys_ptr,
+        d_input_values_ptr,
+        d_output_keys_ptr,
+        d_output_values_ptr,
+        d_num_selected_ptr,
         len(h_input_keys),
     )
 

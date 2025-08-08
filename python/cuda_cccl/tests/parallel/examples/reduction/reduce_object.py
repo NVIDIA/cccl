@@ -23,10 +23,23 @@ def reduce_object_example():
     d_input = cp.asarray(h_input)
     d_output = cp.empty(1, dtype=dtype)
 
+    d_input_ptr = d_input.data.ptr
+    d_output_ptr = d_output.data.ptr
+    h_init_ptr = h_init.data.cast("B")
+
     reducer = parallel.make_reduce_into(d_input, d_output, add_op, h_init)
-    temp_storage_size = reducer(None, d_input, d_output, len(h_input), h_init)
+    temp_storage_size = reducer(
+        0, 0, d_input_ptr, d_output_ptr, len(h_input), h_init_ptr
+    )
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    reducer(d_temp_storage, d_input, d_output, len(h_input), h_init)
+    reducer(
+        d_temp_storage.data.ptr,
+        d_temp_storage.nbytes,
+        d_input_ptr,
+        d_output_ptr,
+        len(h_input),
+        h_init_ptr,
+    )
 
     expected_result = np.sum(h_input) + init_value
     actual_result = d_output.get()[0]

@@ -13,10 +13,22 @@ def reduce_pointer(input_array, build_only):
         return a + b
 
     alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
+
+    input_array_ptr = res.data.ptr
+    res_ptr = res.data.ptr
+    h_init_ptr = h_init.data.cast("B")
+
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg(0, 0, input_array_ptr, res_ptr, size, h_init_ptr)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg(
+            temp_storage.data.ptr,
+            temp_storage.nbytes,
+            input_array_ptr,
+            res_ptr,
+            size,
+            h_init_ptr,
+        )
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -30,10 +42,21 @@ def reduce_struct(input_array, build_only):
         return MyStruct(a.x + b.x, a.y + b.y)
 
     alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
+    input_array_ptr = res.data.ptr
+    res_ptr = res.data.ptr
+    h_init_ptr = h_init._data.data.cast("B")
+
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg(0, 0, input_array_ptr, res_ptr, size, h_init_ptr)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg(
+            temp_storage.data.ptr,
+            temp_storage.nbytes,
+            input_array_ptr,
+            res_ptr,
+            size,
+            h_init_ptr,
+        )
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -47,10 +70,20 @@ def reduce_iterator(inp, size, build_only):
         return a + b
 
     alg = parallel.make_reduce_into(inp, res, my_add, h_init)
+    res_ptr = res.data.ptr
+    h_init_ptr = h_init.data.cast("B")
+
     if not build_only:
-        temp_storage_bytes = alg(None, inp, res, size, h_init)
+        temp_storage_bytes = alg(0, 0, inp.state, res_ptr, size, h_init_ptr)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, inp, res, size, h_init)
+        alg(
+            temp_storage.data.ptr,
+            temp_storage.nbytes,
+            inp.state,
+            res_ptr,
+            size,
+            h_init_ptr,
+        )
 
     cp.cuda.runtime.deviceSynchronize()
 
