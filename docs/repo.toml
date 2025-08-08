@@ -26,7 +26,7 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python", "cccl"]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
