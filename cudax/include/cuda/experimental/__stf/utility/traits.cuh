@@ -92,7 +92,6 @@ constexpr ::std::string_view type_name_impl()
  *
  * @tparam T The type to show.
  *
- * @paragraph example Example
  * @snippet unittest.h type_name
  */
 template <class T>
@@ -106,10 +105,9 @@ inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
  * @tparam Fun Type of mapping function to apply
  * @param t Object to convert, must support `std::apply`
  * @param f function to convert each element of the tuple, must take a single parameter
- * @return constexpr auto The tuple resulting from the mapping
+ * @return auto The tuple resulting from the mapping
  *
- * @paragraph example Example
- * @snippet unittest.h tuple2tuple
+ * @snippet unittest.cuh tuple2tuple
  */
 template <typename Tuple, typename Fun>
 constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
@@ -561,20 +559,13 @@ namespace reserved
 {
 
 /**
- * @brief Trait class to check if a function can be invoked with std::apply using a tuple type
+ * @brief Trait class to check if a function can be invoked with `std::apply` using a tuple type
  */
 template <typename F, typename Tuple>
-struct is_tuple_invocable : ::std::false_type
-{};
+inline constexpr bool is_applicable_v = false;
 
-// Partial specialization that unpacks the tuple
 template <typename F, typename... Args>
-struct is_tuple_invocable<F, ::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
-{};
-
-// Convenient alias template
-template <typename F, typename Tuple>
-inline constexpr bool is_tuple_invocable_v = is_tuple_invocable<F, Tuple>::value;
+inline constexpr bool is_applicable_v<F, ::std::tuple<Args...>> = ::std::is_invocable_v<F, Args...>;
 
 /**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.
