@@ -67,7 +67,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   using type          = typename c2h::get<0, TestType>;
   const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
-  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
+
+  type amplitude = static_cast<type>(1);
+  c2h::gen(C2H_SEED(2), d_input, -amplitude / (num_items + 1), 2 * amplitude / (num_items + 1));
 
   c2h::device_vector<type> d_output(1);
 
@@ -82,7 +84,13 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   // TODO: Use std::reduce once we drop support for GCC 7 and 8
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
+  // relative round-off error of recursive summation is proportional to n * type::epsilon,
+  // see https://epubs.siam.org/doi/epdf/10.1137/19M1257780
+
+  type relative_err = std::min((num_items + 1) * std::numeric_limits<type>::epsilon(), static_cast<type>(1));
+  c2h::host_vector<type> h_actual = d_output;
+
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, h_actual, relative_err);
 }
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
