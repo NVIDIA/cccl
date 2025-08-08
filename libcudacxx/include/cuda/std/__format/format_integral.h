@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/climits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -118,7 +119,7 @@ template <class _Tp, class _CharT, class _FmtCtx>
   const char* __prefix,
   int __base)
 {
-  char* __first = _CUDA_VSTD::__fmt_insert_sign(__array, __negative, __specs.__std_.__sign_);
+  char* __first = _CUDA_VSTD::__fmt_insert_sign(__array, __negative, __fmt_spec_sign{__specs.__std_.__sign_});
   if (__specs.__std_.__alternate_form_ && __prefix != nullptr)
   {
     while (*__prefix)
@@ -135,7 +136,7 @@ template <class _Tp, class _CharT, class _FmtCtx>
   }
 
   auto __out_it = __ctx.out();
-  if (__specs.__alignment_ != __fmt_spec_alignment::__zero_padding)
+  if (__fmt_spec_alignment{__specs.__alignment_} != __fmt_spec_alignment::__zero_padding)
   {
     __first = __array;
   }
@@ -147,7 +148,7 @@ template <class _Tp, class _CharT, class _FmtCtx>
     // - Write [sign][prefix]
     // - Write data right aligned with '0' as fill character.
     __out_it                  = _CUDA_VSTD::__fmt_copy(__array, __first, _CUDA_VSTD::move(__out_it));
-    __specs.__alignment_      = __fmt_spec_alignment::__right;
+    __specs.__alignment_      = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__right);
     __specs.__fill_.__data[0] = _CharT{'0'};
     __specs.__width_ -= _CUDA_VSTD::min(static_cast<int32_t>(__last - __first), __specs.__width_);
   }

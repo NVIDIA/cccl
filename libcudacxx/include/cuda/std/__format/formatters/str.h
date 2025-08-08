@@ -26,6 +26,7 @@
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -74,7 +75,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr __fmt_spec_parser<_CharT> __make_parser()
   {
     __fmt_spec_parser<_CharT> __parser{};
-    __parser.__alignment_ = __fmt_spec_alignment::__left;
+    __parser.__alignment_ = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__left);
     return __parser;
   }
 

@@ -86,6 +86,7 @@ __fmt_padding_size(size_t __size, size_t __width, __fmt_spec_alignment __align)
     default:
       _CCCL_UNREACHABLE();
   }
+  _CCCL_UNREACHABLE(); // nvcc warns about missing return here
 }
 
 //! Copy wrapper.
@@ -166,9 +167,10 @@ __fmt_write(basic_string_view<_CharT> __str, _OutIt __out_it, __fmt_parsed_spec<
     return _CUDA_VSTD::__fmt_copy(__str, _CUDA_VSTD::move(__out_it));
   }
 
-  const auto __padding = _CUDA_VSTD::__fmt_padding_size(__size, __specs.__width_, __specs.__std_.__alignment_);
-  __out_it             = _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__before_, __specs.__fill_);
-  __out_it             = _CUDA_VSTD::__fmt_copy(__str, _CUDA_VSTD::move(__out_it));
+  const auto __padding =
+    _CUDA_VSTD::__fmt_padding_size(__size, __specs.__width_, __fmt_spec_alignment{__specs.__std_.__alignment_});
+  __out_it = _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__before_, __specs.__fill_);
+  __out_it = _CUDA_VSTD::__fmt_copy(__str, _CUDA_VSTD::move(__out_it));
   return _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__after_, __specs.__fill_);
 }
 
@@ -200,9 +202,10 @@ template <class _It, class _CharT = iter_value_t<_It>, class _ParserCharT, class
   {
     return _CUDA_VSTD::__fmt_transform(__first, __last, _CUDA_VSTD::move(__out_it), __op);
   }
-  const auto __padding = _CUDA_VSTD::__fmt_padding_size(__size, __specs.__width_, __specs.__alignment_);
-  __out_it             = _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__before_, __specs.__fill_);
-  __out_it             = _CUDA_VSTD::__fmt_transform(__first, __last, _CUDA_VSTD::move(__out_it), __op);
+  const auto __padding =
+    _CUDA_VSTD::__fmt_padding_size(__size, __specs.__width_, __fmt_spec_alignment{__specs.__alignment_});
+  __out_it = _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__before_, __specs.__fill_);
+  __out_it = _CUDA_VSTD::__fmt_transform(__first, __last, _CUDA_VSTD::move(__out_it), __op);
   return _CUDA_VSTD::__fmt_fill(_CUDA_VSTD::move(__out_it), __padding.__after_, __specs.__fill_);
 }
 

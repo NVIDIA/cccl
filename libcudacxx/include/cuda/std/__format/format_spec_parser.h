@@ -35,7 +35,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/monostate.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/string_view>
 
@@ -118,8 +120,8 @@ struct __fmt_substitute_arg_id_visitor
     // When an integral is used in a format function, it is stored as one of
     // the types checked below. Other integral types are promoted. For example,
     // a signed char is stored as an int.
-    if constexpr (is_same_v<_Tp, int> || is_same_v<_Tp, unsigned int> || //
-                  is_same_v<_Tp, long long> || is_same_v<_Tp, unsigned long long>)
+    else if constexpr (is_same_v<_Tp, int> || is_same_v<_Tp, unsigned int> || //
+                       is_same_v<_Tp, long long> || is_same_v<_Tp, unsigned long long>)
     {
       if constexpr (is_signed_v<_Tp>)
       {
@@ -291,25 +293,27 @@ inline constexpr uint32_t __fmt_spec_type_mask_int =
   _CUDA_VSTD::__fmt_spec_make_type_mask(__fmt_spec_type::__hexadecimal_lower_case) | //
   _CUDA_VSTD::__fmt_spec_make_type_mask(__fmt_spec_type::__hexadecimal_upper_case);
 
+// there is a bug in gcc < 10 that warns about `__fmt_spec_alignment : 3` being too small for all enum values,
+// so we use the underlying type instead
 struct __fmt_spec_std
 {
-  __fmt_spec_alignment __alignment_ : 3;
-  __fmt_spec_sign __sign_           : 2;
-  bool __alternate_form_            : 1;
-  bool __locale_specific_form_      : 1;
+  underlying_type_t<__fmt_spec_alignment> __alignment_ : 3;
+  underlying_type_t<__fmt_spec_sign> __sign_           : 2;
+  bool __alternate_form_                               : 1;
+  bool __locale_specific_form_                         : 1;
   __fmt_spec_type __type_;
 };
 
 struct __fmt_spec_chrono
 {
-  __fmt_spec_alignment __alignment_ : 3;
-  bool __locale_specific_form_      : 1;
-  bool __hour_                      : 1;
-  bool __weekday_name_              : 1;
-  bool __weekday_                   : 1;
-  bool __day_of_year_               : 1;
-  bool __week_of_year_              : 1;
-  bool __month_name_                : 1;
+  underlying_type_t<__fmt_spec_alignment> __alignment_ : 3;
+  bool __locale_specific_form_                         : 1;
+  bool __hour_                                         : 1;
+  bool __weekday_name_                                 : 1;
+  bool __weekday_                                      : 1;
+  bool __day_of_year_                                  : 1;
+  bool __week_of_year_                                 : 1;
+  bool __month_name_                                   : 1;
 };
 
 //! The fill UCS scalar value.
@@ -353,7 +357,7 @@ struct __fmt_parsed_spec
     //
     // This is needed since the generic output routines handle the alignment of
     // the output.
-    __fmt_spec_alignment __alignment_ : 3;
+    underlying_type_t<__fmt_spec_alignment> __alignment_ : 3;
     __fmt_spec_std __std_;
     __fmt_spec_chrono __chrono_;
   };
@@ -561,7 +565,7 @@ public:
   _CCCL_API constexpr void
   __validate(__fmt_spec_fields __fields, const char (&__id)[_IdSize], uint32_t __type_mask = ~uint32_t{0}) const
   {
-    if (!__fields.__sign_ && __sign_ != __fmt_spec_sign::__default)
+    if (!__fields.__sign_ && __fmt_spec_sign{__sign_} != __fmt_spec_sign::__default)
     {
       if (_CUDA_VSTD::is_constant_evaluated())
       {
@@ -585,7 +589,7 @@ public:
       }
     }
 
-    if (!__fields.__zero_padding_ && __alignment_ == __fmt_spec_alignment::__zero_padding)
+    if (!__fields.__zero_padding_ && __fmt_spec_alignment{__alignment_} == __fmt_spec_alignment::__zero_padding)
     {
       if (_CUDA_VSTD::is_constant_evaluated())
       {
@@ -670,8 +674,8 @@ public:
   }
 
   _CCCL_API constexpr __fmt_spec_parser() noexcept
-      : __alignment_{__fmt_spec_alignment::__default}
-      , __sign_{__fmt_spec_sign::__default}
+      : __alignment_{_CUDA_VSTD::to_underlying(__fmt_spec_alignment::__default)}
+      , __sign_{_CUDA_VSTD::to_underlying(__fmt_spec_sign::__default)}
       , __alternate_form_{false}
       , __locale_specific_form_{false}
       , __clear_brackets_{false}
@@ -683,11 +687,11 @@ public:
       , __fill_{}
   {}
 
-  __fmt_spec_alignment __alignment_ : 3;
-  __fmt_spec_sign __sign_           : 2;
-  bool __alternate_form_            : 1;
-  bool __locale_specific_form_      : 1;
-  bool __clear_brackets_            : 1;
+  underlying_type_t<__fmt_spec_alignment> __alignment_ : 3;
+  underlying_type_t<__fmt_spec_sign> __sign_           : 2;
+  bool __alternate_form_                               : 1;
+  bool __locale_specific_form_                         : 1;
+  bool __clear_brackets_                               : 1;
   __fmt_spec_type __type_;
 
   // These flags are only used for formatting chrono. Since the struct has
@@ -723,15 +727,15 @@ private:
     switch (__c)
     {
       case _CharT{'<'}:
-        __alignment_ = __fmt_spec_alignment::__left;
+        __alignment_ = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__left);
         return true;
 
       case _CharT{'^'}:
-        __alignment_ = __fmt_spec_alignment::__center;
+        __alignment_ = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__center);
         return true;
 
       case _CharT{'>'}:
-        __alignment_ = __fmt_spec_alignment::__right;
+        __alignment_ = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__right);
         return true;
     }
     return false;
@@ -781,13 +785,13 @@ private:
     switch (*__begin)
     {
       case _CharT{'-'}:
-        __sign_ = __fmt_spec_sign::__minus;
+        __sign_ = _CUDA_VSTD::to_underlying(__fmt_spec_sign::__minus);
         break;
       case _CharT{'+'}:
-        __sign_ = __fmt_spec_sign::__plus;
+        __sign_ = _CUDA_VSTD::to_underlying(__fmt_spec_sign::__plus);
         break;
       case _CharT{' '}:
-        __sign_ = __fmt_spec_sign::__space;
+        __sign_ = _CUDA_VSTD::to_underlying(__fmt_spec_sign::__space);
         break;
       default:
         return false;
@@ -815,9 +819,9 @@ private:
     {
       return false;
     }
-    if (__alignment_ == __fmt_spec_alignment::__default)
+    if (__fmt_spec_alignment{__alignment_} == __fmt_spec_alignment::__default)
     {
-      __alignment_ = __fmt_spec_alignment::__zero_padding;
+      __alignment_ = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__zero_padding);
     }
     ++__begin;
     return true;
@@ -1026,9 +1030,9 @@ _CCCL_API constexpr void
 __fmt_process_display_type_bool_str(__fmt_spec_parser<_CharT>& __parser, const char (&__id)[_IdSize])
 {
   __parser.__validate(_CUDA_VSTD::__fmt_spec_fields_bool(), __id);
-  if (__parser.__alignment_ == __fmt_spec_alignment::__default)
+  if (__fmt_spec_alignment{__parser.__alignment_} == __fmt_spec_alignment::__default)
   {
-    __parser.__alignment_ = __fmt_spec_alignment::__left;
+    __parser.__alignment_ = _CUDA_VSTD::to_underlying(__fmt_spec_alignment::__left);
   }
 }
 
