@@ -105,8 +105,6 @@ template <class CharT>
 #  define TEST_STRLIT(CharT, str) _test_strlit_impl<CharT>(str, L##str, u##str, U##str)
 #endif // _CCCL_HAS_CHAR8_T()
 
-#if _CCCL_HAS_INT128()
-
 template <class T>
 struct _test_int_literal_impl_result
 {
@@ -242,6 +240,7 @@ _test_int_literal_impl(const char (&cs)[N]) noexcept
 namespace test_integer_literals
 {
 
+#if _CCCL_HAS_INT128()
 template <char... Cs>
 [[nodiscard]] __host__ __device__ constexpr __int128_t operator""_i128() noexcept
 {
@@ -261,9 +260,8 @@ template <char... Cs>
   static_assert(!result.overflow, "Integer literal overflow.");
   return result.value;
 }
+#endif // _CCCL_HAS_INT128()
 
 } // namespace test_integer_literals
-
-#endif // _CCCL_HAS_INT128()
 
 #endif // TEST_SUPPORT_LITERAL_H

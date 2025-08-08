@@ -332,7 +332,14 @@ template <__fp_format _Fmt>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __fp_lowest() noexcept
 {
-  return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_lowest<__fp_format_of_v<_Tp>>());
+  if constexpr (__fp_is_native_type_v<_Tp>)
+  {
+    return _CUDA_VSTD::__fp_neg(_CUDA_VSTD::__fp_max<_Tp>());
+  }
+  else
+  {
+    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_lowest<__fp_format_of_v<_Tp>>());
+  }
 }
 
 // __fp_zero

@@ -20,8 +20,6 @@
 template <class T>
 __host__ __device__ void test_fp_storage()
 {
-  constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
-
   // test __fp_zero to be all zeros
 #if _CCCL_HAS_NVFP8_E8M0()
   if constexpr (!cuda::std::is_same_v<T, __nv_fp8_e8m0>)
