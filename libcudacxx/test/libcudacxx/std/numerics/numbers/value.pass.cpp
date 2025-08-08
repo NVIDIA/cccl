@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // <cuda/std/numbers>
 
 #include <cuda/std/cassert>
@@ -80,6 +83,22 @@ __host__ __device__ constexpr bool test()
   assert(cuda::std::numbers::phi_v<long double> == 0x1.9e3779b97f4a8p+0l);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
+#if _CCCL_HAS_FLOAT128()
+  assert(cuda::std::numbers::e_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.5bf0a8b1457695355fb8ac404e7ap+1));
+  assert(cuda::std::numbers::log2e_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.71547652b82fe1777d0ffda0d23ap+0));
+  assert(cuda::std::numbers::log10e_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.bcb7b1526e50e32a6ab7555f5a68p-2));
+  assert(cuda::std::numbers::pi_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.921fb54442d18469898cc51701b8p+1));
+  assert(cuda::std::numbers::inv_pi_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.45f306dc9c882a53f84eafa3ea6ap-2));
+  assert(cuda::std::numbers::inv_sqrtpi_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.20dd750429b6d11ae3a914fed7fep-1));
+  assert(cuda::std::numbers::ln2_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.62e42fefa39ef35793c7673007e6p-1));
+  assert(cuda::std::numbers::ln10_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.26bb1bbb5551582dd4adac5705a6p+1));
+  assert(cuda::std::numbers::sqrt2_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.6a09e667f3bcc908b2fb1366ea95p+0));
+  assert(cuda::std::numbers::sqrt3_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.bb67ae8584caa73b25742d7078b8p+0));
+  assert(cuda::std::numbers::inv_sqrt3_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.279a74590331c4d218f81e4afb25p-1));
+  assert(cuda::std::numbers::egamma_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.2788cfc6fb618f49a37c7f0202a6p-1));
+  assert(cuda::std::numbers::phi_v<__float128> == _CCCL_FLOAT128_LITERAL(0x1.9e3779b97f4a7c15f39cc0605ceep+0));
+#endif // _CCCL_HAS_FLOAT128()
+
   return true;
 }
 
@@ -133,6 +152,6 @@ int main(int, char**)
 {
   test();
   test_ext_fp();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }
