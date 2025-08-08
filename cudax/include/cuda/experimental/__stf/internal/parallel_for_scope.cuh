@@ -78,6 +78,28 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 }
 
 /**
+ * @brief Create a trait to select useful types during the reduction phase
+ * using Partial Specialization
+ *
+ * Oi are the operator type (no op (= monostate), or reducer::sum for example)
+ * Ai are the argument type (slice<T>, or scalar_view<T> for example)
+ * If Oi is not monostate, it will correspond to the container of Ai, otherwise
+ * we don't need to manipulate that argument during a reduction phase, so this
+ * is a monostate
+ */
+template <typename Oi, typename Ai>
+struct get_owning_container_of
+{
+  using type = typename owning_container_of<Ai>::type; // Default case
+};
+
+template <typename Ai>
+struct get_owning_container_of<::std::monostate, Ai>
+{
+  using type = ::std::monostate;
+};
+
+/**
  * @brief This wraps tuple of arguments and operators into a class that stores
  * a tuple of arguments which include local variables for reductions.
  *
@@ -87,28 +109,6 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 template <typename tuple_args, typename tuple_ops>
 class redux_vars
 {
-  /**
-   * @brief Create a trait to select useful types during the reduction phase
-   * using Partial Specialization
-   *
-   * Oi are the operator type (no op (= monostate), or reducer::sum for example)
-   * Ai are the argument type (slice<T>, or scalar_view<T> for example)
-   * If Oi is not monostate, it will correspond to the container of Ai, otherwise
-   * we don't need to manipulate that argument during a reduction phase, so this
-   * is a monostate
-   */
-  template <typename Oi, typename Ai>
-  struct get_owning_container_of
-  {
-    using type = typename owning_container_of<Ai>::type; // Default case
-  };
-
-  template <typename Ai>
-  struct get_owning_container_of<::std::monostate, Ai>
-  {
-    using type = ::std::monostate;
-  };
-
   /**
    * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
    *
