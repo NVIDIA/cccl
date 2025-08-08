@@ -125,9 +125,9 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
 
   static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ {2} {0}({1}* state)
+extern "C" __device__ void {0}({1}* state, {2}* result)
 {{
-  return (state->linear_id) * (state->row_size);
+  *result = (state->linear_id) * (state->row_size);
 }}
 )XXX";
 
@@ -492,10 +492,10 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_advance_fn_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_type_name);
 
   static constexpr std::string_view it_dereference_fn_src_tmpl = R"XXX(
-extern "C" __device__ {1} {0}({2} *state) {{
+extern "C" __device__ void {0}({2} *state, {1}* result) {{
   unsigned long long col_id = (state->linear_id) / (state->n_rows);
   unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);
-  return *(state->ptr + row_id * (state->n_cols) + col_id);
+  *result = *(state->ptr + row_id * (state->n_cols) + col_id);
 }}
 )XXX";
 
@@ -786,6 +786,7 @@ extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
   auto start_offsets_it =
     make_stateful_transform_input_iterator<IndexT, counting_iterator_state_t<IndexT>, host_offset_functor_state<IndexT>>(
       index_ty_name,
+      index_ty_name,
       {counting_it_state_name, counting_it_state_src},
       {counting_it_advance_fn_name, counting_it_advance_fn_src},
       {counting_it_deref_fn_name, counting_it_deref_fn_src},
@@ -896,6 +897,7 @@ extern "C" __device__ {4} {0}({1} *functor_state, {2} n) {{
                                                          counting_iterator_state_t<IndexT>,
                                                          host_check_functor_state<IndexT, DataT>>(
     cmp_ty_name,
+    index_ty_name,
     {counting_it_state_name, counting_it_state_src},
     {counting_it_advance_fn_name, counting_it_advance_fn_src},
     {counting_it_deref_fn_name, counting_it_deref_fn_src},
