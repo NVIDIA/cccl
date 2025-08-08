@@ -41,10 +41,6 @@ namespace cuda::experimental::stf
 {
 
 class event_impl;
-/**
- * @brief CUDASTF event
- *
- */
 using event = reserved::handle<event_impl>;
 
 namespace reserved
