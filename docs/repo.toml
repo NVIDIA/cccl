@@ -229,6 +229,7 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../cub
+  WARN_IF_UNDOCUMENTED   = NO
 """
 
 [repo_docs.projects.thrust]
@@ -295,6 +296,7 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../thrust
+  WARN_IF_UNDOCUMENTED   = NO
 """
 
 [repo_docs.projects.python]
@@ -392,4 +394,5 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../cudax
+  WARN_IF_UNDOCUMENTED   = NO
 """
