@@ -8,4 +8,4 @@ Type Traits
    :maxdepth: 1
 
    ${repo_docs_api_path}/*struct*proclaim__contiguous__iterator*
-   ${repo_docs_api_path}/*typedef_group__type__traits*
+   ${repo_docs_api_path}/*group__type__traits*
