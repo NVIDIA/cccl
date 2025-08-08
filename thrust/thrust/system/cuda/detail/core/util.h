@@ -43,8 +43,6 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/system/cuda/detail/core/load_iterator.h>
-#include <thrust/system/cuda/detail/core/make_load_iterator.h>
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 

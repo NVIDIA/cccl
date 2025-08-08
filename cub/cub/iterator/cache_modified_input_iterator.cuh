@@ -235,4 +235,26 @@ public:
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
+namespace detail
+{
+template <CacheLoadModifier LoadModifier, typename Iterator>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+{
+  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  {
+    using value_type = it_value_t<Iterator>;
+    using size_type  = it_difference_t<Iterator>;
+    return cub::CacheModifiedInputIterator<LoadModifier, value_type, size_type>{raw_pointer_cast(&*it)};
+  }
+  else
+  {
+    return it;
+  }
+}
+
+template <CacheLoadModifier LoadModifier, typename Iterator>
+using try_make_cache_modified_iterator_t =
+  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+} // namespace detail
+
 CUB_NAMESPACE_END
