@@ -92,9 +92,7 @@ private:
   //! @brief Helper to check whether a different buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    !_CCCL_TRAIT(_CUDA_VSTD::is_same,
-                 _CUDA_VSTD::__make_type_set<_Properties...>,
-                 _CUDA_VSTD::__make_type_set<_OtherProperties...>)
+    !_CUDA_VSTD::is_same_v<_CUDA_VSTD::__make_type_set<_Properties...>, _CUDA_VSTD::__make_type_set<_OtherProperties...>>
     && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Determines the allocation size given the alignment and size of `T`

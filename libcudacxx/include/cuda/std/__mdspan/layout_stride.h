@@ -56,13 +56,13 @@ _CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Exten
   requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
   requires(_StridedLayoutMapping::is_always_unique()),
   requires(_StridedLayoutMapping::is_always_strided()),
-  requires(_CCCL_TRAIT(is_constructible, _Extents, typename _StridedLayoutMapping::extents_type)));
+  requires(is_constructible_v<_Extents, typename _StridedLayoutMapping::extents_type>));
 
 struct __constraints
 {
   template <class _StridedLayoutMapping, class _Extents>
   static constexpr bool __converts_implicit =
-    _CCCL_TRAIT(is_convertible, typename _StridedLayoutMapping::extents_type, _Extents)
+    is_convertible_v<typename _StridedLayoutMapping::extents_type, _Extents>
     && (__mdspan_detail::__is_mapping_of<layout_left, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>);
@@ -130,7 +130,7 @@ private:
   __conversion_may_overflow([[maybe_unused]] _OtherIndexType __stride) noexcept
   {
     // nvcc believes stride is unused here
-    if constexpr (_CCCL_TRAIT(is_integral, _OtherIndexType))
+    if constexpr (is_integral_v<_OtherIndexType>)
     {
       using _CommonType = common_type_t<index_type, _OtherIndexType>;
       return static_cast<_CommonType>(__stride) > static_cast<_CommonType>((numeric_limits<index_type>::max)());
@@ -239,7 +239,7 @@ public:
     [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
   {
     // nvcc believes strides is unused here
-    if constexpr (_CCCL_TRAIT(is_integral, _OtherIndexType))
+    if constexpr (is_integral_v<_OtherIndexType>)
     {
       return ((__strides[_Pos] > _OtherIndexType{0}) && ... && true);
     }
@@ -301,8 +301,8 @@ public:
 
   // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
   template <class _OtherIndexType,
-            enable_if_t<_CCCL_TRAIT(is_constructible, index_type, const _OtherIndexType&), int> = 0,
-            enable_if_t<_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type), int>   = 0>
+            enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
+            enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
   _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept
       : __base(__ext, __to_strides_array(__strides, __rank_sequence))
   {
@@ -316,8 +316,8 @@ public:
 
   // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
   template <class _OtherIndexType,
-            enable_if_t<_CCCL_TRAIT(is_constructible, index_type, const _OtherIndexType&), int> = 0,
-            enable_if_t<_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type), int>   = 0>
+            enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
+            enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
   _CCCL_API constexpr mapping(const extents_type& __ext,
                               const array<_OtherIndexType, extents_type::rank()>& __strides) noexcept
       : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))

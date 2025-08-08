@@ -59,15 +59,15 @@ enum class __numeric_limits_type
 template <class _Tp>
 _CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, bool))
+  if constexpr (is_same_v<_Tp, bool>)
   {
     return __numeric_limits_type::__bool;
   }
-  else if constexpr (_CCCL_TRAIT(is_integral, _Tp))
+  else if constexpr (is_integral_v<_Tp>)
   {
     return __numeric_limits_type::__integral;
   }
-  else if constexpr (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp))
+  else if constexpr (is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>)
   {
     return __numeric_limits_type::__floating_point;
   }

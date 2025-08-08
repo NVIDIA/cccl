@@ -34,7 +34,7 @@ namespace detail
 {
 
 template <typename T, typename... TArgs>
-inline constexpr bool is_one_of_v = (_CCCL_TRAIT(_CUDA_VSTD::is_same, T, TArgs) || ...);
+inline constexpr bool is_one_of_v = (_CUDA_VSTD::is_same_v<T, TArgs> || ...);
 
 template <typename T, typename V, typename = void>
 struct has_binary_call_operator : _CUDA_VSTD::false_type
