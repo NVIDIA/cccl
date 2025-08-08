@@ -47,8 +47,8 @@ public:
   //! @brief default construct a zip_function if \c _Fn is default_initializable
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
-  _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Fn>)
-  _CCCL_API constexpr zip_function() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Fn>)
+  _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Fn2>)
+  _CCCL_API constexpr zip_function() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Fn2>)
       : __fun_()
   {}
 
