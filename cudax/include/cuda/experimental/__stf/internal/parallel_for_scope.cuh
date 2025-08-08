@@ -63,10 +63,10 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
-  auto explode_args = [&](auto&&... data) {
+  auto const explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     auto const explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
+      f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -306,7 +306,7 @@ __global__ void loop_redux(
   const auto explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     const auto explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
+      f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -963,9 +963,9 @@ public:
 
       // deps_ops_t are pairs of data instance type, and a reduction operator,
       // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, typename deps_ops_t::dep_type... data) {
-        auto h = [&](auto... coords) {
-          f(coords..., data...);
+      auto explode_coords = [&](size_t i, auto&&... data) {
+        auto h = [&](auto&&... coords) {
+          f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
         };
         ::std::apply(h, shape.index_to_coords(i));
       };
