@@ -6,11 +6,9 @@ import numba
 import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
-from pynvjitlink import patch
 
 import cuda.cooperative.experimental as cudax
 
-patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 

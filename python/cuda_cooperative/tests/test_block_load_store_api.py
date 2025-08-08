@@ -6,11 +6,9 @@
 import numba
 import numpy as np
 from numba import cuda
-from pynvjitlink import patch
 
 import cuda.cooperative.experimental as cudax
 
-patch.patch_numba_linker(lto=True)
 # example-end imports
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0

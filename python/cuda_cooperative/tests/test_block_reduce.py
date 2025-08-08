@@ -16,14 +16,10 @@ from numba.core.extending import (
     type_callable,
     typeof_impl,
 )
-from pynvjitlink import patch
 
 import cuda.cooperative.experimental as cudax
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-
-patch.patch_numba_linker(lto=True)
 
 
 class Complex:
