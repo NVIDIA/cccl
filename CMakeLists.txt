@@ -1,3 +1,11 @@
+# Disabling for stress testing runners:
+unset(ENV{CMAKE_CUDA_COMPILER_LAUNCHER})
+unset(ENV{CMAKE_CXX_COMPILER_LAUNCHER})
+unset(ENV{CMAKE_C_COMPILER_LAUNCHER})
+unset(CMAKE_CUDA_COMPILER_LAUNCHER)
+unset(CMAKE_CXX_COMPILER_LAUNCHER)
+unset(CMAKE_C_COMPILER_LAUNCHER)
+
 # 3.15 is the minimum for including the project with add_subdirectory.
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
