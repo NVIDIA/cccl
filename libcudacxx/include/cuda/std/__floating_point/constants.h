@@ -142,35 +142,29 @@ template <class _Tp>
 
   static_assert(__fp_has_nans_v<__fmt>, "The format does not support nans");
 
-  if constexpr (false)
-  {
-    return _Tp{};
-  }
-#if defined(_CCCL_BUILTIN_NANSF)
-  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
+#if defined(_CCCL_BUILTIN_NANS)
+  if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_NANSF(""));
   }
-#endif // _CCCL_BUILTIN_NANSF
-#if defined(_CCCL_BUILTIN_NANS)
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary64)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_NANS(""));
   }
-#endif // _CCCL_BUILTIN_NANS
-#if _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format_of_v<long double>)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_NANSL(""));
   }
-#endif // _CCCL_HAS_LONG_DOUBLE
-#if defined(_CCCL_BUILTIN_NANFS128)
+#  endif // _CCCL_HAS_LONG_DOUBLE
+#  if defined(_CCCL_BUILTIN_NANFS128)
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
     return static_cast<_Tp>(_CCCL_BUILTIN_NANFS128(""));
   }
-#endif // _CCCL_BUILTIN_NANFS128
+#  endif // _CCCL_BUILTIN_NANFS128
   else
+#endif // _CCCL_BUILTIN_NANS
   {
     return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nans<__fp_format_of_v<_Tp>>());
   }
