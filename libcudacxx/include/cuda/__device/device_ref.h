@@ -64,7 +64,6 @@ public:
     return __id_;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -78,7 +77,7 @@ public:
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -91,8 +90,7 @@ public:
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#    endif // _CCCL_STD_VER <= 2017
-#  endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Retrieve the specified attribute for the device
   //!

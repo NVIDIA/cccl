@@ -74,8 +74,8 @@ public:
   physical_device(__detail::__emplace_device __ed)
       : physical_device(__ed.__id_)
   {}
-#    endif
-#  endif
+#    endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
 
   //! @brief Retrieve architecture traits of this device.
   //!
