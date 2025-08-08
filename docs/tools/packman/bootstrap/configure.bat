@@ -91,7 +91,7 @@ if %errorlevel% neq 0 (
 if exist "%PM_PYTHON%" (
     call :CLEAN_UP_TEMP_FOLDER
     goto PACKMAN
-) 
+)
 
 :: Clean out broken PM_PYTHON_DIR if it exists
 if exist "%PM_PYTHON_DIR%" (

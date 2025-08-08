@@ -1,6 +1,6 @@
-:: RUN_PM_MODULE must always be at the same spot for packman update to work (batch reloads file during update!) 
+:: RUN_PM_MODULE must always be at the same spot for packman update to work (batch reloads file during update!)
 :: [xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
-:: Reset errorlevel status (don't inherit from caller) 
+:: Reset errorlevel status (don't inherit from caller)
 @call :ECHO_AND_RESET_ERROR
 
 :: You can remove this section if you do your own manual configuration of the dev machines
@@ -63,11 +63,11 @@ goto :RUN_PM_MODULE
 
 :CONFIGURE
 :: Must capture and set code page to work around issue #279, powershell invocation mutates console font
-:: This issue only happens in Windows CMD shell when using 65001 code page. Some Git Bash implementations 
+:: This issue only happens in Windows CMD shell when using 65001 code page. Some Git Bash implementations
 :: don't support chcp so this workaround is a bit convoluted.
 :: Test for chcp:
 chcp > nul 2>&1
-if %errorlevel% equ 0 ( 
+if %errorlevel% equ 0 (
 	for /f "tokens=2 delims=:" %%a in ('chcp') do (set PM_OLD_CODE_PAGE=%%a)
 ) else (
 	call :ECHO_AND_RESET_ERROR
