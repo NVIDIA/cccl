@@ -139,11 +139,11 @@ public:
       return;
     }
 
-    this->block_offset      = num_items_; // Initialize past-the-end
-    this->block_end         = num_items_; // Initialize past-the-end
-    this->num_items         = num_items_;
-    this->total_tiles       = static_cast<int>(::cuda::std::min(
-      static_cast<OffsetT>(::cuda::std::numeric_limits<int>::max()), ::cuda::ceil_div(num_items_, tile_items)));
+    this->block_offset = num_items_; // Initialize past-the-end
+    this->block_end    = num_items_; // Initialize past-the-end
+    this->num_items    = num_items_;
+    this->total_tiles  = static_cast<int>(
+      ::cuda::std::min(OffsetT{::cuda::std::numeric_limits<int>::max()}, ::cuda::ceil_div(num_items_, tile_items)));
     this->grid_size         = ::cuda::std::min(total_tiles, max_grid_size);
     int avg_tiles_per_block = total_tiles / grid_size;
     // leftover grains go to big blocks:
