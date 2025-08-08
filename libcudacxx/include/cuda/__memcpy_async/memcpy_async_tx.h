@@ -30,6 +30,7 @@
 #    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
 #    include <cuda/__memcpy_async/check_preconditions.h>
+#    include <cuda/__memory/address_space.h>
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
@@ -61,15 +62,19 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 
   _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__dest, __src, __size), "memcpy_async_tx preconditions unmet");
 
-  _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
-               "Barrier must be located in local shared memory.");
-  _CCCL_ASSERT(::__isShared(__dest), "dest must point to shared memory.");
-  _CCCL_ASSERT(::__isGlobal(__src), "src must point to global memory.");
+  _CCCL_ASSERT(
+    _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::barrier_native_handle(__b), _CUDA_DEVICE::address_space::shared),
+    "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::shared),
+               "dest must point to shared memory.");
+  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::global),
+               "src must point to global memory.");
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (
-      if (::__isShared(__dest) && ::__isGlobal(__src)) {
+      if (_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::shared)
+          && _CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::global)) {
         _CUDA_VPTX::cp_async_bulk(
           _CUDA_VPTX::space_cluster,
           _CUDA_VPTX::space_global,

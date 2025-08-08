@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__memory/address_space.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,13 +38,12 @@ _CCCL_API inline void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     auto __ptr1 = const_cast<void*>(__ptr);
-     if (!::__isGlobal(__ptr1))
+     if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global))
      {
        return;
      }
      constexpr size_t __line_size = 128;
-     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __p                     = reinterpret_cast<uint8_t*>(const_cast<void*>(__ptr));
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
      for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
@@ -62,13 +62,12 @@ _CCCL_API inline void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     auto __ptr1 = const_cast<void*>(__ptr);
-     if (!::__isGlobal(__ptr1))
+     if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global))
      {
        return;
      }
      constexpr size_t __line_size = 128;
-     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __p                     = reinterpret_cast<uint8_t*>(const_cast<void*>(__ptr));
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
      for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
