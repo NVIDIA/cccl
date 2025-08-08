@@ -78,28 +78,6 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 }
 
 /**
- * @brief Create a trait to select useful types during the reduction phase
- * using Partial Specialization
- *
- * Oi are the operator type (no op (= monostate), or reducer::sum for example)
- * Ai are the argument type (slice<T>, or scalar_view<T> for example)
- * If Oi is not monostate, it will correspond to the container of Ai, otherwise
- * we don't need to manipulate that argument during a reduction phase, so this
- * is a monostate
- */
-template <typename Oi, typename Ai>
-struct get_owning_container_of
-{
-  using type = typename owning_container_of<Ai>::type; // Default case
-};
-
-template <typename Ai>
-struct get_owning_container_of<::std::monostate, Ai>
-{
-  using type = ::std::monostate;
-};
-
-/**
  * @brief This wraps tuple of arguments and operators into a class that stores
  * a tuple of arguments which include local variables for reductions.
  *
@@ -109,6 +87,28 @@ struct get_owning_container_of<::std::monostate, Ai>
 template <typename tuple_args, typename tuple_ops>
 class redux_vars
 {
+  /**
+   * @brief Create a trait to select useful types during the reduction phase
+   * using Partial Specialization
+   *
+   * Oi are the operator type (no op (= monostate), or reducer::sum for example)
+   * Ai are the argument type (slice<T>, or scalar_view<T> for example)
+   * If Oi is not monostate, it will correspond to the container of Ai, otherwise
+   * we don't need to manipulate that argument during a reduction phase, so this
+   * is a monostate
+   */
+  template <typename Oi, typename Ai>
+  struct get_owning_container_of
+  {
+    using type = typename owning_container_of<Ai>::type; // Default case
+  };
+
+  template <typename Ai>
+  struct get_owning_container_of<::std::monostate, Ai>
+  {
+    using type = ::std::monostate;
+  };
+
   /**
    * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
    *
@@ -406,9 +406,37 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
-  //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
-  // tuple<slice<double>, slice<int>> ...
-  using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
+  // using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
+  using deps_tup_t = reserved::remove_void_interface_from_pack_t<typename deps_ops_t::dep_type...>;
+
+  /**
+   * @brief Retrieves instances from a tuple of dependency operations, filtering out `void_interface`.
+   *
+   * Iterates over each element in the `deps` tuple, calling `instance(t)` on each.
+   * If the result is of type `void_interface&`, that element is not part
+   * of the resulting tuple. Otherwise, the returned instance is included.
+   *
+   * @tparam deps_ops_t Variadic template parameter representing the types of the dependency operations.
+   * @param deps Tuple containing dependency operation objects.
+   * @param t Reference to the task for which instances are requested.
+   * @return A tuple containing the result of `dep.instance(t)` for each dependency,
+   *         with `std::ignore` in positions where the result type is `void_interface&`.
+   */
+  static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
+  {
+    return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
+      auto& dep = ::std::get<i>(deps);
+      if constexpr (::std::is_same_v<decltype(dep.instance(t)), void_interface&>)
+      {
+        return ::std::ignore;
+      }
+      else
+      {
+        return dep.instance(t);
+      }
+    });
+  }
+
   //  // tuple<task_dep<slice<double>>, task_dep<slice<int>>> ...
   //  using task_deps_t = ::std::tuple<typename deps_ops_t::task_dep_type...>;
   // tuple<none, none, sum, none> ...
@@ -669,11 +697,7 @@ public:
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t arg_instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    auto arg_instances = get_arg_instances(deps, t);
 
     size_t n = sub_shape.size();
 
@@ -865,11 +889,7 @@ public:
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t arg_instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    auto arg_instances = get_arg_instances(deps, t);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
@@ -921,11 +941,7 @@ public:
     using args_t = ::std::tuple<deps_tup_t, size_t, Fun, sub_shape_t>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    deps_tup_t instances = get_arg_instances(deps, t);
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
