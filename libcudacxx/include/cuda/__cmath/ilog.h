@@ -38,7 +38,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
 _CCCL_API constexpr int ilog2(_Tp __t) noexcept
 {
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
@@ -49,7 +49,7 @@ _CCCL_API constexpr int ilog2(_Tp __t) noexcept
 }
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
 _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
 {
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
@@ -143,7 +143,7 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
 _CCCL_API constexpr int ilog10(_Tp __t) noexcept
 {
   _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");

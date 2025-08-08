@@ -72,11 +72,9 @@ class mdspan
 private:
   static_assert(__mdspan_detail::__is_extents_v<_Extents>,
                 "mdspan: Extents template parameter must be a specialization of extents.");
-  static_assert(!_CCCL_TRAIT(is_array, _ElementType),
-                "mdspan: ElementType template parameter may not be an array type");
-  static_assert(!_CCCL_TRAIT(is_abstract, _ElementType),
-                "mdspan: ElementType template parameter may not be an abstract class");
-  static_assert(_CCCL_TRAIT(is_same, _ElementType, typename _AccessorPolicy::element_type),
+  static_assert(!is_array_v<_ElementType>, "mdspan: ElementType template parameter may not be an array type");
+  static_assert(!is_abstract_v<_ElementType>, "mdspan: ElementType template parameter may not be an abstract class");
+  static_assert(is_same_v<_ElementType, typename _AccessorPolicy::element_type>,
                 "mdspan: ElementType template parameter must match AccessorPolicy::element_type");
   static_assert(__mdspan_detail::__is_valid_layout_mapping<_LayoutPolicy, _Extents>,
                 "mdspan: LayoutPolicy template parameter is invalid. A common mistake is to pass a layout mapping "
@@ -124,14 +122,14 @@ public:
 
   template <class _Extents2>
   static constexpr bool __can_default_construct =
-    (_Extents2::rank_dynamic() > 0) && _CCCL_TRAIT(is_default_constructible, data_handle_type)
-    && _CCCL_TRAIT(is_default_constructible, mapping_type) && _CCCL_TRAIT(is_default_constructible, accessor_type);
+    (_Extents2::rank_dynamic() > 0) && is_default_constructible_v<data_handle_type>
+    && is_default_constructible_v<mapping_type> && is_default_constructible_v<accessor_type>;
 
   _CCCL_TEMPLATE(class _Extents2 = _Extents)
   _CCCL_REQUIRES(__can_default_construct<_Extents2>)
-  _CCCL_API constexpr mdspan() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, data_handle_type)
-                                        && _CCCL_TRAIT(is_nothrow_default_constructible, mapping_type)
-                                        && _CCCL_TRAIT(is_nothrow_default_constructible, accessor_type))
+  _CCCL_API constexpr mdspan() noexcept(
+    is_nothrow_default_constructible_v<data_handle_type> && is_nothrow_default_constructible_v<mapping_type>
+    && is_nothrow_default_constructible_v<accessor_type>)
       : __base()
   {}
 
@@ -149,8 +147,7 @@ public:
   static constexpr bool __can_construct_from_handle_and_variadic =
     (__matches_dynamic_rank<sizeof...(_OtherIndexTypes)> || __matches_static_rank<sizeof...(_OtherIndexTypes)>)
     && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
-    && _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
-    && _CCCL_TRAIT(is_default_constructible, accessor_type);
+    && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>;
 
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES(__can_construct_from_handle_and_variadic<_OtherIndexTypes...>)
@@ -160,10 +157,9 @@ public:
 
   template <class _OtherIndexType>
   static constexpr bool __is_constructible_from_index_type =
-    _CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type)
-    && _CCCL_TRAIT(is_nothrow_constructible, index_type, const _OtherIndexType&)
-    && _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
-    && _CCCL_TRAIT(is_default_constructible, accessor_type);
+    is_convertible_v<const _OtherIndexType&, index_type>
+    && is_nothrow_constructible_v<index_type, const _OtherIndexType&> && is_constructible_v<mapping_type, extents_type>
+    && is_default_constructible_v<accessor_type>;
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
@@ -190,14 +186,14 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy, class _Mapping2 = mapping_type)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _AccessorPolicy2)
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _Mapping2, const extents_type&))
+  _CCCL_REQUIRES(
+    is_default_constructible_v<_AccessorPolicy2> _CCCL_AND is_constructible_v<_Mapping2, const extents_type&>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const extents_type& __exts)
       : __base(_CUDA_VSTD::move(__p), __exts)
   {}
 
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _AccessorPolicy2))
+  _CCCL_REQUIRES(is_default_constructible_v<_AccessorPolicy2>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m)
       : __base(_CUDA_VSTD::move(__p), __m)
   {}
@@ -208,13 +204,13 @@ public:
 
   template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
   static constexpr bool __is_convertible_from =
-    _CCCL_TRAIT(is_constructible, mapping_type, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&)
-    && _CCCL_TRAIT(is_constructible, accessor_type, const _OtherAccessor&);
+    is_constructible_v<mapping_type, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&>
+    && is_constructible_v<accessor_type, const _OtherAccessor&>;
 
   template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
   static constexpr bool __is_implicit_convertible_from =
-    _CCCL_TRAIT(is_convertible, const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type)
-    && _CCCL_TRAIT(is_convertible, const _OtherAccessor&, accessor_type);
+    is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>
+    && is_convertible_v<const _OtherAccessor&, accessor_type>;
 
   _CCCL_TEMPLATE(class _OtherElementType, class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor)
   _CCCL_REQUIRES(__is_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor> //
@@ -222,9 +218,9 @@ public:
   _CCCL_API constexpr mdspan(const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
       : __base(__other.data_handle(), __other.mapping(), __other.accessor())
   {
-    static_assert(_CCCL_TRAIT(is_constructible, data_handle_type, const typename _OtherAccessor::data_handle_type&),
+    static_assert(is_constructible_v<data_handle_type, const typename _OtherAccessor::data_handle_type&>,
                   "mdspan: incompatible data_handle_type for mdspan construction");
-    static_assert(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents),
+    static_assert(is_constructible_v<extents_type, _OtherExtents>,
                   "mdspan: incompatible extents for mdspan construction");
 
     if constexpr (extents_type::rank() != 0)
@@ -253,9 +249,9 @@ public:
     const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
       : __base(__other.data_handle(), __other.mapping(), __other.accessor())
   {
-    static_assert(_CCCL_TRAIT(is_constructible, data_handle_type, const typename _OtherAccessor::data_handle_type&),
+    static_assert(is_constructible_v<data_handle_type, const typename _OtherAccessor::data_handle_type&>,
                   "mdspan: incompatible data_handle_type for mdspan construction");
-    static_assert(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents),
+    static_assert(is_constructible_v<extents_type, _OtherExtents>,
                   "mdspan: incompatible extents for mdspan construction");
 
     if constexpr (extents_type::rank() != 0)
@@ -297,8 +293,8 @@ public:
   }
 #else
   _CCCL_TEMPLATE(class _OtherIndexType)
-  _CCCL_REQUIRES((extents_type::rank() == 1) _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherIndexType, index_type)
-                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _OtherIndexType))
+  _CCCL_REQUIRES((extents_type::rank() == 1) _CCCL_AND is_convertible_v<_OtherIndexType, index_type> _CCCL_AND
+                   is_nothrow_constructible_v<index_type, _OtherIndexType>)
   [[nodiscard]] _CCCL_API constexpr reference operator[](_OtherIndexType __index) const
   {
     return accessor().access(data_handle(), mapping()(static_cast<index_type>(_CUDA_VSTD::move(__index))));
@@ -328,8 +324,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherIndexType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type)
-                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, const _OtherIndexType&))
+  _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
+                   is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
   [[nodiscard]] _CCCL_API constexpr reference
   operator[](const array<_OtherIndexType, extents_type::rank()>& __indices) const
   {
@@ -337,8 +333,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherIndexType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type)
-                   _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, const _OtherIndexType&))
+  _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
+                   is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
   [[nodiscard]] _CCCL_API constexpr reference operator[](span<_OtherIndexType, extents_type::rank()> __indices) const
   {
     return accessor().access(data_handle(), __op_bracket(__indices, make_index_sequence<rank()>()));
@@ -459,17 +455,16 @@ public:
 };
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
-_CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0)
-                 _CCCL_AND(_CCCL_TRAIT(is_convertible, _OtherIndexTypes, size_t) && ... && true))
+_CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0) _CCCL_AND(is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
 _CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _OtherIndexTypes...)
   -> mdspan<_ElementType, extents<size_t, __maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_pointer, remove_reference_t<_Pointer>))
+_CCCL_REQUIRES(is_pointer_v<remove_reference_t<_Pointer>>)
 _CCCL_HOST_DEVICE mdspan(_Pointer&&) -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_array, _CArray) _CCCL_AND(rank_v<_CArray> == 1))
+_CCCL_REQUIRES(is_array_v<_CArray> _CCCL_AND(rank_v<_CArray> == 1))
 _CCCL_HOST_DEVICE mdspan(_CArray&) -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>

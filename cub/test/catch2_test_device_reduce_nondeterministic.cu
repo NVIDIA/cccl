@@ -20,7 +20,13 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/generators.h>
 
-using float_type_list = c2h::type_list<float, double>;
+using float_type_list =
+  c2h::type_list<float
+#if _CCCL_PTX_ARCH() >= 600
+                 ,
+                 double
+#endif
+                 >;
 
 template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
 struct AgentReducePolicy
@@ -67,7 +73,9 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   using type          = typename c2h::get<0, TestType>;
   const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
-  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
+
+  type amplitude = static_cast<type>(1);
+  c2h::gen(C2H_SEED(2), d_input, -amplitude / (num_items + 1), 2 * amplitude / (num_items + 1));
 
   c2h::device_vector<type> d_output(1);
 
@@ -82,7 +90,13 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
   // TODO: Use std::reduce once we drop support for GCC 7 and 8
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
+  // relative round-off error of recursive summation is proportional to n * type::epsilon,
+  // see https://epubs.siam.org/doi/epdf/10.1137/19M1257780
+
+  type relative_err = std::min((num_items + 1) * std::numeric_limits<type>::epsilon(), static_cast<type>(1));
+  c2h::host_vector<type> h_actual = d_output;
+
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, h_actual, relative_err);
 }
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
@@ -276,7 +290,15 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
-using test_types = c2h::type_list<int32_t, unsigned int, float, double>;
+using test_types =
+  c2h::type_list<int32_t,
+                 unsigned int,
+                 float
+#if _CCCL_PTX_ARCH() >= 600
+                 ,
+                 double
+#endif
+                 >;
 
 C2H_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
          "[reduce][nondeterministic]",
