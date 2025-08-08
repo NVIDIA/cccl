@@ -52,7 +52,7 @@ THRUST_NAMESPACE_END
 // pointer's constructor shadowing its nested pointer type. We do this before pointer is defined so the specialization
 // is correctly used inside the definition.
 template <typename Element, typename Tag, typename Reference, typename Derived>
-struct ::std::iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>>
+struct std::iterator_traits<THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>>
 {
   using pointer           = THRUST_NS_QUALIFIER::pointer<Element, Tag, Reference, Derived>;
   using iterator_category = typename pointer::iterator_category;
