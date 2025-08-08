@@ -277,6 +277,17 @@ template <class Iter, class Fn>
 struct iterator_traversal<::cuda::transform_iterator<Iter, Fn>> : iterator_traversal<Iter>
 {};
 
+template <class... Iterators>
+struct iterator_system<::cuda::zip_iterator<Iterators...>>
+{
+  using type = detail::minimum_system_t<iterator_system_t<Iterators>...>;
+};
+template <class... Iterators>
+struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
+{
+  using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
+};
+
 THRUST_NAMESPACE_END
 
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
