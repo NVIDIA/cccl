@@ -51,7 +51,7 @@ inline size_t customHash(size_t value)
 
 } // end namespace reserved
 
-/// \cond DO_NOT_DOCUMENT
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /* TODO : introduce a policy to decide whether or not to use threads, and the thread-index mapping (currently random) */
 template <typename context_t, typename exec_place_t, bool use_threads = true>
 inline void loop_dispatch(
@@ -120,6 +120,7 @@ inline void loop_dispatch(
     }
   }
 }
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /*
  * Overload of loop_dispatch which automatically selects the partitioning scope
