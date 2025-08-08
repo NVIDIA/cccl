@@ -82,5 +82,3 @@ device_ptr<T> device_malloc(const std::size_t n)
  */
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/device_malloc.inl>
