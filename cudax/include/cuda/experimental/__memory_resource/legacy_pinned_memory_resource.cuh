@@ -99,12 +99,10 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(legacy_pinned_memory_resource const&, host_accessible) noexcept {}
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept

@@ -92,14 +92,12 @@ public:
       : __memory_resource_base(__pool.get())
   {}
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
 
   using default_queries = properties_list<device_accessible, host_accessible>;
-#  endif // _CCCL_DOXYGEN_INVOKED
 };
 
 static_assert(_CUDA_VMR::resource_with<pinned_memory_resource, device_accessible>, "");
