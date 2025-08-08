@@ -196,10 +196,10 @@ public:
    */
   template <typename... P>
   explicit thread_hierarchy_spec(const P&... p)
-      : inner(only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
-      , dynamic_width(only_convertible_or(decltype(dynamic_width)(), p...))
-      , sync_scope(only_convertible_or(hw_scope::all, p...))
-      , mem_bytes(only_convertible_or(mem(0), p...))
+      : inner(reserved::only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
+      , dynamic_width(reserved::only_convertible_or(decltype(dynamic_width)(), p...))
+      , sync_scope(reserved::only_convertible_or(hw_scope::all, p...))
+      , mem_bytes(reserved::only_convertible_or(mem(0), p...))
   {
     shuffled_args_check<P...>(inner, dynamic_width, sync_scope, mem_bytes);
     if constexpr (sizeof...(lower_levels) > 0)
