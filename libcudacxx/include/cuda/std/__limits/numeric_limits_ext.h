@@ -662,39 +662,18 @@ public:
   static constexpr int digits10     = 33;
   static constexpr int max_digits10 = 36;
 
-#  if _CCCL_HAS_FLOAT128_LITERAL()
   _CCCL_API static constexpr type min() noexcept
   {
     return _CCCL_FLOAT128_LITERAL(3.36210314311209350626267781732175260e-4932);
   }
-#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type min() noexcept
-  {
-    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x0001'0000'0000'0000} << 64);
-  }
-#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
-#  if _CCCL_HAS_FLOAT128_LITERAL()
   _CCCL_API static constexpr type max() noexcept
   {
     return _CCCL_FLOAT128_LITERAL(1.18973149535723176508575932662800702e+4932);
   }
-#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type max() noexcept
-  {
-    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7ffe'ffff'ffff'ffff} << 64 | 0xffff'ffff'ffff'ffff);
-  }
-#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
-#  if _CCCL_HAS_FLOAT128_LITERAL()
   _CCCL_API static constexpr type lowest() noexcept
   {
     return -max();
   }
-#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type lowest() noexcept
-  {
-    return -max();
-  }
-#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
@@ -752,17 +731,10 @@ public:
     return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
   }
 #  endif // ^^^ !_CCCL_BUILTIN_NANSF128 ^^^
-#  if _CCCL_HAS_FLOAT128_LITERAL()
   _CCCL_API static constexpr type denorm_min() noexcept
   {
     return _CCCL_FLOAT128_LITERAL(6.47517511943802511092443895822764655e-4966);
   }
-#  else // ^^^ _CCCL_HAS_FLOAT128_LITERAL() ^^^ // vvv !_CCCL_HAS_FLOAT128_LITERAL() vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type denorm_min() noexcept
-  {
-    return _CUDA_VSTD::bit_cast<type>(__uint128_t{0x1});
-  }
-#  endif // ^^^ !_CCCL_HAS_FLOAT128_LITERAL() ^^^
 
   static constexpr bool is_iec559  = true;
   static constexpr bool is_bounded = true;
