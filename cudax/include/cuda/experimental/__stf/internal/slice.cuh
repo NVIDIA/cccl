@@ -66,7 +66,10 @@ class shape_of;
  *
  * In debug mode (i.e., `NDEBUG` is not defined) all uses of `operator()()` are bounds-checked by means of `assert`.
  */
-struct layout_stride : ::cuda::std::layout_stride
+struct layout_stride
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+    : ::cuda::std::layout_stride
+#endif
 {
   template <class Extents>
   struct mapping : ::cuda::std::layout_stride::mapping<Extents>
