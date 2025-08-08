@@ -544,6 +544,18 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
 
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
+
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+    }
+
+    return;
+  }
+
   // Thread block type for reducing input tiles
   using AgentReduceT = detail::reduce::AgentReduce<
     typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
