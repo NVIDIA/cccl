@@ -58,9 +58,7 @@ inline access_mode operator|(access_mode lhs, access_mode rhs)
   return access_mode(as_underlying(lhs) | as_underlying(rhs));
 }
 
-/**
- * @brief In-place version of `operator|`.
- */
+//! @brief In-place version of `operator|`
 inline access_mode& operator|=(access_mode& lhs, access_mode rhs)
 {
   return lhs = lhs | rhs;
