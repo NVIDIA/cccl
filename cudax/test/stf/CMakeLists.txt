@@ -41,7 +41,6 @@ set(stf_test_sources
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
-  local_stf/legacy_to_stf_epoch.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
   places/managed.cu
