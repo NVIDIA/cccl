@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <thread_scope _Sco,
           typename _CompF,
           bool _Is_mbarrier = (_Sco == thread_scope_block)
-                           && _CCCL_TRAIT(_CUDA_VSTD::is_same, _CompF, _CUDA_VSTD::__empty_completion)>
+                           && _CUDA_VSTD::is_same_v<_CompF, _CUDA_VSTD::__empty_completion>>
 _CCCL_API inline bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
 {
   NV_IF_ELSE_TARGET(

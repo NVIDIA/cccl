@@ -533,15 +533,14 @@ using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
 template <class _Fn, class... _Args>
 _CCCL_API constexpr invoke_result_t<_Fn, _Args...>
-invoke(_Fn&& __f, _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Fn, _Args...))
+invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
 {
   return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
 _CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_invocable_r, _Ret, _Fn, _Args...))
-_CCCL_API constexpr _Ret invoke_r(_Fn&& __f,
-                                  _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_invocable_r, _Ret, _Fn, _Args...))
+_CCCL_REQUIRES(is_invocable_r_v<_Ret, _Fn, _Args...>)
+_CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>)
 {
   return __invoke_void_return_wrapper<_Ret>::__call(
     _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);

@@ -41,8 +41,7 @@ inline constexpr bool __is_integer_representable_v =
 //! @return An overflow_result object containing the casted number and a boolean indicating whether an overflow
 //! occurred
 _CCCL_TEMPLATE(class _To, class _From)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _To)
-                 _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _From))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_To> _CCCL_AND _CUDA_VSTD::__cccl_is_cv_integer_v<_From>)
 [[nodiscard]] _CCCL_API constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
 {
   bool __overflow = false;

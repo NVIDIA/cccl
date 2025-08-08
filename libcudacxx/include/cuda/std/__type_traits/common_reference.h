@@ -97,7 +97,7 @@ using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>
 //    If A and B are both lvalue reference types, COMMON-REF(A, B) is
 //    COND-RES(COPYCV(X, Y)&, COPYCV(Y, X)&) if that type exists and is a reference type.
 template <class _Ap, class _Bp>
-struct __common_ref<_Ap&, _Bp&, enable_if_t<_CCCL_TRAIT(is_reference, __cv_cond_res<_Ap, _Bp>)>>
+struct __common_ref<_Ap&, _Bp&, enable_if_t<is_reference_v<__cv_cond_res<_Ap, _Bp>>>>
 {
   using __type = __cv_cond_res<_Ap, _Bp>;
 };
@@ -113,10 +113,10 @@ struct __common_ref_rr
 {};
 
 template <class _Ap, class _Bp>
-struct __common_ref_rr<_Ap&&,
-                       _Bp&&,
-                       enable_if_t<_CCCL_TRAIT(is_convertible, _Ap&&, __common_ref_C<_Ap, _Bp>)
-                                   && _CCCL_TRAIT(is_convertible, _Bp&&, __common_ref_C<_Ap, _Bp>)>>
+struct __common_ref_rr<
+  _Ap&&,
+  _Bp&&,
+  enable_if_t<is_convertible_v<_Ap&&, __common_ref_C<_Ap, _Bp>> && is_convertible_v<_Bp&&, __common_ref_C<_Ap, _Bp>>>>
 {
   using __type = __common_ref_C<_Ap, _Bp>;
 };
@@ -136,7 +136,7 @@ struct __common_ref_lr
 {};
 
 template <class _Ap, class _Bp>
-struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<_CCCL_TRAIT(is_convertible, _Ap&&, __common_ref_D<_Ap, _Bp>)>>
+struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<is_convertible_v<_Ap&&, __common_ref_D<_Ap, _Bp>>>>
 {
   using __type = __common_ref_D<_Ap, _Bp>;
 };
@@ -202,7 +202,7 @@ template <class _Tp, class _Up>
 struct __common_reference_sub_bullet1<
   _Tp,
   _Up,
-  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<_CCCL_TRAIT(is_reference, _Tp) && _CCCL_TRAIT(is_reference, _Up)>>>
+  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>>>>
 {
   using type = __common_ref_t<_Tp, _Up>;
 };

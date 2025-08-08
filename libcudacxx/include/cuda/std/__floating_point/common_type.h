@@ -38,8 +38,7 @@ using __fp_common_type_t =
 
 template <class _Lhs, class _Rhs>
 using __fp_int_ext_common_type_t =
-  __fp_common_type_t<conditional_t<_CCCL_TRAIT(is_integral, _Lhs), double, _Lhs>,
-                     conditional_t<_CCCL_TRAIT(is_integral, _Rhs), double, _Rhs>>;
+  __fp_common_type_t<conditional_t<is_integral_v<_Lhs>, double, _Lhs>, conditional_t<is_integral_v<_Rhs>, double, _Rhs>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
