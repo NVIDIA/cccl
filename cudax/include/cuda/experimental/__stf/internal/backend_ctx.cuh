@@ -1155,7 +1155,7 @@ public:
   {
     if constexpr (::std::is_integral_v<S>)
     {
-      return parallel_for(mv(p), box(e_place), mv(shape), mv(deps)...);
+      return parallel_for(mv(p), mv(e_place), box(shape), mv(deps)...);
     }
     else
     {
