@@ -327,6 +327,11 @@ python_paths = [
     "${root}/../python/cuda_cccl"
 ]
 
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "cub", "../_build/docs/cub/latest" ],
+]
+
 [repo_docs.projects.cudax]
 name = "Cudax: Experimental new features"
 docs_root = "cudax"
