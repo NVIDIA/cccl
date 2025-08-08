@@ -14,8 +14,7 @@ social_media     = [
     [ "github", "https://github.com/NVIDIA/cccl" ],
     [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
-
-sphinx_version = "4.5.0.2-py3.10-${platform}"
+copyright_start = 2025
 
 enhanced_search_enabled = true
 api_output_directory = "api"
@@ -31,11 +30,11 @@ project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python", "cccl"
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
-    [ "cudax", "_build/docs/cudax/latest" ],
-    [ "cub", "_build/docs/cub/latest" ],
-    [ "thrust", "_build/docs/thrust/latest" ],
-    [ "python", "_build/docs/python/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
+    [ "cudax", "../_build/docs/cudax/latest" ],
+    [ "cub", "../_build/docs/cub/latest" ],
+    [ "thrust", "../_build/docs/thrust/latest" ],
+    [ "python", "../_build/docs/python/latest" ],
 ]
 
 # doxygen sometimes gets confused by macros. the array below allows the user to
@@ -157,7 +156,7 @@ sphinx_exclude_patterns = []
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
 ]
 
 # list of files from which to extract documentation.  if a directory is specified,
@@ -252,8 +251,8 @@ sphinx_exclude_patterns = []
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
-    [ "cub", "_build/docs/cub/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
+    [ "cub", "../_build/docs/cub/latest" ],
 ]
 
 # list of files from which to extract documentation.  if a directory is specified,
@@ -346,7 +345,7 @@ sphinx_exclude_patterns = []
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
 ]
 
 doxygen_input = [
