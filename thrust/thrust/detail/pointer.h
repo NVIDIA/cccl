@@ -70,22 +70,22 @@ struct pointer_base
 {
   // void pointers should have no element type
   // note that we remove_cv from the Element type to get the value_type
-  using value_type = typename eval_if<::cuda::std::is_void<::cuda::std::remove_cvref_t<Element>>::value,
+  using value_type = typename eval_if<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
                                       ::cuda::std::type_identity<void>,
                                       ::cuda::std::remove_cv<Element>>::type;
 
   // if no Derived type is given, just use pointer
   using derived_type =
-    typename eval_if<::cuda::std::is_same<Derived, use_default>::value,
+    typename eval_if<::cuda::std::is_same_v<Derived, use_default>,
                      ::cuda::std::type_identity<pointer<Element, Tag, Reference, Derived>>,
                      ::cuda::std::type_identity<Derived>>::type;
 
   // void pointers should have no reference type
   // if no Reference type is given, just use reference
   using reference_type =
-    typename eval_if<::cuda::std::is_void<::cuda::std::remove_cvref_t<Element>>::value,
+    typename eval_if<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
                      ::cuda::std::type_identity<void>,
-                     eval_if<::cuda::std::is_same<Reference, use_default>::value,
+                     eval_if<::cuda::std::is_same_v<Reference, use_default>,
                              ::cuda::std::type_identity<reference<Element, derived_type>>,
                              ::cuda::std::type_identity<Reference>>>::type;
 
