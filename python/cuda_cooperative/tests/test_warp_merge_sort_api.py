@@ -6,7 +6,11 @@ import numba
 import numpy as np
 from numba import cuda
 
+# example-begin imports
 import cuda.cooperative.experimental as cudax
+
+numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+# example-end imports
 
 
 def test_warp_merge_sort():
