@@ -321,7 +321,6 @@ public:
     return __x.base() == __y.base();
   }
 
-#if _CCCL_STD_VER <= 2017
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
@@ -329,7 +328,6 @@ public:
   {
     return __x.base() != __y.base();
   }
-#endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
