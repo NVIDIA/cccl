@@ -22,6 +22,7 @@ dependencies = [
   "numpy",
   "cuda-bindings>=12.9.1,<13.0.0",
   "numba-cuda>=0.18.0",
+  "cuda-core",
   "cupy-cuda12x",
 ]
 dynamic = ["version"]
