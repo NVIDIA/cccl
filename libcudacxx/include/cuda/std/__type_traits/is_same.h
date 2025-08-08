@@ -70,10 +70,10 @@ inline constexpr bool is_same_v<_Tp, _Tp> = true;
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = bool_constant<_CCCL_TRAIT(is_same, _Tp, _Up)>;
+using _IsSame = bool_constant<is_same_v<_Tp, _Up>>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!_CCCL_TRAIT(is_same, _Tp, _Up)>;
+using _IsNotSame = bool_constant<!is_same_v<_Tp, _Up>>;
 
 #endif // defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 

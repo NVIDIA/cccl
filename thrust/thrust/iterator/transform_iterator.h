@@ -266,18 +266,18 @@ public:
   _CCCL_HOST_DEVICE transform_iterator& operator=(transform_iterator const& other)
   {
     super_t::operator=(other);
-    if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_assignable, AdaptableUnaryFunction))
+    if constexpr (::cuda::std::is_copy_assignable_v<AdaptableUnaryFunction>)
     {
       m_f = other.m_f;
     }
-    else if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction))
+    else if constexpr (::cuda::std::is_copy_constructible_v<AdaptableUnaryFunction>)
     {
       ::cuda::std::__destroy_at(&m_f);
       ::cuda::std::__construct_at(&m_f, other.m_f);
     }
     else
     {
-      static_assert(_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction),
+      static_assert(::cuda::std::is_copy_constructible_v<AdaptableUnaryFunction>,
                     "Cannot use thrust::transform_iterator with a functor that is neither copy constructible nor "
                     "copy assignable");
     }

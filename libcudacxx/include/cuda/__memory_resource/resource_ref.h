@@ -55,7 +55,7 @@ constexpr bool _IsSmall() noexcept
 {
   return (sizeof(_Resource) <= sizeof(_AnyResourceStorage)) //
       && (alignof(_AnyResourceStorage) % alignof(_Resource) == 0)
-      && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_move_constructible, _Resource);
+      && _CUDA_VSTD::is_nothrow_move_constructible_v<_Resource>;
 }
 
 template <class _Resource>
