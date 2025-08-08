@@ -158,7 +158,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API inline double fabs(_Tp __val) noexcept
 {
   return _CUDA_VSTD::fabs(static_cast<double>(__val));

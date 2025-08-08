@@ -100,15 +100,15 @@ struct __is_nothrow_swappable;
 
 template <class _Tp>
 using __swap_result_t _CCCL_NODEBUG_ALIAS =
-  enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value && _CCCL_TRAIT(is_move_constructible, _Tp)
-              && _CCCL_TRAIT(is_move_assignable, _Tp)>;
+  enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value
+              && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>>;
 
 // we use type_identity_t<_Tp> as second parameter, to avoid ambiguity with std::swap, which will thus be preferred by
 // overload resolution (which is ok since std::swap is only considered when explicitly called, or found by ADL for types
 // from std::)
 template <class _Tp>
 _CCCL_API constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
-  _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
+  is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>);
 
 template <class _Tp, size_t _Np>
 _CCCL_API constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
@@ -118,7 +118,7 @@ namespace __detail
 {
 // ALL generic swap overloads MUST already have a declaration available at this point.
 
-template <class _Tp, class _Up = _Tp, bool _NotVoid = !_CCCL_TRAIT(is_void, _Tp) && !_CCCL_TRAIT(is_void, _Up)>
+template <class _Tp, class _Up = _Tp, bool _NotVoid = !is_void_v<_Tp> && !is_void_v<_Up>>
 struct __swappable_with
 {
   template <class _LHS, class _RHS>

@@ -74,14 +74,14 @@ using __select_traits = conditional_t<__is_primary_cccl_template<_Iter>::value, 
 // libstdc++ uses `is_base_of`
 template <class _Iter, bool>
 inline constexpr bool __is_primary_std_template_impl =
-  _CCCL_TRAIT(is_base_of, ::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>);
+  is_base_of_v<::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>>;
 template <class _Iter>
 inline constexpr bool __is_primary_std_template_impl<_Iter, true> = true;
 
 // This is needed because with a defaulted template argument subsumption fails for C++20 for concepts
 // that involve incrementable_traits
 template <class _Iter>
-struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>>
+struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, is_pointer_v<_Iter>>>
 {};
 #  elif defined(_LIBCPP_VERSION)
 // libc++ uses the same mechanism than we do with __primary_template
@@ -93,14 +93,14 @@ using __is_primary_std_template = _IsValidExpansion<__test_for_primary_template,
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20
 template <class _Iter, bool>
 inline constexpr bool __is_primary_std_template_impl =
-  _CCCL_TRAIT(is_base_of, ::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>);
+  is_base_of_v<::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>>;
 template <class _Iter>
 inline constexpr bool __is_primary_std_template_impl<_Iter, true> = true;
 
 // This is needed because with a defaulted template argument subsumption fails for C++20 for concepts
 // that involve incrementable_traits
 template <class _Iter>
-struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>>
+struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, is_pointer_v<_Iter>>>
 {};
 #  endif // _MSVC_STL_VERSION || _IS_WRS
 
