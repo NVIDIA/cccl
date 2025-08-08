@@ -52,8 +52,7 @@ public:
 
   static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
 
-  static_assert(_CCCL_TRAIT(is_object, _ElementType) && !_CCCL_TRAIT(is_abstract, _ElementType)
-                  && !_CCCL_TRAIT(is_array, _ElementType),
+  static_assert(is_object_v<_ElementType> && !is_abstract_v<_ElementType> && !is_array_v<_ElementType>,
                 "_ElementType must be a complete object type that is neither an abstract class type nor an array "
                 "type.");
 
@@ -65,16 +64,16 @@ public:
   _CCCL_HIDE_FROM_ABI aligned_accessor() noexcept = default;
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherByteAlignment)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[])
-                   _CCCL_AND((_OtherByteAlignment >= byte_alignment)))
+  _CCCL_REQUIRES(
+    is_convertible_v<_OtherElementType (*)[], element_type (*)[]> _CCCL_AND((_OtherByteAlignment >= byte_alignment)))
   _CCCL_API constexpr aligned_accessor(aligned_accessor<_OtherElementType, _OtherByteAlignment>) noexcept {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _CCCL_REQUIRES(is_convertible_v<_OtherElementType (*)[], element_type (*)[]>)
   _CCCL_API constexpr explicit aligned_accessor(default_accessor<_OtherElementType>) noexcept {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _CCCL_REQUIRES(is_convertible_v<_OtherElementType (*)[], element_type (*)[]>)
   _CCCL_API constexpr operator default_accessor<_OtherElementType>() const noexcept
   {
     return {};
