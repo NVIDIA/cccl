@@ -21,16 +21,16 @@ using env_t     = cudax::env_t<cuda::mr::device_accessible>;
 
 struct test_resource
 {
-  void* allocate(size_t, size_t)
+  void* allocate_sync(size_t, size_t)
   {
     return nullptr;
   }
-  void* allocate_async(size_t, size_t, cuda::stream_ref)
+  void* allocate(cuda::stream_ref, size_t, size_t)
   {
     return nullptr;
   }
-  void deallocate(void*, size_t, size_t) {}
-  void deallocate_async(void*, size_t, size_t, cuda::stream_ref) {}
+  void deallocate_sync(void*, size_t, size_t) {}
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
 
   constexpr bool operator==(const test_resource&) const noexcept
   {
