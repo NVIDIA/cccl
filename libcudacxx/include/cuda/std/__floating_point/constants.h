@@ -204,12 +204,12 @@ template <class _Tp>
   {
     return static_cast<_Tp>(0x1.fffffffffffffp+1023);
   }
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128_LITERAL()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
     return static_cast<_Tp>(_CCCL_FLOAT128_LITERAL(0x1.ffffffffffffffffffffffffffffp+16383));
   }
-#endif // _CCCL_HAS_FLOAT128
+#endif // _CCCL_HAS_FLOAT128_LITERAL()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__bfloat16)
   {
     return static_cast<_Tp>(0x1.fep+127);
@@ -254,12 +254,12 @@ template <class _Tp>
   {
     return static_cast<_Tp>(0x1p-1022);
   }
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128_LITERAL()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
     return static_cast<_Tp>(_CCCL_FLOAT128_LITERAL(0x1p-16382));
   }
-#endif // _CCCL_HAS_FLOAT128()
+#endif // _CCCL_HAS_FLOAT128_LITERAL()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__bfloat16)
   {
     return static_cast<_Tp>(0x1p-126f);
@@ -298,12 +298,12 @@ template <class _Tp>
   {
     return static_cast<_Tp>(0x1p-1074);
   }
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128_LITERAL()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
   {
     return static_cast<_Tp>(_CCCL_FLOAT128_LITERAL(0x1p-16494));
   }
-#endif // _CCCL_HAS_FLOAT128()
+#endif // _CCCL_HAS_FLOAT128_LITERAL()
   else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__bfloat16)
   {
     return static_cast<_Tp>(0x1p-133f);
