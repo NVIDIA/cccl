@@ -1,6 +1,8 @@
 import numpy as np
 from numba import cuda
+
 import cuda.cccl.experimental.stf as cudastf
+
 
 @cudastf.jit
 def laplacian_5pt_kernel(u_in, u_out, dx, dy):

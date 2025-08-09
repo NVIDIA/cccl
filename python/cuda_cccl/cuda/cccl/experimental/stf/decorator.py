@@ -1,7 +1,10 @@
-from numba import cuda
 import numba
+from numba import cuda
+
 from cuda.cccl.experimental.stf import context, dep, exec_place
+
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
+
 
 class stf_kernel_decorator:
     def __init__(self, pyfunc, jit_args, jit_kwargs):
@@ -34,13 +37,15 @@ class stf_kernel_decorator:
 
     def __call__(self, *args, **kwargs):
         if self._launch_cfg is None:
-            raise RuntimeError("launch configuration missing – use kernel[grid, block, ctx](...)")
+            raise RuntimeError(
+                "launch configuration missing – use kernel[grid, block, ctx](...)"
+            )
 
         gridDim, blockDim, ctx, exec_pl = self._launch_cfg
 
         dep_items = []
         for i, a in enumerate(args):
-            print(f'got one arg {a} is dep ? {isinstance(a, dep)}')
+            print(f"got one arg {a} is dep ? {isinstance(a, dep)}")
             if isinstance(a, dep):
                 dep_items.append((i, a))
 
@@ -51,12 +56,14 @@ class stf_kernel_decorator:
             dev_args = list(args)
             print(dev_args)
             for dep_index, (pos, _) in enumerate(dep_items):
-                print(f'set arg {dep_index} at position {pos}')
+                print(f"set arg {dep_index} at position {pos}")
                 dev_args[pos] = t.get_arg_numba(dep_index)
 
             if self._compiled_kernel is None:
                 print("compile kernel")
-                self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(self._pyfunc)
+                self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(
+                    self._pyfunc
+                )
 
             nb_stream = cuda.external_stream(t.stream_ptr())
             self._compiled_kernel[gridDim, blockDim, nb_stream](*dev_args, **kwargs)

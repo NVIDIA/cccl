@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import numba
 import numpy as np
 from numba import cuda
-import numba
+
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 from cuda.cccl.experimental.stf._stf_bindings_impl import (
