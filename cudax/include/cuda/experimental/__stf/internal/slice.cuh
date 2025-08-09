@@ -988,7 +988,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 //!       If neither is available, the function will print an error and terminate the program.
 //! @note If the mdspan is empty, the function returns 0.
 template <typename E, typename X, typename L, typename A, size_t... i>
-size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i...> = ::std::index_sequence<>())
+size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i...> = {})
 {
   using Slice = mdspan<E, X, L, A>;
   if constexpr (!reserved::has_std_hash_v<E> && !reserved::has_cudastf_hash_v<E>)
@@ -1054,7 +1054,7 @@ _CCCL_DIAG_POP
 template <typename E, typename X, typename L, typename A, size_t... i>
 void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
                ::std::ostream& file        = ::std::cerr,
-               ::std::index_sequence<i...> = ::std::index_sequence<>())
+               ::std::index_sequence<i...> = {})
 {
   using Slice = mdspan<E, X, L, A>;
   if constexpr (reserved::has_ostream_operator<E>::value)
