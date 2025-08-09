@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_FWD_H
-#define __CUDAX_DETAIL_BASIC_ANY_FWD_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,42 +21,38 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef> // for max_align_t
 #include <cuda/std/cstdint> // for uint8_t
 
-#include <cuda/experimental/__detail/utility.cuh> // IWYU pragma: keep export
-
-// Some functions defined here have their addresses appear in public types
-// (e.g., in `cudax::overrides_for` specializations). If the function is declared
-// `__attribute__((visibility("hidden")))`, and if the address appears, say, in
-// the type of a member of a class that is declared
-// `__attribute__((visibility("default")))`, GCC complains bitterly. So we
-// avoid declaring those functions `hidden`. Instead of the typical `_CCCL_HOST_API`
-// macro, we use `_CUDAX_PUBLIC_API` for those functions.
-#define _CUDAX_PUBLIC_API _CCCL_HOST
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <class _Interface>
 struct __ireference;
 
 template <class _Interface>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any;
 
 template <class _Interface>
-struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>;
+struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>;
 
 template <class _Interface>
-struct basic_any<_Interface*>;
+struct __basic_any<_Interface*>;
 
 template <class _Interface>
-struct basic_any<_Interface&>;
+struct __basic_any<_Interface&>;
+
+template <auto _Value>
+using __constant = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
+
+template <class _InterfaceOrModel, class... _VirtualFnsOrOverrides>
+struct __overrides_list;
 
 template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
-struct overrides_for;
+using __overrides_for = __overrides_list<_InterfaceOrModel, __constant<_VirtualFnsOrOverrides>...>;
 
 template <class _Interface, auto... _Mbrs>
 struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable;
@@ -69,30 +65,30 @@ template <size_t NbrBases>
 struct __rtti_ex;
 
 template <class...>
-struct extends;
+struct __extends;
 
-template <template <class...> class, class = extends<>, size_t = 0, size_t = 0>
-struct interface;
+template <template <class...> class, class = __extends<>, size_t = 0, size_t = 0>
+struct __basic_interface;
 
 template <class _Interface, class... _Super>
 using __rebind_interface _CCCL_NODEBUG_ALIAS = typename _Interface::template __rebind<_Super...>;
 
-struct iunknown;
+struct __iunknown;
 
 template <class...>
-struct __iset;
+struct __iset_;
 
 template <class...>
 struct __iset_vptr;
 
 template <class...>
-struct imovable;
+struct __imovable;
 
 template <class...>
-struct icopyable;
+struct __icopyable;
 
 template <class...>
-struct iequality_comparable;
+struct __iequality_comparable;
 
 template <class... _Tp>
 using __tag _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list_ptr<_Tp...>;
@@ -103,13 +99,13 @@ struct __ctag_;
 template <auto... _Is>
 using __ctag _CCCL_NODEBUG_ALIAS = __ctag_<_Is...>*;
 
-constexpr size_t __word                 = sizeof(void*);
-constexpr size_t __default_buffer_size  = 3 * __word;
-constexpr size_t __default_buffer_align = alignof(_CUDA_VSTD::max_align_t);
+constexpr size_t __word                       = sizeof(void*);
+constexpr size_t __default_small_object_size  = 3 * __word;
+constexpr size_t __default_small_object_align = alignof(_CUDA_VSTD::max_align_t);
 
 using __make_type_list _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>;
 
-[[noreturn]] _CCCL_HOST_API void __throw_bad_any_cast();
+[[noreturn]] _CCCL_API void __throw_bad_any_cast();
 
 enum class __vtable_kind : uint8_t
 {
@@ -125,8 +121,8 @@ extern _Interface __remove_ireference_v; // specialized in interfaces.cuh
 template <class _Interface>
 using __remove_ireference_t _CCCL_NODEBUG_ALIAS = decltype(__remove_ireference_v<_Interface>);
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_FWD_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H

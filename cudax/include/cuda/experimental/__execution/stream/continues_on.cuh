@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__type_traits/is_specialization_of.h>
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/forward_like.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -88,7 +90,7 @@ struct __continues_on_t
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr>{__rcvr_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_HOST_API void start() noexcept
     {
@@ -154,7 +156,7 @@ struct __continues_on_t
 
     // If the child sender has not already been adapted to be a stream sender,
     // we adapt it now.
-    if constexpr (!__is_specialization_of_v<decltype(__child), __stream::__sndr_t>)
+    if constexpr (!::cuda::__is_specialization_of_v<decltype(__child), __stream::__sndr_t>)
     {
       auto __adapted_sndr    = __stream::__adapt(static_cast<__child_t&&>(__child));
       using __adapted_sndr_t = decltype(__adapted_sndr);

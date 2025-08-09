@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/execution.cuh>
 
 #include "testing.cuh" // IWYU pragma: keep
@@ -35,7 +37,7 @@ private:
   };
 
   template <class Rcvr>
-  struct opstate_t : cudax::__immovable
+  struct opstate_t : cuda::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 

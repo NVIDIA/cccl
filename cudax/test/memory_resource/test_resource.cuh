@@ -222,5 +222,5 @@ struct test_resource
 using big_resource   = test_resource<uintptr_t>;
 using small_resource = test_resource<unsigned int>;
 
-static_assert(sizeof(big_resource) > cuda::experimental::__default_buffer_size);
-static_assert(sizeof(small_resource) <= cuda::experimental::__default_buffer_size);
+static_assert(sizeof(big_resource) > cuda::__default_small_object_size);
+static_assert(sizeof(small_resource) <= cuda::__default_small_object_size);

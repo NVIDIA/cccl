@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -61,7 +62,7 @@ private:
     // operation state doesn't strictly need to be immovable, since its address never
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 #endif // !_CCCL_COMPILER(GCC)
 
     _CCCL_API constexpr void start() noexcept

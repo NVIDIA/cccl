@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/fold.h>
@@ -207,7 +208,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
         , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {
