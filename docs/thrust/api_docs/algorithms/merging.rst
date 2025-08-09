@@ -7,4 +7,4 @@ Merging
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__merging*
+   ${repo_docs_api_path}/*group__merging*

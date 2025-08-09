@@ -15,4 +15,4 @@ Allocators
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__allocators*
+   ${repo_docs_api_path}/*group__allocators*

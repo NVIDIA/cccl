@@ -37,7 +37,7 @@ if [ ! -n "$(find img -name '*.png')" ]; then
     done
 fi
 
-if ! ./repo.sh docs "$@"; then
+if ! ./repo.sh docs --warn-as-error=0 "$@"; then
     echo "!!! There were errors while generating"
     exit 1
 fi

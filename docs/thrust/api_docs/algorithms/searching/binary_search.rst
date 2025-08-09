@@ -7,4 +7,4 @@ Binary Search
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__binary__search*
+   ${repo_docs_api_path}/*group__binary__search*

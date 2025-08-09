@@ -7,4 +7,4 @@ Set Operations
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__set__operations*
+   ${repo_docs_api_path}/*group__set__operations*

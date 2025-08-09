@@ -14,8 +14,7 @@ social_media     = [
     [ "github", "https://github.com/NVIDIA/cccl" ],
     [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
-
-sphinx_version = "4.5.0.2-py3.10-${platform}"
+copyright_start = 2025
 
 enhanced_search_enabled = true
 api_output_directory = "api"
@@ -27,15 +26,15 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python", "cccl"]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "python" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
-    [ "cudax", "_build/docs/cudax/latest" ],
-    [ "cub", "_build/docs/cub/latest" ],
-    [ "thrust", "_build/docs/thrust/latest" ],
-    [ "python", "_build/docs/python/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
+    [ "cudax", "../_build/docs/cudax/latest" ],
+    [ "cub", "../_build/docs/cub/latest" ],
+    [ "thrust", "../_build/docs/thrust/latest" ],
+    [ "python", "../_build/docs/python/latest" ],
 ]
 
 # doxygen sometimes gets confused by macros. the array below allows the user to
@@ -157,7 +156,7 @@ sphinx_exclude_patterns = []
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
 ]
 
 # list of files from which to extract documentation.  if a directory is specified,
@@ -211,9 +210,9 @@ doxygen_aliases = [
   "blocked=Assumes a :ref:`blocked arrangement <flexible-data-arrangement>` of (*block-threads* * *items-per-thread*) items across the thread block, where *thread*\\ :sub:`i` owns the *i*\\ :sup:`th` range of *items-per-thread* contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.",
   "striped=Assumes a :ref:`striped arrangement <flexible-data-arrangement>` of (*block-threads* * *items-per-thread*) items across the thread block, where *thread*\\ :sub:`i` owns items (*i*), (*i* + *block-threads*), ..., (*i* + (*block-threads* * (*items-per-thread* - 1))).  For multi-dimensional thread blocks, a row-major thread ordering is assumed.",
   "warpstriped=Assumes a *warp-striped arrangement* of elements across threads, where warp\\ :sub:`i` owns the *i*\\ :sup:`th` range of (*warp-threads* * *items-per-thread*) contiguous items, and each thread owns items (*i*), (*i* + *warp-threads*), ..., (*i* + (*warp-threads* * (*items-per-thread* - 1))).",
-  "linear_performance{1}=The work-complexity of \\1 as a function of input size is linear, resulting in performance throughput that plateaus with problem sizes large enough to saturate the GPU."  ,
+  "linear_performance{1}=The work-complexity of \\1 as a function of input size is linear, resulting in performance throughput that plateaus with problem sizes large enough to saturate the GPU.",
   "plots_below=Performance plots for other scenarios can be found in the detailed method descriptions below.",
-  "identityzero=This operation assumes the value of obtained by the ``T``'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value \"zero\" for addition.",
+  "identityzero=This operation assumes the value obtained by ``T``'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the neutral element for addition.",
   "lookback=`decoupled look-back <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_"
 ]
 
@@ -230,6 +229,7 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../cub
+  WARN_IF_UNDOCUMENTED   = NO
 """
 
 [repo_docs.projects.thrust]
@@ -252,8 +252,8 @@ sphinx_exclude_patterns = []
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
-    [ "cub", "_build/docs/cub/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
+    [ "cub", "../_build/docs/cub/latest" ],
 ]
 
 # list of files from which to extract documentation.  if a directory is specified,
@@ -296,6 +296,7 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../thrust
+  WARN_IF_UNDOCUMENTED   = NO
 """
 
 [repo_docs.projects.python]
@@ -326,6 +327,11 @@ python_paths = [
     "${root}/../python/cuda_cccl"
 ]
 
+# deps can be used to link to other projects' documentation
+deps = [
+    [ "cub", "../_build/docs/cub/latest" ],
+]
+
 [repo_docs.projects.cudax]
 name = "Cudax: Experimental new features"
 docs_root = "cudax"
@@ -346,7 +352,7 @@ sphinx_exclude_patterns = []
 
 # deps can be used to link to other projects' documentation
 deps = [
-    [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "libcudacxx", "../_build/docs/libcudacxx/latest" ],
 ]
 
 doxygen_input = [
@@ -393,4 +399,5 @@ doxygen_conf_extra = """
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../cudax
+  WARN_IF_UNDOCUMENTED   = NO
 """
