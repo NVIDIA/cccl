@@ -664,11 +664,11 @@ public:
 
   _CCCL_API static constexpr type min() noexcept
   {
-    return _CCCL_FLOAT128_LITERAL(3.36210314311209350626267781732175260e-4932);
+    return 3.36210314311209350626267781732175260e-4932q;
   }
   _CCCL_API static constexpr type max() noexcept
   {
-    return _CCCL_FLOAT128_LITERAL(1.18973149535723176508575932662800702e+4932);
+    return 1.18973149535723176508575932662800702e+4932q;
   }
   _CCCL_API static constexpr type lowest() noexcept
   {
@@ -680,11 +680,11 @@ public:
   static constexpr int radix       = FLT_RADIX;
   _CCCL_API static constexpr type epsilon() noexcept
   {
-    return type(1.92592994438723585305597794258492732e-34);
+    return 1.92592994438723585305597794258492732e-34q;
   }
   _CCCL_API static constexpr type round_error() noexcept
   {
-    return type(0.5);
+    return 0.5q;
   }
 
   static constexpr int min_exponent   = -16381;
@@ -733,7 +733,7 @@ public:
 #  endif // ^^^ !_CCCL_BUILTIN_NANSF128 ^^^
   _CCCL_API static constexpr type denorm_min() noexcept
   {
-    return _CCCL_FLOAT128_LITERAL(6.47517511943802511092443895822764655e-4966);
+    return 6.47517511943802511092443895822764655e-4966q;
   }
 
   static constexpr bool is_iec559  = true;
