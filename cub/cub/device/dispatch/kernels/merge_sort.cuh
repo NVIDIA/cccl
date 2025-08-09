@@ -14,10 +14,9 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_vsmem.cuh>
-
-#include <thrust/system/cuda/detail/core/make_load_iterator.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -206,8 +205,8 @@ __launch_bounds__(
   AgentBlockSortT agent(
     ping,
     temp_storage,
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_in),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_in),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_in),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_in),
     keys_count,
     keys_out,
     items_out,
@@ -311,10 +310,10 @@ __launch_bounds__(
   AgentMergeT agent(
     ping,
     temp_storage,
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_ping),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_ping),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_pong),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_pong),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_ping),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_ping),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_pong),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_pong),
     keys_count,
     keys_pong,
     items_pong,
