@@ -46,6 +46,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 
 #include <cuda/std/iterator>
@@ -244,7 +245,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it
   {
     using value_type = it_value_t<Iterator>;
     using size_type  = it_difference_t<Iterator>;
-    return cub::CacheModifiedInputIterator<LoadModifier, value_type, size_type>{raw_pointer_cast(&*it)};
+    return cub::CacheModifiedInputIterator<LoadModifier, value_type, size_type>{
+      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
   }
   else
   {
