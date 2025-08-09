@@ -41,7 +41,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
-#include <ostream>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 THRUST_NAMESPACE_BEGIN
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>
@@ -140,7 +142,7 @@ public:
   {}
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE pointer(std::nullptr_t)
+  _CCCL_HOST_DEVICE pointer(::cuda::std::nullptr_t)
       : super_t(static_cast<Element*>(nullptr))
   {}
 
@@ -170,7 +172,7 @@ public:
   // assignment
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE derived_type& operator=(std::nullptr_t)
+  _CCCL_HOST_DEVICE derived_type& operator=(::cuda::std::nullptr_t)
   {
     super_t::base_reference() = nullptr;
     return static_cast<derived_type&>(*this);
@@ -210,30 +212,32 @@ public:
     return detail::pointer_traits<derived_type>::pointer_to(r);
   }
 
+#if !_CCCL_COMPILER(NVRTC)
   template <typename charT, typename traits>
   _CCCL_HOST friend std::basic_ostream<charT, traits>&
   operator<<(std::basic_ostream<charT, traits>& os, const pointer& p)
   {
     return os << p.get();
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
-  _CCCL_HOST_DEVICE friend bool operator==(std::nullptr_t, pointer p)
+  _CCCL_HOST_DEVICE friend bool operator==(::cuda::std::nullptr_t, pointer p)
   {
     return nullptr == p.get();
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(pointer p, std::nullptr_t)
+  _CCCL_HOST_DEVICE friend bool operator==(pointer p, ::cuda::std::nullptr_t)
   {
     return nullptr == p.get();
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(std::nullptr_t, pointer p)
+  _CCCL_HOST_DEVICE friend bool operator!=(::cuda::std::nullptr_t, pointer p)
   {
     return !(nullptr == p);
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(pointer p, std::nullptr_t)
+  _CCCL_HOST_DEVICE friend bool operator!=(pointer p, ::cuda::std::nullptr_t)
   {
     return !(nullptr == p);
   }
