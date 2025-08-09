@@ -1297,7 +1297,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStripedFlagged(
     T (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD], ValidFlag (&is_valid)[ITEMS_PER_THREAD])
   {
-    ScatterToStripedFlagged(items, items, ranks, is_valid); 
+    ScatterToStripedFlagged(items, items, ranks, is_valid);
   }
 
 #endif // _CCCL_DOXYGEN_INVOKED
