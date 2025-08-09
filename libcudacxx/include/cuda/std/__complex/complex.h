@@ -412,8 +412,8 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw  = _CUDA_VSTD::__constexpr_logb(
-    _CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::__constexpr_fabs(__c), _CUDA_VSTD::__constexpr_fabs(__d)));
+  _Tp __logbw =
+    _CUDA_VSTD::__constexpr_logb(_CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::fabs(__c), _CUDA_VSTD::fabs(__d)));
   if (_CUDA_VSTD::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
