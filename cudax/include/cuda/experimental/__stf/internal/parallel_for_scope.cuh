@@ -60,13 +60,13 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
   const size_t step = blockDim.x * gridDim.x;
 
   // This will explode the targs tuple into a pack of data
-
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
-  auto const explode_args = [&](auto&&... data) {
+  auto const explode_args = [&](auto&... data) {
     CUDASTF_NO_DEVICE_STACK
     auto const explode_coords = [&](auto&&... coords) {
-      f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+      // No move/forward for `data` because it's used multiple times.
+      f(::std::forward<decltype(coords)>(coords)..., data...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -74,7 +74,8 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
       ::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
-  ::std::apply(explode_args, mv(targs));
+  // Moving from `targs` here is not useful because `explode_args` uses it multiple times.
+  ::std::apply(explode_args, targs);
 }
 
 /**
@@ -138,7 +139,7 @@ public:
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
   template <::std::size_t... Is>
-  __device__ auto make_targs(tuple_args& targs, ::std::index_sequence<Is...> = ::std::index_sequence<>())
+  __device__ auto make_targs(tuple_args& targs, ::std::index_sequence<Is...> = {})
   {
     if constexpr (sizeof...(Is) != size)
     {
@@ -306,7 +307,8 @@ __global__ void loop_redux(
   const auto explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     const auto explode_coords = [&](auto&&... coords) {
-      f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+      // No move/forward for `data` because it's used multiple times.
+      f(::std::forward<decltype(coords)>(coords)..., data...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -323,10 +325,10 @@ __global__ void loop_redux(
   const unsigned int tid = threadIdx.x;
   for (unsigned int stride = 1; stride < blockDim.x; stride *= 2)
   {
-    const unsigned int index = 2 * stride * tid; // Target index for this thread
-    if (index + stride < blockDim.x)
+    const unsigned int index = 2 * stride * tid + stride; // Target index for this thread
+    if (index < blockDim.x)
     {
-      per_block_redux_buffer[index].apply_op(per_block_redux_buffer[index + stride]);
+      per_block_redux_buffer[index - stride].apply_op(per_block_redux_buffer[index]);
     }
     __syncthreads();
   }
@@ -592,16 +594,16 @@ public:
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#  if __NVCOMPILER
+#if __NVCOMPILER
     // With nvc++, all lambdas can run on host and device.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
-#  else
+#else
     // With nvcpp, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif
+#endif
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)
