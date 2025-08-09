@@ -231,7 +231,8 @@ bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignment
     tile_padding = ::cuda::std::max(tile_padding, static_cast<int>(vt_alignment));
   }
 
-  int smem_size = tile_padding; // for the barrier and padding
+  int smem_size = ::cuda::round_up(sizeof(uint64_t) * 2 + sizeof(uint4), tile_padding); // barriers, work id, and
+                                                                                        // padding
   for (auto&& [vt_size, _] : it_value_sizes_alignments)
   {
     smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;

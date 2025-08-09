@@ -28,6 +28,7 @@
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
+#include <cuda/work_stealing>
 
 CUB_NAMESPACE_BEGIN
 
@@ -660,152 +661,185 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     smem_with_barrier = static_cast<char*>(__cvta_shared_to_generic(smem32));
   }
 
-  uint64_t& bar = *reinterpret_cast<uint64_t*>(smem_with_barrier);
-  static_assert(tile_padding >= sizeof(uint64_t));
-  char* smem_base = smem_with_barrier + tile_padding;
+  struct alignas(tile_padding) smem_vars_t
+  {
+    uint64_t bar_bulk_cp;
+    uint64_t bar_work_id;
+    uint4 nextworkid;
+  };
+
+  auto& smem_vars   = *reinterpret_cast<smem_vars_t*>(smem_with_barrier);
+  auto& bar_bulk_cp = smem_vars.bar_bulk_cp;
+  auto& bar_work_id = smem_vars.bar_work_id;
+  auto& nextworkid  = smem_vars.nextworkid;
+  char* smem_base   = smem_with_barrier + sizeof(smem_vars_t);
   _CCCL_ASSERT(::cuda::is_aligned(smem_base, tile_padding), "");
 
   namespace ptx = ::cuda::ptx;
 
-  const int tile_size   = block_threads * num_elem_per_thread;
-  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
+  const int tile_size = block_threads * num_elem_per_thread;
 
-  const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  if (inner_blocks)
+  const bool bulk_cp_thread = threadIdx.x == 0;
+  const bool work_id_thread = threadIdx.x == 32;
+  if (bulk_cp_thread)
   {
-    // use one thread to setup the entire bulk copy
-    if (elect_one())
-    {
-      ptx::mbarrier_init(&bar, 1);
-      // an update to the CUDA memory model blesses skipping the following fence
-      // ptx::fence_proxy_async(ptx::space_shared);
+    ptx::mbarrier_init(&bar_bulk_cp, 1);
+  }
+  if (work_id_thread)
+  {
+    ptx::mbarrier_init(&bar_work_id, 1);
+  }
+  __syncthreads();
 
+  int parity          = 0;
+  unsigned blockIdx_x = blockIdx.x;
+  while (true)
+  {
+    if (work_id_thread)
+    {
+      ptx::clusterlaunchcontrol_try_cancel(&nextworkid, &bar_work_id);
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar_work_id, sizeof(uint4));
+    }
+
+    const Offset offset   = static_cast<Offset>(blockIdx_x) * tile_size;
+    const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
+
+    const bool inner_blocks = 0 < blockIdx_x && blockIdx_x + 2 < gridDim.x;
+    if (inner_blocks)
+    {
+      // use one thread to setup the entire bulk copy
+      if (bulk_cp_thread)
+      {
+        char* smem                         = smem_base;
+        ::cuda::std::uint32_t total_copied = 0;
+
+        // turning this lambda into a function does not change SASS
+        auto bulk_copy_tile = [&](auto aligned_ptr) {
+          using T = typename decltype(aligned_ptr)::value_type;
+
+          const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+          char* dst       = smem;
+          _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
+          _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+
+          // TODO(bgruber): we could precompute bytes_to_copy on the host
+          int bytes_to_copy;
+          if constexpr (alignof(T) < bulk_copy_size_multiple)
+          {
+            bytes_to_copy =
+              ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
+          }
+          else
+          {
+            _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
+            bytes_to_copy = int{sizeof(T)} * tile_size;
+          }
+
+          ::cuda::ptx::cp_async_bulk(
+            ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar_bulk_cp);
+          total_copied += bytes_to_copy;
+
+          smem += tile_padding + int{sizeof(T)} * tile_size;
+          _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
+        };
+
+        // Order of evaluation is left-to-right
+        (..., bulk_copy_tile(aligned_ptrs));
+
+        // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+        ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar_bulk_cp, total_copied);
+      }
+    }
+    else
+    {
+      // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
       char* smem                         = smem_base;
       ::cuda::std::uint32_t total_copied = 0;
 
       // turning this lambda into a function does not change SASS
-      auto bulk_copy_tile = [&](auto aligned_ptr) {
-        using T         = typename decltype(aligned_ptr)::value_type;
-        const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
-        char* dst       = smem;
-        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
-        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+      auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
+        using T = typename decltype(aligned_ptr)::value_type;
+        _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
+        const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
 
-        // TODO(bgruber): we could precompute bytes_to_copy on the host
-        int bytes_to_copy;
-        if constexpr (alignof(T) < bulk_copy_size_multiple)
-        {
-          bytes_to_copy =
-            ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
-        }
-        else
-        {
-          _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
-          bytes_to_copy = int{sizeof(T)} * tile_size;
-        }
+        const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
+                                                                                         // Offset==I32
+        char* dst = smem + head_padding;
+        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
+        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
-        ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_cluster, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
-        total_copied += bytes_to_copy;
+        const int bytes_to_copy = int{sizeof(T)} * valid_items;
+        bulk_copy_maybe_unaligned<bulk_copy_alignment>(
+          dst, src, bytes_to_copy, aligned_ptr.head_padding, bar_bulk_cp, total_copied, bulk_cp_thread);
 
+        // add padding to account for this tile's head padding
         smem += tile_padding + int{sizeof(T)} * tile_size;
-        _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
       };
 
       // Order of evaluation is left-to-right
-      (..., bulk_copy_tile(aligned_ptrs));
+      (..., bulk_copy_tile_fallback(aligned_ptrs));
 
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
-    }
-  }
-  else
-  {
-    const bool elected = elect_one();
-    if (elected)
-    {
-      ptx::mbarrier_init(&bar, 1);
-      // an update to the CUDA memory model blesses skipping the following fence
-      // ptx::fence_proxy_async(ptx::space_shared);
-    }
-
-    // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
-    char* smem                         = smem_base;
-    ::cuda::std::uint32_t total_copied = 0;
-
-    // turning this lambda into a function does not change SASS
-    auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
-      using T = typename decltype(aligned_ptr)::value_type;
-
-      _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
-      const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
-
-      const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
-                                                                                       // Offset==I32
-      char* dst = smem + head_padding;
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-      const int bytes_to_copy = int{sizeof(T)} * valid_items;
-      bulk_copy_maybe_unaligned<bulk_copy_alignment>(
-        dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
-
-      // add padding to account for this tile's head padding
-      smem += tile_padding + int{sizeof(T)} * tile_size;
-    };
-
-    // Order of evaluation is left-to-right
-    (..., bulk_copy_tile_fallback(aligned_ptrs));
-
-    if (elected)
-    {
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
-    }
-  }
-
-  // all threads wait for bulk copy
-  __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
-  while (!ptx::mbarrier_try_wait_parity(&bar, 0))
-    ;
-
-  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
-  out += offset;
-
-  auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
-    for (int j = 0; j < num_elem_per_thread; ++j)
-    {
-      // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
-      const int idx = j * block_threads + threadIdx.x;
-      if (full_tile || idx < valid_items)
+      if (bulk_cp_thread)
       {
-        char* smem         = smem_base;
-        auto fetch_operand = [&](auto aligned_ptr) {
-          using T                = typename decltype(aligned_ptr)::value_type;
-          const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
-          const char* src        = smem + head_padding;
-          smem += tile_padding + int{sizeof(T)} * tile_size;
-          return reinterpret_cast<const T*>(src)[idx];
-        };
-
-        // need to expand into a tuple for guaranteed order of evaluation
-        out[idx] = ::cuda::std::apply(
-          [&](auto... values) {
-            return f(values...);
-          },
-          ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
+        // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+        ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar_bulk_cp, total_copied);
       }
     }
-  };
-  // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
-  if (tile_size == valid_items)
-  {
-    process_tile(::cuda::std::true_type{});
-  }
-  else
-  {
-    process_tile(::cuda::std::false_type{});
+
+    // all threads wait for bulk copy
+    while (!ptx::mbarrier_try_wait_parity(&bar_bulk_cp, parity))
+      ;
+
+    // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+    auto local_out = out + offset;
+
+    auto process_tile = [&](auto full_tile) {
+      // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
+      _CCCL_PRAGMA_NOUNROLL()
+      for (int j = 0; j < num_elem_per_thread; ++j)
+      {
+        // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
+        const int idx = j * block_threads + threadIdx.x;
+        if (full_tile || idx < valid_items)
+        {
+          char* smem         = smem_base;
+          auto fetch_operand = [&](auto aligned_ptr) {
+            using T                = typename decltype(aligned_ptr)::value_type;
+            const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+            const char* src        = smem + head_padding;
+            smem += tile_padding + int{sizeof(T)} * tile_size;
+            return reinterpret_cast<const T*>(src)[idx];
+          };
+
+          // need to expand into a tuple for guaranteed order of evaluation
+          local_out[idx] = ::cuda::std::apply(
+            [&](auto... values) {
+              return f(values...);
+            },
+            ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
+        }
+      }
+    };
+    // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
+    if (tile_size == valid_items)
+    {
+      process_tile(::cuda::std::true_type{});
+    }
+    else
+    {
+      process_tile(::cuda::std::false_type{});
+    }
+
+    // wait for new work id, exit if there is none
+    while (!ptx::mbarrier_try_wait_parity(&bar_work_id, parity))
+      ;
+    parity ^= 1;
+    if (!ptx::clusterlaunchcontrol_query_cancel_is_canceled(nextworkid))
+    {
+      break;
+    }
+    blockIdx_x = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<unsigned>(nextworkid);
+    __syncthreads(); // TODO(bgruber): we can get rid of this sync by double buffering nextworkid, see DevTech slides
   }
 }
 
