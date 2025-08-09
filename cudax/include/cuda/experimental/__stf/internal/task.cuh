@@ -271,13 +271,16 @@ public:
   {
     return pimpl->e_place;
   }
+
   exec_place& get_exec_place()
   {
     return pimpl->e_place;
   }
+
   void set_exec_place(const exec_place& place)
   {
-    pimpl->e_place = place;
+    // This will both update the execution place and the affine data place
+    on(place);
   }
 
   /// Get and Set the affine data place of the task
