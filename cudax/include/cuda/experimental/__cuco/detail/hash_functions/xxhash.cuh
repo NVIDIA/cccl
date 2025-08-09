@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 /*
- * _XXHash_32 implementation from
+ * `_XXHash_32` and `_XXHash_64` implementation from
  * https://github.com/Cyan4973/xxHash
  * -----------------------------------------------------------------------------
  * xxHash - Extremely Fast Hash algorithm
@@ -86,58 +86,6 @@ private:
   static constexpr size_t __block_size = 4;
   static constexpr size_t __chunk_size = 16;
 
-  //! @brief Type erased holder of all the bytes
-  template <size_t _KeySize,
-            size_t _Alignment,
-            bool _HasChunks = (_KeySize >= __block_size),
-            bool _HasTail   = (_KeySize % __block_size)>
-  struct alignas(_Alignment) _Byte_holder
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of uint32_t blocks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
-    unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of small types < __block_size
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, false, true>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of uint32_t blocks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) unsigned char __bytes[__tail_size];
-  };
-
-  //! @brief Type erased holder of types without trailing bytes
-  template <size_t _KeySize, size_t _Alignment>
-  struct alignas(_Alignment) _Byte_holder<_KeySize, _Alignment, true, false>
-  {
-    //! The number of trailing bytes that do not fit into a uint32_t
-    static constexpr size_t __tail_size = _KeySize % __block_size;
-
-    //! The number of uint32_t blocks
-    static constexpr size_t __num_blocks = _KeySize / __block_size;
-
-    //! The number of 16-byte chunks
-    static constexpr size_t __num_chunks = _KeySize / __chunk_size;
-
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
-  };
-
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
@@ -150,7 +98,7 @@ public:
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t operator()(_Key const& __key) const noexcept
   {
-    using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
+    using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, true, _CUDA_VSTD::uint32_t>;
     // explicit copy to avoid emitting a bunch of LDG.8 instructions
     const _Key __copy{__key};
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__copy));
@@ -304,6 +252,151 @@ private:
   _CUDA_VSTD::uint32_t __seed_;
 };
 
+//! @brief A `XXHash_64` hash function to hash the given argument on host and device.
+//!
+//! @tparam _Key The type of the values to hash
+template <typename _Key>
+struct _XXHash_64
+{
+private:
+  static constexpr _CUDA_VSTD::uint64_t __prime1 = 11400714785074694791ull;
+  static constexpr _CUDA_VSTD::uint64_t __prime2 = 14029467366897019727ull;
+  static constexpr _CUDA_VSTD::uint64_t __prime3 = 1609587929392839161ull;
+  static constexpr _CUDA_VSTD::uint64_t __prime4 = 9650029242287828579ull;
+  static constexpr _CUDA_VSTD::uint64_t __prime5 = 2870177450012600261ull;
+
+public:
+  //! @brief Constructs a XXH64 hash function with the given `seed`.
+  //!
+  //! @param seed A custom number to randomize the resulting hash value
+  _CCCL_API constexpr _XXHash_64(_CUDA_VSTD::uint64_t __seed = 0)
+      : __seed_{__seed}
+  {}
+
+  //! @brief Returns a hash value for its argument, as a value of type `result_type`.
+  //!
+  //! @param _Key The input argument to hash
+  //! @return The resulting hash value for `key`
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint64_t operator()(_Key const& __key) const noexcept
+  {
+    if constexpr (sizeof(_Key) <= 16)
+    {
+      const _Key __copy{__key};
+      return __compute_hash_span(_CUDA_VSTD::span<const _Key, 1>{&__copy, 1});
+    }
+    else
+    {
+      return __compute_hash_span(_CUDA_VSTD::span<const _Key, 1>{&__key, 1});
+    }
+  }
+
+  template <size_t _Extent>
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint64_t
+  operator()(_CUDA_VSTD::span<_Key, _Extent> __keys) const noexcept
+  {
+    // TODO: optimize when _Extent is known at compile time i.e
+    // _Extent != _CUDA_VSTD::dynamic_extent, dispatch to bit_cast based implementation
+    return __compute_hash_span(__keys);
+  }
+
+private:
+  [[nodiscard]] _CCCL_API _CUDA_VSTD::uint64_t __compute_hash_span(_CUDA_VSTD::span<const _Key> __keys) const noexcept
+  {
+    auto __bytes      = _CUDA_VSTD::as_bytes(__keys).data();
+    auto const __size = __keys.size_bytes();
+
+    size_t __offset            = 0;
+    _CUDA_VSTD::uint64_t __h64 = {};
+
+    // process data in 32-byte chunks
+    if (__size >= 32)
+    {
+      auto const __limit = __size - 32;
+      _CUDA_VSTD::array<_CUDA_VSTD::uint64_t, 4> __v;
+
+      __v[0] = __seed_ + __prime1 + __prime2;
+      __v[1] = __seed_ + __prime2;
+      __v[2] = __seed_;
+      __v[3] = __seed_ - __prime1;
+
+      for (; __offset <= __limit; __offset += 32)
+      {
+        // pipeline 4*8byte computations
+        auto const __pipeline_offset = __offset / 8;
+        cuda::static_for<4>([&](auto i) {
+          __v[i] += __load_chunk<_CUDA_VSTD::uint64_t>(__bytes, __pipeline_offset + i) * __prime2;
+          __v[i] = _CUDA_VSTD::rotl(__v[i], 31);
+          __v[i] *= __prime1;
+        });
+      }
+
+      __h64 = _CUDA_VSTD::rotl(__v[0], 1) + _CUDA_VSTD::rotl(__v[1], 7) + _CUDA_VSTD::rotl(__v[2], 12)
+            + _CUDA_VSTD::rotl(__v[3], 18);
+
+      cuda::static_for<4>([&](auto i) {
+        __v[i] *= __prime2;
+        __v[i] = _CUDA_VSTD::rotl(__v[i], 31);
+        __v[i] *= __prime1;
+        __h64 ^= __v[i];
+        __h64 = __h64 * __prime1 + __prime4;
+      });
+    }
+    else
+    {
+      __h64 = __seed_ + __prime5;
+    }
+
+    __h64 += __size;
+
+    // remaining data can be processed in 8-byte chunks
+    if ((__size % 32) >= 8)
+    {
+      for (; __offset <= __size - 8; __offset += 8)
+      {
+        _CUDA_VSTD::uint64_t __k1 = __load_chunk<_CUDA_VSTD::uint64_t>(__bytes, __offset / 8) * __prime2;
+        __k1                      = _CUDA_VSTD::rotl(__k1, 31) * __prime1;
+        __h64 ^= __k1;
+        __h64 = _CUDA_VSTD::rotl(__h64, 27) * __prime1 + __prime4;
+      }
+    }
+
+    // remaining data can be processed in 4-byte chunks
+    if ((__size % 8) >= 4)
+    {
+      for (; __offset <= __size - 4; __offset += 4)
+      {
+        __h64 ^= (__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __offset / 4) & 0xffffffffull) * __prime1;
+        __h64 = _CUDA_VSTD::rotl(__h64, 23) * __prime2 + __prime3;
+      }
+    }
+
+    // the following loop is only needed if the size of the key is not a multiple of a previous
+    // block size
+    if (__size % 4)
+    {
+      while (__offset < __size)
+      {
+        __h64 ^= (::cuda::std::to_integer<_CUDA_VSTD::uint32_t>(__bytes[__offset]) & 0xff) * __prime5;
+        __h64 = _CUDA_VSTD::rotl(__h64, 11) * __prime1;
+        ++__offset;
+      }
+    }
+    return __finalize(__h64);
+  }
+
+  // avalanche helper
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint64_t __finalize(std::uint64_t __h) const noexcept
+  {
+    __h ^= __h >> 33;
+    __h *= __prime2;
+    __h ^= __h >> 29;
+    __h *= __prime3;
+    __h ^= __h >> 32;
+    return __h;
+  }
+
+  _CUDA_VSTD::uint64_t __seed_;
+};
 } // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>
