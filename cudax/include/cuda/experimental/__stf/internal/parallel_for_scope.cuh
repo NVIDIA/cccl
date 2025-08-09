@@ -594,16 +594,16 @@ public:
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#if __NVCOMPILER
+#  if __NVCOMPILER
     // With nvc++, all lambdas can run on host and device.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
-#else
+#  else
     // With nvcpp, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#endif
+#  endif
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)
