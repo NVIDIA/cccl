@@ -26,15 +26,15 @@ using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
                                          property_without_value<std::size_t>>;
 
 using matching_properties =
-  async_resource<cuda::mr::host_accessible,
-                 property_with_value<double>,
-                 property_without_value<std::size_t>,
-                 property_with_value<int>>;
+  test_resource<cuda::mr::host_accessible,
+                property_with_value<double>,
+                property_without_value<std::size_t>,
+                property_with_value<int>>;
 
 using missing_stateful_property =
-  async_resource<cuda::mr::host_accessible, property_with_value<int>, property_without_value<std::size_t>>;
+  test_resource<cuda::mr::host_accessible, property_with_value<int>, property_without_value<std::size_t>>;
 using missing_stateless_property =
-  async_resource<cuda::mr::host_accessible, property_with_value<int>, property_with_value<double>>;
+  test_resource<cuda::mr::host_accessible, property_with_value<int>, property_with_value<double>>;
 
 using cuda::std::is_constructible;
 static_assert(is_constructible<ref, matching_properties&>::value, "");
@@ -63,17 +63,17 @@ using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
                                          property_with_value<double>,
                                          property_without_value<std::size_t>>;
 
-using res = async_resource<cuda::mr::host_accessible,
-                           property_with_value<int>,
-                           property_with_value<double>,
-                           property_without_value<std::size_t>>;
+using res = test_resource<cuda::mr::host_accessible,
+                          property_with_value<int>,
+                          property_with_value<double>,
+                          property_without_value<std::size_t>>;
 
 using other_res =
-  async_resource<cuda::mr::host_accessible,
-                 property_without_value<int>,
-                 property_with_value<int>,
-                 property_with_value<double>,
-                 property_without_value<std::size_t>>;
+  test_resource<cuda::mr::host_accessible,
+                property_without_value<int>,
+                property_with_value<int>,
+                property_with_value<double>,
+                property_without_value<std::size_t>>;
 
 using cuda::std::is_assignable;
 static_assert(cuda::std::is_assignable<ref, res&>::value, "");
