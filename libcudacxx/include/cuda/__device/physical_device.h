@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -97,7 +97,8 @@ public:
       __device      = _CUDA_DRIVER::__deviceGet(__id_);
       __primary_ctx = _CUDA_DRIVER::__primaryCtxRetain(__device);
     });
-    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::primary_context failed to get context");
+    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::primary_context failed to get context");
+
     return __primary_ctx;
   }
 

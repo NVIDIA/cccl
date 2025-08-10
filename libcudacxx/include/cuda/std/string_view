@@ -64,6 +64,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <class _Tp>
+inline constexpr bool __cccl_is_string_view_v = false;
+template <class _Tp>
+inline constexpr bool __cccl_is_string_view_v<const _Tp> = __cccl_is_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __cccl_is_string_view_v<volatile _Tp> = __cccl_is_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __cccl_is_string_view_v<const volatile _Tp> = __cccl_is_string_view_v<_Tp>;
+template <class _CharT, class _Traits>
+inline constexpr bool __cccl_is_string_view_v<basic_string_view<_CharT, _Traits>> = true;
+
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
   _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(

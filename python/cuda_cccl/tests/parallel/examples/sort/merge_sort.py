@@ -26,22 +26,9 @@ def basic_merge_sort_example():
     d_in_keys = cp.asarray(h_in_keys)
     d_in_values = cp.asarray(h_in_values)
 
-    # Instantiate merge_sort for the given keys, items, and operator
-    merge_sort = parallel.merge_sort(
-        d_in_keys, d_in_values, d_in_keys, d_in_values, compare_op
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = merge_sort(
-        None, d_in_keys, d_in_values, d_in_keys, d_in_values, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run merge_sort
-    merge_sort(
-        d_temp_storage, d_in_keys, d_in_values, d_in_keys, d_in_values, d_in_keys.size
+    # Run merge_sort with automatic temp storage allocation
+    parallel.merge_sort(
+        d_in_keys, d_in_values, d_in_keys, d_in_values, compare_op, d_in_keys.size
     )
 
     # Check the result is correct
@@ -68,21 +55,10 @@ def descending_merge_sort_example():
     h_in_keys = np.array([1, 5, 3, 9, 2, 8, 4, 7, 6], dtype="int32")
     d_in_keys = cp.asarray(h_in_keys)
 
-    # Instantiate merge_sort for descending order
-    merge_sort = parallel.merge_sort(
-        d_in_keys, None, d_in_keys, None, descending_compare_op
+    # Run merge_sort with automatic temp storage allocation
+    parallel.merge_sort(
+        d_in_keys, None, d_in_keys, None, descending_compare_op, d_in_keys.size
     )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = merge_sort(
-        None, d_in_keys, None, d_in_keys, None, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run merge_sort
-    merge_sort(d_temp_storage, d_in_keys, None, d_in_keys, None, d_in_keys.size)
 
     # Check the result is correct
     h_out_keys = cp.asnumpy(d_in_keys)
@@ -109,21 +85,9 @@ def string_length_sort_example():
     d_indices = cp.asarray(h_indices)
 
     # Sort by string length, keeping track of original indices
-    merge_sort = parallel.merge_sort(
-        d_lengths, d_indices, d_lengths, d_indices, length_compare_op
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = merge_sort(
-        None, d_lengths, d_indices, d_lengths, d_indices, d_lengths.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run merge_sort
-    merge_sort(
-        d_temp_storage, d_lengths, d_indices, d_lengths, d_indices, d_lengths.size
+    # Run merge_sort with automatic temp storage allocation
+    parallel.merge_sort(
+        d_lengths, d_indices, d_lengths, d_indices, length_compare_op, d_lengths.size
     )
 
     # Check the result

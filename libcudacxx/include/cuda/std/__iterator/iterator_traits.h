@@ -28,7 +28,7 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/totally_ordered.h>
-#include <cuda/std/__fwd/iterator_traits.h>
+#include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
@@ -558,7 +558,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(convertible_to<decltype(__i++), _Ip const&>),
     requires(same_as<iter_reference_t<_Ip>, decltype(*__i++)>),
     requires(constructible_from<_Ip>),
-    requires(_CCCL_TRAIT(is_lvalue_reference, iter_reference_t<_Ip>)),
+    requires(is_lvalue_reference_v<iter_reference_t<_Ip>>),
     requires(same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>)));
 
 template <class _Ip>

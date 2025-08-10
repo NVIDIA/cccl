@@ -105,7 +105,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target misc ${cn_target}
-    utility/basic_any.cu
     utility/ensure_current_device.cu
   )
 
@@ -121,6 +120,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/properties.cu
     containers/async_buffer/swap.cu
     containers/async_buffer/transform.cu
+  )
+
+  cudax_add_catch2_test(test_target cuco ${cn_target}
+    cuco/utility/hash_test.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}

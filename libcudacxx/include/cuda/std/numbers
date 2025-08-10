@@ -45,7 +45,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation from 'double' to 'const _Tp'
 
 template <class _Tp>
-struct __numbers<_Tp, enable_if_t<_CCCL_TRAIT(is_floating_point, _Tp)>>
+struct __numbers<_Tp, enable_if_t<is_floating_point_v<_Tp>>>
 {
   static _CCCL_API constexpr _Tp __e() noexcept
   {

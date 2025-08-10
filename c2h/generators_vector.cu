@@ -167,3 +167,8 @@ VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
 VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h::detail
+
+// Suppress deprecation warnings for use of vector types in the `*cudafe1.stub.c` file
+#if _CCCL_CTK_AT_LEAST(13, 0) && _CCCL_COMPILER(CLANG)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#endif // _CCCL_CTK_AT_LEAST(13, 0) && _CCCL_COMPILER(CLANG)
