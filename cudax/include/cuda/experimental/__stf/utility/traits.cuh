@@ -29,6 +29,7 @@
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/to_tuple.cuh>
 
 #include <array>
 #include <cassert>
@@ -97,29 +98,6 @@ constexpr ::std::string_view type_name_impl()
  */
 template <class T>
 inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
-
-/**
- * @brief Converts each element in `t` to a new value by calling `f`, then returns a tuple collecting the values thus
- * obtained.
- *
- * @tparam Tuple Type of the tuple to convert
- * @tparam Fun Type of mapping function to apply
- * @param t Object to convert, must support `std::apply`
- * @param f function to convert each element of the tuple, must take a single parameter
- * @return constexpr auto The tuple resulting from the mapping
- *
- * @paragraph example Example
- * @snippet unittest.h tuple2tuple
- */
-template <typename Tuple, typename Fun>
-constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
-{
-  return ::std::apply(
-    [&](auto&&... x) {
-      return ::std::tuple(f(::std::forward<decltype(x)>(x))...);
-    },
-    t);
-}
 
 /*
  * @brief A function that will fail to compile, and result in an error message
@@ -200,53 +178,6 @@ public:
 
 } // end namespace reserved
 
-/**
- * @brief Converts an array-like object (such as an `std::array`) to an `std::tuple`.
- *
- * This function template takes an array-like object and returns a tuple containing the same elements.
- * If the input array has a size of zero, an empty tuple is returned.
- *
- * @tparam Array Type of the array-like object. Must have `std::tuple_size_v<Array>` specialization.
- * @param array The array-like object to be converted to a tuple.
- * @return A tuple containing the elements of the input array.
- *
- * Example usage:
- * @code
- * std::array<int, 3> arr = {1, 2, 3};
- * auto t = to_tuple(arr); // t is a std::tuple<int, int, int>
- * @endcode
- */
-template <typename Array>
-auto to_tuple(Array&& array)
-{
-  return tuple2tuple(::std::forward<Array>(array), [](auto&& e) {
-    return ::std::forward<decltype(e)>(e);
-  });
-}
-
-/**
- * @brief Array-like tuple with a single element type repeated `n` times.
- *
- * The `array_tuple` template generates a `std::tuple` with a single type `T` repeated `n` times.
- * This can be used to create a tuple with consistent types and a fixed size.
- *
- * @tparam T The type of the elements that the tuple will contain.
- * @tparam n The number of elements that the tuple will contain.
- *
- * ### Example
- *
- * ```cpp
- * using my_tuple = array_tuple<int, 5>; // Results in std::tuple<int, int, int, int, int>
- * ```
- *
- * @note The specialization `array_tuple<T, 0>` will result in an empty tuple (`std::tuple<>`).
- */
-template <typename T, size_t n>
-using array_tuple = decltype(to_tuple(::std::array<T, n>{}));
-
-// Mini-unittest
-static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
-
 namespace reserved
 {
 
@@ -264,6 +195,16 @@ namespace reserved
  */
 template <typename T0, typename... Ts>
 ::cuda::std::array<T0, 1 + sizeof...(Ts)> to_cuda_array(const ::std::tuple<T0, Ts...>& obj)
+{
+  ::cuda::std::array<T0, 1 + sizeof...(Ts)> result;
+  each_in_tuple(obj, [&](auto index, const auto& value) {
+    result[index] = value;
+  });
+  return result;
+}
+
+template <typename T0, typename... Ts>
+::cuda::std::array<T0, 1 + sizeof...(Ts)> to_cuda_array(const ::cuda::std::tuple<T0, Ts...>& obj)
 {
   ::cuda::std::array<T0, 1 + sizeof...(Ts)> result;
   each_in_tuple(obj, [&](auto index, const auto& value) {
@@ -561,7 +502,7 @@ namespace reserved
 {
 
 /**
- * @brief Trait class to check if a function can be invoked with std::apply using a tuple type
+ * @brief Trait class to check if a function can be invoked with cuda::std::apply using a tuple type
  */
 template <typename F, typename Tuple>
 struct is_tuple_invocable : ::std::false_type
@@ -569,7 +510,7 @@ struct is_tuple_invocable : ::std::false_type
 
 // Partial specialization that unpacks the tuple
 template <typename F, typename... Args>
-struct is_tuple_invocable<F, ::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
+struct is_tuple_invocable<F, ::cuda::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
 {};
 
 // Convenient alias template
@@ -593,5 +534,29 @@ struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() <
 {};
 
 } // end namespace reserved
+
+/**
+ * @brief Checks whether a type is an instantiation of a given class template.
+ *
+ * This variable template yields `true` if `T` is an instantiation of the class template `Template`,
+ * and `false` otherwise. It works for class templates of the form `template <typename...>`.
+ *
+ * @tparam T The type to check.
+ * @tparam Template The class template to match against.
+ *
+ * @code
+ * template <typename T> struct Wrapper {};
+ * static_assert(is_instance_of<Wrapper<int>, Wrapper>); // true
+ * static_assert(!is_instance_of<int, Wrapper>);         // false
+ * @endcode
+ */
+template <typename T, template <typename...> class Template>
+inline constexpr bool is_instance_of = false;
+
+/**
+ * @brief Specialization that evaluates to true when T is an instantiation of Template.
+ */
+template <typename... Ts, template <typename...> class Template>
+inline constexpr bool is_instance_of<Template<Ts...>, Template> = true;
 
 } // namespace cuda::experimental::stf

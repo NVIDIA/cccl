@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/slice.cuh>
+#include <cuda/experimental/__stf/internal/slice_core.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 namespace cuda::experimental::stf
@@ -51,9 +51,9 @@ _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P.
   using m               = mdspan<T, P...>;
   constexpr size_t rank = m::rank();
 
-  const ::std::array<size_t, rank> sizes = s.get_sizes();
+  const ::cuda::std::array<size_t, rank> sizes = s.get_sizes();
 
-  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, rank> inner_extents;
+  ::cuda::std::array<::cuda::std::pair<::cuda::std::ptrdiff_t, ::cuda::std::ptrdiff_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)
   {
     inner_extents[i].first  = thickness;
@@ -79,7 +79,7 @@ _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P.
 template <size_t thickness, size_t rank>
 _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
 {
-  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, rank> inner_extents;
+  ::cuda::std::array<::cuda::std::pair<::cuda::std::ptrdiff_t, ::cuda::std::ptrdiff_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)
   {
     inner_extents[i].first  = s.get_begin(i) + thickness;

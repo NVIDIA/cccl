@@ -38,6 +38,11 @@ set(stf_test_sources
   interface/cuda_kernel_empty_args.cu
   interface/data_from_device_async.cu
   interface/move_operator.cu
+  jit/axpy.cu
+  jit/axpy_cuda_kernel.cu
+  jit/axpy_pfor.cu
+  jit/heat.cu
+  jit/cub-reduce.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu

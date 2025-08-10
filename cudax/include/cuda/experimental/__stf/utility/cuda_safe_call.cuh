@@ -34,12 +34,17 @@
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <cstddef>
+
 #include <cuda.h>
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
 #if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
 #  include <cusolverDn.h>
+#endif
+#if _CCCL_HAS_INCLUDE(<nvrtc.h>)
+#  include <nvrtc.h>
 #endif
 
 namespace cuda::experimental::stf
@@ -157,6 +162,14 @@ public:
     }
     else
 #endif // _CCCL_HAS_INCLUDE(<cublas_v2.h>)
+#if _CCCL_HAS_INCLUDE(<nvrtc.h>)
+      if constexpr (::std::is_same_v<T, nvrtcResult>)
+    {
+      format(
+        "%s(%u) NVRTC error in %s: %s.", loc.file_name(), loc.line(), loc.function_name(), nvrtcGetErrorString(status));
+    }
+    else
+#endif // _CCCL_HAS_INCLUDE(<nvrtc.h>)
       if constexpr (::std::is_same_v<T, cudaOccError>)
       {
         format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
@@ -250,6 +263,29 @@ struct first_param_impl<R (*)(P, Ps...)>
 */
 template <auto f>
 using first_param = typename first_param_impl<decltype(f)>::type;
+
+template <typename>
+struct last_param_impl;
+
+template <typename R, typename P>
+struct last_param_impl<R (*)(P)>
+{
+  using type = P;
+};
+
+// Specialization for function pointers
+template <typename R, typename P, typename... Ps>
+struct last_param_impl<R (*)(P, Ps...)>
+{
+  using type = typename last_param_impl<R (*)(Ps...)>::type;
+};
+
+/*
+`reserved::last_param<fun>` is an alias for the type of `fun`'s last parameter.
+*/
+template <auto f>
+using last_param = typename last_param_impl<decltype(f)>::type;
+
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
@@ -376,14 +412,23 @@ UNITTEST("cuda_try1")
 template <auto fun, typename... Ps>
 auto cuda_try(Ps&&... ps)
 {
-  if constexpr (::std::is_invocable_v<decltype(fun), Ps...>)
+  using F = decltype(fun);
+  if constexpr (::std::is_invocable_v<F, Ps...>)
   {
     cuda_try(fun(::std::forward<Ps>(ps)...));
   }
-  else
+  else if constexpr (::std::is_invocable_v<F, reserved::first_param<fun>, Ps...>)
   {
+    static_assert(sizeof...(Ps) == 0 || !::std::is_invocable_v<F, Ps..., nullptr_t>,
+                  "Ambiguous call to cuda_try: output could be either the last or the first parameter.");
     ::std::remove_pointer_t<reserved::first_param<fun>> result{};
     cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
+    return result;
+  }
+  else
+  {
+    ::std::remove_pointer_t<reserved::last_param<fun>> result{};
+    cuda_try(fun(::std::forward<Ps>(ps)..., &result));
     return result;
   }
 }

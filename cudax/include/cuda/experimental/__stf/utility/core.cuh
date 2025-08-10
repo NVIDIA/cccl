@@ -24,7 +24,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/utility/core_nvrtc.cuh>
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/experimental/__stf/utility/each.cuh>
+#include <cuda/experimental/__stf/utility/mv.cuh>
 
 #include <cstddef>
 #include <functional>
@@ -79,26 +82,6 @@ inline int setenv(const char* name, const char* value, int overwrite)
 }
 #endif
 
-#ifndef _CCCL_DOXYGEN_INVOKED // FIXME Doxygen is lost with decltype(auto)
-/**
- * @brief Custom move function that performs checks on the argument type.
- *
- * @tparam T Type of the object being moved. The type should satisfy certain conditions for the move to be performed.
- * @param obj The object to be moved.
- * @return The moved object, ready to be passed to another owner.
- *
- * @pre The argument `obj` must be an lvalue, i.e., the function will fail to compile for rvalues.
- * @pre The argument `obj` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
- */
-template <typename T>
-_CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
-{
-  static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
-  static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
-  return ::std::move(obj);
-}
-#endif // _CCCL_DOXYGEN_INVOKED
-
 /**
  * @brief Creates a `std::shared_ptr` managing a copy of the given object.
  *
@@ -129,100 +112,6 @@ template <typename T>
 auto to_shared(T&& obj)
 {
   return ::std::make_shared<::std::remove_cv_t<::std::remove_reference_t<T>>>(::std::forward<T>(obj));
-}
-
-/**
- * @brief   Create an iterable range from 'from' to 'to'
- *
- * @tparam  T   The type of the start range value
- * @tparam  U   The type of the end range value
- * @param   from    The start value of the range
- * @param   to      The end value of the range
- *
- * @return  A range of values from 'from' to 'to'
- *
- * @note    The range includes 'from' and excludes 'to'. The actual type iterated is determined as the type of the
- * expression `true ? from : to`. This ensures expected behavior for iteration with different `from` and `to` types.
- */
-template <typename T, typename U>
-_CCCL_HOST_DEVICE auto each(T from, U to)
-{
-  using common = ::std::remove_reference_t<decltype(true ? from : to)>;
-
-  class iterator
-  {
-    common value;
-
-  public:
-    _CCCL_HOST_DEVICE iterator(common value)
-        : value(mv(value))
-    {}
-
-    _CCCL_HOST_DEVICE common operator*() const
-    {
-      return value;
-    }
-
-    _CCCL_HOST_DEVICE iterator& operator++()
-    {
-      if constexpr (::std::is_enum_v<common>)
-      {
-        value = static_cast<T>(static_cast<::std::underlying_type_t<T>>(value) + 1);
-      }
-      else
-      {
-        ++value;
-      }
-      return *this;
-    }
-
-    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
-    {
-      return value != other.value;
-    }
-  };
-
-  class each_t
-  {
-    common begin_, end_;
-
-  public:
-    _CCCL_HOST_DEVICE each_t(T begin, U end)
-        : begin_(mv(begin))
-        , end_(mv(end))
-    {}
-    _CCCL_HOST_DEVICE iterator begin() const
-    {
-      return iterator(begin_);
-    }
-    _CCCL_HOST_DEVICE iterator end() const
-    {
-      return iterator(end_);
-    }
-  };
-
-  return each_t{mv(from), mv(to)};
-}
-
-/**
- * @brief   Create an iterable range from `T(0)` to `to`
- *
- * @tparam  T   The type of the end range value
- * @param   to   The end value of the range
- *
- * @return  A range of values from `T(0)` to `to`
- *
- * @note    The range includes 0 and excludes `to`
- */
-template <typename T>
-auto each(T to)
-{
-  static_assert(!::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
-  if constexpr (::std::is_signed_v<T>)
-  {
-    _CCCL_ASSERT(to >= 0, "Attempt to iterate from 0 to a negative value.");
-  }
-  return each(T(0), mv(to));
 }
 
 /**
@@ -303,7 +192,7 @@ constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
 namespace reserved
 {
 
-// Like ::std::make_tuple, but skips all values of the same type as `::std::ignore`.
+// Like ::std::make_tuple, but skips all values of the same type as `::cuda::std::ignore`.
 inline constexpr auto make_tuple()
 {
   return ::std::tuple<>();
@@ -312,7 +201,7 @@ inline constexpr auto make_tuple()
 template <typename T, typename... P>
 constexpr auto make_tuple([[maybe_unused]] T t, P... p)
 {
-  if constexpr (::std::is_same_v<const T, const decltype(::std::ignore)>)
+  if constexpr (::std::is_same_v<const T, const decltype(::cuda::std::ignore)>)
   {
     // Recurse skipping the first parameter
     return make_tuple(mv(p)...);
@@ -327,15 +216,15 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
 } // namespace reserved
 
 /**
- * @brief Creates a `std::tuple` by applying a callable object `f` to each integral constant within a given range `[0,
- * n)`.
+ * @brief Creates a `::cuda::std::tuple` by applying a callable object `f` to each integral constant within a given
+ * range `[0, n)`.
  *
  * This function template takes a callable object `f` and applies it to each integral constant in the range `[0, n)`.
- * The results of the calls are collected into a `std::tuple` and returned. The callable object is expected to take a
- * single argument of type `std::integral_constant<size_t, i>`, where `i` is the current index, and return a value of
- * the desired type and value.
+ * The results of the calls are collected into a `::cuda::std::tuple` and returned. The callable object is expected to
+ * take a single argument of type `std::integral_constant<size_t, i>`, where `i` is the current index, and return a
+ * value of the desired type and value.
  *
- * If `f` returns `std::ignore` for any argument(s), the corresponding value(s) will be skipped in the resulting
+ * If `f` returns `::cuda::std::ignore` for any argument(s), the corresponding value(s) will be skipped in the resulting
  * tuple.
  *
  * @tparam n The number of times the callable object `f` should be applied.
@@ -348,12 +237,12 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
  * @code
  * auto make_double = [](auto index) {
  *     if constexpr (index == 2)
- *         return std::ignore;
+ *         return ::cuda::std::ignore;
  *     else
  *         return static_cast<double>(index);
  * };
  * auto result = make_tuple_indexwise<5>(make_double);
- * // result is std::tuple<double, double, double, double>{0.0, 1.0, 3.0, 4.0}
+ * // result is ::cuda::std::tuple<double, double, double, double>{0.0, 1.0, 3.0, 4.0}
  * @endcode
  *
  * Note: Since this function is `constexpr`, it can be used at compile-time if `f` is a compile-time invocable object.
@@ -367,12 +256,12 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
   }
   else
   {
-    return reserved::make_tuple(f(::std::integral_constant<size_t, i>())...);
+    return reserved::make_cuda_tuple(f(::std::integral_constant<size_t, i>())...);
   }
 }
 
 /**
- * @brief Iterates over the elements of a tuple, applying a given function object to each element.
+ * @brief Iterates over the elements of a ::cuda::std::tuple, applying a given function object to each element.
  *
  * The function `each_in_tuple` accepts a tuple and a callable object `f`. If `f` accepts two parameters, it is invoked
  * with the index as a `std::integral_constant` and the value at that index in the tuple for each element. If `f`
@@ -391,13 +280,13 @@ constexpr void each_in_tuple(Tuple&& t, F&& f)
 {
   constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
   unroll<n>([&](auto j) {
-    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::cuda::std::get<j>(::std::forward<Tuple>(t)))>)
     {
-      f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+      f(j, ::cuda::std::get<j>(::std::forward<Tuple>(t)));
     }
     else
     {
-      f(::std::get<j>(::std::forward<Tuple>(t)));
+      f(::cuda::std::get<j>(::std::forward<Tuple>(t)));
     }
   });
 }

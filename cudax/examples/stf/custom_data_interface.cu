@@ -88,12 +88,12 @@ public:
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
-  size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     return m * n;
   }
 
-  using coords_t = ::std::tuple<size_t, size_t>;
+  using coords_t = ::cuda::std::tuple<size_t, size_t>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const

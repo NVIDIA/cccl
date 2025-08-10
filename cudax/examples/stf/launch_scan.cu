@@ -86,7 +86,7 @@ int main(int argc, char** argv)
     slice<double> dev_partial_sum = th.template storage<double>(0);
 
     /* Thread local prefix-sum */
-    const box<1> b = th.apply_partition(shape(x), std::tuple<blocked_partition, blocked_partition>());
+    const box<1> b = th.apply_partition(shape(x), ::cuda::std::tuple<blocked_partition, blocked_partition>());
     for (size_t i = b.get_begin(0) + 1; i < b.get_end(0); i++)
     {
       x(i) += x(i - 1);

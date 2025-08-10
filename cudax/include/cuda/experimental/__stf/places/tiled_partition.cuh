@@ -48,7 +48,7 @@ public:
   {}
 
   /* The number of elements in this part */
-  size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     _CCCL_ASSERT(mdspan_shape_t::rank() == 1, "Tiled mdspan shape only implemented in 1D yet");
 
