@@ -34,6 +34,8 @@
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <cstddef>
+
 #include <cuda.h>
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
