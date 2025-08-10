@@ -896,11 +896,9 @@ namespace reserved
 inline void unit_test_context_pfor_integral()
 {
   context ctx;
-  SCOPE(exit)
-  {
-    ctx.finalize();
-  };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
   ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
@@ -910,6 +908,7 @@ inline void unit_test_context_pfor_integral()
       EXPECT(A(i) == 2 * i);
     }
   };
+  ctx.finalize();
 }
 
 UNITTEST("context parallel_for integral shape")
