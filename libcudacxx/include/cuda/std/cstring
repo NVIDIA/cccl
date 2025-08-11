@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/check_address.h>
 #include <cuda/std/__string/constexpr_c_functions.h>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -31,9 +32,21 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-using ::memcpy;
-using ::memset;
 using ::size_t;
+
+_CCCL_API inline void* memcpy(void* _CCCL_RESTRICT __dest, const void* _CCCL_RESTRICT __src, size_t __count) noexcept
+{
+  _CCCL_ASSERT(::cuda::__is_valid_address_range(__src, __count), "memcpy: source range is invalid");
+  _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: destination range is invalid");
+  _CCCL_ASSERT(::cuda::__are_ptrs_overlapping(__src, __dest, __count), "memcpy: source and destination overlap");
+  return ::memcpy(__dest, __src, __count);
+}
+
+_CCCL_API inline void* memset(void* __dest, int __ch, size_t __count) noexcept
+{
+  _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: source range is invalid");
+  return ::memset(__dest, __ch, __count);
+}
 
 _CCCL_API constexpr char* strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src)
 {
