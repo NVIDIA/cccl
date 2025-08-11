@@ -239,7 +239,7 @@ public:
 namespace detail
 {
 template <CacheLoadModifier LoadModifier, typename Iterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {
   if constexpr (::cuda::std::contiguous_iterator<Iterator>)
   {
