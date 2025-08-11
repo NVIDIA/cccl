@@ -678,16 +678,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   namespace ptx = ::cuda::ptx;
 
   const int tile_size = block_threads * num_elem_per_thread;
-
-  const bool elected        = ptx::elect_sync(~0);
-  const bool bulk_cp_thread = elected && threadIdx.x < 32;
-  const bool work_id_thread = elected && threadIdx.x >= 32;
-  if (bulk_cp_thread)
+  if (elect_one())
   {
     ptx::mbarrier_init(&bar_bulk_cp, 1);
-  }
-  if (work_id_thread)
-  {
     ptx::mbarrier_init(&bar_work_id, 1);
   }
   __syncthreads();
@@ -696,7 +689,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   unsigned blockIdx_x = blockIdx.x;
   while (true)
   {
-    if (work_id_thread)
+    if (elect_one())
     {
       ptx::clusterlaunchcontrol_try_cancel(&nextworkid, &bar_work_id);
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar_work_id, sizeof(uint4));
@@ -709,7 +702,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     if (inner_blocks)
     {
       // use one thread to setup the entire bulk copy
-      if (bulk_cp_thread)
+      if (elect_one())
       {
         char* smem                         = smem_base;
         ::cuda::std::uint32_t total_copied = 0;
@@ -753,6 +746,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     }
     else
     {
+      const bool elected = elect_one();
       // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
       char* smem                         = smem_base;
       ::cuda::std::uint32_t total_copied = 0;
@@ -771,7 +765,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         const int bytes_to_copy = int{sizeof(T)} * valid_items;
         bulk_copy_maybe_unaligned<bulk_copy_alignment>(
-          dst, src, bytes_to_copy, aligned_ptr.head_padding, bar_bulk_cp, total_copied, bulk_cp_thread);
+          dst, src, bytes_to_copy, aligned_ptr.head_padding, bar_bulk_cp, total_copied, elected);
 
         // add padding to account for this tile's head padding
         smem += tile_padding + int{sizeof(T)} * tile_size;
@@ -780,7 +774,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile_fallback(aligned_ptrs));
 
-      if (bulk_cp_thread)
+      if (elected)
       {
         // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
         ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar_bulk_cp, total_copied);
