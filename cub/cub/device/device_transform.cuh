@@ -110,20 +110,20 @@ struct DeviceTransform
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
-  //! Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
-  //! input elements and writing the result to the corresponding output element. No guarantee is given on the identity
-  //! (i.e. address) of the objects passed to the call operator of the transformation operation.
+  //! Transforms one input sequence into one output sequence, by applying a transformation operation on each input
+  //! element and writing the result to the corresponding output element. No guarantee is given on the identity (i.e.
+  //! address) of the objects passed to the call operator of the transformation operation.
   //! @endrst
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
   //! must be trivially relocatable.
-  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
-  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
-  //! overlap with any of the input sequence in any other way.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the same
+  //! sequence as \p input, performing the transformation inplace. The output sequence must not overlap with the
+  //! input sequence in any other way.
   //! @param num_items The number of elements in each input sequence.
-  //! @param transform_op A unary function object, where n is the number of input sequences. The input iterators' value
-  //! types must be convertible to the parameters of the function object's call operator. The return type of the call
-  //! operator must be assignable to the dereferenced output iterator.
+  //! @param transform_op A unary function object. The input iterator's value type must be convertible to the parameter
+  //! of the function object's call operator. The return type of the call operator must be assignable to the
+  //! dereferenced output iterator.
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
@@ -168,6 +168,39 @@ struct DeviceTransform
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! Selectively transforms many input sequences into one output sequence, by applying a transformation operation on
+  //! corresponding input elements, if a given predicate is true, and writing the result to the corresponding output
+  //! element. No guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the
+  //! predicate and transformation operation. Output elements for which the predicate returns false are not written to.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_transform_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin transform-if
+  //!     :end-before: example-end transform-if
+  //!
+  //! @endrst
+  //!
+  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
+  //! iterators' value types must be trivially relocatable.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the
+  //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
+  //! overlap with any of the input sequence in any other way.
+  //! @param num_items The number of elements in each input sequence.
+  //! @param predicate An n-ary function object, where n is the number of input sequences. The input iterators' value
+  //! types must be convertible to the parameters of the function object's call operator, which must return a boolean
+  //! value.
+  //! @param transform_op An n-ary function object, where n is the number of input sequences. The input iterators' value
+  //! types must be convertible to the parameters of the function object's call operator. The return type of the call
+  //! operator must be assignable to the dereferenced output iterator. Will only be invoked if \p predicate returns
+  //! true.
+  //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
             typename Predicate,
@@ -239,6 +272,37 @@ struct DeviceTransform
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! Selectively transforms one input sequence into one output sequence, by applying a transformation operation on each
+  //! input element, if a given predicate is true, and writing the result to the corresponding output element. No
+  //! guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the predicate and
+  //! transformation operation. Output elements for which the predicate returns false are not written to.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_transform_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin transform-if
+  //!     :end-before: example-end transform-if
+  //!
+  //! @endrst
+  //!
+  //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
+  //! must be trivially relocatable.
+  //! @param output An iterator to the output sequence where num_items results are written to. May point to the same
+  //! sequence as \p input, performing the transformation inplace. The output sequence must not overlap with the
+  //! input sequence in any other way.
+  //! @param num_items The number of elements in each input sequence.
+  //! @param predicate A unary function objects returning \p bool. The input iterators' value types must be convertible
+  //! to the parameters of the function object's call operator.
+  //! @param transform_op A unary function object. The input iterator's value type must be convertible to the
+  //! parameter of the function object's call operator. The return type of the call operator must be assignable to the
+  //! dereferenced output iterator. Will only be invoked if \p predicate returns true.
+  //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
             typename Predicate,
