@@ -100,12 +100,14 @@ using readonly_type_of = typename reserved::readonly_type_of<::cuda::std::remove
 template <typename T>
 using rw_type_of = typename reserved::rw_type_of<::cuda::std::remove_cvref_t<T>>::type;
 
+/// @overload
 template <typename T>
 rw_type_of<T> to_rw_type_of(const T& t)
 {
   return rw_type_of<T>{t};
 }
 
+/// @overload
 template <typename T, typename Extents, typename Layout, template <typename> class Accessor>
 mdspan<T, Extents, Layout, Accessor<T>> to_rw_type_of(const mdspan<const T, Extents, Layout, Accessor<const T>>& md)
 {

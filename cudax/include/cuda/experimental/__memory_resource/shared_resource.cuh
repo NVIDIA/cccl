@@ -46,13 +46,13 @@ namespace cuda::experimental
 //! ``shared_resource`` holds a reference counted instance of a memory resource. This allows
 //! the user to pass a resource around with reference semantics while avoiding lifetime issues.
 //!
-//! @note ``shared_resource`` satisfies the ``cuda::mr::async_resource`` concept iff \tparam _Resource satisfies it.
+//! @note ``shared_resource`` satisfies the ``cuda::mr::resource`` concept iff \tparam _Resource satisfies it.
 //! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>
 struct shared_resource : __copy_default_queries<_Resource>
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "");
+  static_assert(_CUDA_VMR::synchronous_resource<_Resource>, "");
 
   //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
   //! that has been constructed with arguments \c __args. The \c _Resource object is
@@ -140,49 +140,48 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return __control_block->__resource.allocate(__bytes, __alignment);
+    return __control_block->__resource.allocate_sync(__bytes, __alignment);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr using the stored resource.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
-  //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
+  void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
   {
-    __control_block->__resource.deallocate(__ptr, __bytes, __alignment);
+    __control_block->__resource.deallocate_sync(__ptr, __bytes, __alignment);
   }
 
   //! @brief Enqueues an allocation of memory of size at least \p __bytes using
   //! the wrapped resource. The allocation is performed asynchronously on stream \c __stream.
-  //! @pre \c _Resource must satisfy \c async_resource.
+  //! @pre \c _Resource must satisfy \c resource.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory.
   //! @note The caller is responsible for ensuring that the memory is not accessed until the
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
-  _CCCL_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  [[nodiscard]] void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_REQUIRES(_CUDA_VMR::resource<_ThisResource>)
+  [[nodiscard]] void* allocate(::cuda::stream_ref __stream, size_t __bytes, size_t __alignment)
   {
-    return this->__control_block->__resource.allocate_async(__bytes, __alignment, __stream);
+    return this->__control_block->__resource.allocate(__stream, __bytes, __alignment);
   }
 
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
   //! performed asynchronously on stream \c __stream.
-  //! @pre \c _Resource must satisfy \c async_resource.
-  //! @param __bytes The number of bytes that was passed to the `allocate_async` call that returned
-  //! \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate_async` call that returned
-  //! \p __ptr.
+  //! @pre \c _Resource must satisfy \c resource.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   //! @note The caller is responsible for ensuring that the memory is not accessed after the
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
-  _CCCL_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  void deallocate_async(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_REQUIRES(_CUDA_VMR::resource<_ThisResource>)
+  void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment)
   {
-    this->__control_block->__resource.deallocate_async(__ptr, __bytes, __alignment, __stream);
+    this->__control_block->__resource.deallocate(__stream, __ptr, __bytes, __alignment);
   }
 
   //! @brief Equality comparison between two \c shared_resource
@@ -254,7 +253,8 @@ private:
 template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
+  static_assert(_CUDA_VMR::synchronous_resource<_Resource>,
+                "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
   return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }
 

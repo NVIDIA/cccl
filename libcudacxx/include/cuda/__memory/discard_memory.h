@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -36,7 +37,7 @@ _CCCL_API inline void discard_memory([[maybe_unused]] volatile void* __ptr, [[ma
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer passed to discard_memory");
-    if (!::__isGlobal((void*) __ptr)) {
+    if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global)) {
       return;
     }
     constexpr size_t __line_size = 128;

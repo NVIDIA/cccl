@@ -42,9 +42,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _ElementType>
 struct default_accessor
 {
-  static_assert(!_CCCL_TRAIT(is_array, _ElementType), "default_accessor: template argument may not be an array type");
-  static_assert(!_CCCL_TRAIT(is_abstract, _ElementType),
-                "default_accessor: template argument may not be an abstract class");
+  static_assert(!is_array_v<_ElementType>, "default_accessor: template argument may not be an array type");
+  static_assert(!is_abstract_v<_ElementType>, "default_accessor: template argument may not be an abstract class");
 
   using offset_policy    = default_accessor;
   using element_type     = _ElementType;
@@ -54,7 +53,7 @@ struct default_accessor
   _CCCL_HIDE_FROM_ABI constexpr default_accessor() noexcept = default;
 
   _CCCL_TEMPLATE(class _OtherElementType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _CCCL_REQUIRES(is_convertible_v<_OtherElementType (*)[], element_type (*)[]>)
   _CCCL_API constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
 
   [[nodiscard]] _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
