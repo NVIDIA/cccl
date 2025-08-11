@@ -17,7 +17,7 @@ __host__ __device__ void test()
 {
   using IterTraits = cuda::std::iterator_traits<cuda::transform_output_iterator<int*, PlusOne>>;
 
-  static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
+  static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::output_iterator_tag>);
   static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
   static_assert(cuda::std::same_as<IterTraits::value_type, void>);
   static_assert(cuda::std::same_as<IterTraits::pointer, void>);

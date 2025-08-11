@@ -133,8 +133,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 #if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
@@ -161,8 +161,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
@@ -190,8 +190,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan")
   {
-    using op_t    = ::cuda::minimum<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::minimum<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
@@ -201,7 +201,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       host_items.cend(),
       expected_result.begin(),
       op_t{},
-      ::cuda::std::numeric_limits<accum_t>::max());
+      cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -223,8 +223,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan with init value")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -258,8 +258,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive scan")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -291,8 +291,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive scan with future-init value")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});

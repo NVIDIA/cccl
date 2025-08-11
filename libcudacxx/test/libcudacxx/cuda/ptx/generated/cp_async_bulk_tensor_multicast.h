@@ -44,7 +44,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
         // [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -85,7 +85,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::1
         // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -139,7 +139,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
         // [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -180,7 +180,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.2d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::1
         // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -234,7 +234,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
         // [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -275,7 +275,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.3d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::1
         // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -329,7 +329,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
         // [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -370,7 +370,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.4d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::1
         // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -424,7 +424,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem],
         // [tensorMap, tensorCoords], [smem_bar], ctaMask;
@@ -465,7 +465,7 @@ __global__ void test_cp_async_bulk_tensor_multicast(void** fn_ptr)
                                    uint64_t*,
                                    const uint16_t&)>(cuda::ptx::cp_async_bulk_tensor));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.tensor.5d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::1
         // [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask;

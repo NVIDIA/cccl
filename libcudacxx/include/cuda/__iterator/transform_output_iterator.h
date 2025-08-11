@@ -145,17 +145,12 @@ public:
   _Iter __current_{};
   _CUDA_VRANGES::__movable_box<_Fn> __func_{};
 
-  using _Cat = typename _CUDA_VSTD::iterator_traits<_Iter>::iterator_category;
-
-  using iterator_category =
-    _CUDA_VSTD::conditional_t<_CUDA_VSTD::derived_from<_Cat, _CUDA_VSTD::contiguous_iterator_tag>,
-                              _CUDA_VSTD::random_access_iterator_tag,
-                              _Cat>;
-  using iterator_concept = iterator_category;
-  using difference_type  = _CUDA_VSTD::iter_difference_t<_Iter>;
-  using value_type       = void;
-  using pointer          = void;
-  using reference        = void;
+  using iterator_concept  = _CUDA_VSTD::output_iterator_tag;
+  using iterator_category = _CUDA_VSTD::output_iterator_tag;
+  using difference_type   = _CUDA_VSTD::iter_difference_t<_Iter>;
+  using value_type        = void;
+  using pointer           = void;
+  using reference         = void;
 
   //! @brief Default constructs a \p transform_output_iterator with a value initialized iterator and functor
 #if _CCCL_HAS_CONCEPTS()

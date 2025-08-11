@@ -178,9 +178,9 @@ template <class _TDynamic, class _TStatic, _TStatic _DynTag, _TStatic... _Values
 struct __maybe_static_array
     : private __possibly_empty_array<_TDynamic, __count_dynamic_v<_TStatic, _DynTag, _Values...>>
 {
-  static_assert(_CCCL_TRAIT(is_convertible, _TStatic, _TDynamic),
+  static_assert(is_convertible_v<_TStatic, _TDynamic>,
                 "__maybe_static_array: _TStatic must be convertible to _TDynamic");
-  static_assert(_CCCL_TRAIT(is_convertible, _TDynamic, _TStatic),
+  static_assert(is_convertible_v<_TDynamic, _TStatic>,
                 "__maybe_static_array: _TDynamic must be convertible to _TStatic");
 
 private:
@@ -239,14 +239,14 @@ public:
 
   // constructors from dynamic values only -- this covers the case for rank() == 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_std_span<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) == __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals) noexcept
       : _DynamicValues{static_cast<_TDynamic>(__vals)...}
   {}
 
   // constructors from all values -- here rank will be greater than 0
   _CCCL_TEMPLATE(class... _DynVals)
-  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_std_span<_DynVals>...>::value))
+  _CCCL_REQUIRES((sizeof...(_DynVals) != __size_dynamic_) && (!__all<__is_std_span_v<_DynVals>...>::value))
   _CCCL_API constexpr __maybe_static_array(_DynVals... __vals)
       : _DynamicValues{}
   {
@@ -327,7 +327,7 @@ _CCCL_REQUIRES(integral<_To>)
 {
   if constexpr (integral<_From>)
   {
-    if constexpr (_CCCL_TRAIT(is_signed, _From))
+    if constexpr (is_signed_v<_From>)
     {
       if constexpr (__potentially_narrowing<_To, _From>)
       {
@@ -344,7 +344,7 @@ _CCCL_REQUIRES(integral<_To>)
         return __value >= 0;
       }
     }
-    else // !_CCCL_TRAIT(is_signed, _From)
+    else // !is_signed_v<_From>
     {
       if constexpr (__potentially_narrowing<_To, _From>)
       {
@@ -360,11 +360,11 @@ _CCCL_REQUIRES(integral<_To>)
   }
   else // !integral<_From>
   {
-    if constexpr (_CCCL_TRAIT(is_signed, _To))
+    if constexpr (is_signed_v<_To>)
     {
       return static_cast<_To>(__value) >= 0;
     }
-    else // !_CCCL_TRAIT(is_signed, _To)
+    else // !is_signed_v<_To>
     {
       return true;
     }
@@ -415,7 +415,7 @@ public:
   using size_type  = make_unsigned_t<index_type>;
   using rank_type  = size_t;
 
-  static_assert(_CCCL_TRAIT(is_integral, index_type) && !_CCCL_TRAIT(is_same, index_type, bool),
+  static_assert(is_integral_v<index_type> && !is_same_v<index_type, bool>,
                 "extents::index_type must be a signed or unsigned integer type");
   static_assert(
     __all<(__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent))...>::value,
@@ -468,8 +468,8 @@ public:
 
   template <class _OtherIndexType>
   static constexpr bool __is_convertible_to_index_type =
-    _CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type)
-    && _CCCL_TRAIT(is_nothrow_constructible, index_type, const _OtherIndexType&);
+    is_convertible_v<const _OtherIndexType&, index_type>
+    && is_nothrow_constructible_v<index_type, const _OtherIndexType&>;
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES((_Size == __rank_dynamic_) _CCCL_AND __is_convertible_to_index_type<_OtherIndexType>)
@@ -604,7 +604,7 @@ public:
 
   // Comparison operator
   template <class _OtherIndexType, size_t... _OtherExtents>
-  [[nodiscard]] _CCCL_API friend constexpr auto
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
   {
     if constexpr (rank() != sizeof...(_OtherExtents))
@@ -701,7 +701,7 @@ _CCCL_REQUIRES(integral<_IndexType>)
 {
   if constexpr (integral<_From>)
   {
-    if constexpr (_CCCL_TRAIT(is_signed, _From))
+    if constexpr (is_signed_v<_From>)
     {
       if (__value < 0)
       {
@@ -718,7 +718,7 @@ _CCCL_REQUIRES(integral<_IndexType>)
   }
   else
   {
-    if constexpr (_CCCL_TRAIT(is_signed, _From))
+    if constexpr (is_signed_v<_From>)
     {
       if (static_cast<_IndexType>(__value) < 0)
       {

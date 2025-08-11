@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-_CCCL_CONCEPT HasMinus = _CCCL_REQUIRES_EXPR((T), T t)((t - t));
+_CCCL_CONCEPT HasMinus = _CCCL_REQUIRES_EXPR((T), T t)(unused(t - t));
 
 using sized_it = random_access_iterator<int*>;
 static_assert(cuda::std::sized_sentinel_for<sized_it, sized_it>);

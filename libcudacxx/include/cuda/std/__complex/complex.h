@@ -88,7 +88,7 @@ public:
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
-            enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>                           = 0>
+            enable_if_t<is_constructible_v<_Tp, _Up>, int>                                      = 0>
   _CCCL_API explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
@@ -327,29 +327,29 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
     bool __recalc = false;
     if (_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b))
     {
-      __a = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
-      __b = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
+      __a = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
+      __b = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
       if (_CUDA_VSTD::isnan(__c))
       {
-        __c = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __c);
+        __c = _CUDA_VSTD::copysign(_Tp(0), __c);
       }
       if (_CUDA_VSTD::isnan(__d))
       {
-        __d = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __d);
+        __d = _CUDA_VSTD::copysign(_Tp(0), __d);
       }
       __recalc = true;
     }
     if (_CUDA_VSTD::isinf(__c) || _CUDA_VSTD::isinf(__d))
     {
-      __c = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
-      __d = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
+      __c = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
+      __d = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
       if (_CUDA_VSTD::isnan(__a))
       {
-        __a = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __a);
+        __a = _CUDA_VSTD::copysign(_Tp(0), __a);
       }
       if (_CUDA_VSTD::isnan(__b))
       {
-        __b = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __b);
+        __b = _CUDA_VSTD::copysign(_Tp(0), __b);
       }
       __recalc = true;
     }
@@ -359,19 +359,19 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
     {
       if (_CUDA_VSTD::isnan(__a))
       {
-        __a = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __a);
+        __a = _CUDA_VSTD::copysign(_Tp(0), __a);
       }
       if (_CUDA_VSTD::isnan(__b))
       {
-        __b = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __b);
+        __b = _CUDA_VSTD::copysign(_Tp(0), __b);
       }
       if (_CUDA_VSTD::isnan(__c))
       {
-        __c = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __c);
+        __c = _CUDA_VSTD::copysign(_Tp(0), __c);
       }
       if (_CUDA_VSTD::isnan(__d))
       {
-        __d = _CUDA_VSTD::__constexpr_copysign(_Tp(0), __d);
+        __d = _CUDA_VSTD::copysign(_Tp(0), __d);
       }
       __recalc = true;
     }
@@ -412,8 +412,8 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw  = _CUDA_VSTD::__constexpr_logb(
-    _CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::__constexpr_fabs(__c), _CUDA_VSTD::__constexpr_fabs(__d)));
+  _Tp __logbw =
+    _CUDA_VSTD::__constexpr_logb(_CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::fabs(__c), _CUDA_VSTD::fabs(__d)));
   if (_CUDA_VSTD::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
@@ -479,21 +479,21 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   {
     if ((__denom == _Tp(0)) && (!_CUDA_VSTD::isnan(__a) || !_CUDA_VSTD::isnan(__b)))
     {
-      __x = _CUDA_VSTD::__constexpr_copysign(numeric_limits<_Tp>::infinity(), __c) * __a;
-      __y = _CUDA_VSTD::__constexpr_copysign(numeric_limits<_Tp>::infinity(), __c) * __b;
+      __x = _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __c) * __a;
+      __y = _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __c) * __b;
     }
     else if ((_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b)) && _CUDA_VSTD::isfinite(__c)
              && _CUDA_VSTD::isfinite(__d))
     {
-      __a = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
-      __b = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
+      __a = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
+      __b = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
       __x = numeric_limits<_Tp>::infinity() * (__a * __c + __b * __d);
       __y = numeric_limits<_Tp>::infinity() * (__b * __c - __a * __d);
     }
     else if (_CUDA_VSTD::isinf(__logbw) && __logbw > _Tp(0) && _CUDA_VSTD::isfinite(__a) && _CUDA_VSTD::isfinite(__b))
     {
-      __c = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
-      __d = _CUDA_VSTD::__constexpr_copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
+      __c = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
+      __d = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
       __x = _Tp(0) * (__a * __c + __b * __d);
       __y = _Tp(0) * (__b * __c - __a * __d);
     }
@@ -606,7 +606,7 @@ template <class _Tp>
 
 // 26.3.7 values:
 
-template <class _Tp, bool = _CCCL_TRAIT(is_integral, _Tp), bool = _CCCL_TRAIT(is_floating_point, _Tp)>
+template <class _Tp, bool = is_integral_v<_Tp>, bool = is_floating_point_v<_Tp>>
 struct __cccl_complex_overload_traits
 {};
 

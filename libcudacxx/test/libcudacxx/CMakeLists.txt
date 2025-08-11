@@ -25,11 +25,12 @@ option(LIBCUDACXX_TEST_WITH_NVRTC
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
   # Should also set up dependency on the project when NVRTC is enabled
+  foreach (include IN ITEMS ${CUDA_INCLUDE_DIR})
+    set(LIBCUDACXX_TEST_COMPILER_FLAGS "${LIBCUDACXX_TEST_COMPILER_FLAGS} -I'${include}'")
+  endforeach()
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc")
   set(LIBCUDACXX_CUDA_COMPILER_ARG1 "")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "True")
-  set(LIBCUDACXX_FORCE_INCLUDE "")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS "-I'${CUDA_INCLUDE_DIR}'")
   # Use the NVRTCC utility to run the built test outputs
   set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
 else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
@@ -168,6 +169,7 @@ function(libcudacxx_add_test target_name_var source)
 
   add_executable(${target_name} "${source}")
   cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+  target_include_directories(${target_name} PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common")
   target_link_libraries(${target_name} PRIVATE
     libcudacxx::libcudacxx
     cccl.c2h.main

@@ -82,7 +82,7 @@ private:
   using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
 
   __async_resource __mr_;
-  ::cuda::stream_ref __stream_ = {};
+  ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
   size_t __count_              = 0;
   void* __buf_                 = nullptr;
 
@@ -92,9 +92,7 @@ private:
   //! @brief Helper to check whether a different buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    !_CCCL_TRAIT(_CUDA_VSTD::is_same,
-                 _CUDA_VSTD::__make_type_set<_Properties...>,
-                 _CUDA_VSTD::__make_type_set<_OtherProperties...>)
+    !_CUDA_VSTD::is_same_v<_CUDA_VSTD::__make_type_set<_Properties...>, _CUDA_VSTD::__make_type_set<_OtherProperties...>>
     && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Determines the allocation size given the alignment and size of `T`
@@ -144,24 +142,24 @@ private:
   {
     __async_resource* __resource_;
 
-    void* allocate(std::size_t __size, std::size_t __alignment)
+    void* allocate_sync(std::size_t __size, std::size_t __alignment)
     {
-      return __resource_->allocate(__size, __alignment);
+      return __resource_->allocate_sync(__size, __alignment);
     }
 
-    void deallocate(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
-      __resource_->deallocate(__ptr, __size, __alignment);
+      __resource_->deallocate_sync(__ptr, __size, __alignment);
     }
 
-    void* allocate_async(std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream)
+    void* allocate(::cuda::stream_ref __stream, std::size_t __size, std::size_t __alignment)
     {
-      return __resource_->allocate_async(__size, __alignment, __stream);
+      return __resource_->allocate(__stream, __size, __alignment);
     }
 
-    void deallocate_async(void* __ptr, std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream) noexcept
+    void deallocate(::cuda::stream_ref __stream, void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
-      __resource_->deallocate_async(__ptr, __size, __alignment, __stream);
+      __resource_->deallocate(__stream, __ptr, __size, __alignment);
     }
 
     friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
@@ -200,7 +198,7 @@ public:
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate_async(__get_allocation_size(__count_), __stream_))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_)))
   {}
 
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(const uninitialized_async_buffer&)            = delete;
@@ -211,7 +209,7 @@ public:
   //! Takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
+      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
@@ -223,7 +221,7 @@ public:
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
+      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
@@ -240,32 +238,32 @@ public:
 
     if (__buf_)
     {
-      __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
     }
     __mr_     = _CUDA_VSTD::move(__other.__mr_);
-    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, {});
+    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
     __count_  = _CUDA_VSTD::exchange(__other.__count_, 0);
     __buf_    = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that was
-  //! used to create the buffer and destroys the memory resource.
+  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
+  //! was used to create the buffer and destroys the memory resource.
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
     if (__buf_)
     {
-      __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
       __buf_   = nullptr;
       __count_ = 0;
     }
     auto __tmp_mr = _CUDA_VSTD::move(__mr_);
   }
 
-  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream that was
-  //! used to create the buffer.
+  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream
+  //! that was used to create the buffer.
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI ~uninitialized_async_buffer()
@@ -340,7 +338,7 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(::cuda::stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(::cuda::stream_ref __new_stream)
   {
     if (__new_stream != __stream_)
     {
@@ -353,7 +351,7 @@ public:
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
   {
     __stream_ = __new_stream;
   }

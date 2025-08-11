@@ -50,7 +50,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
   c2h::gen(C2H_SEED(1), b);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
+  transform_many(cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, cuda::std::plus<type>{});
 
   // compute reference and verify
   c2h::host_vector<type> a_h = a;
@@ -76,7 +76,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
   auto check_result_helper = detail::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
-  transform_many(in_it, check_result_it, num_items, ::cuda::std::identity{});
+  transform_many(in_it, check_result_it, num_items, cuda::std::identity{});
 
   check_result_helper.check_all_results_correct();
 }
@@ -97,7 +97,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
   auto check_result_helper = detail::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
-  transform_many(::cuda::std::make_tuple(a_it, b_it), check_result_it, num_items, ::cuda::std::plus<offset_t>{});
+  transform_many(cuda::std::make_tuple(a_it, b_it), check_result_it, num_items, cuda::std::plus<offset_t>{});
 
   check_result_helper.check_all_results_correct();
 }
@@ -105,7 +105,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 struct times_seven
 {
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator()(T v) const -> T
+  __host__ __device__ auto operator()(T v) const -> T
   {
     return static_cast<T>(v * 7);
   }
@@ -127,7 +127,7 @@ try
   c2h::gen(C2H_SEED(1), input);
 
   c2h::device_vector<type> result(static_cast<size_t>(num_items), thrust::no_init);
-  transform_many(::cuda::std::make_tuple(input.begin()), result.begin(), num_items, times_seven{});
+  transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, times_seven{});
 
   // compute reference and verify
   c2h::host_vector<type> input_h = input;
@@ -146,20 +146,20 @@ struct overaligned_addable_and_equal_comparable_policy
   template <typename CustomType>
   struct alignas(Alignment) type
   {
-    _CCCL_HOST_DEVICE static void check(const CustomType& obj)
+    __host__ __device__ static void check(const CustomType& obj)
     {
       _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
                    "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
     }
 
-    _CCCL_HOST_DEVICE friend auto operator==(const CustomType& a, const CustomType& b) -> bool
+    __host__ __device__ friend auto operator==(const CustomType& a, const CustomType& b) -> bool
     {
       check(a);
       check(b);
       return a.key == b.key;
     }
 
-    _CCCL_HOST_DEVICE friend auto operator+(char u, const CustomType& b) -> CustomType
+    __host__ __device__ friend auto operator+(char u, const CustomType& b) -> CustomType
     {
       check(b);
       CustomType result{};
@@ -194,29 +194,29 @@ struct uncommon_plus
 {
   // vector types
   template <typename T>
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const T& b) const -> T
+  __host__ __device__ auto operator()(int8_t a, const T& b) const -> T
   {
     return T{a, 0, 0} + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const huge_t& b) const -> huge_t
+  __host__ __device__ auto operator()(int8_t a, const huge_t& b) const -> huge_t
   {
     huge_t r = b;
     r.key += static_cast<size_t>(a);
     return r;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<32>& b) const -> overaligned_t<32>
+  __host__ __device__ auto operator()(int8_t a, const overaligned_t<32>& b) const -> overaligned_t<32>
   {
     return a + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<256>& b) const -> overaligned_t<256>
+  __host__ __device__ auto operator()(int8_t a, const overaligned_t<256>& b) const -> overaligned_t<256>
   {
     return a + b;
   }
 
-  _CCCL_HOST_DEVICE auto operator()(int8_t a, const overaligned_t<512>& b) const -> overaligned_t<512>
+  __host__ __device__ auto operator()(int8_t a, const overaligned_t<512>& b) const -> overaligned_t<512>
   {
     return a + b;
   }
@@ -235,7 +235,7 @@ C2H_TEST("DeviceTransform::Transform uncommon types", "[device][transform]", unc
   c2h::gen(C2H_SEED(1), b);
 
   c2h::device_vector<type> result(num_items, thrust::default_init);
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, uncommon_plus{});
+  transform_many(cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, uncommon_plus{});
 
   c2h::host_vector<int8_t> a_h = a;
   c2h::host_vector<type> b_h   = b;
@@ -253,18 +253,18 @@ struct non_default_constructible
   non_default_constructible& operator=(const non_default_constructible&) = default;
   ~non_default_constructible()                                           = default;
 
-  _CCCL_HOST_DEVICE explicit non_default_constructible(int data)
+  __host__ __device__ explicit non_default_constructible(int data)
       : data(data)
   {}
 
-  friend _CCCL_HOST_DEVICE auto operator==(non_default_constructible a, non_default_constructible b) -> bool
+  friend __host__ __device__ auto operator==(non_default_constructible a, non_default_constructible b) -> bool
   {
     return a.data == b.data;
   }
 };
-static_assert(!::cuda::std::is_trivially_default_constructible_v<non_default_constructible>);
-static_assert(!::cuda::std::is_default_constructible_v<non_default_constructible>);
-static_assert(::cuda::std::is_trivially_copyable_v<non_default_constructible>); // as required by the standard
+static_assert(!cuda::std::is_trivially_default_constructible_v<non_default_constructible>);
+static_assert(!cuda::std::is_default_constructible_v<non_default_constructible>);
+static_assert(cuda::std::is_trivially_copyable_v<non_default_constructible>); // as required by the standard
 static_assert(thrust::is_trivially_relocatable_v<non_default_constructible>); // CUB uses this check internally
 
 C2H_TEST("DeviceTransform::Transform non-default constructible types", "[device][transform]")
@@ -275,7 +275,7 @@ C2H_TEST("DeviceTransform::Transform non-default constructible types", "[device]
   c2h::device_vector<type> input(num_items, non_default_constructible{42});
   c2h::device_vector<type> result(num_items, non_default_constructible{0});
 
-  transform_many(::cuda::std::make_tuple(input.begin()), result.begin(), num_items, cuda::std::identity{});
+  transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, cuda::std::identity{});
 
   c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
@@ -286,7 +286,7 @@ struct nstream_kernel
 {
   static constexpr T scalar = 42;
 
-  _CCCL_HOST_DEVICE T operator()(const T& ai, const T& bi, const T& ci) const
+  __host__ __device__ T operator()(const T& ai, const T& bi, const T& ci) const
   {
     return ai + bi + scalar * ci;
   }
@@ -314,7 +314,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream nstream",
   c2h::host_vector<type> b_h = b;
   c2h::host_vector<type> c_h = c;
 
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin(), c.begin()), a.begin(), num_items, nstream_kernel<type>{});
+  transform_many(cuda::std::make_tuple(a.begin(), b.begin(), c.begin()), a.begin(), num_items, nstream_kernel<type>{});
 
   // compute reference and verify
   auto z = thrust::make_zip_iterator(a_h.begin(), b_h.begin(), c_h.begin());
@@ -347,10 +347,8 @@ C2H_TEST("DeviceTransform::Transform add five streams", "[device][transform]")
   c2h::gen(C2H_SEED(1), e, float{10}, float{100});
 
   c2h::device_vector<double> result(num_items, thrust::no_init);
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin(), c.begin(), d.begin(), e.begin()),
-                 result.begin(),
-                 num_items,
-                 sum_five{});
+  transform_many(
+    cuda::std::make_tuple(a.begin(), b.begin(), c.begin(), d.begin(), e.begin()), result.begin(), num_items, sum_five{});
 
   // compute reference and verify
   c2h::host_vector<std::int8_t> a_h  = a;
@@ -376,7 +374,7 @@ C2H_TEST("DeviceTransform::Transform no streams", "[device][transform]")
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<int> result(num_items, thrust::no_init);
-  transform_many(::cuda::std::tuple<>{}, result.begin(), num_items, give_me_five{});
+  transform_many(cuda::std::tuple<>{}, result.begin(), num_items, give_me_five{});
 
   // compute reference and verify
   c2h::device_vector<int> reference(num_items, 5);
@@ -391,7 +389,7 @@ C2H_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
   thrust::counting_iterator<type> b{10};
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
-  transform_many(::cuda::std::make_tuple(a, b), result.begin(), num_items, ::cuda::std::plus<type>{});
+  transform_many(cuda::std::make_tuple(a, b), result.begin(), num_items, cuda::std::plus<type>{});
 
   // compute reference and verify
   c2h::host_vector<type> reference_h(num_items);
@@ -409,7 +407,7 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type", "[device][tran
 
   using thrust::placeholders::_1;
   auto out = thrust::make_transform_output_iterator(result.begin(), _1 + 4);
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, ::cuda::std::plus<type>{});
+  transform_many(cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, cuda::std::plus<type>{});
   REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) + 4));
 }
 
@@ -424,7 +422,7 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type with void value 
   using it_t = cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, int>;
   static_assert(cuda::std::is_void_v<it_t::value_type>);
   auto out = it_t{thrust::raw_pointer_cast(result.data())};
-  transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, ::cuda::std::plus<type>{});
+  transform_many(cuda::std::make_tuple(a.begin(), b.begin()), out, num_items, cuda::std::plus<type>{});
   REQUIRE(result == c2h::device_vector<type>(num_items, 3));
 }
 
@@ -437,7 +435,7 @@ C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][tran
   c2h::gen(C2H_SEED(1), b);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
-  transform_many(::cuda::std::make_tuple(a, b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
+  transform_many(cuda::std::make_tuple(a, b.begin()), result.begin(), num_items, cuda::std::plus<type>{});
 
   // compute reference and verify
   c2h::host_vector<type> b_h = b;
@@ -451,7 +449,7 @@ struct plus_needs_stable_address
   int* a;
   int* b;
 
-  _CCCL_HOST_DEVICE int operator()(const int& v) const
+  __host__ __device__ int operator()(const int& v) const
   {
     const auto i = &v - a;
     return v + b[i];
@@ -469,7 +467,7 @@ C2H_TEST("DeviceTransform::Transform address stability", "[device][transform]")
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
   transform_many_stable(
-    ::cuda::std::make_tuple(thrust::raw_pointer_cast(a.data())),
+    cuda::std::make_tuple(thrust::raw_pointer_cast(a.data())),
     result.begin(),
     num_items,
     plus_needs_stable_address{thrust::raw_pointer_cast(a.data()), thrust::raw_pointer_cast(b.data())});
@@ -489,31 +487,31 @@ struct non_trivial
 
   non_trivial() = default;
 
-  _CCCL_HOST_DEVICE explicit non_trivial(int data)
+  __host__ __device__ explicit non_trivial(int data)
       : data(data)
   {}
 
-  _CCCL_HOST_DEVICE non_trivial(const non_trivial& nt)
+  __host__ __device__ non_trivial(const non_trivial& nt)
       : data(nt.data)
   {}
 
-  _CCCL_HOST_DEVICE auto operator=(const non_trivial& nt) -> non_trivial&
+  __host__ __device__ auto operator=(const non_trivial& nt) -> non_trivial&
   {
     data = nt.data;
     return *this;
   }
 
-  _CCCL_HOST_DEVICE auto operator-() const -> non_trivial
+  __host__ __device__ auto operator-() const -> non_trivial
   {
     return non_trivial{-data};
   }
 
-  friend _CCCL_HOST_DEVICE auto operator==(non_trivial a, non_trivial b) -> bool
+  friend __host__ __device__ auto operator==(non_trivial a, non_trivial b) -> bool
   {
     return a.data == b.data;
   }
 };
-static_assert(!::cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the standard
+static_assert(!cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the standard
 static_assert(!thrust::is_trivially_relocatable_v<non_trivial>); // CUB uses this check internally
 
 // Note(bgruber): I gave up on writing a test that checks whether the copy ctor/assignment operator is actually called
@@ -526,7 +524,7 @@ C2H_TEST("DeviceTransform::Transform not trivially relocatable", "[device][trans
   c2h::device_vector<non_trivial> input(num_items, non_trivial{42});
   c2h::device_vector<non_trivial> result(num_items, thrust::no_init);
   transform_many(
-    ::cuda::std::make_tuple(thrust::raw_pointer_cast(input.data())), result.begin(), num_items, ::cuda::std::negate<>{});
+    cuda::std::make_tuple(thrust::raw_pointer_cast(input.data())), result.begin(), num_items, cuda::std::negate<>{});
 
   const auto reference = c2h::device_vector<non_trivial>(num_items, non_trivial{-42});
   REQUIRE((reference == result));
@@ -561,7 +559,7 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
   thrust::sequence(b.begin(), b.end(), num_items + offset_a);
   c2h::device_vector<type> result(num_items);
   transform_many(
-    ::cuda::std::make_tuple(a.begin() + offset_a, b.begin() + offset_b), result.begin(), num_items, ::cuda::std::plus{});
+    cuda::std::make_tuple(a.begin() + offset_a, b.begin() + offset_b), result.begin(), num_items, cuda::std::plus{});
 
   using thrust::placeholders::_1;
   c2h::device_vector<type> reference(num_items);
@@ -604,8 +602,8 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
   using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
 
-  STATIC_REQUIRE(::cuda::std::is_constructible_v<kernel_arg>);
-  STATIC_REQUIRE(::cuda::std::is_copy_constructible_v<kernel_arg>);
+  STATIC_REQUIRE(cuda::std::is_constructible_v<kernel_arg>);
+  STATIC_REQUIRE(cuda::std::is_copy_constructible_v<kernel_arg>);
 }
 
 // See discussion on: https://github.com/NVIDIA/cccl/pull/4815
@@ -683,4 +681,19 @@ C2H_TEST("DeviceTransform::Transform function/output_iter return type not conver
 
   c2h::device_vector<C> reference(num_items, C{-43});
   CHECK(output == reference);
+}
+
+__global__ void unrelated_kernel()
+{
+  __shared__ int ssmem; // 4 bytes
+  extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
+  asm("" : "+r"(ssmem));
+  asm("" : "+r"(dsmem[0]));
+}
+
+C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static SMEM consumption", "[device][transform]")
+{
+  cudaFuncAttributes attrs;
+  REQUIRE(cudaFuncGetAttributes(&attrs, unrelated_kernel) == cudaSuccess);
+  REQUIRE(attrs.sharedSizeBytes == 4 + 12);
 }

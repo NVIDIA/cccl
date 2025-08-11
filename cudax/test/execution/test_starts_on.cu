@@ -95,15 +95,13 @@ C2H_TEST("starts_on with thread context", "[adaptors][starts_on]")
   cudax_async::thread_context thread;
   bool executed = false;
 
-  {
-    auto snd = cudax_async::starts_on(thread.get_scheduler(), cudax_async::just() | cudax_async::then([&]() {
-                                                                executed = true;
-                                                                return 123;
-                                                              }));
+  auto snd = cudax_async::starts_on(thread.get_scheduler(), cudax_async::just() | cudax_async::then([&]() {
+                                                              executed = true;
+                                                              return 123;
+                                                            }));
 
-    auto op = cudax_async::connect(std::move(snd), checked_value_receiver{123});
-    cudax_async::start(op);
-  }
+  auto op = cudax_async::connect(std::move(snd), checked_value_receiver{123});
+  cudax_async::start(op);
 
   thread.join();
 

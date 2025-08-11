@@ -228,7 +228,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
@@ -242,7 +242,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::maximum<>{});
@@ -256,7 +256,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::minimum<>{});
@@ -497,7 +497,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
@@ -726,7 +726,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
     return cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
@@ -743,7 +743,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::maximum<>{});
@@ -760,7 +760,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::minimum<>{});
@@ -790,7 +790,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     return cub::ThreadReduce(input, reduction_op);
