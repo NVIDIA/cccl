@@ -23,13 +23,13 @@ struct async_resource_base
 {
   virtual ~async_resource_base() = default;
 
-  virtual void* allocate(std::size_t, std::size_t) = 0;
+  virtual void* allocate_sync(std::size_t, std::size_t) = 0;
 
-  virtual void deallocate(void* ptr, std::size_t, std::size_t) noexcept = 0;
+  virtual void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept = 0;
 
-  virtual void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) = 0;
+  virtual void* allocate(cuda::stream_ref, std::size_t, std::size_t) = 0;
 
-  virtual void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) = 0;
+  virtual void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) = 0;
 
   bool operator==(const async_resource_base& other) const
   {
@@ -61,19 +61,19 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
       : _val(val)
   {}
 
-  void* allocate(std::size_t, std::size_t) override
+  void* allocate_sync(std::size_t, std::size_t) override
   {
     return &_val;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept override {}
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept override {}
 
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) override
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t) override
   {
     return &_val;
   }
 
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) override {}
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) override {}
 
   bool operator==(const async_resource_derived_first& other) const
   {
@@ -86,7 +86,7 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
 
   int _val = 0;
 };
-static_assert(cuda::mr::async_resource<async_resource_derived_first<cuda::mr::host_accessible>>, "");
+static_assert(cuda::mr::resource<async_resource_derived_first<cuda::mr::host_accessible>>, "");
 
 struct some_data
 {
@@ -102,19 +102,19 @@ struct async_resource_derived_second : public async_resource_base<Properties...>
       : _val(val)
   {}
 
-  void* allocate(std::size_t, std::size_t) override
+  void* allocate_sync(std::size_t, std::size_t) override
   {
     return &_val->_val;
   }
 
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept override {}
+  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept override {}
 
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) override
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t) override
   {
     return &_val->_val;
   }
 
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) override {}
+  void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t) override {}
 
   bool operator==(const async_resource_derived_second& other) const
   {
@@ -139,12 +139,12 @@ void test_async_resource_ref()
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
 
   // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
-  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == second.allocate_async(0, 0, ::cudaStream_t{}));
+  assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
+  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == second.allocate(::cudaStream_t{}, 0, 0));
 
   // Ensure that assignment still works
   ref_second = ref_first;
-  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
+  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
 }
 
 template <class... Properties>
@@ -165,12 +165,12 @@ void test_async_resource_ref_from_pointer()
   cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
 
   // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
-  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == second.allocate_async(0, 0, ::cudaStream_t{}));
+  assert(ref_first.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
+  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == second.allocate(::cudaStream_t{}, 0, 0));
 
   // Ensure that assignment still works
   ref_second = ref_first;
-  assert(ref_second.allocate_async(0, 0, ::cudaStream_t{}) == first.allocate_async(0, 0, ::cudaStream_t{}));
+  assert(ref_second.allocate(::cudaStream_t{}, 0, 0) == first.allocate(::cudaStream_t{}, 0, 0));
 }
 
 // clang complains about pure virtual functions being called, so ensure that we properly crash if so
