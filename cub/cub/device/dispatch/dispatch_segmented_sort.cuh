@@ -60,10 +60,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_sort
-{
-} // namespace detail::segmented_sort
-
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
