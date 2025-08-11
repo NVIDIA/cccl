@@ -243,9 +243,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it
 {
   if constexpr (::cuda::std::contiguous_iterator<Iterator>)
   {
-    using value_type = it_value_t<Iterator>;
-    using size_type  = it_difference_t<Iterator>;
-    return cub::CacheModifiedInputIterator<LoadModifier, value_type, size_type>{
+    return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
       THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
   }
   else
