@@ -95,6 +95,30 @@ TEST_CASE("permutation_iterator", "[iterators]")
   }
 }
 
+TEST_CASE("reverse_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    thrust::device_vector<int> expected{9, 8, 7, 6, 5, 4, 3, 2, 1};
+    CHECK(thrust::equal(
+      cuda::std::reverse_iterator{vec.end()}, cuda::std::reverse_iterator{vec.begin()}, expected.begin()));
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    thrust::host_vector<int> expected{9, 8, 7, 6, 5, 4, 3, 2, 1};
+    CHECK(thrust::equal(
+      cuda::std::reverse_iterator{vec.end()}, cuda::std::reverse_iterator{vec.begin()}, expected.begin()));
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int> expected{9, 8, 7, 6, 5, 4, 3, 2, 1};
+    CHECK(thrust::equal(
+      cuda::std::reverse_iterator{vec.end()}, cuda::std::reverse_iterator{vec.begin()}, expected.begin()));
+  }
+}
+
 TEST_CASE("strided_iterator", "[iterators]")
 {
   auto discard = cuda::discard_iterator{};
@@ -243,5 +267,33 @@ TEST_CASE("transform_iterator", "[iterators]")
     thrust::copy(cuda::make_transform_iterator(vec.begin(), plus_one{}),
                  cuda::make_transform_iterator(vec.end(), plus_one{}),
                  discard);
+  }
+}
+
+TEST_CASE("zip_iterator", "[iterators]")
+{
+  cuda::zip_function<cuda::std::plus<void>> fun{};
+  { // device system
+    thrust::device_vector<int> vec{-1, -1, -1, -1};
+    auto iter = cuda::make_transform_iterator(cuda::make_zip_iterator(vec.begin(), cuda::counting_iterator{4}), fun);
+    thrust::copy(iter, iter + 4, vec.begin());
+    thrust::device_vector<int> expected{3, 4, 5, 6};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{-1, -1, -1, -1};
+    auto iter = cuda::make_transform_iterator(cuda::make_zip_iterator(vec.begin(), cuda::counting_iterator{4}), fun);
+    thrust::copy(iter, iter + 4, vec.begin());
+    thrust::host_vector<int> expected{3, 4, 5, 6};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{-1, -1, -1, -1};
+    auto iter = cuda::make_transform_iterator(cuda::make_zip_iterator(vec.begin(), cuda::counting_iterator{4}), fun);
+    thrust::copy(iter, iter + 4, vec.begin());
+    std::vector<int> expected{3, 4, 5, 6};
+    CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
   }
 }

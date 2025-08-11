@@ -36,8 +36,7 @@ struct __atomic_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
-  static_assert(_CCCL_TRAIT(is_trivially_copyable, _Tp),
-                "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
+  static_assert(is_trivially_copyable_v<_Tp>, "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;

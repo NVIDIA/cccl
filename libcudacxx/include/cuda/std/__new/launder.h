@@ -33,8 +33,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* launder(_Tp* __p) noexcept
 {
-  static_assert(!_CCCL_TRAIT(is_function, _Tp), "can't launder functions");
-  static_assert(!_CCCL_TRAIT(is_same, void, remove_cv_t<_Tp>), "can't launder cv-void");
+  static_assert(!is_function_v<_Tp>, "can't launder functions");
+  static_assert(!is_same_v<void, remove_cv_t<_Tp>>, "can't launder cv-void");
 #if defined(_CCCL_BUILTIN_LAUNDER)
   return _CCCL_BUILTIN_LAUNDER(__p);
 #else

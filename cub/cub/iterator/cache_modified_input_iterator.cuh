@@ -46,6 +46,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 
 #include <cuda/std/iterator>
@@ -234,5 +235,26 @@ public:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+namespace detail
+{
+template <CacheLoadModifier LoadModifier, typename Iterator>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+{
+  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  {
+    return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
+      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+  }
+  else
+  {
+    return it;
+  }
+}
+
+template <CacheLoadModifier LoadModifier, typename Iterator>
+using try_make_cache_modified_iterator_t =
+  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+} // namespace detail
 
 CUB_NAMESPACE_END

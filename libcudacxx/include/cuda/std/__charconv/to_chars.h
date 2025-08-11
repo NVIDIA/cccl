@@ -93,14 +93,14 @@ _CCCL_API constexpr void __to_chars_int_generic(char* __last, _Tp __value, int _
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr to_chars_result
 to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
 {
   _CCCL_ASSERT(__base >= 2 && __base <= 36, "base must be in the range [2, 36]");
   _CCCL_ASSERT(__first <= __last, "output range must be a valid range");
 
-  if constexpr (_CCCL_TRAIT(is_signed, _Tp))
+  if constexpr (is_signed_v<_Tp>)
   {
     if (__value < _Tp{0} && __first < __last)
     {
@@ -129,7 +129,7 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
 [[nodiscard]] _CCCL_API constexpr to_chars_result
 to_chars(char* __first, char* __last, char __value, int __base = 10) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_signed, char))
+  if constexpr (is_signed_v<char>)
   {
     return _CUDA_VSTD::to_chars(__first, __last, static_cast<signed char>(__value), __base);
   }

@@ -45,13 +45,33 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/numeric>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/bit>
 
 CUB_NAMESPACE_BEGIN
+namespace detail::transform
+{
+struct always_true_predicate
+{
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
+  {
+    return true;
+  }
+};
+} // namespace detail::transform
+CUB_NAMESPACE_END
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : _CUDA_VSTD::true_type
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
 enum class Algorithm
@@ -193,11 +213,8 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 constexpr int ldgsts_size_and_align = 16;
 
 template <typename ItValueSizesAlignments>
-_CCCL_HOST_DEVICE constexpr auto memcpy_async_smem_for_tile_size(
-  ItValueSizesAlignments it_value_sizes_alignments,
-  int tile_size,
-  int /*block_threads*/,
-  int copy_alignment = ldgsts_size_and_align) -> int
+_CCCL_HOST_DEVICE constexpr auto memcpy_async_dyn_smem_for_tile_size(
+  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int copy_alignment = ldgsts_size_and_align) -> int
 {
   int smem_size = 0;
   for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
@@ -220,35 +237,23 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int sm_arch) -> int
 }
 
 template <typename ItValueSizesAlignments>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(
-  ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int block_threads, int bulk_copy_align) -> int
+_CCCL_HOST_DEVICE constexpr auto
+bulk_copy_dyn_smem_for_tile_size(ItValueSizesAlignments it_value_sizes_alignments, int tile_size, int bulk_copy_align)
+  -> int
 {
   // we rely on the tile_size being a multiple of alignments, so shifting offsets/pointers by it retains alignments
   _CCCL_ASSERT(tile_size % bulk_copy_align == 0, "");
   _CCCL_ASSERT(tile_size % bulk_copy_size_multiple == 0, "");
 
-  int min_retained_alignment = 2 << 30; // largest alignment that can fit into int
-  int max_alignment          = 1;
-  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  int tile_padding = bulk_copy_align;
+  for (auto&& [_, vt_alignment] : it_value_sizes_alignments)
   {
-    min_retained_alignment = ::cuda::std::min(min_retained_alignment, static_cast<int>(vt_size) * block_threads);
-    max_alignment          = ::cuda::std::max(max_alignment, static_cast<int>(vt_alignment));
+    tile_padding = ::cuda::std::max(tile_padding, static_cast<int>(vt_alignment));
   }
-  const bool tile_sizes_retain_max_alignment = max_alignment <= min_retained_alignment;
-  const int tile_padding =
-    tile_sizes_retain_max_alignment ? ::cuda::std::max(bulk_copy_align, max_alignment) : bulk_copy_align;
 
-  // dynamic SMEM comes after static shared memory (which contains the 8-byte barrier) and is at least 16 bytes aligned.
-  // So let's start at offset 16. This also hits the worst case scenario for types with alignment larger than 16,
-  // needing the most padding before the first tile. From observation, dynamic shared memory starts at address 0x408
-  // within the shared memory window of the current CTA.
-  int smem_size = ::cuda::round_up(int{sizeof(uint64_t)}, 16);
-  for (auto&& [vt_size, vt_alignment] : it_value_sizes_alignments)
+  int smem_size = tile_padding; // for the barrier and padding
+  for (auto&& [vt_size, _] : it_value_sizes_alignments)
   {
-    if (!tile_sizes_retain_max_alignment)
-    {
-      smem_size = ::cuda::round_up(smem_size, static_cast<int>(vt_alignment));
-    }
     smem_size += tile_padding + static_cast<int>(vt_size) * tile_size;
   }
   return smem_size;
@@ -296,14 +301,23 @@ _CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
     {{sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)}...}};
 }
 
-template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn, typename RandomAccessIteratorOut>
+template <bool RequiresStableAddress,
+          bool DenseOutput,
+          typename RandomAccessIteratorTupleIn,
+          typename RandomAccessIteratorOut>
 struct policy_hub
 {
   static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
 };
 
-template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut>
-struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut>
+template <bool RequiresStableAddress,
+          bool DenseOutput,
+          typename... RandomAccessIteratorsIn,
+          typename RandomAccessIteratorOut>
+struct policy_hub<RequiresStableAddress,
+                  DenseOutput,
+                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                  RandomAccessIteratorOut>
 {
   static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
   static constexpr bool all_inputs_contiguous =
@@ -327,9 +341,10 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif       = arch_to_min_bytes_in_flight(300);
-    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy_inputs || no_input_streams
-                                      || !all_input_values_same_size || !value_type_divides_load_store_size;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || !all_input_values_same_size
+      || !value_type_divides_load_store_size || !DenseOutput;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
     using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
@@ -344,10 +359,9 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      memcpy_async_smem_for_tile_size(
+      memcpy_async_dyn_smem_for_tile_size(
         make_sizes_alignments<RandomAccessIteratorsIn...>(),
         block_threads* async_policy::min_items_per_thread,
-        block_threads,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
     static constexpr bool use_fallback =
@@ -369,14 +383,23 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
     static constexpr bool exhaust_smem =
-      bulk_copy_smem_for_tile_size(
+      bulk_copy_dyn_smem_for_tile_size(
         make_sizes_alignments<RandomAccessIteratorsIn...>(),
         AsyncBlockSize* async_policy::min_items_per_thread,
-        AsyncBlockSize,
         alignment)
       > int{max_smem_per_block};
+
+    // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
+    // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
+    // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly and
+    // complex, so let's fall back in this case.
+    static constexpr int max_alignment =
+      ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
+    static constexpr int tile_sizes_retain_alignment =
+      (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
+
     static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || !tile_sizes_retain_alignment;
 
   public:
     static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);

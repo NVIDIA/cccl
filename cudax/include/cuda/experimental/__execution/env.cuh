@@ -24,6 +24,7 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
@@ -82,7 +83,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
   }
 
   _CCCL_TEMPLATE(class _Env, class = _Env*) // not considered if _Env is a reference type
-  _CCCL_REQUIRES((!__is_specialization_of_v<_Env, __fwd_env_>) )
+  _CCCL_REQUIRES((!::cuda::__is_specialization_of_v<_Env, __fwd_env_>) )
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
   {
     return static_cast<_Env&&>(__env);
@@ -150,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
     -> decltype(auto)
   {
-    if constexpr (__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_Env>, __fwd_env_>)
+    if constexpr (::cuda::__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_Env>, __fwd_env_>)
     {
       // If the environment is already a forwarding environment, we can just return it.
       return static_cast<_Env>(static_cast<_Env&&>(__env)); // take care to not return an rvalue reference
@@ -226,7 +227,7 @@ public:
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(_CUDA_VSTD::is_same, _Env, env_t)) _CCCL_AND __is_compatible_env<_Env>)
+  _CCCL_REQUIRES((!_CUDA_VSTD::is_same_v<_Env, env_t>) _CCCL_AND __is_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
       : __mr_(__env.query(::cuda::mr::get_memory_resource))
       , __stream_(__env.query(::cuda::get_stream))

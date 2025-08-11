@@ -94,7 +94,7 @@ template <class _Tp, size_t _Capacity>
   {
     return __inplace_vector_specialization::__empty;
   }
-  else if (_CCCL_TRAIT(is_trivial, _Tp))
+  else if (is_trivial_v<_Tp>)
   {
     return __inplace_vector_specialization::__trivial;
   }
@@ -124,7 +124,7 @@ struct _Rollback_change_size
   }
 };
 
-template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_destructible, _Tp)>
+template <class _Tp, size_t _Capacity, bool = is_trivially_destructible_v<_Tp>>
 struct __inplace_vector_destruct_base
 {
   using size_type   = size_t;
@@ -212,7 +212,7 @@ struct __inplace_vector_storage : public __inplace_vector_destruct_base<_Tp, _Ca
   // [containers.sequences.inplace.vector.modifiers], modifiers
   template <class... _Args>
   _CCCL_API constexpr reference
-  unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+  unchecked_emplace_back(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
   {
     auto __final = _CUDA_VSTD::__construct_at(end(), _CUDA_VSTD::forward<_Args>(__args)...);
     ++this->__size_;
@@ -226,7 +226,7 @@ protected:
     this->__size_ -= static_cast<__size_type>(__last - __first);
   }
 
-  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _CCCL_TEMPLATE(bool _IsNothrow = is_nothrow_default_constructible_v<_Tp>)
   _CCCL_REQUIRES(_IsNothrow)
   _CCCL_API inline void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
   {
@@ -238,7 +238,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _CCCL_TEMPLATE(bool _IsNothrow = is_nothrow_default_constructible_v<_Tp>)
   _CCCL_REQUIRES((!_IsNothrow))
   _CCCL_API inline void __uninitialized_value_construct(iterator __first, iterator __last)
   {
@@ -252,7 +252,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_TEMPLATE(bool _IsNothrow = is_nothrow_copy_constructible_v<_Tp>)
   _CCCL_REQUIRES(_IsNothrow)
   _CCCL_API inline void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
   {
@@ -264,7 +264,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_TEMPLATE(bool _IsNothrow = is_nothrow_copy_constructible_v<_Tp>)
   _CCCL_REQUIRES((!_IsNothrow))
   _CCCL_API inline void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
   {
@@ -278,7 +278,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = is_nothrow_copy_constructible_v<_Tp>)
   _CCCL_REQUIRES(_IsNothrow)
   _CCCL_API inline void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
@@ -290,7 +290,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
-  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = is_nothrow_copy_constructible_v<_Tp>)
   _CCCL_REQUIRES((!_IsNothrow))
   _CCCL_API inline void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
   {
@@ -304,7 +304,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
-  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = is_nothrow_move_constructible_v<_Tp>)
   _CCCL_REQUIRES(_IsNothrow)
   _CCCL_API inline void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
@@ -316,7 +316,7 @@ protected:
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
-  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = is_nothrow_move_constructible_v<_Tp>)
   _CCCL_REQUIRES((!_IsNothrow))
   _CCCL_API inline void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
   {
@@ -332,13 +332,13 @@ protected:
 };
 
 // * If is_trivially_copy_constructible_v<T> is true, then IV has a trivial copy constructor.
-template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)>
+template <class _Tp, size_t _Capacity, bool = is_trivially_copy_constructible_v<_Tp>>
 struct __inplace_vector_copy : __inplace_vector_storage<_Tp, _Capacity>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy, __inplace_vector_storage, _Tp, _Capacity);
 
   _CCCL_API inline __inplace_vector_copy(const __inplace_vector_copy& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+    is_nothrow_copy_constructible_v<_Tp>)
       : __base()
   {
     this->__uninitialized_copy(__other.begin(), __other.end(), this->begin());
@@ -361,15 +361,14 @@ struct __inplace_vector_copy<_Tp, _Capacity, true> : __inplace_vector_storage<_T
 };
 
 // * If is_trivially_move_constructible_v<T> is true, then IV has a trivial move constructor.
-template <class _Tp, size_t _Capacity, bool = _CCCL_TRAIT(is_trivially_move_constructible, _Tp)>
+template <class _Tp, size_t _Capacity, bool = is_trivially_move_constructible_v<_Tp>>
 struct __inplace_vector_move : __inplace_vector_copy<_Tp, _Capacity>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move, __inplace_vector_copy, _Tp, _Capacity);
 
   _CCCL_HIDE_FROM_ABI __inplace_vector_move(const __inplace_vector_move&) = default;
 
-  _CCCL_API inline __inplace_vector_move(__inplace_vector_move&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_API inline __inplace_vector_move(__inplace_vector_move&& __other) noexcept(is_nothrow_move_constructible_v<_Tp>)
       : __base()
   {
     this->__uninitialized_move(__other.begin(), __other.end(), this->begin());
@@ -394,7 +393,7 @@ struct __inplace_vector_move<_Tp, _Capacity, true> : __inplace_vector_copy<_Tp, 
 // assignment operator
 template <class _Tp,
           size_t _Capacity,
-          bool = _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)>
+          bool = is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_assignable_v<_Tp>>
 struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_copy_assign, __inplace_vector_move, _Tp, _Capacity);
@@ -403,7 +402,7 @@ struct __inplace_vector_copy_assign : __inplace_vector_move<_Tp, _Capacity>
   _CCCL_HIDE_FROM_ABI __inplace_vector_copy_assign(__inplace_vector_copy_assign&&)      = default;
 
   _CCCL_API inline __inplace_vector_copy_assign& operator=(const __inplace_vector_copy_assign& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_copy_assignable, _Tp))
+    is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_assignable_v<_Tp>)
   {
     if (__other.size() < this->size())
     {
@@ -435,7 +434,7 @@ struct __inplace_vector_copy_assign<_Tp, _Capacity, true> : __inplace_vector_mov
 // assignment operator
 template <class _Tp,
           size_t _Capacity,
-          bool = _CCCL_TRAIT(is_trivially_move_constructible, _Tp) && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)>
+          bool = is_trivially_move_constructible_v<_Tp> && is_trivially_move_assignable_v<_Tp>>
 struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacity>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_move_assign, __inplace_vector_copy_assign, _Tp, _Capacity);
@@ -445,7 +444,7 @@ struct __inplace_vector_move_assign : __inplace_vector_copy_assign<_Tp, _Capacit
   _CCCL_HIDE_FROM_ABI __inplace_vector_move_assign& operator=(const __inplace_vector_move_assign&) = default;
 
   _CCCL_API inline __inplace_vector_move_assign& operator=(__inplace_vector_move_assign&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+    is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
   {
     if (__other.size() < this->size())
     {
@@ -546,7 +545,7 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
   // [containers.sequences.inplace.vector.modifiers], modifiers
   template <class... _Args>
   _CCCL_API constexpr reference
-  unchecked_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+  unchecked_emplace_back(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
   {
     _Tp* __final = __elems_ + __size_;
     *__final     = _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
@@ -1397,8 +1396,7 @@ public:
   }
 
   template <class... _Args>
-  _CCCL_API constexpr pointer
-  try_emplace_back(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
+  _CCCL_API constexpr pointer try_emplace_back(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
   {
     if (this->size() == _Capacity)
     {
@@ -1408,7 +1406,7 @@ public:
     return _CUDA_VSTD::addressof(this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...));
   }
 
-  _CCCL_API constexpr pointer try_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_API constexpr pointer try_push_back(const _Tp& __value) noexcept(is_nothrow_copy_constructible_v<_Tp>)
   {
     if (this->size() == _Capacity)
     {
@@ -1418,7 +1416,7 @@ public:
     return _CUDA_VSTD::addressof(this->unchecked_emplace_back(__value));
   }
 
-  _CCCL_API constexpr pointer try_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_API constexpr pointer try_push_back(_Tp&& __value) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     if (this->size() == _Capacity)
     {
@@ -1432,7 +1430,7 @@ public:
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _CCCL_API constexpr _CUDA_VRANGES::iterator_t<_Range>
-  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  try_append_range(_Range&& __range) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     auto __last  = _CUDA_VRANGES::end(__range);
@@ -1447,7 +1445,7 @@ public:
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
                    _CUDA_VRANGES::forward_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range>)
   _CCCL_API constexpr _CUDA_VRANGES::iterator_t<_Range>
-  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  try_append_range(_Range&& __range) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     const auto __capacity = _Capacity - this->size();
     const auto __size     = _CUDA_VRANGES::size(__range);
@@ -1463,7 +1461,7 @@ public:
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
                    _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(!_CUDA_VRANGES::sized_range<_Range>))
   _CCCL_API constexpr _CUDA_VRANGES::iterator_t<_Range>
-  try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  try_append_range(_Range&& __range) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     const auto __capacity = static_cast<ptrdiff_t>(_Capacity - this->size());
     auto __first          = _CUDA_VRANGES::begin(__range);
@@ -1477,14 +1475,12 @@ public:
 
   using __base::unchecked_emplace_back;
 
-  _CCCL_API constexpr reference
-  unchecked_push_back(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_API constexpr reference unchecked_push_back(const _Tp& __value) noexcept(is_nothrow_copy_constructible_v<_Tp>)
   {
     return this->unchecked_emplace_back(__value);
   }
 
-  _CCCL_API constexpr reference
-  unchecked_push_back(_Tp&& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_API constexpr reference unchecked_push_back(_Tp&& __value) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     return this->unchecked_emplace_back(_CUDA_VSTD::move(__value));
   }
@@ -1495,7 +1491,7 @@ public:
     this->__destroy(__end - 1, __end);
   }
 
-  _CCCL_API constexpr iterator erase(const_iterator __cpos) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  _CCCL_API constexpr iterator erase(const_iterator __cpos) noexcept(is_nothrow_move_assignable_v<_Tp>)
   {
     const auto __pos = static_cast<size_type>(__cpos - this->cbegin());
     if (__pos > this->size())
@@ -1516,7 +1512,7 @@ public:
   }
 
   _CCCL_API constexpr iterator
-  erase(const_iterator __cfirst, const_iterator __clast) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  erase(const_iterator __cfirst, const_iterator __clast) noexcept(is_nothrow_move_assignable_v<_Tp>)
   {
     const iterator __first = (iterator) __cfirst;
     const iterator __last  = (iterator) __clast;
@@ -1597,9 +1593,9 @@ public:
   _CCCL_API static constexpr void shrink_to_fit() noexcept {}
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _CCCL_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
-  _CCCL_API constexpr void swap(inplace_vector& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2))
+  _CCCL_REQUIRES(is_swappable_v<_Tp2> _CCCL_AND is_move_constructible_v<_Tp2>)
+  _CCCL_API constexpr void
+  swap(inplace_vector& __other) noexcept(is_nothrow_swappable_v<_Tp2> && is_nothrow_move_constructible_v<_Tp2>)
   {
     if (this->size() < __other.size())
     {
@@ -1616,9 +1612,9 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _CCCL_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
+  _CCCL_REQUIRES(is_swappable_v<_Tp2> _CCCL_AND is_move_constructible_v<_Tp2>)
   _CCCL_API friend constexpr void swap(inplace_vector& __lhs, inplace_vector& __rhs) noexcept(
-    _Capacity == 0 || (_CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2)))
+    _Capacity == 0 || (is_nothrow_swappable_v<_Tp2> && is_nothrow_move_constructible_v<_Tp2>) )
   {
     __lhs.swap(__rhs);
   }
@@ -1674,7 +1670,7 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   // [containers.sequences.inplace.vector.erasure]
-  _CCCL_API constexpr size_type __erase(const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  _CCCL_API constexpr size_type __erase(const _Tp& __value) noexcept(is_nothrow_move_assignable_v<_Tp>)
   {
     const iterator __old_end = this->end();
     const iterator __new_end = _CUDA_VSTD::remove(this->begin(), __old_end, __value);
@@ -1683,7 +1679,7 @@ public:
   }
 
   template <class _Pred>
-  _CCCL_API constexpr size_type __erase_if(_Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+  _CCCL_API constexpr size_type __erase_if(_Pred __pred) noexcept(is_nothrow_move_assignable_v<_Tp>)
   {
     const iterator __old_end = this->end();
     const iterator __new_end = _CUDA_VSTD::remove_if(this->begin(), __old_end, _CUDA_VSTD::move(__pred));
@@ -2144,14 +2140,14 @@ public:
 // [containers.sequences.inplace.vector.erasure]
 template <class _Tp, size_t _Capacity>
 _CCCL_API constexpr size_t
-erase(inplace_vector<_Tp, _Capacity>& __cont, const _Tp& __value) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+erase(inplace_vector<_Tp, _Capacity>& __cont, const _Tp& __value) noexcept(is_nothrow_move_assignable_v<_Tp>)
 {
   return __cont.__erase(__value);
 }
 
 template <class _Tp, size_t _Capacity, class _Pred>
 _CCCL_API constexpr size_t
-erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(is_nothrow_move_assignable_v<_Tp>)
 {
   return __cont.__erase_if(__pred);
 }

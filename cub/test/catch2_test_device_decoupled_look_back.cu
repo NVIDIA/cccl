@@ -43,7 +43,7 @@ __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
 template <class MessageT>
 __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_state, MessageT* tile_data)
 {
-  using scan_op_t         = ::cuda::std::plus<>;
+  using scan_op_t         = cuda::std::plus<>;
   using scan_tile_state_t = cub::ScanTileState<MessageT>;
   using tile_prefix_op    = cub::TilePrefixCallbackOp<MessageT, scan_op_t, scan_tile_state_t>;
   using temp_storage_t    = typename tile_prefix_op::TempStorage;
@@ -149,7 +149,7 @@ C2H_TEST("Decoupled look-back works with various message types", "[decoupled loo
   REQUIRE(status == cudaSuccess);
 
   constexpr unsigned int threads_in_init_block = 256;
-  const unsigned int blocks_in_init_grid       = ::cuda::ceil_div(num_tiles, threads_in_init_block);
+  const unsigned int blocks_in_init_grid       = cuda::ceil_div(num_tiles, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, num_tiles);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

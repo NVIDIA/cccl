@@ -33,7 +33,7 @@
 #ifdef CCCL_DISABLE_PDL
 #  define _CCCL_HAS_PDL() 0
 #else // CCCL_DISABLE_PDL
-#  define _CCCL_HAS_PDL() _CCCL_CTK_AT_LEAST(12, 0)
+#  define _CCCL_HAS_PDL() 1
 #endif // CCCL_DISABLE_PDL
 
 #if _CCCL_HAS_PDL()
