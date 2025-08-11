@@ -14,8 +14,7 @@
 int main(int, char**)
 {
 #if !_CCCL_HAS_FLOAT128()
-  __float128 x4 = __float128(3.14) + __float128(3.14);
-  unused(x4);
+  [[maybe_unused]] __float128 x4 = 3.14q + 3.14Q;
 #else
   static_assert(false);
 #endif
