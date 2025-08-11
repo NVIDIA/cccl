@@ -258,6 +258,7 @@ public:
     return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator==(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
@@ -267,6 +268,7 @@ public:
     return __x.base() == __y.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator!=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
@@ -287,6 +289,7 @@ public:
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
@@ -295,6 +298,7 @@ public:
     return __x.base() > __y.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
@@ -303,6 +307,7 @@ public:
     return __x.base() < __y.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
@@ -311,6 +316,7 @@ public:
     return __x.base() <= __y.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
