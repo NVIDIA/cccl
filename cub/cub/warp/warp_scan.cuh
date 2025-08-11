@@ -790,7 +790,8 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
   //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
-  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
 
   //!
   //! * @smemwarpreuse
@@ -862,7 +863,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
   //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
-  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
+
   //!
   //! * @smemwarpreuse
   //!
@@ -1361,7 +1364,8 @@ public:
   //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
   //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
   //! Because no initial value is supplied, the ``output`` computed for *lane*\ :sub:`0` is undefined.
-  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
   //!
   //! * @smemwarpreuse
   //!
@@ -1437,7 +1441,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
   //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
-  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
+
   //!
   //! * @smemwarpreuse
   //!

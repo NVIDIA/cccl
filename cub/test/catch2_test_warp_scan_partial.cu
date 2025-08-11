@@ -48,8 +48,8 @@ struct sum_aggregate_op_t
   int m_target_thread_id;
   T* m_d_warp_aggregate;
 
-  template <int LOGICAL_WARP_THREADS>
-  __device__ void operator()(cub::WarpScan<T, LOGICAL_WARP_THREADS>& scan, T& thread_data, int valid_items) const
+  template <int LogicalWarpThreads>
+  __device__ void operator()(cub::WarpScan<T, LogicalWarpThreads>& scan, T& thread_data, int valid_items) const
   {
     T warp_aggregate{};
 
@@ -64,9 +64,9 @@ struct sum_aggregate_op_t
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -94,8 +94,8 @@ struct min_aggregate_op_t
   int m_target_thread_id;
   T* m_d_warp_aggregate;
 
-  template <int LOGICAL_WARP_THREADS>
-  __device__ void operator()(cub::WarpScan<T, LOGICAL_WARP_THREADS>& scan, T& thread_data, int valid_items) const
+  template <int LogicalWarpThreads>
+  __device__ void operator()(cub::WarpScan<T, LogicalWarpThreads>& scan, T& thread_data, int valid_items) const
   {
     T warp_aggregate{};
 
@@ -110,9 +110,9 @@ struct min_aggregate_op_t
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -142,8 +142,8 @@ struct min_init_value_aggregate_op_t
   T initial_value;
   T* m_d_warp_aggregate;
 
-  template <int LOGICAL_WARP_THREADS>
-  __device__ void operator()(cub::WarpScan<T, LOGICAL_WARP_THREADS>& scan, T& thread_data, int valid_items) const
+  template <int LogicalWarpThreads>
+  __device__ void operator()(cub::WarpScan<T, LogicalWarpThreads>& scan, T& thread_data, int valid_items) const
   {
     T warp_aggregate{};
 
@@ -158,9 +158,9 @@ struct min_init_value_aggregate_op_t
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -207,12 +207,10 @@ C2H_TEST("Partial warp scan works with sum", "[scan][warp]", types, logical_warp
 
   compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{}, valid_items);
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -245,12 +243,10 @@ C2H_TEST("Partial warp scan works with vec_types", "[scan][warp]", vec_types, lo
 
   compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{}, valid_items);
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -287,12 +283,10 @@ C2H_TEST("Partial warp scan works with custom types",
 
   compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{}, valid_items);
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -338,12 +332,10 @@ C2H_TEST("Partial warp scan returns valid warp aggregate",
   auto h_warp_aggregates =
     compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{}, valid_items);
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -390,12 +382,10 @@ C2H_TEST("Partial warp scan works with custom scan op", "[scan][warp]", types, l
     cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -444,12 +434,10 @@ C2H_TEST("Partial warp custom op scan returns valid warp aggregate", "[scan][war
     cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -605,11 +593,9 @@ C2H_TEST("Partial warp combination scan works with custom scan op", "[scan][warp
     cuda::std::numeric_limits<type>::max());
 
   // According to WarpScan::Scan documentation -
-  // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is
-  // undefined.
+  // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   for (size_t i = 0; i < h_exclusive_out.size(); i += logical_warp_threads)
   {

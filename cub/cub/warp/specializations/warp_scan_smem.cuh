@@ -301,6 +301,11 @@ struct WarpScanSmem
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
   {
+    // Avoid reading uninitialized memory
+    // TODO(pauleonix): Is there a cheaper way of ensuring no uninitialized reads?
+    cub::detail::uninitialized_copy_single(&temp_storage[lane_id], T{});
+    __syncwarp(member_mask);
+
     // Iterate scan steps
     if (static_cast<int>(lane_id) < valid_items)
     {
@@ -312,6 +317,7 @@ struct WarpScanSmem
       // Share partial into buffer
       if constexpr (step == 0)
       {
+        // Upper half is still uninitialized, i.e. some positions are initialized twice without destructing in between.
         cub::detail::uninitialized_copy_single(&temp_storage[HALF_WARP_THREADS + lane_id], inclusive_output);
       }
       else
@@ -319,12 +325,14 @@ struct WarpScanSmem
         temp_storage[HALF_WARP_THREADS + lane_id] = inclusive_output;
       }
       __syncwarp(member_mask);
+      T addend = temp_storage[HALF_WARP_THREADS + lane_id - offset];
       // Update partial if addend is in range
       if ((lane_id >= offset) && (static_cast<int>(lane_id) < valid_items))
       {
-        T addend         = temp_storage[HALF_WARP_THREADS + lane_id - offset];
         inclusive_output = scan_op(addend, inclusive_output);
       }
+      // TODO(pauleonix): Possible optimization: Avoid this in the last iteration.
+      // Downside: Need to be very careful syncing in other functions when writing to temp_storage.
       __syncwarp(member_mask);
     });
   }

@@ -41,9 +41,9 @@ struct merge_aggregate_op_t
   segment* m_d_warp_aggregate;
   bool* error_flag_ptr;
 
-  template <int LOGICAL_WARP_THREADS>
+  template <int LogicalWarpThreads>
   __device__ void
-  operator()(cub::WarpScan<segment, LOGICAL_WARP_THREADS>& scan, segment& thread_data, int valid_items) const
+  operator()(cub::WarpScan<segment, LogicalWarpThreads>& scan, segment& thread_data, int valid_items) const
   {
     segment warp_aggregate{};
 
@@ -60,9 +60,9 @@ struct merge_aggregate_op_t
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -95,9 +95,9 @@ struct merge_init_value_aggregate_op_t
   segment* m_d_warp_aggregate;
   bool* error_flag_ptr;
 
-  template <int LOGICAL_WARP_THREADS>
+  template <int LogicalWarpThreads>
   __device__ void
-  operator()(cub::WarpScan<segment, LOGICAL_WARP_THREADS>& scan, segment& thread_data, int valid_items) const
+  operator()(cub::WarpScan<segment, LogicalWarpThreads>& scan, segment& thread_data, int valid_items) const
   {
     segment warp_aggregate{};
 
@@ -114,9 +114,9 @@ struct merge_init_value_aggregate_op_t
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
 
-    if (tid % LOGICAL_WARP_THREADS == m_target_thread_id)
+    if (tid % LogicalWarpThreads == m_target_thread_id)
     {
-      m_d_warp_aggregate[tid / LOGICAL_WARP_THREADS] = warp_aggregate;
+      m_d_warp_aggregate[tid / LogicalWarpThreads] = warp_aggregate;
     }
   }
 };
@@ -181,12 +181,10 @@ C2H_TEST(
     params::mode, h_out, params::logical_warp_threads, merge_segments_op{}, valid_items, segment{1, 1});
 
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -243,12 +241,10 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and returns va
     params::mode, h_out, params::logical_warp_threads, merge_segments_op{}, valid_items, segment{1, 1});
 
   // From the documentation -
-  // Computes an exclusive prefix scan using the specified binary scan functor
-  // across the calling warp. Because no initial value is supplied, the output
-  // computed for warp-lane0 is undefined.
+  // Computes an exclusive prefix scan using the specified binary scan functor across the calling warp. Because no
+  // initial value is supplied, the output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   if constexpr (params::mode == scan_mode::exclusive)
   {
@@ -410,11 +406,9 @@ C2H_TEST("Partial warp combination scan does not apply op to invalid elements", 
     scan_mode::inclusive, h_inclusive_out, logical_warp_threads, merge_segments_op{}, valid_items, segment{1, 1});
 
   // According to WarpScan::Scan documentation -
-  // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is
-  // undefined.
+  // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is undefined.
 
-  // When comparing device output, the corresponding undefined data points need
-  // to be fixed
+  // When comparing device output, the corresponding undefined data points need to be fixed
 
   for (size_t i = 0; i < h_exclusive_out.size(); i += logical_warp_threads)
   {
