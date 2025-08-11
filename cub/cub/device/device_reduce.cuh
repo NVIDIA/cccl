@@ -201,7 +201,7 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
 
-    if constexpr (std::is_same_v<TransformOpT, ::cuda::std::identity>)
+    if constexpr (::cuda::std::is_same_v<TransformOpT, ::cuda::std::identity>)
     {
       (void) transform_op; // suppress unused variable warning
       using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
@@ -211,7 +211,15 @@ private:
         DispatchReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
 
       return dispatch_t::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), reduction_op, init, stream);
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        static_cast<offset_t>(num_items),
+        reduction_op,
+        init,
+        stream,
+        transform_op);
     }
     else
     {
@@ -259,7 +267,7 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
 
-    if constexpr (std::is_same_v<TransformOpT, ::cuda::std::identity>)
+    if constexpr (::cuda::std::is_same_v<TransformOpT, ::cuda::std::identity>)
     {
       (void) transform_op; // suppress unused variable warning
       using accum_t    = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
@@ -366,7 +374,7 @@ public:
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -375,7 +383,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
@@ -416,7 +424,7 @@ public:
   //!   However, results for pseudo-associative reduction may be inconsistent
   //!   from one device to a another device of a different compute-capability
   //!   because CUB can employ different tile-sizing for different architectures.
-  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
@@ -450,7 +458,7 @@ public:
   //!   **[inferred]** Type of num_items
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -459,7 +467,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
@@ -469,7 +477,7 @@ public:
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -554,7 +562,7 @@ public:
         d_out,
         num_items,
         reduction_op,
-        cuda::std::identity{},
+        ::cuda::std::identity{},
         init,
         determinism_t{},
         stream.get());
@@ -578,7 +586,7 @@ public:
         d_out,
         num_items,
         reduction_op,
-        cuda::std::identity{},
+        ::cuda::std::identity{},
         init,
         determinism_t{},
         stream.get());
@@ -607,7 +615,7 @@ public:
   //!   However, results for pseudo-associative reduction may be inconsistent
   //!   from one device to a another device of a different compute-capability
   //!   because CUB can employ different tile-sizing for different architectures.
-  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
@@ -644,7 +652,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] env
   //!   @rst
@@ -807,7 +815,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -855,7 +863,7 @@ public:
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
   //!
-  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -913,7 +921,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -922,7 +930,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] stream
   //!   @rst
@@ -966,9 +974,9 @@ public:
   //! Computes a device-wide minimum using the less-than (``<``) operator. The result is written to the output
   //! iterator.
   //!
-  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Provides determinism based on the environment's determinism requirements.
-  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
@@ -1004,7 +1012,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] env
   //!   @rst
@@ -1066,7 +1074,7 @@ public:
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
     if (error != cudaSuccess)
     {
       return error;
@@ -1087,7 +1095,7 @@ public:
 
     // Try to deallocate regardless of the error to avoid memory leaks
     cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
     {
@@ -1167,7 +1175,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Iterator to the input sequence of data items
@@ -1179,7 +1187,7 @@ public:
   //!   Iterator to which the index of the returned value is written
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] stream
   //!   @rst
@@ -1246,7 +1254,7 @@ public:
   //!   ``1`` is written to ``d_index_out``.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides determinism based on the environment's determinism requirements.
-  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_min_out`` nor ``d_index_out``.
   //!
@@ -1274,7 +1282,7 @@ public:
   //!   **[inferred]** Output iterator type for recording index of the returned value
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Iterator to the input sequence of data items
@@ -1286,11 +1294,11 @@ public:
   //!   Iterator to which the index of the returned value is written
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
@@ -1367,7 +1375,7 @@ public:
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
     if (error != cudaSuccess)
     {
       return error;
@@ -1391,7 +1399,7 @@ public:
 
     // Try to deallocate regardless of the error to avoid memory leaks
     cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
     {
@@ -1409,7 +1417,7 @@ public:
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
   //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
-  //!   - The ``{1, ::cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, cuda::std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -1417,7 +1425,7 @@ public:
   //!   However, results for pseudo-associative reduction may be inconsistent
   //!   from one device to a another device of a different compute-capability
   //!   because CUB can employ different tile-sizing for different architectures.
-  //! - The range ``[d_in, d_in + num_items)`` shall not overlap `d_out`.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1458,14 +1466,14 @@ public:
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
+  //!   (having value type ``cub::KeyValuePair<int, T>``) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -1474,7 +1482,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] stream
   //!   @rst
@@ -1525,7 +1533,7 @@ public:
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
   //!
-  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1580,7 +1588,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -1589,7 +1597,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] stream
   //!   @rst
@@ -1634,9 +1642,9 @@ public:
   //! Computes a device-wide maximum using the greater-than (``>``) operator. The result is written to the output
   //! iterator.
   //!
-  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Provides determinism based on the environment's determinism requirements.
-  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
@@ -1672,11 +1680,11 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1734,7 +1742,7 @@ public:
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
     if (error != cudaSuccess)
     {
       return error;
@@ -1755,7 +1763,7 @@ public:
 
     // Try to deallocate regardless of the error to avoid memory leaks
     cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
     {
@@ -1835,7 +1843,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -1847,7 +1855,7 @@ public:
   //!   Iterator to which the index of the returned value is written
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] stream
   //!   @rst
@@ -1913,7 +1921,7 @@ public:
   //!
   //!   - The maximum is written to ``d_out.value`` and its offset in the input
   //!     array is written to ``d_out.key``.
-  //!   - The ``{1, ::cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
+  //!   - The ``{1, cuda::std::numeric_limits<T>::lowest()}`` tuple is produced for zero-length inputs
   //!
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -1971,7 +1979,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -1980,7 +1988,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] stream
   //!   @rst
@@ -2039,7 +2047,7 @@ public:
   //!   ``1`` is written to ``d_index_out``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides determinism based on the environment's determinism requirements.
-  //!   To request "run-to-run" determinism, pass `cuda::execution::require(cuda::execution::determinism::run_to_run)`
+  //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_max_out`` nor ``d_index_out``.
   //!
@@ -2067,7 +2075,7 @@ public:
   //!   **[inferred]** Output iterator type for recording index of the returned value
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Iterator to the input sequence of data items
@@ -2079,11 +2087,11 @@ public:
   //!   Iterator to which the index of the returned value is written
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
@@ -2160,7 +2168,7 @@ public:
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
     if (error != cudaSuccess)
     {
       return error;
@@ -2184,7 +2192,7 @@ public:
 
     // Try to deallocate regardless of the error to avoid memory leaks
     cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
     {
@@ -2232,7 +2240,7 @@ public:
   //!      in.begin(),
   //!      out.begin(),
   //!      in.size(),
-  //!      ::cuda::std::plus<>{},
+  //!      cuda::std::plus<>{},
   //!      square_t{},
   //!      init);
   //!
@@ -2245,7 +2253,7 @@ public:
   //!      in.begin(),
   //!      out.begin(),
   //!      in.size(),
-  //!      ::cuda::std::plus<>{},
+  //!      cuda::std::plus<>{},
   //!      square_t{},
   //!      init);
   //!
@@ -2276,7 +2284,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_in
   //!   Pointer to the input sequence of data items
@@ -2285,7 +2293,7 @@ public:
   //!   Pointer to the output aggregate
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
+  //!   Total number of input items (i.e., length of ``d_in``)
   //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
@@ -2437,7 +2445,7 @@ public:
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!   Reference to size in bytes of ``d_temp_storage`` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input sequence of keys
@@ -2454,14 +2462,14 @@ public:
   //!
   //! @param[out] d_num_runs_out
   //!   Pointer to total number of runs encountered
-  //!   (i.e., the length of `d_unique_out`)
+  //!   (i.e., the length of ``d_unique_out``)
   //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
   //!
   //! @param[in] num_items
   //!   Total number of associated key+value pairs
-  //!   (i.e., the length of `d_in_keys` and `d_in_values`)
+  //!   (i.e., the length of ``d_in_keys`` and ``d_in_values``)
   //!
   //! @param[in] stream
   //!   @rst
