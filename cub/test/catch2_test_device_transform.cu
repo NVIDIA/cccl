@@ -684,3 +684,18 @@ C2H_TEST("DeviceTransform::Transform function/output_iter return type not conver
   c2h::device_vector<C> reference(num_items, C{-43});
   CHECK(output == reference);
 }
+
+__global__ void unrelated_kernel()
+{
+  __shared__ int ssmem; // 4 bytes
+  extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
+  asm("" : "+r"(ssmem));
+  asm("" : "+r"(dsmem[0]));
+}
+
+C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static SMEM consumption", "[device][transform]")
+{
+  cudaFuncAttributes attrs;
+  REQUIRE(cudaFuncGetAttributes(&attrs, unrelated_kernel) == cudaSuccess);
+  REQUIRE(attrs.sharedSizeBytes == 4 + 12);
+}

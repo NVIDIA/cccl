@@ -587,7 +587,7 @@ namespace detail
       from_json(const nlohmann::json& json, std::string_view subpolicy_name)                                           \
       {                                                                                                                \
         auto subpolicy = json[subpolicy_name];                                                                         \
-        assert(subpolicy);                                                                                             \
+        assert(!subpolicy.is_null());                                                                                  \
         Runtime##concept_name ap;                                                                                      \
         _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                                            \
         return std::make_pair(                                                                                         \
