@@ -20,12 +20,16 @@ add_custom_command(
       "${jit_template}"
       "${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in"
       "${CMAKE_CURRENT_LIST_DIR}/template_post.h.in"
+
+    COMMAND ${CMAKE_COMMAND} -E cmake_language CALL 0
+            file CONCAT
+            "${jit_template_src}"
+            "${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in"
+            "${jit_template}"
+            "${CMAKE_CURRENT_LIST_DIR}/template_post.h.in"
+
     VERBATIM
-    COMMAND "${CMAKE_COMMAND}" -E cat --
-        "${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in"
-        "${jit_template}"
-        "${CMAKE_CURRENT_LIST_DIR}/template_post.h.in"
-        > "${jit_template_src}"
+    COMMENT "Generated ${jit_template_src}."
 )
 set_source_files_properties("${jit_template_src}" PROPERTIES GENERATED TRUE)
 
