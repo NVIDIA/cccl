@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,19 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#include <cuda/__memory_resource/get_property.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/fold.h>
+#include <cuda/stream_ref>
 
-#  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__concepts/convertible_to.h>
-#  include <cuda/std/__concepts/equality_comparable.h>
-#  include <cuda/std/__concepts/same_as.h>
-#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#  include <cuda/std/__type_traits/decay.h>
-#  include <cuda/std/__type_traits/fold.h>
-#  include <cuda/stream_ref>
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -122,9 +120,6 @@ _CCCL_CONCEPT __different_resource =
     static_cast<_OtherResource*>(nullptr));
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
-
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_H
