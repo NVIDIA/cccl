@@ -80,13 +80,15 @@ template <class Derived, class InputIt, class Size, class OutputIt>
 OutputIt _CCCL_HOST_DEVICE
 uninitialized_copy_n(execution_policy<Derived>& policy, InputIt first, Size count, OutputIt result)
 {
-  // if the output type is trivially constructible from the input, it has no side effect and we can skip placement new
-  // and calling a constructor. If the type is also trivially relocatable, we can construct the instances in a kernel
-  // and memcpy to the destination. In that case, transform offers several fast paths.
+  // if the output type is trivially constructible from the input, it has no side effect, and we can skip placement new
+  // and calling a constructor. If the type is also trivially copyable, we can construct the instances in a kernel
+  // and memcpy to the destination. In that case, transform offers several fast paths. We must not check
+  // is_trivially_relocatable, since we do not semantically relocate, but copy (the source remains valid). This is
+  // relevant for types like `unique_ptr`, which are trivially relocatable, but not trivially copyable.
   using ctor_arg_t = thrust::detail::raw_reference_t<::cuda::std::iter_reference_t<InputIt>>;
   using output_t   = thrust::detail::it_value_t<OutputIt>;
   if constexpr (::cuda::std::is_trivially_constructible_v<output_t, ctor_arg_t>
-                && thrust::is_trivially_relocatable_v<output_t>)
+                && ::cuda::std::is_trivially_copyable_v<output_t>)
   {
     cuda_cub::transform_n(policy, first, count, result, ::cuda::std::identity{});
   }
