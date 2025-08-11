@@ -102,7 +102,7 @@ _CCCL_REQUIRES(__integral_constant_like<_Tp>)
 template <class _IndexType, class _From>
 [[nodiscard]] _CCCL_API constexpr auto __index_cast(_From&& __from) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_integral, _From) && !_CCCL_TRAIT(is_same, _From, bool))
+  if constexpr (is_integral_v<_From> && !is_same_v<_From, bool>)
   {
     return __from;
   }
@@ -124,7 +124,7 @@ using __get_slice_type = tuple_element_t<_Index, __tuple_types<_Slices...>>;
 template <class _IndexType, size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
 {
-  static_assert(_CCCL_TRAIT(is_signed, _IndexType) || _CCCL_TRAIT(is_unsigned, _IndexType),
+  static_assert(is_signed_v<_IndexType> || is_unsigned_v<_IndexType>,
                 "[mdspan.sub.helpers] mandates IndexType to be a signed or unsigned integral");
   using _SliceType                     = __get_slice_type<_Index, _Slices...>;
   [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
@@ -154,7 +154,7 @@ template <size_t _Index, class _Extents, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr typename _Extents::index_type
 __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
 {
-  static_assert(_CCCL_TRAIT(__mdspan_detail::__is_extents, _Extents),
+  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
                 "[mdspan.sub.helpers] mandates Extents to be a specialization of extents");
   using _IndexType                     = typename _Extents::index_type;
   using _SliceType                     = __get_slice_type<_Index, _Slices...>;

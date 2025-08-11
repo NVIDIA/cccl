@@ -50,9 +50,8 @@ template <class _From, class _To>
 _CCCL_CONCEPT __test_conversion = _CCCL_FRAGMENT(__test_conversion_, _From, _To);
 
 template <class _From, class _To>
-_CCCL_CONCEPT_FRAGMENT(
-  __convertible_to_,
-  requires()(requires(_CCCL_TRAIT(is_convertible, _From, _To)), requires(__test_conversion<_From, _To>)));
+_CCCL_CONCEPT_FRAGMENT(__convertible_to_,
+                       requires()(requires(is_convertible_v<_From, _To>), requires(__test_conversion<_From, _To>)));
 
 template <class _From, class _To>
 _CCCL_CONCEPT convertible_to = _CCCL_FRAGMENT(__convertible_to_, _From, _To);

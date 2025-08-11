@@ -59,8 +59,7 @@ template <class _Tp>
 struct __optional_destruct_base<_Tp, false>
 {
   using value_type = _Tp;
-  static_assert(_CCCL_TRAIT(is_object, value_type),
-                "instantiation of optional with a non-object type is undefined behavior");
+  static_assert(is_object_v<value_type>, "instantiation of optional with a non-object type is undefined behavior");
   union __storage
   {
     char __null_state_;
@@ -128,8 +127,7 @@ template <class _Tp>
 struct __optional_destruct_base<_Tp, true>
 {
   using value_type = _Tp;
-  static_assert(_CCCL_TRAIT(is_object, value_type),
-                "instantiation of optional with a non-object type is undefined behavior");
+  static_assert(is_object_v<value_type>, "instantiation of optional with a non-object type is undefined behavior");
   union __storage
   {
     char __null_state_;
@@ -255,8 +253,8 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_copy_construct =
-  _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) ? __smf_availability::__trivial
-  : _CCCL_TRAIT(is_copy_constructible, _Tp)
+  is_trivially_copy_constructible_v<_Tp> ? __smf_availability::__trivial
+  : is_copy_constructible_v<_Tp>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -298,8 +296,8 @@ struct __optional_copy_base<_Tp, __smf_availability::__deleted> : __optional_sto
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_move_construct =
-  _CCCL_TRAIT(is_trivially_move_constructible, _Tp) ? __smf_availability::__trivial
-  : _CCCL_TRAIT(is_move_constructible, _Tp)
+  is_trivially_move_constructible_v<_Tp> ? __smf_availability::__trivial
+  : is_move_constructible_v<_Tp>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -316,8 +314,7 @@ struct __optional_move_base<_Tp, __smf_availability::__available> : __optional_c
 
   _CCCL_HIDE_FROM_ABI __optional_move_base(const __optional_move_base&) = default;
 
-  _CCCL_API constexpr __optional_move_base(__optional_move_base&& __opt) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_API constexpr __optional_move_base(__optional_move_base&& __opt) noexcept(is_nothrow_move_constructible_v<_Tp>)
   {
     this->__construct_from(_CUDA_VSTD::move(__opt));
   }
@@ -339,10 +336,9 @@ struct __optional_move_base<_Tp, __smf_availability::__deleted> : __optional_cop
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_copy_assign =
-  _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)
-      && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)
+  is_trivially_destructible_v<_Tp> && is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_assignable_v<_Tp>
     ? __smf_availability::__trivial
-  : _CCCL_TRAIT(is_destructible, _Tp) && _CCCL_TRAIT(is_copy_constructible, _Tp) && _CCCL_TRAIT(is_copy_assignable, _Tp)
+  : is_destructible_v<_Tp> && is_copy_constructible_v<_Tp> && is_copy_assignable_v<_Tp>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -382,10 +378,9 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__deleted> : __optio
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_move_assign =
-  _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_move_constructible, _Tp)
-      && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)
+  is_trivially_destructible_v<_Tp> && is_trivially_move_constructible_v<_Tp> && is_trivially_move_assignable_v<_Tp>
     ? __smf_availability::__trivial
-  : _CCCL_TRAIT(is_destructible, _Tp) && _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_move_assignable, _Tp)
+  : is_destructible_v<_Tp> && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -405,7 +400,7 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__available> : __opt
   _CCCL_HIDE_FROM_ABI __optional_move_assign_base& operator=(const __optional_move_assign_base&) = default;
 
   _CCCL_API constexpr __optional_move_assign_base& operator=(__optional_move_assign_base&& __opt) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+    is_nothrow_move_assignable_v<_Tp> && is_nothrow_move_constructible_v<_Tp>)
   {
     this->__assign_from(_CUDA_VSTD::move(__opt));
     return *this;

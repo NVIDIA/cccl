@@ -249,7 +249,7 @@ C2H_TEST(
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
   CAPTURE(c2h::type_name<T>(), params::logical_warp_threads, segmented_mod, params::total_warps);
   using warp_seg_sum_t =
-    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<T>, warp_seg_sum_head_t<T>>;
+    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<type>, warp_seg_sum_head_t<type>>;
 
   c2h::device_vector<T> d_in(params::tile_size);
   c2h::device_vector<flag_t> d_flags(params::tile_size);

@@ -26,7 +26,7 @@ struct unused_property
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
-  constexpr bool is_big = sizeof(TestResource) > cudax::__default_buffer_size;
+  constexpr bool is_big = sizeof(TestResource) > cuda::__default_small_object_size;
 
   SECTION("construct and destruct")
   {
@@ -84,7 +84,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate and deallocate")
+  SECTION("allocate and deallocate_sync")
   {
     Counts expected{};
     CHECK(this->counts == expected);
@@ -95,12 +95,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, bytes(50), align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -146,11 +146,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -177,11 +177,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -208,11 +208,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.copy_count;
       CHECK(this->counts == expected);
 
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }

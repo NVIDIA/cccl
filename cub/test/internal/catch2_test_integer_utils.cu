@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 #include <cub/detail/integer_utils.cuh>
 
-#include "c2h/catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 /***********************************************************************************************************************
  * TEST CASES
@@ -99,7 +99,7 @@ static __global__ void test_float_kernel(Operation op, const T* input, int num_i
 template <typename T, typename Operation>
 static __global__ void test_float_special_values_kernel(Operation op)
 {
-  test_floating_point(op, -T{0.0f}, T{0.0f});
+  test_floating_point(op, T{-0.0f}, T{0.0f});
   test_floating_point(op, T{1.0f}, cuda::std::numeric_limits<T>::max());
   test_floating_point(op, T{1.0f}, cuda::std::numeric_limits<T>::min());
   test_floating_point(op, T{1.0f}, cuda::std::numeric_limits<T>::quiet_NaN());
