@@ -214,7 +214,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Sum(const InputType& input,
       detail::reduce_logical_mode_t<Mode> logical_mode = {},
@@ -234,7 +234,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Max(const InputType& input,
       detail::reduce_logical_mode_t<Mode> logical_mode = {},
@@ -254,7 +254,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Min(const InputType& input,
       detail::reduce_logical_mode_t<Mode> logical_mode = {},
@@ -334,7 +334,7 @@ public:
                  typename ReductionOp,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
     const InputType& input,
     ReductionOp reduction_op,
@@ -765,7 +765,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Sum(const InputType& input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
   {
@@ -793,7 +793,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Max(const InputType& input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
   {
@@ -821,7 +821,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Min(const InputType& input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
   {
@@ -852,7 +852,7 @@ public:
                  typename ReductionOp,
                  detail::ReduceLogicalMode Mode = logical_mode_default,
                  detail::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(detail::is_fixed_size_random_access_range_v<InputType>)
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
     const InputType& input,
     ReductionOp reduction_op,
