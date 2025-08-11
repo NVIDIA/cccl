@@ -125,7 +125,7 @@ __host__ __device__ void test_ext_fp()
   assert(cuda::std::numbers::phi_v<__half> == __half{1.618034f});
 #  endif // _CCCL_HAS_NVFP16()
 
-#  if _CCCL_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16()
   assert(cuda::std::numbers::e_v<__nv_bfloat16> == __nv_bfloat16{2.7182817f});
   assert(cuda::std::numbers::log2e_v<__nv_bfloat16> == __nv_bfloat16{1.442695f});
   assert(cuda::std::numbers::log10e_v<__nv_bfloat16> == __nv_bfloat16{0.4342945f});
