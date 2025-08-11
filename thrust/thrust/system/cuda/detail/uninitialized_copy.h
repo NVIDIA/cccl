@@ -90,7 +90,7 @@ uninitialized_copy_n(execution_policy<Derived>& policy, InputIt first, Size coun
   if constexpr (::cuda::std::is_trivially_constructible_v<output_t, ctor_arg_t>
                 && ::cuda::std::is_trivially_copyable_v<output_t>)
   {
-    cuda_cub::transform_n(policy, first, count, result, ::cuda::std::identity{});
+    cuda_cub::transform_n(policy, first, count, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
   }
   else
   {
