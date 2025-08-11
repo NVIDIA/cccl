@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_ANY_CAST_H
-#define __CUDAX_DETAIL_BASIC_ANY_ANY_CAST_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_ANY_CAST_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_ANY_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,20 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/access.h>
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
+#include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/typeid.h>
 
-#include <cuda/experimental/__utility/basic_any/access.cuh>
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-#include <cuda/experimental/__utility/basic_any/interfaces.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! __valid_any_cast
 //!
@@ -49,11 +48,11 @@ inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
   !_CUDA_VSTD::is_const_v<_Interface> || _CUDA_VSTD::is_const_v<_Tp>;
 
 //!
-//! any_cast
+//! __any_cast
 //!
 _CCCL_TEMPLATE(class _Tp, class _Interface)
 _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-[[nodiscard]] _CCCL_HOST_API auto any_cast(basic_any<_Interface>* __self) noexcept -> _Tp*
+[[nodiscard]] _CCCL_API auto __any_cast(__basic_any<_Interface>* __self) noexcept -> _Tp*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
@@ -65,7 +64,7 @@ _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp, class _Interface)
 _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-[[nodiscard]] _CCCL_HOST_API auto any_cast(basic_any<_Interface> const* __self) noexcept -> _Tp const*
+[[nodiscard]] _CCCL_API auto __any_cast(__basic_any<_Interface> const* __self) noexcept -> _Tp const*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
@@ -75,10 +74,10 @@ _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
   return nullptr;
 }
 
-// TODO: implement the same overloads as for std::any_cast
+// TODO: implement the same overloads as for std::__any_cast
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_ANY_CAST_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_ANY_CAST_H

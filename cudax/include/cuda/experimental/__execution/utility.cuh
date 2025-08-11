@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>

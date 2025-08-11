@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H
-#define __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
@@ -35,12 +36,10 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/typeid.h>
 
-#include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 //!
 //! __override_tag
 //!
@@ -54,10 +53,10 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
 
 template <class _Fn, class _Cp>
-_CCCL_HOST_API auto __class_of_(_Fn _Cp::*) -> _Cp;
+_CCCL_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 
 template <class _Fn>
-using __class_of _CCCL_NODEBUG_ALIAS = decltype(experimental::__class_of_(_Fn()));
+using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
 
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
@@ -70,8 +69,8 @@ _CCCL_TRIVIAL_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 }
 
 template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-[[nodiscard]] _CCCL_HOST_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
-                                                 [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
+[[nodiscard]] _CCCL_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
+                                            [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
   using __value_type _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<_IsConst, _Tp>;
 
@@ -87,7 +86,7 @@ template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class
     // after static_cast-ing to _Tp*, we need to use a C-style cast to get a
     // pointer to the correct base class.
     using __class_type  = _CUDA_VSTD::__maybe_const<_IsConst, __class_of<decltype(_Fn)>>;
-    __class_type& __obj = *experimental::__c_style_cast<__class_type*>(static_cast<__value_type*>(__pv));
+    __class_type& __obj = *::cuda::__c_style_cast<__class_type*>(static_cast<__value_type*>(__pv));
     return (__obj.*_Fn)(static_cast<_Args&&>(__args)...);
   }
   else
@@ -146,16 +145,16 @@ inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void const*, _Args...) noe
     &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
 template <class _Ret, class... _Args>
-_CCCL_HOST_API auto __get_virtual_result(_Ret (*)(_Args...)) -> _Ret;
+_CCCL_API auto __get_virtual_result(_Ret (*)(_Args...)) -> _Ret;
 
 template <class _Ret, class... _Args>
-_CCCL_HOST_API auto __get_virtual_result(_Ret (*)(_Args...) noexcept) noexcept -> _Ret;
+_CCCL_API auto __get_virtual_result(_Ret (*)(_Args...) noexcept) noexcept -> _Ret;
 
 template <class _Ret, class... _Args>
-_CCCL_HOST_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> _CUDA_VSTD::false_type;
+_CCCL_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> _CUDA_VSTD::false_type;
 
 template <class _Ret, class... _Args>
-_CCCL_HOST_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> _CUDA_VSTD::true_type;
+_CCCL_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> _CUDA_VSTD::true_type;
 
 //!
 //! __virtual_fn
@@ -166,19 +165,19 @@ struct __virtual_fn
   using __function_t _CCCL_NODEBUG_ALIAS = decltype(__virtual_override_fn<decltype(_Fn)>);
   using __result_t _CCCL_NODEBUG_ALIAS   = decltype(__get_virtual_result(__function_t{}));
 
-  static constexpr bool __const_fn   = decltype(experimental::__is_virtual_const(__function_t{}))::value;
-  static constexpr bool __nothrow_fn = noexcept(experimental::__get_virtual_result(__function_t{}));
+  static constexpr bool __const_fn   = decltype(::cuda::__is_virtual_const(__function_t{}))::value;
+  static constexpr bool __nothrow_fn = noexcept(::cuda::__get_virtual_result(__function_t{}));
 
   template <class _Tp, auto _Override>
-  _CCCL_HOST_API constexpr __virtual_fn(__override_tag<_Tp, _Override>) noexcept
+  _CCCL_API constexpr __virtual_fn(__override_tag<_Tp, _Override>) noexcept
       : __fn_(__virtual_override_fn<decltype(_Fn), _Tp, _Override>)
   {}
 
   __function_t __fn_;
 };
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
