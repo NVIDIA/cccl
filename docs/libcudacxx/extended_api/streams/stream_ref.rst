@@ -13,7 +13,7 @@ These hard to spot bugs can be avoided through ``cuda::stream_ref``, which is a 
 that prevents implicit conversions. It also provides the ``wait()`` and ``ready()`` member functions to facilitate
 waiting for a stream to finish and checking whether it is finished.
 
-.. code:: cpp
+.. code-block:: cpp
 
        cudaStream_t stream;
        cudaStreamCreate(&stream);

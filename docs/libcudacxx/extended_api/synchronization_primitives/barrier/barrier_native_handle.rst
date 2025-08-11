@@ -5,7 +5,7 @@ cuda::device::barrier_native_handle
 
 Defined in header ``<cuda/barrier>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    __device__ cuda::std::uint64_t* cuda::device::barrier_native_handle(
      cuda::barrier<cuda::thread_scope_block>& bar);
@@ -28,7 +28,7 @@ object.
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/barrier>
 

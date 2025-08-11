@@ -6,7 +6,7 @@ cuda::pipeline_shared_state
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <cuda::thread_scope Scope, cuda::std::uint8_t StagesCount>
    class cuda::pipeline_shared_state {
@@ -53,7 +53,7 @@ in a ``cuda::pipeline``.
 
 .. rubric:: Constructor
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <cuda::thread_scope Scope, cuda::std::uint8_t StagesCount>
    __host__ __device__
@@ -67,7 +67,7 @@ in a ``cuda::pipeline``.
 
 Construct a ``cuda::pipeline`` *shared state* object.
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/pipeline>
 
@@ -84,7 +84,7 @@ Construct a ``cuda::pipeline`` *shared state* object.
 When using libcu++ with NVCC, a ``__shared__`` ``cuda::pipeline_shared_state`` will lead to the following warning
 because ``__shared__`` variables are not initialized:
 
-.. code:: bash
+.. code-block:: bash
 
    warning: dynamic initialization is not supported for a function-scope static
    __shared__ variable within a __device__/__global__ function
@@ -93,7 +93,7 @@ It can be silenced using ``#pragma nv_diag_suppress static_var_with_dynamic_init
 
 .. rubric:: Example
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/pipeline>
 

@@ -3,7 +3,7 @@
 
 tcgen05.wait::ld.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tcgen05.wait::ld.sync.aligned; // PTX ISA 86, SM_100a, SM_110a
    template <typename = void>
@@ -11,7 +11,7 @@ tcgen05.wait::ld.sync.aligned
 
 tcgen05.wait::st.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tcgen05.wait::st.sync.aligned; // PTX ISA 86, SM_100a, SM_110a
    template <typename = void>

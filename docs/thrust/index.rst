@@ -7,12 +7,12 @@ Thrust: The C++ Parallel Algorithms Library
    :hidden:
    :maxdepth: 2
 
-   :ref:`Overview <thrust-module>`
+   Overview <self>
    releases
    release_process
    developer_build
    api
-   ${repo_docs_api_path}/thrust_api
+   api/index
 
 Thrust is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the
 C++ Standard Library. Thrust's **high-level** interface greatly enhances programmer **productivity** while
@@ -43,7 +43,7 @@ Thrust API Example
 The following example generates random numbers serially and then transfers them
   to a parallel device where they are sorted.
 
-.. code:: cpp
+.. code-block:: cpp
 
    #include <thrust/host_vector.h>
    #include <thrust/device_vector.h>
@@ -74,7 +74,7 @@ The following example generates random numbers serially and then transfers them
 
 This example demonstrates computing the sum of some random numbers in parallel:
 
-.. code:: cpp
+.. code-block:: cpp
 
    #include <thrust/host_vector.h>
    #include <thrust/device_vector.h>

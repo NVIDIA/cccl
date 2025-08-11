@@ -8,7 +8,7 @@
 Types and Traits
 ----------------
 
-.. code:: cpp
+.. code-block:: cpp
 
   template <typename Accessor>
   using host_accessor;
@@ -23,7 +23,7 @@ Alias types to create accessors tailored for the *host*, *device*, or *managed* 
 
 ----
 
-.. code:: cpp
+.. code-block:: cpp
 
   template <typename ElementType,
             typename Extents,
@@ -47,7 +47,7 @@ Alias types to create ``mdspan`` with *host*, *device*, or *managed* accessors.
 
 ----
 
-.. code:: cpp
+.. code-block:: cpp
 
   template <typename T>
   inline constexpr bool is_host_accessor_v = /* true if T is a host accessor, false otherwise */
@@ -106,7 +106,7 @@ Example 1
 
 ``cuda::host_mdspan`` and ``cuda::device_mdspan`` usage:
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/mdspan>
 
@@ -150,7 +150,7 @@ Example 2
 
 ``cuda::managed_mdspan`` usage:
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/mdspan>
 
@@ -184,7 +184,7 @@ Example 3
 
 Conversion from other accessors:
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/mdspan>
 

@@ -15,7 +15,7 @@ API:
 Usage:
 ------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cooperative_groups.h>
 

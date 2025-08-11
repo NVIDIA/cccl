@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/annotated_ptr>``.
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename ShapeT>
    [[nodiscard]] __host__ __device__
@@ -39,7 +39,7 @@ Example
 
 Given three input and output vectors ``x``, ``y``, and ``z``, and two arrays of coefficients ``a`` and ``b``, all of length ``N``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    size_t N;
    int* x, *y, *z;
@@ -47,7 +47,7 @@ Given three input and output vectors ``x``, ``y``, and ``z``, and two arrays of 
 
 the grid-strided kernel:
 
-.. code:: cuda
+.. code-block:: cuda
 
     __global__ void update(const int* x, const int* a, const int* b, size_t N) {
         auto g = cooperative_groups::this_grid();
@@ -58,7 +58,7 @@ the grid-strided kernel:
 
 updates ``x``, ``y``, and ``z`` as follows:
 
-.. code:: cuda
+.. code-block:: cuda
 
     update<<<grid, block>>>(x, a, b, N);
     update<<<grid, block>>>(y, a, b, N);
@@ -68,7 +68,7 @@ The elements of ``a`` and ``b`` are used in all kernels. For certain values of `
 
 With :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property>` and :ref:`cuda::apply_access_property <libcudacxx-extended-api-memory-access-properties-apply-access-property>`, we can write kernels that specify that ``a`` and ``b`` are accessed more often in the ``pin`` kernel and with normal access in the ``unpin`` kernel:
 
-.. code:: cuda
+.. code-block:: cuda
 
     __global__ void pin(int* a, int* b, size_t N) {
         auto g = cooperative_groups::this_grid();
@@ -88,7 +88,7 @@ With :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properti
 
 which we can launch before and after the ``update`` kernels:
 
-.. code:: cuda
+.. code-block:: cuda
 
    pin<<<grid, block>>>(a, b, N);
    update<<<grid, block>>>(x, a, b, N);

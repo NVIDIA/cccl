@@ -5,7 +5,7 @@
 
 Defined in the header ``<cuda/functional>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <class Ret, class Fn>
    __host__ __device__
@@ -42,7 +42,7 @@ Parameters
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/functional>
 

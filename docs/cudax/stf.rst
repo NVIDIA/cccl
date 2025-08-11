@@ -94,7 +94,7 @@ main header. CUDASTF API is part of the ``cuda::experimental::stf`` C++
 namespace, and we will assume for brevity that we are using this
 workspace in the rest of this document.
 
-.. code:: cpp
+.. code-block:: cpp
 
    #include <cuda/experimental/stf.cuh>
 
@@ -107,7 +107,7 @@ CUDASTF requires a compiler conforming to the C++17 standard or later.
 Although there is no need to link against CUDASTF itself, the library
 internally utilizes the CUDA library.
 
-.. code:: bash
+.. code-block:: bash
 
    # Compilation flags
    nvcc -std=c++17 --expt-relaxed-constexpr --extended-lambda -I$(cudastf_path)
@@ -120,7 +120,7 @@ require authoring custom kernels. Note that CUDASTF APIs intended to
 automatically generate CUDA kernels such as ``parallel_for`` or
 ``launch`` are disabled when compiling without nvcc.
 
-.. code:: bash
+.. code-block:: bash
 
    # Compilation flags
    g++ -I$(cudastf_path)
@@ -143,7 +143,7 @@ The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
 and ``Y`` are two vectors, and ``alpha`` is a scalar_view value.
 
-.. code:: cpp
+.. code-block:: cpp
 
    #include <cuda/experimental/stf.cuh>
 
@@ -202,7 +202,7 @@ compile the examples. Not specifying it will launch as many processes as there
 are processors on the machine, which might lead to an excessive resource
 consumption and system instability.
 
-.. code:: bash
+.. code-block:: bash
 
     mkdir -p build
     cd build
@@ -214,7 +214,7 @@ To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`
 example :
 
-.. code:: bash
+.. code-block:: bash
 
     ./bin/cudax.cpp17.example.stf.01-axpy
 
@@ -227,7 +227,7 @@ and which stores the state of the CUDASTF library and to keep track of
 all resources and all dependencies. This context must eventually be
 destroyed using the ``finalize()`` method.
 
-.. code:: cpp
+.. code-block:: cpp
 
    context ctx;
 
@@ -263,7 +263,7 @@ One may switch from a type to another one by adapting how we initialize
 the context object, or by selecting an appropriate type to decide
 statically :
 
-.. code:: cpp
+.. code-block:: cpp
 
    // assigns a graph_ctx() to a generic context
    context ctx = graph_ctx();
@@ -344,7 +344,7 @@ In the following example, a stack array ``X`` is used to define a new
 logical data object ``lX``, which should be subsequently used instead of
 ``X``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[N];
    auto lX = ctx.logical_data(X);
@@ -427,7 +427,7 @@ arrays, we have introduced a C++ data structure class called ``slice``.
 A slice is a partial specialization of C++’s
 ``std::mdspan`` (or ``std::experimental::mdspan`` depending on the C++ revision).
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <typename T, size_t dimensions = 1>
    using slice = mdspan<T, dextents<size_t, dimensions>, layout_stride>;
@@ -437,7 +437,7 @@ describes it as a slice instantiated with the scalar_view element type and
 the dimensionality of the array. Here is an example with an 1D array of
 ``double``.
 
-.. code:: cpp
+.. code-block:: cpp
 
    double A[128];
    context ctx;
@@ -467,7 +467,7 @@ Slices can be passed by value, copied, or moved. Copying a slice does
 not copy the underlying data. Slices can be passed as arguments to CUDA
 kernel. Example:
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <typename T>
    __global__ void axpy(T a, slice<T> x, slice<T> y) {
@@ -491,7 +491,7 @@ which takes a base pointer, a tuple with all dimensions, and then the
 dimensions minus one. The i-th stride defines the number of elements in
 memory between two successive elements along dimension i.
 
-.. code:: c++
+.. code-block:: c++
 
        double A[5 * 2];
 
@@ -509,7 +509,7 @@ and ``s2(0, 1)`` (which is ``A[5]``)
 Similarly with 3D data, we need to define 2 strides and 3 extent values
 :
 
-.. code:: c++
+.. code-block:: c++
 
        double A[5 * 3 * 40];
 
@@ -524,7 +524,7 @@ Similarly with 3D data, we need to define 2 strides and 3 extent values
 
 Such slices can also be used to create logical data :
 
-.. code:: c++
+.. code-block:: c++
 
        double A[32 * 32];
 
@@ -543,7 +543,7 @@ fill it with a task. In this case, there is no need to have a *reference
 instance* associated to that logical data because CUDASTF will
 automatically allocate an instance on its first usage.
 
-.. code:: cpp
+.. code-block:: cpp
 
    auto lX = ctx.logical_data(shape_of<slice<int>>(10));
 
@@ -568,7 +568,7 @@ on a logical data which has valid data instance.
 Similarly, it is possible to define a logical data from a slice shapes
 with multiple dimensions.
 
-.. code:: cpp
+.. code-block:: cpp
 
    auto lX_2D = ctx.logical_data(shape_of<slice<double, 2>>(16, 24));
    auto lX_3D = ctx.logical_data(shape_of<slice<double, 3>>(16, 24, 10));
@@ -587,7 +587,7 @@ method of the logical data object.
 In the example below, ``X`` is accessed in read-only mode and ``Y``
 needs to be updated so it uses a read-write access mode.
 
-.. code:: cpp
+.. code-block:: cpp
 
    __global__ void axpy(size_t n, double a, const double *x, double *y) {
        int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -625,7 +625,7 @@ equivalent to ``.extent(0)``.)
 Better yet, the CUDA kernel could manipulate slices directly instead of
 resorting to unsafe pointers as parameters:
 
-.. code:: cpp
+.. code-block:: cpp
 
    __global__ void axpy(double a, slice<const double> x, slice<double> y) {
        int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -644,7 +644,7 @@ resorting to unsafe pointers as parameters:
 Task submission can be further simplified to rely on type deduction with
 ``auto``, which also makes code more generic:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t s, auto sX, auto sY) {
        axpy<<<16, 128, 0, s>>>(alpha, sX, sY);
@@ -670,7 +670,7 @@ CUDASTF will ensure optimal parallel execution without requiring the
 user code to explicitly define a dependency graph. Consider the
 following example consisting of four tasks, of which three run on GPUs:
 
-.. code:: cpp
+.. code-block:: cpp
 
    auto lX = ctx.logical_data(X);
    auto lY = ctx.logical_data(Y);
@@ -717,6 +717,8 @@ matters instead.
 
 .. image:: stf/images/task-sequence.png
 
+.. _lower-level-api:
+
 Lower-level task API
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -738,7 +740,7 @@ stream. CUDASTF ensures that any operation enqueued in the stream
 attached to the task within task body may access the specified data in a
 coherently, with respect to the requested access modes.
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.submit();
    // Unrelated CPU-based code might go here...
@@ -774,7 +776,7 @@ second).
 To wait for the completion of all pending operations (tasks, transfers, ...),
 an asynchronous fence mechanism is available :
 
-.. code:: cpp
+.. code-block:: cpp
 
     cudaStream_t stream = ctx.fence();
     cudaStreamSynchronize(stream);
@@ -829,7 +831,7 @@ current CUDA device to ``id`` when the task is started, and restore the
 previous current device when the task ends. ``exec_place::host()`` does
 not affect the current CUDA device.
 
-.. code:: cpp
+.. code-block:: cpp
 
    context ctx;
 
@@ -864,7 +866,7 @@ This is disallowed in the ``graph_ctx`` backend.
 An alternative solution which is compatible with all types of backend is
 to use ``ctx.host_launch``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.host_launch(lX.read())->*[](auto sX) {
        assert(sX(0) == 44);
@@ -891,7 +893,7 @@ created. Consequently, the affine data places will be chosen for the two
 tasks: the memory of device ``0`` for the first task and the host RAM
 for the second task.
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(exec_place::device(0), lA.rw())->*[](cudaStream_t s, auto a) {
        ...
@@ -903,7 +905,7 @@ for the second task.
 
 The code above is equivalent with:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
@@ -915,7 +917,7 @@ The code above is equivalent with:
 
 The affinity can also be made explicit:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(exec_place::device(0), lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
        ...
@@ -930,7 +932,7 @@ The example below ensures that an instance of logical data ``A`` located
 in host memory is passed to the task so that it can be accessed from
 device ``0``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
@@ -945,7 +947,7 @@ will automatically fault in the portions of the data actually used.
 Conversely, we can launch a task on the host that accesses data located
 on a device:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(exec_place::host(), lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
        ...
@@ -955,7 +957,7 @@ Alternatively, assuming there are at least two devices available, in
 unified memory it is possible to access the memory of one device from
 another:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.task(exec_place::device(0), lA.rw(data_place::device(1)))->*[](cudaStream_t s, auto a) {
        ...
@@ -991,14 +993,14 @@ is not known statically, for example.
 
 It is possible to generate a 1D grid from a vector of places :
 
-.. code:: c++
+.. code-block:: c++
 
        exec_place exec_place::grid(std::vector<exec_place> places);
 
 For example, this is used to implement the ``exec_place::all_devices()``
 helper which creates a grid of all devices.
 
-.. code:: c++
+.. code-block:: c++
 
    template <typename partitioner_t>
    inline exec_place_grid<exec_place_device, partitioner_t> exec_place::all_devices() {
@@ -1030,7 +1032,7 @@ arrays, and can be structured as a multi-dimensional grid described with
 a ``dim4`` class. There is indeed another constructor which takes such a
 ``dim4`` parameter :
 
-.. code:: c++
+.. code-block:: c++
 
        exec_place::grid(std::vector<exec_place> places, dim4 dims);
 
@@ -1047,7 +1049,7 @@ with a different shape using the reshape member of the
 ``exec_place_grid``. In this example, a grid of 8 devices is reshaped
 into a cube of size 2.
 
-.. code:: c++
+.. code-block:: c++
 
        // This assumes places.size() == 8
        auto places = exec_place::all_devices();
@@ -1060,7 +1062,7 @@ Partitioning policies makes it possible to express how data are
 dispatched over the different places of a grid, or how the index space
 of a ``parallel_loop`` will be scattered across places too.
 
-.. code:: c++
+.. code-block:: c++
 
    class MyPartition : public partitioner_base {
    public:
@@ -1119,7 +1121,7 @@ dimension.
 This illustrates how a 2D shape is dispatched over 3 places using the
 blocked layout :
 
-.. code:: text
+.. code-block:: text
 
     __________________________________
    |           |           |         |
@@ -1134,7 +1136,7 @@ This illustrates how a 2D shape is dispatched over 3 places using a
 tiled layout, where the dimension of the tiles is indicated by the
 ``TILE_SIZE`` parameter :
 
-.. code:: text
+.. code-block:: text
 
     ________________________________
    |     |     |     |     |     |  |
@@ -1160,7 +1162,7 @@ Example with a 1-dimensional array
 The example below illustrates processing a 1D array using
 ``parallel_for``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    int A[128];
    auto lA = ctx.logical_data(A);
@@ -1200,7 +1202,7 @@ For multidimensional data shapes, iteration (and consequently the lambda
 function) requires additional parameters. Consider an example that uses
 ``parallel_for`` to iterate over 2D arrays:
 
-.. code:: cpp
+.. code-block:: cpp
 
    const size_t N = 16;
    double X[2 * N * 2 * N];
@@ -1249,7 +1251,7 @@ Passing a shape object defined as ``box<2>({2, 3})`` to ``parallel_for``
 will correspond to a 2-dimensional iteration where the first index
 varies from 0 through 1 and the second from 0 through 2. Consider:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.parallel_for(box<2>({2, 3}))->*[] __device__(size_t i, size_t j) {
        printf("%ld, %ld\n", i, j);
@@ -1269,7 +1271,7 @@ The code above will print (in an unspecified order):
 Since the ``box`` default template parameter is 1, it is also possible
 to write code to iterate over all values of ``i`` from 0 through 3:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.parallel_for(box({4}))->*[] __device__(size_t i) {
        printf("%ld\n", i);
@@ -1282,7 +1284,7 @@ Box shapes can be defined based on their lower and upper bounds. The
 lower bounds are inclusive, while the upper bounds are exclusive.
 Consider an example similar to the previous one:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.parallel_for(box<2>({{5, 8}, {2, 4}}))->*[] __device__(size_t i, size_t j) {
        printf("%ld, %ld\n", i, j);
@@ -1312,7 +1314,7 @@ To define a new type of shape ``S`` (where ``S`` typically has a form of
 ``parallel_for``, ``shape_of<I>`` must define inner type ``coords_t``
 and member function ``index_to_coords`` as follows:
 
-.. code:: c++
+.. code-block:: c++
 
    template <typename I>
    class shape_of<I> {
@@ -1464,7 +1466,7 @@ Example with a 1-dimensional array
 
 The example below illustrates processing a 1D array using ``launch``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    ctx.launch(par(1024), all_devs, handle_X.read(cdp), handle_Y.rw(cdp))->*[=] __device__(thread_info t, slice<double> x, slice<double> y) {
        size_t tid = t.thread_id();
@@ -1621,7 +1623,7 @@ the CUDA kernel function pointer (ie. the ``__global__`` method defining the
 kernel), a grid description, the amount of dynamically allocated shared memory,
 and finally all the arguments that must be passed to the CUDA kernel.
 
-.. code:: cpp
+.. code-block:: cpp
 
   template <typename Fun, typename... Args>
   cuda_kernel_desc(Fun func,           // Pointer to the CUDA kernel function (__global__)
@@ -1632,7 +1634,7 @@ and finally all the arguments that must be passed to the CUDA kernel.
 
 For example, the following piece of code creates a task that launches a CUDA kernel that accesses two logical data.
 
-.. code:: cpp
+.. code-block:: cpp
 
   ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
     // calls __global__ void axpy(double a, slice<const double> x, slice<double> y);
@@ -1644,7 +1646,7 @@ Similar to the `task` construct, the `cuda_kernel` construct also supports
 specifying dynamic dependencies using the `add_deps` method and retrieving data
 instances using `get`. The previous code can therefore be rewritten as:
 
-.. code:: cpp
+.. code-block:: cpp
 
   auto t = ctx.cuda_kernel();
   t.add_deps(lX.read());
@@ -1670,7 +1672,7 @@ The following two constructs are therefore equivalent, except that the
 kernel launch APIs, while the implementation of the `task` construct may rely
 on graph capture when using a CUDA graph backend.
 
-.. code:: cpp
+.. code-block:: cpp
 
   /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
   ctx.cuda_kernel_chain(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
@@ -1690,7 +1692,7 @@ on graph capture when using a CUDA graph backend.
 
 Similarly to the `cuda_kernel` constructs, dependencies can be set dynamically:
 
-.. code:: cpp
+.. code-block:: cpp
 
   /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
   auto t = ctx.cuda_kernel_chain();
@@ -1725,7 +1727,7 @@ manipulate the logical data object. For example, a contiguous array of
 ``double`` is internally represented as a ``slice`` (which is an alias
 of ``std::experimental::mdspan``) so that we can use the following type:
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[16];
    logical_data<slice<double>> lX = ctx.logical_data(X);
@@ -1733,7 +1735,7 @@ of ``std::experimental::mdspan``) so that we can use the following type:
 For simplicity and without losing any information, users can typically
 rely on the ``auto`` keyword:
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[16];
    auto lX = ctx.logical_data(X);
@@ -1741,7 +1743,7 @@ rely on the ``auto`` keyword:
 One may for example store the logical data of a ``slice<int>`` in a C++
 class or structure in such as way:
 
-.. code:: cpp
+.. code-block:: cpp
 
    class foo {
       ...
@@ -1756,7 +1758,7 @@ as a ``const`` operation from user’s perspective. Without this ``mutable``
 qualifier, we could not have a ``const`` qualifier on the ``f`` variable
 in the following code :
 
-.. code:: cpp
+.. code-block:: cpp
 
    void func(context &ctx, const foo &f) {
        ctx.task(f.ldata.read())->*[](cudaStream_t stream, auto) {
@@ -1774,7 +1776,7 @@ logical data ``lX`` and ``lY``. Assuming two arrays of ``double``, which
 CUDASTF internally manages as ``slice<double>`` objects, the type of
 this task will be:
 
-.. code:: cpp
+.. code-block:: cpp
 
    stream_task<slice<const double>, slice<double>>
 
@@ -1785,7 +1787,7 @@ propagated further from the task object to the lambda invoked by means
 of ``operator->*`` in such a way that type errors are detected during
 compilation.
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[16], Y[16];
    logical_data<slice<double>> lX = ctx.logical_data(X);
@@ -1799,7 +1801,7 @@ compilation.
 In most cases, it’s recommended to use the ``auto`` C++ keyword to
 automatically obtain the correct data types:
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[16], Y[16];
    auto lX = ctx.logical_data(X);
@@ -1829,7 +1831,7 @@ For such situations CUDASTF offers a dynamically-typed task, called
 ``stream_task<>`` in the ``stream_ctx`` backend, whose member function
 ``add_deps`` allows adding dependencies dynamically:
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[16], Y[16];
    auto lX = ctx.logical_data(X);
@@ -1843,7 +1845,7 @@ the ``->*`` notation is only compatible with *statically-typed* tasks,
 as the user-provided lambda function needs to be passed data instances
 of the proper types (for example ``slice<double>``) by CUDASTF. As a
 consequence, the ``stream_task<>`` needs to be manipulated with the
-`low-level API <#lower-level-api>`__.
+:ref:`low-level API <lower-level-api>`.
 
 Combining typed and untyped tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1853,7 +1855,7 @@ type of the task will not reflect the dynamically added dependencies.
 This allows for combining the low-level API with the ``->*`` notation in
 the following way:
 
-.. code:: cpp
+.. code-block:: cpp
 
    double X[16], Y[16];
    auto lX = ctx.logical_data(X);
@@ -1873,7 +1875,7 @@ Untyped tasks cannot be converted to typed tasks. On the other hand,
 typed tasks can be converted implicitly to untyped tasks (thus losing
 all the benefits of statically available types):
 
-.. code:: cpp
+.. code-block:: cpp
 
    stream_task<> t = ctx.task(lX.read());
 
@@ -1911,7 +1913,7 @@ Modifying these frozen read-only views results in undefined behavior.
 If necessary, implicit data transfers or allocations are performed asynchronously
 when calling ``get``.
 
-.. code:: cpp
+.. code-block:: cpp
 
     auto frozen_ld = ctx.freeze(ld);
     auto dX = frozen_ld.get(data_place::current_device(), stream);
@@ -1928,7 +1930,7 @@ them. CUDASTF will allow tasks with a read access modes to run
 concurrently before ``unfreeze`` is called, but it will defer write accesses
 until data is made is made modifiable again, after ``unfreeze``.
 
-.. code:: cpp
+.. code-block:: cpp
 
     auto frozen_ld = ctx.freeze(ld, access_mode::rw, data_place::current_device());
     auto dX = frozen_ld.get(data_place::current_device(), stream);
@@ -1976,7 +1978,7 @@ coherency protocol (e.g., data allocations or copying data). When appropriate,
 using a token rather than a logical data with a full-fledged data
 interface therefore minimizes runtime overhead.
 
-.. code:: cpp
+.. code-block:: cpp
 
     auto token = ctx.token();
 
@@ -1993,7 +1995,7 @@ Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
 task’s implementation. Thus, the above task is equivalent to this code:
 
-.. code:: cpp
+.. code-block:: cpp
 
     ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, void_interface dummy, auto a, auto b)
 
@@ -2029,7 +2031,7 @@ Generating visualizations of task graphs
 Let us consider the ``examples/01-axpy.cu`` example which we compile as
 usual with ``make build/examples/01-axpy``.
 
-.. code:: bash
+.. code-block:: bash
 
    # Run the application with CUDASTF_DOT_FILE set to the filename
    CUDASTF_DOT_FILE=axpy.dot build/examples/01-axpy
@@ -2050,7 +2052,7 @@ debugging information. For example, we can specify what is the name of a
 logical data using the ``set_symbol`` method of the ``logical_data``
 class. As illustrated here :
 
-.. code:: c++
+.. code-block:: c++
 
    auto lX = ctx.logical_data(X).set_symbol("X");
    auto lY = ctx.logical_data(Y);
@@ -2058,13 +2060,13 @@ class. As illustrated here :
 
 We can also annotate tasks with symbols. Instead of writing this :
 
-.. code:: c++
+.. code-block:: c++
 
        ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) { axpy<<<16, 128, 0, s>>>(alpha, dX, dY); };
 
 We can write code like this :
 
-.. code:: c++
+.. code-block:: c++
 
        // Inlined notation
        ctx.task(lX.read(), lY.rw()).set_symbol("axpy")->*[&](cudaStream_t s, auto dX, auto dY) { axpy<<<16, 128, 0, s>>>(alpha, dX, dY); };
@@ -2083,7 +2085,7 @@ On a more elaborated application, such as the ``examples/heat_mgpu.cu``
 example, we can easily understand the overall workflow thanks to this
 visualization.
 
-.. code:: bash
+.. code-block:: bash
 
    CUDASTF_DOT_FILE=heat.dot build/examples/heat_mgpu 1000 8 4
    dot -Tpng heat.dot -o heat.png
@@ -2094,7 +2096,7 @@ For advanced users, it is also possible to display internally generated
 asynchronous operations by setting the ``CUDASTF_DOT_IGNORE_PREREQS``
 environment variable to 0.
 
-.. code:: c++
+.. code-block:: c++
 
    CUDASTF_DOT_IGNORE_PREREQS=0 CUDASTF_DOT_FILE=axpy-with-events.dot build/examples/01-axpy
    dot -Tpng axpy-with-events.dot -o axpy-with-events.png
@@ -2128,7 +2130,7 @@ an object whose lifetime defines a dot section valid until it is destroyed, or
 when calling the `end()` method on this object. The following example
 illustrates how to add nested sections:
 
-.. code:: c++
+.. code-block:: c++
 
     context ctx;
     auto lA = ctx.token().set_symbol("A");
@@ -2198,7 +2200,7 @@ must be associated to the ``ctx.parallel_for`` and ``ctx.launch``
 constructs using the ``set_symbol`` method. In the following example, we
 name the generated kernel “updateA” :
 
-.. code:: cpp
+.. code-block:: cpp
 
    int A[128];
    auto lA = ctx.logical_data(A);
@@ -2212,13 +2214,13 @@ Example with miniWeather
 
 Kernel tuning should always be performed on optimized code :
 
-.. code:: bash
+.. code-block:: bash
 
    make build/examples/miniweather
 
 The following command will analyse the performance of kernels :
 
-.. code:: bash
+.. code-block:: bash
 
    ncu --section=ComputeWorkloadAnalysis --print-nvtx-rename=kernel --nvtx -o output build/examples/miniWeather
 
@@ -2241,7 +2243,7 @@ for example required when the following message is appears during
 
 The file generated by ``ncu`` can be opened using ``ncu-ui`` :
 
-.. code:: bash
+.. code-block:: bash
 
    ncu-ui output.ncu-rep
 

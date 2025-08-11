@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/semaphore>``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    namespace cuda {
 
@@ -55,7 +55,7 @@ For each :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-s
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/semaphore>
 

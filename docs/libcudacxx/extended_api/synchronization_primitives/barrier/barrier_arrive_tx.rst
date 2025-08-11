@@ -5,7 +5,7 @@ cuda::device::barrier_arrive_tx
 
 Defined in header ``<cuda/barrier>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    __device__
    cuda::barrier<cuda::thread_scope_block>::arrival_token
@@ -53,7 +53,7 @@ Example
 Below example shows only ``cuda::device::barrier_arrive_tx``. A more extensive example can be found in the
 :ref:`cuda::device::memcpy_async_tx <libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx>` documentation.
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/barrier>
    #include <cuda/std/utility> // cuda::std::move

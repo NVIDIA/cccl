@@ -5,7 +5,7 @@ Work stealing
 
 Defined in header ``<cuda/work_stealing>`` if the CUDA compiler supports at least PTX ISA 8.7:
 
-.. code:: cuda
+.. code-block:: cuda
 
    namespace cuda {
 
@@ -51,7 +51,7 @@ Example
 
 This example demonstrates work-stealing at thread-block granularity using this API.
 
-.. code:: cuda
+.. code-block:: cuda
 
    // Before:
 

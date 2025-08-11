@@ -11,7 +11,7 @@ To tell the compiler that memory provided by ``my_memory_resource`` is device ac
 ``cuda::mr::device_accessible`` tag type with a free function ``get_property`` to declare that the resource provides
 device-accessible memory.
 
-.. code:: cpp
+.. code-block:: cpp
 
    struct my_memory_resource {
        friend constexpr void get_property(const my_memory_resource&, cuda::mr::device_accessible) noexcept {}
@@ -22,7 +22,7 @@ right kind of memory
 
 `See it on Godbolt <https://godbolt.org/z/5hjoEnerb>`__
 
-.. code:: cpp
+.. code-block:: cpp
 
    template<class MemoryResource>
        requires cuda::has_property<MemoryResource, cuda::mr::device_accessible>
@@ -32,7 +32,7 @@ If C++20 is not available, the function can instead be constrained via SFINAE
 
 `See it on Godbolt  <https://godbolt.org/z/11sGbr333>`__
 
-.. code:: cpp
+.. code-block:: cpp
 
    template<class MemoryResource, class = cuda::std::enable_if_t<cuda::has_property<MemoryResource, cuda::mr::device_accessible>>>
    void function_that_dispatches_to_device(MemoryResource& resource);
@@ -52,7 +52,7 @@ require a stateful property with ``cuda::has_property_with`` as shown in the exa
 
 `See it on Godbolt  <https://godbolt.org/z/11sGbr333>`__
 
-.. code:: cpp
+.. code-block:: cpp
 
    struct required_alignment{
        using value_type = std::size_t;
@@ -77,7 +77,7 @@ require a stateful property with ``cuda::has_property_with`` as shown in the exa
 In generic code it is often desirable to propagate properties from a base type to a derived type, without knowing the
 base type at all. This common use case is covered by ``cuda::forward_property``, a simple CRTP template.
 
-.. code:: cpp
+.. code-block:: cpp
 
    template<class MemoryResource>
    class logging_resource : cuda::forward_property<logging_resource<MemoryResource>, MemoryResource> {

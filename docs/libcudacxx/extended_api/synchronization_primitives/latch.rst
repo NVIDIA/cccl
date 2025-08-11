@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/latch>``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <cuda::thread_scope Scope>
    class cuda::latch;
@@ -49,7 +49,7 @@ For each :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-s
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/latch>
 

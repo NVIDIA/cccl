@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/annotated_ptr>``.
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, typename Property>
    [[nodiscard]] __host__ __device__
@@ -36,7 +36,7 @@ Associate an :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/cooperative_groups.h>
 

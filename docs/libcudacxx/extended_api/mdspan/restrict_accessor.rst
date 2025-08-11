@@ -3,7 +3,7 @@
 ``restrict`` ``mdspan`` and ``accessor``
 ========================================
 
-.. code:: cpp
+.. code-block:: cpp
 
   template <typename Accessor>
   using restrict_accessor;
@@ -14,7 +14,7 @@ More information related to the *restrict aliasing policy* can be found in the C
 
 ----
 
-.. code:: cpp
+.. code-block:: cpp
 
   template <typename ElementType,
             typename Extents,
@@ -28,7 +28,7 @@ An alias type to create an ``mdspan`` with a *restrict aliasing policy* accessor
 
 Traits:
 
-.. code:: cpp
+.. code-block:: cpp
 
     template <typename T>
     inline constexpr bool is_restrict_accessor_v = /*true if T is a restrict accessor, false otherwise*/;
@@ -45,7 +45,7 @@ Traits:
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/mdspan>
 

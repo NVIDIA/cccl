@@ -3,7 +3,7 @@
 ``cuda::bitmask``
 =================
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <typename T = uint32_t>
    [[nodiscard]] constexpr T
@@ -48,7 +48,7 @@ The function performs the following operations in device code:
 Example
 -------
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/bit>
     #include <cuda/std/cassert>

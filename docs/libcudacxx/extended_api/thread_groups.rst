@@ -3,7 +3,7 @@
 Thread Groups
 =============
 
-.. code:: cuda
+.. code-block:: cuda
 
    struct ThreadGroup {
      static constexpr cuda::thread_scope thread_scope;
@@ -49,7 +49,7 @@ This concept is defined for documentation purposes but is not materialized in th
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/atomic>
    #include <cuda/std/cstddef>

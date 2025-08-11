@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/barrier>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, size_t Alignment>
    inline __device__
@@ -46,7 +46,7 @@ Currently, ``memcpy_async_tx`` has no synchronous fallback mechanism., i.e., it 
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/barrier>
    #include <cuda/std/utility> // cuda::std::move

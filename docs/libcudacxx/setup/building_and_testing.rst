@@ -8,7 +8,7 @@ libcu++ can be build and tested as shown in our `contributor guidelines <https:/
 However, often only a small subset of the full test suite needs to be run during development. For that we rely on ``lit``.
 After libcu++ has been configured either through the build scripts or directly via a cmake preset one can then run.
 
-.. code:: bash
+.. code-block:: bash
 
    cd build
    lit libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER -sv
@@ -18,7 +18,7 @@ Note that the name of the top level folder is the same as the name of the preset
 ``libcudacxx-cpp17``. As an example this is how to run all tests for ``cuda::std::span``, which are located in
 ``libcudacxx/test/libcudacxx/std/containers/views/views.span``
 
-.. code:: bash
+.. code-block:: bash
 
    cd build
 
@@ -31,14 +31,14 @@ Note that the name of the top level folder is the same as the name of the preset
 If only building the tests and not running them is desired one can pass ``-Dexecutor="NoopExecutor()"`` to the lit invocation.
 This is especially useful if the machine has no GPU or testing a different architecture
 
-.. code:: bash
+.. code-block:: bash
 
    cd build
    lit libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER -sv -Dexecutor="NoopExecutor()"
 
 Finally different standard modes can be tested by passing e.g ``--param=std=c++20``
 
-.. code:: bash
+.. code-block:: bash
 
    cd build
    lit libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER -sv --param=std=c++20

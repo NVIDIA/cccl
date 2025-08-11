@@ -3,7 +3,7 @@
 ``cuda::neg``
 ====================================
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -26,7 +26,7 @@ The function computes the negation of the input value accepting both signed and 
 Example
 -------
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>

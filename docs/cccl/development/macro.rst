@@ -28,7 +28,7 @@ Compiler Macros
 
 The ``_CCCL_COMPILER`` function-like macro can also be used to check the version of a compiler.
 
-.. code:: cpp
+.. code-block:: cpp
 
    _CCCL_COMPILER(MSVC, <, 19, 24)
    _CCCL_COMPILER(GCC, >=, 9)
@@ -51,7 +51,7 @@ the compiler's major version number. For example, when the compiler is ``gcc-9.1
 
 The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the version of a CUDA compiler.
 
-.. code:: cpp
+.. code-block:: cpp
 
    _CCCL_CUDA_COMPILER(NVCC, <, 12, 3)
    _CCCL_CUDA_COMPILER(CLANG, >=, 14)

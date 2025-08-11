@@ -3,7 +3,7 @@
 ``cuda::ceil_div``
 ==================
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, typename U>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -39,7 +39,7 @@ Example
 
 This API is very useful for determining the *number of thread blocks* required to process a fixed amount of work, given a fixed number of threads per block:
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/span>

@@ -43,7 +43,7 @@ libraries.yaml
 This file tells CE how to pull in library files and defines which
 versions to fetch. Look for the ``thrustcub:`` section:
 
-.. code:: yaml
+.. code-block:: yaml
 
        thrustcub:
          type: github
@@ -70,7 +70,7 @@ This file defines the library versions displayed in the CE UI and maps
 them to a set of include directories. Look for the ``libs.thrustcub``
 section:
 
-.. code:: yaml
+.. code-block:: yaml
 
    libs.thrustcub.name=Thrust+CUB
    libs.thrustcub.description=CUDA collective and parallel algorithms

@@ -5,7 +5,7 @@ cuda::pipeline::consumer_release
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <cuda::thread_scope Scope>
    __host__ __device__

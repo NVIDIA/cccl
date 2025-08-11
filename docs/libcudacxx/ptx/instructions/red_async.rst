@@ -19,7 +19,7 @@ red.async ``.s64`` emulation
 PTX does not currently (CTK 12.3) expose ``red.async.add.s64``. This
 exposure is emulated in ``cuda::ptx`` using
 
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
    // .op        = { .add }

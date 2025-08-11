@@ -9,7 +9,7 @@ be suitable, for example when the number of parameters is not known
 statically. To address such situations, CUDASTF provides a lower-level
 interface for creating tasks, which is described below.
 
-.. code:: cpp
+.. code-block:: cpp
 
    #include "cudastf/stf.h"
    #include "cudastf/__stf/stream/stream_ctx.h"
@@ -77,7 +77,7 @@ Similarly to the CUDA stream backend with a context of type
 ``stream_ctx``, the CUDA graph backend ``graph_ctx`` also provides a
 low-level interface.
 
-.. code:: cpp
+.. code-block:: cpp
 
        graph_ctx ctx;
 

@@ -3,7 +3,7 @@
 ``cuda::maximum`` and ``cuda::minimum``
 =======================================
 
-.. code:: cuda
+.. code-block:: cuda
 
     template <typename T>
     struct maximum {
@@ -40,7 +40,7 @@ Function objects for performing maximum and minimum. The functions behave as ``n
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/functional>
     #include <cuda/std/cstdint>

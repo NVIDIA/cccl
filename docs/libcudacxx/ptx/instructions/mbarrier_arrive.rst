@@ -30,7 +30,7 @@ mbarrier.arrive.expect_tx
 Usage
 -----
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/ptx>
    #include <cuda/barrier>

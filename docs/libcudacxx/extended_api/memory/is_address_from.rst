@@ -5,7 +5,7 @@
 
 Defined in ``<cuda/memory>`` header.
 
-.. code:: cpp
+.. code-block:: cpp
 
    enum class address_space
    {
@@ -19,14 +19,14 @@ Defined in ``<cuda/memory>`` header.
 
 Enumeration of device address spaces to be used with the ``is_address_from()`` and ``is_object_from()`` functions. See `PTX ISA documentation for state spaces <https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces>`_ for more details.
 
-.. code:: cpp
+.. code-block:: cpp
 
    [[nodiscard]] __device__ inline
    bool is_address_from(const volatile void* ptr, address_space space) noexcept; // (1)
 
 The function checks if a pointer ``ptr`` with a generic address is from a ``space`` address state space.
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <typename T>
    [[nodiscard]] __device__ inline
@@ -59,7 +59,7 @@ Compared to the corresponding CUDA C functions ``__isGlobal()``, ``__isShared()`
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/memory>
 

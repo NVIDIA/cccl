@@ -263,7 +263,7 @@ Additionally, the traits from libcu++ have to be specialized as well:
 
 For example, a custom floating point type ``my_half`` could be registered with CUB and libcu++ like this:
 
-.. code:: cpp
+.. code-block:: cpp
 
     template <>
     inline constexpr bool ::cuda::is_floating_point_v<my_half> = true;

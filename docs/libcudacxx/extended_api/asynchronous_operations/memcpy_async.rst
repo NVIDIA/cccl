@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/barrier>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    // (1)
    template <typename Shape, cuda::thread_scope Scope, typename CompletionFunction>
@@ -23,7 +23,7 @@ Defined in header ``<cuda/barrier>``:
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    // (3)
    template <typename Shape, cuda::thread_scope Scope>
@@ -40,7 +40,7 @@ Defined in header ``<cuda/pipeline>``:
 
 Defined in header ``<cuda/annotated_ptr>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    // (5)
    template <typename Dst, typename Src, typename SrcProperty, typename Shape, typename Sync>
@@ -136,7 +136,7 @@ Parameters
 Examples
 --------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/barrier>
 

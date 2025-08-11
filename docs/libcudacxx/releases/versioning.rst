@@ -200,7 +200,7 @@ However, we must be careful, because ABI namespaces cannot diagnosis all
 mixing of different ABI versions. Let's say we a translation unit
 compiled with ABI version 3 that contains this code:
 
-.. code:: cuda
+.. code-block:: cuda
 
    struct sum { cuda::atomic<float> };
    void negate(sum&);

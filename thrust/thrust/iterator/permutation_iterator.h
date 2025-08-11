@@ -148,7 +148,7 @@ public:
       , m_element_iterator(x)
   {}
 
-  //! Copy constructor accepts a related \p permutation_iterator. \param r A compatible \p permutation_iterator to copy
+  //! Copy constructor accepts a related \p permutation_iterator. \param rhs A compatible \p permutation_iterator to copy
   //! from.
   template <typename OtherElementIterator,
             typename OtherIndexIterator,

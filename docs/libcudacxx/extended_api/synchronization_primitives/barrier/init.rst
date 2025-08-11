@@ -5,7 +5,7 @@ cuda::barrier::init
 
 Defined in header ``<cuda/barrier>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <cuda::thread_scope Scope,
              typename CompletionFunction = /* unspecified */>
@@ -28,7 +28,7 @@ variables are not initialized. ``cuda::barrier::init`` should be used to properl
 
 An NVCC diagnostic warning about the ignored constructor will be emitted:
 
-.. code:: bash
+.. code-block:: bash
 
    warning: dynamic initialization is not supported for a function-scope static
    __shared__ variable within a __device__/__global__ function
@@ -38,7 +38,7 @@ It can be silenced using ``#pragma nv_diag_suppress static_var_with_dynamic_init
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/barrier>
 

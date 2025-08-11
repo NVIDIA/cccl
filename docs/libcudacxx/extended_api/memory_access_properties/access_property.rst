@@ -7,7 +7,7 @@ Defined in header ``<cuda/annotated_ptr>``.
 
 The class ``cuda::access_property`` provides an opaque encoding for *L2 cache memory residence* control and *memory space* properties. It is used in combination with :ref:`cuda::annotated_ptr <libcudacxx-extended-api-memory-access-properties-annotated-ptr>`, :ref:`cuda::associate_access_property <libcudacxx-extended-api-memory-access-properties-associate-access-property>` and :ref:`cuda::apply_access_property <libcudacxx-extended-api-memory-access-properties-apply-access-property>` to *request* the application of properties to memory operations.
 
-.. code:: cuda
+.. code-block:: cuda
 
    namespace cuda {
 
@@ -109,7 +109,7 @@ The L2 residence control can be specified in two ways:
 Default constructor
 -------------------
 
-.. code:: cuda
+.. code-block:: cuda
 
    access_property() noexcept = default;
 
@@ -118,7 +118,7 @@ Default constructor
 Static global memory residence control property constructors
 ------------------------------------------------------------
 
-.. code:: cuda
+.. code-block:: cuda
 
    __host__ __device__ constexpr access_property::access_property(global) noexcept;
    __host__ __device__ constexpr access_property::access_property(normal) noexcept;
@@ -130,7 +130,7 @@ Static global memory residence control property constructors
 Dynamic interleaved global memory residence control property constructors
 -------------------------------------------------------------------------
 
-.. code:: cuda
+.. code-block:: cuda
 
    __host__ __device__ constexpr access_property::access_property(normal,     float probability) noexcept;
    __host__ __device__ constexpr access_property::access_property(streaming,  float probability) noexcept;
@@ -145,7 +145,7 @@ Dynamic interleaved global memory residence control property constructors
 Dynamic range global memory residence control property constructors
 -------------------------------------------------------------------
 
-.. code:: cuda
+.. code-block:: cuda
 
    __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, normal) noexcept;
    __host__ __device__ access_property::access_property(void* ptr, size_t leading_bytes, size_t total_bytes, streaming) noexcept;
@@ -180,7 +180,7 @@ Dynamic range global memory residence control property constructors
 Conversion operators
 --------------------
 
-.. code:: cuda
+.. code-block:: cuda
 
    __host__ __device__ constexpr access_property::normal::operator     cudaAccessProperty() const noexcept;
    __host__ __device__ constexpr access_property::streaming::operator  cudaAccessProperty() const noexcept;
@@ -191,7 +191,7 @@ Allows ``constexpr cuda::access_property::normal{}``, ``cuda::access_property::s
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/access_property>
 

@@ -23,7 +23,7 @@ See below for different memory resources and potential pitfals.
 To demonstrate, the following example defines several resources, only some of which are valid implementations of the
 ``cuda::mr::synchronous_resource`` concept. The ``static_assertion``'s will result in compile-time errors for the invalid resources.
 
-.. code:: cpp
+.. code-block:: cpp
 
    struct valid_resource {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
@@ -74,7 +74,7 @@ In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp
 ``cuda::mr::resource`` concept verifies that a memory resource also satisfies the ``allocate`` /
 ``deallocate`` interface. Requiring both the PMR interface and the async interface is a deliberate design decision.
 
-.. code:: cpp
+.. code-block:: cpp
 
    struct valid_resource {
      void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
@@ -88,7 +88,7 @@ In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp
 
 A library can easily decide whether to use the async interface:
 
-.. code:: cpp
+.. code-block:: cpp
 
    template<class MemoryResource>
        requires cuda::mr::synchronous_resource<MemoryResource>
@@ -105,7 +105,7 @@ A library can easily decide whether to use the async interface:
 Applications and libraries may want to combine type checks for arbitrary properties with the ``{synchronous_}resource``
 concept. The ``{synchronous_}resource_with`` concept allows checking resources for arbitrary properties.
 
-.. code:: cpp
+.. code-block:: cpp
 
    struct required_alignment{
        using value_type = std::size_t;

@@ -21,7 +21,7 @@
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <cuda::thread_scope Scope>
    class cuda::pipeline {
@@ -115,7 +115,7 @@ producers and consumers. In a *partitioned pipeline*, each participating thread 
 
 .. rubric:: Example
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/pipeline>
    #include <cooperative_groups.h>

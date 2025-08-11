@@ -10,4 +10,4 @@ Transformations
    transformations/filling
    transformations/modifying
    transformations/replacing
-   ${repo_docs_api_path}/*function_group__transformations*
+   ../../api/group__transformations*

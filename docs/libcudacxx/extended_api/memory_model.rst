@@ -21,7 +21,7 @@ A **thread scope** specifies the kind of threads that can synchronize with each 
 as :ref:`atomic <libcudacxx-extended-api-synchronization-atomic>` or
 :ref:`barrier <libcudacxx-extended-api-synchronization-barrier>`.
 
-.. code:: cuda
+.. code-block:: cuda
 
    namespace cuda {
 
@@ -158,7 +158,7 @@ Example: Message Passing
 The following example passes a message stored to the ``x`` variable by a
 thread in block ``0`` to a thread in block ``1`` via the flag ``f``:
 
-.. code:: cpp
+.. code-block:: cpp
 
    int x = 0;
    int f = 0;
@@ -186,7 +186,7 @@ In the following variation of the previous example, two threads
 concurrently access the ``f`` object without synchronization, which
 leads to a **data race**, and exhibits **undefined behavior**:
 
-.. code:: cpp
+.. code-block:: cpp
 
    int x = 0;
    int f = 0;

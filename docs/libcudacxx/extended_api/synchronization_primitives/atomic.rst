@@ -13,7 +13,7 @@
 
 Defined in header ``<cuda/atomic>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, cuda::thread_scope Scope = cuda::thread_scope_system>
    class cuda::atomic;
@@ -78,7 +78,7 @@ the value of ``cuda::atomic<T, S>::is_always_lock_free()`` is as follows:
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/atomic>
 

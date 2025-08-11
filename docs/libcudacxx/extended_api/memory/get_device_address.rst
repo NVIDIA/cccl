@@ -11,7 +11,7 @@ It replaces uses of ``cudaGetSymbolAddress``, which requires an inout parameter.
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
   #include <cuda/memory>
 

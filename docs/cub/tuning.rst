@@ -89,7 +89,7 @@ Headers
 You start writing a benchmark by including :code:`nvbench_helper.cuh`. This contains all
 necessary includes and definitions.
 
-.. code:: c++
+.. code-block:: c++
 
   #include <nvbench_helper.cuh>
 
@@ -99,7 +99,7 @@ The range is represented by three numbers: :code:`start:end:step`.
 Start and end are included.
 For instance, the following code defines a search space for two parameters, the number of threads per block and items per thread.
 
-.. code:: c++
+.. code-block:: c++
 
   // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
   // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -108,7 +108,7 @@ Next, you need to define a benchmark function. The function accepts :code:`nvben
 a :code:`nvbench::type_list`. For more details on the benchmark signature, take a look at the
 `NVBench documentation <https://github.com/NVIDIA/nvbench>`_.
 
-.. code:: c++
+.. code-block:: c++
 
   template <typename T, typename OffsetT>
   void algname(nvbench::state &state, nvbench::type_list<T, OffsetT>)
@@ -139,7 +139,7 @@ The following code is included in the benchmark for the policy hub to be enabled
 ..
     The following code is repeated further down as well. Please keep in sync!
 
-.. code:: c++
+.. code-block:: c++
 
   #if TUNE_BASE
     using dispatch_t = cub::DispatchReduce<T, OffsetT>; // uses default policy hub
@@ -169,7 +169,7 @@ for example the number of elements to process.
 Instead, use the* :code:`gen` *function,
 which will fill the input vector with random data on GPU with no compile-time overhead.*
 
-.. code:: c++
+.. code-block:: c++
 
     const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
     thrust::device_vector<T> in(elements);
@@ -180,7 +180,7 @@ which will fill the input vector with random data on GPU with no compile-time ov
 In addition to the benchmark runtime, NVBench can also report information on the achieved memory bandwidth.
 For this, you can optionally provide information on the memory reads and writes of the algorithm to the :code:`state`:
 
-.. code:: c++
+.. code-block:: c++
 
     state.add_element_count(elements);
     state.add_global_memory_reads<T>(elements, "Size");
@@ -193,7 +193,7 @@ Most CUB algorithms need to be called twice:
 
 We perform the first call now and allocate temporary storage:
 
-.. code:: c++
+.. code-block:: c++
 
     std::size_t temp_size;
     dispatch_t::Dispatch(nullptr,
@@ -209,7 +209,7 @@ We perform the first call now and allocate temporary storage:
 Finally, we can execute the timed region of the benchmark,
 which contains the second call to a CUB algorithm and performs the actual work we want to benchmark:
 
-.. code:: c++
+.. code-block:: c++
 
     state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch,
                [&](nvbench::launch &launch) {
@@ -229,7 +229,7 @@ Now we need to tell NVBench about it.
 NVBench Attributes
 ++++++++++++++++++
 
-.. code:: c++
+.. code-block:: c++
 
   NVBENCH_BENCH_TYPES(algname, NVBENCH_TYPE_AXES(all_types, offset_types))
     .set_name("base")
@@ -254,7 +254,7 @@ a `TUNE_AxisName` macro with the type that's currently being tuned. For instance
 have the type axes :code:`T{ct}` and :code:`OffsetT` (as shown above), you can use the following
 pattern to narrow down the types you compile for:
 
-.. code:: c++
+.. code-block:: c++
 
   #ifdef TUNE_T
   using all_types = nvbench::type_list<TUNE_T>;
@@ -303,7 +303,7 @@ that we don't intend to provide separate tuning policies for.
 Also, a large space of runtime workloads can be segmented this way,
 e.g. by splitting the benchmark entry point and supplying a few low and a few high values for a runtime axis:
 
-.. code:: c++
+.. code-block:: c++
 
   NVBENCH_BENCH_TYPES(algname, NVBENCH_TYPE_AXES(all_types, offset_types))
     .set_name("small")
@@ -324,7 +324,7 @@ During the Search Process we are covering all variants for all compile-time work
 To get started with tuning, you need to configure CMake.
 You can use the following command:
 
-.. code:: bash
+.. code-block:: bash
 
   $ mkdir build
   $ cd build
@@ -332,7 +332,7 @@ You can use the following command:
 
 You can then run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
   cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858
@@ -363,7 +363,7 @@ The same applies to benchmarks running for too long.
 To get quick feedback on what benchmarks are selected and how big the search space is,
 you can add the :code:`-l` option:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28' -l
   ctk:  12.6.85
@@ -421,7 +421,7 @@ The result of the search is stored in one or more :code:`cccl_meta_bench.db` fil
 result you can use the :code:`analyze.py` script.
 The :code:`--coverage` flag will show the amount of variants that were covered per compile-time workload:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/analyze.py --coverage
     cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I32] coverage: 167 / 522 (31.9923%)
@@ -429,7 +429,7 @@ The :code:`--coverage` flag will show the amount of variants that were covered p
 
 The :code:`--top N` flag will list the best :code:`N` variants for each compile-time workload:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/analyze.py --top=5
     cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I32]:
@@ -461,14 +461,14 @@ By default, :code:`analyze.py` will look for a file named :code:`cccl_meta_bench
 If the tuning results are available in multiple databases, e.g., after tuning on multiple GPUs,
 glob expressions matching multiple databases, or just multiple file paths, can be passed as arguments as well:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/analyze.py --top=5 <path-to-databases>/*.db
 
 In case the tuning database(s) store(s) results for several different benchmarks,
 the analysis can again be restricted using a regular expression via the :code:`-R` option:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/analyze.py -R=".*radix_sort.keys.*"  --top=5 <path-to-databases>/*.db
 
@@ -486,7 +486,7 @@ For more background information on this subject, we refer the reader to `this ar
 A variant plot can be generated for one or more variants using the :code:`--variants-ratio=` option and specifying the specific variant to plot.
 For example:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/analyze.py -R=".*radix_sort.keys.*" --variants-ratio='ipt_18.tpb_288' <path-to-databases>/*.db
 
@@ -532,7 +532,7 @@ Once a suitable tuning result has been selected, we have to translate it into C+
 The tuning variant name shown by :code:`analyze.py` gives us all the information on the selected tuning values.
 Here is an example:
 
-.. code:: bash
+.. code-block:: bash
 
   $ ../benchmarks/scripts/analyze.py --top=1
     cub.bench.radix_sort.keys[T{ct}=I8, OffsetT{ct}=I64]:
@@ -543,7 +543,7 @@ Assume we have determined this tuning to be the best one for sorting I8 keys usi
 The ``variant`` can be decoded using the ``// %RANGE%`` comments in the C++ source code of the benchmark,
 since the names of the reported parameters in the variant are derived from these:
 
-.. code::  c++
+.. code-block::  c++
 
     // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
     // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -557,7 +557,7 @@ These tuning parameters are then typically used to create a policy hub,
 which is passed to the algorithm’s dispatcher, as :ref:`sketched above <cub-tuning-authoring-benchmarks>`,
 and repeated here:
 
-.. code:: c++
+.. code-block:: c++
 
   #if !TUNE_BASE
     template <typename AccumT, typename OffsetT>
@@ -588,7 +588,7 @@ This is usually the case when a CUB algorithm has been reengineered and shows di
 or more tuning parameters are exposed (e.g., a new load algorithm is available).
 For example, this existing radix sort tuning may exist:
 
-.. code:: c++
+.. code-block:: c++
 
     template <typename ValueT, size_t KeySize, size_t ValueSize, size_t OffsetSize>
     struct sm100_small_key_tuning : sm90_small_key_tuning<KeySize, ValueSize, OffsetSize> {};

@@ -3,7 +3,7 @@
 ``cuda::round_up``
 ==================
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, typename U>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -40,7 +40,7 @@ The function computes the round up to the smallest multiple of an integral or en
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/cmath>
     #include <cstdio>

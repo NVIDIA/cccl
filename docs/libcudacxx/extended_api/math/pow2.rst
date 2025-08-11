@@ -3,19 +3,19 @@
 Power of Two Utilities
 ======================
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
    bool is_power_of_two(T value) noexcept;
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
    T next_power_of_two(T value) noexcept;
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -48,7 +48,7 @@ See :ref:`\<cuda/std/bit\> performance considerations <libcudacxx-standard-api-n
 Example
 -------
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>

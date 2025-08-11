@@ -5,7 +5,7 @@
 
 Defined in ``<cuda/cmath>`` header.
 
-.. code:: cpp
+.. code-block:: cpp
 
     template <typename T, bool DivisorIsNeverOne = false>
     class fast_mod_div {
@@ -27,7 +27,7 @@ Defined in ``<cuda/cmath>`` header.
         operator T() const noexcept;
     };
 
-.. code:: cpp
+.. code-block:: cpp
 
     template <typename T, typename U>
     [[nodiscard]] __host__ __device__
@@ -64,7 +64,7 @@ The class ``fast_mod_div`` is used to pre-compute the modulo and division of an 
 Example
 -------
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>

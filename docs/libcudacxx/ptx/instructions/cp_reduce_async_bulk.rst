@@ -19,7 +19,7 @@ PTX does not currently (CTK 12.3) expose
 ``cp.reduce.async.bulk.add.s64``. This exposure is emulated in
 ``cuda::ptx`` using:
 
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.u64 [dstMem], [srcMem], size, [rdsmem_bar]; // 2. PTX ISA 80, SM_90
    // .dst       = { .shared::cluster }

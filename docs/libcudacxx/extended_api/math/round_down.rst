@@ -3,7 +3,7 @@
 ``cuda::round_down``
 ====================
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, typename U>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -36,7 +36,7 @@ The function computes the round down to the largest multiple of an integral or e
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/cmath>
     #include <cstdio>

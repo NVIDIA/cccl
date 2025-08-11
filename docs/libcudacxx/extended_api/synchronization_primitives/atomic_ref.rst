@@ -13,7 +13,7 @@
 
 Defined in header ``<cuda/atomic>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    template <typename T, cuda::thread_scope Scope = cuda::thread_scope_system>
    class cuda::atomic_ref;
@@ -84,7 +84,7 @@ will be exacerbated. In these situations it is advisable to perform a hierarchic
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/atomic>
 

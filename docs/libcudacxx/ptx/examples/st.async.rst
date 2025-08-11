@@ -3,7 +3,7 @@
 How to use st.async
 ===================
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cstdio>
    #include <cuda/ptx>

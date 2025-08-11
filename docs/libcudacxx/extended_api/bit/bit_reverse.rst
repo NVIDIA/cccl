@@ -3,7 +3,7 @@
 ``cuda::bit_reverse``
 =====================
 
-.. code:: cpp
+.. code-block:: cpp
 
    template <typename T>
    [[nodiscard]] constexpr T
@@ -47,7 +47,7 @@ The function performs the following operations:
 Example
 -------
 
-.. code:: cpp
+.. code-block:: cpp
 
     #include <cuda/bit>
     #include <cuda/std/cassert>

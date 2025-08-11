@@ -5,7 +5,7 @@
 
 Defined in ``<cuda/warp>`` header.
 
-.. code:: cuda
+.. code-block:: cuda
 
     namespace cuda::device {
 
@@ -50,7 +50,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/std/array>
     #include <cuda/std/cassert>

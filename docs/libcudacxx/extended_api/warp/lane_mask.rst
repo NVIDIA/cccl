@@ -5,7 +5,7 @@
 
 Defined in ``<cuda/warp>`` header.
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/std/cstdint>
 
@@ -71,7 +71,7 @@ The class provides several ``static`` member functions to create common lane mas
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/std/cassert>
     #include <cuda/std/type_traits>

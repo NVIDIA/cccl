@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/memory>``, ``<cuda/discard_memory>``.
 
-.. code:: cuda
+.. code-block:: cuda
 
    __host__ __device__ void discard_memory(volatile void* ptr, size_t nbytes);
 
@@ -22,7 +22,7 @@ Example
 
 This kernel needs a scratch pad that does not fit in shared memory, so it uses an allocation in global memory instead:
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/memory>
 

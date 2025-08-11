@@ -3,7 +3,7 @@
 
 st.bulk.weak.shared::cta
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // st.bulk.weak.shared::cta [addr], size, initval; // PTX ISA 86, SM_100
    template <int N32>

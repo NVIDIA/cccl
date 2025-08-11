@@ -3,7 +3,7 @@
 ``cuda::ptr_rebind``
 ====================
 
-.. code:: cuda
+.. code-block:: cuda
 
     template <typename U, typename T>
     [[nodiscard]] __host__ __device__ inline
@@ -43,7 +43,7 @@ The functions return the pointer ``ptr`` cast to type ``U*`` or ``const U*``. Th
 Example
 -------
 
-.. code:: cuda
+.. code-block:: cuda
 
     #include <cuda/memory>
     #include <cuda/std/cstdint>

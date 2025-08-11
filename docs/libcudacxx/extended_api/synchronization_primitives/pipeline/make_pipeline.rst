@@ -5,7 +5,7 @@ cuda::make_pipeline
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code:: cuda
+.. code-block:: cuda
 
    // (1)
    __host__ __device__
@@ -87,7 +87,7 @@ A ``cuda::pipeline`` object.
 
 .. rubric:: Example
 
-.. code:: cuda
+.. code-block:: cuda
 
    #include <cuda/pipeline>
    #include <cooperative_groups.h>

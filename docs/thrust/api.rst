@@ -1,5 +1,3 @@
-.. _thrust-module-api:
-
 Thrust API documentation
 =========================
 
