@@ -250,7 +250,7 @@ auto each(T to)
  * compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr void unroll(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
+constexpr void unroll(F&& f, ::std::index_sequence<i...> = {})
 {
   if constexpr (sizeof...(i) != n)
   {
@@ -359,7 +359,7 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
  * Note: Since this function is `constexpr`, it can be used at compile-time if `f` is a compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
+constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = {})
 {
   if constexpr (sizeof...(i) != n)
   {
