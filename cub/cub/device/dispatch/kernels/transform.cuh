@@ -679,8 +679,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   const int tile_size = block_threads * num_elem_per_thread;
 
-  const bool bulk_cp_thread = threadIdx.x == 0;
-  const bool work_id_thread = threadIdx.x == 32;
+  const bool elected        = ptx::elect_sync(~0);
+  const bool bulk_cp_thread = elected && threadIdx.x < 32;
+  const bool work_id_thread = elected && threadIdx.x >= 32;
   if (bulk_cp_thread)
   {
     ptx::mbarrier_init(&bar_bulk_cp, 1);
