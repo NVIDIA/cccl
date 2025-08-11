@@ -893,6 +893,29 @@ UNITTEST("context with arguments")
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
+inline void unit_test_context_pfor_integral()
+{
+  context ctx;
+  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
+  ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
+  ctx.host_launch(lA.read())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      EXPECT(A(i) == 2 * i);
+    }
+  };
+  ctx.finalize();
+}
+
+UNITTEST("context parallel_for integral shape")
+{
+  unit_test_context_pfor_integral();
+};
+
 inline void unit_test_context_pfor()
 {
   context ctx;
@@ -1451,13 +1474,13 @@ UNITTEST("token elision")
   auto lC = ctx.logical_data(buf);
 
   // with all arguments
-  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with argument elision
   ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with all arguments
-  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](void_interface, void_interface, slice<int>) {};
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
 
   // with argument elision
   ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};

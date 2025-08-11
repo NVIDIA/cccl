@@ -28,6 +28,10 @@
 {
 } query2{};
 
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query3_t
+{
+} query3{};
+
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct none_such_t
 {
 } none_such{};
@@ -37,6 +41,12 @@ struct custom_env
   __host__ __device__ constexpr auto query(query1_t) const noexcept
   {
     return -1;
+  }
+
+  // A query that takes an extra argument:
+  __host__ __device__ constexpr auto query(query3_t, int i) const noexcept
+  {
+    return i;
   }
 };
 
@@ -86,15 +96,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     custom_env{}, cuda::std::execution::prop{query1, 42}, cuda::std::execution::prop{query2, 3.14}};
   assert(e4.query(query1) == -1);
   assert(e4.query(query2) == 3.14);
+  assert(e4.query(query3, 42) == 42);
   using expected_e4_t = cuda::std::execution::
     env<custom_env, cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e4), expected_e4_t>);
   static_assert(is_trivial_aggregate<expected_e4_t>(), "");
   static_assert(cuda::std::is_same_v<decltype(e4.query(query1)), int>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query2)), const double&>);
+  static_assert(cuda::std::is_same_v<decltype(e4.query(query3, 42)), int>);
 
   assert(cuda::std::execution::__query_or(e2, query1, 0) == 42);
   assert(cuda::std::execution::__query_or(e2, query2, &e2) == &e2);
+  assert(cuda::std::execution::__query_or(e4, query3, 0) == 0);
+  assert(cuda::std::execution::__query_or(e4, query3, 0, 42) == 42);
 
   // Test that env works with const references:
   cuda::std::execution::env<decltype(e2) const&> e5{e2};

@@ -62,7 +62,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _From, class _To>
-_CCCL_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
+_CCCL_CONCEPT __span_array_convertible = is_convertible_v<_From (*)[], _To (*)[]>;
 
 template <class _Range, class _ElementType>
 _CCCL_CONCEPT_FRAGMENT(
@@ -70,11 +70,10 @@ _CCCL_CONCEPT_FRAGMENT(
   requires()(
     requires(_CUDA_VRANGES::contiguous_range<_Range>),
     requires(_CUDA_VRANGES::sized_range<_Range>),
-    requires((_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))),
-    requires((!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>))),
+    requires((_CUDA_VRANGES::borrowed_range<_Range> || is_const_v<_ElementType>) ),
+    requires((!is_array_v<remove_cvref_t<_Range>>) ),
     requires((!__is_std_span_v<remove_cvref_t<_Range>> && !__is_std_array_v<remove_cvref_t<_Range>>) ),
-    requires(_CCCL_TRAIT(
-      is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]))));
+    requires(is_convertible_v<remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]>)));
 
 template <class _Range, class _ElementType>
 _CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
@@ -86,7 +85,7 @@ _CCCL_CONCEPT __span_compatible_iterator =
 
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for =
-  sized_sentinel_for<_Sentinel, _It> && !_CCCL_TRAIT(is_convertible, _Sentinel, size_t);
+  sized_sentinel_for<_Sentinel, _It> && !is_convertible_v<_Sentinel, size_t>;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _It, class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__span_compatible_iterator_,
@@ -99,7 +98,7 @@ _CCCL_CONCEPT __span_compatible_iterator = _CCCL_FRAGMENT(__span_compatible_iter
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT_FRAGMENT(
   __span_compatible_sentinel_for_,
-  requires()(requires(sized_sentinel_for<_Sentinel, _It>), requires(!_CCCL_TRAIT(is_convertible, _Sentinel, size_t))));
+  requires()(requires(sized_sentinel_for<_Sentinel, _It>), requires(!is_convertible_v<_Sentinel, size_t>)));
 
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
@@ -121,8 +120,8 @@ concept __integral_constant_like =
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __integral_constant_like_,
-  requires()(requires(_CCCL_TRAIT(is_integral, decltype(_Tp::value))),
-             requires(!_CCCL_TRAIT(is_same, bool, remove_const_t<decltype(_Tp::value)>)),
+  requires()(requires(is_integral_v<decltype(_Tp::value)>),
+             requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>),
              requires(convertible_to<_Tp, decltype(_Tp::value)>),
              requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
              (integral_constant<bool, _Tp() == _Tp::value>::value),
@@ -163,7 +162,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
+  _CCCL_REQUIRES(is_const_v<_Tp2>)
   _CCCL_API constexpr explicit span(initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
   {
@@ -387,7 +386,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
+  _CCCL_REQUIRES(is_const_v<_Tp2>)
   _CCCL_API constexpr span(initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
       , __size_{__il.size()}

@@ -134,8 +134,7 @@ public:
     }
 
     _CCCL_TEMPLATE(class _IndexType0, class _IndexType1)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _IndexType0, index_type)
-                     _CCCL_AND _CCCL_TRAIT(is_convertible, _IndexType1, index_type))
+    _CCCL_REQUIRES(is_convertible_v<_IndexType0, index_type> _CCCL_AND is_convertible_v<_IndexType1, index_type>)
     _CCCL_API constexpr index_type operator()(_IndexType0 __i, _IndexType1 __j) const
     {
       return __nested_mapping_(__j, __i);

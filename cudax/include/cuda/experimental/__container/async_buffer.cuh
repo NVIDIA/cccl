@@ -120,7 +120,7 @@ public:
   friend class async_buffer;
 
   // For now we require trivially copyable type to simplify the implementation
-  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_trivially_copyable, _Tp),
+  static_assert(_CUDA_VSTD::is_trivially_copyable_v<_Tp>,
                 "cuda::experimental::async_buffer requires T to be trivially copyable.");
 
   // At least one of the properties must signal an execution space

@@ -142,7 +142,7 @@ _CCCL_API constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 }
 
 template <class _Tp, class _Up>
-using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<_CCCL_TRAIT(is_unsigned, _Tp), make_unsigned_t<_Up>, _Up>;
+using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<is_unsigned_v<_Tp>, make_unsigned_t<_Up>, _Up>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

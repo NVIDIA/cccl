@@ -133,14 +133,13 @@ struct get_execution_policy_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_execution_policy = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
-  requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, decltype(__t.get_execution_policy()), __execution_policy)));
+  requires(_CUDA_VSTD::is_convertible_v<decltype(__t.get_execution_policy()), __execution_policy>));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_execution_policy = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_execution_policy<_Env>),
-  requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible,
-                       _CUDA_STD_EXEC::__query_result_t<const _Env&, get_execution_policy_t>,
-                       __execution_policy)));
+  requires(_CUDA_VSTD::is_convertible_v<_CUDA_STD_EXEC::__query_result_t<const _Env&, get_execution_policy_t>,
+                                        __execution_policy>));
 
 struct get_execution_policy_t
 {

@@ -55,6 +55,7 @@ namespace detail::transform
 template <typename Offset,
           typename RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
+          typename Predicate,
           typename TransformOp,
           typename PolicyHub>
 struct TransformKernelSource;
@@ -63,11 +64,13 @@ struct TransformKernelSource;
 template <typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
+          typename Predicate,
           typename TransformOp,
           typename PolicyHub>
 struct TransformKernelSource<Offset,
                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                              RandomAccessIteratorOut,
+                             Predicate,
                              TransformOp,
                              PolicyHub>
 {
@@ -75,6 +78,7 @@ struct TransformKernelSource<Offset,
     TransformKernel,
     transform_kernel<typename PolicyHub::max_policy,
                      Offset,
+                     Predicate,
                      TransformOp,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
@@ -147,11 +151,14 @@ template <
   typename Offset,
   typename RandomAccessIteratorTupleIn,
   typename RandomAccessIteratorOut,
+  typename Predicate,
   typename TransformOp,
-  typename PolicyHub =
-    policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn, RandomAccessIteratorOut>,
+  typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes,
+                                  ::cuda::std::is_same_v<Predicate, always_true_predicate>,
+                                  RandomAccessIteratorTupleIn,
+                                  RandomAccessIteratorOut>,
   typename KernelSource =
-    TransformKernelSource<Offset, RandomAccessIteratorTupleIn, RandomAccessIteratorOut, TransformOp, PolicyHub>,
+    TransformKernelSource<Offset, RandomAccessIteratorTupleIn, RandomAccessIteratorOut, Predicate, TransformOp, PolicyHub>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct dispatch_t;
 
@@ -159,6 +166,7 @@ template <requires_stable_address StableAddress,
           typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
+          typename Predicate,
           typename TransformOp,
           typename PolicyHub,
           typename KernelSource,
@@ -167,6 +175,7 @@ struct dispatch_t<StableAddress,
                   Offset,
                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                   RandomAccessIteratorOut,
+                  Predicate,
                   TransformOp,
                   PolicyHub,
                   KernelSource,
@@ -179,6 +188,7 @@ struct dispatch_t<StableAddress,
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
   RandomAccessIteratorOut out;
   Offset num_items;
+  Predicate pred;
   TransformOp op;
   int bulk_copy_align;
   cudaStream_t stream;
@@ -205,7 +215,7 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto
-  configure_async_kernel(int alignment, SMemFunc smem_for_tile_size, ActivePolicy policy = {}) -> cuda_expected<
+  configure_async_kernel(int alignment, SMemFunc dyn_smem_for_tile_size, ActivePolicy policy = {}) -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
   {
     auto wrapped_policy = MakeTransformPolicyWrapper(policy);
@@ -222,15 +232,8 @@ struct dispatch_t<StableAddress,
     CUB_DETAIL_STATIC_ISH_ASSERT(min_items_per_thread <= max_items_per_thread, "invalid policy");
 
     auto determine_element_counts = [&]() -> cuda_expected<async_config> {
-      int max_smem = 0;
-      auto error   = CubDebug(launcher_factory.MaxSharedMemory(max_smem));
-      if (error != cudaSuccess)
-      {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
-      }
-
       int sm_count = 0;
-      error        = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
+      auto error   = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
       if (error != cudaSuccess)
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
@@ -243,21 +246,20 @@ struct dispatch_t<StableAddress,
       async_config last_config{};
       for (int items_per_thread = +min_items_per_thread; items_per_thread <= +max_items_per_thread; ++items_per_thread)
       {
-        const int tile_size = block_threads * items_per_thread;
-        const int smem_size = smem_for_tile_size(tile_size, alignment);
-        if (smem_size > max_smem)
+        const int tile_size     = block_threads * items_per_thread;
+        const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
+        int max_occupancy       = 0;
+        error                   = CubDebug(launcher_factory.MaxSmOccupancy(
+          max_occupancy, kernel_source.TransformKernel(), block_threads, dyn_smem_size));
+        if (error != cudaSuccess)
+        {
+          return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
+        }
+        if (max_occupancy == 0)
         {
           // assert should be prevented by smem check in policy
           _CCCL_ASSERT(last_config.items_per_thread > 0, "min_items_per_thread exceeds available shared memory");
           return last_config;
-        }
-
-        int max_occupancy = 0;
-        error             = CubDebug(
-          launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_threads, smem_size));
-        if (error != cudaSuccess)
-        {
-          return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
         }
 
         const auto config = async_config{items_per_thread, max_occupancy, sm_count};
@@ -297,15 +299,15 @@ struct dispatch_t<StableAddress,
 
     const int ipt =
       spread_out_items_per_thread(policy, config->items_per_thread, config->sm_count, config->max_occupancy);
-    const int tile_size = block_threads * ipt;
-    const int smem_size = smem_for_tile_size(tile_size, alignment);
-    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (smem_size != 0), ""); // logical xor
+    const int tile_size     = block_threads * ipt;
+    const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
+    _CCCL_ASSERT((sizeof...(RandomAccessIteratorsIn) == 0) != (dyn_smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     // config->smem_size is 16 bytes larger than needed for UBLKCP because it's the total SMEM size, but 16 bytes are
     // occupied by static shared memory and padding. But let's not complicate things.
     return ::cuda::std::make_tuple(
-      launcher_factory(grid_dim, block_threads, smem_size, stream), kernel_source.TransformKernel(), ipt);
+      launcher_factory(grid_dim, block_threads, dyn_smem_size, stream), kernel_source.TransformKernel(), ipt);
   }
 
   // Avoid unnecessarily parsing these definitions when not needed.
@@ -327,9 +329,9 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, typename SMemFunc, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
-    int alignment, SMemFunc smem_for_tile_size, cuda::std::index_sequence<Is...>, ActivePolicy policy = {})
+    int alignment, SMemFunc dyn_smem_for_tile_size, cuda::std::index_sequence<Is...>, ActivePolicy policy = {})
   {
-    auto ret = configure_async_kernel(alignment, smem_for_tile_size, policy);
+    auto ret = configure_async_kernel(alignment, dyn_smem_for_tile_size, policy);
     if (!ret)
     {
       return ret.error();
@@ -347,6 +349,7 @@ struct dispatch_t<StableAddress,
         num_items,
         items_per_thread,
         false,
+        pred,
         op,
         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
         kernel_source.MakeAlignedBasePtrKernelArg(
@@ -476,6 +479,7 @@ struct dispatch_t<StableAddress,
               num_items,
               ipt,
               can_vectorize,
+              pred,
               op,
               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
               kernel_source.MakeIteratorKernelArg(
@@ -491,12 +495,8 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         bulk_copy_align,
-        [this, wrapped_policy](int tile_size, int alignment) {
-          return bulk_copy_smem_for_tile_size(
-            kernel_source.ItValueSizesAlignments(),
-            tile_size,
-            wrapped_policy.AlgorithmPolicy().BlockThreads(),
-            alignment);
+        [this](int tile_size, int alignment) {
+          return bulk_copy_dyn_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
         },
         seq,
         active_policy);
@@ -505,12 +505,8 @@ struct dispatch_t<StableAddress,
     {
       return invoke_async_algorithm(
         ldgsts_size_and_align,
-        [this, wrapped_policy](int tile_size, int alignment) {
-          return memcpy_async_smem_for_tile_size(
-            kernel_source.ItValueSizesAlignments(),
-            tile_size,
-            wrapped_policy.AlgorithmPolicy().BlockThreads(),
-            alignment);
+        [this](int tile_size, int alignment) {
+          return memcpy_async_dyn_smem_for_tile_size(kernel_source.ItValueSizesAlignments(), tile_size, alignment);
         },
         seq,
         active_policy);
@@ -526,6 +522,7 @@ struct dispatch_t<StableAddress,
     ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
     RandomAccessIteratorOut out,
     Offset num_items,
+    Predicate pred,
     TransformOp op,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
@@ -548,6 +545,7 @@ struct dispatch_t<StableAddress,
       ::cuda::std::move(in),
       ::cuda::std::move(out),
       num_items,
+      ::cuda::std::move(pred),
       ::cuda::std::move(op),
       bulk_copy_alignment(ptx_version),
       stream,

@@ -19,11 +19,12 @@ requires-python = ">=3.9"
 dependencies = [
   "numba>=0.60.0",
   "numpy",
-  "cuda-python==12.9.0",
+  "cuda-bindings>=12.9.1,<13.0.0",
+  "cuda-pathfinder>=1.1.0",
   "cuda-core",
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
-  "pynvjitlink-cu12>=0.2.4",
+  "numba-cuda>=0.18.0",
 ]
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }

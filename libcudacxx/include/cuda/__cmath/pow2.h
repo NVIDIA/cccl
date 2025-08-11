@@ -32,10 +32,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool is_power_of_two(_Tp __t) noexcept
 {
-  if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
+  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__t >= _Tp{0}, "cuda::is_power_of_two requires non-negative input");
   }
@@ -44,10 +44,10 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 }
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp next_power_of_two(_Tp __t) noexcept
 {
-  if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
+  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__t >= _Tp{0}, "cuda::is_power_of_two requires non-negative input");
   }
@@ -56,10 +56,10 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 }
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp prev_power_of_two(_Tp __t) noexcept
 {
-  if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
+  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__t >= _Tp{0}, "cuda::is_power_of_two requires non-negative input");
   }

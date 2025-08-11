@@ -537,8 +537,25 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   InitT init,
                                                                   TransformOpT transform_op)
 {
+  NV_IF_TARGET(NV_PROVIDES_SM_60,
+               (),
+               (static_assert(!cuda::std::is_same_v<AccumT, double>,
+                              "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
+
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
+
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+    }
+
+    return;
+  }
+
   // Thread block type for reducing input tiles
   using AgentReduceT = detail::reduce::AgentReduce<
     typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,

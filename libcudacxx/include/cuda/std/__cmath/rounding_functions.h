@@ -106,7 +106,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double ceil(_Integer __x) noexcept
 {
   return _CUDA_VSTD::ceil((double) __x);
@@ -182,7 +182,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double floor(_Integer __x) noexcept
 {
   return _CUDA_VSTD::floor((double) __x);
@@ -264,7 +264,7 @@ _CCCL_API inline long long llrintl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llrint(_Integer __x) noexcept
 {
   return _CUDA_VSTD::llrint((double) __x);
@@ -346,7 +346,7 @@ _CCCL_API inline long long llroundl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long long llround(_Integer __x) noexcept
 {
   return _CUDA_VSTD::llround((double) __x);
@@ -428,7 +428,7 @@ _CCCL_API inline long lrintl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lrint(_Integer __x) noexcept
 {
   return _CUDA_VSTD::lrint((double) __x);
@@ -510,7 +510,7 @@ _CCCL_API inline long lroundl(long double __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline long lround(_Integer __x) noexcept
 {
   return _CUDA_VSTD::lround((double) __x);
@@ -585,7 +585,7 @@ _CCCL_API inline long lround(_Integer __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double nearbyint(_Integer __x) noexcept
 {
   return _CUDA_VSTD::nearbyint((double) __x);
@@ -667,11 +667,11 @@ _CCCL_API inline long double nextafterl(long double __x, long double __y) noexce
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
+template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 _CCCL_API inline __promote_t<_A1, _A2> nextafter(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
   return _CUDA_VSTD::nextafter(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 
@@ -743,7 +743,7 @@ _CCCL_API inline long double nexttowardl(long double __x, long double __y) noexc
 }
 #  endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 {
   return _CUDA_VSTD::nexttoward((double) __x, __y);
@@ -820,7 +820,7 @@ _CCCL_API inline double nexttoward(_Integer __x, long double __y) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double rint(_Integer __x) noexcept
 {
   return _CUDA_VSTD::rint((double) __x);
@@ -895,7 +895,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double round(_Integer __x) noexcept
 {
   return _CUDA_VSTD::round((double) __x);
@@ -971,7 +971,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double trunc(_Integer __x) noexcept
 {
   return _CUDA_VSTD::trunc((double) __x);

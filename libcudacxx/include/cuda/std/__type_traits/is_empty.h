@@ -49,7 +49,7 @@ struct __is_empty2
   double __lx;
 };
 
-template <class _Tp, bool = _CCCL_TRAIT(is_class, _Tp)>
+template <class _Tp, bool = is_class_v<_Tp>>
 struct __cccl_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)>
 {};
 

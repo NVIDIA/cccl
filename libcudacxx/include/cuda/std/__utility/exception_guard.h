@@ -76,7 +76,7 @@ struct __exception_guard_exceptions
   {}
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __exception_guard_exceptions(__exception_guard_exceptions&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
+    is_nothrow_move_constructible_v<_Rollback>)
       : __rollback_(_CUDA_VSTD::move(__other.__rollback_))
       , __completed_(__other.__completed_)
   {
@@ -114,7 +114,7 @@ struct __exception_guard_noexceptions
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback) {}
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
-    __exception_guard_noexceptions&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
+    __exception_guard_noexceptions&& __other) noexcept(is_nothrow_move_constructible_v<_Rollback>)
       : __completed_(__other.__completed_)
   {
     __other.__completed_ = true;

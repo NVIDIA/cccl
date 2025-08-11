@@ -227,7 +227,7 @@ public:
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(_CUDA_VSTD::is_same, _Env, env_t)) _CCCL_AND __is_compatible_env<_Env>)
+  _CCCL_REQUIRES((!_CUDA_VSTD::is_same_v<_Env, env_t>) _CCCL_AND __is_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
       : __mr_(__env.query(::cuda::mr::get_memory_resource))
       , __stream_(__env.query(::cuda::get_stream))

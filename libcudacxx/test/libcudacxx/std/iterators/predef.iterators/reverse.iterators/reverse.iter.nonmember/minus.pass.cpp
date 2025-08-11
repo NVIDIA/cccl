@@ -24,12 +24,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-template <class, class, class = void>
-struct HasMinus : cuda::std::false_type
-{};
 template <class R1, class R2>
-struct HasMinus<R1, R2, decltype((R1() - R2(), void()))> : cuda::std::true_type
-{};
+_CCCL_CONCEPT HasMinus = _CCCL_REQUIRES_EXPR((R1, R2), R1 r1, R2 r2)(unused(R1() - R2()));
 
 template <class It1, class It2>
 __host__ __device__ constexpr void test(It1 l, It2 r, cuda::std::ptrdiff_t x)
@@ -55,11 +51,11 @@ __host__ __device__ constexpr bool tests()
   test(PC(s + 1), s, -1);
 
   // Test non-subtractable base iterator types
-  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<int*>>::value, "");
-  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>::value, "");
-  static_assert(!HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>::value, "");
+  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<int*>>, "");
+  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>, "");
+  static_assert(!HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>, "");
   static_assert(!HasMinus<cuda::std::reverse_iterator<bidirectional_iterator<int*>>,
-                          cuda::std::reverse_iterator<bidirectional_iterator<int*>>>::value,
+                          cuda::std::reverse_iterator<bidirectional_iterator<int*>>>,
                 "");
 
   return true;

@@ -35,18 +35,17 @@ inline constexpr bool __has_allocator_type_v = false;
 template <class _Tp>
 inline constexpr bool __has_allocator_type_v<_Tp, void_t<typename _Tp::allocator_type>> = true;
 
-template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
+template <class _Tp, class _Alloc, bool = __has_allocator_type_v<_Tp>>
 inline constexpr bool __uses_allocator_v = false;
 template <class _Tp, class _Alloc>
 inline constexpr bool __uses_allocator_v<_Tp, _Alloc, true> = is_convertible_v<_Alloc, typename _Tp::allocator_type>;
 
 template <class _Tp, class _Alloc>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-uses_allocator : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator : public integral_constant<bool, __uses_allocator_v<_Tp, _Alloc>>
 {};
 
 template <class _Tp, class _Alloc>
-inline constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
+inline constexpr bool uses_allocator_v = __uses_allocator_v<_Tp, _Alloc>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

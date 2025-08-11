@@ -12,19 +12,18 @@
 void test_transform_api()
 {
   // example-begin transform-many
-  constexpr auto num_items = 4;
-  auto input1              = c2h::device_vector<int>{0, -2, 5, 3};
-  auto input2              = c2h::device_vector<float>{5.2f, 3.1f, -1.1f, 3.0f};
-  auto input3              = thrust::counting_iterator<int>{100};
-  auto op                  = [] __device__(int a, float b, int c) {
+  auto input1 = thrust::device_vector<int>{0, -2, 5, 3};
+  auto input2 = thrust::device_vector<float>{5.2f, 3.1f, -1.1f, 3.0f};
+  auto input3 = thrust::counting_iterator<int>{100};
+  auto op     = [] __device__(int a, float b, int c) {
     return (a + b) * c;
   };
 
-  auto result = c2h::device_vector<int>(num_items);
+  auto result = thrust::device_vector<int>(input1.size());
   cub::DeviceTransform::Transform(
-    cuda::std::make_tuple(input1.begin(), input2.begin(), input3), result.begin(), num_items, op);
+    cuda::std::tuple{input1.begin(), input2.begin(), input3}, result.begin(), input1.size(), op);
 
-  const auto expected = c2h::host_vector<float>{520, 111, 397, 618};
+  const auto expected = thrust::host_vector<float>{520, 111, 397, 618};
   // example-end transform-many
   CHECK(result == expected);
 }
@@ -34,13 +33,36 @@ C2H_TEST("DeviceTransform::Transform API example", "[device][device_transform]")
   test_transform_api();
 }
 
+void test_transform_if_api()
+{
+  // example-begin transform-if
+  auto input     = thrust::device_vector<int>{0, -1, 2, -3, 4, -5};
+  auto predicate = [] __device__(int value) {
+    return value < 0;
+  };
+  auto op = [] __device__(int value) {
+    return value * 2;
+  };
+
+  auto result = thrust::device_vector<int>(input.size()); // initialized to zeros
+  cub::DeviceTransform::TransformIf(cuda::std::tuple{input.begin()}, result.begin(), input.size(), predicate, op);
+
+  const auto expected = thrust::host_vector<float>{0, -2, 0, -6, 0, -10};
+  // example-end transform-if
+  CHECK(result == expected);
+}
+
+C2H_TEST("DeviceTransform::TransformIf API example", "[device][device_transform]")
+{
+  test_transform_if_api();
+}
+
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_stable_api()
 {
   // example-begin transform-many-stable
-  constexpr auto num_items = 4;
-  auto input1              = c2h::device_vector<int>{0, -2, 5, 3};
-  auto input2              = c2h::device_vector<int>{52, 31, -11, 30};
+  auto input1 = thrust::device_vector<int>{0, -2, 5, 3};
+  auto input2 = thrust::device_vector<int>{52, 31, -11, 30};
 
   auto* input1_ptr = thrust::raw_pointer_cast(input1.data());
   auto* input2_ptr = thrust::raw_pointer_cast(input2.data());
@@ -50,11 +72,11 @@ void test_transform_stable_api()
     return a + input2_ptr[i];
   };
 
-  auto result = c2h::device_vector<int>(num_items);
+  auto result = thrust::device_vector<int>(input1.size());
   cub::DeviceTransform::TransformStableArgumentAddresses(
-    cuda::std::make_tuple(input1_ptr), result.begin(), num_items, op);
+    cuda::std::tuple{input1_ptr}, result.begin(), input1.size(), op);
 
-  const auto expected = c2h::host_vector<float>{52, 29, -6, 33};
+  const auto expected = thrust::host_vector<float>{52, 29, -6, 33};
   // example-end transform-many-stable
   CHECK(result == expected);
 }

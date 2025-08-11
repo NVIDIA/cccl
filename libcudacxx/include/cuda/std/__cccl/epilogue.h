@@ -323,4 +323,12 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_interface
 #endif
 
+#if defined(__valid)
+#  error \
+    "cccl internal error: macro `__valid` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO___valid)
+#  pragma pop_macro("__valid")
+#  undef _CCCL_POP_MACRO___valid
+#endif
+
 // NO include guards here (this file is included multiple times)

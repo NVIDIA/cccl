@@ -35,7 +35,7 @@ namespace __stream
 {
 /////////////////////////////////////////////////////////////////////////////////
 // sync_wait: customization for the stream scheduler
-struct __sync_wait_t
+struct __sync_wait_t : private sync_wait_t
 {
   // TODO: calling sync_wait from device code is not supported yet.
   template <class _Sndr, class _Env>
@@ -63,9 +63,10 @@ private:
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
-    using __values_t = typename sync_wait_t::__state_t<_Sndr, _Env>::__values_t;
-    using __errors_t = typename sync_wait_t::__state_t<_Sndr, _Env>::__errors_t;
-    using __rcvr_t   = sync_wait_t::__rcvr_t<_Sndr, _Env>;
+    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
+    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
+    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
+    using __rcvr_t                       = sync_wait_t::__rcvr_t<__values_t, __errors_t, _Env>;
 
     _CCCL_HOST_API explicit __state_t(_Sndr&& __sndr, _Env&& __env)
         : __result_{}
@@ -74,7 +75,7 @@ private:
     {}
 
     _CUDA_VSTD::optional<__values_t> __result_;
-    sync_wait_t::__state_t<_Sndr, _Env> __state_;
+    sync_wait_t::__state_t<__values_t, __errors_t, _Env> __state_;
     connect_result_t<_Sndr, __rcvr_t> __opstate_;
   };
 
