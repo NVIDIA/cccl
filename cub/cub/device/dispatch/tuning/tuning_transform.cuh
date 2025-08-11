@@ -45,13 +45,33 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/numeric>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/bit>
 
 CUB_NAMESPACE_BEGIN
+namespace detail::transform
+{
+struct always_true_predicate
+{
+  template <typename... Ts>
+  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
+  {
+    return true;
+  }
+};
+} // namespace detail::transform
+CUB_NAMESPACE_END
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : _CUDA_VSTD::true_type
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
 enum class Algorithm
@@ -281,14 +301,23 @@ _CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
     {{sizeof(it_value_t<RandomAccessIteratorsIn>), alignof(it_value_t<RandomAccessIteratorsIn>)}...}};
 }
 
-template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn, typename RandomAccessIteratorOut>
+template <bool RequiresStableAddress,
+          bool DenseOutput,
+          typename RandomAccessIteratorTupleIn,
+          typename RandomAccessIteratorOut>
 struct policy_hub
 {
   static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
 };
 
-template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut>
-struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut>
+template <bool RequiresStableAddress,
+          bool DenseOutput,
+          typename... RandomAccessIteratorsIn,
+          typename RandomAccessIteratorOut>
+struct policy_hub<RequiresStableAddress,
+                  DenseOutput,
+                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                  RandomAccessIteratorOut>
 {
   static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
   static constexpr bool all_inputs_contiguous =
@@ -312,9 +341,10 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif       = arch_to_min_bytes_in_flight(300);
-    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy_inputs || no_input_streams
-                                      || !all_input_values_same_size || !value_type_divides_load_store_size;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
+    static constexpr bool use_fallback =
+      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || !all_input_values_same_size
+      || !value_type_divides_load_store_size || !DenseOutput;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
     using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
