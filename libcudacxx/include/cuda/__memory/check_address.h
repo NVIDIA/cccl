@@ -21,13 +21,40 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/address_space.h>
-#include <cuda/std/__utility/cmp.h>
+// including cuda/std/limits generates a circular dependency because:
+//    numeric_limits -> bit_cast -> cstring -> check_address
+// <cuda/std/__utility/cmp.h> also includes cuda/std/limits
+#include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__memory/address_space.h>
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CUDA_COMPILATION()
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+
+[[nodiscard]] _CCCL_DEVICE_API inline bool
+__is_smem_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcept
+{
+  if (::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
+  {
+    if (__n > _CUDA_VSTD::size_t{UINT32_MAX})
+    {
+      return false;
+    }
+    auto __limit = _CUDA_VSTD::uintptr_t{UINT32_MAX} - __n;
+    return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
+  }
+  return true;
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -37,22 +64,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
   {
     return false;
   }
-  if (::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
-  {
-    if (_CUDA_VSTD::cmp_greater(__n, _CUDA_VSTD::numeric_limits<uint32_t>::max()))
+  // clang-format off
+  NV_IF_TARGET(NV_IS_DEVICE, (
+    if (!::cuda::device::__is_smem_valid_address_range(__ptr, __n))
     {
       return false;
-    }
-    auto __limit = size_t{_CUDA_VSTD::numeric_limits<_CUDA_VSTD::uint32_t>::max()} - __n;
-    return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
-  }
-  auto __limit = size_t{_CUDA_VSTD::numeric_limits<_CUDA_VSTD::uintptr_t>::max()} - __n;
+    };))
+  // clang-format on
+  auto __limit = UINTMAX_MAX - __n;
   return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
 }
 
 [[nodiscard]] _CCCL_API inline bool __is_valid_address(const void* __ptr) noexcept
 {
-  return __is_valid_address_range(__ptr, 0);
+  return ::cuda::__is_valid_address_range(__ptr, 0);
 }
 
 [[nodiscard]] _CCCL_API inline bool
