@@ -125,7 +125,7 @@ public:
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
-            enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                           = 0>
+            enable_if_t<is_constructible_v<value_type, _Up>, int>                                      = 0>
   _CCCL_API inline explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}

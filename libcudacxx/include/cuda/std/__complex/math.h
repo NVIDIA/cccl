@@ -97,7 +97,7 @@ template <class _Tp>
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES((_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp)))
+_CCCL_REQUIRES((is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>) )
 [[nodiscard]] _CCCL_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   if (_CUDA_VSTD::isinf(__re))
@@ -108,7 +108,7 @@ _CCCL_REQUIRES((_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   return __cccl_complex_complex_type<_Tp>(__re);

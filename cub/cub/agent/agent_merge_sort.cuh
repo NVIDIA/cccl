@@ -40,10 +40,9 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/load_iterator.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -91,10 +90,8 @@ struct AgentBlockSort
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyInputIteratorT>;
+  using ItemsLoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueInputIteratorT>;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -163,10 +160,10 @@ struct AgentBlockSort
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
-    auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
-    auto num_tiles    = static_cast<OffsetT>(gridDim.x);
-    auto tile_base    = tile_idx * ITEMS_PER_TILE;
-    int items_in_tile = (::cuda::std::min) (static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
+    const auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
+    const auto num_tiles    = static_cast<OffsetT>(gridDim.x);
+    const auto tile_base    = tile_idx * ITEMS_PER_TILE;
+    const int items_in_tile = (::cuda::std::min) (static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
 
     if (tile_idx < num_tiles - 1)
     {
@@ -305,29 +302,6 @@ struct AgentPartition
   int items_per_tile;
   OffsetT num_partitions;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(
-    bool ping,
-    KeyIteratorT keys_ping,
-    KeyT* keys_pong,
-    OffsetT keys_count,
-    OffsetT partition_idx,
-    OffsetT* merge_partitions,
-    CompareOpT compare_op,
-    OffsetT target_merged_tiles_number,
-    int items_per_tile,
-    OffsetT num_partitions)
-      : ping(ping)
-      , keys_ping(keys_ping)
-      , keys_pong(keys_pong)
-      , keys_count(keys_count)
-      , partition_idx(partition_idx)
-      , merge_partitions(merge_partitions)
-      , compare_op(compare_op)
-      , target_merged_tiles_number(target_merged_tiles_number)
-      , items_per_tile(items_per_tile)
-      , num_partitions(num_partitions)
-  {}
-
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
@@ -378,6 +352,10 @@ struct AgentPartition
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }
+
+    // TODO(bgruber): looking at SASS triggering the next launch here just generates a lot of noise and the PRE-EXIT
+    // just ends of right before EXIT anyway. So let's omit it.
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 };
 
@@ -440,11 +418,10 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyIteratorT>;
+  using ItemsLoadPingIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueIteratorT>;
+  using KeysLoadPongIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyT*>;
+  using ItemsLoadPongIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueT*>;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
@@ -508,6 +485,8 @@ struct AgentMerge
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
     const OffsetT partition_beg = merge_partitions[tile_idx + 0];
     const OffsetT partition_end = merge_partitions[tile_idx + 1];
 
@@ -549,8 +528,6 @@ struct AgentMerge
     // number of keys per tile
     const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
-
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // load keys1 & keys2
     KeyT keys_local[ITEMS_PER_THREAD];

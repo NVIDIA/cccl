@@ -104,9 +104,9 @@ struct __non_trivial_if<true, _Unique>
 //       allocator<void> trivial in C++20.
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator : private __non_trivial_if<!is_void_v<_Tp>, allocator<_Tp>>
 {
-  static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
+  static_assert(!is_volatile_v<_Tp>, "std::allocator does not support volatile types");
 
 public:
   using size_type                              = size_t;
@@ -208,9 +208,9 @@ public:
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT
-allocator<const _Tp> : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<const _Tp>>
+allocator<const _Tp> : private __non_trivial_if<!is_void_v<_Tp>, allocator<const _Tp>>
 {
-  static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
+  static_assert(!is_volatile_v<_Tp>, "std::allocator does not support volatile types");
 
 public:
   using size_type                              = size_t;
