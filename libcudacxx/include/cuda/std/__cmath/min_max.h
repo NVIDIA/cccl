@@ -25,6 +25,7 @@
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/promote.h>
 
 #include <nv/target>
@@ -102,8 +103,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 [[nodiscard]] _CCCL_API inline ::__half fmax(::__half __x, ::__half __y) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmax(__x, __y);),
-                    (return ::__float2half(_CUDA_VSTD::fmaxf(::__half2float(__x), ::__half2float(__y)));))
+                    (return __hmax(__x, __y);),
+                    (return __float2half(_CUDA_VSTD::fmaxf(__half2float(__x), __half2float(__y)));))
 }
 template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmax(__half __x, _A1 __y) noexcept
@@ -121,17 +122,52 @@ template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 
 #if _LIBCUDACXX_HAS_NVBF16()
 
-[[nodiscard]] _CCCL_API inline ::__nv_bfloat16 fmax(::__nv_bfloat16 __x, ::__nv_bfloat16 __y) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmax(__x, __y);),
-                    (return ::__float2bfloat16(_CUDA_VSTD::fmaxf(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+                    (return __hmax(__x, __y);),
+                    (return __float2bfloat16(_CUDA_VSTD::fmaxf(__bfloat162float(__x), __bfloat162float(__y)));))
 }
 template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmax(__nv_bfloat16 __x, _A1 __y) noexcept
 {
   return _CUDA_VSTD::fmaxf(::__bfloat162float(__x), __y);
 }
+
+#  if _CCCL_HAS_FLOAT128()
+
+[[nodiscard]] _CCCL_API inline constexpr __float128 fmax(__float128 __x, __float128 __y) noexcept
+{
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+#    if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
+#    endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+  }
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  if (_CUDA_VSTD::isnan(__y))
+  {
+    return __x;
+  }
+  return __x < __y ? __y : __x;
+}
+
+template <typename _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
+[[nodiscard]] _CCCL_API inline constexpr __promote_t<__float128, _A1> fmax(__float128 __x, _A1 __y) noexcept
+{
+  return _CUDA_VSTD::fmax(__x, static_cast<__float128>(__y));
+}
+
+template <typename _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
+[[nodiscard]] _CCCL_API inline constexpr __promote_t<_A1, __float128> fmax(_A1 __x, __float128 __y) noexcept
+{
+  return _CUDA_VSTD::fmax(static_cast<__float128>(__x), __y);
+}
+
+#  endif //  _CCCL_HAS_FLOAT128()
 
 template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmax(_A1 __x, __nv_bfloat16 __y) noexcept
@@ -210,11 +246,11 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 
 #if _LIBCUDACXX_HAS_NVFP16()
 
-[[nodiscard]] _CCCL_API inline ::__half fmin(::__half __x, ::__half __y) noexcept
+[[nodiscard]] _CCCL_API inline __half fmin(__half __x, __half __y) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmin(__x, __y);),
-                    (return __float2half(_CUDA_VSTD::fminf(::__half2float(__x), ::__half2float(__y)));))
+                    (return __hmin(__x, __y);),
+                    (return __float2half(_CUDA_VSTD::fminf(__half2float(__x), __half2float(__y)));))
 }
 template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmin(__half __x, _A1 __y) noexcept
@@ -232,11 +268,11 @@ template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 
 #if _LIBCUDACXX_HAS_NVBF16()
 
-[[nodiscard]] _CCCL_API inline ::__nv_bfloat16 fmin(::__nv_bfloat16 __x, ::__nv_bfloat16 __y) noexcept
+[[nodiscard]] _CCCL_API inline __nv_bfloat16 fmin(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmin(__x, __y);),
-                    (return ::__float2bfloat16(_CUDA_VSTD::fminf(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+                    (return __hmin(__x, __y);),
+                    (return __float2bfloat16(_CUDA_VSTD::fminf(__bfloat162float(__x), __bfloat162float(__y)));))
 }
 template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmin(__nv_bfloat16 __x, _A1 __y) noexcept
@@ -251,6 +287,41 @@ template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 }
 
 #endif // _LIBCUDACXX_HAS_NVBF16()
+
+#if _CCCL_HAS_FLOAT128()
+
+[[nodiscard]] _CCCL_API inline constexpr __float128 fmin(__float128 __x, __float128 __y) noexcept
+{
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  {
+#  if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
+#  endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+  }
+  if (_CUDA_VSTD::isnan(__x))
+  {
+    return __y;
+  }
+  if (_CUDA_VSTD::isnan(__y))
+  {
+    return __x;
+  }
+  return __x < __y ? __x : __y;
+}
+
+template <typename _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
+[[nodiscard]] _CCCL_API inline constexpr __promote_t<__float128, _A1> fmin(__float128 __x, _A1 __y) noexcept
+{
+  return _CUDA_VSTD::fmin(__x, static_cast<__float128>(__y));
+}
+
+template <typename _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
+[[nodiscard]] _CCCL_API inline constexpr __promote_t<_A1, __float128> fmin(_A1 __x, __float128 __y) noexcept
+{
+  return _CUDA_VSTD::fmin(static_cast<__float128>(__x), __y);
+}
+
+#endif //  _CCCL_HAS_FLOAT128()
 
 template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmin(_A1 __x, _A2 __y) noexcept
