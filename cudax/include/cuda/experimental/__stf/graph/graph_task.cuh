@@ -564,7 +564,7 @@ public:
 
     constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
     constexpr bool fun_invocable_stream_non_void_deps =
-      reserved::is_invocable_with_filtered<Fun, cudaStream_t, Deps...>::value;
+      reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Deps...>>;
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (fun_invocable_stream_deps || fun_invocable_stream_non_void_deps)
@@ -595,7 +595,7 @@ public:
       {
         // Remove void arguments
         ::std::apply(::std::forward<Fun>(f),
-                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
+                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
@@ -610,7 +610,7 @@ public:
     {
       constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
       constexpr bool fun_invocable_graph_non_void_deps =
-        reserved::is_invocable_with_filtered<Fun, cudaGraph_t, Deps...>::value;
+        reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaGraph_t, Deps...>>;
 
       static_assert(fun_invocable_graph_deps || fun_invocable_graph_non_void_deps,
                     "Incorrect lambda function signature.");

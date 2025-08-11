@@ -1474,13 +1474,13 @@ UNITTEST("token elision")
   auto lC = ctx.logical_data(buf);
 
   // with all arguments
-  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with argument elision
   ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with all arguments
-  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](void_interface, void_interface, slice<int>) {};
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
 
   // with argument elision
   ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
