@@ -47,7 +47,7 @@ using offsets = c2h::type_list<std::ptrdiff_t, std::size_t>;
 C2H_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets", "[reduce][device]", offsets)
 {
   using offset_t = typename c2h::get<0, TestType>;
-  using op_t     = ::cuda::std::plus<>;
+  using op_t     = cuda::std::plus<>;
 
   constexpr offset_t offset_zero           = 0;
   constexpr offset_t offset_one            = 1;

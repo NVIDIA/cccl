@@ -127,12 +127,37 @@ class context
       return *this;
     }
 
+    template <typename... Args>
+    auto& add_kernel_desc(Args&&... args)
+    {
+      payload->*[&](auto& self) {
+        self.add_kernel_desc(::std::forward<Args>(args)...);
+      };
+      return *this;
+    }
+
     template <typename T>
     decltype(auto) get(size_t submitted_index) const
     {
       return payload->*[&](auto& self) {
         return self.template get<T>(submitted_index);
       };
+    }
+
+    auto& start()
+    {
+      payload->*[&](auto& self) {
+        self.start();
+      };
+      return *this;
+    }
+
+    auto& end()
+    {
+      payload->*[&](auto& self) {
+        self.end();
+      };
+      return *this;
     }
 
   private:
@@ -868,6 +893,29 @@ UNITTEST("context with arguments")
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
+inline void unit_test_context_pfor_integral()
+{
+  context ctx;
+  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
+  ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
+  ctx.host_launch(lA.read())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      EXPECT(A(i) == 2 * i);
+    }
+  };
+  ctx.finalize();
+}
+
+UNITTEST("context parallel_for integral shape")
+{
+  unit_test_context_pfor_integral();
+};
+
 inline void unit_test_context_pfor()
 {
   context ctx;

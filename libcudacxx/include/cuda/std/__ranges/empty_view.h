@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_object, _Tp))
+_CCCL_REQUIRES(is_object_v<_Tp>)
 class empty_view : public view_interface<empty_view<_Tp>>
 {
 public:

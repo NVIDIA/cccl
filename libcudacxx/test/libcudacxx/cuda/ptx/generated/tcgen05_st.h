@@ -22,7 +22,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[1])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -35,7 +35,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[1])>(cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -48,7 +48,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[2])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -61,7 +61,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[2])>(cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -74,7 +74,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[4])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -87,7 +87,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[4])>(cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -100,7 +100,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[8])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -113,7 +113,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[8])>(cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -126,7 +126,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[16])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -139,7 +139,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
                      cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
@@ -152,7 +152,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[32])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -165,7 +165,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
                      cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
@@ -178,7 +178,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x64.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[64])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x64.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -191,7 +191,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x64.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
                      cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x64.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
@@ -204,7 +204,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x128.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[128])>(cuda::ptx::tcgen05_st_16x64b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x128.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -217,7 +217,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x64b.x128.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
                      cuda::ptx::tcgen05_st_16x64b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x64b.x128.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
@@ -230,7 +230,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[2])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -243,7 +243,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[2])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[2])>(
@@ -256,7 +256,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[4])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -269,7 +269,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[4])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[4])>(
@@ -282,7 +282,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[8])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -295,7 +295,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[8])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[8])>(
@@ -308,7 +308,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[16])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -321,7 +321,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
@@ -334,7 +334,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[32])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -347,7 +347,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
@@ -360,7 +360,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[64])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -373,7 +373,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
@@ -386,7 +386,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x64.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[128])>(cuda::ptx::tcgen05_st_16x128b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x64.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -399,7 +399,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x128b.x64.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
                      cuda::ptx::tcgen05_st_16x128b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x128b.x64.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
@@ -412,7 +412,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[4])>(cuda::ptx::tcgen05_st_16x256b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -425,7 +425,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[4])>(
                      cuda::ptx::tcgen05_st_16x256b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[4])>(
@@ -438,7 +438,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[8])>(cuda::ptx::tcgen05_st_16x256b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -451,7 +451,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[8])>(
                      cuda::ptx::tcgen05_st_16x256b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[8])>(
@@ -464,7 +464,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[16])>(cuda::ptx::tcgen05_st_16x256b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -477,7 +477,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
                      cuda::ptx::tcgen05_st_16x256b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
@@ -490,7 +490,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[32])>(cuda::ptx::tcgen05_st_16x256b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -503,7 +503,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
                      cuda::ptx::tcgen05_st_16x256b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
@@ -516,7 +516,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[64])>(cuda::ptx::tcgen05_st_16x256b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -529,7 +529,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
                      cuda::ptx::tcgen05_st_16x256b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
@@ -542,7 +542,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[128])>(cuda::ptx::tcgen05_st_16x256b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -555,7 +555,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.16x256b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
                      cuda::ptx::tcgen05_st_16x256b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.16x256b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
@@ -568,7 +568,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[1])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x1.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -581,7 +581,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[1])>(cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x1.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -594,7 +594,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[2])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x2.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -607,7 +607,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[2])>(cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x2.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -620,7 +620,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[4])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x4.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -633,7 +633,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[4])>(cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x4.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -646,7 +646,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[8])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x8.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -659,7 +659,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[8])>(cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x8.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -672,7 +672,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[16])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x16.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -685,7 +685,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
                      cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x16.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[16])>(
@@ -698,7 +698,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[32])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x32.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -711,7 +711,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
                      cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x32.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[32])>(
@@ -724,7 +724,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x64.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[64])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x64.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -737,7 +737,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x64.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
                      cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x64.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[64])>(
@@ -750,7 +750,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x128.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<void (*)(uint32_t, const int32_t (&)[128])>(cuda::ptx::tcgen05_st_32x32b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x128.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(
@@ -763,7 +763,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
                    // tcgen05.st.sync.aligned.32x32b.x128.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
                      cuda::ptx::tcgen05_st_32x32b_unpack_16b));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.st.sync.aligned.32x32b.x128.unpack::16b.b32 [taddr], values;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, const int32_t (&)[128])>(
@@ -778,7 +778,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[1])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x1.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[1])>(
@@ -793,7 +793,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[1])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x1.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[1])>(
@@ -808,7 +808,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[2])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x2.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[2])>(
@@ -823,7 +823,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[2])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x2.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[2])>(
@@ -838,7 +838,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[4])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x4.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[4])>(
@@ -853,7 +853,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[4])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x4.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[4])>(
@@ -868,7 +868,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[8])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x8.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[8])>(
@@ -883,7 +883,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[8])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x8.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[8])>(
@@ -898,7 +898,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[16])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x16.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[16])>(
@@ -913,7 +913,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[16])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x16.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[16])>(
@@ -928,7 +928,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[32])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x32.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[32])>(
@@ -943,7 +943,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[32])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x32.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[32])>(
@@ -958,7 +958,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[64])>(
           cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x64.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[64])>(
@@ -973,7 +973,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[64])>(
           cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x64.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[64])>(
@@ -989,7 +989,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
           reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[128])>(
             cuda::ptx::tcgen05_st_16x32bx2));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x128.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ =
@@ -1006,7 +1006,7 @@ __global__ void test_tcgen05_st(void** fn_ptr)
           reinterpret_cast<void*>(static_cast<void (*)(uint32_t, cuda::ptx::n32_t<0>, const int32_t (&)[128])>(
             cuda::ptx::tcgen05_st_16x32bx2_unpack_16b));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.st.sync.aligned.16x32bx2.x128.unpack::16b.b32 [taddr], immHalfSplitoff, values;
         * fn_ptr++ =

@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -91,7 +93,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr, _Env>{&__state_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {
