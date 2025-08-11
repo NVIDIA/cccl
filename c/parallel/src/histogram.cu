@@ -11,7 +11,8 @@
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_histogram.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm>
+#include <cuda/std/type_traits>
 
 #include <format>
 
@@ -365,7 +366,7 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t,
       cub::detail::histogram::Transforms<LevelT, // LevelT
                                          OffsetT, // OffsetT
-                                         typename std::remove_pointer<typename std::remove_reference<decltype(d_samples.state)>::type>::type // SampleT
+                                         ::cuda::std::iter_value_t<decltype(d_samples.state)> // SampleT
                                          >>::
       DispatchEven(
         d_temp_storage,
@@ -403,6 +404,31 @@ CUresult cccl_device_histogram_even_impl(
   return error;
 }
 
+// Template to map cccl_type_enum_t to the corresponding C++ type
+template <cccl_type_enum_t TypeEnum>
+struct type_enum_to_cpp_type;
+
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT8> { using type = int8_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT8> { using type = uint8_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT16> { using type = int16_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT16> { using type = uint16_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT32> { using type = int32_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT32> { using type = uint32_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT64> { using type = int64_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT64> { using type = uint64_t; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_FLOAT32> { using type = float; };
+template <>
+struct type_enum_to_cpp_type<cccl_type_enum_t::CCCL_FLOAT64> { using type = double; };
+
 CUresult cccl_device_histogram_even(
   cccl_device_histogram_build_result_t build,
   void* d_temp_storage,
@@ -417,155 +443,318 @@ CUresult cccl_device_histogram_even(
   int64_t row_stride_samples,
   CUstream stream)
 {
-  auto histogram_impl = [&](auto level_type_tag) {
-    using LevelT = typename std::remove_pointer<typename std::remove_reference<decltype(level_type_tag)>::type>::type;
-    return d_samples.value_type.size == 1 
-      ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>
-      : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>;
-  };
-
-  // Dispatch based on the level type
+  // Dispatch based on the level type using the template
   switch (lower_level.type.type) {
     case cccl_type_enum_t::CCCL_INT8:
-      return histogram_impl(static_cast<int8_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT8>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_UINT8:
-      return histogram_impl(static_cast<uint8_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT8>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_INT16:
-      return histogram_impl(static_cast<int16_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT16>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_UINT16:
-      return histogram_impl(static_cast<uint16_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT16>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_INT32:
-      return histogram_impl(static_cast<int32_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT32>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_UINT32:
-      return histogram_impl(static_cast<uint32_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT32>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_INT64:
-      return histogram_impl(static_cast<int64_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_INT64>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_UINT64:
-      return histogram_impl(static_cast<uint64_t*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_UINT64>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_FLOAT32:
-      return histogram_impl(static_cast<float*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_FLOAT32>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     case cccl_type_enum_t::CCCL_FLOAT64:
-      return histogram_impl(static_cast<double*>(nullptr))(
-        build,
-        d_temp_storage,
-        temp_storage_bytes,
-        d_samples,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream);
+      {
+        using LevelT = type_enum_to_cpp_type<cccl_type_enum_t::CCCL_FLOAT64>::type;
+        return d_samples.value_type.size == 1 
+          ? cccl_device_histogram_even_impl<::cuda::std::true_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream)
+          : cccl_device_histogram_even_impl<::cuda::std::false_type, LevelT>(
+              build,
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              lower_level,
+              upper_level,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream);
+      }
     default:
       return CUDA_ERROR_INVALID_VALUE;
   }
