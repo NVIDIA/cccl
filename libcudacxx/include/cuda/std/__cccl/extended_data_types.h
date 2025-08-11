@@ -118,6 +118,11 @@
 #  define _CCCL_HAS_FLOAT128() 0
 #endif // _CCCL_HAS_FLOAT128()
 
+#if _CCCL_HAS_FLOAT128() && _CCCL_HAS_INCLUDE(<crt/device_fp128_functions.h>)
+#  undef _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS
+#  define _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS() 1
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_HAS_INCLUDE(<crt/device_fp128_functions.h>)
+
 /***********************************************************************************************************************
  * char8_t
  **********************************************************************************************************************/
