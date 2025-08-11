@@ -153,12 +153,6 @@ public:
     super_t::operator=(nullptr);
     return *this;
   }
-
-#ifdef _CCCL_DOXYGEN_INVOKED
-  /*! \brief Return the raw pointer that this \c device_ptr points to.
-   */
-  _CCCL_HOST_DEVICE T* get() const;
-#endif
 };
 
 #ifdef _CCCL_DOXYGEN_INVOKED
