@@ -108,7 +108,7 @@ __host__ __device__ void test_ext_fp()
 {
 #if !TEST_COMPILER(MSVC)
   // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on Windows"
-#  if _CCCL_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16()
   // __half constants
   assert(cuda::std::numbers::e_v<__half> == __half{2.7182817f});
   assert(cuda::std::numbers::log2e_v<__half> == __half{1.442695f});
