@@ -4,7 +4,7 @@ import operator
 import uuid
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple
 
 import numba
 import numpy as np
@@ -59,10 +59,7 @@ class IteratorKind:
         return hash((type(self), self.value_type, self.state_type))
 
 
-@lru_cache(maxsize=None)
 def _get_abi_suffix(kind: IteratorKind):
-    # given an IteratorKind, return a UUID. The value is cached so
-    # that the same UUID is always returned for a given IteratorKind.
     return uuid.uuid4().hex
 
 
@@ -206,7 +203,7 @@ class IteratorBase:
             self.value_type,
             self.iterator_io,
         )
-        out.ltoirs = copy.copy(self.ltoirs)
+        out.ltoirs = copy.copy(self._ltoirs)
         return out
 
 
@@ -615,46 +612,3 @@ def _get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset_to_last_element
-
-
-def _replace_duplicate_values(*ds, replacement_value):
-    # given a sequence of dictionaries, return a sequence of dictionaries
-    # such that for any found duplicate keys, the value is set to `replacement_value`.
-    if len(ds) <= 1:
-        return ds
-    seen = set(ds[0].keys())
-    for d in ds[1:]:
-        for key in d:
-            if key in seen:
-                d[key] = replacement_value
-        seen.update(d.keys())
-    return ds
-
-
-def scrub_duplicate_ltoirs(*maybe_iterators: Any) -> tuple[Any, ...]:
-    """
-    Given a sequence of iterators and/or other objects, return a new sequence
-    with duplicate LTOIRs removed from iterators.
-
-    Note that a copy of the iterators is made, so the original iterators
-    are not modified.
-
-    If the sequence contains iterators with duplicate advance/dereference
-    ltoirs, those are set to the empty byte string b"". This pre-processing
-    step ensures that NVRTC doesn't see the same symbol defined more than
-    once.
-    """
-    # extract just the iterators:
-    iterators = [it.copy() for it in maybe_iterators if isinstance(it, IteratorBase)]
-
-    # replace duplicate ltoirs with empty byte strings:
-    ltoirs = _replace_duplicate_values(
-        *(it.ltoirs for it in iterators), replacement_value=b""
-    )
-    for iterator, ltoir in zip(iterators, ltoirs):
-        iterator.ltoirs = ltoir
-
-    it = iter(iterators)
-    return tuple(
-        next(it) if isinstance(arg, IteratorBase) else arg for arg in maybe_iterators
-    )
