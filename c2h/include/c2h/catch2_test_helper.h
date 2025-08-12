@@ -5,7 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__nvtx/nvtx3.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -338,14 +338,11 @@ struct nvtx_c2h_domain
 };
 
 template <typename T>
-struct nvtx_fixture
+class nvtx_fixture
 {
-  nvtx_fixture()
-      : nvtx_range(Catch::getResultCapture().getCurrentTestName())
-  {}
-
-private:
-  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range;
+#if _CCCL_HAS_NVTX3()
+  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
+#endif // _CCCL_HAS_NVTX3()
 };
 } // namespace detail
 
