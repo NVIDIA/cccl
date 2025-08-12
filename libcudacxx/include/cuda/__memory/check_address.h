@@ -31,6 +31,8 @@
 #  include <cuda/__memory/address_space.h>
 #endif // _CCCL_CUDA_COMPILATION()
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILATION()
@@ -46,7 +48,7 @@ __is_smem_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcep
     {
       return false;
     }
-    auto __limit = _CUDA_VSTD::uintptr_t{UINT32_MAX} - __n;
+    auto __limit = _CUDA_VSTD::uintptr_t{UINT32_MAX} - static_cast<_CUDA_VSTD::uintptr_t>(__n);
     return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
   }
   return true;
@@ -71,7 +73,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
       return false;
     };))
   // clang-format on
-  auto __limit = UINTMAX_MAX - __n;
+  auto __limit = _CUDA_VSTD::uintptr_t{UINTMAX_MAX} - static_cast<_CUDA_VSTD::uintptr_t>(__n);
   return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
 }
 
