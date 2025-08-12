@@ -267,7 +267,7 @@ struct AgentReduceImpl
 
   // Whether the input is aligned with the vector type
   template <typename Iterator, bool AttemptVectorization = ATTEMPT_VECTORIZATION>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAligned(Iterator d_in)
+  [[nodiscard]] _CCCL_DEVICE_API static bool IsAligned(Iterator d_in) noexcept
   {
     if constexpr (AttemptVectorization)
     {
