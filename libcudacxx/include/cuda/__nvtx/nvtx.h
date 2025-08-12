@@ -12,6 +12,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/std/__cccl/diagnostic.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -34,7 +36,11 @@
                       && !_CCCL_COMPILER(NVRTC)
 
 // Since NVTX 3.2, the NVTX headers can declare themselves as system headers by declaring the following macro:
-#  define NVTX_AS_SYSTEM_HEADER
+#  ifdef NVTX_AS_SYSTEM_HEADER
+#    define NVTX_AS_SYSTEM_HEADER_DEFINED_BY_USER
+#  else // NVTX_AS_SYSTEM_HEADER
+#    define NVTX_AS_SYSTEM_HEADER
+#  endif // NVTX_AS_SYSTEM_HEADER
 
 // Include our NVTX3 C++ wrapper if not available from the CTK or not provided by the user
 // Note: NVTX3 is available in the CTK since 12.9, so we can drop our copy once this is the minimum supported version
@@ -44,7 +50,10 @@
 #    include <cuda/__nvtx/nvtx3.h>
 #  endif // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
 
-#  undef NVTX_AS_SYSTEM_HEADER
+#  ifndef NVTX_AS_SYSTEM_HEADER_DEFINED_BY_USER
+#    undef NVTX_AS_SYSTEM_HEADER
+#  endif // NVTX_AS_SYSTEM_HEADER_DEFINED_BY_USER
+#  undef NVTX_AS_SYSTEM_HEADER_DEFINED_BY_USER
 
 // We expect the NVTX3 V1 C++ API to be available when nvtx3.hpp is available. This should work, because newer versions
 // of NVTX3 will continue to declare previous API versions. See also:
