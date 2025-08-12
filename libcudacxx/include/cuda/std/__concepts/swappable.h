@@ -129,7 +129,7 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__exchangeable<_Tp>)
   _CCCL_API constexpr void operator()(_Tp& __x, _Tp& __y) const
-    noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+    noexcept(is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
   {
     __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));
   }
@@ -141,7 +141,7 @@ _CCCL_CONCEPT_FRAGMENT(
   __swappable_arrays_,
   requires(_Tp (&__t)[_Size::value], _Up (&__u)[_Size::value], const __fn& __swap)(
     requires(!__unqualified_swappable_with<_Tp (&)[_Size::value], _Up (&)[_Size::value]>),
-    requires(_CCCL_TRAIT(extent, _Tp) == _CCCL_TRAIT(extent, _Up)),
+    requires(extent_v<_Tp> == extent_v<_Up>),
     (__swap(__t[0], __u[0]))));
 
 template <class _Tp, class _Up, size_t _Size>

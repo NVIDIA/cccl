@@ -33,23 +33,22 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <size_t _Index, class _Elem, bool = _CCCL_TRAIT(is_empty, _Elem)>
+template <size_t _Index, class _Elem, bool = is_empty_v<_Elem>>
 struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco_impl
 {
   _Elem __elem_;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem_ = _Elem)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem_))
-  _CCCL_API constexpr __mdspan_ebco_impl() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem_))
+  _CCCL_REQUIRES(is_default_constructible_v<_Elem_>)
+  _CCCL_API constexpr __mdspan_ebco_impl() noexcept(is_nothrow_default_constructible_v<_Elem_>)
       : __elem_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND _CCCL_TRAIT(is_constructible, _Elem, _Args...))
-  _CCCL_API constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem, _Args...))
+  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Elem, _Args...>)
+  _CCCL_API constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Elem, _Args...>)
       : __elem_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
@@ -68,16 +67,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco_impl<_Index, _Elem, true> : _Ele
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem_ = _Elem)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem_))
-  _CCCL_API constexpr __mdspan_ebco_impl() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem_))
+  _CCCL_REQUIRES(is_default_constructible_v<_Elem_>)
+  _CCCL_API constexpr __mdspan_ebco_impl() noexcept(is_nothrow_default_constructible_v<_Elem_>)
       : _Elem()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND _CCCL_TRAIT(is_constructible, _Elem, _Args...))
-  _CCCL_API constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem, _Args...))
+  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Elem, _Args...>)
+  _CCCL_API constexpr __mdspan_ebco_impl(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Elem, _Args...>)
       : _Elem(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
@@ -101,15 +99,15 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, 
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem1_))
-  _CCCL_API constexpr __mdspan_ebco() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_))
+  _CCCL_REQUIRES(is_default_constructible_v<_Elem1_>)
+  _CCCL_API constexpr __mdspan_ebco() noexcept(is_nothrow_default_constructible_v<_Elem1_>)
       : __base1()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND _CCCL_TRAIT(is_constructible, _Elem1, _Args...))
-  _CCCL_API constexpr __mdspan_ebco(_Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Args...))
+  _CCCL_REQUIRES((sizeof...(_Args) != 0) _CCCL_AND is_constructible_v<_Elem1, _Args...>)
+  _CCCL_API constexpr __mdspan_ebco(_Args&&... __args) noexcept(is_nothrow_constructible_v<_Elem1, _Args...>)
       : __base1(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
@@ -144,21 +142,20 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem1_)
-                   _CCCL_AND _CCCL_TRAIT(is_default_constructible, _Elem2_))
-  _CCCL_API constexpr __mdspan_ebco() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_)
-                                               && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2_))
+  _CCCL_REQUIRES(is_default_constructible_v<_Elem1_> _CCCL_AND is_default_constructible_v<_Elem2_>)
+  _CCCL_API constexpr __mdspan_ebco() noexcept(is_nothrow_default_constructible_v<_Elem1_>
+                                               && is_nothrow_default_constructible_v<_Elem2_>)
       : __base1()
       , __base2()
   {}
 
   template <class _Arg1>
   static constexpr bool __is_constructible_from_one_arg =
-    _CCCL_TRAIT(is_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_default_constructible, _Elem2);
+    is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2>;
 
   template <class _Arg1>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2);
+    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
@@ -170,11 +167,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
-    _CCCL_TRAIT(is_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_constructible, _Elem2, _Arg2);
+    is_constructible_v<_Elem1, _Arg1> && is_constructible_v<_Elem2, _Arg2>;
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_nothrow_constructible_from_two_args =
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_nothrow_constructible, _Elem2, _Arg2);
+    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_constructible_v<_Elem2, _Arg2>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1, class _Arg2)
@@ -235,11 +232,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Elem1_ = _Elem1, class _Elem2_ = _Elem2, class _Elem3_ = _Elem3)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Elem1_) _CCCL_AND _CCCL_TRAIT(is_default_constructible, _Elem2_)
-                   _CCCL_AND _CCCL_TRAIT(is_default_constructible, _Elem3_))
+  _CCCL_REQUIRES(is_default_constructible_v<_Elem1_> _CCCL_AND is_default_constructible_v<_Elem2_> _CCCL_AND
+                   is_default_constructible_v<_Elem3_>)
   _CCCL_API constexpr __mdspan_ebco() noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Elem1_) && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2_)
-    && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem3_))
+    is_nothrow_default_constructible_v<_Elem1_> && is_nothrow_default_constructible_v<_Elem2_>
+    && is_nothrow_default_constructible_v<_Elem3_>)
       : __base1()
       , __base2()
       , __base3()
@@ -247,13 +244,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   template <class _Arg1>
   static constexpr bool __is_constructible_from_one_arg =
-    _CCCL_TRAIT(is_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_default_constructible, _Elem2)
-    && _CCCL_TRAIT(is_default_constructible, _Elem3);
+    is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2> && is_default_constructible_v<_Elem3>;
 
   template <class _Arg1>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem2)
-    && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem3);
+    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
+    && is_nothrow_default_constructible_v<_Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
@@ -266,13 +262,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_constructible_from_two_args =
-    _CCCL_TRAIT(is_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_constructible, _Elem2, _Arg2)
-    && _CCCL_TRAIT(is_default_constructible, _Elem3);
+    is_constructible_v<_Elem1, _Arg1> && is_constructible_v<_Elem2, _Arg2> && is_default_constructible_v<_Elem3>;
 
   template <class _Arg1, class _Arg2>
   static constexpr bool __is_nothrow_constructible_from_two_args =
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_nothrow_constructible, _Elem2, _Arg2)
-    && _CCCL_TRAIT(is_nothrow_default_constructible, _Elem3);
+    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_constructible_v<_Elem2, _Arg2>
+    && is_nothrow_default_constructible_v<_Elem3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1, class _Arg2)
@@ -286,13 +281,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   template <class _Arg1, class _Arg2, class _Arg3>
   static constexpr bool __is_constructible_from_three_args =
-    _CCCL_TRAIT(is_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_constructible, _Elem2, _Arg2)
-    && _CCCL_TRAIT(is_constructible, _Elem3, _Arg3);
+    is_constructible_v<_Elem1, _Arg1> && is_constructible_v<_Elem2, _Arg2> && is_constructible_v<_Elem3, _Arg3>;
 
   template <class _Arg1, class _Arg2, class _Arg3>
   static constexpr bool __is_nothrow_constructible_from_three_args =
-    _CCCL_TRAIT(is_nothrow_constructible, _Elem1, _Arg1) && _CCCL_TRAIT(is_nothrow_constructible, _Elem2, _Arg2)
-    && _CCCL_TRAIT(is_nothrow_constructible, _Elem3, _Arg3);
+    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_constructible_v<_Elem2, _Arg2>
+    && is_nothrow_constructible_v<_Elem3, _Arg3>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1, class _Arg2, class _Arg3)

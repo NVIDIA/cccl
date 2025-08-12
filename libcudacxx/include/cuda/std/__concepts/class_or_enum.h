@@ -31,13 +31,12 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_CONCEPT __class_or_enum = _CCCL_TRAIT(is_class, _Tp) || _CCCL_TRAIT(is_union, _Tp) || _CCCL_TRAIT(is_enum, _Tp);
+_CCCL_CONCEPT __class_or_enum = is_class_v<_Tp> || is_union_v<_Tp> || is_enum_v<_Tp>;
 
 // Work around Clang bug https://llvm.org/PR52970
 // TODO: remove this workaround once libc++ no longer has to support Clang 13 (it was fixed in Clang 14).
 template <class _Tp>
-_CCCL_CONCEPT __workaround_52970 =
-  _CCCL_TRAIT(is_class, remove_cvref_t<_Tp>) || _CCCL_TRAIT(is_union, remove_cvref_t<_Tp>);
+_CCCL_CONCEPT __workaround_52970 = is_class_v<remove_cvref_t<_Tp>> || is_union_v<remove_cvref_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
