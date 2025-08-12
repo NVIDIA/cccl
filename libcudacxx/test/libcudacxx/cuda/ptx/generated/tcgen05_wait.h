@@ -21,7 +21,7 @@ __global__ void test_tcgen05_wait(void** fn_ptr)
                (
                    // tcgen05.wait::ld.sync.aligned;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_wait_ld));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.wait::ld.sync.aligned;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_wait_ld));));
@@ -32,7 +32,7 @@ __global__ void test_tcgen05_wait(void** fn_ptr)
                (
                    // tcgen05.wait::st.sync.aligned;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_wait_st));));
-  NV_IF_TARGET(NV_HAS_FEATURE_SM_101a,
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_110a,
                (
                    // tcgen05.wait::st.sync.aligned;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_wait_st));));

@@ -51,4 +51,14 @@
 #    endif
 #  endif // NV_HAS_FEATURE_SM_101a
 
+// missing SM_110a
+#  ifndef NV_HAS_FEATURE_SM_110a
+#    define NV_HAS_FEATURE_SM_110a __NV_HAS_FEATURE_SM_110a
+#    if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1100) && defined(__CUDA_ARCH_FEAT_SM110_ALL))
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 1
+#    else
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 0
+#    endif
+#  endif // NV_HAS_FEATURE_SM_110a
+
 #endif // __CUDACC_RTC__
