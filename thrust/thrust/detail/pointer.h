@@ -209,6 +209,7 @@ public:
       : super_t(detail::pointer_traits<OtherPointer>::get(other))
   {}
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle this constructor and creates a duplicate ID with the ctor above
   // OtherPointer's element_type shall be void
   // OtherPointer's system shall be convertible to Tag
   template <typename OtherPointer,
@@ -216,6 +217,7 @@ public:
   _CCCL_HOST_DEVICE explicit pointer(const OtherPointer& other)
       : super_t(static_cast<Element*>(detail::pointer_traits<OtherPointer>::get(other)))
   {}
+#endif
 
   // assignment
 
