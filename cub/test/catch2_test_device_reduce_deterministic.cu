@@ -32,6 +32,7 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/sequence.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
@@ -79,6 +80,31 @@ struct hub_t
   using MaxPolicy = Policy;
 };
 
+C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
+{
+  using type          = typename c2h::get<0, TestType>;
+  const int num_items = 1 << 20;
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(-1000.0), static_cast<type>(1000.0));
+
+  c2h::device_vector<type> d_output(1);
+
+  const type* d_input_ptr = thrust::raw_pointer_cast(d_input.data());
+
+  const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+  cub::DeviceReduce::Reduce(d_input_ptr, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+
+  c2h::host_vector<type> h_input = d_input;
+
+  c2h::host_vector<type> h_expected(1);
+  // Requires `std::accumulate` to produce deterministic result which is required for comparison
+  // with the device RFA result.
+  // NOTE: `std::reduce` is not equivalent
+  h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
+
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
+}
+
 template <typename FType, typename Iter>
 struct cyclic_chunk_accessor
 {
@@ -96,40 +122,46 @@ struct cyclic_chunk_accessor
   }
 };
 
-C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with large offset types and num_items",
+         "[reduce][deterministic]",
+         float_type_list)
 {
-  using type              = typename c2h::get<0, TestType>;
-  const size_t num_items  = (1uL << 32) + GENERATE_COPY(take(1, random(1, 1000)));
-  const size_t chunk_size = GENERATE_COPY(take(1, random(128, 10000)));
+  using type                    = typename c2h::get<0, TestType>;
+  const size_t random_num_items = (1uL << 32) + GENERATE_COPY(take(1, random(1, 1000)));
 
-  const size_t num_chunks              = num_items / chunk_size;
-  const size_t num_items_in_last_chunk = num_items % chunk_size;
+  const size_t half_chunk_size = GENERATE_COPY(take(1, random(1, 128)));
+
+  // make the chunk size even, so that we can split it in half
+  const size_t chunk_size = half_chunk_size * 2;
+
+  const size_t num_chunks = random_num_items / chunk_size;
+  const size_t num_items  = num_chunks * chunk_size;
 
   c2h::device_vector<type> d_chunk(chunk_size);
+  thrust::sequence(thrust::device, d_chunk.begin(), d_chunk.end(), 0);
 
-  // using very small range, so that accumulated value does not overflow the integer precision of the fp type
-  c2h::gen(C2H_SEED(1), d_chunk, static_cast<type>(0.0001), static_cast<type>(0.0002));
-
-  c2h::device_vector<type> d_output(1);
+  // overwrite the second half of the chunk with negative values from the first half
+  thrust::transform(
+    thrust::device,
+    d_chunk.begin(),
+    d_chunk.begin() + half_chunk_size,
+    d_chunk.begin() + half_chunk_size,
+    ::cuda::std::negate<type>{});
 
   cyclic_chunk_accessor<type, decltype(d_chunk.data())> wrapper{d_chunk.data(), chunk_size};
   auto d_input = thrust::make_transform_iterator(thrust::counting_iterator<size_t>{}, wrapper);
+  c2h::device_vector<type> d_output(1);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
   cub::DeviceReduce::Reduce(d_input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
 
-  c2h::host_vector<type> h_chunk = d_chunk;
-
-  const type h_chunk_sum = std::reduce(h_chunk.begin(), h_chunk.end(), type{}, ::cuda::std::plus<type>());
-
-  const type h_last_chunk_sum =
-    std::reduce(h_chunk.begin(), h_chunk.begin() + num_items_in_last_chunk, type{}, ::cuda::std::plus<type>());
-
-  c2h::host_vector<type> h_expected(1);
-  h_expected[0] = h_chunk_sum * num_chunks + h_last_chunk_sum;
-
+  // expected sum must be zero, as there would be equal number of positive and negative values
+  // in the input and they will cancel each other out
+  c2h::host_vector<type> h_expected(1, type{});
   c2h::host_vector<type> h_output = d_output;
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
+
+  // output should be exactly equal to expected i.e 0.0
+  REQUIRE(h_expected == h_output);
 }
 
 C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
