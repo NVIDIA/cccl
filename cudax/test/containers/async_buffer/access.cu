@@ -57,12 +57,12 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
       buf.stream().sync();
       auto& res = buf.get_unsynchronized(2);
-      CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
+      CUDAX_CHECK(compare_value<Buffer>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
-      assign_value<Buffer::__is_host_only>(res, T(4));
+      assign_value<Buffer>(res, T(4));
 
       auto& const_res = cuda::std::as_const(buf).get_unsynchronized(2);
-      CUDAX_CHECK(compare_value<Buffer::__is_host_only>(const_res, T(4)));
+      CUDAX_CHECK(compare_value<Buffer>(const_res, T(4)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
     }
   }
