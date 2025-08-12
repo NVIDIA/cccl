@@ -110,7 +110,7 @@ class IteratorBase:
         """
         self.cvalue = cvalue
         self.state_type = state_type
-        self.numba_type = types.CPointer(state_type)
+        self.state_ptr_type = types.CPointer(state_type)
         self.value_type = value_type
 
         self.iterator_io = iterator_io
@@ -172,7 +172,7 @@ class IteratorBase:
         # add the offset to the iterator's state, and return a new iterator
         # with the new state.
         res = type(self).__new__(type(self))
-        res.numba_type = self.numba_type
+        res.state_ptr_type = self.state_ptr_type
         res.state_type = self.state_type
         res.value_type = self.value_type
         res.iterator_io = self.iterator_io
@@ -185,17 +185,17 @@ class IteratorBase:
 
     def _get_advance_signature(self) -> Tuple:
         return (
-            self.numba_type,
+            self.state_ptr_type,
             types.uint64,  # distance type
         )
 
     def _get_dereference_signature(self) -> Tuple:
         if self.iterator_io is IteratorIOKind.INPUT:
             # state, result
-            return (self.numba_type, types.CPointer(self.value_type))
+            return (self.state_ptr_type, types.CPointer(self.value_type))
         else:
             # state, value
-            return (self.numba_type, self.value_type)
+            return (self.state_ptr_type, self.value_type)
 
     def copy(self):
         out = object.__new__(self.__class__)
