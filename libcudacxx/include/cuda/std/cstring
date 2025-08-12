@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::size_t;
 
-_CCCL_API inline void* memcpy(void* _CCCL_RESTRICT __dest, const void* _CCCL_RESTRICT __src, size_t __count) noexcept
+_CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
 {
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__src, __count), "memcpy: source range is invalid");
   _CCCL_ASSERT(::cuda::__is_valid_address_range(__dest, __count), "memcpy: destination range is invalid");
