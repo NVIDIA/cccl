@@ -49,6 +49,11 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
+// forward declare and not include thrust/system/cuda/detail/copy.h to avoid a circular dependency
+template <class System, class InputIterator, class Size, class OutputIterator>
+OutputIterator _CCCL_HOST_DEVICE
+copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIterator result);
+
 namespace __uninitialized_copy
 {
 template <class InputIt, class OutputIt>
