@@ -36,6 +36,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // sqrt
 
+#if _CCCL_CHECK_BUILTIN(builtin_sqrt) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SQRTF(...) __builtin_sqrtf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SQRT(...)  __builtin_sqrt(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SQRTL(...) __builtin_sqrtl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sqrt)
+
 [[nodiscard]] _CCCL_API inline float sqrt(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SQRTF)
@@ -98,13 +104,26 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double sqrt(_Integer __x) noexcept
 {
   return _CUDA_VSTD::sqrt((double) __x);
 }
 
 // cbrt
+
+#if _CCCL_CHECK_BUILTIN(builtin_cbrt) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_CBRTF(...) __builtin_cbrtf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CBRT(...)  __builtin_cbrt(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CBRTL(...) __builtin_cbrtl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cbrt)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "cbrt"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_CBRTF
+#  undef _CCCL_BUILTIN_CBRT
+#  undef _CCCL_BUILTIN_CBRTL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float cbrt(float __x) noexcept
 {
@@ -167,7 +186,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double cbrt(_Integer __x) noexcept
 {
   return _CUDA_VSTD::cbrt((double) __x);

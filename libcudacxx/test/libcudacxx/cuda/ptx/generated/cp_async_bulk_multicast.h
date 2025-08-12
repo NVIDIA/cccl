@@ -44,7 +44,7 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
                                uint64_t*,
                                const uint16_t&)>(cuda::ptx::cp_async_bulk));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
         // size, [smem_bar], ctaMask;

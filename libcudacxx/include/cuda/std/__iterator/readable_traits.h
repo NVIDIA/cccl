@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/iterator_traits.h>
+#include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -112,7 +112,7 @@ struct __cond_value_type
 {};
 
 template <class _Tp>
-struct __cond_value_type<_Tp, enable_if_t<_CCCL_TRAIT(is_object, _Tp)>>
+struct __cond_value_type<_Tp, enable_if_t<is_object_v<_Tp>>>
 {
   using value_type = remove_cv_t<_Tp>;
 };
@@ -134,7 +134,7 @@ struct indirectly_readable_traits
 {};
 
 template <class _Ip>
-struct indirectly_readable_traits<_Ip, enable_if_t<!_CCCL_TRAIT(is_const, _Ip) && _CCCL_TRAIT(is_array, _Ip)>>
+struct indirectly_readable_traits<_Ip, enable_if_t<!is_const_v<_Ip> && is_array_v<_Ip>>>
 {
   using value_type = remove_cv_t<remove_extent_t<_Ip>>;
 };
@@ -150,21 +150,21 @@ struct indirectly_readable_traits<_Tp*> : __cond_value_type<_Tp>
 template <class _Tp>
 struct indirectly_readable_traits<
   _Tp,
-  enable_if_t<!_CCCL_TRAIT(is_const, _Tp) && __has_member_value_type<_Tp> && !__has_member_element_type<_Tp>>>
+  enable_if_t<!is_const_v<_Tp> && __has_member_value_type<_Tp> && !__has_member_element_type<_Tp>>>
     : __cond_value_type<typename _Tp::value_type>
 {};
 
 template <class _Tp>
 struct indirectly_readable_traits<
   _Tp,
-  enable_if_t<!_CCCL_TRAIT(is_const, _Tp) && !__has_member_value_type<_Tp> && __has_member_element_type<_Tp>>>
+  enable_if_t<!is_const_v<_Tp> && !__has_member_value_type<_Tp> && __has_member_element_type<_Tp>>>
     : __cond_value_type<typename _Tp::element_type>
 {};
 
 template <class _Tp>
 struct indirectly_readable_traits<
   _Tp,
-  enable_if_t<!_CCCL_TRAIT(is_const, _Tp) && __has_member_value_type<_Tp> && __has_member_element_type<_Tp>
+  enable_if_t<!is_const_v<_Tp> && __has_member_value_type<_Tp> && __has_member_element_type<_Tp>
               && same_as<remove_cv_t<typename _Tp::element_type>, remove_cv_t<typename _Tp::value_type>>>>
     : __cond_value_type<typename _Tp::value_type>
 {};

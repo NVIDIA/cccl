@@ -35,6 +35,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // fmod
 
+#if _CCCL_CHECK_BUILTIN(builtin_fmod) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMODF(...) __builtin_fmodf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMOD(...)  __builtin_fmod(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMODL(...) __builtin_fmodl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmod)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "modf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_FMODF
+#  undef _CCCL_BUILTIN_FMOD
+#  undef _CCCL_BUILTIN_FMODL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float fmod(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_FMODF)
@@ -105,6 +118,19 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 }
 
 // modf
+
+#if _CCCL_CHECK_BUILTIN(builtin_modf) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_MODFF(...) __builtin_modff(__VA_ARGS__)
+#  define _CCCL_BUILTIN_MODF(...)  __builtin_modf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_MODFL(...) __builtin_modfl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_modf)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "modf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_MODFF
+#  undef _CCCL_BUILTIN_MODF
+#  undef _CCCL_BUILTIN_MODFL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float modf(float __x, float* __y) noexcept
 {

@@ -43,8 +43,8 @@ int main(int, char**)
   check<T const[3], T const*>();
   check<T(), T (*)()>();
   check<T(int) const, T(int) const>();
-  check<T(int)&, T(int)&>();
-  check<T(int)&&, T(int) &&>();
+  check<T(int) &, T(int) &>();
+  check<T(int) &&, T(int) &&>();
 
   check<cuda::std::reference_wrapper<T>, T&>();
   check<cuda::std::reference_wrapper<T>&, T&>();

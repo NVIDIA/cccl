@@ -34,16 +34,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // floating point helper
-_CCCL_API constexpr __half __constexpr_copysign(__half __x, __half __y) noexcept
-{
-  return _CUDA_VSTD::copysign(__x, __y);
-}
-
-_CCCL_API inline __half __constexpr_fabs(__half __x) noexcept
-{
-  return ::__habs(__x);
-}
-
 _CCCL_API inline __half __constexpr_fmax(__half __x, __half __y) noexcept
 {
   return ::__hmax(__x, __y);

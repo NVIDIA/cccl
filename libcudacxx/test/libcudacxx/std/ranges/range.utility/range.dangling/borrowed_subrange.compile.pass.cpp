@@ -14,13 +14,12 @@
 #include <cuda/std/concepts>
 #include <cuda/std/ranges>
 #include <cuda/std/span>
+#include <cuda/std/string_view>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>
-#endif
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  include <cuda/std/string_view>
-#endif
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/inplace_vector>
+#include <cuda/std/string_view>
 
 #if defined(_LIBCUDACXX_HAS_STRING)
 static_assert(
@@ -38,10 +37,8 @@ static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::st
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::span<int>>,
                                  cuda::std::ranges::subrange<cuda::std::span<int>::iterator>>);
 
-#if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string_view>,
                                  cuda::std::ranges::subrange<cuda::std::string_view::iterator>>);
-#endif
 
 #if TEST_STD_VER > 2017
 template <class T>

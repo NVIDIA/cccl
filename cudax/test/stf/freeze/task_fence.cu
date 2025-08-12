@@ -60,8 +60,8 @@ int main()
     auto fx      = ctx.freeze(lX);
     auto [dX, _] = fx.get(data_place::current_device());
 
-    // the stream returned by task_fence should depend on the get operation
-    auto stream2 = ctx.task_fence();
+    // the stream returned by fence should depend on the get operation
+    auto stream2 = ctx.fence();
     print<<<8, 4, 0, stream2>>>(dX);
 
     ctx.parallel_for(lX.shape(), lX.read(), lY.write()).set_symbol("Y=X")->*[] __device__(size_t i, auto x, auto y) {
@@ -76,8 +76,8 @@ int main()
     auto fx      = ctx.freeze(lX);
     auto [dX, _] = fx.get(data_place::current_device());
 
-    // the stream returned by task_fence should depend on the get operation
-    auto stream2 = ctx.task_fence();
+    // the stream returned by fence should depend on the get operation
+    auto stream2 = ctx.fence();
     print<<<8, 4, 0, stream2>>>(dX);
 
     // We synchronize so there is nothing to depend on anymore

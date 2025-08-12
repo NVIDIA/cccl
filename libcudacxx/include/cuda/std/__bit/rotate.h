@@ -64,7 +64,7 @@ template <typename _Tp>
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp rotl(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
@@ -76,7 +76,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp rotr(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)

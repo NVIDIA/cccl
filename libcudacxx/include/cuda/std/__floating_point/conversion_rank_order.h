@@ -48,11 +48,11 @@ template <class _Lhs, class _Rhs>
     // If double and long double have the same properties, long double has the higher subrank
     if constexpr (__fp_is_subset_of_v<long double, double>)
     {
-      if constexpr (_CCCL_TRAIT(is_same, _Lhs, long double) && !_CCCL_TRAIT(is_same, _Rhs, long double))
+      if constexpr (is_same_v<_Lhs, long double> && !is_same_v<_Rhs, long double>)
       {
         return __fp_conv_rank_order::__greater;
       }
-      else if constexpr (!_CCCL_TRAIT(is_same, _Lhs, long double) && _CCCL_TRAIT(is_same, _Rhs, long double))
+      else if constexpr (!is_same_v<_Lhs, long double> && is_same_v<_Rhs, long double>)
       {
         return __fp_conv_rank_order::__less;
       }
@@ -82,16 +82,16 @@ template <class _Lhs, class _Rhs>
 }
 
 _CCCL_TEMPLATE(class _Lhs, class _Rhs)
-_CCCL_REQUIRES(_CCCL_TRAIT(__is_fp, _Lhs) && _CCCL_TRAIT(__is_fp, _Rhs))
+_CCCL_REQUIRES(__is_fp_v<_Lhs>&& __is_fp_v<_Rhs>)
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = __fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
 
 template <class _Lhs, class _Rhs>
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
-  __fp_conv_rank_order_v<conditional_t<_CCCL_TRAIT(is_integral, _Lhs), double, _Lhs>,
-                         conditional_t<_CCCL_TRAIT(is_integral, _Rhs), double, _Rhs>>;
+  __fp_conv_rank_order_v<conditional_t<is_integral_v<_Lhs>, double, _Lhs>,
+                         conditional_t<is_integral_v<_Rhs>, double, _Rhs>>;
 
 _CCCL_TEMPLATE(class _From, class _To)
-_CCCL_REQUIRES(_CCCL_TRAIT(__is_fp, _From) && _CCCL_TRAIT(__is_fp, _To))
+_CCCL_REQUIRES(__is_fp_v<_From>&& __is_fp_v<_To>)
 inline constexpr bool __fp_is_implicit_conversion_v =
   __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__less
   || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__equal;

@@ -21,9 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__utility/immovable.h>
 
-#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__execution/stream/scheduler.cuh>
 #include <cuda/experimental/stream.cuh>
 

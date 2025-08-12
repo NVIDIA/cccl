@@ -14,7 +14,7 @@ sccache_languages = ["C/C++", "CUDA"]
 
 def job_succeeded(job):
     # The job was successful if the success file exists:
-    return os.path.exists(f'jobs/{job["id"]}/success')
+    return os.path.exists(f"jobs/{job['id']}/success")
 
 
 def natural_sort_key(key):
@@ -283,10 +283,10 @@ def get_tag_line(tag, tag_summary):
     note = ""
     if likely_culprit:
         flag = "🚨"
-        note = f': {likely_culprit["name"]} {flag}'
+        note = f": {likely_culprit['name']} {flag}"
     elif suspicious:
         flag = "🔍"
-        note = f': {suspicious["name"]} {flag}'
+        note = f": {suspicious['name']} {flag}"
     elif passed == 0:
         flag = "🟥"
     elif failed > 0:

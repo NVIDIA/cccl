@@ -32,22 +32,22 @@ namespace test
 
 constexpr auto one_thread_dims = cudax::make_config(cudax::block_dims<1>(), cudax::grid_dims<1>());
 
-struct _malloc_managed
+struct _malloc_pinned
 {
 private:
   void* pv = nullptr;
 
 public:
-  explicit _malloc_managed(std::size_t size)
+  explicit _malloc_pinned(std::size_t size)
   {
-    cudax::__ensure_current_device guard(cudax::device_ref{0});
-    _CCCL_TRY_CUDA_API(::cudaMallocManaged, "failed to allocate managed memory", &pv, size);
+    cudax::__ensure_current_device guard(cuda::device_ref{0});
+    _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
-  ~_malloc_managed()
+  ~_malloc_pinned()
   {
-    cudax::__ensure_current_device guard(cudax::device_ref{0});
-    [[maybe_unused]] auto status = ::cudaFree(pv);
+    cudax::__ensure_current_device guard(cuda::device_ref{0});
+    [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 
   template <class T>
@@ -58,19 +58,19 @@ public:
 };
 
 template <class T>
-struct managed
+struct pinned
 {
 private:
-  _malloc_managed _mem;
+  _malloc_pinned _mem;
 
 public:
-  explicit managed(T t)
+  explicit pinned(T t)
       : _mem(sizeof(T))
   {
-    ::new (_mem.get_as<void>()) T(_CUDA_VSTD::move(t));
+    ::new (_mem.get_as<void>()) T(std::move(t));
   }
 
-  ~managed()
+  ~pinned()
   {
     get()->~T();
   }

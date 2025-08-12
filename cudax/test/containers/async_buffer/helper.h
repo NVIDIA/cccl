@@ -30,7 +30,7 @@ __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 
 template <class Buffer>
-constexpr bool equal_range(const Buffer& buf)
+bool equal_range(const Buffer& buf)
 {
   if constexpr (Buffer::__is_host_only)
   {
@@ -39,6 +39,7 @@ constexpr bool equal_range(const Buffer& buf)
   }
   else
   {
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return buf.size() == cuda::std::size(device_data)
         && thrust::equal(
              thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
@@ -46,7 +47,7 @@ constexpr bool equal_range(const Buffer& buf)
 }
 
 template <bool HostOnly, class T>
-constexpr bool compare_value(const T& value, const T& expected)
+bool compare_value(const T& value, const T& expected)
 {
   if constexpr (HostOnly)
   {
@@ -54,6 +55,7 @@ constexpr bool compare_value(const T& value, const T& expected)
   }
   else
   {
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     // copy the value to host
     T host_value;
     _CCCL_TRY_CUDA_API(
@@ -76,6 +78,7 @@ void assign_value(T& value, const T& input)
   }
   else
   {
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     // copy the input to device
     _CCCL_TRY_CUDA_API(
       ::cudaMemcpy,
@@ -100,7 +103,7 @@ struct equal_to_value
 };
 
 template <class Buffer>
-constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int value)
+bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
   if constexpr (Buffer::__is_host_only)
   {
@@ -110,6 +113,7 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
   }
   else
   {
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return buf.size() == size
         && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
                          buf.begin(),
@@ -121,7 +125,7 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
 
 // Helper function to compare two ranges
 template <class Range1, class Range2>
-constexpr bool equal_range(const Range1& range1, const Range2& range2)
+bool equal_range(const Range1& range1, const Range2& range2)
 {
   if constexpr (Range1::__is_host_only)
   {
@@ -130,6 +134,7 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
   }
   else
   {
+    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
     return range1.size() == range2.size()
         && thrust::equal(thrust::cuda::par.on(range1.stream().get()), range1.begin(), range1.end(), range2.begin());
   }
@@ -138,7 +143,7 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
 struct dev0_device_memory_resource : cudax::device_memory_resource
 {
   dev0_device_memory_resource()
-      : cudax::device_memory_resource{cudax::device_ref{0}}
+      : cudax::device_memory_resource{cuda::device_ref{0}}
   {}
 
   using default_queries = cudax::properties_list<cuda::mr::device_accessible>;

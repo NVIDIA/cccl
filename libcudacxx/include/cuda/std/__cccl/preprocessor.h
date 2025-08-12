@@ -11,6 +11,17 @@
 #ifndef __CCCL_PREPROCESSOR_H
 #define __CCCL_PREPROCESSOR_H
 
+// warn when MSVC is used with the traditional preprocessor
+#if defined(_MSC_VER) && !defined(__clang__)
+#  if (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1) \
+    && !defined(CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING)
+#    pragma message(                                                                                               \
+      "MSVC/cl.exe with traditional preprocessor is used. This may lead to unexpected compilation errors. Please " \
+      "switch to the standard conforming preprocessor by passing `/Zc:preprocessor` to cl.exe. You can define "    \
+      "CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.")
+#  endif // !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1
+#endif // defined(_MSC_VER) && !defined(__clang__)
+
 #ifdef __has_include
 #  define _CCCL_HAS_INCLUDE(_X) __has_include(_X)
 #else
@@ -75,7 +86,7 @@
 #define _CCCL_PP_COMMA()        ,
 #define _CCCL_PP_LBRACE()       {
 #define _CCCL_PP_RBRACE()       }
-#define _CCCL_PP_COMMA_IIF(_Xp) _CCCL_PP_IIF(_Xp)(_CCCL_PP_EMPTY, _CCCL_PP_COMMA)() /**/
+#define _CCCL_PP_COMMA_IIF(_Xp) _CCCL_PP_IIF(_Xp)(_CCCL_PP_COMMA, _CCCL_PP_EMPTY)()
 
 #define _CCCL_PP_FOR_EACH(_Mp, ...)                          _CCCL_PP_FOR_EACH_N(_CCCL_PP_COUNT(__VA_ARGS__), _Mp, __VA_ARGS__)
 #define _CCCL_PP_FOR_EACH_N(_Np, _Mp, ...)                   _CCCL_PP_CAT2(_CCCL_PP_FOR_EACH_, _Np)(_Mp, __VA_ARGS__)

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__exception/terminate.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -36,7 +37,7 @@ namespace cuda::experimental::execution
 struct start_detached_t
 {
 private:
-  struct __opstate_base_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_base_t
   {};
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -79,7 +80,7 @@ private:
         : __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {

@@ -58,6 +58,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FPCLASSIFY(...) __builtin_fpclassify(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fpclassify)
+
+// nvcc does not implement __builtin_fpclassify
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_FPCLASSIFY
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_impl(_Tp __x) noexcept
 {
@@ -77,7 +86,7 @@ template <class _Tp>
       return FP_INFINITE;
     }
   }
-  if constexpr (_CCCL_TRAIT(is_floating_point, _Tp))
+  if constexpr (is_floating_point_v<_Tp>)
   {
     if (__x > -numeric_limits<_Tp>::min() && __x < numeric_limits<_Tp>::min())
     {
@@ -127,13 +136,13 @@ template <class _Tp>
 {
 #  if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
-#  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
+#  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
   return _CUDA_VSTD::__fpclassify_impl(__x);
-#  endif // !_CCCL_BUILTIN_SIGNBIT
+#  endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
@@ -194,7 +203,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int fpclassify(_Tp __x) noexcept
 {
   return (__x == 0) ? FP_ZERO : FP_NORMAL;

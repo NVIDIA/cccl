@@ -33,7 +33,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/optional>
+#include <cuda/std/optional>
 
 #include <cuda/std/__cccl/prologue.h>
 

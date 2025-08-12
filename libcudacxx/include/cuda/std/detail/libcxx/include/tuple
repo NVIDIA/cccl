@@ -213,8 +213,8 @@ enum class __tuple_leaf_specialization
 template <class _Tp>
 _CCCL_API constexpr __tuple_leaf_specialization __tuple_leaf_choose()
 {
-  return _CCCL_TRAIT(is_empty, _Tp) && !_CCCL_TRAIT(is_final, _Tp) ? __tuple_leaf_specialization::__empty_non_final
-       : __must_synthesize_assignment<_Tp>::value
+  return is_empty_v<_Tp> && !is_final_v<_Tp> ? __tuple_leaf_specialization::__empty_non_final
+       : __must_synthesize_assignment_v<_Tp>
          ? __tuple_leaf_specialization::__synthesize_assignment
          : __tuple_leaf_specialization::__default;
 }
@@ -248,13 +248,13 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
+  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
       : __value_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
+    is_nothrow_default_constructible_v<_Hp>)
       : __value_()
   {}
 
@@ -281,7 +281,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
-  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
+  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
@@ -305,7 +305,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
+  _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
@@ -342,10 +342,10 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
+  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
       : __value_()
   {
-    static_assert(!_CCCL_TRAIT(is_reference, _Hp), "Attempted to default construct a reference element in a tuple");
+    static_assert(!is_reference_v<_Hp>, "Attempted to default construct a reference element in a tuple");
   }
 
   template <class _Tp>
@@ -353,7 +353,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
-  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
+  _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -391,7 +391,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
-  _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
+  _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
@@ -422,7 +422,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
-    _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
+    is_nothrow_default_constructible_v<_Hp>)
       : _Hp()
   {}
 
@@ -471,16 +471,16 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tp, enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, const _Tp&), int> = 0>
-  _CCCL_API inline __tuple_leaf& operator=(const _Tp& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, const _Tp&))
+  template <class _Tp, enable_if_t<is_assignable_v<_Hp&, const _Tp&>, int> = 0>
+  _CCCL_API inline __tuple_leaf& operator=(const _Tp& __t) noexcept(is_nothrow_assignable_v<_Hp&, const _Tp&>)
   {
     _Hp::operator=(__t);
     return *this;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tp, enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, _Tp), int> = 0>
-  _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
+  template <class _Tp, enable_if_t<is_assignable_v<_Hp&, _Tp>, int> = 0>
+  _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
     _Hp::operator=(_CUDA_VSTD::forward<_Tp>(__t));
     return *this;
@@ -513,7 +513,7 @@ template <class _Tp>
 struct __all_default_constructible;
 
 template <class... _Tp>
-struct __all_default_constructible<__tuple_types<_Tp...>> : __all<_CCCL_TRAIT(is_default_constructible, _Tp)...>
+struct __all_default_constructible<__tuple_types<_Tp...>> : __all<is_default_constructible_v<_Tp>...>
 {};
 
 struct __tuple_variadic_constructor_tag
@@ -521,18 +521,23 @@ struct __tuple_variadic_constructor_tag
 
 // __tuple_impl
 
+template <class... _Tp>
+inline constexpr bool __tuple_all_copy_assignable_v = (is_copy_assignable_v<_Tp> && ... && true);
+
+template <class... _Tp>
+inline constexpr bool __tuple_all_move_assignable_v = (is_move_assignable_v<_Tp> && ... && true);
+
 template <class _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl;
 
 template <size_t... _Indx, class... _Tp>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
-    , public __sfinae_base<true,
-                           true,
-                           __all<_CCCL_TRAIT(is_copy_assignable, _Tp)...>::value,
-                           __all<_CCCL_TRAIT(is_move_assignable, _Tp)...>::value>
+    , public __tuple_impl_sfinae_helper<__tuple_impl<__tuple_indices<_Indx...>, _Tp...>,
+                                        __tuple_all_copy_assignable_v<_Tp...>,
+                                        __tuple_all_move_assignable_v<_Tp...>>
 {
-  _CCCL_API constexpr __tuple_impl() noexcept(__all<_CCCL_TRAIT(is_nothrow_default_constructible, _Tp)...>::value)
+  _CCCL_API constexpr __tuple_impl() noexcept(__all<is_nothrow_default_constructible_v<_Tp>...>::value)
       : __tuple_leaf<_Indx, _Tp>()...
   {}
 
@@ -540,7 +545,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   // Old MSVC cannot handle the noexept specifier outside of template arguments
   template <class... _Up,
             enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0,
-            bool __all_nothrow_constructible = __all<_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)...>::value>
+            bool __all_nothrow_constructible                   = __all<is_nothrow_constructible_v<_Tp, _Up>...>::value>
   _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
                                             _Up&&... __u) noexcept(__all_nothrow_constructible)
       : __tuple_leaf<_Indx, _Tp>(_CUDA_VSTD::forward<_Up>(__u))...
@@ -572,7 +577,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 
   template <class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _CCCL_API constexpr __tuple_impl(_Tuple&& __t) noexcept(
-    (__all<_CCCL_TRAIT(is_nothrow_constructible, _Tp, __tuple_elem_at<_Tuple, _Indx>)...>::value))
+    (__all<is_nothrow_constructible_v<_Tp, __tuple_elem_at<_Tuple, _Indx>>...>::value))
       : __tuple_leaf<_Indx, _Tp>(_CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...
   {}
 
@@ -584,8 +589,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   {}
 
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple<_Tp...>>::value, int> = 0>
-  _CCCL_API inline __tuple_impl& operator=(_Tuple&& __t) noexcept(
-    (__all<_CCCL_TRAIT(is_nothrow_assignable, _Tp&, __tuple_elem_at<_Tuple, _Indx>)...>::value))
+  _CCCL_API inline __tuple_impl&
+  operator=(_Tuple&& __t) noexcept((__all<is_nothrow_assignable_v<_Tp&, __tuple_elem_at<_Tuple, _Indx>>...>::value))
   {
     _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
       _CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...);
@@ -617,10 +622,9 @@ struct __tuple_constraints
     __all<__is_implicitly_default_constructible<_Tp>::value...>::value;
 
   static constexpr bool __explicit_default_constructible =
-    !__implicit_default_constructible && __all<_CCCL_TRAIT(is_default_constructible, _Tp)...>::value;
+    !__implicit_default_constructible && __all<is_default_constructible_v<_Tp>...>::value;
 
-  static constexpr bool __nothrow_default_constructible =
-    __all<_CCCL_TRAIT(is_nothrow_default_constructible, _Tp)...>::value;
+  static constexpr bool __nothrow_default_constructible = __all<is_nothrow_default_constructible_v<_Tp>...>::value;
 
   static constexpr bool __implicit_variadic_copy_constructible =
     __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>::value
@@ -630,8 +634,7 @@ struct __tuple_constraints
     __tuple_constructible<tuple<const _Tp&...>, tuple<_Tp...>>::value
     && !__tuple_convertible<tuple<const _Tp&...>, tuple<_Tp...>>::value;
 
-  static constexpr bool __nothrow_variadic_copy_constructible =
-    __all<_CCCL_TRAIT(is_nothrow_copy_constructible, _Tp)...>::value;
+  static constexpr bool __nothrow_variadic_copy_constructible = __all<is_nothrow_copy_constructible_v<_Tp>...>::value;
 
   template <class... _Args>
   struct _PackExpandsToThisTuple : false_type
@@ -652,7 +655,7 @@ struct __tuple_constraints
       __tuple_constructible<tuple<_Args...>, tuple<_Tp...>>::value
       && !__tuple_convertible<tuple<_Args...>, tuple<_Tp...>>::value;
 
-    static constexpr bool __nothrow_constructible = __all<_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args)...>::value;
+    static constexpr bool __nothrow_constructible = __all<is_nothrow_constructible_v<_Tp, _Args>...>::value;
   };
 
   template <class... _Args>
@@ -770,18 +773,18 @@ public:
 
   template <class _AllocArgT,
             class _Alloc,
-            class _Constraints                                                  = __tuple_constraints<_Tp...>,
-            enable_if_t<_CCCL_TRAIT(is_same, allocator_arg_t, _AllocArgT), int> = 0,
-            enable_if_t<_Constraints::__implicit_default_constructible, int>    = 0>
+            class _Constraints                                               = __tuple_constraints<_Tp...>,
+            enable_if_t<is_same_v<allocator_arg_t, _AllocArgT>, int>         = 0,
+            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
   _CCCL_API inline tuple(_AllocArgT, _Alloc const& __a) noexcept(_Constraints::__nothrow_default_constructible)
       : __base_(allocator_arg_t(), __a)
   {}
 
   template <class _AllocArgT,
             class _Alloc,
-            class _Constraints                                                  = __tuple_constraints<_Tp...>,
-            enable_if_t<_CCCL_TRAIT(is_same, allocator_arg_t, _AllocArgT), int> = 0,
-            enable_if_t<_Constraints::__explicit_default_constructible, int>    = 0>
+            class _Constraints                                               = __tuple_constraints<_Tp...>,
+            enable_if_t<is_same_v<allocator_arg_t, _AllocArgT>, int>         = 0,
+            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
   explicit _CCCL_API inline tuple(_AllocArgT, _Alloc const& __a) noexcept(_Constraints::__nothrow_default_constructible)
       : __base_(allocator_arg_t(), __a)
   {}
@@ -844,7 +847,7 @@ public:
             class _Constraints                                       = __variadic_constraints_less_rank<_Up...>,
             enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _CCCL_API constexpr explicit tuple(_Up&&... __u) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Up...))
+  _CCCL_API constexpr explicit tuple(_Up&&... __u) noexcept(is_nothrow_constructible_v<_BaseT, _Up...>)
       : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
   {}
 
@@ -891,11 +894,11 @@ private:
 
 public:
   template <class _Tuple,
-            class _Constraints                                          = __tuple_like_constraints<_Tuple>,
-            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,
-            enable_if_t<!_CCCL_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
-            enable_if_t<_Constraints::__implicit_constructible, int>    = 0>
-  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Tuple))
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
+            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
+            enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
+  _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(_CUDA_VSTD::forward<_Tuple>(__t))
   {}
 
@@ -903,16 +906,16 @@ public:
             class _Constraints                                        = __tuple_like_constraints<const _Tuple&>,
             enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
             enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
-  _CCCL_API constexpr tuple(const _Tuple& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, const _Tuple&))
+  _CCCL_API constexpr tuple(const _Tuple& __t) noexcept(is_nothrow_constructible_v<_BaseT, const _Tuple&>)
       : __base_(__t)
   {}
 
   template <class _Tuple,
-            class _Constraints                                          = __tuple_like_constraints<_Tuple>,
-            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,
-            enable_if_t<!_CCCL_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
-            enable_if_t<_Constraints::__explicit_constructible, int>    = 0>
-  _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Tuple))
+            class _Constraints                                        = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
+            enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
+  _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
       : __base_(_CUDA_VSTD::forward<_Tuple>(__t))
   {}
 
@@ -920,8 +923,7 @@ public:
             class _Constraints                                        = __tuple_like_constraints<const _Tuple&>,
             enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
             enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
-  _CCCL_API constexpr explicit tuple(const _Tuple& __t) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _BaseT, const _Tuple&))
+  _CCCL_API constexpr explicit tuple(const _Tuple& __t) noexcept(is_nothrow_constructible_v<_BaseT, const _Tuple&>)
       : __base_(__t)
   {}
 
@@ -941,14 +943,14 @@ public:
       : __base_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tuple>(__t))
   {}
 
-  using _CanCopyAssign = __all<_CCCL_TRAIT(is_copy_assignable, _Tp)...>;
-  using _CanMoveAssign = __all<_CCCL_TRAIT(is_move_assignable, _Tp)...>;
+  using _CanCopyAssign = __all<is_copy_assignable_v<_Tp>...>;
+  using _CanMoveAssign = __all<is_move_assignable_v<_Tp>...>;
 
   _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
   _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
 
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>::value, bool> = false>
-  _CCCL_API inline tuple& operator=(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _BaseT&, _Tuple))
+  _CCCL_API inline tuple& operator=(_Tuple&& __t) noexcept(is_nothrow_assignable_v<_BaseT&, _Tuple>)
   {
     __base_.operator=(_CUDA_VSTD::forward<_Tuple>(__t));
     return *this;

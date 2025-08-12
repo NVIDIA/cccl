@@ -35,10 +35,11 @@ struct say_hello
 
 __host__ void run()
 {
+  /*
   try
   {
     task::thread_context tctx;
-    task::stream_context sctx{cuda::experimental::device_ref{0}};
+    task::stream_context sctx{cuda::device_ref{0}};
     auto sch = sctx.get_scheduler();
 
     auto start = //
@@ -72,6 +73,7 @@ __host__ void run()
   {
     std::printf("Unknown exception\n");
   }
+  */
 }
 
 int main()

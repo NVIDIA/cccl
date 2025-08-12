@@ -292,7 +292,7 @@ try
   using offset_t = std::int64_t;
 
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
-  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   offset_t num_items = GENERATE_COPY(
     values({

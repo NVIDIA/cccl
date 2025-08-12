@@ -82,33 +82,32 @@
 
 // define these entities here for the purpose of Doxygenating them
 // they are actually defined elsewhere
-#if 0
+#if _CCCL_DOXYGEN_INVOKED
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
 namespace tbb
 {
 
-
 /*! \addtogroup execution_policies
  *  \{
  */
 
-
 /*! \p thrust::tbb::execution_policy is the base class for all Thrust parallel execution
  *  policies which are derived from Thrust's TBB backend system.
  */
-template<typename DerivedPolicy>
+template <typename DerivedPolicy>
 struct execution_policy : thrust::execution_policy<DerivedPolicy>
 {};
-
 
 /*! \p tbb::tag is a type representing Thrust's TBB backend system in C++'s type system.
  *  Iterators "tagged" with a type which is convertible to \p tbb::tag assert that they may be
  *  "dispatched" to algorithm implementations in the \p tbb system.
  */
-struct tag : thrust::system::tbb::execution_policy<tag> { unspecified };
-
+struct tag : thrust::system::tbb::execution_policy<tag>
+{
+  unspecified
+};
 
 /*! \p thrust::tbb::par is the parallel execution policy associated with Thrust's TBB
  *  backend system.
@@ -149,12 +148,10 @@ struct tag : thrust::system::tbb::execution_policy<tag> { unspecified };
  */
 static const unspecified par;
 
-
 /*! \}
  */
 
-
-} // end tbb
-} // end system
+} // namespace tbb
+} // namespace system
 THRUST_NAMESPACE_END
 #endif

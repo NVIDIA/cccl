@@ -163,7 +163,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_TEMPLATE(class _Integer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_CCCL_REQUIRES(is_integral_v<_Integer>)
 [[nodiscard]] _CCCL_API constexpr _Integer byteswap(_Integer __val) noexcept
 {
   if constexpr (sizeof(_Integer) > 1)

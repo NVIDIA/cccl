@@ -25,31 +25,46 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
+
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/tabulate.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
 namespace detail
 {
-namespace generic
+template <typename T>
+struct compute_sequence_value
 {
+  T init;
+  T step;
 
-template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE void
-sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE T operator()(std::size_t i) const
+  {
+    if constexpr (::cuda::std::is_arithmetic_v<T>)
+    {
+      return init + step * static_cast<T>(i);
+    }
+    else
+    {
+      return init + step * i;
+    }
+  }
+};
+} // namespace detail
 
-template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
-sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init);
-
-template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void
-sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init, T step);
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+template <typename DerivedPolicy, typename ForwardIterator, typename T = thrust::detail::it_value_t<ForwardIterator>>
+_CCCL_HOST_DEVICE void sequence(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  T init = T{},
+  T step = T{1})
+{
+  thrust::tabulate(
+    exec, first, last, detail::compute_sequence_value<T>{::cuda::std::move(init), ::cuda::std::move(step)});
+}
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/sequence.inl>

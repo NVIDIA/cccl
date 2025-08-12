@@ -87,6 +87,19 @@ struct path_builder
     cudaStreamCaptureStatus __capture_status;
     const cudaGraphNode_t* __last_captured_node = nullptr;
     size_t __num_nodes                          = 0;
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    _CCCL_TRY_CUDA_API(
+      ::cudaStreamGetCaptureInfo,
+      "Failed to get stream capture info",
+      __stream.get(),
+      &__capture_status,
+      nullptr,
+      nullptr,
+      &__last_captured_node,
+      nullptr,
+      &__num_nodes);
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
     _CCCL_TRY_CUDA_API(
       ::cudaStreamGetCaptureInfo,
       "Failed to get stream capture info",
@@ -96,6 +109,8 @@ struct path_builder
       nullptr,
       &__last_captured_node,
       &__num_nodes);
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
     if (__capture_status != cudaStreamCaptureStatusActive)
     {
       __throw_cuda_error(cudaErrorInvalidValue, "Stream capture no longer active", "cudaStreamGetCaptureInfo");

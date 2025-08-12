@@ -22,16 +22,27 @@
 
 #include <nvbench_helper.cuh>
 
-template <typename... RandomAccessIteratorsIn>
+template <typename RandomAccessIteratorOut, typename... RandomAccessIteratorsIn>
 #if TUNE_BASE
-using policy_hub_t = cub::detail::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>>;
+using policy_hub_t =
+  cub::detail::transform::policy_hub</* stable address */ false,
+                                     /* dense output */ true,
+                                     ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                     RandomAccessIteratorOut>;
 #else
 struct policy_hub_t
 {
   struct max_policy : cub::ChainedPolicy<500, max_policy, max_policy>
   {
-    static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
-    static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
+    static constexpr int min_bif = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
+#  if TUNE_ALGORITHM == 0
+    static constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
+#  elif TUNE_ALGORITHM == 1
+    static constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
+#  else
+#    error Policy hub does not yet implement the specified value for algorithm
+#  endif
+
     using algo_policy =
       ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
                        cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
@@ -59,8 +70,11 @@ void bench_transform(
       OffsetT,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,
+      cub::detail::transform::always_true_predicate,
       TransformOp,
-      policy_hub_t<RandomAccessIteratorsIn...>>::dispatch(inputs, output, num_items, transform_op, launch.get_stream());
+      policy_hub_t<RandomAccessIteratorOut, RandomAccessIteratorsIn...>>::
+      dispatch(
+        inputs, output, num_items, cub::detail::transform::always_true_predicate{}, transform_op, launch.get_stream());
   });
 }
 

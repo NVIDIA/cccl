@@ -42,7 +42,7 @@ C2H_TEST("Device inclusive scan works", "[scan][device]")
   size_t temp_storage_bytes{};
 
   cub::DeviceScan::InclusiveScanInit(
-    nullptr, temp_storage_bytes, input.begin(), out.begin(), ::cuda::maximum<>{}, init, static_cast<int>(input.size()));
+    nullptr, temp_storage_bytes, input.begin(), out.begin(), cuda::maximum<>{}, init, static_cast<int>(input.size()));
 
   // Allocate temporary storage for inclusive scan
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
@@ -53,7 +53,7 @@ C2H_TEST("Device inclusive scan works", "[scan][device]")
     temp_storage_bytes,
     input.begin(),
     out.begin(),
-    ::cuda::maximum<>{},
+    cuda::maximum<>{},
     init,
     static_cast<int>(input.size()));
 

@@ -77,7 +77,7 @@ private:
 public:
   //! @brief Constructs a device_memory_resource using the default \c cudaMemPool_t of a given device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  explicit device_memory_resource(::cuda::experimental::device_ref __device)
+  explicit device_memory_resource(::cuda::device_ref __device)
       : __memory_resource_base(__get_default_device_mem_pool(__device.get()))
   {}
 
@@ -104,7 +104,7 @@ public:
   using default_queries = properties_list<device_accessible>;
 #endif // _CCCL_DOXYGEN_INVOKED
 };
-static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");
+static_assert(_CUDA_VMR::synchronous_resource_with<device_memory_resource, device_accessible>, "");
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

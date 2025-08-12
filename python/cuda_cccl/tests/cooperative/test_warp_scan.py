@@ -7,19 +7,15 @@ import numpy as np
 import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
-from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
-patch.patch_numba_linker(lto=True)
-
-
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_exclusive_sum(T):
-    warp_exclusive_sum = cudax.warp.exclusive_sum(dtype=T)
+    warp_exclusive_sum = coop.warp.exclusive_sum(dtype=T)
     temp_storage_bytes = warp_exclusive_sum.temp_storage_bytes
 
     @cuda.jit(link=warp_exclusive_sum.files)

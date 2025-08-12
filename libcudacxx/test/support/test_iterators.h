@@ -1617,6 +1617,10 @@ inline constexpr bool IsProxy = false;
 template <class T>
 inline constexpr bool IsProxy<Proxy<T>> = true;
 
+#if TEST_COMPILER(MSVC)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
+#endif // TEST_COMPILER(MSVC)
+
 template <class T>
 struct Proxy
 {
@@ -1668,10 +1672,6 @@ struct Proxy
     data = cuda::std::forward<Other>(other).getData();
     return *this;
   }
-
-#if TEST_COMPILER(MSVC)
-  TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER(MSVC)
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _CCCL_TEMPLATE(class Other)
@@ -1733,6 +1733,10 @@ struct Proxy
   }
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
+
+#if TEST_COMPILER(MSVC)
+_CCCL_END_NV_DIAG_SUPPRESS()
+#endif // TEST_COMPILER(MSVC)
 
 namespace cuda
 {
@@ -1831,10 +1835,11 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // If operator* returns Proxy<Foo&>, iter_move will return Proxy<Foo&&>
   // Note cuda::std::move(*it) returns Proxy<Foo&>&&, which is not what we want as
   // it will likely result in a copy rather than a move
-  __host__ __device__ friend constexpr Proxy<cuda::std::iter_rvalue_reference_t<Base>>
-  iter_move(const ProxyIterator& p) noexcept
+  // MSVC falls over its feet without the template indirection
+  template <class B2 = Base>
+  __host__ __device__ friend constexpr auto iter_move(const ProxyIterator<B2>& p) noexcept
   {
-    return {cuda::std::ranges::iter_move(p.base_)};
+    return Proxy<cuda::std::iter_rvalue_reference_t<Base>>{cuda::std::ranges::iter_move(p.base_)};
   }
 
   // Specialization of iter_swap

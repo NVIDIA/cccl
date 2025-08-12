@@ -1,0 +1,57 @@
+---
+alwaysApply: false
+---
+Analyze CUDA benchmark performance data from sqlite MCP to identify the optimal tuning variant configuration for requested algorithm.
+
+Database Context:
+- Table: cub.bench.{ALGORITHM_NAME} contains performance measurements
+- Key columns:
+  - variant: Tuning configuration (format: ipt_X.tpb_Y.rle_Z.ws_W.mem_M.ld_L.laid_A.vec_V or base)
+  - OffsetT{ct}: Compile-time parameter
+  - Elements{io}: Runtime workload size (larger values = more important workloads)
+  - center: Average elapsed time per operation (lower is better)
+  - samples: Compressed measurement data (use fpzip.decompress() to extract)
+
+Analysis Requirements:
+
+1. Compare variants against baseline:
+  - Group data by (gpu, OffsetT{ct}, variant)
+  - For each variant, compare its center values against variant='base' for all Elements{io} workloads
+  - A variant "wins" if it has lower center than base for ALL workload sizes
+2. Prioritize by workload importance:
+  - Workloads with larger Elements{io} values are more important
+  - A variant that performs better on large workloads but slightly worse on small ones may be preferable
+  - Calculate weighted performance improvement using Elements{io} as weight
+3. Statistical reliability check:
+  - Decompress samples data using fpzip.decompress(samples)
+  - Distributions can be multi-modal, so
+  - Identify likelihood of speedup and discard it if it's low
+4. Ranking criteria (in order):
+  - Variants that beat baseline on ALL workloads
+  - Variants with highest weighted performance improvement (weight by Elements{io})
+  - Variants with consistent improvements (low variance across samples)
+  - Prefer simpler configurations when performance is similar (fewer non-default parameters)
+
+Output Requirements:
+1. Top 5 tuning variants with:
+  - Variant configuration string
+  - Performance improvement percentage vs baseline (weighted by workload size)
+  - Win rate (% of workloads where variant beats baseline)
+  - Reliability score based on sample variance
+  - Specific workload sizes where variant excels or struggles
+2. Detailed analysis of the #1 variant:
+  - Performance profile across all workload sizes
+  - Statistical confidence intervals
+  - Parameter values that contribute most to improvement
+3. Summary recommendation with rationale
+
+SQL Query Structure Hints:
+- Use CTEs to calculate baseline performance per workload
+- Join variant results with baseline for comparison
+- Use window functions for ranking within each configuration group
+- Consider creating aggregate metrics for easier comparison
+
+Please analyze the data systematically and provide actionable tuning recommendations based on both performance gains and statistical
+reliability.
+
+After you identify the best variant, modify CUB sources in cub/cub/device/dispatch/tuning for appropriate algorithm such that found tuning variant is used.

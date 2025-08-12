@@ -39,7 +39,7 @@ class constant_iterator
 private:
   static_assert(_CUDA_VSTD::__integer_like<_Index>, "The index type of cuda::constant_iterator must be integer-like!");
 
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VRANGES::__movable_box<_Tp> __value_{_CUDA_VSTD::in_place};
+  _CUDA_VRANGES::__movable_box<_Tp> __value_{_CUDA_VSTD::in_place};
   _Index __index_ = 0;
 
 public:

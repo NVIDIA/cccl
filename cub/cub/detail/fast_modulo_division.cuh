@@ -48,7 +48,7 @@
 #include <cuda/std/type_traits> // ::cuda::std::is_integral
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
 CUB_NAMESPACE_BEGIN
@@ -108,11 +108,11 @@ multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
   static_assert(supported_integral<R>::value, "unsupported type");
-  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, T))
+  if constexpr (::cuda::std::is_signed_v<T>)
   {
     _CCCL_ASSERT(value >= 0, "value must be non-negative");
   }
-  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, R))
+  if constexpr (::cuda::std::is_signed_v<R>)
   {
     _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
   }
@@ -242,5 +242,5 @@ _CCCL_DIAG_POP
 CUB_NAMESPACE_END
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_DEFAULT(186)
+_CCCL_END_NV_DIAG_SUPPRESS()
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS

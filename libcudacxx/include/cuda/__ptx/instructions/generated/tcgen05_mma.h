@@ -177,7 +177,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 
 /*
 // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
-SM_100a, SM_101a
+SM_100a, SM_110a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 // .cta_group = { .cta_group::1 }
 template <cuda::ptx::dot_kind Kind>
@@ -192,7 +192,7 @@ __device__ static inline void tcgen05_mma(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma(
   kind_t<_Kind> __kind,
@@ -206,7 +206,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 // __cta_group == cta_group_1 (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
@@ -285,14 +285,14 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
-SM_100a, SM_101a
+SM_100a, SM_110a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 // .cta_group = { .cta_group::2 }
 template <cuda::ptx::dot_kind Kind>
@@ -307,7 +307,7 @@ __device__ static inline void tcgen05_mma(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma(
   kind_t<_Kind> __kind,
@@ -321,7 +321,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 // __cta_group == cta_group_2 (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
@@ -419,7 +419,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -527,7 +527,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -541,7 +541,7 @@ __device__ static inline void tcgen05_mma(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma(
   kind_t<_Kind> __kind,
@@ -554,7 +554,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -677,7 +677,7 @@ _CCCL_DEVICE static inline void tcgen05_mma(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -856,7 +856,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 
 /*
 // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
-SM_100a, SM_101a
+SM_100a, SM_110a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 // .cta_group = { .cta_group::1 }
 template <cuda::ptx::dot_kind Kind>
@@ -871,7 +871,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   kind_t<_Kind> __kind,
@@ -885,7 +885,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 // __cta_group == cta_group_1 (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
@@ -964,14 +964,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d; // PTX ISA 86,
-SM_100a, SM_101a
+SM_100a, SM_110a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 // .cta_group = { .cta_group::2 }
 template <cuda::ptx::dot_kind Kind>
@@ -986,7 +986,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   kind_t<_Kind> __kind,
@@ -1000,7 +1000,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
 // __cta_group == cta_group_2 (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_f16)
   {
     asm volatile(
@@ -1099,7 +1099,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -1207,7 +1207,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -1221,7 +1221,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   kind_t<_Kind> __kind,
@@ -1234,7 +1234,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 {
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_f16 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -1357,14 +1357,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem], [scale_B_tmem],
-enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -1380,7 +1380,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_1x_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_1x_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
   kind_mxf8f6f4_t,
@@ -1395,7 +1395,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -1434,14 +1434,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem], [scale_B_tmem],
-enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -1457,7 +1457,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_2x_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_2x_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
   kind_t<_Kind> __kind,
@@ -1472,7 +1472,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -1547,14 +1547,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem], [scale_B_tmem],
-enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -1570,7 +1570,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_4x_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_4x_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
   kind_mxf4nvf4_t,
@@ -1585,7 +1585,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -1624,14 +1624,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem], [scale_B_tmem],
-enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -1648,7 +1648,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
   kind_mxf8f6f4_t,
@@ -1663,7 +1663,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -1702,14 +1702,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem], [scale_B_tmem],
-enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -1725,7 +1725,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
   bool enable_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
   kind_t<_Kind> __kind,
@@ -1740,7 +1740,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -1815,14 +1815,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem], [scale_B_tmem],
-enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -1839,7 +1839,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
   kind_mxf4nvf4_t,
@@ -1854,7 +1854,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -1893,14 +1893,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -1917,7 +1917,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
   kind_mxf8f6f4_t,
@@ -1932,7 +1932,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -1971,14 +1971,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -1995,7 +1995,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
   kind_t<_Kind> __kind,
@@ -2010,7 +2010,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -2085,14 +2085,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2109,7 +2109,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
   kind_mxf4nvf4_t,
@@ -2124,7 +2124,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2163,14 +2163,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2187,7 +2187,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill(
   kind_mxf8f6f4_t,
@@ -2202,7 +2202,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2241,14 +2241,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -2265,7 +2265,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_f
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill(
   kind_t<_Kind> __kind,
@@ -2280,7 +2280,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -2355,14 +2355,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2379,7 +2379,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill(
   kind_mxf4nvf4_t,
@@ -2394,7 +2394,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2433,14 +2433,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2457,7 +2457,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
   kind_mxf8f6f4_t,
@@ -2472,7 +2472,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2511,14 +2511,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -2535,7 +2535,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
   kind_t<_Kind> __kind,
@@ -2550,7 +2550,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -2625,14 +2625,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2649,7 +2649,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
   kind_mxf4nvf4_t,
@@ -2664,7 +2664,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2703,14 +2703,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2727,7 +2727,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use(
   kind_mxf8f6f4_t,
@@ -2742,7 +2742,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2781,14 +2781,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -2805,7 +2805,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_u
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use(
   kind_t<_Kind> __kind,
@@ -2820,7 +2820,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -2895,14 +2895,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2919,7 +2919,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use(
   kind_mxf4nvf4_t,
@@ -2934,7 +2934,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -2973,14 +2973,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -2997,7 +2997,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastuse
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastuse(
   kind_mxf8f6f4_t,
@@ -3012,7 +3012,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastu
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3051,14 +3051,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastu
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -3075,7 +3075,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastuse
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastuse(
   kind_t<_Kind> __kind,
@@ -3090,7 +3090,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -3165,14 +3165,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastu
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3189,7 +3189,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastuse
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastuse(
   kind_mxf4nvf4_t,
@@ -3204,7 +3204,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastu
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3243,14 +3243,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastu
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3267,7 +3267,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse(
   kind_mxf8f6f4_t,
@@ -3282,7 +3282,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3321,14 +3321,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -3345,7 +3345,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_l
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse(
   kind_t<_Kind> __kind,
@@ -3360,7 +3360,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -3435,14 +3435,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3459,7 +3459,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse(
   kind_mxf4nvf4_t,
@@ -3474,7 +3474,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3513,14 +3513,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3537,7 +3537,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_discard
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_discard(
   kind_mxf8f6f4_t,
@@ -3552,7 +3552,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_disca
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3591,14 +3591,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_disca
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -3615,7 +3615,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_discard
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_discard(
   kind_t<_Kind> __kind,
@@ -3630,7 +3630,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -3705,14 +3705,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_disca
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2x_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3729,7 +3729,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_discard
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_discard(
   kind_mxf4nvf4_t,
@@ -3744,7 +3744,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_disca
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3783,14 +3783,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_disca
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf8f6f4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3807,7 +3807,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard(
   kind_mxf8f6f4_t,
@@ -3822,7 +3822,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
 {
   // __kind == kind_mxf8f6f4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -3861,14 +3861,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4, .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_kind Kind, cuda::ptx::dot_cta_group Cta_Group>
@@ -3885,7 +3885,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_d
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_kind _Kind, dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard(
   kind_t<_Kind> __kind,
@@ -3900,7 +3900,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
 {
   static_assert(__kind == kind_mxf4 || __kind == kind_mxf4nvf4, "");
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__kind == kind_mxf4 && __cta_group == cta_group_1)
   {
     asm volatile(
@@ -3975,14 +3975,14 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
 // tcgen05.mma.cta_group.kind.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc, b_desc, idesc,
-[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+[scale_A_tmem], [scale_B_tmem], enable_input_d; // PTX ISA 86, SM_100a, SM_110a
 // .kind      = { .kind::mxf4nvf4 }
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
@@ -3999,7 +3999,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+__cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard(
   kind_mxf4nvf4_t,
@@ -4014,7 +4014,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
 {
   // __kind == kind_mxf4nvf4 (due to parameter type constraint)
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM101_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile(
@@ -4053,7 +4053,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_
   }
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_101a__();
+  __cuda_ptx_tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard_is_not_supported_before_SM_100a_SM_110a__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

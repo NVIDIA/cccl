@@ -12,6 +12,8 @@
 
 #include "test_macros.h"
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <class VType, size_t Size>
 __host__ __device__ constexpr void test()
 {
@@ -42,28 +44,34 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(float);
   EXPAND_VECTOR_TYPE(double);
 
-  return true;
-}
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test<long4_16a, 4>();
+  test<long4_32a, 4>();
+  test<ulong4_16a, 4>();
+  test<ulong4_32a, 4>();
+  test<longlong4_16a, 4>();
+  test<longlong4_32a, 4>();
+  test<ulonglong4_16a, 4>();
+  test<ulonglong4_32a, 4>();
+  test<double4_16a, 4>();
+  test<double4_32a, 4>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-__host__ __device__
-#if !TEST_COMPILER(MSVC)
-  constexpr
-#endif // !TEST_COMPILER(MSVC)
-  bool
-  test_dim3()
-{
+#if _CCCL_HAS_NVFP16()
+  test<__half2, 2>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat162, 2>();
+#endif // _CCCL_HAS_NVBF16()
+
   test<dim3, 3>();
+
   return true;
 }
 
 int main(int arg, char** argv)
 {
   test();
-  test_dim3();
-  static_assert(test(), "");
-#if !TEST_COMPILER(MSVC)
-  static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER(MSVC)
-
+  static_assert(test());
   return 0;
 }

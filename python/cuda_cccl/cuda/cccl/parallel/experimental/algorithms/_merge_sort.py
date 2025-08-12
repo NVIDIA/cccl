@@ -12,7 +12,11 @@ from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    validate_and_get_stream,
+)
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike
 
@@ -141,7 +145,7 @@ class _MergeSort:
 
 
 @cache_with_key(make_cache_key)
-def merge_sort(
+def make_merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
     d_out_keys: DeviceArrayLike,
@@ -170,3 +174,22 @@ def merge_sort(
         A callable object that can be used to perform the merge sort
     """
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
+
+
+def merge_sort(
+    d_in_keys: DeviceArrayLike | IteratorBase,
+    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_out_keys: DeviceArrayLike,
+    d_out_items: DeviceArrayLike | None,
+    op: Callable,
+    num_items: int,
+    stream=None,
+):
+    sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
+    tmp_storage_bytes = sorter(
+        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+    )
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    sorter(
+        tmp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+    )

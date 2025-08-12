@@ -57,7 +57,7 @@ struct __cccl_char_traits_impl
 
   [[nodiscard]] _CCCL_API static constexpr bool lt(char_type __lhs, char_type __rhs) noexcept
   {
-    if constexpr (_CCCL_TRAIT(is_same, char_type, char))
+    if constexpr (is_same_v<char_type, char>)
     {
       return static_cast<unsigned char>(__lhs) < static_cast<unsigned char>(__rhs);
     }
@@ -130,7 +130,7 @@ struct __cccl_char_traits_impl
 
   [[nodiscard]] _CCCL_API static constexpr int_type to_int_type(char_type __c) noexcept
   {
-    if constexpr (_CCCL_TRAIT(is_same, char_type, char))
+    if constexpr (is_same_v<char_type, char>)
     {
       return int_type(static_cast<unsigned char>(__c));
     }
@@ -169,13 +169,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t> : __cccl_char_traits_i
 #endif // _CCCL_HAS_CHAR8_T()
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>
-    : __cccl_char_traits_impl<char16_t, uint_least16_t /*, ??? */>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+char_traits<char16_t> : __cccl_char_traits_impl<char16_t, uint_least16_t /*, ??? */>
 {};
 
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
-    : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+char_traits<char32_t> : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
 {};
 
 #if _CCCL_HAS_WCHAR_T()

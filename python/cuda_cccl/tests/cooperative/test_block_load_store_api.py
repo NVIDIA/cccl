@@ -6,11 +6,9 @@
 import numba
 import numpy as np
 from numba import cuda
-from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
-patch.patch_numba_linker(lto=True)
 # example-end imports
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
@@ -20,10 +18,10 @@ def test_block_load_store():
     # example-begin load_store
     threads_per_block = 32
     items_per_thread = 4
-    block_load = cudax.block.load(
+    block_load = coop.block.load(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
-    block_store = cudax.block.store(
+    block_store = coop.block.store(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
 

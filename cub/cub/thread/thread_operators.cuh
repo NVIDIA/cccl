@@ -551,63 +551,58 @@ inline constexpr bool is_cuda_std_bitwise_v =
   is_cuda_std_bit_and_v<Op, T> || is_cuda_std_bit_or_v<Op, T> || is_cuda_std_bit_xor_v<Op, T>;
 
 template <typename Op, typename T = void>
+inline constexpr bool is_cuda_std_logical_v = is_cuda_std_logical_and_v<Op, T> || is_cuda_std_logical_or_v<Op, T>;
+
+template <typename Op, typename T = void>
 inline constexpr bool is_simd_enabled_cuda_operator =
   is_cuda_minimum_maximum_v<Op, T> || //
   is_cuda_std_plus_mul_v<Op, T> || //
   is_cuda_std_bitwise_v<Op, T>;
 
+template <typename Op, typename T = void>
+inline constexpr bool is_cuda_binary_operator =
+  is_cuda_minimum_maximum_v<Op, T> || //
+  is_cuda_std_plus_mul_v<Op, T> || //
+  is_cuda_std_bitwise_v<Op, T> || //
+  is_cuda_std_logical_v<Op, T>;
+
 //----------------------------------------------------------------------------------------------------------------------
 // Generalize Operator
 
-template <typename Op, typename>
+template <typename Operator>
 struct GeneralizeOperator
 {
-  using type = Op;
+  using type = Operator;
 };
 
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::plus<T>, T>
+template <template <typename = void> class Operator, typename T>
+struct GeneralizeOperator<Operator<T>>
 {
-  using type = _CUDA_VSTD::plus<>;
+  using type = Operator<>;
 };
 
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::bit_and<T>, T>
+template <typename Op>
+using generalize_operator_t = typename GeneralizeOperator<Op>::type;
+
+template <typename Operator>
+[[nodiscard]] constexpr _CCCL_DEVICE _CCCL_FORCEINLINE auto generalize_operator(Operator op)
 {
-  using type = _CUDA_VSTD::bit_and<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::bit_or<T>, T>
-{
-  using type = _CUDA_VSTD::bit_or<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<_CUDA_VSTD::bit_xor<T>, T>
-{
-  using type = _CUDA_VSTD::bit_xor<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<::cuda::maximum<T>, T>
-{
-  using type = ::cuda::maximum<>;
-};
-
-template <typename T>
-struct GeneralizeOperator<::cuda::minimum<T>, T>
-{
-  using type = ::cuda::minimum<>;
-};
-
-template <typename Op, typename T>
-using generalize_operator_t = typename GeneralizeOperator<Op, T>::type;
+  if constexpr (is_cuda_std_logical_or_v<Operator> || is_cuda_std_logical_and_v<Operator>
+                || is_cuda_minimum_maximum_v<Operator> || is_cuda_std_plus_mul_v<Operator>
+                || is_cuda_std_bitwise_v<Operator>)
+  {
+    return generalize_operator_t<Operator>{};
+  }
+  else
+  {
+    return op;
+  }
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // Identity
 
-template <typename Op, typename T>
+template <typename Op, typename T = void>
 inline constexpr T identity_v;
 
 template <typename T>
@@ -617,10 +612,70 @@ template <typename T>
 inline constexpr T identity_v<::cuda::minimum<T>, T> = _CUDA_VSTD::numeric_limits<T>::max();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::maximum<>, T> = _CUDA_VSTD::numeric_limits<T>::min();
+inline constexpr T identity_v<::cuda::minimum<T>, void> = _CUDA_VSTD::numeric_limits<T>::max();
 
 template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, T> = _CUDA_VSTD::numeric_limits<T>::min();
+inline constexpr T identity_v<::cuda::maximum<>, T> = _CUDA_VSTD::numeric_limits<T>::lowest();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<T>, T> = _CUDA_VSTD::numeric_limits<T>::lowest();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<T>, void> = _CUDA_VSTD::numeric_limits<T>::lowest();
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::plus<T>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::plus<>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::plus<T>, void> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_and<>, T> = static_cast<T>(~T{});
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_and<T>, T> = static_cast<T>(~T{});
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_and<T>, void> = static_cast<T>(~T{});
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_or<>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_or<T>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_or<T>, void> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_xor<>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_xor<T>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::bit_xor<T>, void> = T{};
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::logical_and<>, T> = true;
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::logical_and<T>, T> = true;
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::logical_and<T>, void> = true;
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::logical_or<>, T> = false;
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::logical_or<T>, T> = false;
+
+template <typename T>
+inline constexpr T identity_v<_CUDA_VSTD::logical_or<T>, void> = false;
 
 } // namespace detail
 

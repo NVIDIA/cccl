@@ -99,7 +99,7 @@ public:
 private:
   _CCCL_HOST_DEVICE void set_bytes_required(size_t new_size)
   {
-    m_size = (::cuda::std::max)(m_size, new_size);
+    m_size = (::cuda::std::max) (m_size, new_size);
   }
 
   _CCCL_HOST_DEVICE size_t get_bytes_required() const
@@ -351,29 +351,29 @@ private:
 
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
-allocate_async(void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr, ::cuda::stream_ref stream)
+allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (
-      try { d_temp_storage = mr.allocate_async(temp_storage_bytes, stream); } catch (...) {
+      try { d_temp_storage = mr.allocate(stream, temp_storage_bytes); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (d_temp_storage = mr.allocate_async(temp_storage_bytes, stream);));
+    (d_temp_storage = mr.allocate(stream, temp_storage_bytes);));
   return cudaSuccess;
 }
 
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
-deallocate_async(void* d_temp_storage, size_t temp_storage_bytes, MRT& mr, ::cuda::stream_ref stream)
+deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_bytes, MRT& mr)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (
-      try { mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream); } catch (...) {
+      try { mr.deallocate(stream, d_temp_storage, temp_storage_bytes); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (mr.deallocate_async(d_temp_storage, temp_storage_bytes, stream);));
+    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes);));
   return cudaSuccess;
 }
 

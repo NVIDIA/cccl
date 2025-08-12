@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -31,7 +32,7 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
 
 namespace cuda::experimental::execution
 {
@@ -63,6 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
 
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> _Env
   {
+    static_assert(sizeof(_Rcvr) > 0, "Receiver type is incomplete.");
     static_assert(_CUDA_VSTD::is_same_v<_Env, env_of_t<_Rcvr>>,
                   "get_env() must return the same type as env_of_t<_Rcvr>");
     return execution::get_env(*__rcvr_);
@@ -101,7 +103,7 @@ template <class _Env = void, class _Rcvr>
   {
     return execution::__ref_rcvr<env_of_t<_Rcvr>>(__rcvr);
   }
-  else if constexpr (__is_specialization_of_v<_Rcvr, __rcvr_ref>)
+  else if constexpr (::cuda::__is_specialization_of_v<_Rcvr, __rcvr_ref>)
   {
     return __rcvr;
   }
@@ -129,7 +131,7 @@ using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::experimental::executio
 
 } // namespace cuda::experimental::execution
 
-_CCCL_NV_DIAG_DEFAULT(114) // function "foo" was references but not defined
+_CCCL_END_NV_DIAG_SUPPRESS() // function "foo" was references but not defined
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

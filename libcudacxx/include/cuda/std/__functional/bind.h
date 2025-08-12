@@ -73,29 +73,16 @@ template <int _Np>
 struct __ph
 {};
 
-#  if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_CCCL_API inline extern const __ph<1> _1;
-_CCCL_API inline extern const __ph<2> _2;
-_CCCL_API inline extern const __ph<3> _3;
-_CCCL_API inline extern const __ph<4> _4;
-_CCCL_API inline extern const __ph<5> _5;
-_CCCL_API inline extern const __ph<6> _6;
-_CCCL_API inline extern const __ph<7> _7;
-_CCCL_API inline extern const __ph<8> _8;
-_CCCL_API inline extern const __ph<9> _9;
-_CCCL_API inline extern const __ph<10> _10;
-#  else
-/* inline */ constexpr __ph<1> _1{};
-/* inline */ constexpr __ph<2> _2{};
-/* inline */ constexpr __ph<3> _3{};
-/* inline */ constexpr __ph<4> _4{};
-/* inline */ constexpr __ph<5> _5{};
-/* inline */ constexpr __ph<6> _6{};
-/* inline */ constexpr __ph<7> _7{};
-/* inline */ constexpr __ph<8> _8{};
-/* inline */ constexpr __ph<9> _9{};
-/* inline */ constexpr __ph<10> _10{};
-#  endif // defined(_LIBCUDACXX_BUILDING_LIBRARY)
+inline constexpr __ph<1> _1{};
+inline constexpr __ph<2> _2{};
+inline constexpr __ph<3> _3{};
+inline constexpr __ph<4> _4{};
+inline constexpr __ph<5> _5{};
+inline constexpr __ph<6> _6{};
+inline constexpr __ph<7> _7{};
+inline constexpr __ph<8> _8{};
+inline constexpr __ph<9> _9{};
+inline constexpr __ph<10> _10{};
 
 } // namespace placeholders
 
@@ -155,21 +142,21 @@ __mu(_Ti& __ti, _Uj&)
 template <class _Ti, bool IsReferenceWrapper, bool IsBindEx, bool IsPh, class _TupleUj>
 struct __mu_return_impl;
 
-template <bool _Invokable, class _Ti, class... _Uj>
-struct __mu_return_invokable // false
+template <bool _Invocable, class _Ti, class... _Uj>
+struct __mu_return_invocable // false
 {
   using type = __nat;
 };
 
 template <class _Ti, class... _Uj>
-struct __mu_return_invokable<true, _Ti, _Uj...>
+struct __mu_return_invocable<true, _Ti, _Uj...>
 {
   using type = typename __invoke_of<_Ti&, _Uj...>::type;
 };
 
 template <class _Ti, class... _Uj>
 struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...>>
-    : public __mu_return_invokable<__invokable<_Ti&, _Uj...>::value, _Ti, _Uj...>
+    : public __mu_return_invocable<__invocable<_Ti&, _Uj...>::value, _Ti, _Uj...>
 {};
 
 template <class _Ti, class _TupleUj>
@@ -209,13 +196,13 @@ struct __is_valid_bind_return
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invokable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = __invocable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invokable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = __invocable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj, bool = __is_valid_bind_return<_Fp, _BoundArgs, _TupleUj>::value>

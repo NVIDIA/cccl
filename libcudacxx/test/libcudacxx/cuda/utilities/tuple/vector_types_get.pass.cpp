@@ -7,135 +7,139 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
+#include <cuda/std/limits>
 #include <cuda/std/tuple>
 
 #include "test_macros.h"
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <class VType, class BaseType, size_t VSize>
-struct get_val;
-
-template <class VType, class BaseType>
-struct get_val<VType, BaseType, 1>
+__host__ __device__ constexpr VType get_val()
 {
-  __host__ __device__ static constexpr VType create()
+  BaseType vals[4]{};
+
+  if constexpr (cuda::std::is_integral_v<VType>)
   {
-    return VType{static_cast<BaseType>(42)};
+    vals[0] = static_cast<BaseType>(42);
+    vals[1] = static_cast<BaseType>(1337);
+    vals[2] = static_cast<BaseType>(-1);
+    vals[3] = static_cast<BaseType>(0);
   }
-};
-template <class VType, class BaseType>
-struct get_val<VType, BaseType, 2>
-{
-  __host__ __device__ static constexpr VType create()
+  else
   {
-    return VType{static_cast<BaseType>(42), static_cast<BaseType>(1337)};
+    vals[0] = BaseType{};
+    vals[1] = cuda::std::numeric_limits<BaseType>::min();
+    vals[2] = cuda::std::numeric_limits<BaseType>::max();
+    vals[3] = cuda::std::numeric_limits<BaseType>::lowest();
   }
-};
-template <class VType, class BaseType>
-struct get_val<VType, BaseType, 3>
-{
-  __host__ __device__ static constexpr VType create()
+
+  if constexpr (VSize == 1)
   {
-    return VType{static_cast<BaseType>(42), static_cast<BaseType>(1337), static_cast<BaseType>(-1)};
+    return VType{vals[0]};
   }
-};
-template <class VType, class BaseType>
-struct get_val<VType, BaseType, 4>
-{
-  __host__ __device__ static constexpr VType create()
+  else if constexpr (VSize == 2)
   {
-    return VType{
-      static_cast<BaseType>(42), static_cast<BaseType>(1337), static_cast<BaseType>(-1), static_cast<BaseType>(0)};
+    return VType{vals[0], vals[1]};
   }
-};
-
-template <class BaseType, size_t Size>
-struct get_expected;
-
-template <class BaseType>
-struct get_expected<BaseType, 0>
-{
-  __host__ __device__ static constexpr BaseType create()
+  else if constexpr (VSize == 3)
   {
-    return BaseType{static_cast<BaseType>(42)};
+    return VType{vals[0], vals[1], vals[2]};
   }
-};
-template <class BaseType>
-struct get_expected<BaseType, 1>
-{
-  __host__ __device__ static constexpr BaseType create()
+  else
   {
-    return BaseType{static_cast<BaseType>(1337)};
-  }
-};
-template <class BaseType>
-struct get_expected<BaseType, 2>
-{
-  __host__ __device__ static constexpr BaseType create()
-  {
-    return BaseType{static_cast<BaseType>(-1)};
-  }
-};
-template <class BaseType>
-struct get_expected<BaseType, 3>
-{
-  __host__ __device__ static constexpr BaseType create()
-  {
-    return BaseType{static_cast<BaseType>(0)};
-  }
-};
-
-template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index < VSize), int> = 0>
-__host__ __device__ constexpr void test()
-{
-  { // & overload
-    VType val  = get_val<VType, BaseType, VSize>::create();
-    auto&& ret = cuda::std::get<Index>(val);
-    //    static_assert(cuda::std::is_same<decltype(ret), BaseType&>::value, "");
-
-    const BaseType expected = get_expected<BaseType, Index>::create();
-    assert(ret == expected);
-  }
-
-  { // const& overload
-    const VType val = get_val<const VType, BaseType, VSize>::create();
-    auto&& ret      = cuda::std::get<Index>(val);
-    // static_assert(cuda::std::is_same<decltype(ret), const BaseType&>::value,"");
-
-    const BaseType expected = get_expected<BaseType, Index>::create();
-    assert(ret == expected);
-  }
-
-  { // && overload
-    VType val  = get_val<VType, BaseType, VSize>::create();
-    auto&& ret = cuda::std::get<Index>(cuda::std::move(val));
-    //    static_assert(cuda::std::is_same<decltype(ret), BaseType&&>::value, "");
-
-    const BaseType expected = get_expected<BaseType, Index>::create();
-    assert(ret == expected);
-  }
-
-  { // const && overload
-    const VType val = get_val<const VType, BaseType, VSize>::create();
-    auto&& ret      = cuda::std::get<Index>(cuda::std::move(val));
-    //    static_assert(cuda::std::is_same<decltype(ret), const BaseType&&>::value,"");
-
-    const BaseType expected = get_expected<const BaseType, Index>::create();
-    assert(ret == expected);
+    return VType{vals[0], vals[1], vals[2], vals[3]};
   }
 }
 
-template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index >= VSize), int> = 0>
+template <class VType, class BaseType, size_t VSize, size_t Index>
+__host__ __device__ constexpr BaseType get_expected()
+{
+  const auto val = get_val<VType, BaseType, VSize>();
+  if constexpr (Index == 0)
+  {
+    return val.x;
+  }
+  else if constexpr (Index == 1)
+  {
+    return val.y;
+  }
+  else if constexpr (Index == 2)
+  {
+    return val.z;
+  }
+  else
+  {
+    return val.w;
+  }
+}
+
+template <class T>
+__host__ __device__ constexpr bool test_eq(const T& lhs, const T& rhs)
+{
+  if constexpr (cuda::std::is_same_v<T, __half> || cuda::std::is_same_v<T, __nv_bfloat16>)
+  {
+    return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
+  }
+  else
+  {
+    return lhs == rhs;
+  }
+}
+
+template <class VType, class BaseType, size_t VSize, size_t Index>
 __host__ __device__ constexpr void test()
-{}
+{
+  { // & overload
+    VType val          = get_val<VType, BaseType, VSize>();
+    decltype(auto) ret = cuda::std::get<Index>(val);
+    static_assert(cuda::std::is_same_v<decltype(ret), BaseType&>);
+    assert(test_eq(ret, get_expected<VType, BaseType, VSize, Index>()));
+  }
+
+  { // const& overload
+    const VType val    = get_val<VType, BaseType, VSize>();
+    decltype(auto) ret = cuda::std::get<Index>(val);
+    static_assert(cuda::std::is_same_v<decltype(ret), const BaseType&>);
+    assert(test_eq(ret, get_expected<VType, BaseType, VSize, Index>()));
+  }
+
+  { // && overload
+    VType val          = get_val<VType, BaseType, VSize>();
+    decltype(auto) ret = cuda::std::get<Index>(cuda::std::move(val));
+    static_assert(cuda::std::is_same_v<decltype(ret), BaseType&&>);
+    assert(test_eq(ret, get_expected<VType, BaseType, VSize, Index>()));
+  }
+
+  { // const && overload
+    const VType val    = get_val<VType, BaseType, VSize>();
+    decltype(auto) ret = cuda::std::get<Index>(cuda::std::move(val));
+    static_assert(cuda::std::is_same_v<decltype(ret), const BaseType&&>);
+    assert(test_eq(ret, get_expected<VType, BaseType, VSize, Index>()));
+  }
+}
 
 template <class VType, class BaseType, size_t VSize>
 __host__ __device__ constexpr void test()
 {
-  test<VType, BaseType, VSize, 0>();
-  test<VType, BaseType, VSize, 1>();
-  test<VType, BaseType, VSize, 2>();
-  test<VType, BaseType, VSize, 3>();
+  if constexpr (VSize > 0)
+  {
+    test<VType, BaseType, VSize, 0>();
+  }
+  if constexpr (VSize > 1)
+  {
+    test<VType, BaseType, VSize, 1>();
+  }
+  if constexpr (VSize > 2)
+  {
+    test<VType, BaseType, VSize, 2>();
+  }
+  if constexpr (VSize > 3)
+  {
+    test<VType, BaseType, VSize, 3>();
+  }
 }
 
 #define EXPAND_VECTOR_TYPE(Type, BaseType) \
@@ -144,7 +148,7 @@ __host__ __device__ constexpr void test()
   test<Type##3, BaseType, 3>();            \
   test<Type##4, BaseType, 4>();
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ constexpr bool test_constexpr()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
@@ -159,30 +163,43 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(float, float);
   EXPAND_VECTOR_TYPE(double, double);
 
-  return true;
-}
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test<long4_16a, long, 4>();
+  test<long4_32a, long, 4>();
+  test<ulong4_16a, unsigned long, 4>();
+  test<ulong4_32a, unsigned long, 4>();
+  test<longlong4_16a, long long, 4>();
+  test<longlong4_32a, long long, 4>();
+  test<ulonglong4_16a, unsigned long long, 4>();
+  test<ulonglong4_32a, unsigned long long, 4>();
+  test<double4_16a, double, 4>();
+  test<double4_32a, double, 4>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-__host__ __device__
-#if !TEST_COMPILER(MSVC)
-  constexpr
-#endif // !TEST_COMPILER(MSVC)
-  bool
-  test_dim3()
-{
   test<dim3, unsigned int, 3, 0>();
   test<dim3, unsigned int, 3, 1>();
   test<dim3, unsigned int, 3, 2>();
+
+  return true;
+}
+
+__host__ __device__ bool test()
+{
+  test_constexpr();
+
+#if _CCCL_HAS_NVFP16()
+  test<__half2, __half, 2>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat162, __nv_bfloat16, 2>();
+#endif // _CCCL_HAS_NVBF16()
+
   return true;
 }
 
 int main(int arg, char** argv)
 {
   test();
-  test_dim3();
-  static_assert(test(), "");
-#if !TEST_COMPILER(MSVC)
-  static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER(MSVC)
-
+  static_assert(test_constexpr());
   return 0;
 }

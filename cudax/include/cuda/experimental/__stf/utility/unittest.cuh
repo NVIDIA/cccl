@@ -184,7 +184,7 @@ struct expecter
      */
 #  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
     template <typename U>                                                                  \
-    auto operator op(const U& rhs)&&                                                       \
+    auto operator op(const U& rhs) &&                                                      \
     {                                                                                      \
       using T_noref = std::remove_reference_t<T>;                                          \
       using U_noref = std::remove_reference_t<U>;                                          \
@@ -221,7 +221,7 @@ struct expecter
      */
 #  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                \
     template <typename U>                                                      \
-    auto operator op(U&& rhs)&&                                                \
+    auto operator op(U&& rhs) &&                                               \
     {                                                                          \
       using Result = decltype(value op ::std::forward<U>(rhs));                \
       return term<Result>(::std::forward<T>(value) op ::std::forward<U>(rhs)); \
@@ -655,11 +655,11 @@ UNITTEST("all_convertible")
 UNITTEST("shuffled arguments")
 {
   using namespace cuda::experimental::stf;
-  auto x0 = only_convertible_or(42);
+  auto x0 = reserved::only_convertible_or(42);
   EXPECT(x0 == 42);
-  auto x1 = only_convertible_or(42, 23);
+  auto x1 = reserved::only_convertible_or(42, 23);
   EXPECT(x1 == 23);
-  auto x2 = only_convertible_or(42, "23", ::std::tuple{1});
+  auto x2 = reserved::only_convertible_or(42, "23", ::std::tuple{1});
   EXPECT(x2 == 42);
   // Note that a needs to be iniliazed because shuffled_args_check takes a const ref
   int a = 0;

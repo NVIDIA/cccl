@@ -368,17 +368,17 @@ struct convertible_from_T
       : val_(val)
   {}
 
-  _CCCL_HOST_DEVICE friend bool operator==(const convertible_from_T& a, const T& b)
+  __host__ __device__ friend bool operator==(const convertible_from_T& a, const T& b)
   {
     return a.val_ == b;
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const T& a, const convertible_from_T& b)
+  __host__ __device__ friend bool operator==(const T& a, const convertible_from_T& b)
   {
     return a == b.val_;
   }
 
-  _CCCL_HOST_DEVICE friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
+  __host__ __device__ friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
   {
     return os << value.val_;
   }
@@ -417,13 +417,9 @@ try
   using type     = std::int64_t;
   using offset_t = typename c2h::get<0, TestType>;
 
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
+  const offset_t num_items     = GENERATE_COPY(
     values(
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));

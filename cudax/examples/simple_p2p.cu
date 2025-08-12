@@ -30,11 +30,11 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
+#include <cuda/devices>
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
-#include <cuda/experimental/device.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -61,9 +61,9 @@ void print_peer_accessibility()
   // Check possibility for peer access
   printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
 
-  for (auto& dev_i : cudax::devices)
+  for (auto& dev_i : cuda::devices)
   {
-    for (auto& dev_j : cudax::devices)
+    for (auto& dev_j : cuda::devices)
     {
       if (dev_i != dev_j)
       {
@@ -112,8 +112,8 @@ template <typename BufferType>
 void test_cross_device_access_from_kernel(
   cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
-  cudax::device_ref dev0 = dev0_stream.device();
-  cudax::device_ref dev1 = dev1_stream.device();
+  cuda::device_ref dev0 = dev0_stream.device();
+  cuda::device_ref dev1 = dev1_stream.device();
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and copy to GPU%d...\n", dev0.get());
@@ -184,9 +184,9 @@ try
 
   // Number of GPUs
   printf("Checking for multiple GPUs...\n");
-  printf("CUDA-capable device count: %zu\n", cudax::devices.size());
+  printf("CUDA-capable device count: %zu\n", cuda::devices.size());
 
-  if (cudax::devices.size() < 2)
+  if (cuda::devices.size() < 2)
   {
     printf("Two or more GPUs with Peer-to-Peer access capability are required for %s.\n", argv[0]);
     printf("Waiving test.\n");
@@ -197,8 +197,8 @@ try
   print_peer_accessibility();
 
   // But use a shorthand to find all peers of a device
-  std::vector<cudax::device_ref> peers;
-  for (auto& dev : cudax::devices)
+  std::vector<cuda::device_ref> peers;
+  for (auto& dev : cuda::devices)
   {
     peers = dev.peer_devices();
     if (peers.size() != 0)

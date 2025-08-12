@@ -41,6 +41,7 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
@@ -161,8 +162,8 @@ struct ReduceAgent
     //
     using tuning = Tuning<Arch, T>;
 
-    using Vector      = typename cub::CubVector<T, PtxPlan::VECTOR_LOAD_LENGTH>;
-    using LoadIt      = typename core::detail::LoadIterator<PtxPlan, InputIt>::type;
+    using Vector      = cub::CubVector<T, PtxPlan::VECTOR_LOAD_LENGTH>;
+    using LoadIt      = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, InputIt>;
     using BlockReduce = cub::BlockReduce<T, PtxPlan::BLOCK_THREADS, PtxPlan::BLOCK_ALGORITHM, 1, 1>;
 
     using VectorLoadIt = cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, Vector, Size>;
@@ -237,7 +238,7 @@ struct ReduceAgent
     THRUST_DEVICE_FUNCTION impl(TempStorage& storage_, InputIt input_it_, ReductionOp reduction_op_)
         : storage(storage_)
         , input_it(input_it_)
-        , load_it(core::detail::make_load_iterator(ptx_plan(), input_it))
+        , load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(input_it))
         , reduction_op(reduction_op_)
     {}
 

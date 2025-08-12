@@ -62,7 +62,9 @@
 
 //! Use the different standard library implementations to implement host side asserts
 //! _CCCL_ASSERT_IMPL_HOST should never be used directly
-#if _CCCL_COMPILER(NVRTC) // There is no host standard library in nvrtc
+#if _CCCL_OS(QNX)
+#  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
+#elif _CCCL_COMPILER(NVRTC) // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
 #elif _CCCL_HAS_INCLUDE(<yvals.h>) && _CCCL_COMPILER(MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
@@ -86,7 +88,9 @@ _CCCL_HOST_DEVICE
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
 //! _CCCL_ASSERT_IMPL_DEVICE should never be used directly
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_OS(QNX)
+#  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) ((void) 0)
+#elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
     _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
     ? (void) 0 : __assertfail(message, __FILE__, __LINE__, __func__, sizeof(char))

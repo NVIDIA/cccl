@@ -27,34 +27,34 @@ struct Empty
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     const T t(3);
     assert(cuda::std::get<0>(t) == 3);
   }
   // cuda::std::string not supported
   /*
   {
-      typedef cuda::std::tuple<cuda::std::string, int> T;
+      using T = cuda::std::tuple<cuda::std::string, int>;
       const T t("high", 5);
       assert(cuda::std::get<0>(t) == "high");
       assert(cuda::std::get<1>(t) == 5);
   }
   */
   {
-    typedef cuda::std::tuple<double, int> T;
+    using T = cuda::std::tuple<double, int>;
     constexpr T t(2.718, 5);
     static_assert(cuda::std::get<0>(t) == 2.718, "");
     static_assert(cuda::std::get<1>(t) == 5, "");
   }
   {
-    typedef cuda::std::tuple<Empty> T;
+    using T = cuda::std::tuple<Empty>;
     constexpr T t{Empty()};
     [[maybe_unused]] constexpr Empty e = cuda::std::get<0>(t);
   }
   // cuda::std::string not supported
   /*
   {
-      typedef cuda::std::tuple<double&, cuda::std::string, int> T;
+      using T = cuda::std::tuple<double&, cuda::std::string, int>;
       double d = 1.5;
       const T t(d, "high", 5);
       assert(cuda::std::get<0>(t) == 1.5);
@@ -68,7 +68,7 @@ int main(int, char**)
   }
   */
   {
-    typedef cuda::std::tuple<double&, int> T;
+    using T  = cuda::std::tuple<double&, int>;
     double d = 1.5;
     const T t(d, 5);
     assert(cuda::std::get<0>(t) == 1.5);

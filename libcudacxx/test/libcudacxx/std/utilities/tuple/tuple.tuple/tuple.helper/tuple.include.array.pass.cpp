@@ -13,7 +13,7 @@
 // template <size_t I, class... Types>
 // struct tuple_element<I, tuple<Types...> >
 // {
-//     typedef Ti type;
+//     using type = Ti;
 // };
 //
 //  LWG #2212 says that tuple_size and tuple_element must be

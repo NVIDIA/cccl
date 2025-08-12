@@ -158,7 +158,7 @@ private:
  *
  * When launch configuration contains this option, that configuration can be then
  * passed to dynamic_smem_span or dynamic_smem_ref function to get a span/reference
- * to that shared memory allocation that is approprietly typed.
+ * to that shared memory allocation that is appropriately typed.
  * It is also possible to obtain that memory through the original
  * extern __shared__ variable[] declaration.
  *
@@ -546,7 +546,8 @@ template <typename... Prev>
   }
   else
   {
-    return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous));
+    constexpr auto fn = &make_hierarchy<void, const Prev&...>;
+    return kernel_config(::cuda::std::apply(fn, previous));
   }
 }
 
@@ -564,7 +565,8 @@ __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& ar
     }
     else
     {
-      return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous), arg, rest...);
+      constexpr auto fn = make_hierarchy<void, const Prev&...>;
+      return kernel_config(::cuda::std::apply(fn, previous), arg, rest...);
     }
   }
   else

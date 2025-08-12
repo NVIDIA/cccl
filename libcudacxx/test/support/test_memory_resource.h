@@ -111,7 +111,7 @@ protected:
   virtual void do_deallocate(void* p, std::size_t s, std::size_t a)
   {
     C.countDealloc(p, s, a);
-    P.deallocate(p, s, a);
+    P.deallocate_sync(p, s, a);
   }
 
   virtual bool do_is_equal(memory_resource const& other) const noexcept
@@ -143,7 +143,7 @@ struct NullProvider
   {
     return nullptr;
   }
-  void deallocate(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
   void reset() {}
 
 private:
@@ -157,7 +157,7 @@ struct NewDeleteProvider
   {
     return ::operator new(s);
   }
-  void deallocate(void* p, size_t, size_t) noexcept
+  void deallocate_sync(void* p, size_t, size_t) noexcept
   {
     ::operator delete(p);
   }
@@ -191,7 +191,7 @@ struct BufferProvider
     return ret;
   }
 
-  void deallocate(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
 
   void reset()
   {

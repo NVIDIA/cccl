@@ -40,6 +40,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // exp
 
+#if _CCCL_CHECK_BUILTIN(builtin_exp) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_EXPF(...) __builtin_expf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_EXP(...)  __builtin_exp(__VA_ARGS__)
+#  define _CCCL_BUILTIN_EXPL(...) __builtin_expl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_exp)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "expf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_EXPF
+#  undef _CCCL_BUILTIN_EXP
+#  undef _CCCL_BUILTIN_EXPL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 [[nodiscard]] _CCCL_API inline float exp(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_EXPF)
@@ -121,13 +134,26 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double exp(_Integer __x) noexcept
 {
   return _CUDA_VSTD::exp((double) __x);
 }
 
 // frexp
+
+#if _CCCL_CHECK_BUILTIN(builtin_frexp) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FREXPF(...) __builtin_frexpf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FREXP(...)  __builtin_frexp(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FREXPL(...) __builtin_frexpl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_frexp)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "frexp"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_FREXPF
+#  undef _CCCL_BUILTIN_FREXP
+#  undef _CCCL_BUILTIN_FREXPL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float frexp(float __x, int* __e) noexcept
 {
@@ -190,13 +216,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double frexp(_Integer __x, int* __e) noexcept
 {
   return _CUDA_VSTD::frexp((double) __x, __e);
 }
 
 // ldexp
+
+#if _CCCL_CHECK_BUILTIN(builtin_ldexp) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LDEXPF(...) __builtin_ldexpf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LDEXP(...)  __builtin_ldexp(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LDEXPL(...) __builtin_ldexpl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ldexp)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ldexp"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LDEXPF
+#  undef _CCCL_BUILTIN_LDEXP
+#  undef _CCCL_BUILTIN_LDEXPL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float ldexp(float __x, int __e) noexcept
 {
@@ -259,13 +298,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double ldexp(_Integer __x, int __e) noexcept
 {
   return _CUDA_VSTD::ldexp((double) __x, __e);
 }
 
 // exp2
+
+#if _CCCL_CHECK_BUILTIN(builtin_exp2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_EXP2F(...) __builtin_exp2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_EXP2(...)  __builtin_exp2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_EXP2L(...) __builtin_exp2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_exp2)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "exp2"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_EXP2F
+#  undef _CCCL_BUILTIN_EXP2
+#  undef _CCCL_BUILTIN_EXP2L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float exp2(float __x) noexcept
 {
@@ -329,13 +381,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double exp2(_Integer __x) noexcept
 {
   return _CUDA_VSTD::exp2((double) __x);
 }
 
 // expm1
+
+#if _CCCL_CHECK_BUILTIN(builtin_expm1) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_EXPM1F(...) __builtin_expm1f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_EXPM1(...)  __builtin_expm1(__VA_ARGS__)
+#  define _CCCL_BUILTIN_EXPM1L(...) __builtin_expm1l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_expm1)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "expm1"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_EXPM1F
+#  undef _CCCL_BUILTIN_EXPM1
+#  undef _CCCL_BUILTIN_EXPM1L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float expm1(float __x) noexcept
 {
@@ -398,13 +463,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double expm1(_Integer __x) noexcept
 {
   return _CUDA_VSTD::expm1((double) __x);
 }
 
 // scalbln
+
+#if _CCCL_CHECK_BUILTIN(builtin_scalbln) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SCALBLNF(...) __builtin_scalblnf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SCALBLN(...)  __builtin_scalbln(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SCALBLNL(...) __builtin_scalblnl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_scalbln)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "scalblnf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SCALBLNF
+#  undef _CCCL_BUILTIN_SCALBLN
+#  undef _CCCL_BUILTIN_SCALBLNL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float scalbln(float __x, long __y) noexcept
 {
@@ -467,13 +545,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double scalbln(_Integer __x, long __y) noexcept
 {
   return _CUDA_VSTD::scalbln((double) __x, __y);
 }
 
 // scalbn
+
+#if _CCCL_CHECK_BUILTIN(builtin_scalbn) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SCALBNF(...) __builtin_scalbnf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SCALBN(...)  __builtin_scalbn(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SCALBNL(...) __builtin_scalbnl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_scalbn)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "scalbnf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SCALBNF
+#  undef _CCCL_BUILTIN_SCALBN
+#  undef _CCCL_BUILTIN_SCALBNL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float scalbn(float __x, int __y) noexcept
 {
@@ -536,13 +627,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double scalbn(_Integer __x, int __y) noexcept
 {
   return _CUDA_VSTD::scalbn((double) __x, __y);
 }
 
 // pow
+
+#if _CCCL_CHECK_BUILTIN(builtin_pow) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_POWF(...) __builtin_powf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POW(...)  __builtin_pow(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POWL(...) __builtin_powl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_pow)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "pow"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_POWF
+#  undef _CCCL_BUILTIN_POW
+#  undef _CCCL_BUILTIN_POWL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float pow(float __x, float __y) noexcept
 {
@@ -605,11 +709,11 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
+template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> pow(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
   return _CUDA_VSTD::pow((__result_type) __x, (__result_type) __y);
 }
 

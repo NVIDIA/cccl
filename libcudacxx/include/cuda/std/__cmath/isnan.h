@@ -36,10 +36,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_CHECK_BUILTIN(builtin_isnan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isnan)
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isnan_impl(_Tp __x) noexcept
 {
-  static_assert(_CCCL_TRAIT(is_floating_point, _Tp), "Only standard floating-point types are supported");
+  static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::isnan(__x);
@@ -163,7 +167,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool isnan(_Tp) noexcept
 {
   return false;

@@ -128,13 +128,13 @@ template <class _InputIterator, class _OutputIterator, class _BinaryPredicate>
 _CCCL_API constexpr _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryPredicate __pred)
 {
-  using __algo_tag = conditional_t<
-    _CCCL_TRAIT(is_base_of, forward_iterator_tag, __iterator_category_type<_InputIterator>),
-    __unique_copy_tags::__reread_from_input_tag,
-    conditional_t<_CCCL_TRAIT(is_base_of, forward_iterator_tag, __iterator_category_type<_OutputIterator>)
-                    && _CCCL_TRAIT(is_same, __iter_value_type<_InputIterator>, __iter_value_type<_OutputIterator>),
-                  __unique_copy_tags::__reread_from_output_tag,
-                  __unique_copy_tags::__read_from_tmp_value_tag>>;
+  using __algo_tag =
+    conditional_t<is_base_of_v<forward_iterator_tag, __iterator_category_type<_InputIterator>>,
+                  __unique_copy_tags::__reread_from_input_tag,
+                  conditional_t<is_base_of_v<forward_iterator_tag, __iterator_category_type<_OutputIterator>>
+                                  && is_same_v<__iter_value_type<_InputIterator>, __iter_value_type<_OutputIterator>>,
+                                __unique_copy_tags::__reread_from_output_tag,
+                                __unique_copy_tags::__read_from_tmp_value_tag>>;
   return _CUDA_VSTD::__unique_copy<_ClassicAlgPolicy>(
            _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _CUDA_VSTD::move(__result), __pred, __algo_tag())
     .second;

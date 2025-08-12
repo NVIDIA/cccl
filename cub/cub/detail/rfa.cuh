@@ -279,7 +279,7 @@ private:
     else
     {
       (void) ::cuda::std::frexpf(x, &exp);
-      return (::cuda::std::min)((max_exp - exp) / bin_width, +max_index);
+      return (::cuda::std::min) ((max_exp - exp) / bin_width, +max_index);
     }
   }
 

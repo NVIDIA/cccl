@@ -58,7 +58,7 @@ concept copy_constructible =
 
 template <class _Tp, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(__constructible_from_,
-                       requires()(requires(destructible<_Tp>), requires(_CCCL_TRAIT(is_constructible, _Tp, _Args...))));
+                       requires()(requires(destructible<_Tp>), requires(is_constructible_v<_Tp, _Args...>)));
 
 template <class _Tp, class... _Args>
 _CCCL_CONCEPT constructible_from = _CCCL_FRAGMENT(__constructible_from_, _Tp, _Args...);

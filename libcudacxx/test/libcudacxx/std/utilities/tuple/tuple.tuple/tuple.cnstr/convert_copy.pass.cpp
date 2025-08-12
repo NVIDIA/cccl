@@ -91,37 +91,37 @@ struct C
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<long> T0;
-    typedef cuda::std::tuple<long long> T1;
+    using T0 = cuda::std::tuple<long>;
+    using T1 = cuda::std::tuple<long long>;
     T0 t0(2);
     T1 t1 = t0;
     assert(cuda::std::get<0>(t1) == 2);
   }
   {
-    typedef cuda::std::tuple<int> T0;
-    typedef cuda::std::tuple<A> T1;
+    using T0 = cuda::std::tuple<int>;
+    using T1 = cuda::std::tuple<A>;
     constexpr T0 t0(2);
     constexpr T1 t1 = t0;
     static_assert(cuda::std::get<0>(t1) == 2, "");
   }
   {
-    typedef cuda::std::tuple<int> T0;
-    typedef cuda::std::tuple<C> T1;
+    using T0 = cuda::std::tuple<int>;
+    using T1 = cuda::std::tuple<C>;
     constexpr T0 t0(2);
     constexpr T1 t1{t0};
     static_assert(cuda::std::get<0>(t1) == C(2), "");
   }
   {
-    typedef cuda::std::tuple<long, char> T0;
-    typedef cuda::std::tuple<long long, int> T1;
+    using T0 = cuda::std::tuple<long, char>;
+    using T1 = cuda::std::tuple<long long, int>;
     T0 t0(2, 'a');
     T1 t1 = t0;
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1) == int('a'));
   }
   {
-    typedef cuda::std::tuple<long, char, D> T0;
-    typedef cuda::std::tuple<long long, int, B> T1;
+    using T0 = cuda::std::tuple<long, char, D>;
+    using T1 = cuda::std::tuple<long long, int, B>;
     T0 t0(2, 'a', D(3));
     T1 t1 = t0;
     assert(cuda::std::get<0>(t1) == 2);
@@ -130,8 +130,8 @@ int main(int, char**)
   }
   {
     D d(3);
-    typedef cuda::std::tuple<long, char, D&> T0;
-    typedef cuda::std::tuple<long long, int, B&> T1;
+    using T0 = cuda::std::tuple<long, char, D&>;
+    using T1 = cuda::std::tuple<long long, int, B&>;
     T0 t0(2, 'a', d);
     T1 t1 = t0;
     d.id_ = 2;
@@ -140,8 +140,8 @@ int main(int, char**)
     assert(cuda::std::get<2>(t1).id_ == 2);
   }
   {
-    typedef cuda::std::tuple<long, char, int> T0;
-    typedef cuda::std::tuple<long long, int, B> T1;
+    using T0 = cuda::std::tuple<long, char, int>;
+    using T1 = cuda::std::tuple<long long, int, B>;
     T0 t0(2, 'a', 3);
     T1 t1(t0);
     assert(cuda::std::get<0>(t1) == 2);

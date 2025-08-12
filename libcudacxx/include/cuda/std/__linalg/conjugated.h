@@ -63,15 +63,15 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _OtherNestedAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
-                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
+  _CCCL_REQUIRES(is_constructible_v<_NestedAccessor, const _OtherNestedAccessor&> _CCCL_AND
+                   is_convertible_v<_OtherNestedAccessor, _NestedAccessor>)
   _CCCL_API constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
       : __nested_accessor_(__other.nested_accessor())
   {}
 
   _CCCL_TEMPLATE(class _OtherNestedAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor)))
+  _CCCL_REQUIRES(is_constructible_v<_NestedAccessor, const _OtherNestedAccessor&> _CCCL_AND(
+    !is_convertible_v<_OtherNestedAccessor, _NestedAccessor>))
   _CCCL_API explicit constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
       : __nested_accessor_(__other.nested_accessor())
   {}

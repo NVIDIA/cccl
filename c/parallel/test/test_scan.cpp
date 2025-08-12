@@ -39,6 +39,7 @@ auto& get_cache()
   return fixture<scan_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool Disable75SassCheck = false>
 struct scan_build
 {
   CUresult operator()(
@@ -74,7 +75,7 @@ struct scan_build
   static bool should_check_sass(int cc_major)
   {
     // TODO: add a check for NVRTC version; ref nvbug 5243118
-    return cc_major < 9;
+    return (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
   }
 };
 
@@ -95,7 +96,7 @@ struct scan_run
   }
 };
 
-template <typename BuildCache = scan_build_cache_t, typename KeyT = std::string>
+template <bool Disable75SassCheck = false, typename BuildCache = scan_build_cache_t, typename KeyT = std::string>
 void scan(cccl_iterator_t input,
           cccl_iterator_t output,
           uint64_t num_items,
@@ -105,7 +106,7 @@ void scan(cccl_iterator_t input,
           std::optional<BuildCache>& cache,
           const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, scan_build, scan_cleanup, scan_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, scan_build<Disable75SassCheck>, scan_cleanup, scan_run, BuildCache, KeyT>(
     cache, lookup_key, inclusive, input, output, num_items, op, init);
 }
 
@@ -128,6 +129,32 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<Scan_IntegralTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+}
+
+struct Scan_IntegralTypes_WellKnown_Fixture_Tag;
+C2H_TEST("Scan works with integral types with well-known operations", "[scan][well_known]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  cccl_op_t op                = make_well_known_binary_operation();
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Scan_IntegralTypes_WellKnown_Fixture_Tag>();
   const auto& test_key = make_key<T>();
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
@@ -206,7 +233,50 @@ C2H_TEST("Scan works with custom types", "[scan]")
   auto& build_cache    = get_cache<Scan_CustomTypes_Fixture_Tag>();
   const auto& test_key = make_key<pair>();
 
-  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
+  scan<true>(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
+
+  std::vector<pair> expected(num_items, {0, 0});
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value, [](const pair& lhs, const pair& rhs) {
+    return pair{short(lhs.a + rhs.a), lhs.b + rhs.b};
+  });
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<pair>(output_ptr));
+  }
+}
+
+struct Scan_CustomTypes_WellKnown_Fixture_Tag;
+C2H_TEST("Scan works with custom types with well-known operations", "[scan][well_known]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+
+  operation_t op_state = make_operation(
+    "op",
+    "struct pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
+    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
+    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
+    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
+    "}");
+  cccl_op_t op                = op_state;
+  op.type                     = cccl_op_kind_t::CCCL_PLUS;
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<pair> input(num_items);
+  std::vector<pair> output(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input[i] = pair{a[i], b[i]};
+  }
+  pointer_t<pair> input_ptr(input);
+  pointer_t<pair> output_ptr(output);
+  value_t<pair> init{pair{4, 2}};
+
+  auto& build_cache    = get_cache<Scan_CustomTypes_WellKnown_Fixture_Tag>();
+  const auto& test_key = make_key<pair>();
+
+  scan<true>(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
   std::vector<pair> expected(num_items, {0, 0});
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value, [](const pair& lhs, const pair& rhs) {

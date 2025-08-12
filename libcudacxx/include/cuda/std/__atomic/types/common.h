@@ -55,14 +55,13 @@ using __atomic_underlying_remove_cv_t = remove_cv_t<typename _Tp::__underlying_t
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
 template <typename _Tp, typename _Tv>
-_CCCL_HOST_DEVICE enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
-__atomic_assign_volatile(_Tp* __a_value, _Tv const& __val)
+_CCCL_HOST_DEVICE enable_if_t<is_assignable_v<_Tp&, _Tv>> __atomic_assign_volatile(_Tp* __a_value, _Tv const& __val)
 {
   *__a_value = __val;
 }
 
 template <typename _Tp, typename _Tv>
-_CCCL_HOST_DEVICE enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
+_CCCL_HOST_DEVICE enable_if_t<is_assignable_v<_Tp&, _Tv>>
 __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
 {
   volatile char* __to         = reinterpret_cast<volatile char*>(__a_value);

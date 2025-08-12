@@ -54,6 +54,8 @@
 #  define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::device::experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DRIVER _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::__driver { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_CUDA_DRIVER } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Namespaces related to <ranges>
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_RANGES _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::ranges { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
@@ -96,6 +98,7 @@
 #  define _CUDA_VSTD_FS        ::cuda::std::__fs::filesystem::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_STD_EXEC       ::cuda::std::execution::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_EXEC           ::cuda::execution::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_DRIVER         ::cuda::__driver::_LIBCUDACXX_ABI_NAMESPACE
 
 // clang-format on
 
