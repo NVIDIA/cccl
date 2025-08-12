@@ -47,6 +47,95 @@ namespace detail
 {
 namespace segmented_sort
 {
+
+template <typename PolicyT, typename = void>
+struct SegmentedSortPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct SegmentedSortPolicyWrapper<StaticPolicyT,
+                                  _CUDA_VSTD::void_t<typename StaticPolicyT::LargeSegmentPolicy,
+                                                     typename StaticPolicyT::SmallAndMediumSegmentedSortPolicyT>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr auto LargeSegment()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto SmallAndMediumSegmentedSort()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallAndMediumSegmentedSortPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr void CheckLoadModifierIsNotLDG()
+  {
+    static_assert(StaticPolicyT::LargeSegmentPolicy::LOAD_MODIFIER != CacheLoadModifier::LOAD_LDG,
+                  "The memory consistency model does not apply to texture accesses");
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr void CheckLoadAlgorithmIsNotStriped()
+  {
+    static_assert(
+      StaticPolicyT::LargeSegmentPolicy::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED
+        || StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED
+        || StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::SmallPolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED,
+      "Striped load will make this algorithm unstable");
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr void CheckStoreAlgorithmIsNotStriped()
+  {
+    static_assert(
+      StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED
+        || StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::SmallPolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED,
+      "Striped stores will produce unsorted results");
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int PartitioningThreshold()
+  {
+    return StaticPolicyT::PARTITIONING_THRESHOLD;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int LargeSegmentRadixBits()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerSmallBlock()
+  {
+    return StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::SEGMENTS_PER_SMALL_BLOCK;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerMediumBlock()
+  {
+    return StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::SEGMENTS_PER_MEDIUM_BLOCK;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SmallPolicyItemsPerTile()
+  {
+    return StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::SmallPolicyT::ITEMS_PER_TILE;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int MediumPolicyItemsPerTile()
+  {
+    return StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT::ITEMS_PER_TILE;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION SegmentedSortPolicyWrapper<PolicyT> MakeSegmentedSortPolicyWrapper(PolicyT policy)
+{
+  return SegmentedSortPolicyWrapper<PolicyT>{policy};
+}
+
 template <typename KeyT, typename ValueT>
 struct policy_hub
 {
