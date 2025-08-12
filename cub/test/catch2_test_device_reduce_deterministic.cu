@@ -44,7 +44,7 @@
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 
-using float_type_list = c2h::type_list<float>;
+using float_type_list = c2h::type_list<float, double>;
 
 template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
 struct AgentReducePolicy
