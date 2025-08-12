@@ -305,7 +305,8 @@ struct DispatchStreamingReduceByKey
               equality_op,
               reduction_op,
               static_cast<local_offset_t>(current_num_items),
-              streaming_context);
+              streaming_context,
+              cub::detail::vsmem_t{nullptr});
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
