@@ -272,6 +272,7 @@ doxygen_input = [
     "../../thrust/thrust/system/omp/pointer.h",
     "../../thrust/thrust/system/tbb/pointer.h",
     "../../thrust/thrust/type_traits/*.h",
+    "../../thrust/thrust/detail/pointer.h"
 ]
 
 # doxygen allows the creation of custom commands to ease in the documentation process.
