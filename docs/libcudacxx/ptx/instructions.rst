@@ -22,6 +22,7 @@ PTX Instructions
    instructions/cp_async_mbarrier_arrive
    instructions/cp_reduce_async_bulk
    instructions/cp_reduce_async_bulk_tensor
+   instructions/elect_sync
    instructions/exit
    instructions/fence
    instructions/getctarank
