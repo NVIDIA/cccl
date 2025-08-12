@@ -812,7 +812,10 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       BlockLoadT(temp_storage.load_items)
-        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+        .Load((d_in + streaming_context.input_offset()) + tile_offset,
+              items,
+              num_tile_items,
+              *(d_in + streaming_context.input_offset() + tile_offset));
     }
     else
     {
@@ -892,7 +895,10 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       BlockLoadT(temp_storage.load_items)
-        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+        .Load((d_in + streaming_context.input_offset()) + tile_offset,
+              items,
+              num_tile_items,
+              *(d_in + streaming_context.input_offset() + tile_offset));
     }
     else
     {
