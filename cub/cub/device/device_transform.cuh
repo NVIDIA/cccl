@@ -171,6 +171,25 @@ struct DeviceTransform
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! Fills the output sequence by invoking a generator operation for each output element and writing the result to it.
+  //! This is effectively calling Transform with no input sequences.
+  //!
+  //! @param output An iterator to the output sequence where num_items results are written to.
+  //! @param num_items The number of elements to write to the output sequence.
+  //! @param generator A nullary function object. The return type of the call operator must be assignable to the
+  //! dereferenced output iterator.
+  //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Fill(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream = nullptr)
+  {
+    return Transform(
+      ::cuda::std::make_tuple(), ::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Selectively transforms many input sequences into one output sequence, by applying a transformation operation on
   //! corresponding input elements, if a given predicate is true, and writing the result to the corresponding output
   //! element. No guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the
