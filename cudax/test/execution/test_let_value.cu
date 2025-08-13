@@ -304,7 +304,7 @@ C2H_TEST("let_value exposes a parameter that is destructed when the main operati
 C2H_TEST("let_value works when changing threads", "[adaptors][let_value]")
 {
   ex::thread_context worker;
-  std::atomic<bool> called{false};
+  cuda::std::atomic<bool> called{false};
   {
     // lunch some work on the worker thread
     auto sndr =
