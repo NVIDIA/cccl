@@ -107,7 +107,7 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_popcount_impl(_Tp __v) noexcept
 {
-  static_assert(_CCCL_TRAIT(is_same, _Tp, uint32_t) || _CCCL_TRAIT(is_same, _Tp, uint64_t));
+  static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -119,7 +119,7 @@ template <typename _Tp>
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int popcount(_Tp __v) noexcept
 {
   int __count{};

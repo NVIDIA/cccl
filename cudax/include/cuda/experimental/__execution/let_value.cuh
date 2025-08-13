@@ -301,8 +301,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
   template <class _Fn>
-  struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
-                                                  // extended (host/device) lambda
+  struct _CCCL_TYPE_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
+                                                       // extended (host/device) lambda
   {
     template <class _Sndr>
     [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const

@@ -154,7 +154,7 @@ struct policy_hub_all
 template <int Selected, int... ArchList>
 struct check
 {
-  static_assert(::cuda::std::_Or<::cuda::std::bool_constant<Selected == ArchList * CUDA_SM_LIST_SCALE>...>::value, "");
+  static_assert(cuda::std::_Or<cuda::std::bool_constant<Selected == ArchList * CUDA_SM_LIST_SCALE>...>::value, "");
   using type = cudaError_t;
 };
 
@@ -202,7 +202,7 @@ template <int NumPolicies>
 struct check_policy_closure
 {
   int ptx_version;
-  ::cuda::std::array<int, NumPolicies> policies;
+  cuda::std::array<int, NumPolicies> policies;
 
   // quick way to get a comparator for find_if below
   __host__ __device__ bool operator()(int policy_ver) const
@@ -213,7 +213,7 @@ struct check_policy_closure
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION cudaError_t Invoke() const
   {
-#define CHECK_EXPR +ActivePolicy::value == *::cuda::std::find_if(policies.rbegin(), policies.rend(), *this)
+#define CHECK_EXPR +ActivePolicy::value == *cuda::std::find_if(policies.rbegin(), policies.rend(), *this)
 
 #if TEST_LAUNCH == 0
     CAPTURE(ptx_version, policies);
@@ -240,7 +240,7 @@ struct check_policy_closure
 
 template <typename PolicyHub, int NumPolicies>
 CUB_RUNTIME_FUNCTION cudaError_t check_chained_policy_selects_correct_policy(
-  void* d_temp_storage, size_t& temp_storage_bytes, ::cuda::std::array<int, NumPolicies> policies, cudaStream_t = 0)
+  void* d_temp_storage, size_t& temp_storage_bytes, cuda::std::array<int, NumPolicies> policies, cudaStream_t = 0)
 {
   if (d_temp_storage == nullptr)
   {
@@ -285,14 +285,14 @@ C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
 {
   SECTION("policy_hub_some")
   {
-    check_wrapper_some<policy_hub_some, 4>(::cuda::std::array<int, 4>{500, 700, 900, 2000});
+    check_wrapper_some<policy_hub_some, 4>(cuda::std::array<int, 4>{500, 700, 900, 2000});
   }
   SECTION("policy_hub_few")
   {
-    check_wrapper_some<policy_hub_few, 3>(::cuda::std::array<int, 3>{500, 860, 2000});
+    check_wrapper_some<policy_hub_few, 3>(cuda::std::array<int, 3>{500, 860, 2000});
   }
   SECTION("policy_hub_minimal")
   {
-    check_wrapper_some<policy_hub_minimal, 1>(::cuda::std::array<int, 1>{500});
+    check_wrapper_some<policy_hub_minimal, 1>(cuda::std::array<int, 1>{500});
   }
 }

@@ -34,11 +34,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // floating point helper
-_CCCL_API inline __nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noexcept
-{
-  return ::__habs(__x);
-}
-
 _CCCL_API inline __nv_bfloat16 __constexpr_fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   return ::__hmax(__x, __y);

@@ -80,7 +80,6 @@ doxygen_predefined = [
     "_CCCL_SUPPRESS_DEPRECATED_PUSH=",
     "_CCCL_SUPPRESS_DEPRECATED_POP=",
     "_CCCL_TEMPLATE(x)=template<x, ",
-    "_CCCL_TRAIT(x, y)=x<y>::value",
     "_CCCL_TRAILING_REQUIRES(x)=-> x requires ",
     "_CCCL_TYPE_VISIBILITY_DEFAULT=",
     "_CCCL_API=inline",
@@ -273,6 +272,7 @@ doxygen_input = [
     "../../thrust/thrust/system/omp/pointer.h",
     "../../thrust/thrust/system/tbb/pointer.h",
     "../../thrust/thrust/type_traits/*.h",
+    "../../thrust/thrust/detail/pointer.h"
 ]
 
 # doxygen allows the creation of custom commands to ease in the documentation process.

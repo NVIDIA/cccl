@@ -88,7 +88,7 @@ public:
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
-            enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>                           = 0>
+            enable_if_t<is_constructible_v<_Tp, _Up>, int>                                      = 0>
   _CCCL_API explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
@@ -412,8 +412,8 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw  = _CUDA_VSTD::__constexpr_logb(
-    _CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::__constexpr_fabs(__c), _CUDA_VSTD::__constexpr_fabs(__d)));
+  _Tp __logbw =
+    _CUDA_VSTD::__constexpr_logb(_CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::fabs(__c), _CUDA_VSTD::fabs(__d)));
   if (_CUDA_VSTD::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
@@ -606,7 +606,7 @@ template <class _Tp>
 
 // 26.3.7 values:
 
-template <class _Tp, bool = _CCCL_TRAIT(is_integral, _Tp), bool = _CCCL_TRAIT(is_floating_point, _Tp)>
+template <class _Tp, bool = is_integral_v<_Tp>, bool = is_floating_point_v<_Tp>>
 struct __cccl_complex_overload_traits
 {};
 

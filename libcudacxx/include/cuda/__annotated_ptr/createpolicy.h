@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -176,7 +177,7 @@ template <typename T = void>
 [[nodiscard]] _CCCL_CONST _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __createpolicy_range(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_size, uint32_t __total_size)
 {
-  _CCCL_ASSERT(::__isGlobal(__ptr), "ptr must be global");
+  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global), "ptr must be global");
   _CCCL_ASSERT(__primary_size > 0, "primary_size  must be greater than zero");
   _CCCL_ASSERT(__primary_size <= __total_size, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,

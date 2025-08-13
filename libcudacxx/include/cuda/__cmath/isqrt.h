@@ -38,10 +38,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @return The square root of \p __v rounded down
 //! @warning If \p __v is negative, the behavior is undefined
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp isqrt(_Tp __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
+  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__v >= _Tp{0}, "cuda::isqrt requires non-negative input");
   }

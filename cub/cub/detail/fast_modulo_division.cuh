@@ -108,11 +108,11 @@ multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
   static_assert(supported_integral<R>::value, "unsupported type");
-  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, T))
+  if constexpr (::cuda::std::is_signed_v<T>)
   {
     _CCCL_ASSERT(value >= 0, "value must be non-negative");
   }
-  if constexpr (_CCCL_TRAIT(::cuda::std::is_signed, R))
+  if constexpr (::cuda::std::is_signed_v<R>)
   {
     _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
   }
