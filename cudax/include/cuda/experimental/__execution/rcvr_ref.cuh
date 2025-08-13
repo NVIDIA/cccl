@@ -115,7 +115,7 @@ template <class _Env = void, class _Rcvr>
   {
     return __rcvr_ref<_Rcvr, _Env>{__rcvr};
   }
-  else if constexpr (__nothrow_constructible<_Rcvr, const _Rcvr&> && _CUDA_VSTD::is_copy_constructible_v<_Rcvr>)
+  else if constexpr (__nothrow_constructible<_Rcvr, const _Rcvr&>)
   {
     return const_cast<const _Rcvr&>(__rcvr);
   }
