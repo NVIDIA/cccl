@@ -95,12 +95,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       return __state_.__stop_token_;
     }
 
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>) -> __query_result_t<env_of_t<__rcvr_t>, _Query>
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<__rcvr_t>, _Query, _Args...>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Query{});
+      return execution::get_env(__state_.__rcvr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
   };
 
@@ -487,18 +489,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    if constexpr (sizeof...(_Sndrs) == 0)
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
     {
-      return prop{get_domain, default_domain{}};
+      if constexpr (sizeof...(_Sndrs) == 0)
+      {
+        return default_domain{};
+      }
+      else
+      {
+        return _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>{};
+      }
     }
-    else
+
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, const _Env&...) noexcept
     {
-      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
-      return prop{get_domain, __dom_t{}};
+      return (execution::min) (execution::get_completion_behavior<_Sndrs, _Env...>()...);
     }
-    _CCCL_UNREACHABLE();
+  };
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  {
+    return {};
   }
 };
 

@@ -85,6 +85,14 @@ private:
     }
   };
 
+  struct __attrs_t
+  {
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    {
+      return completion_behavior::inline_completion;
+    }
+  };
+
 public:
   template <class _Query>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -100,8 +108,6 @@ template <class _Query>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Self, class _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -134,6 +140,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
+
+  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  {
+    return __attrs_t{};
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
+  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 };
 
 template <class _Query>

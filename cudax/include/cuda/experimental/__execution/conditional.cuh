@@ -112,8 +112,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 
     template <class... _As>
     using __opstate_list_t = _CUDA_VSTD::__type_list<
-      connect_result_t<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
-      connect_result_t<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
+      connect_result_t<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
+      connect_result_t<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
 
     using __next_ops_variant_t _CCCL_NODEBUG_ALIAS =
       __value_types<_Completions, __opstate_list_t, __type_concat_into_quote<__variant>::__call>;
@@ -138,13 +138,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
         if (static_cast<_Pred&&>(__state_->__params_.pred)(__as...))
         {
           auto& __op = __state_->__ops_.__emplace_from(
-            connect, static_cast<_Then&&>(__state_->__params_.on_true)(__just), __ref_rcvr(__state_->__rcvr_));
+            connect, static_cast<_Then&&>(__state_->__params_.on_true)(__just), __rcvr_ref(__state_->__rcvr_));
           execution::start(__op);
         }
         else
         {
           auto& __op = __state_->__ops_.__emplace_from(
-            connect, static_cast<_Else&&>(__state_->__params_.on_false)(__just), __ref_rcvr(__state_->__rcvr_));
+            connect, static_cast<_Else&&>(__state_->__params_.on_false)(__just), __rcvr_ref(__state_->__rcvr_));
           execution::start(__op);
         }
       }

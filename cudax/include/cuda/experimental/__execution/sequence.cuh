@@ -51,11 +51,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
   {
     _CCCL_API constexpr explicit __state_t(_Rcvr&& __rcvr, _Sndr2&& __sndr2)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
-        , __opstate2_(execution::connect(static_cast<_Sndr2&&>(__sndr2), __ref_rcvr(__rcvr_)))
+        , __opstate2_(execution::connect(static_cast<_Sndr2&&>(__sndr2), __rcvr_ref(__rcvr_)))
     {}
 
     _Rcvr __rcvr_;
-    connect_result_t<_Sndr2, __rcvr_ref_t<_Rcvr>> __opstate2_;
+    connect_result_t<_Sndr2, __rcvr_ref<_Rcvr>> __opstate2_;
   };
 
   template <class _Rcvr, class _Sndr2>
@@ -151,9 +151,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr2>>
+  struct __attrs_t
   {
-    return __fwd_env(execution::get_env(__sndr2_));
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, const _Env&...) noexcept
+    {
+      return (execution::min) (execution::get_completion_behavior<_Sndr1, _Env...>(),
+                               execution::get_completion_behavior<_Sndr2, _Env...>());
+    }
+
+    // The following overload will not be considered when _Query is get_domain_override_t
+    // because get_domain_override_t is not a forwarding query.
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_Query, get_completion_behavior_t>)
+                     _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr2>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr2>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<_Sndr2>, _Query, _Args...>
+    {
+      return execution::get_env(__self_->__sndr2_).query(_Query{}, static_cast<_Args&&>(__args)...);
+    }
+
+    __sndr_t const* __self_;
+  };
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  {
+    return {this};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
