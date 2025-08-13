@@ -101,6 +101,7 @@ jobs:
             --cuda 12.9 \
             --host gcc13 \
             --cuda-ext \
+            --env "devcontainer_utils_debug=sccache" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_ENV=$GITHUB_ENV" \

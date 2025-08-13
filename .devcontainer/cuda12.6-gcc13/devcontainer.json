@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.10-cpp-gcc14-cuda12.6",
+  "image": "rapidsai/devcontainers:25.10-cpp-gcc13-cuda12.6",
   "hostRequirements": {
     "gpu": "optional"
   },
@@ -39,11 +39,11 @@
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.6-gcc14",
+    "DEVCONTAINER_NAME": "cuda12.6-gcc13",
     "CCCL_CUDA_VERSION": "12.6",
     "CCCL_HOST_COMPILER": "gcc",
-    "CCCL_HOST_COMPILER_VERSION": "14",
-    "CCCL_BUILD_INFIX": "cuda12.6-gcc14",
+    "CCCL_HOST_COMPILER_VERSION": "13",
+    "CCCL_BUILD_INFIX": "cuda12.6-gcc13",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -77,5 +77,5 @@
       }
     }
   },
-  "name": "cuda12.6-gcc14"
+  "name": "cuda12.6-gcc13"
 }
