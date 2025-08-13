@@ -197,7 +197,9 @@ class Configuration(object):
 
     def get_all_major_compute_capabilities(self):
         if self.cxx.type != "nvcc":
-            self.lit_config.fatal("get_all_major_compute_capabilities is only supported for nvcc compiler type")
+            self.lit_config.fatal(
+                "get_all_major_compute_capabilities is only supported for nvcc compiler type"
+            )
             return ""
 
         cmd = (
@@ -215,7 +217,9 @@ class Configuration(object):
         archs = result.stdout.strip().splitlines()
 
         if not archs:
-            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
+            self.lit_config.fatal(
+                "Failed to retrieve compute capabilities or no capabilities found."
+            )
             return ""
 
         # Build the same list used by --arch=all-major:
@@ -232,7 +236,9 @@ class Configuration(object):
 
     def get_all_compute_capabilities(self):
         if self.cxx.type != "nvcc":
-            self.lit_config.fatal("get_all_compute_capabilities is only supported for nvcc compiler type")
+            self.lit_config.fatal(
+                "get_all_compute_capabilities is only supported for nvcc compiler type"
+            )
             return ""
 
         cmd = (
@@ -250,7 +256,9 @@ class Configuration(object):
         archs = result.stdout.strip().splitlines()
 
         if not archs:
-            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
+            self.lit_config.fatal(
+                "Failed to retrieve compute capabilities or no capabilities found."
+            )
             return ""
 
         archs = sorted(set([int(arch) for arch in archs]))
