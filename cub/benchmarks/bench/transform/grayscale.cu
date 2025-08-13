@@ -45,9 +45,9 @@ static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     thrust::make_zip_iterator(r_data.begin(), g_data.begin(), b_data.begin()),
     thrust::make_zip_iterator(r_data.end(), g_data.end(), b_data.end()),
     input.begin(),
-    [] __device__(const thrust::tuple<T, T, T>& rgb_tuple) {
-      return pixel_t{thrust::get<0>(rgb_tuple), thrust::get<1>(rgb_tuple), thrust::get<2>(rgb_tuple)};
-    });
+    thrust::make_zip_function([] __device__(T r, T g, T b) {
+      return pixel_t{r, g, b};
+    }));
 
   thrust::device_vector<T> output(n, thrust::no_init);
 
