@@ -80,9 +80,10 @@ template <class _Tp>
   // overflow bound = sqrt(MAX_FLOAT / 2)
   // underflow bound similar, but tweaked to allow for normalizing denormal calculation.
   constexpr __uint_t __overflow_bound_exp =
-    __uint_t(((__max_exponent - 1) >> 1) + __exp_bias) << __uint_t(__mant_nbits);
+  constexpr __uint_t __overflow_bound_exp =
+    static_cast<__uint_t>((static_cast<__uint_t>(__max_exponent - 1) >> 1) + __exp_bias) << __mant_nbits;
   constexpr __uint_t __underflow_bound_exp =
-    __uint_t(((-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __uint_t(__mant_nbits);
+    static_cast<__uint_t>((static_cast<__uint_t>(-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __mant_nbits;
 
   _Tp __overflow_bound  = _CUDA_VSTD::__fp_from_storage<_Tp>(__overflow_bound_exp);
   _Tp __underflow_bound = _CUDA_VSTD::__fp_from_storage<_Tp>(__underflow_bound_exp);
