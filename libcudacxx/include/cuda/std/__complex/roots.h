@@ -92,8 +92,8 @@ template <class _Tp>
   constexpr __uint_t __underflow_bound_exp =
     __uint_t(((-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __uint_t(__mant_nbits);
 
-  _Tp __overflow_bound  = _CUDA_VSTD::bit_cast<_Tp>(__overflow_bound_exp);
-  _Tp __underflow_bound = _CUDA_VSTD::bit_cast<_Tp>(__underflow_bound_exp);
+  _Tp __overflow_bound  = _CUDA_VSTD::__fp_from_storage<_Tp>(__overflow_bound_exp);
+  _Tp __underflow_bound = _CUDA_VSTD::__fp_from_storage<_Tp>(__underflow_bound_exp);
 
   // Prepare some range-reduction that simplifies the calculation and avoids needing the full hypot function.
   // Alas there is not a single splitting point that works for all values, so we split into 3 intervals.
@@ -125,8 +125,8 @@ template <class _Tp>
       (__exp_bias + (__uint_t(__reduced_exponent - 1) >> 1)) << __uint_t(__mant_nbits);
 
     // Set our scaling values:
-    __ldexp_factor_1 = _CUDA_VSTD::bit_cast<_Tp>(__lxexp_1_uint);
-    __ldexp_factor_2 = _CUDA_VSTD::bit_cast<_Tp>(__lxexp_2_uint);
+    __ldexp_factor_1 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_1_uint);
+    __ldexp_factor_2 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_2_uint);
     __ldexp_combined = __ldexp_factor_1 * __ldexp_factor_2;
   }
 
@@ -143,8 +143,8 @@ template <class _Tp>
     constexpr __uint_t __lxexp_2_uint = (__exp_bias + (__uint_t(__reduced_exponent) >> 1)) << __uint_t(__mant_nbits);
 
     // Set our scaling values:
-    __ldexp_factor_1 = _CUDA_VSTD::bit_cast<_Tp>(__lxexp_1_uint);
-    __ldexp_factor_2 = _CUDA_VSTD::bit_cast<_Tp>(__lxexp_2_uint);
+    __ldexp_factor_1 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_1_uint);
+    __ldexp_factor_2 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_2_uint);
     __ldexp_combined = __ldexp_factor_1 * __ldexp_factor_2;
   }
 
