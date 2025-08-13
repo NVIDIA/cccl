@@ -85,10 +85,6 @@ runs:
         ulimit -n $(ulimit -Hn)
         sccache --stop-server >/dev/null 2>&1
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
-        # Print current dist status to verify we're connected
-        echo -e "::group::️⚙️ \e[1;34mBuild cluster status:\e[0m"
-        ./ci/sccache_dist_status.sh | sed 's/\"//g' | column -t -s,
-        echo -e "::endgroup::"
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
         exit_code=0
@@ -186,7 +182,10 @@ runs:
         source ci/util/workflow/common.sh
 
         # Dump artifact matrix for upload step:
-        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+        ( # Subshell to contain the set -x log
+          set -x
+          printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+        )
 
         # Launch this container using the host's docker daemon
         ( # Subshell to contain the set -x log
@@ -220,7 +219,10 @@ runs:
         )
 
         # Dump artifact matrix for upload step:
-        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+        ( # Subshell to contain the set -x log
+          set -x
+          printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+        )
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
