@@ -222,15 +222,13 @@ struct tuple_to_segment_op
 // Actual scan operator doing the core test when run on device
 struct merge_segments_op
 {
-  __host__ merge_segments_op(bool* error_flag_ptr)
-      : error_flag_ptr_{error_flag_ptr}
-  {}
+  bool* error_flag_ptr;
 
   __device__ void check_inputs(segment left, segment right)
   {
     if (left.end != right.begin || left == right)
     {
-      *error_flag_ptr_ = true;
+      *error_flag_ptr = true;
     }
   }
 
@@ -239,6 +237,4 @@ struct merge_segments_op
     NV_IF_TARGET(NV_IS_DEVICE, check_inputs(left, right););
     return {left.begin, right.end};
   }
-
-  bool* error_flag_ptr_;
 };

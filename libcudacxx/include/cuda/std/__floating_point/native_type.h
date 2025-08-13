@@ -44,7 +44,7 @@ _CCCL_API constexpr auto __fp_native_type_impl()
   else if constexpr (_Fmt == __fp_format::__binary128)
   {
 #if _CCCL_HAS_FLOAT128()
-    return __float128{};
+    return __float128{0.0};
 #elif _CCCL_HAS_LONG_DOUBLE() && LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113
     return (long double) {};
 #else // ^^^ has native binary128 ^^^ / vvv no native binary128 vvv

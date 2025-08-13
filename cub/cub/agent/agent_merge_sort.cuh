@@ -40,10 +40,9 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/load_iterator.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -91,10 +90,8 @@ struct AgentBlockSort
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyInputIteratorT>;
+  using ItemsLoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueInputIteratorT>;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -421,11 +418,10 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyIteratorT>;
+  using ItemsLoadPingIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueIteratorT>;
+  using KeysLoadPongIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyT*>;
+  using ItemsLoadPongIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueT*>;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;

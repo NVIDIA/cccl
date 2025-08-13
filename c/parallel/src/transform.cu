@@ -78,7 +78,7 @@ std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it,
   check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -103,7 +103,8 @@ get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_itera
   check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}, "
+    "{5}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -265,7 +266,7 @@ struct __align__({3}) output_storage_t {{
       op_src); // 6
 
     nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, "
+      std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, true, "
                   "::cuda::std::tuple<{0}>, {1}>::max_policy::ActivePolicy{{}})",
                   transform::get_iterator_name<input_storage_t>(input_it, transform::input_iterator_name),
                   transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name)),
@@ -401,6 +402,7 @@ CUresult cccl_device_unary_transform(
           OffsetT,
           ::cuda::std::tuple<indirect_iterator_t>,
           indirect_iterator_t,
+          transform::cdt::always_true_predicate,
           indirect_arg_t,
           Policy,
           transform::transform_kernel_source<1>,
@@ -408,6 +410,7 @@ CUresult cccl_device_unary_transform(
           dispatch(d_in,
                    d_out,
                    num_items,
+                   {},
                    op,
                    stream,
                    {build, {{{d_in.value_type.size, d_in.value_type.alignment}}}},
@@ -501,7 +504,7 @@ struct __align__({5}) output_storage_t {{
       op_src); // 9
 
     nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, "
+      std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, true, "
                   "::cuda::std::tuple<{0}, {1}>, {2}>::max_policy::ActivePolicy{{}})",
                   transform::get_iterator_name<input1_storage_t>(input1_it, transform::input1_iterator_name),
                   transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name),
@@ -638,6 +641,7 @@ CUresult cccl_device_binary_transform(
           OffsetT,
           ::cuda::std::tuple<indirect_iterator_t, indirect_iterator_t>,
           indirect_iterator_t,
+          transform::cdt::always_true_predicate,
           indirect_arg_t,
           Policy,
           transform::transform_kernel_source<2>,
@@ -646,6 +650,7 @@ CUresult cccl_device_binary_transform(
             ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
             d_out,
             num_items,
+            {},
             op,
             stream,
             {build,
