@@ -364,13 +364,21 @@ struct policy_hub<RequiresStableAddress,
         block_threads* async_policy::min_items_per_thread,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+
+    static constexpr bool fallback_to_prefetch   = RequiresStableAddress || !can_memcpy_inputs;
+    static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams;
 
   public:
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(800);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<block_threads>, async_policy>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
+    static constexpr auto algorithm =
+      fallback_to_prefetch ? Algorithm::prefetch
+      : fallback_to_vectorized
+        ? Algorithm::vectorized
+        : Algorithm::memcpy_async;
+    using algo_policy =
+      ::cuda::std::_If<fallback_to_prefetch,
+                       prefetch_policy_t<block_threads>,
+                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
   };
 
   template <int AsyncBlockSize, int PtxVersion>
@@ -398,13 +406,20 @@ struct policy_hub<RequiresStableAddress,
     static constexpr int tile_sizes_retain_alignment =
       (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
 
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || !tile_sizes_retain_alignment;
+    static constexpr bool fallback_to_prefetch   = RequiresStableAddress || !can_memcpy_inputs;
+    static constexpr bool fallback_to_vectorized = exhaust_smem || !tile_sizes_retain_alignment || no_input_streams;
 
   public:
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+    static constexpr auto algorithm =
+      fallback_to_prefetch ? Algorithm::prefetch
+      : fallback_to_vectorized
+        ? Algorithm::vectorized
+        : Algorithm::ublkcp;
+    using algo_policy =
+      ::cuda::std::_If<fallback_to_prefetch,
+                       prefetch_policy_t<256>,
+                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
   };
 
   struct policy900
