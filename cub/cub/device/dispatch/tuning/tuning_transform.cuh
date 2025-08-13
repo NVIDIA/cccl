@@ -329,10 +329,13 @@ struct policy_hub<RequiresStableAddress,
   // for vectorized policy:
   static constexpr bool all_input_values_same_size = all_equal(sizeof(it_value_t<RandomAccessIteratorsIn>)...);
   static constexpr int load_store_word_size        = 8; // TODO(bgruber): make this 16, and 32 on Blackwell+
-  static constexpr int value_type_size             = first_item(int{sizeof(it_value_t<RandomAccessIteratorsIn>)}..., 1);
+  // if there are no inputs, we take the size of the output value
+  static constexpr int value_type_size =
+    first_item(int{sizeof(it_value_t<RandomAccessIteratorsIn>)}..., int{sizeof(it_value_t<RandomAccessIteratorOut>)});
   static constexpr bool value_type_divides_load_store_size =
     load_store_word_size % value_type_size == 0; // implicitly checks that value_type_size <= load_store_word_size
-  static constexpr int target_bytes_per_thread = 32; // guestimate by gevtushenko
+  static constexpr int target_bytes_per_thread =
+    no_input_streams ? 16 /* by experiment on RTX 5090 */ : 32 /* guestimate by gevtushenko for loading */;
   static constexpr int items_per_thread_vec =
     ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / value_type_size;
   using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread_vec, load_store_word_size>;
