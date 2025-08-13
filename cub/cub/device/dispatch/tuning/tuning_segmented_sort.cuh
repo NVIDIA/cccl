@@ -128,6 +128,18 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   {
     return StaticPolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT::ITEMS_PER_TILE;
   }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  {
+    return PolicyT::BLOCK_THREADS;
+  }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread(PolicyT /*policy*/)
+  {
+    return PolicyT::ITEMS_PER_THREAD;
+  }
 };
 
 template <typename PolicyT>

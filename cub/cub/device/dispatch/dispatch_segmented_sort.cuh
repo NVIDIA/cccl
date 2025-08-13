@@ -110,11 +110,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     _CubLog("Invoking "
             "DeviceSegmentedSortKernelLarge<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(blocks_in_grid),
-            wrapped_policy.LargeSegment().BlockThreads(),
+            wrapped_policy.BlockThreads(wrapped_policy.LargeSegment()),
             (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-    launcher_factory(blocks_in_grid, wrapped_policy.LargeSegment().BlockThreads(), 0, stream)
+    launcher_factory(blocks_in_grid, wrapped_policy.BlockThreads(wrapped_policy.LargeSegment()), 0, stream)
       .doit(large_kernel,
             large_and_medium_segments_indices,
             d_current_keys,
@@ -158,12 +158,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     _CubLog("Invoking "
             "DeviceSegmentedSortKernelSmall<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(small_and_medium_blocks_in_grid),
-            small_and_medium_policy.BlockThreads(),
+            wrapped_policy.BlockThreads(wrapped_policy.SmallAndMediumSegmentedSort()),
             (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-    launcher_factory(
-      small_and_medium_blocks_in_grid, wrapped_policy.SmallAndMediumSegmentedSort().BlockThreads(), 0, stream)
+    launcher_factory(small_and_medium_blocks_in_grid,
+                     wrapped_policy.BlockThreads(wrapped_policy.SmallAndMediumSegmentedSort()),
+                     0,
+                     stream)
       .doit(small_kernel,
             small_segments,
             medium_segments,
@@ -807,11 +809,11 @@ private:
       (
         local_segment_index_t h_group_sizes[num_selected_groups];
         error = CubDebug(launcher_factory.MemcpyAsync(h_group_sizes,
-                                             group_sizes.get(),
-                                             num_selected_groups *
-                                               sizeof(local_segment_index_t),
-                                             cudaMemcpyDeviceToHost,
-                                             stream));
+                                            group_sizes.get(),
+                                            num_selected_groups *
+                                              sizeof(local_segment_index_t),
+                                            cudaMemcpyDeviceToHost,
+                                            stream));
 
         if (cudaSuccess != error)
         {
@@ -860,8 +862,9 @@ private:
   {
     cudaError_t error = cudaSuccess;
 
-    const auto blocks_in_grid       = static_cast<local_segment_index_t>(num_segments);
-    constexpr auto threads_in_block = static_cast<unsigned int>(wrapped_policy.LargeSegment().BlockThreads());
+    const auto blocks_in_grid = static_cast<local_segment_index_t>(num_segments);
+    constexpr auto threads_in_block =
+      static_cast<unsigned int>(wrapped_policy.BlockThreads(wrapped_policy.LargeSegment()));
 
 // Log kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -870,7 +873,7 @@ private:
             blocks_in_grid,
             threads_in_block,
             (long long) stream,
-            wrapped_policy.LargeSegment().ItemsPerThread(),
+            wrapped_policy.ItemsPerThread(wrapped_policy.LargeSegment()),
             wrapped_policy.LargeSegmentRadixBits());
 #endif // CUB_DEBUG_LOG
 
