@@ -407,9 +407,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      using __sch_t               = __query_result_or_t<env_of_t<_Sndr>, get_completion_scheduler_t<_SetTag>, __nil>;
-      using __domain_t            = __detail::__domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<_SetTag>>;
-      using __env2_t              = __let_t::__env2_t<env_of_t<_Sndr>>;
+      using __sch_t    = __query_result_or_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>, __nil>;
+      using __domain_t = __detail::__domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>>;
+      using __env2_t   = __let_t::__env2_t<env_of_t<_Sndr>>;
       using __completion_domain_t = __completion_domain_of_t<_Sndr, _Fn>;
       using __transform_fn_t      = __transform_args_fn<_Fn, __env2_t, _Env...>;
 
