@@ -135,7 +135,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Fn, _Rcvr, _Env2>
   {
     using __sndr2_opstate_t _CCCL_NODEBUG_ALIAS =
-      __gather_completion_signatures<_Completions, _SetTag, __state_t::template __sndr2_opstate_fn, __variant>;
+      __gather_completion_signatures<_Completions,
+                                     _SetTag,
+                                     __state_t::__state_base_t::template __sndr2_opstate_fn,
+                                     __variant>;
 
     __sndr1_results_t<_Completions, __fwd_env_t<env_of_t<_Rcvr>>> __result_{};
     __sndr2_opstate_t __opstate2_{};
