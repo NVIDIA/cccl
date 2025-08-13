@@ -58,7 +58,7 @@ _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 #endif // _CCCL_HAS_INT128()
     else
     {
-      static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported signed integer size");
+      static_assert(__always_false_v<decltype(_NBits)>, "Unsupported signed integer size");
       _CCCL_UNREACHABLE();
     }
   }
@@ -88,7 +88,7 @@ _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 #endif // _CCCL_HAS_INT128()
     else
     {
-      static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported unsigned integer size");
+      static_assert(__always_false_v<decltype(_NBits)>, "Unsupported unsigned integer size");
       _CCCL_UNREACHABLE();
     }
   }

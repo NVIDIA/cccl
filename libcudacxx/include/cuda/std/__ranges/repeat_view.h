@@ -240,7 +240,7 @@ public:
       : __value_(in_place, __value)
       , __bound_(__bound_sentinel)
   {
-    if constexpr (!same_as<_Bound, unreachable_sentinel_t> && _CCCL_TRAIT(is_signed, _Bound))
+    if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
       _CCCL_ASSERT(__bound_ >= 0, "The value of bound must be greater than or equal to 0");
     }
@@ -250,7 +250,7 @@ public:
       : __value_(in_place, _CUDA_VSTD::move(__value))
       , __bound_(__bound_sentinel)
   {
-    if constexpr (!same_as<_Bound, unreachable_sentinel_t> && _CCCL_TRAIT(is_signed, _Bound))
+    if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
       _CCCL_ASSERT(__bound_ >= 0, "The value of bound must be greater than or equal to 0");
     }
@@ -263,7 +263,7 @@ public:
       : __value_(in_place, _CUDA_VSTD::make_from_tuple<_Tp>(_CUDA_VSTD::move(__value_args)))
       , __bound_(_CUDA_VSTD::make_from_tuple<_Bound>(_CUDA_VSTD::move(__bound_args)))
   {
-    if constexpr (!same_as<_Bound, unreachable_sentinel_t> && _CCCL_TRAIT(is_signed, _Bound))
+    if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
       _CCCL_ASSERT(__bound_ >= 0,
                    "The behavior is undefined if Bound is not unreachable_sentinel_t and bound is negative");

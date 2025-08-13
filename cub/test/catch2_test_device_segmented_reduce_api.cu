@@ -59,7 +59,7 @@ struct is_equal
     return !(lhs != rhs);
   }
 
-  __device__ bool operator()(::cuda::std::pair<int, int> lhs, ::cuda::std::pair<int, int> rhs)
+  __device__ bool operator()(cuda::std::pair<int, int> lhs, cuda::std::pair<int, int> rhs)
   {
     return !(lhs != rhs);
   }
@@ -344,7 +344,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int d
   int num_segments = 3;
   int segment_size = 2;
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
-  c2h::device_vector<::cuda::std::pair<int, int>> d_out(3);
+  c2h::device_vector<cuda::std::pair<int, int>> d_out(3);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
@@ -359,10 +359,10 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int d
   cub::DeviceSegmentedReduce::ArgMin(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
 
-  c2h::host_vector<::cuda::std::pair<int, int>> h_expected{{0, 6}, {1, 5}, {1, 0}};
+  c2h::host_vector<cuda::std::pair<int, int>> h_expected{{0, 6}, {1, 5}, {1, 0}};
   // example-end fixed-size-segmented-reduce-argmin
 
-  c2h::host_vector<::cuda::std::pair<int, int>> h_out(d_out);
+  c2h::host_vector<cuda::std::pair<int, int>> h_out(d_out);
 
   REQUIRE(h_expected == h_out);
 }
@@ -403,7 +403,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int d
   int num_segments = 3;
   int segment_size = 2;
   c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
-  c2h::device_vector<::cuda::std::pair<int, int>> d_out(3);
+  c2h::device_vector<cuda::std::pair<int, int>> d_out(3);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
@@ -418,9 +418,9 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int d
   cub::DeviceSegmentedReduce::ArgMax(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
 
-  c2h::host_vector<::cuda::std::pair<int, int>> h_expected{{1, 8}, {0, 7}, {0, 3}};
+  c2h::host_vector<cuda::std::pair<int, int>> h_expected{{1, 8}, {0, 7}, {0, 3}};
   // example-end fixed-size-segmented-reduce-argmax
 
-  c2h::host_vector<::cuda::std::pair<int, int>> h_out(d_out);
+  c2h::host_vector<cuda::std::pair<int, int>> h_out(d_out);
   REQUIRE(h_expected == h_out);
 }

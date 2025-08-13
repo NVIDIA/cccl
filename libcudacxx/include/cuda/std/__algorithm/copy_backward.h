@@ -46,8 +46,8 @@ __copy_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class _Up,
-          enable_if_t<_CCCL_TRAIT(is_same, remove_const_t<_Tp>, _Up), int> = 0,
-          enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>        = 0>
+          enable_if_t<is_same_v<remove_const_t<_Tp>, _Up>, int> = 0,
+          enable_if_t<is_trivially_copyable_v<_Up>, int>        = 0>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Up* __copy_backward(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;

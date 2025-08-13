@@ -158,7 +158,7 @@ _CCCL_API constexpr bool __is_unit_stride_slice()
     return true;
   }
   // [mdspan.sub.map.common-9.3]
-  else if constexpr (_CCCL_TRAIT(is_convertible, _SliceType, full_extent_t))
+  else if constexpr (is_convertible_v<_SliceType, full_extent_t>)
   {
     return true;
   }
@@ -184,7 +184,7 @@ _CCCL_API constexpr bool __can_layout_left()
     return _CUDA_VSTD::__is_unit_stride_slice<_LayoutMapping, _Slice>();
   }
   // [mdspan.sub.map.left-1.3.1]
-  else if constexpr (_CCCL_TRAIT(is_convertible, _Slice, full_extent_t))
+  else if constexpr (is_convertible_v<_Slice, full_extent_t>)
   {
     return _CUDA_VSTD::__can_layout_left<_LayoutMapping, _SubExtents, _OtherSlices...>();
   }
@@ -244,7 +244,7 @@ _CCCL_API constexpr bool __can_layout_right()
     return _CUDA_VSTD::__is_unit_stride_slice<_LayoutMapping, _Slice>();
   }
   // [mdspan.sub.map.right-1.3.1]
-  else if constexpr (_CCCL_TRAIT(is_convertible, _Slice, full_extent_t))
+  else if constexpr (is_convertible_v<_Slice, full_extent_t>)
   {
     return _CUDA_VSTD::__can_layout_left<_LayoutMapping, _SubExtents, _OtherSlices...>();
   }

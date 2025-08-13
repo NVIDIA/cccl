@@ -72,35 +72,35 @@ _CCCL_API constexpr byte operator~(byte __b) noexcept
 }
 
 _CCCL_TEMPLATE(class _Integer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_CCCL_REQUIRES(is_integral_v<_Integer>)
 _CCCL_API constexpr byte& operator<<=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs << __shift;
 }
 
 _CCCL_TEMPLATE(class _Integer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_CCCL_REQUIRES(is_integral_v<_Integer>)
 _CCCL_API constexpr byte operator<<(byte __lhs, _Integer __shift) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift));
 }
 
 _CCCL_TEMPLATE(class _Integer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_CCCL_REQUIRES(is_integral_v<_Integer>)
 _CCCL_API constexpr byte& operator>>=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs >> __shift;
 }
 
 _CCCL_TEMPLATE(class _Integer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_CCCL_REQUIRES(is_integral_v<_Integer>)
 _CCCL_API constexpr byte operator>>(byte __lhs, _Integer __shift) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift));
 }
 
 _CCCL_TEMPLATE(class _Integer)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_CCCL_REQUIRES(is_integral_v<_Integer>)
 _CCCL_API constexpr _Integer to_integer(byte __b) noexcept
 {
   return static_cast<_Integer>(__b);

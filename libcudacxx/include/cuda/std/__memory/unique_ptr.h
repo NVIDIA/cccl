@@ -59,13 +59,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 {
-  static_assert(!_CCCL_TRAIT(is_function, _Tp), "default_delete cannot be instantiated for function types");
+  static_assert(!is_function_v<_Tp>, "default_delete cannot be instantiated for function types");
 
   _CCCL_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20
-  default_delete(const default_delete<_Up>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
+  default_delete(const default_delete<_Up>&, enable_if_t<is_convertible_v<_Up*, _Tp*>, int> = 0) noexcept
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -83,13 +83,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   _CCCL_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 default_delete(
-    const default_delete<_Up[]>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
+  default_delete(const default_delete<_Up[]>&, enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, int> = 0) noexcept
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Up>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, void>
   operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
@@ -100,7 +100,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
-  static_assert(!_CCCL_TRAIT(is_reference, _Deleter), "incorrect specialization");
+  static_assert(!is_reference_v<_Deleter>, "incorrect specialization");
   typedef const _Deleter& __lval_ref_type;
   typedef _Deleter&& __good_rval_ref_type;
   typedef true_type __enable_rval_overload;
@@ -136,8 +136,7 @@ public:
   typedef _Dp deleter_type;
   typedef _CCCL_NODEBUG_ALIAS typename __pointer<_Tp, deleter_type>::type pointer;
 
-  static_assert(!_CCCL_TRAIT(is_rvalue_reference, deleter_type),
-                "the specified deleter type cannot be an rvalue reference");
+  static_assert(!is_rvalue_reference_v<deleter_type>, "the specified deleter type cannot be an rvalue reference");
 
 private:
   __compressed_pair<pointer, deleter_type> __ptr_;

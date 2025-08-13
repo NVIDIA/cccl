@@ -8,7 +8,11 @@ from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    validate_and_get_stream,
+)
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -150,7 +154,7 @@ def make_cache_key(
 
 
 @cache_with_key(make_cache_key)
-def segmented_reduce(
+def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
     start_offsets_in: DeviceArrayLike | IteratorBase,
@@ -181,3 +185,39 @@ def segmented_reduce(
         A callable object that can be used to perform the reduction
     """
     return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
+
+
+def segmented_reduce(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    start_offsets_in: DeviceArrayLike | IteratorBase,
+    end_offsets_in: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray | GpuStruct,
+    num_segments: int,
+    stream=None,
+):
+    reducer = make_segmented_reduce(
+        d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
+    )
+    tmp_storage_bytes = reducer(
+        None,
+        d_in,
+        d_out,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
+        stream,
+    )
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    reducer(
+        tmp_storage,
+        d_in,
+        d_out,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
+        stream,
+    )

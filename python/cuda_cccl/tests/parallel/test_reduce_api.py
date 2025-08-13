@@ -20,17 +20,8 @@ def test_device_reduce():
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    # Instantiate reduction for the given operator and initial value
-    reduce_into = parallel.reduce_into(d_output, d_output, min_op, h_init)
-
-    # Determine temporary device storage requirements
-    temp_storage_size = reduce_into(None, d_input, d_output, len(d_input), h_init)
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, d_input, d_output, len(d_input), h_init)
+    parallel.reduce_into(d_input, d_output, min_op, len(d_input), h_init)
 
     # Check the result is correct
     expected_output = 0
@@ -60,13 +51,8 @@ def test_cache_modified_input_iterator():
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
-    # Instantiate reduction, determine storage requirements, and allocate storage
-    reduce_into = parallel.reduce_into(iterator, d_output, add_op, h_init)
-    temp_storage_size = reduce_into(None, iterator, d_output, len(values), h_init)
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, iterator, d_output, len(values), h_init)
+    parallel.reduce_into(iterator, d_output, add_op, len(values), h_init)
 
     expected_output = functools.reduce(lambda a, b: a + b, values)
     assert (d_output == expected_output).all()
@@ -92,13 +78,8 @@ def test_constant_iterator():
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
-    # Instantiate reduction, determine storage requirements, and allocate storage
-    reduce_into = parallel.reduce_into(constant_it, d_output, add_op, h_init)
-    temp_storage_size = reduce_into(None, constant_it, d_output, num_items, h_init)
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, constant_it, d_output, num_items, h_init)
+    parallel.reduce_into(constant_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(lambda a, b: a + b, [value] * num_items)
     assert (d_output == expected_output).all()
@@ -124,13 +105,8 @@ def test_counting_iterator():
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
-    # Instantiate reduction, determine storage requirements, and allocate storage
-    reduce_into = parallel.reduce_into(first_it, d_output, add_op, h_init)
-    temp_storage_size = reduce_into(None, first_it, d_output, num_items, h_init)
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, first_it, d_output, num_items, h_init)
+    parallel.reduce_into(first_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(
         lambda a, b: a + b, range(first_item, first_item + num_items)
@@ -163,13 +139,8 @@ def test_transform_iterator():
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
-    # Instantiate reduction, determine storage requirements, and allocate storage
-    reduce_into = parallel.reduce_into(transform_it, d_output, add_op, h_init)
-    temp_storage_size = reduce_into(None, transform_it, d_output, num_items, h_init)
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, transform_it, d_output, num_items, h_init)
+    parallel.reduce_into(transform_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(
         lambda a, b: a + b, [a**2 for a in range(first_item, first_item + num_items)]
@@ -199,11 +170,8 @@ def test_reduce_struct_type():
 
     h_init = Pixel(0, 0, 0)
 
-    reduce_into = parallel.reduce_into(d_rgb, d_out, max_g_value, h_init)
-    temp_storage_bytes = reduce_into(None, d_rgb, d_out, d_rgb.size, h_init)
-
-    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    _ = reduce_into(d_temp_storage, d_rgb, d_out, d_rgb.size, h_init)
+    # Run reduction
+    parallel.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
 
     h_rgb = d_rgb.get()
     expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
@@ -249,15 +217,8 @@ def test_reduce_struct_type_minmax():
     # minimum and maximum operators
     h_init = MinMax(np.inf, -np.inf)
 
-    # get algorithm object
-    cccl_sum = parallel.reduce_into(tr_it, d_out, minmax_op, h_init)
-
-    # allocated needed temporary
-    tmp_sz = cccl_sum(None, tr_it, d_out, nelems, h_init)
-    tmp_storage = cp.empty(tmp_sz, dtype=cp.uint8)
-
-    # invoke the reduction algorithm
-    cccl_sum(tmp_storage, tr_it, d_out, nelems, h_init)
+    # run the reduction algorithm
+    parallel.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
 
     # display values computed on the device
     actual = d_out.get()

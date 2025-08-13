@@ -175,7 +175,7 @@ using full_type_list =
 
 using builtin_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t>;
 
-using predefined_op_list = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, ::cuda::minimum<>>;
+using predefined_op_list = c2h::type_list<cuda::std::plus<>, cuda::maximum<>, cuda::minimum<>>;
 
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
 

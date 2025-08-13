@@ -110,6 +110,29 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
   REQUIRE(expected_keys == std::vector<key_t>(input_keys_it));
 }
 
+struct DeviceMergeSort_SortKeys_WellKnown_Fixture_Tag;
+C2H_TEST("DeviceMergeSort::SortKeys works with well-known predicate", "[merge_sort][well_known]", key_types)
+{
+  using key_t = c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+
+  cccl_op_t op                     = make_well_known_binary_predicate();
+  std::vector<key_t> input_keys    = make_shuffled_sequence<key_t>(num_items);
+  std::vector<key_t> expected_keys = input_keys;
+
+  pointer_t<key_t> input_keys_it(input_keys);
+  pointer_t<key_t> input_items_it;
+
+  auto& build_cache    = get_cache<DeviceMergeSort_SortKeys_WellKnown_Fixture_Tag>();
+  const auto& test_key = make_key<key_t>();
+
+  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  REQUIRE(expected_keys == std::vector<key_t>(input_keys_it));
+}
+
 struct DeviceMergeSort_SortKeysCopy_Fixture_Tag;
 C2H_TEST("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
 {
@@ -242,6 +265,65 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]"
   pointer_t<item_pair> output_items_it(input_items);
 
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairsCopy_CustomType_Fixture_Tag>();
+  const auto& test_key = make_key<key_pair, item_pair>();
+
+  merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
+
+  std::sort(expected_keys.begin(), expected_keys.end(), [](const key_pair& lhs, const key_pair& rhs) {
+    return lhs.a == rhs.a ? lhs.b < rhs.b : lhs.a < rhs.a;
+  });
+  std::sort(expected_items.begin(), expected_items.end(), [](const item_pair& lhs, const item_pair& rhs) {
+    return lhs.a == rhs.a ? lhs.b < rhs.b : lhs.a < rhs.a;
+  });
+  REQUIRE(std::equal(
+    expected_keys.begin(),
+    expected_keys.end(),
+    std::vector<key_pair>(output_keys_it).begin(),
+    [](const key_pair& lhs, const key_pair& rhs) {
+      return lhs.a == rhs.a && lhs.b == rhs.b;
+    }));
+  REQUIRE(std::equal(
+    expected_items.begin(),
+    expected_items.end(),
+    std::vector<item_pair>(output_items_it).begin(),
+    [](const item_pair& lhs, const item_pair& rhs) {
+      return lhs.a == rhs.a && lhs.b == rhs.b;
+    }));
+}
+
+struct DeviceMergeSort_SortPairsCopy_CustomType_WellKnown_Fixture_Tag;
+C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types with well-known predicates", "[merge_sort][well_known]")
+{
+  const size_t num_items = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
+  operation_t op_state   = make_operation(
+    "op",
+    "struct key_pair { short a; size_t b; };\n"
+      "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {\n"
+      "  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);\n"
+      "  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);\n"
+      "  bool* out = static_cast<bool*>(out_ptr);\n"
+      "  *out = lhs->a == rhs->a ? lhs->b < rhs->b : lhs->a < rhs->a;\n"
+      "}");
+  cccl_op_t op                = op_state;
+  op.type                     = cccl_op_kind_t::CCCL_LESS;
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<key_pair> input_keys(num_items);
+  std::vector<item_pair> input_items(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input_keys[i]  = key_pair{a[i], b[i]};
+    input_items[i] = item_pair{static_cast<int>(a[i]), static_cast<float>(b[i])};
+  }
+  std::vector<key_pair> expected_keys   = input_keys;
+  std::vector<item_pair> expected_items = input_items;
+
+  pointer_t<key_pair> input_keys_it(input_keys);
+  pointer_t<item_pair> input_items_it(input_items);
+  pointer_t<key_pair> output_keys_it(input_keys);
+  pointer_t<item_pair> output_items_it(input_items);
+
+  auto& build_cache    = get_cache<DeviceMergeSort_SortPairsCopy_CustomType_WellKnown_Fixture_Tag>();
   const auto& test_key = make_key<key_pair, item_pair>();
 
   merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);

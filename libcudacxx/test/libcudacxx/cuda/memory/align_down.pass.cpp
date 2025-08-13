@@ -42,8 +42,8 @@ __global__ void test_kernel()
 {
   __shared__ int smem_value[4];
   auto ptr = smem_value;
-  assert(__isShared(ptr + 3));
-  assert(__isShared(cuda::align_down(ptr + 3, 8)));
+  assert(cuda::device::is_address_from(ptr + 3, cuda::device::address_space::shared));
+  assert(cuda::device::is_address_from(cuda::align_down(ptr + 3, 8), cuda::device::address_space::shared));
 }
 
 int main(int, char**)

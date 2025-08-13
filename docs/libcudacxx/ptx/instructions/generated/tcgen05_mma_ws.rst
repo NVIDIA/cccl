@@ -5,7 +5,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -23,7 +23,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -41,7 +41,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -59,7 +59,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -77,7 +77,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -94,7 +94,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -111,7 +111,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -128,7 +128,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -145,7 +145,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -163,7 +163,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -181,7 +181,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -199,7 +199,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -217,7 +217,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -234,7 +234,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -251,7 +251,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -268,7 +268,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -285,7 +285,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -303,7 +303,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -321,7 +321,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -339,7 +339,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -357,7 +357,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -374,7 +374,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -391,7 +391,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -408,7 +408,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -425,7 +425,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -443,7 +443,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -461,7 +461,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -479,7 +479,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -497,7 +497,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -514,7 +514,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -531,7 +531,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -548,7 +548,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -565,7 +565,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -583,7 +583,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -601,7 +601,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -619,7 +619,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -637,7 +637,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -654,7 +654,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -671,7 +671,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -688,7 +688,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -705,7 +705,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -723,7 +723,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -741,7 +741,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -759,7 +759,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -777,7 +777,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -794,7 +794,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -811,7 +811,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -828,7 +828,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -845,7 +845,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -863,7 +863,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -881,7 +881,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -899,7 +899,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -917,7 +917,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -934,7 +934,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -951,7 +951,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -968,7 +968,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -985,7 +985,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1003,7 +1003,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1021,7 +1021,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1039,7 +1039,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1057,7 +1057,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1074,7 +1074,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1091,7 +1091,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1108,7 +1108,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1125,7 +1125,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1143,7 +1143,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1161,7 +1161,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1179,7 +1179,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1197,7 +1197,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1214,7 +1214,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1231,7 +1231,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1248,7 +1248,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1265,7 +1265,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1283,7 +1283,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1301,7 +1301,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1319,7 +1319,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1337,7 +1337,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1354,7 +1354,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1371,7 +1371,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1388,7 +1388,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1405,7 +1405,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1423,7 +1423,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1441,7 +1441,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1459,7 +1459,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1477,7 +1477,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1494,7 +1494,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1511,7 +1511,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1528,7 +1528,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1545,7 +1545,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1563,7 +1563,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1581,7 +1581,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1599,7 +1599,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1617,7 +1617,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1634,7 +1634,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1651,7 +1651,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1668,7 +1668,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1685,7 +1685,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1703,7 +1703,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1721,7 +1721,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1739,7 +1739,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1757,7 +1757,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1774,7 +1774,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1791,7 +1791,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1808,7 +1808,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1825,7 +1825,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1843,7 +1843,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1861,7 +1861,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1879,7 +1879,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1897,7 +1897,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1914,7 +1914,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1931,7 +1931,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1948,7 +1948,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1965,7 +1965,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -1983,7 +1983,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2001,7 +2001,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2019,7 +2019,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2037,7 +2037,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2054,7 +2054,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2071,7 +2071,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2088,7 +2088,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2105,7 +2105,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2123,7 +2123,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2141,7 +2141,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2159,7 +2159,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2177,7 +2177,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2194,7 +2194,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2211,7 +2211,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2228,7 +2228,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2245,7 +2245,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2263,7 +2263,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2281,7 +2281,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2299,7 +2299,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2317,7 +2317,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2334,7 +2334,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2351,7 +2351,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2368,7 +2368,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2385,7 +2385,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2403,7 +2403,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2421,7 +2421,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2439,7 +2439,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2457,7 +2457,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2474,7 +2474,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2491,7 +2491,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2508,7 +2508,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2525,7 +2525,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2543,7 +2543,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2561,7 +2561,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2579,7 +2579,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2597,7 +2597,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2614,7 +2614,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2631,7 +2631,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2648,7 +2648,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2665,7 +2665,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2683,7 +2683,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2701,7 +2701,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2719,7 +2719,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2737,7 +2737,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2754,7 +2754,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2771,7 +2771,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2788,7 +2788,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2805,7 +2805,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2823,7 +2823,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2841,7 +2841,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2859,7 +2859,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2877,7 +2877,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2894,7 +2894,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2911,7 +2911,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2928,7 +2928,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2945,7 +2945,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2963,7 +2963,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2981,7 +2981,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -2999,7 +2999,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3017,7 +3017,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3034,7 +3034,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3051,7 +3051,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3068,7 +3068,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3085,7 +3085,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3103,7 +3103,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3121,7 +3121,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3139,7 +3139,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3157,7 +3157,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3174,7 +3174,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3191,7 +3191,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3208,7 +3208,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3225,7 +3225,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3243,7 +3243,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3261,7 +3261,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3279,7 +3279,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3297,7 +3297,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3314,7 +3314,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3331,7 +3331,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3348,7 +3348,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3365,7 +3365,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3383,7 +3383,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3401,7 +3401,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3419,7 +3419,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3437,7 +3437,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3454,7 +3454,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3471,7 +3471,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3488,7 +3488,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3505,7 +3505,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3523,7 +3523,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3541,7 +3541,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3559,7 +3559,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3577,7 +3577,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3594,7 +3594,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3611,7 +3611,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3628,7 +3628,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3645,7 +3645,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3663,7 +3663,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3681,7 +3681,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3699,7 +3699,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3717,7 +3717,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3734,7 +3734,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3751,7 +3751,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3768,7 +3768,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3785,7 +3785,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3803,7 +3803,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3821,7 +3821,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3839,7 +3839,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3857,7 +3857,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3874,7 +3874,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3891,7 +3891,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3908,7 +3908,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3925,7 +3925,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3943,7 +3943,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3961,7 +3961,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3979,7 +3979,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -3997,7 +3997,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4014,7 +4014,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4031,7 +4031,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4048,7 +4048,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4065,7 +4065,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4083,7 +4083,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4101,7 +4101,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4119,7 +4119,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4137,7 +4137,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4154,7 +4154,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4171,7 +4171,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4188,7 +4188,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4205,7 +4205,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4223,7 +4223,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4241,7 +4241,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4259,7 +4259,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4277,7 +4277,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4294,7 +4294,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4311,7 +4311,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4328,7 +4328,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4345,7 +4345,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4363,7 +4363,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4381,7 +4381,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4399,7 +4399,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4417,7 +4417,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4434,7 +4434,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4451,7 +4451,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>
@@ -4468,7 +4468,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
-   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_101a
+   // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
    // .kind      = { .kind::f16, .kind::tf32, .kind::f8f6f4, .kind::i8 }
    template <cuda::ptx::dot_kind Kind>

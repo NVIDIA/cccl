@@ -36,7 +36,7 @@ struct offset_to_transform_it
   template <typename OffsetT>
   __host__ __device__ __forceinline__ auto operator()(OffsetT offset) const
   {
-    return thrust::make_transform_output_iterator(base_it + offset, ::cuda::std::identity{});
+    return thrust::make_transform_output_iterator(base_it + offset, cuda::std::identity{});
   }
   IteratorT base_it;
 };

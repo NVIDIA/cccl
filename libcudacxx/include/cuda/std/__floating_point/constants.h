@@ -165,6 +165,50 @@ template <class _Tp>
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_lowest<__fp_format_of_v<_Tp>>());
 }
 
+// __fp_zero
+
+template <__fp_format _Fmt>
+[[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_zero() noexcept
+{
+  static_assert(_Fmt != __fp_format::__fp8_nv_e8m0, "__fp_zero: __nv_fp8_e8m0 cannot represent zero");
+  return __fp_storage_t<_Fmt>(0);
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __fp_zero() noexcept
+{
+  static_assert(__fp_format_of_v<_Tp> != __fp_format::__fp8_nv_e8m0, "__fp_zero: __nv_fp8_e8m0 cannot represent zero");
+  if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
+  {
+    return _Tp{};
+  }
+  else
+  {
+    return _CUDA_VSTD::__fp_from_storage<_Tp>(__fp_storage_of_t<_Tp>{0});
+  }
+}
+
+// __fp_one
+
+template <__fp_format _Fmt>
+[[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_one() noexcept
+{
+  return static_cast<__fp_storage_t<_Fmt>>(__fp_exp_bias_v<_Fmt> << __fp_mant_nbits_v<_Fmt>);
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __fp_one() noexcept
+{
+  if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
+  {
+    return _Tp{1};
+  }
+  else
+  {
+    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_one<__fp_format_of_v<_Tp>>());
+  }
+}
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>

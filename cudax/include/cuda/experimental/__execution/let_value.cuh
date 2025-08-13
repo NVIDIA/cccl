@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/fold.h>
@@ -202,12 +203,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     using __rcvr_t                = __let_t::__rcvr_t<_Rcvr, _Fn, __completions_t>;
 
     _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
-      __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
+      __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __rcvr_t>)
         : __state_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn)}
         , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {
@@ -300,8 +301,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
   template <class _Fn>
-  struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
-                                                  // extended (host/device) lambda
+  struct _CCCL_TYPE_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
+                                                       // extended (host/device) lambda
   {
     template <class _Sndr>
     [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const

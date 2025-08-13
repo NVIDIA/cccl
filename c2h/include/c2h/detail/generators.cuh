@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <cuda/std/complex>
+
 #include <c2h/generators.h>
 #include <c2h/vector.h>
 
@@ -80,6 +82,23 @@ struct random_to_item_t<T, true>
   __device__ T operator()(float random_value)
   {
     return static_cast<T>(m_max * random_value + m_min * (1.0f - random_value));
+  }
+};
+
+template <typename T>
+struct random_to_item_t<cuda::std::complex<T>, false>
+{
+  cuda::std::complex<T> m_min;
+  cuda::std::complex<T> m_max;
+
+  __host__ __device__ random_to_item_t(cuda::std::complex<T> min, cuda::std::complex<T> max)
+      : m_min(min)
+      , m_max(max)
+  {}
+
+  __device__ cuda::std::complex<T> operator()(float random_value) const
+  {
+    return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
 

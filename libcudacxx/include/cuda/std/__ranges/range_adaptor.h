@@ -44,9 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 // make the following hold:
 // - `x | f` is equivalent to `f(x)`
 // - `f1 | f2` is an adaptor closure `g` such that `g(x)` is equivalent to `f2(f1(x))`
-template <class _Tp,
-          enable_if_t<_CCCL_TRAIT(is_class, _Tp), int>     = 0,
-          enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>
+template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>
 struct __range_adaptor_closure
 {};
 
@@ -100,9 +98,7 @@ _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
     _CUDA_VSTD::forward<_OtherClosure>(__other_closure), _CUDA_VSTD::forward<_Closure>(__closure)));
 }
 
-template <class _Tp,
-          enable_if_t<_CCCL_TRAIT(is_class, _Tp), int>     = 0,
-          enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>
+template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>
 class range_adaptor_closure : public __range_adaptor_closure<_Tp>
 {};
 

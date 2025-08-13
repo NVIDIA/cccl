@@ -65,7 +65,7 @@ __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
-  ::cuda::std::array<T, NUM_ITEMS> thread_data;
+  cuda::std::array<T, NUM_ITEMS> thread_data;
 #  pragma unroll
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
@@ -166,7 +166,7 @@ using narrow_precision_type_list = c2h::type_list<
 
 using fp_type_list = c2h::type_list<float>;
 
-using integral_type_list = c2h::type_list<::cuda::std::int8_t, ::cuda::std::int16_t, ::cuda::std::int32_t>;
+using integral_type_list = c2h::type_list<cuda::std::int8_t, cuda::std::int16_t, cuda::std::int32_t>;
 
 using cub_operator_integral_list =
   c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::std::bit_xor<>, cuda::minimum<>>;
@@ -178,14 +178,14 @@ using cub_operator_fp_list = c2h::type_list<cuda::std::plus<>, cuda::minimum<>>;
  **********************************************************************************************************************/
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((cuda::std::is_floating_point<T>::value))
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
 }
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!::cuda::std::is_floating_point<T>::value))
+_CCCL_REQUIRES((!cuda::std::is_floating_point<T>::value))
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == test_results);

@@ -23,17 +23,8 @@ def sum_reduction_example():
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    # Instantiate reduction
-    reduce_into = parallel.reduce_into(d_output, d_output, add_op, h_init)
-
-    # Determine temporary device storage requirements
-    temp_storage_size = reduce_into(None, d_input, d_output, len(d_input), h_init)
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
     # Run reduction
-    reduce_into(d_temp_storage, d_input, d_output, len(d_input), h_init)
+    parallel.reduce_into(d_input, d_output, add_op, len(d_input), h_init)
 
     expected_output = 15  # 1+2+3+4+5
     assert (d_output == expected_output).all()

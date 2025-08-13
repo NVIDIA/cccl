@@ -46,8 +46,7 @@ private:
   tuple<_BoundArgs...> __bound_args_;
 
   template <class... _Args>
-  static constexpr bool __noexcept_constructible =
-    _CCCL_TRAIT(is_nothrow_constructible, tuple<_BoundArgs...>, _Args&&...);
+  static constexpr bool __noexcept_constructible = is_nothrow_constructible_v<tuple<_BoundArgs...>, _Args&&...>;
 
 public:
   _CCCL_TEMPLATE(class... _Args)

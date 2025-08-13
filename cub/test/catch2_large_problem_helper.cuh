@@ -28,7 +28,7 @@ struct concat_iterators_op
   SecondSegmentItT second_it;
   ::cuda::std::int64_t num_first_items;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t i)
+  __host__ __device__ _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t i)
   {
     if (i < num_first_items)
     {
@@ -57,7 +57,7 @@ struct flag_correct_writes_op
 
   static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
   template <typename OffsetT, typename T>
-  _CCCL_HOST_DEVICE void operator()(OffsetT index, T val)
+  __host__ __device__ void operator()(OffsetT index, T val)
   {
     // Set bit-flag if the correct result has been written at the given index
     if (expected_it[index] == val)

@@ -85,15 +85,12 @@ template <typename _Fp>
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, class _A3>
-[[nodiscard]] _CCCL_API constexpr enable_if_t<
-  _CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2) && _CCCL_TRAIT(is_arithmetic, _A3),
-  __promote_t<_A1, _A2, _A3>>
-lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
+[[nodiscard]]
+_CCCL_API constexpr enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && is_arithmetic_v<_A3>,
+                                __promote_t<_A1, _A2, _A3>> lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
-  static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)
-                  && _CCCL_TRAIT(is_same, _A3, __result_type)),
-                "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>), "");
   return _CUDA_VSTD::__lerp((__result_type) __a, (__result_type) __b, (__result_type) __t);
 }
 

@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_impl(_Tp __x) noexcept
 {
-  static_assert(_CCCL_TRAIT(is_floating_point, _Tp), "Only standard floating-point types are supported");
+  static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::isfinite(__x);
@@ -154,7 +154,7 @@ template <class _Tp>
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool isfinite(_Tp) noexcept
 {
   return true;

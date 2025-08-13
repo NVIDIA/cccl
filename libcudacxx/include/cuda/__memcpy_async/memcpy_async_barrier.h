@@ -58,7 +58,7 @@ template <typename _Group, class _Tp, typename _Size, thread_scope _Sco, typenam
 _CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
   _Group const& __group, _Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
-  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_trivially_copyable, _Tp), "memcpy_async requires a trivially copyable type");
+  static_assert(_CUDA_VSTD::is_trivially_copyable_v<_Tp>, "memcpy_async requires a trivially copyable type");
 
   // 1. Determine which completion mechanisms can be used with the current
   // barrier. A local shared memory barrier, i.e., block-scope barrier in local

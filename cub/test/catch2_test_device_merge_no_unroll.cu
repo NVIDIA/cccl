@@ -27,7 +27,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 
 template <typename Key,
           typename Offset,
-          typename CompareOp = ::cuda::std::less<Key>,
+          typename CompareOp = cuda::std::less<Key>,
           typename MergeKeys = decltype(::merge_keys)>
 void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = {}, MergeKeys merge_keys = ::merge_keys)
 {
@@ -82,14 +82,14 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     sizeof(key_t) * cub::detail::merge::fallback_BLOCK_THREADS * cub::detail::merge::fallback_ITEMS_PER_THREAD;
   static_assert(agent_sm > cub::detail::max_smem_per_block,
                 "key_t is not big enough to exceed SM and trigger fallback policy");
-  static_assert(::cuda::std::is_same_v<key_t, large_type_fallb> == (fallback_sm <= cub::detail::max_smem_per_block),
+  static_assert(cuda::std::is_same_v<key_t, large_type_fallb> == (fallback_sm <= cub::detail::max_smem_per_block),
                 "SM consumption by fallback policy should fit into max_smem_per_block");
 
   test_keys<key_t, offset_t>(
     3623,
     6346,
-    ::cuda::std::less<key_t>{},
-    [](const key_t* k1, offset_t s1, const key_t* k2, offset_t s2, key_t* r, ::cuda::std::less<key_t> co) {
+    cuda::std::less<key_t>{},
+    [](const key_t* k1, offset_t s1, const key_t* k2, offset_t s2, key_t* r, cuda::std::less<key_t> co) {
       using dispatch_t = cub::detail::merge::dispatch_t<
         const key_t*,
         const cub::NullType*,
@@ -98,7 +98,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
         key_t*,
         cub::NullType*,
         offset_t,
-        ::cuda::std::less<key_t>,
+        cuda::std::less<key_t>,
         fallback_test_policy_hub>; // use a fixed policy for this test so the needed shared memory is deterministic
 
       std::size_t temp_storage_bytes = 0;

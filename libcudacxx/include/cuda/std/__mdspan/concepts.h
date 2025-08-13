@@ -67,16 +67,16 @@ inline constexpr bool __is_extents_v = __is_extents<_Tp>::value;
 // [mdspan.layout.general]/2
 template <class _Layout, class _Mapping>
 inline constexpr bool __is_mapping_of =
-  _CCCL_TRAIT(is_same, typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping);
+  is_same_v<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>;
 
 // [mdspan.layout.reqmts]/1
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_req_type = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(copyable<_Mapping>),
   requires(equality_comparable<_Mapping>),
-  requires(_CCCL_TRAIT(is_nothrow_move_constructible, _Mapping)),
-  requires(_CCCL_TRAIT(is_move_assignable, _Mapping)),
-  requires(_CCCL_TRAIT(is_nothrow_swappable, _Mapping)));
+  requires(is_nothrow_move_constructible_v<_Mapping>),
+  requires(is_move_assignable_v<_Mapping>),
+  requires(is_nothrow_swappable_v<_Mapping>));
 
 // [mdspan.layout.reqmts]/2-4
 template <class _Mapping>
@@ -115,8 +115,8 @@ _CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
 
 template <class _IndexType, class... _Indices>
 _CCCL_CONCEPT __all_convertible_to_index_type =
-  (_CCCL_TRAIT(is_convertible, _Indices, _IndexType) && ... && true)
-  && (_CCCL_TRAIT(is_nothrow_constructible, _IndexType, _Indices) && ... && true);
+  (is_convertible_v<_Indices, _IndexType> && ... && true)
+  && (is_nothrow_constructible_v<_IndexType, _Indices> && ... && true);
 
 } // namespace __mdspan_detail
 
@@ -129,8 +129,7 @@ _CCCL_CONCEPT __index_pair_like = _CCCL_REQUIRES_EXPR((_Tp, _IndexType))(
 // [mdspan.submdspan.strided.slice]/3
 
 template <class _Tp>
-_CCCL_CONCEPT __index_like =
-  _CCCL_TRAIT(is_signed, _Tp) || _CCCL_TRAIT(is_unsigned, _Tp) || __integral_constant_like<_Tp>;
+_CCCL_CONCEPT __index_like = is_signed_v<_Tp> || is_unsigned_v<_Tp> || __integral_constant_like<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

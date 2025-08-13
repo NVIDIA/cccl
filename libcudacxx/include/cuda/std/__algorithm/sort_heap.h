@@ -50,8 +50,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
 _CCCL_API constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  static_assert(_CCCL_TRAIT(is_copy_constructible, _RandomAccessIterator), "Iterators must be copy constructible.");
-  static_assert(_CCCL_TRAIT(is_copy_assignable, _RandomAccessIterator), "Iterators must be copy assignable.");
+  static_assert(is_copy_constructible_v<_RandomAccessIterator>, "Iterators must be copy constructible.");
+  static_assert(is_copy_assignable_v<_RandomAccessIterator>, "Iterators must be copy assignable.");
 
   _CUDA_VSTD::__sort_heap<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp);
 }

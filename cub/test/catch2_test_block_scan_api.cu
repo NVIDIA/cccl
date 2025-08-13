@@ -56,7 +56,7 @@ __global__ void InclusiveBlockScanKernel(int* output)
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
   // Collectively compute the block-wide inclusive scan max
-  block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, ::cuda::maximum<>{});
+  block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cuda::maximum<>{});
 
   // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
   // ...
@@ -107,8 +107,7 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
 
   // Collectively compute the block-wide inclusive scan max
   int block_aggregate;
-  block_scan_t(temp_storage)
-    .InclusiveScan(thread_data, thread_data, initial_value, ::cuda::maximum<>{}, block_aggregate);
+  block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cuda::maximum<>{}, block_aggregate);
 
   // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
   // block_aggregate = 126;

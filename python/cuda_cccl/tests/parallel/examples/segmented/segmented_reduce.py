@@ -9,8 +9,7 @@ Segmented reduction examples demonstrating reduction operations on segmented dat
 import cupy as cp
 import numpy as np
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
+import cuda.cccl.parallel.experimental as parallel
 
 
 def basic_segmented_reduce_example():
@@ -39,22 +38,9 @@ def basic_segmented_reduce_example():
     n_segments = start_o.size
     d_output = cp.empty(n_segments, dtype=dtype)
 
-    # Instantiate reduction for the given operator and initial value
-    segmented_reduce = algorithms.segmented_reduce(
-        d_output, d_output, start_o, end_o, min_op, h_init
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = segmented_reduce(
-        None, d_input, d_output, n_segments, start_o, end_o, h_init
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run reduction
-    segmented_reduce(
-        d_temp_storage, d_input, d_output, n_segments, start_o, end_o, h_init
+    # Run segmented reduction with automatic temp storage allocation
+    parallel.segmented_reduce(
+        d_input, d_output, start_o, end_o, min_op, h_init, n_segments
     )
 
     # Check the result is correct
@@ -91,8 +77,8 @@ def rowwise_sum_example():
 
     zero = np.int32(0)
     row_offset = make_scaler(np.int32(n_cols))
-    start_offsets = iterators.TransformIterator(
-        iterators.CountingIterator(zero), row_offset
+    start_offsets = parallel.TransformIterator(
+        parallel.CountingIterator(zero), row_offset
     )
 
     end_offsets = start_offsets + 1
@@ -101,18 +87,10 @@ def rowwise_sum_example():
     h_init = np.zeros(tuple(), dtype=np.int32)
     d_output = cp.empty(n_rows, dtype=d_input.dtype)
 
-    alg = algorithms.segmented_reduce(
-        d_input, d_output, start_offsets, end_offsets, add_op, h_init
+    # Run segmented reduction with automatic temp storage allocation
+    parallel.segmented_reduce(
+        d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
     )
-
-    # query size of temporary storage and allocate
-    temp_nbytes = alg(
-        None, d_input, d_output, n_rows, start_offsets, end_offsets, h_init
-    )
-    temp_storage = cp.empty(temp_nbytes, dtype=cp.uint8)
-
-    # launch computation
-    alg(temp_storage, d_input, d_output, n_rows, start_offsets, end_offsets, h_init)
 
     # Verify correctness
     expected = cp.sum(mat, axis=-1)
@@ -143,22 +121,9 @@ def mixed_segments_example():
     d_output = cp.empty(n_segments, dtype=np.int32)
     h_init = np.array(0, dtype=np.int32)
 
-    # Instantiate segmented reduction
-    segmented_reduce = algorithms.segmented_reduce(
-        d_input, d_output, start_o, end_o, add_op, h_init
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = segmented_reduce(
-        None, d_input, d_output, n_segments, start_o, end_o, h_init
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run reduction
-    segmented_reduce(
-        d_temp_storage, d_input, d_output, n_segments, start_o, end_o, h_init
+    # Run segmented reduction with automatic temp storage allocation
+    parallel.segmented_reduce(
+        d_input, d_output, start_o, end_o, add_op, h_init, n_segments
     )
 
     # Expected results: [1, 9, 11, 34]

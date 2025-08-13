@@ -21,22 +21,9 @@ def test_merge_sort():
     d_in_keys = cp.asarray(h_in_keys)
     d_in_items = cp.asarray(h_in_items)
 
-    # Instantiate merge_sort for the given keys, items, and operator
-    merge_sort = parallel.merge_sort(
-        d_in_keys, d_in_items, d_in_keys, d_in_items, compare_op
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = merge_sort(
-        None, d_in_keys, d_in_items, d_in_keys, d_in_items, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run merge_sort
-    merge_sort(
-        d_temp_storage, d_in_keys, d_in_items, d_in_keys, d_in_items, d_in_keys.size
+    # Run merge_sort with automatic temp storage allocation
+    parallel.merge_sort(
+        d_in_keys, d_in_items, d_in_keys, d_in_items, compare_op, d_in_keys.size
     )
 
     # Check the result is correct

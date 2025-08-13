@@ -45,7 +45,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -99,7 +99,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -153,7 +153,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -208,7 +208,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -263,7 +263,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -317,7 +317,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -371,7 +371,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -426,7 +426,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -481,7 +481,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -537,7 +537,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -593,7 +593,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -650,7 +650,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -707,7 +707,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -763,7 +763,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b0_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -819,7 +819,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -876,7 +876,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b0_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -933,7 +933,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -987,7 +987,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1041,7 +1041,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1096,7 +1096,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1151,7 +1151,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1205,7 +1205,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1259,7 +1259,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1314,7 +1314,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1369,7 +1369,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1425,7 +1425,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1481,7 +1481,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -1538,7 +1538,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -1595,7 +1595,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1651,7 +1651,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b1_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1707,7 +1707,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -1764,7 +1764,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b1_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -1821,7 +1821,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1875,7 +1875,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -1929,7 +1929,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -1984,7 +1984,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2039,7 +2039,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2093,7 +2093,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2147,7 +2147,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2202,7 +2202,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2257,7 +2257,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2313,7 +2313,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2369,7 +2369,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -2426,7 +2426,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -2483,7 +2483,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2539,7 +2539,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b2_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2595,7 +2595,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -2652,7 +2652,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b2_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -2709,7 +2709,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2763,7 +2763,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2817,7 +2817,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2872,7 +2872,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -2927,7 +2927,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -2981,7 +2981,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -3035,7 +3035,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -3090,7 +3090,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -3145,7 +3145,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -3201,7 +3201,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -3257,7 +3257,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -3314,7 +3314,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;
@@ -3371,7 +3371,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d,
         // zero_column_mask_desc;
@@ -3427,7 +3427,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_collector_b3_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
@@ -3483,7 +3483,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool, uint64_t)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d, zero_column_mask_desc;
@@ -3540,7 +3540,7 @@ __global__ void test_tcgen05_mma_ws(void** fn_ptr)
                 cuda::ptx::cta_group_1_t, cuda::ptx::kind_i8_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
                 cuda::ptx::tcgen05_mma_ws_tmem_a_collector_b3_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc,
         // enable_input_d;

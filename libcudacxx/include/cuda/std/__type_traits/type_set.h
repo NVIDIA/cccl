@@ -37,7 +37,7 @@ template <class...>
 struct __type_list;
 
 template <class _Set, class... _Ty>
-struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, type_identity<_Ty>, _Set)...>
+struct __type_set_contains : __fold_and<is_base_of_v<type_identity<_Ty>, _Set>...>
 {};
 
 template <class _Set, class... _Ty>
@@ -66,8 +66,7 @@ struct __tupl<_Ty, _Ts...>
     , __tupl<_Ts...>
 {
   template <class _Uy>
-  using __maybe_insert _CCCL_NODEBUG_ALIAS =
-    _If<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
+  using __maybe_insert _CCCL_NODEBUG_ALIAS = _If<__type_set_contains_v<__tupl, _Uy>, __tupl, __tupl<_Uy, _Ty, _Ts...>>;
 
   _CCCL_API static constexpr size_t __size() noexcept
   {
@@ -119,7 +118,7 @@ template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
 template <class _Ty, class... _Ts>
-struct __is_included_in : __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>
+struct __is_included_in : __fold_or<is_same_v<_Ty, _Ts>...>
 {};
 
 template <class _Ty, class... _Ts>

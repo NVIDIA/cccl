@@ -35,7 +35,8 @@ namespace cuda::experimental
 namespace __detail
 {
 template <typename _SrcTy, typename _DstTy>
-void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUDA_VSTD::span<_DstTy> __dst)
+_CCCL_HOST_API void
+__copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUDA_VSTD::span<_DstTy> __dst)
 {
   static_assert(!_CUDA_VSTD::is_const_v<_DstTy>, "Copy destination can't be const");
   static_assert(_CUDA_VSTD::is_trivially_copyable_v<_SrcTy> && _CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
@@ -48,21 +49,6 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
   _CUDA_DRIVER::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
 }
 
-template <typename _SrcExtents, typename _DstExtents>
-[[nodiscard]] bool __copy_bytes_runtime_extents_match(_SrcExtents __src_exts, _DstExtents __dst_exts)
-{
-  for (typename _SrcExtents::rank_type __i = 0; __i < __src_exts.rank(); __i++)
-  {
-    if (__src_exts.extent(__i)
-        != static_cast<typename _SrcExtents::index_type>(
-          __dst_exts.extent(static_cast<typename _DstExtents::rank_type>(__i))))
-    {
-      return false;
-    }
-  }
-  return true;
-}
-
 template <typename _SrcElem,
           typename _SrcExtents,
           typename _SrcLayout,
@@ -71,9 +57,9 @@ template <typename _SrcElem,
           typename _DstExtents,
           typename _DstLayout,
           typename _DstAccessor>
-void __copy_bytes_impl(stream_ref __stream,
-                       _CUDA_VSTD::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
-                       _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
+_CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
+                                      _CUDA_VSTD::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
+                                      _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
 {
   static_assert(_CUDA_VSTD::is_constructible_v<_DstExtents, _SrcExtents>,
                 "Multidimensional copy requires both source and destination extents to be compatible");
@@ -86,24 +72,23 @@ void __copy_bytes_impl(stream_ref __stream,
     _CUDA_VSTD::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
   }
 
-  if (!__detail::__copy_bytes_runtime_extents_match(__src.extents(), __dst.extents()))
+  if (__src.extents() != __dst.extents())
   {
     _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
   }
 
-  __detail::__copy_bytes_impl(__stream,
-                              _CUDA_VSTD::span(__src.data_handle(), __src.mapping().required_span_size()),
-                              _CUDA_VSTD::span(__dst.data_handle(), __dst.mapping().required_span_size()));
+  ::cuda::experimental::__detail::__copy_bytes_impl(
+    __stream,
+    _CUDA_VSTD::span(__src.data_handle(), __src.mapping().required_span_size()),
+    _CUDA_VSTD::span(__dst.data_handle(), __dst.mapping().required_span_size()));
 }
 } // namespace __detail
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided
 //! stream.
 //!
-//! Both source and destination needs to either be a `contiguous_range` or transform to
-//! one. They can also implicitly convert to `cuda::std::span`, but the type needs to
-//! contain `value_type` member alias. The element types of both the source and
-//! destination range is required to be trivially copyable.
+//! Both source and destination needs to be or device_transform to a type that is a `contiguous_range` and converts to
+//! `cuda::std::span`. The element types of both the source and destination range is required to be trivially copyable.
 //!
 //! This call might be synchronous if either source or destination is pagable host memory.
 //! It will be synchronous if both destination and copy is located in host memory.
@@ -114,18 +99,19 @@ void __copy_bytes_impl(stream_ref __stream,
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
 _CCCL_REQUIRES(
   __spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
-void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
+_CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
-  __detail::__copy_bytes_impl(__stream,
-                              _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-                              _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
+  ::cuda::experimental::__detail::__copy_bytes_impl(
+    __stream,
+    _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
+    _CUDA_VSTD::span(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
 }
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided
 //! stream.
 //!
-//! Both source and destination needs to either be an instance of `cuda::std::mdspan` or
-//! transform to one. They can also implicitly convert to `cuda::std::mdspan`, but the
+//! Both source and destination needs to be or device_transform to an instance of `cuda::std::mdspan`.
+//! They can also implicitly convert to `cuda::std::mdspan`, but the
 //! type needs to contain `mdspan` template arguments as member aliases named
 //! `value_type`, `extents_type`, `layout_type` and `accessor_type`. The resulting mdspan
 //! is required to be exhaustive. The element types of both the source and destination
@@ -140,12 +126,12 @@ void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
 _CCCL_REQUIRES(
   __mdspannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __mdspannable<transformed_device_argument_t<_DstTy>>)
-void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
+_CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
-  __detail::__copy_bytes_impl(
+  ::cuda::experimental::__detail::__copy_bytes_impl(
     __stream,
-    experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-    experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
+    ::cuda::experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
+    ::cuda::experimental::__as_mdspan(device_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
 }
 
 } // namespace cuda::experimental

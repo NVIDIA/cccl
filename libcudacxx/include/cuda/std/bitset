@@ -59,7 +59,7 @@ struct __avoid_promotions
 
   _CCCL_HIDE_FROM_ABI constexpr __avoid_promotions() = default;
 
-  template <class _Tp, typename = enable_if_t<_CCCL_TRAIT(is_integral, _Tp)>>
+  template <class _Tp, typename = enable_if_t<is_integral_v<_Tp>>>
   _CCCL_HOST_DEVICE constexpr __avoid_promotions(_Tp __i)
       : __data(static_cast<_Int>(__i))
   {}

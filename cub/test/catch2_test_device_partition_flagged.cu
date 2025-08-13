@@ -368,17 +368,17 @@ struct convertible_from_T
       : val_(val)
   {}
 
-  _CCCL_HOST_DEVICE friend bool operator==(const convertible_from_T& a, const T& b)
+  __host__ __device__ friend bool operator==(const convertible_from_T& a, const T& b)
   {
     return a.val_ == b;
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const T& a, const convertible_from_T& b)
+  __host__ __device__ friend bool operator==(const T& a, const convertible_from_T& b)
   {
     return a == b.val_;
   }
 
-  _CCCL_HOST_DEVICE friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
+  __host__ __device__ friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
   {
     return os << value.val_;
   }

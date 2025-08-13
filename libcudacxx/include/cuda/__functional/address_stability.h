@@ -75,8 +75,8 @@ struct proclaims_copyable_arguments<_CUDA_VSTD::__not_fn_t<_Fn>> : proclaims_cop
 
 template <typename _Tp>
 struct __has_builtin_operators
-    : _CUDA_VSTD::bool_constant<!_CCCL_TRAIT(_CUDA_VSTD::is_class, _Tp) && !_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp)
-                                && !_CCCL_TRAIT(_CUDA_VSTD::is_void, _Tp)>
+    : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_class_v<_Tp> && !_CUDA_VSTD::is_enum_v<_Tp>
+                                && !_CUDA_VSTD::is_void_v<_Tp>>
 {};
 
 #define _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(functor)                                         \

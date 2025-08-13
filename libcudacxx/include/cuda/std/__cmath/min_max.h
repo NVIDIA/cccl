@@ -98,13 +98,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
                     (return ::__hmax(__x, __y);),
                     (return __float2half(_CUDA_VSTD::fmaxf(__half2float(__x), __half2float(__y)));))
 }
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmax(__half __x, _A1 __y) noexcept
 {
   return _CUDA_VSTD::fmaxf(__half2float(__x), __y);
 }
 
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmax(_A1 __x, __half __y) noexcept
 {
   return _CUDA_VSTD::fmaxf(__x, __half2float(__y));
@@ -118,24 +118,24 @@ template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
                     (return ::__hmax(__x, __y);),
                     (return __float2bfloat16(_CUDA_VSTD::fmaxf(__bfloat162float(__x), __bfloat162float(__y)));))
 }
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmax(__nv_bfloat16 __x, _A1 __y) noexcept
 {
   return _CUDA_VSTD::fmaxf(__bfloat162float(__x), __y);
 }
 
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmax(_A1 __x, __nv_bfloat16 __y) noexcept
 {
   return _CUDA_VSTD::fmaxf(__x, __bfloat162float(__y));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
+template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmax(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
   return _CUDA_VSTD::fmax((__result_type) __x, (__result_type) __y);
 }
 
@@ -200,13 +200,13 @@ template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _
                     (return ::__hmin(__x, __y);),
                     (return __float2half(_CUDA_VSTD::fminf(__half2float(__x), __half2float(__y)));))
 }
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmin(__half __x, _A1 __y) noexcept
 {
   return _CUDA_VSTD::fminf(__half2float(__x), __y);
 }
 
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmin(_A1 __x, __half __y) noexcept
 {
   return _CUDA_VSTD::fminf(__x, __half2float(__y));
@@ -220,24 +220,24 @@ template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
                     (return ::__hmin(__x, __y);),
                     (return __float2bfloat16(_CUDA_VSTD::fminf(__bfloat162float(__x), __bfloat162float(__y)));))
 }
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmin(__nv_bfloat16 __x, _A1 __y) noexcept
 {
   return _CUDA_VSTD::fminf(__bfloat162float(__x), __y);
 }
 
-template <class _A1, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1), int> = 0>
+template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmin(_A1 __x, __nv_bfloat16 __y) noexcept
 {
   return _CUDA_VSTD::fminf(__x, __bfloat162float(__y));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
+template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmin(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
   return _CUDA_VSTD::fmin((__result_type) __x, (__result_type) __y);
 }
 

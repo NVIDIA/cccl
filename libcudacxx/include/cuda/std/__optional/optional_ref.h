@@ -59,10 +59,10 @@ private:
   __raw_type* __value_ = nullptr;
 
   _CCCL_TEMPLATE(class _Ref, class _Arg)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Ref, _Arg))
+  _CCCL_REQUIRES(is_constructible_v<_Ref, _Arg>)
   [[nodiscard]] _CCCL_API static constexpr _Ref __make_reference(_Arg&& __arg) noexcept
   {
-    static_assert(_CCCL_TRAIT(is_reference, _Ref), "optional<T&>: make-reference requires a reference as argument");
+    static_assert(is_reference_v<_Ref>, "optional<T&>: make-reference requires a reference as argument");
     return _Ref(_CUDA_VSTD::forward<_Arg>(__arg));
   }
 
@@ -96,21 +96,21 @@ public:
   _CCCL_API constexpr optional(nullopt_t) noexcept {}
 
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp&, _Arg) _CCCL_AND(!__from_temporary<_Arg>))
+  _CCCL_REQUIRES(is_constructible_v<_Tp&, _Arg> _CCCL_AND(!__from_temporary<_Arg>))
   _CCCL_API explicit constexpr optional(in_place_t, _Arg&& __arg) noexcept
       : __value_(_CUDA_VSTD::addressof(__make_reference<_Tp&>(_CUDA_VSTD::forward<_Arg>(__arg))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND _CCCL_TRAIT(is_convertible, _Up, _Tp&)
-                   _CCCL_AND(!__from_temporary<_Up>))
+  _CCCL_REQUIRES(
+    (!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND is_convertible_v<_Up, _Tp&> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
       : __value_(_CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND(!_CCCL_TRAIT(is_convertible, _Up, _Tp&))
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp&, _Up) _CCCL_AND(!__from_temporary<_Up>))
+  _CCCL_REQUIRES((!__is_std_optional_v<decay_t<_Up>>) _CCCL_AND(!is_convertible_v<_Up, _Tp&>)
+                   _CCCL_AND is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API explicit constexpr optional(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
       : __value_(_CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
   {}
@@ -120,14 +120,14 @@ public:
   _CCCL_API constexpr optional(_Up&&) = delete;
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _Up&, _Tp&) _CCCL_AND(!__from_temporary<_Up&>))
+  _CCCL_REQUIRES(is_convertible_v<_Up&, _Tp&> _CCCL_AND(!__from_temporary<_Up&>))
   _CCCL_API constexpr optional(optional<_Up>& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up&>())))
       : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_convertible, _Up&, _Tp&)) _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp&, _Up&)
-                   _CCCL_AND(!__from_temporary<_Up&>))
+  _CCCL_REQUIRES(
+    (!is_convertible_v<_Up&, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, _Up&> _CCCL_AND(!__from_temporary<_Up&>))
   _CCCL_API explicit constexpr optional(optional<_Up>& __u) noexcept(
     noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up&>())))
       : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
@@ -138,15 +138,15 @@ public:
   _CCCL_API constexpr optional(optional<_Up>&) = delete;
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, const _Up&, _Tp&) _CCCL_AND(!__from_temporary<const _Up&>))
+  _CCCL_REQUIRES(is_convertible_v<const _Up&, _Tp&> _CCCL_AND(!__from_temporary<const _Up&>))
   _CCCL_API constexpr optional(const optional<_Up>& __u) noexcept(
     noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up&>())))
       : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_convertible, const _Up&, _Tp&)) _CCCL_AND _CCCL_TRAIT(
-    is_constructible, _Tp&, const _Up&) _CCCL_AND(!__from_temporary<const _Up&>))
+  _CCCL_REQUIRES((!is_convertible_v<const _Up&, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, const _Up&> _CCCL_AND(
+    !__from_temporary<const _Up&>))
   _CCCL_API explicit constexpr optional(const optional<_Up>& __u) noexcept(
     noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up&>())))
       : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
@@ -157,15 +157,15 @@ public:
   _CCCL_API constexpr optional(const optional<_Up>&) = delete;
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _Up, _Tp&) _CCCL_AND(!__from_temporary<_Up>))
+  _CCCL_REQUIRES(is_convertible_v<_Up, _Tp&> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API constexpr optional(optional<_Up>&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
       : __value_(
           __u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u.value()))) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_convertible, _Up, _Tp&)) _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp&, _Up)
-                   _CCCL_AND(!__from_temporary<_Up>))
+  _CCCL_REQUIRES(
+    (!is_convertible_v<_Up, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API explicit constexpr optional(optional<_Up>&& __u) noexcept(
     noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<_Up>())))
       : __value_(
@@ -177,15 +177,15 @@ public:
   _CCCL_API constexpr optional(optional<_Up>&&) = delete;
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, const _Up, _Tp&) _CCCL_AND(!__from_temporary<const _Up>))
+  _CCCL_REQUIRES(is_convertible_v<const _Up, _Tp&> _CCCL_AND(!__from_temporary<const _Up>))
   _CCCL_API constexpr optional(const optional<_Up>&& __u) noexcept(
     noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up>())))
       : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
   {}
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_convertible, const _Up, _Tp&)) _CCCL_AND _CCCL_TRAIT(
-    is_constructible, _Tp&, const _Up) _CCCL_AND(!__from_temporary<const _Up>))
+  _CCCL_REQUIRES((!is_convertible_v<const _Up, _Tp&>) _CCCL_AND is_constructible_v<_Tp&, const _Up> _CCCL_AND(
+    !__from_temporary<const _Up>))
   _CCCL_API explicit constexpr optional(const optional<_Up>&& __u) noexcept(
     noexcept(static_cast<_Tp&>(_CUDA_VSTD::declval<const _Up>())))
       : __value_(__u.has_value() ? _CUDA_VSTD::addressof(static_cast<_Tp&>(__u.value())) : nullptr)
@@ -205,7 +205,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Up = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp&, _Up) _CCCL_AND(!__from_temporary<_Up>))
+  _CCCL_REQUIRES(is_constructible_v<_Tp&, _Up> _CCCL_AND(!__from_temporary<_Up>))
   _CCCL_API constexpr _Tp& emplace(_Up&& __u) noexcept(noexcept(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u))))
   {
     __value_ = _CUDA_VSTD::addressof(static_cast<_Tp&>(_CUDA_VSTD::forward<_Up>(__u)));
@@ -254,8 +254,8 @@ public:
   template <class _Up>
   _CCCL_API constexpr remove_cvref_t<_Tp> value_or(_Up&& __v) const
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Tp), "optional<T&>::value_or: T must be copy constructible");
-    static_assert(_CCCL_TRAIT(is_convertible, _Up, _Tp), "optional<T&>::value_or: U must be convertible to T");
+    static_assert(is_copy_constructible_v<_Tp>, "optional<T&>::value_or: T must be copy constructible");
+    static_assert(is_convertible_v<_Up, _Tp>, "optional<T&>::value_or: U must be convertible to T");
     return __value_ != nullptr ? *__value_ : static_cast<_Tp>(_CUDA_VSTD::forward<_Up>(__v));
   }
 
@@ -276,14 +276,14 @@ public:
   _CCCL_API constexpr auto transform(_Func&& __f) const
   {
     using _Up = invoke_result_t<_Func, _Tp&>;
-    static_assert(!_CCCL_TRAIT(is_array, _Up), "optional<T&>::transform: Result of f(value()) should not be an Array");
-    static_assert(!_CCCL_TRAIT(is_same, _Up, in_place_t),
+    static_assert(!is_array_v<_Up>, "optional<T&>::transform: Result of f(value()) should not be an Array");
+    static_assert(!is_same_v<_Up, in_place_t>,
                   "optional<T&>::transform: Result of f(value()) should not be std::in_place_t");
-    static_assert(!_CCCL_TRAIT(is_same, _Up, nullopt_t),
+    static_assert(!is_same_v<_Up, nullopt_t>,
                   "optional<T&>::transform: Result of f(value()) should not be std::nullopt_t");
     if (__value_ != nullptr)
     {
-      if constexpr (_CCCL_TRAIT(is_lvalue_reference, _Up))
+      if constexpr (is_lvalue_reference_v<_Up>)
       {
         return optional<_Up>(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Func>(__f), *__value_));
       }
@@ -300,7 +300,7 @@ public:
   _CCCL_API constexpr optional or_else(_Func&& __f) const
   {
     using _Up = invoke_result_t<_Func>;
-    static_assert(_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional),
+    static_assert(is_same_v<remove_cvref_t<_Up>, optional>,
                   "optional<T&>::or_else: Result of f() should be the same type as this optional");
     if (__value_ != nullptr)
     {

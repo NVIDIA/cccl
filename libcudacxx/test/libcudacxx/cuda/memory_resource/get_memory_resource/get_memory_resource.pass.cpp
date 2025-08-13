@@ -15,23 +15,23 @@
 
 struct test_resource
 {
-  __host__ __device__ void* allocate(std::size_t, std::size_t)
+  __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  __host__ __device__ void deallocate(void* ptr, std::size_t, std::size_t) noexcept
+  __host__ __device__ void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
+  __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  __host__ __device__ void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
+  __host__ __device__ void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
@@ -169,12 +169,12 @@ __host__ __device__ void test()
     {
       struct resource
       {
-        __host__ __device__ void* allocate(std::size_t, std::size_t)
+        __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
         {
           return nullptr;
         }
 
-        __host__ __device__ void deallocate(void*, std::size_t, std::size_t) noexcept {}
+        __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 
         __host__ __device__ bool operator==(const resource&) const noexcept
         {

@@ -726,6 +726,26 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
   return {op, name, compile(code)};
 }
 
+static cccl_op_t make_well_known_unary_operation()
+{
+  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, 1, 1, nullptr};
+}
+
+static cccl_op_t make_well_known_binary_operation()
+{
+  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, 1, 1, nullptr};
+}
+
+static cccl_op_t make_well_known_binary_predicate()
+{
+  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, 1, 1, nullptr};
+}
+
+static cccl_op_t make_well_known_unique_binary_predicate()
+{
+  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, 1, 1, nullptr};
+}
+
 template <class ValueT, class StateT>
 struct iterator_t
 {

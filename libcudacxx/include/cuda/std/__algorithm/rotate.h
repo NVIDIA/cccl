@@ -165,7 +165,7 @@ _CCCL_API constexpr _ForwardIterator __rotate_impl(
   _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
 {
   using value_type = typename iterator_traits<_ForwardIterator>::value_type;
-  if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
+  if (is_trivially_move_assignable_v<value_type>)
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
@@ -184,7 +184,7 @@ _CCCL_API constexpr _BidirectionalIterator __rotate_impl(
   bidirectional_iterator_tag)
 {
   using value_type = typename iterator_traits<_BidirectionalIterator>::value_type;
-  if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
+  if (is_trivially_move_assignable_v<value_type>)
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {
@@ -207,7 +207,7 @@ _CCCL_API constexpr _RandomAccessIterator __rotate_impl(
   random_access_iterator_tag)
 {
   using value_type = typename iterator_traits<_RandomAccessIterator>::value_type;
-  if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
+  if (is_trivially_move_assignable_v<value_type>)
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
     {

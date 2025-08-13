@@ -236,6 +236,34 @@ C2H_TEST("Transform works with misaligned output with integral types", "[transfo
   output_ptr.ptr = nullptr; // avoid freeing the memory through this pointer
 }
 
+struct Transform_IntegralTypes_WellKnown_Fixture_Tag;
+C2H_TEST("Transform works with integral types with well-known operations", "[transform][well_known]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  cccl_op_t op                = make_well_known_unary_operation();
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_IntegralTypes_WellKnown_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
+    return -x;
+  });
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+}
+
 struct pair
 {
   short a;
@@ -281,7 +309,7 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   }
 }
 
-struct Transform_CustomTypes_FIxture_Tag;
+struct Transform_CustomTypes_Fixture_Tag;
 C2H_TEST("Transform works with custom types", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
@@ -305,7 +333,50 @@ C2H_TEST("Transform works with custom types", "[transform]")
   pointer_t<pair> input_ptr(input);
   pointer_t<pair> output_ptr(output);
 
-  auto& build_cache    = get_cache<Transform_CustomTypes_FIxture_Tag>();
+  auto& build_cache    = get_cache<Transform_CustomTypes_Fixture_Tag>();
+  const auto& test_key = make_key<pair, pair>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<pair> expected(num_items, {0, 0});
+  std::transform(input.begin(), input.end(), expected.begin(), [](const pair& x) {
+    return pair{short(x.a * 2), x.b * 2};
+  });
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<pair>(output_ptr));
+  }
+}
+
+struct Transform_CustomTypes_WellKnown_Fixture_Tag;
+C2H_TEST("Transform works with custom types with well-known operators", "[transform][well_known]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+
+  operation_t op_state = make_operation(
+    "op",
+    "struct pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
+    "  pair* x = static_cast<pair*>(x_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
+    "  *out = pair{ x->a * 2, x->b * 2  };\n"
+    "}");
+  cccl_op_t op = op_state;
+  // HACK: this doesn't actually match the operation above, but that's fine, as we are supposed to not take the
+  // well-known path anyway
+  op.type                     = cccl_op_kind_t::CCCL_NEGATE;
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<pair> input(num_items);
+  std::vector<pair> output(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input[i] = pair{a[i], b[i]};
+  }
+  pointer_t<pair> input_ptr(input);
+  pointer_t<pair> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_CustomTypes_WellKnown_Fixture_Tag>();
   const auto& test_key = make_key<pair, pair>();
 
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);

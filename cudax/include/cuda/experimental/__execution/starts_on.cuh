@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -231,7 +232,7 @@ struct starts_on_t
         : __state_{__sch, static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr)}
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_API constexpr void start() noexcept
     {
