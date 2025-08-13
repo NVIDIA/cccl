@@ -99,7 +99,11 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
+#ifdef TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
 using value_types = nvbench::type_list<int32_t, int64_t, float, double>;
+#endif
 
 NVBENCH_BENCH_TYPES(nondeterministic_sum, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("base")
