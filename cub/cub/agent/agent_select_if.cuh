@@ -49,6 +49,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/vectorized_fill.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
@@ -812,8 +813,11 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
-      BlockLoadT(temp_storage.load_items)
-        .Load(src, items, num_tile_items, *src);
+
+      // Pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the equality operator
+      InputT oob_value = *src;
+      vectorized_fill(items, oob_value);
+      BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
     }
     else
     {
@@ -893,8 +897,10 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
-      BlockLoadT(temp_storage.load_items)
-        .Load(src, items, num_tile_items, *src);
+      // Pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the equality operator
+      InputT oob_value = *src;
+      vectorized_fill(items, oob_value);
+      BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
     }
     else
     {
