@@ -39,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // code than rsqrt(x) for fp64. While rqsrtf is better for fp32.
 // So only specialize for fp32.
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt(_Tp __x)
+[[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt(_Tp __x) noexcept
 {
   if constexpr (is_same_v<_Tp, float>)
   {
@@ -51,7 +51,7 @@ template <class _Tp>
 // sqrt
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> sqrt(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API inline complex<_Tp> sqrt(const complex<_Tp>& __x) noexcept
 {
   using __uint_t = __fp_storage_of_t<_Tp>;
 
