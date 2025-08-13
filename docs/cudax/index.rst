@@ -11,6 +11,7 @@ CUDA Experimental
    memory_resource
    graph
    stf
+   cufile
    ${repo_docs_api_path}/cudax_api
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
