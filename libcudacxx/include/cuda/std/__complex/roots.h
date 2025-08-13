@@ -64,10 +64,10 @@ template <class _Tp>
 
   if (_CUDA_VSTD::isinf(__im))
   {
-    return complex<_Tp>(_CUDA_VSTD::numeric_limits<_Tp>::infinity(), __im);
+    return complex<_Tp>(numeric_limits<_Tp>::infinity(), __im);
   }
 
-  if ((__re == _Tp(0.0)) && (__im == _Tp(0.0f)))
+  if ((__re == _Tp(0.0)) && (__im == _Tp(0.0)))
   {
     return complex<_Tp>(_Tp(0.0), __im);
   }
@@ -151,7 +151,7 @@ template <class _Tp>
   // Add in the hypot inf-nan override here to avoid a complicated inf/nan check at the start.
   if (_CUDA_VSTD::isinf(__im) || _CUDA_VSTD::isinf(__re))
   {
-    __x_abs_scaled = _CUDA_VSTD::numeric_limits<_Tp>::infinity();
+    __x_abs_scaled = numeric_limits<_Tp>::infinity();
   }
 
   // These would be the ideal terms we want to compute, however we can get catastrophic
@@ -169,7 +169,7 @@ template <class _Tp>
   const bool __im_part_is_hard = (__re_scaled > _Tp(0.0));
   _Tp __easy_part              = __im_part_is_hard ? __ans_re_sq : __ans_im_sq;
 
-  _Tp __sqrt_easy_part = __internal_rsqrt<_Tp>(__easy_part);
+  _Tp __sqrt_easy_part = _CUDA_VSTD::__internal_rsqrt<_Tp>(__easy_part);
 
   // (__im_scaled) can have under/overflowed when scaled so we go back to using (__im) briefly.
   // Multiply by (__im) last to avoid over/underflow:
