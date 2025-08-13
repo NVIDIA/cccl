@@ -400,6 +400,8 @@ template <class _Sndr, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
 {
   using sender_concept = sender_t;
+  using __let_tag_t    = typename __let_t::__let_tag_t; // needed to avoid an MSVC bug
+  using __set_tag_t    = typename __let_t::__set_tag_t; // needed to avoid an MSVC bug
 
   // the env of the receiver used to connect the secondary sender
   template <class _Self, class... _Env>
