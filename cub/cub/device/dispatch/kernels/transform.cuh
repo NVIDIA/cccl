@@ -175,12 +175,6 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
 template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
