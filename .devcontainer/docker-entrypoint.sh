@@ -47,5 +47,18 @@ else
     export XDG_CONFIG_HOME="$HOME_FOLDER/.config";
     export XDG_STATE_HOME="$HOME_FOLDER/.local/state";
     export PYTHONHISTFILE="$HOME_FOLDER/.local/state/.python_history";
+
+    # "deactivate" lmod so it will be reactivated as the non-root user
+    export LMOD_CMD=
+    export LMOD_DEFAULT_MODULEPATH=
+    export LMOD_DIR=
+    export LMOD_PKG=
+    export LOADEDMODULES=
+    export MANPATH=
+    export MODULEPATH_ROOT=
+    export MODULEPATH=
+    export MODULESHOME=
+    export -fn module
+
     exec su -p "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 fi
