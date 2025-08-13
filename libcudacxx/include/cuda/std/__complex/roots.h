@@ -45,7 +45,7 @@ template <class _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrtf(__x);))
   }
-  return _Tp(1.0) / _CUDA_VSTD::sqrt(__x);
+  return _Tp(1) / _CUDA_VSTD::sqrt(__x);
 }
 
 // sqrt
@@ -67,9 +67,9 @@ template <class _Tp>
     return complex<_Tp>(numeric_limits<_Tp>::infinity(), __im);
   }
 
-  if ((__re == _Tp(0.0)) && (__im == _Tp(0.0)))
+  if ((__re == _Tp(0)) && (__im == _Tp(0)))
   {
-    return complex<_Tp>(_Tp(0.0), __im);
+    return complex<_Tp>(_Tp(0), __im);
   }
 
   // pre-check to see if we over/underflow:
@@ -79,7 +79,6 @@ template <class _Tp>
   // Doesn't need to be too exact, enough to cover extremal cases.
   // overflow bound = sqrt(MAX_FLOAT / 2)
   // underflow bound similar, but tweaked to allow for normalizing denormal calculation.
-  constexpr __uint_t __overflow_bound_exp =
   constexpr __uint_t __overflow_bound_exp =
     static_cast<__uint_t>((static_cast<__uint_t>(__max_exponent - 1) >> 1) + __exp_bias) << __mant_nbits;
   constexpr __uint_t __underflow_bound_exp =
