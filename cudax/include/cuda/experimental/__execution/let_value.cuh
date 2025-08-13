@@ -77,8 +77,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t
   template <class _Rcvr, class _Env2>
   struct __sndr2_rcvr_t : __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>
   {
+    using __base_t = __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>;
+
     _CCCL_TRIVIAL_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
-        : __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>{__rcvr}
+        : __base_t(__ref_rcvr(__rcvr))
     {}
   };
 };
