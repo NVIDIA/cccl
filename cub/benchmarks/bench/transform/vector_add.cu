@@ -25,7 +25,7 @@ static void vector_add(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, ::cuda::std::plus<T>{});
+  bench_transform(state, cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, cuda::std::plus<T>{});
 }
 
 NVBENCH_BENCH_TYPES(vector_add, NVBENCH_TYPE_AXES(all_types, offset_types))
