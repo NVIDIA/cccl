@@ -1071,7 +1071,7 @@ public:
             typename S,
             typename... Deps,
             typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
-  auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
+  auto parallel_for([[maybe_unused]] partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
     if constexpr (::std::is_integral_v<S>)
     {
