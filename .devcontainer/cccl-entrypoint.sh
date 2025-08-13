@@ -4,6 +4,11 @@
 
 set -e;
 
+if ! test -n "${DISABLE_SCCACHE:+x}" && test -n "${DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST:+x}"; then
+    export SCCACHE_DIST_URL="https://$(dpkg --print-architecture).$(uname -s | tr '[:upper:]' '[:lower:]').sccache.rapids.nvidia.com";
+    echo "export SCCACHE_DIST_URL=$SCCACHE_DIST_URL" >> ~/.bashrc;
+fi
+
 devcontainer-utils-post-create-command;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;

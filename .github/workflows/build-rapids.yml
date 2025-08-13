@@ -88,6 +88,13 @@ jobs:
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
+          # Build cluster auth
+          SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
+          SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
+          # Infinitely retry all retryable errors
+          SCCACHE_DIST_MAX_RETRIES: "inf"
+          # Never fallback to building locally, fail instead
+          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
@@ -131,7 +138,7 @@ jobs:
               cat <<____EOF
              RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
                .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
-               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
+               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j0 -v || exec /bin/bash -li'
           ____EOF
               echo ""
               echo "For additional information, see:"
@@ -151,7 +158,7 @@ jobs:
             _apply_manifest_modifications;
             for lib in ${RAPIDS_LIBS}; do
               sccache -z
-              if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
+              if ! configure-${lib}-cpp || ! build-${lib}-cpp -j0; then
                 if ! test -v failures_map["${lib}"]; then
                   failures+=("${lib}")
                   failures_map["${lib}"]=1
@@ -174,7 +181,6 @@ jobs:
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
-            --env "CI=$CI" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \

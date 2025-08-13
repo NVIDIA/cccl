@@ -9,15 +9,35 @@
     "-c",
     "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}; mkdir -m 0755 -p ${localWorkspaceFolder}/{build,wheelhouse}; if test -z ${localEnv:WSLENV}; then docker volume create --driver local --opt type=none --opt device=${localWorkspaceFolder}/build --opt o=bind cccl-build; docker volume create --driver local --opt type=none --opt device=${localWorkspaceFolder}/wheelhouse --opt o=bind cccl-wheelhouse; else docker volume create cccl-build; docker volume create cccl-wheelhouse; fi;"
   ],
+  "postCreateCommand": [
+    "/bin/bash",
+    "-c",
+    "if ! test -n ${DISABLE_SCCACHE:+x}; then echo \"export SCCACHE_DIST_URL=https://$(dpkg --print-architecture).$(uname -s | tr '[:upper:]' '[:lower:]').sccache.rapids.nvidia.com\" >> /home/coder/.bashrc; fi"
+  ],
   "postAttachCommand": [
     "/bin/bash",
     "-c",
     "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"
   ],
   "containerEnv": {
-    "SCCACHE_REGION": "us-east-2",
-    "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
+    "CI": "${localEnv:CI}",
+    "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "true",
+    "NVCC_APPEND_FLAGS": "-t=100",
+    "SCCACHE_DIST_TOKEN": "${localEnv:SCCACHE_DIST_TOKEN}",
+    "SCCACHE_DIST_CONNECT_TIMEOUT": "${localEnv:SCCACHE_DIST_CONNECT_TIMEOUT:30}",
+    "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
+    "SCCACHE_DIST_KEEPALIVE_ENABLED": "${localEnv:SCCACHE_DIST_KEEPALIVE_ENABLED:true}",
+    "SCCACHE_DIST_KEEPALIVE_INTERVAL": "${localEnv:SCCACHE_DIST_KEEPALIVE_INTERVAL:20}",
+    "SCCACHE_DIST_KEEPALIVE_TIMEOUT": "${localEnv:SCCACHE_DIST_KEEPALIVE_TIMEOUT:600}",
+    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
+    "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
+    "SCCACHE_ERROR_LOG": "/home/coder/cccl/.cache/sccache.log",
+    "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:7200}",
+    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda99.9-llvm19",
     "CCCL_CUDA_VERSION": "99.9",

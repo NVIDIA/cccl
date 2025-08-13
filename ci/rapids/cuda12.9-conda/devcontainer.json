@@ -3,17 +3,33 @@
   "runArgs": [
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda12.9-conda"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda12.9-conda",
+    "--ulimit",
+    "nofile=500000"
   ],
   "hostRequirements": {"gpu": "optional"},
-  "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:25.8": {}
-  },
-  "overrideFeatureInstallOrder": [
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
-  ],
   "containerEnv": {
+    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",
+    "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "true",
+    "INFER_NUM_DEVICE_ARCHITECTURES": "1",
+    "MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL": "20",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "SCCACHE_DIST_TOKEN": "${localEnv:SCCACHE_DIST_TOKEN}",
+    "SCCACHE_DIST_CONNECT_TIMEOUT": "${localEnv:SCCACHE_DIST_CONNECT_TIMEOUT:30}",
+    "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
+    "SCCACHE_DIST_KEEPALIVE_ENABLED": "${localEnv:SCCACHE_DIST_KEEPALIVE_ENABLED:true}",
+    "SCCACHE_DIST_KEEPALIVE_INTERVAL": "${localEnv:SCCACHE_DIST_KEEPALIVE_INTERVAL:20}",
+    "SCCACHE_DIST_KEEPALIVE_TIMEOUT": "${localEnv:SCCACHE_DIST_KEEPALIVE_TIMEOUT:600}",
+    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
+    "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
+    "SCCACHE_ERROR_LOG": "/home/coder/cccl/.cache/sccache.log",
+    "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:7200}",
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_REPOSITORY": "rapidsai/sccache",
+    "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
+    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
+    "SCCACHE_VERSION": "rapids",
     "CUDAARCHS": "75-real",
     "CUDA_VERSION": "12.9",
     "DEFAULT_CONDA_ENV": "rapids",
@@ -21,9 +37,6 @@
     "PYTHONUNBUFFERED": "1",
     "PYTHONDONTWRITEBYTECODE": "1",
     "PYTHON_PACKAGE_MANAGER": "conda",
-    "SCCACHE_REGION": "us-east-2",
-    "SCCACHE_BUCKET": "rapids-sccache-devs",
-    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "/home/coder/.cache/._bash_history",
     "LIBCUDF_KERNEL_CACHE_PATH": "/home/coder/cudf/cpp/build/latest/jitify_cache",
     "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
@@ -47,7 +60,7 @@
   "postCreateCommand": [
     "/bin/bash",
     "-c",
-    "if [ ${CI:-false} = 'false' ]; then . /home/coder/cccl/ci/rapids/post-create-command.sh; fi"
+    "if [ ${CI:-false} = 'false' ]; then . /home/coder/cccl/ci/rapids/post-create-command.sh; fi; if ! test -n ${DISABLE_SCCACHE:+x}; then echo \"export SCCACHE_DIST_URL=https://$(dpkg --print-architecture).$(uname -s | tr '[:upper:]' '[:lower:]').sccache.rapids.nvidia.com\" >> /home/coder/.bashrc; fi"
   ],
   "postAttachCommand": [
     "/bin/bash",
@@ -71,6 +84,12 @@
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph-gnn,target=/home/coder/cugraph-gnn,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.conda,target=/home/coder/.conda,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind,consistency=consistent"
+  ],
+  "features": {
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:25.10": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
   "customizations": {
     "vscode": {
