@@ -94,6 +94,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
   friend struct let_stopped_t;
 
   using __let_tag_t = _LetTag; // needed to avoid an MSVC bug
+  using __set_tag_t = _SetTag; // needed to avoid an MSVC bug
 
   //! @brief Computes the type of a variant of tuples to hold the results of the
   //! predecessor sender.
@@ -410,6 +411,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
       using __domain_t            = __detail::__domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<_SetTag>>;
       using __env2_t              = __let_t::__env2_t<env_of_t<_Sndr>>;
       using __completion_domain_t = __completion_domain_of_t<_Sndr, _Fn>;
+      using __transform_fn_t      = __transform_args_fn<_Fn, __env2_t, _Env...>;
 
       if constexpr (_CUDA_VSTD::is_same_v<__completion_domain_t, __nil> && sizeof...(_Env) != 0)
       {
@@ -417,18 +419,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
                                             _WHAT(_FUNCTION_MUST_RETURN_SENDERS_THAT_ALL_COMPLETE_IN_A_COMMON_DOMAIN),
                                             _WITH_FUNCTION(_Fn)>();
       }
-      else if constexpr (_SetTag{} == execution::set_value)
+      else if constexpr (__set_tag_t{} == execution::set_value)
       {
-        return transform_completion_signatures(__child_completions, __transform_args_fn<_Fn, __env2_t, _Env...>{});
+        return transform_completion_signatures(__child_completions, __transform_fn_t{});
       }
-      else if constexpr (_SetTag{} == execution::set_error)
+      else if constexpr (__set_tag_t{} == execution::set_error)
       {
-        return transform_completion_signatures(__child_completions, {}, __transform_args_fn<_Fn, __env2_t, _Env...>{});
+        return transform_completion_signatures(__child_completions, {}, __transform_fn_t{});
       }
       else
       {
-        return transform_completion_signatures(
-          __child_completions, {}, {}, __transform_args_fn<_Fn, __env2_t, _Env...>{});
+        return transform_completion_signatures(__child_completions, {}, {}, __transform_fn_t{});
       }
     }
 
