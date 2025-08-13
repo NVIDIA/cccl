@@ -203,8 +203,8 @@ struct DeviceTransform
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
-            typename Predicate,
             typename NumItemsT,
+            typename Predicate,
             typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
@@ -243,8 +243,8 @@ struct DeviceTransform
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
-            typename Predicate,
             typename NumItemsT,
+            typename Predicate,
             typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
     void* d_temp_storage,
@@ -305,8 +305,8 @@ struct DeviceTransform
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
-            typename Predicate,
             typename NumItemsT,
+            typename Predicate,
             typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
     RandomAccessIteratorIn input,
@@ -329,8 +329,8 @@ struct DeviceTransform
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
-            typename Predicate,
             typename NumItemsT,
+            typename Predicate,
             typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
     void* d_temp_storage,
