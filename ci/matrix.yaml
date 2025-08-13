@@ -26,6 +26,11 @@ workflows:
 
     # 12.X python images, pinned at gcc13 for consistency, as 12.5 / 12.6 don't support newer gcc.
     - {jobs: ['build'], ctk: ['12.5', '12.6', '12.8', '12.9'], cxx: 'gcc13'}
+    # Modded builds:
+    - {jobs: ['build'], std: 'all', ctk: '12.9', cxx: 'nvhpc'}
+    - {jobs: ['build'], std: 'max', cxx: ['gcc', 'clang'], cpu: 'arm64'}
+    # NVHPC stdpar smoke tests
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.9', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
     - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_par'],                                         ctk: [                '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc13'}
