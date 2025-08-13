@@ -41,17 +41,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline _Tp __internal_rsqrt(_Tp __x)
 {
+  if constexpr (is_same_v<_Tp, float>)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrtf(__x);))
+  }
   return _Tp(1.0) / _CUDA_VSTD::sqrt(__x);
-}
-
-template <>
-_CCCL_API inline float __internal_rsqrt<float>(float __x)
-{
-  // Use device optimized rsqrt when better.
-  float __sqrt_x;
-
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__sqrt_x = ::rsqrtf(__x);), (__sqrt_x = 1.0f / (_CUDA_VSTD::sqrtf(__x));))
-  return __sqrt_x;
 }
 
 // sqrt
