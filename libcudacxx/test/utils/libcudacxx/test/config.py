@@ -253,7 +253,7 @@ class Configuration(object):
             self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
             return ""
 
-        arches = sorted(set([int(arch) for arch in archs]))
+        archs = sorted(set([int(arch) for arch in archs]))
         last_arch = archs[-1]
         archs = [f"{arch}-real" for arch in archs]
         archs.append(f"{last_arch}-virtual")
