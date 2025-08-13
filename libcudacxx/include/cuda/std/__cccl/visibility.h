@@ -53,10 +53,13 @@
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
+#  define _CCCL_TYPE_VISIBILITY_HIDDEN
 #elif _CCCL_HAS_ATTRIBUTE(__type_visibility__)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT __attribute__((__type_visibility__("default")))
+#  define _CCCL_TYPE_VISIBILITY_HIDDEN  __attribute__((__type_visibility__("hidden")))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__type_visibility__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__type_visibility__) vvv
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_VISIBILITY_DEFAULT
+#  define _CCCL_TYPE_VISIBILITY_HIDDEN  _CCCL_VISIBILITY_HIDDEN
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_COMPILER(MSVC)
