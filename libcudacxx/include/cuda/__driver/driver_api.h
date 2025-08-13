@@ -175,6 +175,26 @@ _CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t 
     __stream);
 }
 
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
+  void* __dst, const void* __src, size_t __count, ::CUstream __stream, ::CUmemcpyAttributes __attributes)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
+  size_t __zero           = 0;
+  _CUDA_DRIVER::__call_driver_fn(
+    __driver_fn,
+    "Failed to perform a memcpy with attributes",
+    reinterpret_cast<::CUdeviceptr*>(&__dst),
+    reinterpret_cast<::CUdeviceptr*>(&__src),
+    &__count,
+    1,
+    &__attributes,
+    &__zero,
+    1,
+    __stream);
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
 template <typename _Tp>
 _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CUstream __stream)
 {
