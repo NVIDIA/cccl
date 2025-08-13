@@ -185,6 +185,9 @@ runs:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
 
+        # Dump artifact matrix for upload step:
+        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+
         # Launch this container using the host's docker daemon
         ( # Subshell to contain the set -x log
           set -x
@@ -208,15 +211,13 @@ runs:
             --env "GH_TOKEN=${{ github.token }}" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
             --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
+            --env SCCACHE_ERROR_LOG=/home/coder/cccl/.cache/sccache.log \
             --env "JOB_ID=$JOB_ID" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
             -- ./ci.sh
         )
-
-        # Dump artifact matrix for upload step:
-        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}

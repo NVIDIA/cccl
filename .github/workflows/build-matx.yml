@@ -115,6 +115,7 @@ jobs:
             --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --env SCCACHE_ERROR_LOG=/home/coder/cccl/.cache/sccache.log \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 
