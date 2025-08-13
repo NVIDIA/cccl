@@ -101,7 +101,8 @@ jobs:
             --cuda 12.9 \
             --host gcc14 \
             --cuda-ext \
-            --env "devcontainer_utils_debug=sccache" \
+            --ulimit "nofile=$(ulimit -Hn):$(ulimit -Hn)" \
+            --env "PARALLEL_LEVEL=$(ulimit -Hn)" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "GITHUB_ENV=$GITHUB_ENV" \
