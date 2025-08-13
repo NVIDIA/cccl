@@ -59,9 +59,7 @@ _CCCL_API inline float __internal_rsqrt<float>(float __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> sqrt(const complex<_Tp>& __x)
 {
-  // Uint of the same size as our fp type.
-  // Shouldn't need make_unsigned, but just in case:
-  using __uint_t = make_unsigned_t<__fp_storage_of_t<_Tp>>;
+  using __uint_t = __fp_storage_of_t<_Tp>;
 
   constexpr int32_t __max_exponent = __fp_exp_max_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __mant_nbits   = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
