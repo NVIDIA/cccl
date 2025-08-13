@@ -92,9 +92,10 @@ cat $version_override_file
 
 # Configure and build
 rm -rf build
-mkdir build
-cd build
-cmake -G Ninja ../MatX \
+
+SCCACHE_NO_DIST_COMPILE=1 \
+cmake \
+  -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=60;70;80" \
   "-DRAPIDS_CMAKE_CPM_OVERRIDE_VERSION_FILE=${version_override_file}" \
   -DMATX_BUILD_TESTS=ON \
@@ -102,4 +103,4 @@ cmake -G Ninja ../MatX \
   -DMATX_BUILD_BENCHMARKS=ON \
   -DMATX_EN_CUTENSOR=ON
 
-cmake --build . -j 8
+cmake --build build -j "${PARALLEL_LEVEL:-}"
