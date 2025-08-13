@@ -186,7 +186,7 @@ template <class _Tp>
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
-_CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x)
+_CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) noexcept
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::sqrt(complex<float>{__x})};
 }
@@ -194,7 +194,7 @@ _CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x)
 
 #if _LIBCUDACXX_HAS_NVFP16()
 template <>
-_CCCL_API inline complex<__half> sqrt(const complex<__half>& __x)
+_CCCL_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
 {
   return complex<__half>{_CUDA_VSTD::sqrt(complex<float>{__x})};
 }
