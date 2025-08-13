@@ -83,6 +83,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t
         : __base_t(__ref_rcvr(__rcvr))
     {}
   };
+
+  template <size_t _Ny>
+  using __type_at_fn = _CUDA_VSTD::__detail::__type_at_fn<_Ny>;
 };
 
 template <class _LetTag, class _SetTag>
@@ -400,8 +403,11 @@ template <class _Sndr, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
 {
   using sender_concept = sender_t;
-  using __let_tag_t    = typename __let_t::__let_tag_t; // needed to avoid an MSVC bug
-  using __set_tag_t    = typename __let_t::__set_tag_t; // needed to avoid an MSVC bug
+
+#if _CCCL_COMPILER(MSVC)
+  using __let_tag_t = _CUDA_VSTD::__type_apply<__type_at_fn<0>, __let_t>;
+  using __set_tag_t = _CUDA_VSTD::__type_apply<__type_at_fn<1>, __let_t>;
+#endif // _CCCL_COMPILER(MSVC)
 
   // the env of the receiver used to connect the secondary sender
   template <class _Self, class... _Env>
