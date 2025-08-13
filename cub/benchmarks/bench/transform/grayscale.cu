@@ -58,9 +58,13 @@ static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   bench_transform(state, cuda::std::tuple{input.begin()}, output.begin(), n, transform_op_t<T>{});
 }
 
-using floating_point_types = nvbench::type_list<float, double>;
+#ifdef TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
+using value_types = nvbench::type_list<float, double>;
+#endif
 
-NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(floating_point_types, offset_types))
+NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("grayscale")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

@@ -28,7 +28,13 @@ static void vector_add(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   bench_transform(state, cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, cuda::std::plus<T>{});
 }
 
-NVBENCH_BENCH_TYPES(vector_add, NVBENCH_TYPE_AXES(all_types, offset_types))
+#ifdef TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
+using value_types = all_types;
+#endif
+
+NVBENCH_BENCH_TYPES(vector_add, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("vector_add")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
