@@ -44,6 +44,14 @@ __is_smem_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcep
 {
   if (::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
   {
+    // clang-format off
+    NV_IF_TARGET(NV_PROVIDES_SM_90, ( // smem can start at address 0x0 before sm_90
+      if (__ptr == nullptr)
+      {
+        return false;
+      })
+    );
+    // clang-format on
     if (__n > _CUDA_VSTD::size_t{UINT32_MAX})
     {
       return false;
@@ -62,16 +70,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 [[nodiscard]] _CCCL_API inline bool __is_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcept
 {
-  if (__ptr == nullptr)
-  {
-    return false;
-  }
   // clang-format off
-  NV_IF_TARGET(NV_IS_DEVICE, (
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
     if (!::cuda::device::__is_smem_valid_address_range(__ptr, __n))
     {
       return false;
-    };))
+    };),
+   (if (__ptr == nullptr)
+    {
+      return false;
+    })
+  );
   // clang-format on
   auto __limit = _CUDA_VSTD::uintptr_t{UINTMAX_MAX} - static_cast<_CUDA_VSTD::uintptr_t>(__n);
   return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
