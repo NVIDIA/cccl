@@ -1,3 +1,12 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
 #pragma once
 
 #include <cuda/std/detail/__config>
@@ -10,14 +19,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include "detail/error_handling.hpp"
 #include <cuda/std/span>
-#include <functional>
 
+#include <functional>
 #include <vector>
+
+#include "detail/error_handling.hpp"
 #include "detail/raii_resource.hpp"
 
-namespace cuda::experimental::cufile {
+namespace cuda::experimental::cufile
+{
 
 // Forward declarations
 class file_handle_base;
@@ -26,86 +37,84 @@ class file_handle_base;
  * @brief Batch I/O operation descriptor using span
  * @tparam T Element type (must be trivially copyable)
  */
-template<typename T>
-struct batch_io_params_span {
-    cuda::std::span<T> buffer;             ///< Buffer span
-    off_t file_offset;          ///< File offset
-    off_t buffer_offset;        ///< Buffer offset (in bytes)
-    CUfileOpcode_t opcode;      ///< CUFILE_READ or CUFILE_WRITE
-    void* cookie;               ///< User data for tracking
+template <typename T>
+struct batch_io_params_span
+{
+  cuda::std::span<T> buffer; ///< Buffer span
+  off_t file_offset; ///< File offset
+  off_t buffer_offset; ///< Buffer offset (in bytes)
+  CUfileOpcode_t opcode; ///< CUFILE_READ or CUFILE_WRITE
+  void* cookie; ///< User data for tracking
 
-    // Constructor
-    batch_io_params_span(cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr);
+  // Constructor
+  batch_io_params_span(cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr);
 };
 
 /**
  * @brief Batch I/O operation result
  */
-struct batch_io_result {
-    void* cookie;               ///< User data from operation
-    CUfileStatus_t status;      ///< Operation status
-    size_t result;              ///< Bytes transferred or error code
+struct batch_io_result
+{
+  void* cookie; ///< User data from operation
+  CUfileStatus_t status; ///< Operation status
+  size_t result; ///< Bytes transferred or error code
 
-    bool is_complete() const noexcept;
-    bool is_failed() const noexcept;
-    bool has_error() const noexcept;
+  bool is_complete() const noexcept;
+  bool is_failed() const noexcept;
+  bool has_error() const noexcept;
 };
 
 /**
  * @brief RAII wrapper for batch operations
  */
-class batch_handle {
+class batch_handle
+{
 private:
-    CUfileBatchHandle_t handle_;
-    unsigned int max_operations_;
-    detail::raii_resource<CUfileBatchHandle_t, ::std::function<void(CUfileBatchHandle_t)>> batch_resource_;
+  CUfileBatchHandle_t handle_;
+  unsigned int max_operations_;
+  detail::raii_resource<CUfileBatchHandle_t, ::std::function<void(CUfileBatchHandle_t)>> batch_resource_;
 
 public:
-    /**
-     * @brief Create batch handle
-     * @param max_operations Maximum number of operations
-     */
-    explicit batch_handle(unsigned int max_operations);
+  /**
+   * @brief Create batch handle
+   * @param max_operations Maximum number of operations
+   */
+  explicit batch_handle(unsigned int max_operations);
 
-    batch_handle(batch_handle&& other) noexcept;
-    batch_handle& operator=(batch_handle&& other) noexcept;
+  batch_handle(batch_handle&& other) noexcept;
+  batch_handle& operator=(batch_handle&& other) noexcept;
 
-    /**
-     * @brief Submit batch operations using span
-     * @tparam T Element type (must be trivially copyable)
-     * @param file_handle_ref File handle to operate on
-     * @param operations Span of span-based batch operations
-     * @param flags Additional flags (default: 0)
-     */
-    template<typename T>
-    void submit(const file_handle_base& file_handle_ref,
-               cuda::std::span<const batch_io_params_span<T>> operations,
-               unsigned int flags = 0);
+  /**
+   * @brief Submit batch operations using span
+   * @tparam T Element type (must be trivially copyable)
+   * @param file_handle_ref File handle to operate on
+   * @param operations Span of span-based batch operations
+   * @param flags Additional flags (default: 0)
+   */
+  template <typename T>
+  void submit(const file_handle_base& file_handle_ref,
+              cuda::std::span<const batch_io_params_span<T>> operations,
+              unsigned int flags = 0);
 
+  /**
+   * @brief Get batch status
+   */
+  ::std::vector<batch_io_result> get_status(unsigned int min_completed, int timeout_ms = 0);
 
+  /**
+   * @brief Cancel batch operations
+   */
+  void cancel();
 
-    /**
-     * @brief Get batch status
-     */
-    ::std::vector<batch_io_result> get_status(unsigned int min_completed,
-                                           int timeout_ms = 0);
+  /**
+   * @brief Get maximum operations capacity
+   */
+  unsigned int max_operations() const noexcept;
 
-    /**
-     * @brief Cancel batch operations
-     */
-    void cancel();
-
-    /**
-     * @brief Get maximum operations capacity
-     */
-    unsigned int max_operations() const noexcept;
-
-    /**
-     * @brief Check if the handle owns a valid resource
-     */
-    bool is_valid() const noexcept;
-
-
+  /**
+   * @brief Check if the handle owns a valid resource
+   */
+  bool is_valid() const noexcept;
 };
 
 /**
@@ -116,9 +125,9 @@ public:
  * @param buffer_offset Buffer offset (in bytes)
  * @param cookie User data for tracking
  */
-template<typename T>
-batch_io_params_span<T> make_read_operation(cuda::std::span<T> buffer, off_t file_offset,
-                                            off_t buffer_offset = 0, void* cookie = nullptr);
+template <typename T>
+batch_io_params_span<T>
+make_read_operation(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
 
 /**
  * @brief Create a write operation for batch processing
@@ -128,8 +137,8 @@ batch_io_params_span<T> make_read_operation(cuda::std::span<T> buffer, off_t fil
  * @param buffer_offset Buffer offset (in bytes)
  * @param cookie User data for tracking
  */
-template<typename T>
-batch_io_params_span<const T> make_write_operation(cuda::std::span<const T> buffer, off_t file_offset,
-                                                   off_t buffer_offset = 0, void* cookie = nullptr);
+template <typename T>
+batch_io_params_span<const T> make_write_operation(
+  cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
 
 } // namespace cuda::experimental::cufile

@@ -27,10 +27,37 @@
  * Provides clean, modern C++ interface that directly maps to the cuFILE C API.
  */
 
+// Feature detection: Check if the C cuFILE headers are available
+#ifndef CUDAX_HAS_CUFILE
+#  if defined(__has_include)
+#    if __has_include(<cufile.h>)
+#      define CUDAX_HAS_CUFILE 1
+#    else
+#      define CUDAX_HAS_CUFILE 0
+#    endif
+#  else
+#    define CUDAX_HAS_CUFILE 0
+#  endif
+#endif // CUDAX_HAS_CUFILE
+
 // ================================================================================================
 // Core Components
 // ================================================================================================
 
-#include <cuda/experimental/__cufile/cufile.hpp>
+#if CUDAX_HAS_CUFILE
+#  include <cuda/experimental/__cufile/cufile.hpp>
+#else
+// cuFILE not available on this platform. The header is safe to include, but
+// no cuFILE APIs are provided. Use CUDAX_HAS_CUFILE to conditionally compile code.
+namespace cuda
+{
+namespace experimental
+{
+namespace cufile
+{
+}
+} // namespace experimental
+} // namespace cuda
+#endif
 
 #endif // __CUDAX_CUFILE_H
