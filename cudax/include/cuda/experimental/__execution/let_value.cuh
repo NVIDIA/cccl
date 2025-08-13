@@ -75,10 +75,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t
   };
 
   template <class _Rcvr, class _Env2>
-  struct __sndr2_rcvr_t : __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env2>>
+  struct __sndr2_rcvr_t : __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>
   {
     _CCCL_TRIVIAL_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
-        : __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env2>>{__rcvr}
+        : __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>{__rcvr}
     {}
   };
 };
@@ -90,6 +90,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
   friend struct let_value_t;
   friend struct let_error_t;
   friend struct let_stopped_t;
+
+  using __let_tag_t = _LetTag; // needed to avoid an MSVC bug
 
   //! @brief Computes the type of a variant of tuples to hold the results of the
   //! predecessor sender.
@@ -311,11 +313,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
                                               _WITH_ARGUMENTS(_CUDA_VSTD::decay_t<_Ts> & ...),
                                               _WITH_RETURN_TYPE(__sndr2_t)>();
         }
+        else if constexpr (sizeof...(_Env) == 0)
+        {
+          // The function is callable with the arguments and returns a sender, but we do
+          // not know whether connect will throw.
+          return execution::get_completion_signatures<__sndr2_t, _Env2>() + __eptr_completion();
+        }
         else
         {
-          //  The function is callable with the arguments and returns a sender, but we
-          //  do not know whether connect will throw.
-          return execution::get_completion_signatures<__sndr2_t, env<_Env2, _Env>...>() + __eptr_completion();
+          // The function is callable with the arguments and returns a sender, but we do
+          // not know whether connect will throw.
+          return execution::get_completion_signatures<__sndr2_t, env<_Env2, _Env...>>() + __eptr_completion();
         }
       }
     }
@@ -459,13 +467,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     {
       if constexpr (sender_in<_Sndr, _Env...>)
       {
-        // The completion behavior of let_value(sndr, fn) is the weakest completion behavior of
-        // sndr and all the senders that fn can potentially produce.
-        return (
-          execution::min) (execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>(),
-                           execution::get_completion_signatures<_Sndr, __fwd_env_t<_Env>...>() //
-                             .select(_SetTag{}) //
-                             .transform_reduce(__completion_behavior_transform_fn<_Fn, _Env...>{}, execution::min));
+        // The completion behavior of let_value(sndr, fn) is the weakest completion
+        // behavior of sndr and all the senders that fn can potentially produce. (MSVC
+        // needs the constexpr computation broken up, hence the local variables.)
+        constexpr auto __completions =
+          execution::get_completion_signatures<_Sndr, __fwd_env_t<_Env>...>().select(_SetTag{});
+        constexpr auto __behavior =
+          __completions.transform_reduce(__completion_behavior_transform_fn<_Fn, _Env...>{}, execution::min);
+        return (execution::min) (execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>(), __behavior);
       }
       else
       {
@@ -493,7 +502,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     return {__sndr_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __let_tag_t __tag_; // use __let_tag_t instead of _LetTag to avoid MSVC bug
   _Fn __fn_;
   _Sndr __sndr_;
 };

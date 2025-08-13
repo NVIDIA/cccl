@@ -51,11 +51,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
   {
     _CCCL_API constexpr explicit __state_t(_Rcvr&& __rcvr, _Sndr2&& __sndr2)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
-        , __opstate2_(execution::connect(static_cast<_Sndr2&&>(__sndr2), __rcvr_ref(__rcvr_)))
+        , __opstate2_(execution::connect(static_cast<_Sndr2&&>(__sndr2), __ref_rcvr(__rcvr_)))
     {}
 
     _Rcvr __rcvr_;
-    connect_result_t<_Sndr2, __rcvr_ref<_Rcvr>> __opstate2_;
+    connect_result_t<_Sndr2, __rcvr_ref_t<_Rcvr>> __opstate2_;
   };
 
   template <class _Rcvr, class _Sndr2>
