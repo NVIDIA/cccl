@@ -167,7 +167,8 @@ _CCCL_PUBLIC_HOST_API const _CUDA_VMR::_Alloc_vtable* __get_resource_vptr(_Resou
   }
   else if constexpr (_CUDA_VMR::synchronous_resource<_Resource>)
   {
-    return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Synchronous, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
+    return &_CUDA_VMR::
+      __alloc_vtable<_CUDA_VMR::_AllocType::_Synchronous, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
   }
   else
   {
