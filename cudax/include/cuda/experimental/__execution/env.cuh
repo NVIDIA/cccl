@@ -196,7 +196,7 @@ template <class... _Properties>
 class env_t
 {
 private:
-  using __resource   = any_async_resource<_Properties...>;
+  using __resource   = any_resource<_Properties...>;
   using __stream_ref = stream_ref;
 
   __resource __mr_;
