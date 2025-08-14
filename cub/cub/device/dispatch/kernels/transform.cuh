@@ -763,9 +763,11 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
 
-      // let the SM ramp up the next kernel while we wait for the bulk copy. Also do it on the uniform code path to
-      // reduce traffic to the CWD.
-      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+      // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
+      // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
+      // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we decided
+      // to omit PREEXIT here. See #5249 for details.
+      // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
   else
@@ -812,7 +814,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
     }
 
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // let the SM ramp up the next kernel while we wait for the bulk copy
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
   }
 
   // all threads wait for bulk copy
