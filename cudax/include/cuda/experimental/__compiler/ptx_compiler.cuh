@@ -43,8 +43,8 @@ namespace cuda::experimental
 //! @brief A class representing the options for PTX compilation.
 struct __nvptx_compile_options
 {
-  ::std::vector<const char*> __opt_ptrs; //!< The option pointers
-  ::std::vector<::std::string> __opt_strs; //!< The option strings
+  ::std::vector<const char*> __ptrs; //!< The option pointers
+  ::std::vector<::std::string> __strs; //!< The option strings
 };
 
 //! @brief A class representing a PTX compiler.
@@ -77,8 +77,9 @@ class ptx_compiler
     // set thread limit
     if (__thread_limit_ != 1)
     {
-      __ret.__opt_ptrs.push_back("-split-compile");
-      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__thread_limit_)).c_str());
+      __ret.__ptrs.push_back("-split-compile");
+      __ret.__ptrs.push_back(nullptr); // placeholder for string pointer
+      __ret.__strs.push_back(::std::to_string(__thread_limit_));
     }
     return __ret;
   }
@@ -96,85 +97,86 @@ class ptx_compiler
     // device debug flag
     if (__ptx_opts.__device_debug_)
     {
-      __ret.__opt_ptrs.push_back("--device-debug");
+      __ret.__ptrs.push_back("--device-debug");
     }
 
     // line info flag
     if (__ptx_opts.__line_info_)
     {
-      __ret.__opt_ptrs.push_back("-line-info");
+      __ret.__ptrs.push_back("-line-info");
     }
 
     // fmad flag
-    __ret.__opt_ptrs.push_back(__ptx_opts.__fmad_ ? "-fmad=true" : "-fmad=false");
+    __ret.__ptrs.push_back(__ptx_opts.__fmad_ ? "-fmad=true" : "-fmad=false");
 
     // max register count
     if (__ptx_opts.__max_reg_count_ >= 0)
     {
-      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back("--maxrregcount").c_str());
-      __ret.__opt_strs.back().append(::std::to_string(__ptx_opts.__max_reg_count_));
+      __ret.__ptrs.push_back("--maxrregcount");
+      __ret.__ptrs.push_back(nullptr); // placeholder for string pointer
+      __ret.__strs.push_back(::std::to_string(__ptx_opts.__max_reg_count_));
     }
 
     // optimization level
     switch (__ptx_opts.__optimization_level_)
     {
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O0):
-        __ret.__opt_ptrs.push_back("-O0");
+        __ret.__ptrs.push_back("-O0");
         break;
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O1):
-        __ret.__opt_ptrs.push_back("-O1");
+        __ret.__ptrs.push_back("-O1");
         break;
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O2):
-        __ret.__opt_ptrs.push_back("-O2");
+        __ret.__ptrs.push_back("-O2");
         break;
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O3):
-        __ret.__opt_ptrs.push_back("-O3");
+        __ret.__ptrs.push_back("-O3");
         break;
       default:
         _CCCL_UNREACHABLE();
     }
 
     // position independent code flag
-    __ret.__opt_ptrs.push_back(__ptx_opts.__pic_ ? "-pic=true" : "-pic=false");
+    __ret.__ptrs.push_back(__ptx_opts.__pic_ ? "-pic=true" : "-pic=false");
 
     // binary architecture
     switch (__ptx_opts.__binary_arch_)
     {
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
-        __ret.__opt_ptrs.push_back("-arch=sm_75");
+        __ret.__ptrs.push_back("-arch=sm_75");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
-        __ret.__opt_ptrs.push_back("-arch=sm_80");
+        __ret.__ptrs.push_back("-arch=sm_80");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
-        __ret.__opt_ptrs.push_back("-arch=sm_86");
+        __ret.__ptrs.push_back("-arch=sm_86");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
-        __ret.__opt_ptrs.push_back("-arch=sm_89");
+        __ret.__ptrs.push_back("-arch=sm_89");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
-        __ret.__opt_ptrs.push_back("-arch=sm_90");
+        __ret.__ptrs.push_back("-arch=sm_90");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
-        __ret.__opt_ptrs.push_back("-arch=sm_100");
+        __ret.__ptrs.push_back("-arch=sm_100");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
-        __ret.__opt_ptrs.push_back("-arch=sm_103");
+        __ret.__ptrs.push_back("-arch=sm_103");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
-        __ret.__opt_ptrs.push_back("-arch=sm_120");
+        __ret.__ptrs.push_back("-arch=sm_120");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
-        __ret.__opt_ptrs.push_back("-arch=sm_90a");
+        __ret.__ptrs.push_back("-arch=sm_90a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
-        __ret.__opt_ptrs.push_back("-arch=sm_100a");
+        __ret.__ptrs.push_back("-arch=sm_100a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
-        __ret.__opt_ptrs.push_back("-arch=sm_103a");
+        __ret.__ptrs.push_back("-arch=sm_103a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
-        __ret.__opt_ptrs.push_back("-arch=sm_120a");
+        __ret.__ptrs.push_back("-arch=sm_120a");
         break;
       default:
         _CCCL_UNREACHABLE();
@@ -186,12 +188,24 @@ class ptx_compiler
   //! @brief Compiles the PTX source code using the nvPTX compiler.
   //!
   //! @param __handle The nvPTX compiler handle.
-  //! @param __opt_ptrs The compilation options to use.
+  //! @param __ptrs The compilation options to use.
   //!
   //! @return `true` if the compilation was successful, `false` otherwise.
-  [[nodiscard]] static bool __compile(::nvPTXCompilerHandle __handle, _CUDA_VSTD::span<const char*> __opt_ptrs)
+  [[nodiscard]] static bool __compile(::nvPTXCompilerHandle __handle, __nvptx_compile_options&& __opts)
   {
-    const auto __result = ::nvPTXCompilerCompile(__handle, static_cast<int>(__opt_ptrs.size()), __opt_ptrs.data());
+    // replace nullptrs in __opts.__ptrs with the corresponding strings
+    auto __strs_it = __opts.__strs.begin();
+    for (auto& __ptr : __opts.__ptrs)
+    {
+      if (__ptr == nullptr)
+      {
+        __ptr = __strs_it->c_str();
+        ++__strs_it;
+      }
+    }
+
+    const auto __result =
+      ::nvPTXCompilerCompile(__handle, static_cast<int>(__opts.__ptrs.size()), __opts.__ptrs.data());
     return __result == ::NVPTXCOMPILE_SUCCESS;
   }
 
@@ -231,23 +245,15 @@ public:
   {
     auto __handle = __make_handle(__ptx_src);
 
-    auto [__opt_ptrs, __opt_strings] = __make_options(__ptx_opts);
+    auto __opts = __make_options(__ptx_opts);
 
-    __opt_ptrs.push_back("-e");
-    ::std::string __tmp{"\""};
-    for (_CUDA_VSTD::size_t __i = 0; __i < __ptx_src.__symbols_.size(); ++__i)
+    for (const auto& __symbol : __ptx_src.__symbols_)
     {
-      if (__i > 0)
-      {
-        __tmp.append(",");
-      }
-      __tmp.append(__ptx_src.__symbols_[__i].begin(), __ptx_src.__symbols_[__i].end());
+      __opts.__ptrs.push_back("-e");
+      __opts.__ptrs.push_back(__symbol.c_str());
     }
-    __tmp.append("\"");
-    __opt_strings.emplace_back(_CUDA_VSTD::move(__tmp));
-    __opt_ptrs.push_back(__opt_strings.back().c_str());
 
-    return compile_ptx_to_cubin_result{__handle, __compile(__handle, __opt_ptrs)};
+    return compile_ptx_to_cubin_result{__handle, __compile(__handle, _CUDA_VSTD::move(__opts))};
   }
 };
 

@@ -47,8 +47,8 @@ namespace cuda::experimental
 //! @brief Helper structure for nvrtc options
 struct __nvrtc_compile_options
 {
-  ::std::vector<const char*> __opt_ptrs; //!< The option pointers
-  ::std::vector<::std::string> __opt_strs; //!< The option strings
+  ::std::vector<const char*> __ptrs; //!< The option pointers
+  ::std::vector<::std::string> __strs; //!< The option strings
 };
 
 //! @brief A class representing a CUDA compiler.
@@ -85,27 +85,28 @@ class cuda_compiler
     // enable internal cache
     if (!__enable_internal_cache_)
     {
-      __ret.__opt_ptrs.push_back("-no-cache");
+      __ret.__ptrs.push_back("-no-cache");
     }
 
     // set thread limit
     if (__thread_limit_ != 1)
     {
-      __ret.__opt_ptrs.push_back("-split-compile");
-      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__thread_limit_)).c_str());
+      __ret.__ptrs.push_back("-split-compile");
+      __ret.__ptrs.push_back(nullptr); // placeholder for string pointer
+      __ret.__strs.emplace_back(::std::to_string(__thread_limit_));
     }
 
     // enable auto PCH
     if (__pch_auto_)
     {
-      __ret.__opt_ptrs.push_back("-pch");
+      __ret.__ptrs.push_back("-pch");
     }
 
     // PCH directory
     if (!__pch_dir_.empty())
     {
-      __ret.__opt_ptrs.push_back("-pch-dir");
-      __ret.__opt_ptrs.push_back(__pch_dir_.c_str());
+      __ret.__ptrs.push_back("-pch-dir");
+      __ret.__ptrs.push_back(__pch_dir_.c_str());
     }
 
     return __ret;
@@ -121,25 +122,25 @@ class cuda_compiler
     __nvrtc_compile_options __ret = __make_options();
 
     // disable automatic addition of source's directory to the include path
-    __ret.__opt_ptrs.push_back("-no-source-include");
+    __ret.__ptrs.push_back("-no-source-include");
 
     // C++ standard version
     switch (__cuda_opts.__std_version_)
     {
       case _CUDA_VSTD::to_underlying(cuda_std_version::cxx03):
-        __ret.__opt_ptrs.push_back("-std=c++03");
+        __ret.__ptrs.push_back("-std=c++03");
         break;
       case _CUDA_VSTD::to_underlying(cuda_std_version::cxx11):
-        __ret.__opt_ptrs.push_back("-std=c++11");
+        __ret.__ptrs.push_back("-std=c++11");
         break;
       case _CUDA_VSTD::to_underlying(cuda_std_version::cxx14):
-        __ret.__opt_ptrs.push_back("-std=c++14");
+        __ret.__ptrs.push_back("-std=c++14");
         break;
       case _CUDA_VSTD::to_underlying(cuda_std_version::cxx17):
-        __ret.__opt_ptrs.push_back("-std=c++17");
+        __ret.__ptrs.push_back("-std=c++17");
         break;
       case _CUDA_VSTD::to_underlying(cuda_std_version::cxx20):
-        __ret.__opt_ptrs.push_back("-std=c++20");
+        __ret.__ptrs.push_back("-std=c++20");
         break;
       default:
         _CCCL_UNREACHABLE();
@@ -149,40 +150,40 @@ class cuda_compiler
     switch (__cuda_opts.__virtual_arch_)
     {
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
-        __ret.__opt_ptrs.push_back("-arch=compute_75");
+        __ret.__ptrs.push_back("-arch=compute_75");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
-        __ret.__opt_ptrs.push_back("-arch=compute_80");
+        __ret.__ptrs.push_back("-arch=compute_80");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
-        __ret.__opt_ptrs.push_back("-arch=compute_86");
+        __ret.__ptrs.push_back("-arch=compute_86");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
-        __ret.__opt_ptrs.push_back("-arch=compute_89");
+        __ret.__ptrs.push_back("-arch=compute_89");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
-        __ret.__opt_ptrs.push_back("-arch=compute_90");
+        __ret.__ptrs.push_back("-arch=compute_90");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
-        __ret.__opt_ptrs.push_back("-arch=compute_100");
+        __ret.__ptrs.push_back("-arch=compute_100");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
-        __ret.__opt_ptrs.push_back("-arch=compute_103");
+        __ret.__ptrs.push_back("-arch=compute_103");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
-        __ret.__opt_ptrs.push_back("-arch=compute_120");
+        __ret.__ptrs.push_back("-arch=compute_120");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
-        __ret.__opt_ptrs.push_back("-arch=compute_90a");
+        __ret.__ptrs.push_back("-arch=compute_90a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
-        __ret.__opt_ptrs.push_back("-arch=compute_100a");
+        __ret.__ptrs.push_back("-arch=compute_100a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
-        __ret.__opt_ptrs.push_back("-arch=compute_103a");
+        __ret.__ptrs.push_back("-arch=compute_103a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
-        __ret.__opt_ptrs.push_back("-arch=compute_120a");
+        __ret.__ptrs.push_back("-arch=compute_120a");
         break;
       default:
         _CCCL_UNREACHABLE();
@@ -194,19 +195,19 @@ class cuda_compiler
       switch (__dopt.__kind_)
       {
         case cuda_compile_options::_DynOptKind::__macro_def:
-          __ret.__opt_ptrs.push_back("-D");
+          __ret.__ptrs.push_back("-D");
           break;
         case cuda_compile_options::_DynOptKind::__macro_undef:
-          __ret.__opt_ptrs.push_back("-U");
+          __ret.__ptrs.push_back("-U");
           break;
         case cuda_compile_options::_DynOptKind::__include_path:
-          __ret.__opt_ptrs.push_back("-I");
+          __ret.__ptrs.push_back("-I");
           break;
         case cuda_compile_options::_DynOptKind::__force_include:
-          __ret.__opt_ptrs.push_back("-include");
+          __ret.__ptrs.push_back("-include");
           break;
       }
-      __ret.__opt_ptrs.push_back(__dopt.__value_.c_str());
+      __ret.__ptrs.push_back(__dopt.__value_.c_str());
     }
 
     return __ret;
@@ -227,91 +228,91 @@ class cuda_compiler
     // device debug flag
     if (__ptx_opts.__device_debug_)
     {
-      __ret.__opt_ptrs.push_back("--device-debug");
+      __ret.__ptrs.push_back("--device-debug");
     }
 
     // line info flag
     if (__ptx_opts.__line_info_)
     {
-      __ret.__opt_ptrs.push_back("-line-info");
+      __ret.__ptrs.push_back("-line-info");
     }
 
     // fmad flag
-    __ret.__opt_ptrs.push_back((__ptx_opts.__fmad_) ? "--fmad=true" : "--fmad=false");
+    __ret.__ptrs.push_back((__ptx_opts.__fmad_) ? "--fmad=true" : "--fmad=false");
 
     // max register count
     if (__ptx_opts.__max_reg_count_ >= 0)
     {
-      __ret.__opt_ptrs.push_back("--maxrregcount");
-      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__ptx_opts.__max_reg_count_)).c_str());
+      __ret.__ptrs.push_back("--maxrregcount");
+      __ret.__ptrs.push_back(nullptr); // placeholder for string pointer
+      __ret.__strs.push_back(::std::to_string(__ptx_opts.__max_reg_count_));
     }
 
     // optimization level
     switch (__ptx_opts.__optimization_level_)
     {
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O0):
-        __ret.__opt_ptrs.push_back("-Xptxas");
-        __ret.__opt_ptrs.push_back("-O0");
+        __ret.__ptrs.push_back("-Xptxas");
+        __ret.__ptrs.push_back("-O0");
         break;
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O1):
-        __ret.__opt_ptrs.push_back("-Xptxas");
-        __ret.__opt_ptrs.push_back("-O1");
+        __ret.__ptrs.push_back("-Xptxas");
+        __ret.__ptrs.push_back("-O1");
         break;
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O2):
-        __ret.__opt_ptrs.push_back("-Xptxas");
-        __ret.__opt_ptrs.push_back("-O2");
+        __ret.__ptrs.push_back("-Xptxas");
+        __ret.__ptrs.push_back("-O2");
         break;
       case _CUDA_VSTD::to_underlying(ptx_optimization_level::O3):
-        __ret.__opt_ptrs.push_back("-Xptxas");
-        __ret.__opt_ptrs.push_back("-O3");
+        __ret.__ptrs.push_back("-Xptxas");
+        __ret.__ptrs.push_back("-O3");
         break;
       default:
         _CCCL_UNREACHABLE();
     }
 
     // position independent code flag
-    __ret.__opt_ptrs.push_back("-Xptxas");
-    __ret.__opt_ptrs.push_back(
-      __ptx_opts.__pic_ ? "--position-independent-code=true" : "--position-independent-code=false");
+    __ret.__ptrs.push_back("-Xptxas");
+    __ret.__ptrs.push_back(__ptx_opts.__pic_ ? "-pic=true" : "-pic=false");
 
     // binary architecture
     switch (__ptx_opts.__binary_arch_)
     {
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
-        __ret.__opt_ptrs.push_back("-arch=sm_75");
+        __ret.__ptrs.push_back("-arch=sm_75");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
-        __ret.__opt_ptrs.push_back("-arch=sm_80");
+        __ret.__ptrs.push_back("-arch=sm_80");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
-        __ret.__opt_ptrs.push_back("-arch=sm_86");
+        __ret.__ptrs.push_back("-arch=sm_86");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
-        __ret.__opt_ptrs.push_back("-arch=sm_89");
+        __ret.__ptrs.push_back("-arch=sm_89");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
-        __ret.__opt_ptrs.push_back("-arch=sm_90");
+        __ret.__ptrs.push_back("-arch=sm_90");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
-        __ret.__opt_ptrs.push_back("-arch=sm_100");
+        __ret.__ptrs.push_back("-arch=sm_100");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
-        __ret.__opt_ptrs.push_back("-arch=sm_103");
+        __ret.__ptrs.push_back("-arch=sm_103");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
-        __ret.__opt_ptrs.push_back("-arch=sm_120");
+        __ret.__ptrs.push_back("-arch=sm_120");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
-        __ret.__opt_ptrs.push_back("-arch=sm_90a");
+        __ret.__ptrs.push_back("-arch=sm_90a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
-        __ret.__opt_ptrs.push_back("-arch=sm_100a");
+        __ret.__ptrs.push_back("-arch=sm_100a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
-        __ret.__opt_ptrs.push_back("-arch=sm_103a");
+        __ret.__ptrs.push_back("-arch=sm_103a");
         break;
       case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
-        __ret.__opt_ptrs.push_back("-arch=sm_120a");
+        __ret.__ptrs.push_back("-arch=sm_120a");
         break;
       default:
         _CCCL_UNREACHABLE();
@@ -340,12 +341,24 @@ class cuda_compiler
   //! @brief Compile the NVRTC program with the given options.
   //!
   //! @param __program The NVRTC program.
-  //! @param __opt_ptrs The compilation options.
+  //! @param __ptrs The compilation options.
   //!
   //! @return `true` if the compilation was successful; otherwise, `false`.
-  [[nodiscard]] static bool __compile(::nvrtcProgram __program, _CUDA_VSTD::span<const char*> __opt_ptrs)
+  [[nodiscard]] static bool __compile(::nvrtcProgram __program, __nvrtc_compile_options&& __opts)
   {
-    const auto __result = ::nvrtcCompileProgram(__program, static_cast<int>(__opt_ptrs.size()), __opt_ptrs.data());
+    // replace nullptrs in __opts.__ptrs with the corresponding strings
+    auto __strs_it = __opts.__strs.begin();
+    for (auto& __ptr : __opts.__ptrs)
+    {
+      if (__ptr == nullptr)
+      {
+        __ptr = __strs_it->c_str();
+        ++__strs_it;
+      }
+    }
+
+    const auto __result =
+      ::nvrtcCompileProgram(__program, static_cast<int>(__opts.__ptrs.size()), __opts.__ptrs.data());
     return __result == ::NVRTC_SUCCESS;
   }
 
@@ -435,16 +448,16 @@ public:
     auto __program = __make_program(__cuda_src);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
-    [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts);
+    auto __opts = __make_options(__cuda_opts);
 
     for (const auto& __pch_header : __cuda_src.__pch_headers_)
     {
-      __opt_ptrs.push_back("-use-pch");
-      __opt_ptrs.push_back(__opt_strs.emplace_back(__pch_header.begin(), __pch_header.end()).c_str()); // todo: wrap
-                                                                                                       // name by ""
+      __opts.__ptrs.push_back("-use-pch");
+      __opts.__ptrs.push_back(nullptr); // placeholder for string pointer
+      __opts.__strs.push_back({__pch_header.begin(), __pch_header.end()});
     }
 
-    const bool __success = __compile(__program, __opt_ptrs);
+    const bool __success = __compile(__program, _CUDA_VSTD::move(__opts));
 
     ::std::vector<_CUDA_VSTD::string_view> __lowered_names;
     if (__success)
@@ -470,9 +483,7 @@ public:
     auto __program = __make_program(__cuda_src);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
-    [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts, __ptx_opts);
-
-    const bool __success = __compile(__program, __opt_ptrs);
+    const bool __success = __compile(__program, __make_options(__cuda_opts, __ptx_opts));
 
     ::std::vector<_CUDA_VSTD::string_view> __lowered_names;
     if (__success)
@@ -495,10 +506,10 @@ public:
     auto __program = __make_program(__cuda_src);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
-    [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts);
-    __opt_ptrs.push_back("-dlto");
+    auto __opts = __make_options(__cuda_opts);
+    __opts.__ptrs.push_back("-dlto");
 
-    return compile_cuda_to_ltoir_result{__cuda_src.__id_, __program, __compile(__program, __opt_ptrs)};
+    return compile_cuda_to_ltoir_result{__cuda_src.__id_, __program, __compile(__program, _CUDA_VSTD::move(__opts))};
   }
 };
 
