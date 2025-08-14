@@ -110,7 +110,7 @@ public:
   //! @brief Adds a precompiled header.
   //!
   //! @param __pch The precompiled header to be added.
-  void add_precompiled_header(::std::string __pch)
+  void add_pch(::std::string __pch)
   {
     __pchs_.push_back(_CUDA_VSTD::move(__pch));
   }

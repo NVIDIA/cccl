@@ -455,7 +455,7 @@ public:
   //! @brief Enable or disable automatic precompiled headers.
   //!
   //! @param __enable If `true`, automatic precompiled headers are enabled; otherwise, they are disabled.
-  void enable_auto_precompiled_headers(bool __enable = true) noexcept
+  void enable_auto_pch(bool __enable = true) noexcept
   {
     __auto_pch_ = __enable;
   }
@@ -463,7 +463,7 @@ public:
   //! @brief Set precompiled headers directory.
   //!
   //! @param __dir_name The directory name for the precompiled headers.
-  void set_precompiled_headers_dir(::std::string __dir_name) noexcept
+  void set_auto_pch_dir(::std::string __dir_name) noexcept
   {
     __auto_pch_dir_ = _CUDA_VSTD::move(__dir_name);
   }

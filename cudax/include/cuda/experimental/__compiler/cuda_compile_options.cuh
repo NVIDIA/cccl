@@ -165,7 +165,7 @@ public:
   //! @brief Sets the precompiled header output file.
   //!
   //! @param __file_name The name of the precompiled header file.
-  void set_precompiled_header_output_file(::std::string __file_name)
+  void set_pch_output_file(::std::string __file_name)
   {
     if (__file_name.empty())
     {
@@ -177,7 +177,7 @@ public:
   //! @brief Sets the precompiled headers directory.
   //!
   //! @param __dir_name The name of the precompiled headers directory.
-  void set_precompiled_headers_dir(::std::string __dir_name)
+  void set_pch_dir(::std::string __dir_name)
   {
     if (__dir_name.empty())
     {
