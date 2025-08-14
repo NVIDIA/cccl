@@ -187,6 +187,27 @@ struct DeviceTransform
       ::cuda::std::make_tuple(), ::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
+  template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Fill(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       RandomAccessIteratorOut output,
+       NumItemsT num_items,
+       Generator generator,
+       cudaStream_t stream = nullptr)
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return Fill(::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
+  }
+#endif // _CCCL_DOXYGEN_INVOKED
+
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
