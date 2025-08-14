@@ -382,7 +382,11 @@ struct DispatchSegmentedSort
 
   KernelSource kernel_source;
 
+  PartitionKernelSource partition_kernel_source;
+
   KernelLauncherFactory launcher_factory;
+
+  typename PartitionPolicyHub::MaxPolicy partition_max_policy;
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
@@ -511,7 +515,9 @@ struct DispatchSegmentedSort
           large_segments_selector,
           small_segments_selector,
           max_num_segments_per_invocation,
-          stream);
+          stream,
+          partition_kernel_source,
+          launcher_factory);
 
         device_partition_temp_storage.grow(three_way_partition_temp_storage_bytes);
       }
@@ -638,7 +644,8 @@ struct DispatchSegmentedSort
     return error;
   }
 
-  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
+  template <typename MaxPolicyT          = typename PolicyHub::MaxPolicy,
+            typename PartitionMaxPolicyT = typename PartitionPolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -650,9 +657,11 @@ struct DispatchSegmentedSort
     EndOffsetIteratorT d_end_offsets,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {})
+    KernelSource kernel_source                    = {},
+    PartitionKernelSource partition_kernel_source = {},
+    KernelLauncherFactory launcher_factory        = {},
+    MaxPolicyT max_policy                         = {},
+    PartitionMaxPolicyT partition_max_policy      = {})
   {
     // Get PTX version
     int ptx_version = 0;
@@ -674,7 +683,9 @@ struct DispatchSegmentedSort
       is_overwrite_okay,
       stream,
       kernel_source,
-      launcher_factory};
+      partition_kernel_source,
+      launcher_factory,
+      partition_max_policy};
 
     // Dispatch to chained policy
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
