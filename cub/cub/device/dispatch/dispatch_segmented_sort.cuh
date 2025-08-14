@@ -757,7 +757,32 @@ private:
       auto medium_indices_iterator =
         THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
 
-      error = CubDebug(cub::DevicePartition::IfNoNVTX(
+      // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
+      // This approach propagates the type erasure to partition.
+      using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
+      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+        decltype(large_and_medium_segments_indices.get()),
+        decltype(small_segments_indices.get()),
+        decltype(medium_indices_iterator),
+        decltype(group_sizes.get()),
+        LargeSegmentsSelectorT,
+        SmallSegmentsSelectorT,
+        PartitionOffsetT,
+        PartitionPolicyHub,
+        PartitionKernelSource,
+        KernelLauncherFactory>;
+
+      // Signed integer type for global offsets
+      // Check if the number of items exceeds the range covered by the selected signed offset type
+      cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+      if (error)
+      {
+        return error;
+      }
+
+      DispatchThreeWayPartitionIfT::Dispatch(
         device_partition_temp_storage.get(),
         three_way_partition_temp_storage_bytes,
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
@@ -765,10 +790,13 @@ private:
         small_segments_indices.get(),
         medium_indices_iterator,
         group_sizes.get(),
-        current_num_segments,
         large_segments_selector,
         small_segments_selector,
-        stream));
+        current_num_segments,
+        stream,
+        partition_kernel_source,
+        launcher_factory);
+
       if (cudaSuccess != error)
       {
         return error;
