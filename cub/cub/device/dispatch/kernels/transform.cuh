@@ -762,6 +762,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+
+      // let the SM ramp up the next kernel while we wait for the bulk copy. Also do it on the uniform code path to
+      // reduce traffic to the CWD.
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
   else
@@ -807,13 +811,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
     }
+
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // let the SM ramp up the next kernel while we wait for the bulk copy
   }
 
   // all threads wait for bulk copy
   __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
     ;
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
