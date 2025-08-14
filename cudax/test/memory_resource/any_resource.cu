@@ -143,10 +143,10 @@ TEMPLATE_TEST_CASE_METHOD(
       CHECK(this->counts == expected);
 
       // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref:
-      cudax::resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
+      cudax::synchronous_resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
 
       // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref with narrowing:
-      cudax::resource_ref<cudax::host_accessible, get_data> ref2 = mr;
+      cudax::synchronous_resource_ref<cudax::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
