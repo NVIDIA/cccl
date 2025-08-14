@@ -30,7 +30,7 @@
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 class stream_ref;
 
 //! @brief RAII helper which on construction sets the current context to the specified one.
@@ -86,7 +86,7 @@ struct [[maybe_unused]] __ensure_current_context
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 

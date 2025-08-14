@@ -33,14 +33,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Tp>
 _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
 
 // [range.access.begin]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__begin)
+_CCCL_BEGIN_NAMESPACE_CPO(__begin)
 template <class _Tp>
 void begin(_Tp&) = delete;
 template <class _Tp>
@@ -129,7 +129,7 @@ struct __fn
   void operator()(_Tp (&&)[_Np]) const = delete;
 #endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -143,7 +143,7 @@ using iterator_t = decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp&>()));
 
 // [range.access.end]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__end)
+_CCCL_BEGIN_NAMESPACE_CPO(__end)
 template <class _Tp>
 void end(_Tp&) = delete;
 template <class _Tp>
@@ -225,7 +225,7 @@ struct __fn
   void operator()(_Tp (&&)[_Np]) const = delete;
 #endif // _CCCL_COMPILER(MSVC, <, 19, 23)
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -234,7 +234,7 @@ _CCCL_GLOBAL_CONSTANT auto end = __end::__fn{};
 
 // [range.access.cbegin]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cbegin)
+_CCCL_BEGIN_NAMESPACE_CPO(__cbegin)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -257,7 +257,7 @@ struct __fn
     return _CUDA_VRANGES::begin(static_cast<const _Tp&&>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -266,7 +266,7 @@ _CCCL_GLOBAL_CONSTANT auto cbegin = __cbegin::__fn{};
 
 // [range.access.cend]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cend)
+_CCCL_BEGIN_NAMESPACE_CPO(__cend)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -289,14 +289,14 @@ struct __fn
     return _CUDA_VRANGES::end(static_cast<const _Tp&&>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

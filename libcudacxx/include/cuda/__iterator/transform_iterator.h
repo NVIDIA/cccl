@@ -45,7 +45,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class, class, class = void>
 struct __transform_iterator_category_base
@@ -458,7 +458,7 @@ template <class _Iter, class _Fn>
   return transform_iterator<_Iter, _Fn>{__iter, __fun};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

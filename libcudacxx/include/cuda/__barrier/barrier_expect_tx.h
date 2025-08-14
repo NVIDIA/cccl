@@ -35,7 +35,7 @@
 
 #    include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
 _CCCL_DEVICE inline void
@@ -64,7 +64,7 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
     (_CUDA_DEVICE::__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #    include <cuda/std/__cccl/epilogue.h>
 

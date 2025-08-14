@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
 using __insert_iterator_iter_t = typename _Container::iterator;
@@ -100,7 +100,7 @@ inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
   return insert_iterator<_Container>(__x, __i);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

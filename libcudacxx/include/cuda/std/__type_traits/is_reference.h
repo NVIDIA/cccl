@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_LVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK)  \
   && defined(_CCCL_BUILTIN_IS_RVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_RVALUE_REFERENCE_FALLBACK) \
@@ -88,7 +88,7 @@ inline constexpr bool is_reference_v = is_reference<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_LVALUE_REFERENCE
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

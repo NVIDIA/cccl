@@ -48,7 +48,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class _Tp>
@@ -317,7 +317,7 @@ public:
 
 #endif // CCCL_ENABLE_OPTIONAL_REF
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _RealType = double>
 class uniform_real_distribution
@@ -176,7 +176,7 @@ operator>>(basic_istream<_CharT, _Traits>& __is, uniform_real_distribution<_RT>&
 }
 #endif // Not implemented
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Round the number \p __a to the next multiple of \p __b
 //! @param __a The input number
@@ -97,7 +97,7 @@ round_up(const _Tp __a, const _Up __b) noexcept
   return ::cuda::round_up(_CUDA_VSTD::to_underlying(__a), _CUDA_VSTD::to_underlying(__b));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct tuple_size<complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
@@ -100,7 +100,7 @@ template <size_t _Index, class _Tp>
   return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

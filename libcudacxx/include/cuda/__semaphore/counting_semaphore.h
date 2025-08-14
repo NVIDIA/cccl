@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <thread_scope _Sco, ptrdiff_t __least_max_value = INT_MAX>
 class counting_semaphore : public _CUDA_VSTD::__atomic_semaphore<_Sco, __least_max_value>
@@ -46,7 +46,7 @@ public:
 template <thread_scope _Sco>
 using binary_semaphore = counting_semaphore<_Sco, 1>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

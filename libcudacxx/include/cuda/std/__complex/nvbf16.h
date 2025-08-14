@@ -66,7 +66,7 @@ struct __is_non_narrowing_convertible<double, __nv_bfloat16>
 };
 } // namespace __cccl_internal
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <>
 inline constexpr size_t __complex_alignment_v<__nv_bfloat16> = alignof(__nv_bfloat162);
@@ -314,7 +314,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloa
 }
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 

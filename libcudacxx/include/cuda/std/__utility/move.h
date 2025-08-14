@@ -31,9 +31,9 @@
 // would prefer to bring the ::std:: function into the ::cuda::std:: namespace with a using
 // declaration, like this:
 //
-//   _LIBCUDACXX_BEGIN_NAMESPACE_STD
+//   _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //   using ::std::move;
-//   _LIBCUDACXX_END_NAMESPACE_STD
+//   _CCCL_END_NAMESPACE_CUDA_STD
 //
 // But "using ::std::move;" would also drag in the algorithm ::std::move(In, In, Out),
 // which would conflict with ::cuda::std::move algorithm in <cuda/std/algorithm.h>.
@@ -48,7 +48,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
@@ -67,7 +67,7 @@ template <class _Tp>
   return _CUDA_VSTD::move(__x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

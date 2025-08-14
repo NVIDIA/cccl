@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class = void>
 struct __has_element_type : false_type
@@ -254,7 +254,7 @@ _CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(_C
   return _CUDA_VSTD::__to_address(__p);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

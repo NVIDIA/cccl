@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _I0, size_t... _In>
 struct __static_max;
@@ -55,7 +55,7 @@ struct aligned_union
 template <size_t _Len, class... _Types>
 using aligned_union_t _CCCL_NODEBUG_ALIAS = typename aligned_union<_Len, _Types...>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

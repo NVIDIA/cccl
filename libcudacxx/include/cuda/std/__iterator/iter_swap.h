@@ -34,8 +34,8 @@
 
 // [iter.cust.swap]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
+_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__iter_swap)
 template <class _I1, class _I2>
 void iter_swap(_I1, _I2) = delete;
 
@@ -115,15 +115,15 @@ struct __fn
     *_CUDA_VSTD::forward<_T1>(__x) = _CUDA_VSTD::move(__old);
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()
 template <class _I1, class _I2 = _I1>
 concept indirectly_swappable =
@@ -156,7 +156,7 @@ template <class _I1, class _I2>
 inline constexpr bool __noexcept_swappable<_I1, _I2, enable_if_t<indirectly_swappable<_I1, _I2>>> =
   noexcept(_CUDA_VRANGES::iter_swap(_CUDA_VSTD::declval<_I1&>(), _CUDA_VSTD::declval<_I2&>()));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

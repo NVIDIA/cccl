@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [mdspan.sub.map]
 
@@ -337,7 +337,7 @@ submdspan(const mdspan<_Tp, _Extents, _Layout, _Accessor>& __src, _Slices... __s
                 typename _Accessor::offset_policy(__src.accessor()));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

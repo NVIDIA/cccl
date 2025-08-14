@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Fn, class _Index = _CUDA_VSTD::ptrdiff_t>
 class tabulate_output_iterator;
@@ -326,7 +326,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
   return tabulate_output_iterator{_CUDA_VSTD::move(__func), __index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

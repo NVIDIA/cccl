@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __disabled_formatter
 {
@@ -243,7 +243,7 @@ struct formatter<basic_string_view<char, _Traits>, wchar_t> : __disabled_formatt
 {};
 #endif // _CCCL_HAS_WCHAR_T()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

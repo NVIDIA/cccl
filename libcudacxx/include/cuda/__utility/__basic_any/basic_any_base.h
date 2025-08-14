@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface>
 _CCCL_API auto __is_basic_any_test(__basic_any<_Interface>&&) -> __basic_any<_Interface>&&;
@@ -141,7 +141,7 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
 };
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

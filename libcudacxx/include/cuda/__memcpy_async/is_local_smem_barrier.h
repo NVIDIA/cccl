@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __is_local_smem_barrier returns true if barrier is (1) block-scoped and (2) located in shared memory.
 template <thread_scope _Sco,
@@ -46,7 +46,7 @@ _CCCL_API inline bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
     (return false;));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

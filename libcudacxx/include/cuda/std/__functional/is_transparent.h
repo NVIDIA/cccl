@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class, class = void>
 struct __is_transparent : false_type
@@ -36,7 +36,7 @@ template <class _Tp, class _Up>
 struct __is_transparent<_Tp, _Up, void_t<typename _Tp::is_transparent>> : true_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

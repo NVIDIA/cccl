@@ -38,7 +38,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <typename _Tp>
 struct warp_shuffle_result
@@ -241,7 +241,7 @@ warp_shuffle_xor(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constan
   return _CUDA_DEVICE::warp_shuffle_xor(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

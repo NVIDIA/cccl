@@ -30,7 +30,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 //! @brief Address space enumeration for CUDA device code.
 //!
@@ -202,7 +202,7 @@ template <class _Tp>
   return _CUDA_DEVICE::is_address_from(_CUDA_VSTD::addressof(__obj), __space);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

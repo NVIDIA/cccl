@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
@@ -37,7 +37,7 @@ inline constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
 
 #endif // defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

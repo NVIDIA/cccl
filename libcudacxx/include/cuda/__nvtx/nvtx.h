@@ -79,7 +79,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace detail
 {
 struct NVTXCCCLDomain
@@ -87,7 +87,7 @@ struct NVTXCCCLDomain
   static constexpr const char* name{"CCCL"};
 };
 } // namespace detail
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 // Hook for the NestedNVTXRangeGuard from the unit tests
 #  ifndef _CCCL_BEFORE_NVTX_RANGE_SCOPE

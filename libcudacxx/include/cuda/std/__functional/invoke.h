@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __any
 {
@@ -550,7 +550,7 @@ _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_noth
 template <typename Invocable, typename InputT, typename InitT = InputT>
 using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invocable, InitT, InputT>::type>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

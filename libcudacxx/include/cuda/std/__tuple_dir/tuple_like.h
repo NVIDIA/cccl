@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __tuple_like_impl : false_type
@@ -83,7 +83,7 @@ _CCCL_CONCEPT __pair_like = _CCCL_REQUIRES_EXPR((_Tp)) //
   (requires(__tuple_like_impl<remove_cvref_t<_Tp>>::value), requires(tuple_size<remove_cvref_t<_Tp>>::value == 2));
 #endif // _CCCL_STD_VER >= 2014
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

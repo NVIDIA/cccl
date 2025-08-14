@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER >= 2023
 template <class _Pointer>
@@ -74,7 +74,7 @@ __allocate_at_least(_Alloc& __alloc, size_t __n)
 
 #endif // _CCCL_STD_VER >= 2023
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

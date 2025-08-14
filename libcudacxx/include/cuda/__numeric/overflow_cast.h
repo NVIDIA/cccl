@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _From, typename _To>
 inline constexpr bool __is_integer_representable_v =
@@ -52,7 +52,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_To> _CCCL_AND _CUDA_VSTD::__cccl
   return overflow_result<_To>{static_cast<_To>(__from), __overflow};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

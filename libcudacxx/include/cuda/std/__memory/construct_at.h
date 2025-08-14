@@ -69,7 +69,7 @@ _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // There is a performance issue with placement new, where EDG based compiler insert a nullptr check that is superfluous
 // Because this is a noticeable performance regression, we specialize it for certain types
@@ -241,7 +241,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_ForwardIterat
   return __first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __atomic_cuda_memorder
 {
@@ -170,7 +170,7 @@ using __atomic_enable_if_native_minmax = enable_if_t<is_integral_v<_Type>, bool>
 template <class _Type>
 using __atomic_enable_if_not_native_minmax = enable_if_t<!is_integral_v<_Type>, bool>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

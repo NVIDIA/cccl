@@ -35,12 +35,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__conj_if_needed)
+_CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 
 template <class _Type>
 _CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(_CUDA_VSTD::conj(__a)));
@@ -62,7 +62,7 @@ struct __conj_if_needed
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -71,7 +71,7 @@ _CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__conj_if_needed{}
 } // namespace __cpo
 } // end namespace linalg
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
