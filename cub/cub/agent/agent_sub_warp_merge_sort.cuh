@@ -76,6 +76,18 @@ struct AgentSmallAndMediumSegmentedSortPolicy
   static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS / SmallPolicyT::WARP_THREADS;
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail
+{
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  SmallAndMediumSegmentedSortAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (SEGMENTS_PER_MEDIUM_BLOCK, SegmentsPerMediumBlock, int),
+  (SEGMENTS_PER_SMALL_BLOCK, SegmentsPerSmallBlock, int) )
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
 namespace detail
 {
 namespace sub_warp_merge_sort

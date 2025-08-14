@@ -73,9 +73,22 @@ struct AgentThreeWayPartitionPolicy
   };
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 namespace detail
 {
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  ThreeWayPartitionAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
+namespace detail
+{
 namespace three_way_partition
 {
 
