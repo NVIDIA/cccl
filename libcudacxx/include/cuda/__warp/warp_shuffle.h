@@ -48,7 +48,7 @@ struct warp_shuffle_result
 
   template <typename _Up = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
-  operator cuda::std::enable_if_t<!cuda::std::is_array_v<_Up>, _Up>() const
+  operator ::cuda::std::enable_if_t<!::cuda::std::is_array_v<_Up>, _Up>() const
   {
     return data;
   }
