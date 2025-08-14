@@ -45,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __to_chars_int_width(_Tp __v, int __base) noexcept
 {
-  using _Up = cuda::std::conditional_t<sizeof(_Tp) >= sizeof(uint32_t), make_unsigned_t<_Tp>, uint32_t>;
+  using _Up = ::cuda::std::conditional_t<sizeof(_Tp) >= sizeof(uint32_t), make_unsigned_t<_Tp>, uint32_t>;
 
   auto __uv = static_cast<_Up>(__v);
 

@@ -73,7 +73,7 @@ struct traits_t
   const int max_block_dim_z = 64;
 
   // Maximum x-dimension of a grid
-  const int max_grid_dim_x = cuda::std::numeric_limits<int32_t>::max();
+  const int max_grid_dim_x = ::cuda::std::numeric_limits<int32_t>::max();
 
   // Maximum y-dimension of a grid
   const int max_grid_dim_y = 64 * 1024 - 1;
