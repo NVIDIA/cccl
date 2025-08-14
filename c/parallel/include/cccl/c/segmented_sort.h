@@ -28,10 +28,14 @@ typedef struct cccl_device_segmented_sort_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info offset_type;
   CUkernel segmented_sort_fallback_kernel;
   CUkernel segmented_sort_kernel_small;
   CUkernel segmented_sort_kernel_large;
+  CUkernel three_way_partition_init_kernel;
+  CUkernel three_way_partition_kernel;
   void* runtime_policy;
+  void* partition_runtime_policy;
 } cccl_device_segmented_sort_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
@@ -58,7 +62,8 @@ CCCL_C_API CUresult cccl_device_segmented_sort(
   cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
   cccl_iterator_t d_values_out,
-  uint64_t num_segments,
+  int64_t num_items,
+  int64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   CUstream stream);
