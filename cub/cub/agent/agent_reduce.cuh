@@ -309,51 +309,48 @@ struct AgentReduceImpl
    * @param block_offset The offset the tile to consume
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
-  template <int IsFirstTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset, bool input_is_vector_aligned)
+  template <int IsFirstTile, bool CanVectorize>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTile(AccumT& thread_aggregate, OffsetT block_offset)
   {
-    if constexpr (ATTEMPT_VECTORIZATION)
+    if constexpr (CanVectorize)
     {
-      if (input_is_vector_aligned)
+      // Fabricate a vectorized input iterator
+      InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
+      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
+        reinterpret_cast<VectorT*>(d_in_unqualified));
+
+      // Load items as vector items
+      InputT input_items[ITEMS_PER_THREAD];
+      VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
+
+      // Alias items as an array of VectorT and load it in striped fashion
+      static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < words; ++i)
       {
-        // Fabricate a vectorized input iterator
-        InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * VECTOR_LOAD_LENGTH);
-        CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
-          reinterpret_cast<VectorT*>(d_in_unqualified));
-
-        // Load items as vector items
-        InputT input_items[ITEMS_PER_THREAD];
-        VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-
-        // Alias items as an array of VectorT and load it in striped fashion
-        static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < words; ++i)
-        {
-          vec_items[i] = d_vec_in[NumThreads * i];
-        }
-
-        // Convert from input type to output type
-        AccumT items[ITEMS_PER_THREAD];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < ITEMS_PER_THREAD; ++i)
-        {
-          items[i] = transform_op(input_items[i]);
-        }
-
-        // Reduce items within each thread stripe
-        thread_aggregate = IsFirstTile ? cub::ThreadReduce(items, reduction_op)
-                                       : cub::ThreadReduce(items, reduction_op, thread_aggregate);
-        return;
+        vec_items[i] = d_vec_in[NumThreads * i];
       }
-    }
 
-    // Scalar path: load items in striped fashion and reduce items within each thread stripe
-    AccumT items[ITEMS_PER_THREAD];
-    load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
-    thread_aggregate =
-      IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      // Convert from input type to output type
+      AccumT items[ITEMS_PER_THREAD];
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+      {
+        items[i] = transform_op(input_items[i]);
+      }
+
+      // Reduce items within each thread stripe
+      thread_aggregate =
+        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+    }
+    else
+    {
+      // Scalar path: load items in striped fashion and reduce items within each thread stripe
+      AccumT items[ITEMS_PER_THREAD];
+      load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
+      thread_aggregate =
+        IsFirstTile ? cub::ThreadReduce(items, reduction_op) : cub::ThreadReduce(items, reduction_op, thread_aggregate);
+    }
   }
 
   /**
@@ -393,7 +390,8 @@ struct AgentReduceImpl
    * @brief Reduce a contiguous segment of input tiles
    * @param even_share GridEvenShare descriptor
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share, bool input_is_vector_aligned)
+  template <bool CanVectorize>
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(GridEvenShare<OffsetT>& even_share)
   {
     AccumT thread_aggregate{};
 
@@ -414,7 +412,7 @@ struct AgentReduceImpl
 
     // Extracting this into a function saves 8% of generated kernel size by allowing to reuse
     // the block reduction below. This also workaround hang in nvcc.
-    ConsumeFullTileRange(thread_aggregate, even_share, input_is_vector_aligned);
+    ConsumeFullTileRange<CanVectorize>(thread_aggregate, even_share);
 
     // Compute block-wide reduction (all threads have valid items)
     return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op);
@@ -430,8 +428,9 @@ struct AgentReduceImpl
     GridEvenShare<OffsetT> even_share;
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
 
-    const bool input_is_vector_aligned = IsAligned(d_in + block_offset);
-    return ConsumeRange(even_share, input_is_vector_aligned);
+    return IsAligned(d_in + block_offset)
+           ? ConsumeRange<ATTEMPT_VECTORIZATION>(even_share)
+           : ConsumeRange<false>(even_share);
   }
 
   /**
@@ -443,8 +442,7 @@ struct AgentReduceImpl
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
 
-    const bool input_is_vector_aligned = IsAligned(d_in);
-    return ConsumeRange(even_share, input_is_vector_aligned);
+    return IsAligned(d_in) ? ConsumeRange<ATTEMPT_VECTORIZATION>(even_share) : ConsumeRange<false>(even_share);
   }
 
 private:
@@ -453,11 +451,11 @@ private:
    * @param even_share GridEvenShare descriptor
    * @param input_is_vector_aligned Whether we can vectorize loads
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share, bool input_is_vector_aligned)
+  template <bool CanVectorize>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeFullTileRange(AccumT& thread_aggregate, GridEvenShare<OffsetT>& even_share)
   {
     // At least one full block
-    ConsumeFullTile<true>(thread_aggregate, even_share.block_offset, input_is_vector_aligned);
+    ConsumeFullTile<true, CanVectorize>(thread_aggregate, even_share.block_offset);
 
     if (even_share.block_end - even_share.block_offset < even_share.block_stride)
     {
@@ -471,7 +469,7 @@ private:
     // `even_share.block_end >= TILE_ITEMS`
     while (even_share.block_offset <= even_share.block_end - TILE_ITEMS)
     {
-      ConsumeFullTile<false>(thread_aggregate, even_share.block_offset, input_is_vector_aligned);
+      ConsumeFullTile<false, CanVectorize>(thread_aggregate, even_share.block_offset);
 
       if (even_share.block_end - even_share.block_offset < even_share.block_stride)
       {
