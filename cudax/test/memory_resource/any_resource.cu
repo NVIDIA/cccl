@@ -138,11 +138,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      // conversion from any_resource to cuda::mr::resource_ref:
-      cuda::mr::resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
+      // conversion from any_resource to cuda::mr::synchronous_resource_ref:
+      cudax::resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
 
-      // conversion from any_resource to cuda::mr::resource_ref with narrowing:
-      cuda::mr::resource_ref<cudax::host_accessible, get_data> ref2 = mr;
+      // conversion from any_resource to cuda::mr::synchronous_resource_ref with narrowing:
+      cudax::resource_ref<cudax::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
@@ -159,7 +159,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     CHECK(this->counts == expected);
   }
 
-  SECTION("conversion from any_resource to cuda::mr::resource_ref")
+  SECTION("conversion from any_resource to cuda::mr::synchronous_resource_ref")
   {
     Counts expected{};
     {
@@ -169,11 +169,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      // conversion from any_resource to cuda::mr::resource_ref:
-      cuda::mr::resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
+      // conversion from any_resource to cuda::mr::synchronous_resource_ref:
+      cuda::mr::synchronous_resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
 
-      // conversion from any_resource to cuda::mr::resource_ref with narrowing:
-      cuda::mr::resource_ref<cudax::host_accessible, get_data> ref2 = mr;
+      // conversion from any_resource to cuda::mr::synchronous_resource_ref with narrowing:
+      cuda::mr::synchronous_resource_ref<cudax::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);

@@ -163,11 +163,12 @@ _CCCL_PUBLIC_HOST_API const _CUDA_VMR::_Alloc_vtable* __get_resource_vptr(_Resou
 {
   if constexpr (_CUDA_VMR::resource<_Resource>)
   {
-    return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Async, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
+    return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Default, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
   }
   else if constexpr (_CUDA_VMR::synchronous_resource<_Resource>)
   {
-    return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Default, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
+    return &_CUDA_VMR::
+      __alloc_vtable<_CUDA_VMR::_AllocType::_Synchronous, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
   }
   else
   {
@@ -208,7 +209,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
   template <_CUDA_VMR::_AllocType _Alloc_type>
   using __iresource = __rebind_interface<
     _CUDA_VSTD::
-      conditional_t<_Alloc_type == _CUDA_VMR::_AllocType::_Default, __ibasic_resource<>, __ibasic_async_resource<>>,
+      conditional_t<_Alloc_type == _CUDA_VMR::_AllocType::_Synchronous, __ibasic_resource<>, __ibasic_async_resource<>>,
     _Super...>;
 
   _CCCL_TEMPLATE(_CUDA_VMR::_AllocType _Alloc_type, class... _Properties)
@@ -357,10 +358,10 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
 
   // Conversions from the resource_ref types in cuda::mr is not supported.
   template <class... _OtherProperties>
-  resource_ref(_CUDA_VMR::resource_ref<_OtherProperties...>) = delete;
+  resource_ref(_CUDA_VMR::synchronous_resource_ref<_OtherProperties...>) = delete;
 
   template <class... _OtherProperties>
-  resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
+  resource_ref(_CUDA_VMR::resource_ref<_OtherProperties...>) = delete;
 
   using default_queries = properties_list<_Properties...>;
 
@@ -380,7 +381,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES async_resource_ref
 {
   // Conversions from the resource_ref types in cuda::mr is not supported.
   template <class... _OtherProperties>
-  async_resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
+  async_resource_ref(_CUDA_VMR::resource_ref<_OtherProperties...>) = delete;
 
   // Inherit other constructors from __basic_any
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
@@ -424,7 +425,7 @@ resource_ref<_Properties...> __as_resource_ref(async_resource_ref<_Properties...
 }
 
 template <class... _Properties, mr::_AllocType _Alloc_type>
-mr::resource_ref<_Properties...>
+mr::synchronous_resource_ref<_Properties...>
 __as_resource_ref(mr::basic_resource_ref<_Alloc_type, _Properties...> const __mr) noexcept
 {
   return __mr;
