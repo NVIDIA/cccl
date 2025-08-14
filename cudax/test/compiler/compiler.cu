@@ -69,10 +69,14 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
 
   cudax::cuda_compile_source src{"test.cu", test_cuda_src};
   src.add_name_expression(name_expr);
+  src.add_precompiled_header("my_pch.pch");
 
   cudax::cuda_compiler compiler{};
-  compiler.set_thread_limit(2);
-  compiler.enable_internal_cache(false);
+  compiler.enable_auto_precompiled_headers();
+  compiler.set_precompiled_headers_directory("nvrtc_pch");
+  compiler.set_thread_limit(1);
+  compiler.enable_internal_cache(true);
+
   auto result = compiler.compile_to_ptx(src, cuda_opts);
 
   if (result)
@@ -108,6 +112,11 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
   src.add_name_expression(name_expr);
 
   cudax::cuda_compiler compiler{};
+  compiler.enable_auto_precompiled_headers();
+  compiler.set_precompiled_headers_directory("nvrtc_pch");
+  compiler.set_thread_limit(1);
+  compiler.enable_internal_cache(true);
+
   auto result = compiler.compile_to_cubin(src, cuda_opts, ptx_opts);
 
   if (result)
@@ -137,6 +146,11 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
   src.add_name_expression(name_expr);
 
   cudax::cuda_compiler compiler{};
+  compiler.enable_auto_precompiled_headers();
+  compiler.set_precompiled_headers_directory("nvrtc_pch");
+  compiler.set_thread_limit(1);
+  compiler.enable_internal_cache(true);
+
   auto result = compiler.compile_to_ltoir(src, cuda_opts);
 
   if (result)

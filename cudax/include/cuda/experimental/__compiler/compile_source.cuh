@@ -40,6 +40,7 @@ class cuda_compile_source
   _CUDA_VSTD::string_view __name_;
   _CUDA_VSTD::string_view __code_;
   ::std::vector<_CUDA_VSTD::string_view> __name_exprs_;
+  ::std::vector<_CUDA_VSTD::string_view> __pch_headers_;
 
 public:
   cuda_compile_source() = delete;
@@ -73,6 +74,14 @@ public:
   void add_name_expression(_CUDA_VSTD::string_view __name_expr)
   {
     __name_exprs_.push_back(__name_expr);
+  }
+
+  //! @brief Adds a precompiled header.
+  //!
+  //! @param __header The precompiled header to be added.
+  void add_precompiled_header(_CUDA_VSTD::string_view __header)
+  {
+    __pch_headers_.push_back(__header);
   }
 };
 

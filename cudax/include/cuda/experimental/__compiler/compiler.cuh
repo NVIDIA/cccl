@@ -54,6 +54,8 @@ class cuda_compiler
 {
   bool __enable_internal_cache_{true};
   unsigned __thread_limit_{1};
+  bool __pch_auto_{false};
+  ::std::string __pch_dir_{};
 
   [[nodiscard]] static ::nvrtcProgram __make_program(const cuda_compile_source& __src)
   {
@@ -80,9 +82,21 @@ class cuda_compiler
     // set thread limit
     if (__thread_limit_ != 1)
     {
-      auto& __str = __ret.__opt_strs.emplace_back("-split-compile=");
-      __str.append(::std::to_string(__thread_limit_));
-      __ret.__opt_ptrs.push_back(__str.c_str());
+      __ret.__opt_ptrs.push_back("-split-compile");
+      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__thread_limit_)).c_str());
+    }
+
+    // enable auto PCH
+    if (__pch_auto_)
+    {
+      __ret.__opt_ptrs.push_back("-pch");
+    }
+
+    // PCH directory
+    if (!__pch_dir_.empty())
+    {
+      __ret.__opt_ptrs.push_back("-pch-dir");
+      __ret.__opt_ptrs.push_back(__pch_dir_.c_str());
     }
 
     return __ret;
@@ -192,9 +206,8 @@ class cuda_compiler
     // max register count
     if (__ptx_opts.__max_reg_count_ >= 0)
     {
-      auto& __str = __ret.__opt_strs.emplace_back("--maxrregcount=");
-      __str.append(::std::to_string(__ptx_opts.__max_reg_count_));
-      __ret.__opt_ptrs.push_back(__str.c_str());
+      __ret.__opt_ptrs.push_back("--maxrregcount");
+      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__ptx_opts.__max_reg_count_)).c_str());
     }
 
     // optimization level
@@ -323,6 +336,22 @@ public:
     __thread_limit_ = __limit;
   }
 
+  //! @brief Enable or disable automatic precompiled headers.
+  //!
+  //! @param __enable If `true`, automatic precompiled headers are enabled; otherwise, they are disabled.
+  void enable_auto_precompiled_headers(bool __enable = true) noexcept
+  {
+    __pch_auto_ = __enable;
+  }
+
+  //! @brief Set precompiled headers directory.
+  //!
+  //! @param __dir_name The directory name for the precompiled headers.
+  void set_precompiled_headers_dir(_CUDA_VSTD::string_view __dir_name) noexcept
+  {
+    __pch_dir_.assign(__dir_name.begin(), __dir_name.end());
+  }
+
   //! @brief Compile CUDA source code to PTX.
   //!
   //! @param __cuda_src The CUDA source code to compile.
@@ -336,6 +365,13 @@ public:
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts);
+
+    for (const auto& __pch_header : __cuda_src.__pch_headers_)
+    {
+      __opt_ptrs.push_back("-use-pch");
+      __opt_ptrs.push_back(__opt_strs.emplace_back(__pch_header.begin(), __pch_header.end()).c_str()); // todo: wrap
+                                                                                                       // name by ""
+    }
 
     return compile_cuda_to_ptx_result{__program, __compile(__program, __opt_ptrs)};
   }
@@ -401,9 +437,8 @@ class ptx_compiler
     // set thread limit
     if (__thread_limit_ != 1)
     {
-      auto& __str = __ret.__opt_strs.emplace_back("-split-compile=");
-      __str.append(::std::to_string(__thread_limit_));
-      __ret.__opt_ptrs.push_back(__str.c_str());
+      __ret.__opt_ptrs.push_back("-split-compile");
+      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__thread_limit_)).c_str());
     }
     return __ret;
   }
@@ -425,14 +460,13 @@ class ptx_compiler
     }
 
     // fmad flag
-    __ret.__opt_ptrs.push_back(__ptx_opts.__fmad_ ? "--fmad=true" : "--fmad=false");
+    __ret.__opt_ptrs.push_back(__ptx_opts.__fmad_ ? "-fmad=true" : "-fmad=false");
 
     // max register count
     if (__ptx_opts.__max_reg_count_ >= 0)
     {
-      auto& __str = __ret.__opt_strs.emplace_back("--maxrregcount=");
-      __str.append(::std::to_string(__ptx_opts.__max_reg_count_));
-      __ret.__opt_ptrs.push_back(__str.c_str());
+      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back("--maxrregcount").c_str());
+      __ret.__opt_strs.back().append(::std::to_string(__ptx_opts.__max_reg_count_));
     }
 
     // optimization level
@@ -455,8 +489,7 @@ class ptx_compiler
     }
 
     // position independent code flag
-    __ret.__opt_ptrs.push_back(
-      __ptx_opts.__pic_ ? "--position-independent-code=true" : "--position-independent-code=false");
+    __ret.__opt_ptrs.push_back(__ptx_opts.__pic_ ? "-pic=true" : "-pic=false");
 
     // binary architecture
     switch (__ptx_opts.__binary_arch_)
@@ -548,7 +581,8 @@ public:
 
     auto [__opt_ptrs, __opt_strings] = __make_options(__ptx_opts);
 
-    ::std::string __tmp{"--entry=\""};
+    __opt_ptrs.push_back("-e");
+    ::std::string __tmp{"\""};
     for (_CUDA_VSTD::size_t __i = 0; __i < __ptx_src.__symbols_.size(); ++__i)
     {
       if (__i > 0)
