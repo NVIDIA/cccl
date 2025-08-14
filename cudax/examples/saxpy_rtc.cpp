@@ -59,7 +59,11 @@ int main()
 
   CUDA_SAFE_CALL(cuInit(0));
   CUDA_SAFE_CALL(cuDeviceGet(&device, 0));
-  CUDA_SAFE_CALL(cuCtxCreate(&context, nullptr, 0, device));
+#if CUDA_VERSION < 12050
+  CUDA_SAFE_CALL(cuCtxCreate_v3(&context, 0, device));
+#else
+  CUDA_SAFE_CALL(cuCtxCreate_v4(&context, nullptr, 0, device));
+#endif
   CUDA_SAFE_CALL(cuLibraryLoadData(&library, ptx.c_str(), nullptr, nullptr, 0, nullptr, nullptr, 0));
   CUDA_SAFE_CALL(cuLibraryGetKernel(&kernel, library, "saxpy"));
 
