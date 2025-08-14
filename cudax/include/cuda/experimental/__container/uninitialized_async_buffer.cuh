@@ -79,7 +79,7 @@ private:
                 "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
+  using __async_resource = ::cuda::experimental::any_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
@@ -321,7 +321,7 @@ public:
   }
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
+  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& memory_resource() const noexcept

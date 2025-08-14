@@ -243,9 +243,9 @@ private:
 //! Factory function for `shared_resource` objects
 //! -----------------------------------------------
 //!
-//! ``make_any_resource`` constructs an :ref:`shared_resource <cudax-memory-resource-shared-resource>` object that wraps
-//! a newly constructed instance of the given resource type. The resource type must satisfy the ``cuda::mr::resource``
-//! concept and provide all of the properties specified in the template parameter pack.
+//! ``make_any_synchronous_resource`` constructs an :ref:`shared_resource <cudax-memory-resource-shared-resource>`
+//! object that wraps a newly constructed instance of the given resource type. The resource type must satisfy the
+//! ``cuda::mr::resource`` concept and provide all of the properties specified in the template parameter pack.
 //!
 //! @param __args The arguments used to construct the instance of the resource type.
 //!
