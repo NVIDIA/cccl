@@ -29,6 +29,56 @@ using local_segment_index_t = ::cuda::std::uint32_t;
 // Type used for total number of segments and to index within segments globally
 using global_segment_offset_t = ::cuda::std::int64_t;
 
+template <typename OffsetT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+struct LargeSegmentsSelectorT
+{
+  OffsetT value{};
+  BeginOffsetIteratorT d_offset_begin{};
+  EndOffsetIteratorT d_offset_end{};
+  global_segment_offset_t base_segment_offset{};
+
+#if !_CCCL_COMPILER(NVRTC)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  LargeSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
+      : value(value)
+      , d_offset_begin(d_offset_begin)
+      , d_offset_end(d_offset_end)
+  {}
+#endif
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
+  {
+    const OffsetT segment_size =
+      d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
+    return segment_size > value;
+  }
+};
+
+template <typename OffsetT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+struct SmallSegmentsSelectorT
+{
+  OffsetT value{};
+  BeginOffsetIteratorT d_offset_begin{};
+  EndOffsetIteratorT d_offset_end{};
+  global_segment_offset_t base_segment_offset{};
+
+#if !_CCCL_COMPILER(NVRTC)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  SmallSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
+      : value(value)
+      , d_offset_begin(d_offset_begin)
+      , d_offset_end(d_offset_end)
+  {}
+#endif
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
+  {
+    const OffsetT segment_size =
+      d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
+    return segment_size < value;
+  }
+};
+
 /**
  * @brief Fallback kernel, in case there's not enough segments to
  *        take advantage of partitioning.

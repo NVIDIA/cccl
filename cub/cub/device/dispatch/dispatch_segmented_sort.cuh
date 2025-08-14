@@ -282,22 +282,39 @@ struct DeviceSegmentedSortKernelSource
 };
 } // namespace detail::segmented_sort
 
-template <SortOrder Order,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename PolicyHub    = detail::segmented_sort::policy_hub<KeyT, ValueT>,
-          typename KernelSource = detail::segmented_sort::DeviceSegmentedSortKernelSource<
-            typename PolicyHub::MaxPolicy,
-            Order,
-            KeyT,
-            ValueT,
-            BeginOffsetIteratorT,
-            EndOffsetIteratorT,
-            OffsetT>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  SortOrder Order,
+  typename KeyT,
+  typename ValueT,
+  typename OffsetT,
+  typename BeginOffsetIteratorT,
+  typename EndOffsetIteratorT,
+  typename PolicyHub    = detail::segmented_sort::policy_hub<KeyT, ValueT>,
+  typename KernelSource = detail::segmented_sort::DeviceSegmentedSortKernelSource<
+    typename PolicyHub::MaxPolicy,
+    Order,
+    KeyT,
+    ValueT,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT,
+    OffsetT>,
+  typename PartitionPolicyHub = detail::three_way_partition::policy_hub<
+    cub::detail::it_value_t<THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>>,
+    detail::three_way_partition::per_partition_offset_t>,
+  typename PartitionKernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
+    typename PartitionPolicyHub::MaxPolicy,
+    THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>,
+    cub::detail::segmented_sort::local_segment_index_t*,
+    cub::detail::segmented_sort::local_segment_index_t*,
+    THRUST_NS_QUALIFIER::reverse_iterator<cub::detail::segmented_sort::local_segment_index_t*>,
+    cub::detail::segmented_sort::local_segment_index_t*,
+    detail::three_way_partition::ScanTileStateT,
+    cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>,
+    cub::detail::segmented_sort::SmallSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>,
+    detail::three_way_partition::per_partition_offset_t,
+    detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>,
+    detail::choose_signed_offset<cub::detail::segmented_sort::global_segment_offset_t>::type>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedSort
 {
   using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
@@ -305,49 +322,10 @@ struct DispatchSegmentedSort
 
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  struct LargeSegmentsSelectorT
-  {
-    OffsetT value{};
-    BeginOffsetIteratorT d_offset_begin{};
-    EndOffsetIteratorT d_offset_end{};
-    global_segment_offset_t base_segment_offset{};
-
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-    LargeSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
-        : value(value)
-        , d_offset_begin(d_offset_begin)
-        , d_offset_end(d_offset_end)
-    {}
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
-    {
-      const OffsetT segment_size =
-        d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
-      return segment_size > value;
-    }
-  };
-
-  struct SmallSegmentsSelectorT
-  {
-    OffsetT value{};
-    BeginOffsetIteratorT d_offset_begin{};
-    EndOffsetIteratorT d_offset_end{};
-    global_segment_offset_t base_segment_offset{};
-
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-    SmallSegmentsSelectorT(OffsetT value, BeginOffsetIteratorT d_offset_begin, EndOffsetIteratorT d_offset_end)
-        : value(value)
-        , d_offset_begin(d_offset_begin)
-        , d_offset_end(d_offset_end)
-    {}
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
-    {
-      const OffsetT segment_size =
-        d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
-      return segment_size < value;
-    }
-  };
+  using LargeSegmentsSelectorT =
+    cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+  using SmallSegmentsSelectorT =
+    cub::detail::segmented_sort::SmallSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
   // Partition selects large and small groups. The middle group is not selected.
   static constexpr size_t num_selected_groups = 2;
@@ -497,7 +475,32 @@ struct DispatchSegmentedSort
         auto medium_indices_iterator =
           THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get());
 
-        cub::DevicePartition::IfNoNVTX(
+        // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
+        // This approach propagates the type erasure to partition.
+        using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
+        using PartitionOffsetT             = typename ChooseOffsetT::type;
+        using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+          THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+          decltype(large_and_medium_segments_indices.get()),
+          decltype(small_segments_indices.get()),
+          decltype(medium_indices_iterator),
+          decltype(group_sizes.get()),
+          LargeSegmentsSelectorT,
+          SmallSegmentsSelectorT,
+          PartitionOffsetT,
+          PartitionPolicyHub,
+          PartitionKernelSource,
+          KernelLauncherFactory>;
+
+        // Signed integer type for global offsets
+        // Check if the number of items exceeds the range covered by the selected signed offset type
+        cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+        if (error)
+        {
+          return error;
+        }
+
+        DispatchThreeWayPartitionIfT::Dispatch(
           nullptr,
           three_way_partition_temp_storage_bytes,
           THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
@@ -505,9 +508,9 @@ struct DispatchSegmentedSort
           small_segments_indices.get(),
           medium_indices_iterator,
           group_sizes.get(),
-          max_num_segments_per_invocation,
           large_segments_selector,
           small_segments_selector,
+          max_num_segments_per_invocation,
           stream);
 
         device_partition_temp_storage.grow(three_way_partition_temp_storage_bytes);
