@@ -421,6 +421,34 @@ class cuda_compiler
   }
 
 public:
+  //! @brief Namespace-like class representing the PCH heap.
+  struct pch_heap
+  {
+    //! @brief Get the size of the PCH heap.
+    //!
+    //! @return The size of the PCH heap.
+    [[nodiscard]] static _CUDA_VSTD::size_t size()
+    {
+      _CUDA_VSTD::size_t __size{};
+      if (::nvrtcGetPCHHeapSize(&__size) != ::NVRTC_SUCCESS)
+      {
+        // Handle error
+      }
+      return __size;
+    }
+
+    //! @brief Resize the PCH heap to the specified size.
+    //!
+    //! @param __size The new size of the PCH heap.
+    static void resize(_CUDA_VSTD::size_t __size)
+    {
+      if (::nvrtcSetPCHHeapSize(__size) != ::NVRTC_SUCCESS)
+      {
+        // Handle error
+      }
+    }
+  };
+
   //! @brief Get the version of the NVRTC compiler.
   //!
   //! @return The version of the NVRTC compiler as an integer, where the major version is multiplied by 100 and added to

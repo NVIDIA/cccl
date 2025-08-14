@@ -40,6 +40,15 @@
 namespace cuda::experimental
 {
 
+//! @brief Enumeration representing the status of the PCH (precompiled header) creation.
+enum class cuda_pch_create_status
+{
+  success, //!< The PCH was created successfully
+  not_attempted, //!< The PCH creation was not attempted or not allowed
+  heap_exhausted, //!< The PCH heap was exhausted
+  error, //!< An error occurred during PCH creation
+};
+
 class __nvrtc_compile_result_base
 {
 protected:
@@ -144,6 +153,40 @@ public:
   [[nodiscard]] bool success() const noexcept
   {
     return __success_;
+  }
+
+  //! @brief Get the PCH create status.
+  //!
+  //! @return The PCH create status.
+  [[nodiscard]] cuda_pch_create_status pch_create_status() const noexcept
+  {
+    switch (::nvrtcGetPCHCreateStatus(__program_))
+    {
+      case ::NVRTC_SUCCESS:
+        return cuda_pch_create_status::success;
+      case ::NVRTC_ERROR_PCH_CREATE_HEAP_EXHAUSTED:
+        return cuda_pch_create_status::heap_exhausted;
+      case ::NVRTC_ERROR_NO_PCH_CREATE_ATTEMPTED:
+        return cuda_pch_create_status::not_attempted;
+      case ::NVRTC_ERROR_PCH_CREATE:
+        return cuda_pch_create_status::error;
+      default:
+        _CCCL_UNREACHABLE();
+    }
+  }
+
+  //! @brief Get the PCH heap required size. Only valid if `cuda_pch_create_status::heap_exhausted` is returned by
+  //!        `pch_create_status()`.
+  //!
+  //! @return The PCH required heap size.
+  [[nodiscard]] _CUDA_VSTD::size_t pch_heap_required_size() const
+  {
+    _CUDA_VSTD::size_t __size{};
+    if (::nvrtcGetPCHHeapSizeRequired(__program_, &__size) != ::NVRTC_SUCCESS)
+    {
+      // todo: throw
+    }
+    return __size;
   }
 
   //! @brief Convert the result to a boolean value.
