@@ -56,8 +56,8 @@ class cuda_compiler
 {
   bool __enable_internal_cache_{true}; //!< Enable internal cache
   unsigned __thread_limit_{1}; //!< The thread limit (0 means no limit)
-  bool __pch_auto_{false}; //!< Enable automatic precompiled headers
-  ::std::string __pch_dir_{}; //!< The directory for precompiled headers
+  bool __auto_pch_{false}; //!< Enable automatic precompiled headers
+  ::std::string __auto_pch_dir_{}; //!< The directory for precompiled headers
 
   //! @brief Create a NVRTC program from the CUDA source code.
   //!
@@ -94,19 +94,6 @@ class cuda_compiler
       __ret.__ptrs.push_back("-split-compile");
       __ret.__ptrs.push_back(nullptr); // placeholder for string pointer
       __ret.__strs.emplace_back(::std::to_string(__thread_limit_));
-    }
-
-    // enable auto PCH
-    if (__pch_auto_)
-    {
-      __ret.__ptrs.push_back("-pch");
-    }
-
-    // PCH directory
-    if (!__pch_dir_.empty())
-    {
-      __ret.__ptrs.push_back("-pch-dir");
-      __ret.__ptrs.push_back(__pch_dir_.c_str());
     }
 
     return __ret;
@@ -192,7 +179,7 @@ class cuda_compiler
     // create PCH
     if (!__cuda_opts.__pch_file_name_.empty())
     {
-      __ret.__ptrs.push_back("-use-pch");
+      __ret.__ptrs.push_back("-create-pch");
       __ret.__ptrs.push_back(__cuda_opts.__pch_file_name_.c_str());
     }
 
@@ -332,12 +319,37 @@ class cuda_compiler
   //!
   //! @param __pchs The precompiled headers to add.
   //! @param __opts The NVRTC compile options to modify.
-  void __add_pchs(_CUDA_VSTD::span<const ::std::string> __pchs, __nvrtc_compile_options& __opts)
+  void __add_pchs(
+    const cuda_compile_source& __cuda_src, const cuda_compile_options& __cuda_opts, __nvrtc_compile_options& __opts)
   {
-    for (const auto& __pch : __pchs)
+    if (!__cuda_src.__pchs_.empty() || !__cuda_opts.__pch_file_name_.empty())
     {
-      __opts.__ptrs.push_back("-use-pch");
-      __opts.__ptrs.push_back(__pch.c_str());
+      for (const auto& __pch : __cuda_src.__pchs_)
+      {
+        __opts.__ptrs.push_back("-use-pch");
+        __opts.__ptrs.push_back(__pch.c_str());
+      }
+
+      if (!__cuda_opts.__pch_file_name_.empty())
+      {
+        __opts.__ptrs.push_back("-create-pch");
+        __opts.__ptrs.push_back(__cuda_opts.__pch_file_name_.c_str());
+      }
+
+      if (!__cuda_opts.__pch_dir_.empty())
+      {
+        __opts.__ptrs.push_back("-pch-dir");
+        __opts.__ptrs.push_back(__cuda_opts.__pch_dir_.c_str());
+      }
+    }
+    else if (__auto_pch_)
+    {
+      __opts.__ptrs.push_back("-pch");
+      if (!__auto_pch_dir_.empty())
+      {
+        __opts.__ptrs.push_back("-pch-dir");
+        __opts.__ptrs.push_back(__auto_pch_dir_.c_str());
+      }
     }
   }
 
@@ -445,7 +457,7 @@ public:
   //! @param __enable If `true`, automatic precompiled headers are enabled; otherwise, they are disabled.
   void enable_auto_precompiled_headers(bool __enable = true) noexcept
   {
-    __pch_auto_ = __enable;
+    __auto_pch_ = __enable;
   }
 
   //! @brief Set precompiled headers directory.
@@ -453,7 +465,7 @@ public:
   //! @param __dir_name The directory name for the precompiled headers.
   void set_precompiled_headers_dir(::std::string __dir_name) noexcept
   {
-    __pch_dir_ = ::std::move(__dir_name);
+    __auto_pch_dir_ = _CUDA_VSTD::move(__dir_name);
   }
 
   //! @brief Compile CUDA source code to PTX.
@@ -469,7 +481,7 @@ public:
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     auto __opts = __make_options(__cuda_opts);
-    __add_pchs(__cuda_src.__pchs_, __opts);
+    __add_pchs(__cuda_src, __cuda_opts, __opts);
 
     const bool __success = __compile(__program, _CUDA_VSTD::move(__opts));
 
@@ -497,7 +509,7 @@ public:
     auto __program = __make_program(__cuda_src);
     auto __opts    = __make_options(__cuda_opts, __ptx_opts);
 
-    __add_pchs(__cuda_src.__pchs_, __opts);
+    __add_pchs(__cuda_src, __cuda_opts, __opts);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     const bool __success = __compile(__program, _CUDA_VSTD::move(__opts));
@@ -523,7 +535,7 @@ public:
     auto __program = __make_program(__cuda_src);
     auto __opts    = __make_options(__cuda_opts);
     __opts.__ptrs.push_back("-dlto");
-    __add_pchs(__cuda_src.__pchs_, __opts);
+    __add_pchs(__cuda_src, __cuda_opts, __opts);
     return compile_cuda_to_ltoir_result{__cuda_src.__id_, __program, __compile(__program, _CUDA_VSTD::move(__opts))};
   }
 };

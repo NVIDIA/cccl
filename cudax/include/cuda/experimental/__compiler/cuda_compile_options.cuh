@@ -67,6 +67,7 @@ class cuda_compile_options
   unsigned __std_version_ : 8; //!< C++ standard version.
   int __virtual_arch_; //!< Virtual architecture.
   ::std::string __pch_file_name_; //!< Name of the generated precompiled header file.
+  ::std::string __pch_dir_; //!< Directory for precompiled headers.
 
 public:
   //! @brief Default constructor for CUDA compilation options.
@@ -75,6 +76,7 @@ public:
       , __std_version_{_CUDA_VSTD::to_underlying(cuda_std_version::cxx17)}
       , __virtual_arch_{_CUDA_VSTD::to_underlying(cuda::arch::id::sm_75)}
       , __pch_file_name_{}
+      , __pch_dir_{}
   {}
 
   //! @brief Adds a macro definition to the list of options.
@@ -170,6 +172,18 @@ public:
       return;
     }
     __pch_file_name_ = _CUDA_VSTD::move(__file_name);
+  }
+
+  //! @brief Sets the precompiled headers directory.
+  //!
+  //! @param __dir_name The name of the precompiled headers directory.
+  void set_precompiled_headers_dir(::std::string __dir_name)
+  {
+    if (__dir_name.empty())
+    {
+      return;
+    }
+    __pch_dir_ = _CUDA_VSTD::move(__dir_name);
   }
 };
 
