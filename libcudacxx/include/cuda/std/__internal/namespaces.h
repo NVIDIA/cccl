@@ -71,7 +71,7 @@
 #  define _CCCL_END_NAMESPACE_FILESYSTEM } } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Shorthands for different qualifiers
-  // Namespaces related to execution
+// Namespaces related to execution
 #  define _CCCL_BEGIN_NAMESPACE_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _CCCL_END_NAMESPACE_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
