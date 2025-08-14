@@ -40,6 +40,7 @@
 #include <cub/detail/device_double_buffer.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/device_partition.cuh>
+#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/util_debug.cuh>
@@ -751,8 +752,12 @@ private:
 
       large_segments_selector.base_segment_offset = current_seg_offset;
       small_segments_selector.base_segment_offset = current_seg_offset;
-      [[maybe_unused]] auto current_begin_offset  = d_begin_offsets + current_seg_offset;
-      [[maybe_unused]] auto current_end_offset    = d_end_offsets + current_seg_offset;
+
+      BeginOffsetIteratorT current_begin_offset = d_begin_offsets;
+      EndOffsetIteratorT current_end_offset     = d_end_offsets;
+
+      detail::advance_iterators_inplace_if_supported(current_begin_offset, current_seg_offset);
+      detail::advance_iterators_inplace_if_supported(current_end_offset, current_seg_offset);
 
       auto medium_indices_iterator =
         THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
