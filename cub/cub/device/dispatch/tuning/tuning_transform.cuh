@@ -346,17 +346,18 @@ struct policy_hub<RequiresStableAddress,
     ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / value_type_size;
   using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread_vec, load_store_word_size>;
 
+  static constexpr bool fallback_to_prefetch =
+    RequiresStableAddress || !can_memcpy_inputs || !all_input_values_same_size || !value_type_divides_load_store_size
+    || !DenseOutput;
+
   // TODO(bgruber): consider a separate kernel for just filling
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || !all_input_values_same_size
-      || !value_type_divides_load_store_size || !DenseOutput;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
-    using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
+    static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
+    using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, default_vectorized_policy_t>;
   };
 
   struct policy800 : ChainedPolicy<800, policy800, policy300>
@@ -373,8 +374,6 @@ struct policy_hub<RequiresStableAddress,
         block_threads* async_policy::min_items_per_thread,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
-
-    static constexpr bool fallback_to_prefetch   = RequiresStableAddress || !can_memcpy_inputs;
     static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams;
 
   public:
@@ -414,8 +413,6 @@ struct policy_hub<RequiresStableAddress,
       ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
     static constexpr int tile_sizes_retain_alignment =
       (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
-
-    static constexpr bool fallback_to_prefetch   = RequiresStableAddress || !can_memcpy_inputs;
     static constexpr bool fallback_to_vectorized = exhaust_smem || !tile_sizes_retain_alignment || no_input_streams;
 
   public:
