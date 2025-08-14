@@ -51,6 +51,32 @@ namespace detail
 {
 namespace three_way_partition
 {
+
+template <typename PolicyT, typename = void>
+struct ThreeWayPartitionPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, _CUDA_VSTD::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_DEFINE_SUB_POLICY_GETTER(ThreeWayPartition)
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
+{
+  return ThreeWayPartitionPolicyWrapper<PolicyT>{policy};
+}
+
 enum class input_size
 {
   _1,
