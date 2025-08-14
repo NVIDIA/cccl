@@ -38,12 +38,12 @@
 #include <nvrtc/ltoir_list_appender.h>
 
 struct device_segmented_sort_policy;
-using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
+using OffsetT = long;
+static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be long");
 
-// check we can map OffsetT to ::cuda::std::uint64_t
-static_assert(std::is_unsigned_v<OffsetT>);
-static_assert(sizeof(OffsetT) == sizeof(::cuda::std::uint64_t));
+// check we can map OffsetT to ::cuda::std::int64_t
+static_assert(std::is_signed_v<OffsetT>);
+static_assert(sizeof(OffsetT) == sizeof(::cuda::std::int64_t));
 
 namespace segmented_sort
 {
@@ -244,6 +244,66 @@ struct segmented_sort_kernel_source
   CUkernel SegmentedSortKernelLarge() const
   {
     return build.segmented_sort_kernel_large;
+  }
+};
+
+struct partition_kernel_source
+{
+  cccl_device_segmented_sort_build_result_t& build;
+
+  CUkernel ThreeWayPartitionInitKernel() const
+  {
+    return build.three_way_partition_init_kernel;
+  }
+  CUkernel ThreeWayPartitionKernel() const
+  {
+    return build.three_way_partition_kernel;
+  }
+
+  std::size_t OffsetSize() const
+  {
+    return build.offset_type.size;
+  }
+};
+
+struct segmented_sort_runtime_tuning_policy
+{
+  cub::detail::RuntimeRadixSortDownsweepAgentPolicy large_segment;
+  cub::detail::RuntimeSmallAndMediumSegmentedSortAgentPolicy small_and_medium_segment;
+
+  auto LargeSegment() const
+  {
+    return large_segment;
+  }
+  auto SmallAndMediumSegmentedSort() const
+  {
+    return small_and_medium_segment;
+  }
+
+  using MaxPolicy = segmented_sort_runtime_tuning_policy;
+
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
+  {
+    return op.template Invoke<segmented_sort_runtime_tuning_policy>(*this);
+  }
+};
+
+struct partition_runtime_tuning_policy
+{
+  cub::detail::RuntimeThreeWayPartitionAgentPolicy three_way_partition;
+
+  auto ThreeWayPartition() const
+  {
+    return three_way_partition;
+  }
+
+  using MaxPolicy = partition_runtime_tuning_policy;
+
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
+  {
+    return op.template Invoke<partition_runtime_tuning_policy>(*this);
   }
 };
 } // namespace segmented_sort
@@ -554,7 +614,8 @@ CUresult cccl_device_segmented_sort(
   cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
   cccl_iterator_t d_values_out,
-  uint64_t num_segments,
+  int64_t num_items,
+  int64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   CUstream stream)
@@ -582,23 +643,28 @@ CUresult cccl_device_segmented_sort(
       OffsetT, // OffsetT
       indirect_iterator_t, // BeginOffsetIteratorT
       indirect_iterator_t, // EndOffsetIteratorT
-      cub::detail::segmented_sort::policy_hub<indirect_arg_t, indirect_arg_t>, // PolicyHub
+      segmented_sort::segmented_sort_runtime_tuning_policy, // PolicyHub
       segmented_sort::segmented_sort_kernel_source, // KernelSource
+      segmented_sort::partition_runtime_tuning_policy, // PartitionPolicyHub
+      segmented_sort::partition_kernel_source, // PartitionKernelSource
       cub::detail::CudaDriverLauncherFactory>:: // KernelLaunchFactory
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
         d_keys_double_buffer,
         d_values_double_buffer,
-        0, // num_items - not used in segmented sort
-        static_cast<cub::detail::segmented_sort::global_segment_offset_t>(num_segments),
+        num_items,
+        num_segments,
         indirect_iterator_t{start_offset_in},
         indirect_iterator_t{end_offset_in},
         true, // is_overwrite_okay
         stream,
         /* kernel_source */ {build},
+        /* partition_kernel_source */ {build},
         /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        /* policy */ *static_cast<segmented_sort::segmented_sort_runtime_policy*>(build.runtime_policy));
+        /* policy */ *reinterpret_cast<segmented_sort::segmented_sort_runtime_policy*>(build.runtime_policy),
+        /* partition_policy */
+        *reinterpret_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }

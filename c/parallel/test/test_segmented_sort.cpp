@@ -52,7 +52,8 @@ struct segmented_sort_build
     cccl_iterator_t keys_out,
     cccl_iterator_t values_in,
     cccl_iterator_t values_out,
-    uint64_t,
+    int64_t /*num_items*/,
+    int64_t /*num_segments*/,
     cccl_iterator_t start_offsets,
     cccl_iterator_t end_offsets,
     int cc_major,
@@ -94,14 +95,15 @@ void segmented_sort(
   cccl_iterator_t keys_out,
   cccl_iterator_t values_in,
   cccl_iterator_t values_out,
-  uint64_t num_segments,
+  int64_t num_items,
+  int64_t num_segments,
   cccl_iterator_t start_offsets,
   cccl_iterator_t end_offsets,
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
   AlgorithmExecute<BuildResultT, segmented_sort_build, segmented_sort_cleanup, segmented_sort_run, BuildCache, KeyT>(
-    cache, lookup_key, keys_in, keys_out, values_in, values_out, num_segments, start_offsets, end_offsets);
+    cache, lookup_key, keys_in, keys_out, values_in, values_out, num_items, num_segments, start_offsets, end_offsets);
 }
 
 // ==============
@@ -215,7 +217,16 @@ C2H_TEST_LIST("segmented_sort can sort keys-only with integral types",
   const auto& test_key = make_key<TestType>();
 
   segmented_sort(
-    keys_in_ptr, keys_out_ptr, values_in, values_out, n_segments, start_offset_it, end_offset_it, build_cache, test_key);
+    keys_in_ptr,
+    keys_out_ptr,
+    values_in,
+    values_out,
+    n_elems,
+    n_segments,
+    start_offset_it,
+    end_offset_it,
+    build_cache,
+    test_key);
 
   // Create expected result by sorting each segment
   std::vector<TestType> expected_keys = host_keys;
@@ -298,6 +309,7 @@ C2H_TEST_LIST("segmented_sort can sort key-value pairs with integral types",
     keys_out_ptr,
     values_in_ptr,
     values_out_ptr,
+    n_elems,
     n_segments,
     start_offset_it,
     end_offset_it,
@@ -405,6 +417,7 @@ C2H_TEST("SegmentedSort works with custom types as keys", "[segmented_sort][cust
     keys_out_ptr,
     values_in_ptr,
     values_out_ptr,
+    n_elems,
     n_segments,
     start_offset_it,
     end_offset_it,
@@ -553,6 +566,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
     keys_out_ptr,
     values_in_ptr,
     values_out_ptr,
+    n_elems,
     n_segments,
     start_offset_it,
     end_offset_it,
