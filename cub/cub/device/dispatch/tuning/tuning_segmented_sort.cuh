@@ -140,6 +140,15 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   {
     return PolicyT::ITEMS_PER_THREAD;
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"LargeSegmentPolicy">()                = LargeSegment().EncodedPolicy(),
+                  key<"SmallAndMediumSegmentedSortPolicy">() = SmallAndMediumSegmentedSort().EncodedPolicy()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
