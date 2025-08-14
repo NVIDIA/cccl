@@ -53,11 +53,7 @@ using _CUDA_STD_EXEC::__query_result_t;
 using _CUDA_STD_EXEC::__queryable_with;
 
 using _CUDA_STD_EXEC::__query_or;
-// TODO: Remove this alias once https://github.com/NVIDIA/cccl/pull/5109 is merged.
-// using _CUDA_STD_EXEC::__query_result_or_t;
-template <class _Env, class _Query, class _Default>
-using __query_result_or_t _CCCL_NODEBUG_ALIAS =
-  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _CUDA_VSTD::declval<_Query>(), _CUDA_VSTD::declval<_Default>()));
+using _CUDA_STD_EXEC::__query_result_or_t;
 // NOLINTEND(misc-unused-using-decls)
 
 template <class _Env, class _Query, bool _Default>
