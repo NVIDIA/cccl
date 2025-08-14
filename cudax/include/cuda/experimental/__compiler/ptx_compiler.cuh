@@ -244,8 +244,7 @@ public:
   compile_to_cubin(const ptx_compile_source& __ptx_src, const ptx_compile_options& __ptx_opts)
   {
     auto __handle = __make_handle(__ptx_src);
-
-    auto __opts = __make_options(__ptx_opts);
+    auto __opts   = __make_options(__ptx_opts);
 
     for (const auto& __symbol : __ptx_src.__symbols_)
     {

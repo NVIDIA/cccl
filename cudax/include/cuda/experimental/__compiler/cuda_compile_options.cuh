@@ -66,6 +66,7 @@ class cuda_compile_options
   ::std::vector<_DynOpt> __dyn_opts_; //!< Dynamic compilation options.
   unsigned __std_version_ : 8; //!< C++ standard version.
   int __virtual_arch_; //!< Virtual architecture.
+  ::std::string __pch_file_name_; //!< Name of the generated precompiled header file.
 
 public:
   //! @brief Default constructor for CUDA compilation options.
@@ -73,6 +74,7 @@ public:
       : __dyn_opts_{}
       , __std_version_{_CUDA_VSTD::to_underlying(cuda_std_version::cxx17)}
       , __virtual_arch_{_CUDA_VSTD::to_underlying(cuda::arch::id::sm_75)}
+      , __pch_file_name_{}
   {}
 
   //! @brief Adds a macro definition to the list of options.
@@ -156,6 +158,18 @@ public:
   void set_virtual_arch(cuda::arch::id __arch_id)
   {
     __virtual_arch_ = _CUDA_VSTD::to_underlying(__arch_id);
+  }
+
+  //! @brief Sets the precompiled header output file.
+  //!
+  //! @param __file_name The name of the precompiled header file.
+  void set_precompiled_header_output_file(::std::string __file_name)
+  {
+    if (__file_name.empty())
+    {
+      return;
+    }
+    __pch_file_name_ = _CUDA_VSTD::move(__file_name);
   }
 };
 

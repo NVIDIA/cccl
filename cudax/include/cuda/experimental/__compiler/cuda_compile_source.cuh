@@ -56,7 +56,7 @@ class cuda_compile_source
   ::std::string __name_{}; //!< The name of the source code.
   ::std::string __code_{}; //!< The source code to be compiled.
   ::std::vector<::std::string> __name_exprs_{}; //!< The name expressions in the source code.
-  ::std::vector<::std::string> __pch_headers_{}; //!< The precompiled headers for the source code.
+  ::std::vector<::std::string> __pchs_{}; //!< The precompiled headers for the source code.
   __cuda_compile_source_id __id_{}; //!< The unique identifier for the source code.
 
   //! @brief Makes an unique id.
@@ -109,10 +109,10 @@ public:
 
   //! @brief Adds a precompiled header.
   //!
-  //! @param __header The precompiled header to be added.
-  void add_precompiled_header(::std::string __header)
+  //! @param __pch The precompiled header to be added.
+  void add_precompiled_header(::std::string __pch)
   {
-    __pch_headers_.push_back(_CUDA_VSTD::move(__header));
+    __pchs_.push_back(_CUDA_VSTD::move(__pch));
   }
 };
 

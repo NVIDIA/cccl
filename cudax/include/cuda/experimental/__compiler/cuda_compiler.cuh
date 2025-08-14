@@ -189,6 +189,13 @@ class cuda_compiler
         _CCCL_UNREACHABLE();
     }
 
+    // create PCH
+    if (!__cuda_opts.__pch_file_name_.empty())
+    {
+      __ret.__ptrs.push_back("-use-pch");
+      __ret.__ptrs.push_back(__cuda_opts.__pch_file_name_.c_str());
+    }
+
     // process dynamic options
     for (const auto& __dopt : __cuda_opts.__dyn_opts_)
     {
@@ -321,6 +328,19 @@ class cuda_compiler
     return __ret;
   }
 
+  //! @brief Add precompiled headers to the NVRTC compile options.
+  //!
+  //! @param __pchs The precompiled headers to add.
+  //! @param __opts The NVRTC compile options to modify.
+  void __add_pchs(_CUDA_VSTD::span<const ::std::string> __pchs, __nvrtc_compile_options& __opts)
+  {
+    for (const auto& __pch : __pchs)
+    {
+      __opts.__ptrs.push_back("-use-pch");
+      __opts.__ptrs.push_back(__pch.c_str());
+    }
+  }
+
   //! @brief Add name expressions to the NVRTC program.
   //!
   //! @param __program The NVRTC program.
@@ -449,13 +469,7 @@ public:
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     auto __opts = __make_options(__cuda_opts);
-
-    for (const auto& __pch_header : __cuda_src.__pch_headers_)
-    {
-      __opts.__ptrs.push_back("-use-pch");
-      __opts.__ptrs.push_back(nullptr); // placeholder for string pointer
-      __opts.__strs.push_back({__pch_header.begin(), __pch_header.end()});
-    }
+    __add_pchs(__cuda_src.__pchs_, __opts);
 
     const bool __success = __compile(__program, _CUDA_VSTD::move(__opts));
 
@@ -481,9 +495,12 @@ public:
     const ptx_compile_options& __ptx_opts)
   {
     auto __program = __make_program(__cuda_src);
+    auto __opts    = __make_options(__cuda_opts, __ptx_opts);
+
+    __add_pchs(__cuda_src.__pchs_, __opts);
     __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
-    const bool __success = __compile(__program, __make_options(__cuda_opts, __ptx_opts));
+    const bool __success = __compile(__program, _CUDA_VSTD::move(__opts));
 
     ::std::vector<_CUDA_VSTD::string_view> __lowered_names;
     if (__success)
@@ -504,11 +521,9 @@ public:
   compile_to_ltoir(const cuda_compile_source& __cuda_src, const cuda_compile_options& __cuda_opts)
   {
     auto __program = __make_program(__cuda_src);
-    __add_name_expressions(__program, __cuda_src.__name_exprs_);
-
-    auto __opts = __make_options(__cuda_opts);
+    auto __opts    = __make_options(__cuda_opts);
     __opts.__ptrs.push_back("-dlto");
-
+    __add_pchs(__cuda_src.__pchs_, __opts);
     return compile_cuda_to_ltoir_result{__cuda_src.__id_, __program, __compile(__program, _CUDA_VSTD::move(__opts))};
   }
 };
