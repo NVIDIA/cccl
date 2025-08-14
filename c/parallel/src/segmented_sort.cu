@@ -270,6 +270,9 @@ struct segmented_sort_runtime_tuning_policy
 {
   cub::detail::RuntimeRadixSortDownsweepAgentPolicy large_segment;
   cub::detail::RuntimeSmallAndMediumSegmentedSortAgentPolicy small_and_medium_segment;
+  cub::detail::RuntimeSubWarpMergeSortAgentPolicy small_segment;
+  cub::detail::RuntimeSubWarpMergeSortAgentPolicy medium_segment;
+  int partitioning_threshold;
 
   auto LargeSegment() const
   {
@@ -278,6 +281,75 @@ struct segmented_sort_runtime_tuning_policy
   auto SmallAndMediumSegmentedSort() const
   {
     return small_and_medium_segment;
+  }
+
+  void CheckLoadModifierIsNotLDG() const
+  {
+    if (large_segment.LoadModifier() == cub::CacheLoadModifier::LOAD_LDG)
+    {
+      throw std::runtime_error("The memory consistency model does not apply to texture accesses");
+    }
+  }
+
+  void CheckLoadAlgorithmIsNotStriped() const
+  {
+    if (large_segment.LoadAlgorithm() == cub::BLOCK_LOAD_STRIPED
+        || medium_segment.LoadAlgorithm() == cub::WARP_LOAD_STRIPED
+        || small_segment.LoadAlgorithm() == cub::WARP_LOAD_STRIPED)
+    {
+      throw std::runtime_error("Striped load will make this algorithm unstable");
+    }
+  }
+
+  void CheckStoreAlgorithmIsNotStriped() const
+  {
+    if (medium_segment.StoreAlgorithm() == cub::WARP_STORE_STRIPED
+        || small_segment.StoreAlgorithm() == cub::WARP_STORE_STRIPED)
+    {
+      throw std::runtime_error("Striped stores will produce unsorted results");
+    }
+  }
+
+  int PartitioningThreshold() const
+  {
+    return partitioning_threshold;
+  }
+
+  int LargeSegmentRadixBits() const
+  {
+    return large_segment.RadixBits();
+  }
+
+  int SegmentsPerSmallBlock() const
+  {
+    return small_and_medium_segment.SegmentsPerSmallBlock();
+  }
+
+  int SegmentsPerMediumBlock() const
+  {
+    return small_and_medium_segment.SegmentsPerMediumBlock();
+  }
+
+  int SmallPolicyItemsPerTile() const
+  {
+    return small_segment.ItemsPerTile();
+  }
+
+  int MediumPolicyItemsPerTile() const
+  {
+    return medium_segment.ItemsPerTile();
+  }
+
+  template <typename PolicyT>
+  int BlockThreads(PolicyT policy) const
+  {
+    return policy.BlockThreads();
+  }
+
+  template <typename PolicyT>
+  int ItemsPerThread(PolicyT policy) const
+  {
+    return policy.ItemsPerThread();
   }
 
   using MaxPolicy = segmented_sort_runtime_tuning_policy;
