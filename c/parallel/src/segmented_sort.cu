@@ -272,22 +272,36 @@ CUresult cccl_device_segmented_sort_build(
 {
   CUresult error = CUDA_SUCCESS;
 
+  if (keys_in_it.value_type.type != keys_out_it.value_type.type)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_segmented_sort_build(): keys_in_it and keys_out_it must have the same type\n ");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  if (values_in_it.value_type.type != values_out_it.value_type.type)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_segmented_sort_build(): values_in_it and values_out_it must have the same type\n ");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
   try
   {
     const char* name = "device_segmented_sort";
 
     const int cc = cc_major * 10 + cc_minor;
 
-    // Get iterator specializations
     const auto [keys_in_iterator_name, keys_in_iterator_src] =
       get_specialization<segmented_sort_keys_input_iterator_tag>(template_id<input_iterator_traits>(), keys_in_it);
 
     const auto [keys_out_iterator_name, keys_out_iterator_src] =
       get_specialization<segmented_sort_keys_output_iterator_tag>(
-        template_id<output_iterator_traits>(), keys_out_it, keys_in_it.value_type);
+        template_id<output_iterator_traits>(), keys_out_it, keys_out_it.value_type);
 
-    // Determine if this is keys-only sorting
-    const bool keys_only = (values_in_it.state == nullptr || values_out_it.state == nullptr);
+    const bool keys_only = values_in_it.type == cccl_iterator_kind_t::CCCL_POINTER && values_in_it.state == nullptr;
 
     std::string values_in_iterator_name, values_in_iterator_src;
     std::string values_out_iterator_name, values_out_iterator_src;
@@ -306,7 +320,6 @@ CUresult cccl_device_segmented_sort_build(
     }
     else
     {
-      // For keys-only sorting, use NullType for values
       values_in_iterator_name  = "cub::NullType*";
       values_out_iterator_name = "cub::NullType*";
       values_in_iterator_src   = "";
@@ -320,10 +333,8 @@ CUresult cccl_device_segmented_sort_build(
     const auto [end_offset_iterator_name, end_offset_iterator_src] =
       get_specialization<segmented_sort_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
-    // OffsetT is checked to match have 64-bit size
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    // Get type names for keys and values
     const std::string key_t   = cccl_type_enum_to_name(keys_in_it.value_type.type);
     const std::string value_t = keys_only ? "cub::NullType" : cccl_type_enum_to_name(values_in_it.value_type.type);
 
