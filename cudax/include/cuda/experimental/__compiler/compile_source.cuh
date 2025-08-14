@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/string_view>
+#include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 
+#include <string>
 #include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -32,15 +33,38 @@
 namespace cuda::experimental
 {
 
+//! @brief An identifier for a CUDA source code.
+enum class __cuda_compile_source_id : _CUDA_VSTD::uint64_t
+{
+};
+
+//! @brief An identifier for a name expression within a CUDA source code.
+struct __cuda_name_expression_id
+{
+  __cuda_compile_source_id __src_id_;
+  _CUDA_VSTD::size_t __expr_idx_;
+};
+
 //! @brief A class representing a source code to be compiled by the CUDA compiler.
 class cuda_compile_source
 {
   friend class cuda_compiler;
 
-  _CUDA_VSTD::string_view __name_;
-  _CUDA_VSTD::string_view __code_;
-  ::std::vector<_CUDA_VSTD::string_view> __name_exprs_;
-  ::std::vector<_CUDA_VSTD::string_view> __pch_headers_;
+  ::std::string __name_;
+  ::std::string __code_;
+  ::std::vector<::std::string> __name_exprs_;
+  ::std::vector<::std::string> __pch_headers_;
+  __cuda_compile_source_id __id_;
+
+  //! @brief Makes an unique id.
+  //!
+  //! @return An unique identifier for the CUDA source code.
+  [[nodiscard]] static __cuda_compile_source_id __make_id() noexcept
+  {
+    using _IdCounter               = _CUDA_VSTD::underlying_type_t<__cuda_compile_source_id>;
+    static _IdCounter __id_counter = 1;
+    return __cuda_compile_source_id{__id_counter++};
+  }
 
 public:
   cuda_compile_source() = delete;
@@ -52,10 +76,11 @@ public:
   //!
   //! @param __name The name of the source code.
   //! @param __code The source code to be compiled.
-  cuda_compile_source(_CUDA_VSTD::string_view __name, _CUDA_VSTD::string_view __code) noexcept
-      : __name_{__name}
-      , __code_{__code}
+  cuda_compile_source(::std::string __name, ::std::string __code) noexcept
+      : __name_{_CUDA_VSTD::move(__name)}
+      , __code_{_CUDA_VSTD::move(__code)}
       , __name_exprs_{}
+      , __id_{__make_id()}
   {}
 
   cuda_compile_source(const cuda_compile_source&) = delete;
@@ -71,17 +96,20 @@ public:
   //! @brief Adds a name expression to the source code.
   //!
   //! @param __name_expr The name expression to be added.
-  void add_name_expression(_CUDA_VSTD::string_view __name_expr)
+  //!
+  //! @return An identifier for the added name expression of an undefined type.
+  [[nodiscard]] __cuda_name_expression_id add_name_expression(::std::string __name_expr)
   {
-    __name_exprs_.push_back(__name_expr);
+    __name_exprs_.push_back(_CUDA_VSTD::move(__name_expr));
+    return __cuda_name_expression_id{__id_, __name_exprs_.size() - 1};
   }
 
   //! @brief Adds a precompiled header.
   //!
   //! @param __header The precompiled header to be added.
-  void add_precompiled_header(_CUDA_VSTD::string_view __header)
+  void add_precompiled_header(::std::string __header)
   {
-    __pch_headers_.push_back(__header);
+    __pch_headers_.push_back(_CUDA_VSTD::move(__header));
   }
 };
 
@@ -90,9 +118,9 @@ class ptx_compile_source
 {
   friend class ptx_compiler;
 
-  _CUDA_VSTD::string_view __name_;
-  _CUDA_VSTD::string_view __code_;
-  ::std::vector<_CUDA_VSTD::string_view> __symbols_;
+  ::std::string __name_;
+  ::std::string __code_;
+  ::std::vector<::std::string> __symbols_;
 
 public:
   ptx_compile_source() = delete;
@@ -104,9 +132,9 @@ public:
   //!
   //! @param __name The name of the source code.
   //! @param __code The source code to be compiled.
-  ptx_compile_source(_CUDA_VSTD::string_view __name, _CUDA_VSTD::string_view __code) noexcept
-      : __name_{__name}
-      , __code_{__code}
+  ptx_compile_source(::std::string __name, ::std::string __code) noexcept
+      : __name_{_CUDA_VSTD::move(__name)}
+      , __code_{_CUDA_VSTD::move(__code)}
       , __symbols_{}
   {}
 
@@ -123,17 +151,17 @@ public:
   //! @brief Adds a kernel symbol to be kept in the PTX source code.
   //!
   //! @param __symbol The kernel symbol to be added.
-  void add_kernel_symbol(_CUDA_VSTD::string_view __symbol)
+  void add_kernel_symbol(::std::string __symbol)
   {
-    __symbols_.push_back(__symbol);
+    __symbols_.push_back(_CUDA_VSTD::move(__symbol));
   }
 
   //! @brief Adds a function symbol to be kept in the PTX source code.
   //!
   //! @param __symbol The function symbol to be added.
-  void add_function_symbol(_CUDA_VSTD::string_view __symbol)
+  void add_function_symbol(::std::string __symbol)
   {
-    __symbols_.push_back(__symbol);
+    __symbols_.push_back(_CUDA_VSTD::move(__symbol));
   }
 };
 

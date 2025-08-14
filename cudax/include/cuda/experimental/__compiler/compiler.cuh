@@ -59,10 +59,9 @@ class cuda_compiler
 
   [[nodiscard]] static ::nvrtcProgram __make_program(const cuda_compile_source& __src)
   {
-    ::std::string __name{__src.__name_.begin(), __src.__name_.end()};
-    ::std::string __code{__src.__code_.begin(), __src.__code_.end()};
     ::nvrtcProgram __program{};
-    if (::nvrtcCreateProgram(&__program, __code.c_str(), __name.c_str(), 0, nullptr, nullptr) != ::NVRTC_SUCCESS)
+    if (::nvrtcCreateProgram(&__program, __src.__code_.c_str(), __src.__name_.c_str(), 0, nullptr, nullptr)
+        != ::NVRTC_SUCCESS)
     {
       // todo: throw an exception if the program creation failed
     }
@@ -284,14 +283,11 @@ class cuda_compiler
     return __ret;
   }
 
-  static void
-  __add_name_expressions(::nvrtcProgram __program, _CUDA_VSTD::span<const _CUDA_VSTD::string_view> __name_exprs)
+  static void __add_name_expressions(::nvrtcProgram __program, _CUDA_VSTD::span<const ::std::string> __name_exprs)
   {
-    ::std::string __tmp{};
     for (const auto& __name_expr : __name_exprs)
     {
-      __tmp.assign(__name_expr.begin(), __name_expr.end());
-      if (::nvrtcAddNameExpression(__program, __tmp.c_str()) != ::NVRTC_SUCCESS)
+      if (::nvrtcAddNameExpression(__program, __name_expr.c_str()) != ::NVRTC_SUCCESS)
       {
         // todo: throw an exception if the name expression could not be added
       }
@@ -302,6 +298,24 @@ class cuda_compiler
   {
     const auto __result = ::nvrtcCompileProgram(__program, static_cast<int>(__opt_ptrs.size()), __opt_ptrs.data());
     return __result == ::NVRTC_SUCCESS;
+  }
+
+  [[nodiscard]] static ::std::vector<_CUDA_VSTD::string_view>
+  __get_lowered_names(::nvrtcProgram __program, _CUDA_VSTD::span<const ::std::string> __name_exprs)
+  {
+    ::std::vector<_CUDA_VSTD::string_view> __lowered_names;
+    __lowered_names.reserve(__name_exprs.size());
+
+    for (const auto& __name_expr : __name_exprs)
+    {
+      const char* __lowered_name{};
+      if (::nvrtcGetLoweredName(__program, __name_expr.c_str(), &__lowered_name) != ::NVRTC_SUCCESS)
+      {
+        // todo: throw an exception if the lowered name could not be retrieved
+      }
+      __lowered_names.push_back(_CUDA_VSTD::string_view{__lowered_name});
+    }
+    return __lowered_names;
   }
 
 public:
@@ -347,9 +361,9 @@ public:
   //! @brief Set precompiled headers directory.
   //!
   //! @param __dir_name The directory name for the precompiled headers.
-  void set_precompiled_headers_dir(_CUDA_VSTD::string_view __dir_name) noexcept
+  void set_precompiled_headers_dir(::std::string __dir_name) noexcept
   {
-    __pch_dir_.assign(__dir_name.begin(), __dir_name.end());
+    __pch_dir_ = ::std::move(__dir_name);
   }
 
   //! @brief Compile CUDA source code to PTX.
@@ -373,7 +387,15 @@ public:
                                                                                                        // name by ""
     }
 
-    return compile_cuda_to_ptx_result{__program, __compile(__program, __opt_ptrs)};
+    const bool __success = __compile(__program, __opt_ptrs);
+
+    ::std::vector<_CUDA_VSTD::string_view> __lowered_names;
+    if (__success)
+    {
+      __lowered_names = __get_lowered_names(__program, __cuda_src.__name_exprs_);
+    }
+
+    return compile_cuda_to_ptx_result{__cuda_src.__id_, __program, __success, _CUDA_VSTD::move(__lowered_names)};
   }
 
   //! @brief Compile CUDA source code to CUBIN.
@@ -393,7 +415,15 @@ public:
 
     [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts, __ptx_opts);
 
-    return compile_cuda_to_cubin_result{__program, __compile(__program, __opt_ptrs)};
+    const bool __success = __compile(__program, __opt_ptrs);
+
+    ::std::vector<_CUDA_VSTD::string_view> __lowered_names;
+    if (__success)
+    {
+      __lowered_names = __get_lowered_names(__program, __cuda_src.__name_exprs_);
+    }
+
+    return compile_cuda_to_cubin_result{__cuda_src.__id_, __program, __success, _CUDA_VSTD::move(__lowered_names)};
   }
 
   //! @brief Compile CUDA source code to LTOIR.
@@ -411,7 +441,7 @@ public:
     [[maybe_unused]] auto [__opt_ptrs, __opt_strs] = __make_options(__cuda_opts);
     __opt_ptrs.push_back("-dlto");
 
-    return compile_cuda_to_ltoir_result{__program, __compile(__program, __opt_ptrs)};
+    return compile_cuda_to_ltoir_result{__cuda_src.__id_, __program, __compile(__program, __opt_ptrs)};
   }
 };
 

@@ -65,15 +65,13 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
   cuda_opts.set_std_version(cudax::cuda_std_version::cxx17);
   cuda_opts.set_virtual_arch(cuda::arch::id::sm_75);
 
-  constexpr auto name_expr = "test_kernel<int>";
-
   cudax::cuda_compile_source src{"test.cu", test_cuda_src};
-  src.add_name_expression(name_expr);
+  const auto name_expr_id = src.add_name_expression("test_kernel<int>");
   src.add_precompiled_header("my_pch.pch");
 
   cudax::cuda_compiler compiler{};
   compiler.enable_auto_precompiled_headers();
-  compiler.set_precompiled_headers_directory("nvrtc_pch");
+  compiler.set_precompiled_headers_dir("nvrtc_pch");
   compiler.set_thread_limit(1);
   compiler.enable_internal_cache(true);
 
@@ -85,7 +83,7 @@ C2H_TEST("Compile cuda to ptx", "[cuda.compile.cuda_to_ptx]")
   }
 
   [[maybe_unused]] auto ptx          = result.ptx();
-  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
+  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr_id);
 }
 
 C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
@@ -106,14 +104,12 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
   ptx_opts.set_optimization_level(cudax::ptx_optimization_level::O3);
   ptx_opts.set_binary_arch(cuda::arch::id::sm_75);
 
-  constexpr auto name_expr = "test_kernel<int>";
-
   cudax::cuda_compile_source src{"test.cu", test_cuda_src};
-  src.add_name_expression(name_expr);
+  const auto name_expr_id = src.add_name_expression("test_kernel<int>");
 
   cudax::cuda_compiler compiler{};
   compiler.enable_auto_precompiled_headers();
-  compiler.set_precompiled_headers_directory("nvrtc_pch");
+  compiler.set_precompiled_headers_dir("nvrtc_pch");
   compiler.set_thread_limit(1);
   compiler.enable_internal_cache(true);
 
@@ -126,7 +122,7 @@ C2H_TEST("Compile cuda to cubin", "[cuda.compile.cuda_to_cubin]")
 
   [[maybe_unused]] auto ptx          = result.ptx();
   [[maybe_unused]] auto cubin        = result.cubin();
-  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
+  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr_id);
 }
 
 C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
@@ -143,11 +139,10 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
   constexpr auto name_expr = "test_kernel<int>";
 
   cudax::cuda_compile_source src{"test.cu", test_cuda_src};
-  src.add_name_expression(name_expr);
 
   cudax::cuda_compiler compiler{};
   compiler.enable_auto_precompiled_headers();
-  compiler.set_precompiled_headers_directory("nvrtc_pch");
+  compiler.set_precompiled_headers_dir("nvrtc_pch");
   compiler.set_thread_limit(1);
   compiler.enable_internal_cache(true);
 
@@ -158,8 +153,7 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
     [[maybe_unused]] const auto log = result.log();
   }
 
-  [[maybe_unused]] auto ltoir        = result.ltoir();
-  [[maybe_unused]] auto lowered_name = result.lowered_name(name_expr);
+  [[maybe_unused]] auto ltoir = result.ltoir();
 }
 
 C2H_TEST("PTX compiler version", "[ptx.compiler.version]")

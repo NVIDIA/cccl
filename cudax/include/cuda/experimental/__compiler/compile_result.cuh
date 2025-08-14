@@ -26,6 +26,7 @@
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/string_view>
 
+#include <cuda/experimental/__compiler/compile_source.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <string>
@@ -42,12 +43,19 @@ namespace cuda::experimental
 class __nvrtc_compile_result_base
 {
 protected:
+  __cuda_compile_source_id __src_id_;
   ::nvrtcProgram __program_;
   bool __success_;
+  ::std::vector<_CUDA_VSTD::string_view> __lowered_names_;
 
-  __nvrtc_compile_result_base(::nvrtcProgram __program, bool __success) noexcept
-      : __program_{__program}
+  __nvrtc_compile_result_base(__cuda_compile_source_id __src_id,
+                              ::nvrtcProgram __program,
+                              bool __success,
+                              ::std::vector<_CUDA_VSTD::string_view> __lowered_names = {}) noexcept
+      : __src_id_{__src_id}
+      , __program_{__program}
       , __success_{__success}
+      , __lowered_names_{_CUDA_VSTD::move(__lowered_names)}
   {}
 
   void __destroy() noexcept
@@ -122,24 +130,6 @@ public:
     return __log;
   }
 
-  //! @brief Get the lowered name for a name expression.
-  //!
-  //! @param __name The name expression to get the lowered name for.
-  //!
-  //! @return A string view containing the lowered name.
-  //!
-  //! @note Only expressions that were specified during compilation can be lowered.
-  [[nodiscard]] _CUDA_VSTD::string_view lowered_name(_CUDA_VSTD::string_view __name) const
-  {
-    const char* __lowered_name{};
-    ::std::string __tmp(__name.begin(), __name.end());
-    if (::nvrtcGetLoweredName(__program_, __tmp.c_str(), &__lowered_name) != ::NVRTC_SUCCESS)
-    {
-      // todo: throw an exception if the lowered name could not be retrieved
-    }
-    return _CUDA_VSTD::string_view{__lowered_name};
-  }
-
   //! @brief Was the compilation successful?
   //!
   //! @return `true` if the compilation was successful, `false` otherwise.
@@ -167,6 +157,19 @@ struct compile_cuda_to_ptx_result : public __nvrtc_compile_result_base
   using _Base::_Base;
   using _Base::operator=;
   using _Base::operator bool;
+
+  //! @brief Get the lowered name for a name expression.
+  //!
+  //! @param __id The name expression id to get the lowered name for.
+  //!
+  //! @return A string view containing the lowered name.
+  //!
+  //! @note Only expressions that were specified during compilation can be lowered.
+  [[nodiscard]] _CUDA_VSTD::string_view lowered_name(__cuda_name_expression_id __id_) const
+  {
+    _CCCL_ASSERT(__id_.__src_id_ == __src_id_, "Invalid name expression id");
+    return (success()) ? __lowered_names_[__id_.__expr_idx_] : _CUDA_VSTD::string_view{};
+  }
 
   //! @brief Get the compiled PTX.
   //!
@@ -197,6 +200,19 @@ struct compile_cuda_to_cubin_result : public __nvrtc_compile_result_base
   using _Base::_Base;
   using _Base::operator=;
   using _Base::operator bool;
+
+  //! @brief Get the lowered name for a name expression.
+  //!
+  //! @param __id The name expression id to get the lowered name for.
+  //!
+  //! @return A string view containing the lowered name.
+  //!
+  //! @note Only expressions that were specified during compilation can be lowered.
+  [[nodiscard]] _CUDA_VSTD::string_view lowered_name(__cuda_name_expression_id __id_) const
+  {
+    _CCCL_ASSERT(__id_.__src_id_ == __src_id_, "Invalid name expression id");
+    return (success()) ? __lowered_names_[__id_.__expr_idx_] : _CUDA_VSTD::string_view{};
+  }
 
   //! @brief Get the compiled PTX.
   //!
