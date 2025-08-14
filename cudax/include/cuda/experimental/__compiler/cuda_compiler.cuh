@@ -183,6 +183,9 @@ class cuda_compiler
       __ret.__ptrs.push_back(__cuda_opts.__pch_file_name_.c_str());
     }
 
+    // fmad
+    __ret.__ptrs.push_back((__cuda_opts.__fmad_) ? "-fmad=true" : "-fmad=false");
+
     // process dynamic options
     for (const auto& __dopt : __cuda_opts.__dyn_opts_)
     {

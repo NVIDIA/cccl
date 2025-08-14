@@ -68,6 +68,7 @@ class cuda_compile_options
   int __virtual_arch_; //!< Virtual architecture.
   ::std::string __pch_file_name_; //!< Name of the generated precompiled header file.
   ::std::string __pch_dir_; //!< Directory for precompiled headers.
+  bool __fmad_; //!< Flag to enable/disable FMA operations.
 
 public:
   //! @brief Default constructor for CUDA compilation options.
@@ -184,6 +185,14 @@ public:
       return;
     }
     __pch_dir_ = _CUDA_VSTD::move(__dir_name);
+  }
+
+  //! @brief Enables or disables the use of fused multiply-add (FMA) operations.
+  //!
+  //! @param __enable If true, FMA operations are enabled. If false, they are disabled.
+  void enable_fmad(bool __enable = true) noexcept
+  {
+    __fmad_ = __enable;
   }
 };
 
