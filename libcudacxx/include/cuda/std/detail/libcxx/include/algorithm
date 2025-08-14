@@ -81,6 +81,8 @@
 #include <cuda/std/__algorithm/pop_heap.h>
 #include <cuda/std/__algorithm/prev_permutation.h>
 #include <cuda/std/__algorithm/push_heap.h>
+#include <cuda/std/__algorithm/ranges_for_each.h>
+#include <cuda/std/__algorithm/ranges_for_each_n.h>
 #include <cuda/std/__algorithm/ranges_iterator_concept.h>
 #include <cuda/std/__algorithm/ranges_min.h>
 #include <cuda/std/__algorithm/ranges_min_element.h>
