@@ -80,6 +80,16 @@ struct AgentSmallAndMediumSegmentedSortPolicy
 namespace detail
 {
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  SubWarpMergeSortAgentPolicy,
+  (GenericAgentPolicy),
+  (WARP_THREADS, WarpThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (ITEMS_PER_TILE, ItemsPerTile, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::WarpLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
+
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   SmallAndMediumSegmentedSortAgentPolicy,
   (GenericAgentPolicy),
   (BLOCK_THREADS, BlockThreads, int),
