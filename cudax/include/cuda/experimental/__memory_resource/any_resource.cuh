@@ -883,7 +883,7 @@ using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Propertie
 //! .. _cudax-memory-resource-make-any-resource:
 //!
 //! Factory function for `any_synchronous_resource` objects
-//! -------------------------------------------
+//! -------------------------------------------------------
 //!
 //! ``make_any_synchronous_resource`` constructs an :ref:`any_synchronous_resource
 //! <cudax-memory-resource-any-resource>` object that wraps a newly constructed

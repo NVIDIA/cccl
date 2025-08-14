@@ -190,7 +190,7 @@ struct test_resource
 
   friend bool operator!=(const test_resource& lhs, const test_resource& rhs)
   {
-    FAIL("any_synchronous_resource should only be calling operator==");
+    FAIL("any_resource should only be calling operator==");
     return lhs.data != rhs.data;
   }
 
