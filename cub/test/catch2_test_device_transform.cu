@@ -551,19 +551,22 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
   {
     return;
   }
+  const int offset_r = offset_a;
   CAPTURE(c2h::type_name<type>(), num_items, offset_a, offset_b);
 
   c2h::device_vector<type> a(num_items + offset_a, thrust::no_init);
   c2h::device_vector<type> b(num_items + offset_b, thrust::no_init);
   thrust::sequence(a.begin(), a.end());
   thrust::sequence(b.begin(), b.end(), num_items + offset_a);
-  c2h::device_vector<type> result(num_items);
-  transform_many(
-    cuda::std::make_tuple(a.begin() + offset_a, b.begin() + offset_b), result.begin(), num_items, cuda::std::plus{});
+  c2h::device_vector<type> result(num_items + offset_r);
+  transform_many(cuda::std::make_tuple(a.begin() + offset_a, b.begin() + offset_b),
+                 result.begin() + offset_r,
+                 num_items,
+                 cuda::std::plus{});
 
   using thrust::placeholders::_1;
-  c2h::device_vector<type> reference(num_items);
-  thrust::tabulate(reference.begin(), reference.end(), (_1 + offset_a) * 2 + offset_b + num_items);
+  c2h::device_vector<type> reference(num_items + offset_r);
+  thrust::tabulate(reference.begin() + offset_r, reference.end(), (_1 + offset_a) * 2 + offset_b + num_items);
   REQUIRE(reference == result);
 }
 

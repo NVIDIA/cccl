@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -45,23 +47,7 @@ using __decay_copyable_ _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::decay_t<_Ty>(
 template <class... _As>
 inline constexpr bool __decay_copyable = (_CUDA_VSTD::is_constructible_v<_CUDA_VSTD::decay_t<_As>, _As> && ...);
 
-#if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-template <class _Fn, class... _As>
-inline constexpr bool __nothrow_callable = true;
-
-template <class _Ty, class... _As>
-inline constexpr bool __nothrow_constructible = true;
-
-template <class... _As>
-inline constexpr bool __nothrow_decay_copyable = true;
-
-template <class... _As>
-inline constexpr bool __nothrow_movable = true;
-
-template <class... _As>
-inline constexpr bool __nothrow_copyable = true;
-#else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
-      // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
+#if _CCCL_HOST_COMPILATION()
 template <class _Fn, class... _As>
 inline constexpr bool __nothrow_callable = _CUDA_VSTD::__is_nothrow_callable_v<_Fn, _As...>;
 
@@ -77,7 +63,23 @@ inline constexpr bool __nothrow_movable = (_CUDA_VSTD::is_nothrow_move_construct
 
 template <class... _As>
 inline constexpr bool __nothrow_copyable = (_CUDA_VSTD::is_nothrow_copy_constructible_v<_As> && ...);
-#endif // ^^^ !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
+#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
+// There are no exceptions in device code:
+template <class _Fn, class... _As>
+inline constexpr bool __nothrow_callable = _CUDA_VSTD::__is_callable_v<_Fn, _As...>;
+
+template <class _Ty, class... _As>
+inline constexpr bool __nothrow_constructible = _CUDA_VSTD::is_constructible_v<_Ty, _As...>;
+
+template <class... _As>
+inline constexpr bool __nothrow_decay_copyable = __decay_copyable<_As...>;
+
+template <class... _As>
+inline constexpr bool __nothrow_movable = (_CUDA_VSTD::is_move_constructible_v<_As> && ...);
+
+template <class... _As>
+inline constexpr bool __nothrow_copyable = (_CUDA_VSTD::is_copy_constructible_v<_As> && ...);
+#endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 template <class... _As>
 using __nothrow_decay_copyable_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::bool_constant<__nothrow_decay_copyable<_As...>>;
