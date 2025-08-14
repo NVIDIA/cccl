@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -47,71 +48,27 @@
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 {
-  template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr2_fn
-  {
-    template <class... _As>
-    using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_As>&...>;
-  };
+  template <class _LetTag>
+  static _CUDA_VSTD::__undefined<_LetTag> __set_tag;
 
-  template <class _Fn, class... _Env>
-  struct __completion_behavior_transform_fn
-  {
-    template <class _Tag, class... _Ts>
-    [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag (*)(_Ts...)) const noexcept
-    {
-      if constexpr (_CUDA_VSTD::__type_callable<__sndr2_fn<_Fn>, _Ts...>::value)
-      {
-        using __sndr2_t = _CUDA_VSTD::__type_call<__sndr2_fn<_Fn>, _Ts...>;
-        return execution::get_completion_behavior<__sndr2_t, _Env...>();
-      }
-      else
-      {
-        return completion_behavior::unknown;
-      }
-    }
-  };
-
-  template <class _Rcvr, class _Env2>
-  struct __sndr2_rcvr_t : __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>
-  {
-    using __base_t = __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>;
-
-    _CCCL_TRIVIAL_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
-        : __base_t(__ref_rcvr(__rcvr))
-    {}
-  };
-
-  template <size_t _Ny>
-  using __type_at_fn = _CUDA_VSTD::__detail::__type_at_fn<_Ny>;
-};
-
-template <class _LetTag, class _SetTag>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
-{
-  _CUDAX_SEMI_PRIVATE :
-  friend struct let_value_t;
-  friend struct let_error_t;
-  friend struct let_stopped_t;
-
-  using __let_tag_t = _LetTag; // needed to avoid an MSVC bug
-  using __set_tag_t = _SetTag; // needed to avoid an MSVC bug
+  template <class _LetTag>
+  using __set_tag_for_t = decltype(_LIBCUDACXX_AUTO_CAST(__set_tag<_LetTag>));
 
   //! @brief Computes the type of a variant of tuples to hold the results of the
   //! predecessor sender.
-  template <class _Completions, class _Env>
+  template <class _SetTag, class _Completions, class _Env>
   using __sndr1_results_t _CCCL_NODEBUG_ALIAS =
-    __gather_completion_signatures<_Completions, __set_tag_t, _CUDA_VSTD::__decayed_tuple, __variant>;
+    __gather_completion_signatures<_Completions, _SetTag, _CUDA_VSTD::__decayed_tuple, __variant>;
 
   // This environment is part of the receiver used to connect the secondary sender.
-  template <class _Attrs>
+  template <class _SetTag, class _Attrs>
   _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs) noexcept
   {
-    if constexpr (_CUDA_VSTD::__is_callable_v<get_completion_scheduler_t<__set_tag_t>, _Attrs>)
+    if constexpr (_CUDA_VSTD::__is_callable_v<get_completion_scheduler_t<_SetTag>, _Attrs>)
     {
-      return __sch_env_t{get_completion_scheduler<__set_tag_t>(__attrs)};
+      return __sch_env_t{get_completion_scheduler<_SetTag>(__attrs)};
     }
     else if constexpr (_CUDA_VSTD::__is_callable_v<get_domain_t, _Attrs>)
     {
@@ -123,8 +80,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
     }
   }
 
-  template <class _Attrs>
-  using __env2_t _CCCL_NODEBUG_ALIAS = decltype(__let_t::__mk_env2(_CUDA_VSTD::declval<_Attrs>()));
+  template <class _SetTag, class _Attrs>
+  using __env2_t _CCCL_NODEBUG_ALIAS = decltype(__let_t::__mk_env2<_SetTag>(_CUDA_VSTD::declval<_Attrs>()));
+  template <class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr2_fn
+  {
+    template <class... _As>
+    using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_As>&...>;
+  };
+
+  template <class _Rcvr, class _Env2>
+  struct __sndr2_rcvr_t : __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>
+  {
+    using __base_t = __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env2>>;
+
+    _CCCL_TRIVIAL_API explicit constexpr __sndr2_rcvr_t(__rcvr_with_env_t<_Rcvr, _Env2>& __rcvr) noexcept
+        : __base_t(__ref_rcvr(__rcvr))
+    {}
+  };
 
   template <class _Fn, class _Rcvr, class _Env2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
@@ -139,29 +112,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
     _Fn __fn_;
   };
 
-  template <class _Fn, class _Rcvr, class _Env2, class _Completions>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Fn, _Rcvr, _Env2>
+  template <class _SetTag, class _Fn, class _Rcvr, class _Env2, class _Completions>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __let_t::__state_base_t<_Fn, _Rcvr, _Env2>
   {
     using __sndr2_opstate_t _CCCL_NODEBUG_ALIAS =
       __gather_completion_signatures<_Completions,
-                                     __set_tag_t,
+                                     _SetTag,
                                      __state_t::__state_base_t::template __sndr2_opstate_fn,
                                      __variant>;
 
-    __sndr1_results_t<_Completions, __fwd_env_t<env_of_t<_Rcvr>>> __result_{};
+    __sndr1_results_t<_SetTag, _Completions, __fwd_env_t<env_of_t<_Rcvr>>> __result_{};
     __sndr2_opstate_t __opstate2_{};
   };
 
   //! @brief This is the receiver that gets connected to the predecessor sender. It caches
   //! the results of the predecessor and then calls the user-provided function with them
   //! to produce the secondary sender, which it then connects and starts.
-  template <class _Fn, class _Rcvr, class _Env2, class _Completions>
+  template <class _SetTag, class _Fn, class _Rcvr, class _Env2, class _Completions>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr1_rcvr_t
   {
     using receiver_concept = receiver_t;
 
     template <class... _As>
-    _CCCL_API void __complete(__set_tag_t, _As&&... __as) noexcept
+    _CCCL_API void __complete(_SetTag, _As&&... __as) noexcept
     {
       _CCCL_TRY
       {
@@ -213,7 +186,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
       return __fwd_env(execution::get_env(__state_->__rcvr_.__base()));
     }
 
-    __state_t<_Fn, _Rcvr, _Env2, _Completions>* __state_;
+    __state_t<_SetTag, _Fn, _Rcvr, _Env2, _Completions>* __state_;
   };
 
   //! @brief The `let_(value|error|stopped)` operation state.
@@ -222,17 +195,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
   //! predecessor sender.
   //! @tparam _Rcvr The receiver connected to the `let_(value|error|stopped)`
   //! sender.
-  template <class _CvSndr, class _Fn, class _Rcvr>
+  template <class _SetTag, class _CvSndr, class _Fn, class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
     using __completions_t         = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
-    using __env2_t                = __let_t::__env2_t<env_of_t<_CvSndr>>;
-    using __sndr1_rcvr_t          = __let_t::__sndr1_rcvr_t<_Fn, _Rcvr, __env2_t, __completions_t>;
+    using __env2_t                = __env2_t<_SetTag, env_of_t<_CvSndr>>;
+    using __sndr1_rcvr_t          = __sndr1_rcvr_t<_SetTag, _Fn, _Rcvr, __env2_t, __completions_t>;
 
     _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
-        : __state_{{{static_cast<_Rcvr&&>(__rcvr), __let_t::__mk_env2(execution::get_env(__sndr))},
+        : __state_{{{static_cast<_Rcvr&&>(__rcvr), __let_t::__mk_env2<_SetTag>(execution::get_env(__sndr))},
                     static_cast<_Fn&&>(__fn)}}
         , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __sndr1_rcvr_t{&__state_}))
     {}
@@ -244,7 +217,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
       execution::start(__opstate1_);
     }
 
-    __state_t<_Fn, _Rcvr, __env2_t, __completions_t> __state_;
+    __state_t<_SetTag, _Fn, _Rcvr, __env2_t, __completions_t> __state_;
     connect_result_t<_CvSndr, __sndr1_rcvr_t> __opstate1_;
   };
 
@@ -268,7 +241,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
       _CUDA_VSTD::_If<sizeof...(_Domains) == 0, default_domain, _CUDA_VSTD::__type_call<__reduce_fn_t, _Domains...>>;
   };
 
-  template <class _Sndr, class _Fn>
+  template <class _SetTag, class _Sndr, class _Fn>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_domain() noexcept
   {
     // we can know the completion domain for non-dependent senders
@@ -276,7 +249,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
     if constexpr (__valid_completion_signatures<__completions>)
     {
       return __gather_completion_signatures<__completions,
-                                            __set_tag_t,
+                                            _SetTag,
                                             __domain_transform_fn<_Fn>::template __call,
                                             __domain_reduce_fn::template __call>{};
     }
@@ -286,10 +259,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
     }
   }
 
-  template <class _Sndr, class _Fn>
-  using __completion_domain_of_t _CCCL_NODEBUG_ALIAS = decltype(__let_t::__get_completion_domain<_Sndr, _Fn>());
+  template <class _SetTag, class _Sndr, class _Fn>
+  using __completion_domain_of_t _CCCL_NODEBUG_ALIAS =
+    decltype(__let_t::__get_completion_domain<_SetTag, _Sndr, _Fn>());
 
-  template <class _Fn, class _Env2, class... _Env>
+  template <class _LetTag, class _Fn, class _Env2, class... _Env>
   struct __transform_args_fn
   {
     template <class... _Ts>
@@ -297,13 +271,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
     {
       if constexpr (!__decay_copyable<_Ts...>)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __let_tag_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                             _WHAT(_ARGUMENTS_ARE_NOT_DECAY_COPYABLE),
                                             _WITH_ARGUMENTS(_Ts...)>();
       }
       else if constexpr (!_CUDA_VSTD::__type_callable<__sndr2_fn<_Fn>, _Ts...>::value)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __let_tag_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
                                             _WITH_FUNCTION(_Fn),
                                             _WITH_ARGUMENTS(_CUDA_VSTD::decay_t<_Ts> & ...)>();
@@ -313,7 +287,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
         using __sndr2_t = _CUDA_VSTD::__type_call<__sndr2_fn<_Fn>, _Ts...>;
         if constexpr (!sender<__sndr2_t>)
         {
-          return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __let_tag_t),
+          return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                               _WHAT(_FUNCTION_MUST_RETURN_A_SENDER),
                                               _WITH_FUNCTION(_Fn),
                                               _WITH_ARGUMENTS(_CUDA_VSTD::decay_t<_Ts> & ...),
@@ -335,31 +309,52 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t : __let_base_t
     }
   };
 
-  template <class _Sndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
+  template <class _Fn, class... _Env>
+  struct __completion_behavior_transform_fn
+  {
+    template <class _Tag, class... _Ts>
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag (*)(_Ts...)) const noexcept
+    {
+      if constexpr (_CUDA_VSTD::__type_callable<__sndr2_fn<_Fn>, _Ts...>::value)
+      {
+        using __sndr2_t = _CUDA_VSTD::__type_call<__sndr2_fn<_Fn>, _Ts...>;
+        return execution::get_completion_behavior<__sndr2_t, _Env...>();
+      }
+      else
+      {
+        return completion_behavior::unknown;
+      }
+    }
+  };
 
-  template <class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
-                                                       // extended (host/device) lambda
+  template <class _LetTag, class _Sndr, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+  template <class _LetTag, class _Fn>
+  struct _CCCL_TYPE_VISIBILITY_HIDDEN __closure_t // hidden visibility because member __fn_ is hidden if it is an
+                                                  // extended (host/device) lambda
   {
     template <class _Sndr>
     [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const
-      -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
+      -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
     {
-      return __let_tag_t{}(static_cast<_Sndr&&>(__sndr), __fn_);
+      return _LetTag{}(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_base_t& __self)
-      -> _CUDA_VSTD::__call_result_t<__let_tag_t, _Sndr, _Fn>
+    [[nodiscard]] _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
+      -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
     {
-      return __let_tag_t{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
+      return _LetTag{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
     }
 
     _Fn __fn_;
   };
+};
 
-public:
+template <class _LetTag>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_base_t : __let_t
+{
   //! @brief The `let_(value|error|stopped)` sender.
   //! @tparam _Sndr The predecessor sender.
   //! @tparam _Fn The function to be called when the predecessor sender
@@ -371,7 +366,7 @@ public:
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
-struct let_value_t : __let_t<let_value_t, set_value_t>
+struct let_value_t : __let_base_t<let_value_t>
 {
   template <class _Sndr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -380,7 +375,7 @@ struct let_value_t : __let_t<let_value_t, set_value_t>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 };
 
-struct let_error_t : __let_t<let_error_t, set_error_t>
+struct let_error_t : __let_base_t<let_error_t>
 {
   template <class _Sndr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -389,7 +384,7 @@ struct let_error_t : __let_t<let_error_t, set_error_t>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 };
 
-struct let_stopped_t : __let_t<let_stopped_t, set_stopped_t>
+struct let_stopped_t : __let_base_t<let_stopped_t>
 {
   template <class _Sndr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -398,16 +393,11 @@ struct let_stopped_t : __let_t<let_stopped_t, set_stopped_t>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 };
 
-template <class _LetTag, class _SetTag>
-template <class _Sndr, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
+template <class _LetTag, class _Sndr, class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
 {
   using sender_concept = sender_t;
-
-#if _CCCL_COMPILER(MSVC)
-  using __let_tag_t = _CUDA_VSTD::__type_apply<__type_at_fn<0>, __let_t>;
-  using __set_tag_t = _CUDA_VSTD::__type_apply<__type_at_fn<1>, __let_t>;
-#endif // _CCCL_COMPILER(MSVC)
+  using __set_tag_t    = __set_tag_for_t<_LetTag>;
 
   // the env of the receiver used to connect the secondary sender
   template <class _Self, class... _Env>
@@ -417,13 +407,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     {
       using __sch_t    = __query_result_or_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>, __nil>;
       using __domain_t = __detail::__domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>>;
-      using __env2_t   = __let_t::__env2_t<env_of_t<_Sndr>>;
-      using __completion_domain_t = __completion_domain_of_t<_Sndr, _Fn>;
-      using __transform_fn_t      = __transform_args_fn<_Fn, __env2_t, _Env...>;
+      using __env2_t   = __let_t::__env2_t<__set_tag_t, env_of_t<_Sndr>>;
+      using __completion_domain_t = __completion_domain_of_t<__set_tag_t, _Sndr, _Fn>;
+      using __transform_fn_t      = __transform_args_fn<_LetTag, _Fn, __env2_t, _Env...>;
 
       if constexpr (_CUDA_VSTD::is_same_v<__completion_domain_t, __nil> && sizeof...(_Env) != 0)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __let_tag_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                             _WHAT(_FUNCTION_MUST_RETURN_SENDERS_THAT_ALL_COMPLETE_IN_A_COMMON_DOMAIN),
                                             _WITH_FUNCTION(_Fn)>();
       }
@@ -445,20 +435,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto
-  connect(_Rcvr __rcvr) && noexcept(__nothrow_constructible<__opstate_t<_Sndr, _Fn, _Rcvr>, _Sndr, _Fn, _Rcvr>)
-    -> __opstate_t<_Sndr, _Fn, _Rcvr>
+  _CCCL_API auto connect(_Rcvr __rcvr) && noexcept(
+    __nothrow_constructible<__opstate_t<__set_tag_t, _Sndr, _Fn, _Rcvr>, _Sndr, _Fn, _Rcvr>)
+    -> __opstate_t<__set_tag_t, _Sndr, _Fn, _Rcvr>
   {
-    return __opstate_t<_Sndr, _Fn, _Rcvr>(
+    return __opstate_t<__set_tag_t, _Sndr, _Fn, _Rcvr>(
       static_cast<_Sndr&&>(__sndr_), static_cast<_Fn&&>(__fn_), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& noexcept(
-    __nothrow_constructible<__opstate_t<const _Sndr&, _Fn, _Rcvr>, const _Sndr&, const _Fn&, _Rcvr>)
-    -> __opstate_t<const _Sndr&, _Fn, _Rcvr>
+    __nothrow_constructible<__opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>, const _Sndr&, const _Fn&, _Rcvr>)
+    -> __opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>
   {
-    return __opstate_t<const _Sndr&, _Fn, _Rcvr>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
+    return __opstate_t<__set_tag_t, const _Sndr&, _Fn, _Rcvr>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
   struct __attrs_t
@@ -466,7 +456,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     template <class _Tag>
     _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>) const = delete;
 
-    _CCCL_TEMPLATE(class _Fn2 = _Fn, class _Domain = __completion_domain_of_t<_Sndr, _Fn2>)
+    _CCCL_TEMPLATE(class _Fn2 = _Fn, class _Domain = __completion_domain_of_t<__set_tag_t, _Sndr, _Fn2>)
     _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_Domain, __nil>) )
     [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> _Domain
     {
@@ -513,47 +503,43 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_LetTag, _SetTag>::__sndr_base_t
     return {__sndr_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __let_tag_t __tag_; // use __let_tag_t instead of _LetTag to avoid MSVC bug
+  _CCCL_NO_UNIQUE_ADDRESS _LetTag __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
 };
 
 template <class _Sndr, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT let_value_t::__sndr_t
-    : __let_t<let_value_t, set_value_t>::__sndr_base_t<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_value_t::__sndr_t : __let_t::__sndr_t<let_value_t, _Sndr, _Fn>
 {};
 
 template <class _Sndr, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT let_error_t::__sndr_t
-    : __let_t<let_error_t, set_error_t>::__sndr_base_t<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_error_t::__sndr_t : __let_t::__sndr_t<let_error_t, _Sndr, _Fn>
 {};
 
 template <class _Sndr, class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__sndr_t
-    : __let_t<let_stopped_t, set_stopped_t>::__sndr_base_t<_Sndr, _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__sndr_t : __let_t::__sndr_t<let_stopped_t, _Sndr, _Fn>
 {};
 
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT let_value_t::__closure_t : __let_t<let_value_t, set_value_t>::__closure_base_t<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_value_t::__closure_t : __let_t::__closure_t<let_value_t, _Fn>
 {};
 
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT let_error_t::__closure_t : __let_t<let_error_t, set_error_t>::__closure_base_t<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_error_t::__closure_t : __let_t::__closure_t<let_error_t, _Fn>
 {};
 
 template <class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__closure_t
-    : __let_t<let_stopped_t, set_stopped_t>::__closure_base_t<_Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT let_stopped_t::__closure_t : __let_t::__closure_t<let_stopped_t, _Fn>
 {};
 
 template <class... _Sndr>
 using __all_non_dependent_t = _CUDA_VSTD::__fold_and<(!dependent_sender<_Sndr>) ...>;
 
-template <class _LetTag, class _SetTag>
+template <class _LetTag>
 template <class _Sndr, class _Fn>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_base_t<_LetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __sndr_t   = typename __let_tag_t::template __sndr_t<_Sndr, _Fn>;
+  using __sndr_t   = typename _LetTag::template __sndr_t<_Sndr, _Fn>;
   using __domain_t = __early_domain_of_t<_Sndr>;
   // If the incoming sender is non-dependent, we can check the completion signatures of
   // the composed sender immediately.
@@ -566,7 +552,7 @@ template <class _Sndr, class _Fn>
     using __completions_t = completion_signatures_of_t<_Sndr>;
     constexpr bool __all_non_dependent =
       __gather_completion_signatures<__completions_t,
-                                     __set_tag_t,
+                                     __set_tag_for_t<_LetTag>,
                                      __sndr2_fn<_Fn>::template __call,
                                      __all_non_dependent_t>::value;
 
@@ -578,13 +564,20 @@ template <class _Sndr, class _Fn>
   return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
 }
 
-template <class _LetTag, class _SetTag>
+template <class _LetTag>
 template <class _Fn>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_t<_LetTag, _SetTag>::operator()(_Fn __fn) const noexcept
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __let_base_t<_LetTag>::operator()(_Fn __fn) const noexcept
 {
-  using __closure_t = typename __let_tag_t::template __closure_t<_Fn>;
+  using __closure_t = typename _LetTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};
 }
+
+template <>
+constexpr set_value_t __let_t::__set_tag<let_value_t>{};
+template <>
+constexpr set_error_t __let_t::__set_tag<let_error_t>{};
+template <>
+constexpr set_stopped_t __let_t::__set_tag<let_stopped_t>{};
 
 template <class _Sndr, class _Fn>
 inline constexpr size_t structured_binding_size<let_value_t::__sndr_t<_Sndr, _Fn>> = 3;
