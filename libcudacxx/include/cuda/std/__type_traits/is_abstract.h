@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public bool_constant<_CCCL_BUILTIN_IS_ABSTRACT(_Tp)>
@@ -33,7 +33,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public bool_constant<_CCCL_BU
 template <class _Tp>
 inline constexpr bool is_abstract_v = _CCCL_BUILTIN_IS_ABSTRACT(_Tp);
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -57,7 +57,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Fn, class _View>
 _CCCL_CONCEPT __regular_invocable_with_range_ref = regular_invocable<_Fn, range_reference_t<_View>>;
@@ -485,10 +485,10 @@ public:
 template <class _Range, class _Fn>
 _CCCL_HOST_DEVICE transform_view(_Range&&, _Fn) -> transform_view<_CUDA_VIEWS::all_t<_Range>, _Fn>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__transform)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__transform)
 struct __fn
 {
   template <class _Range, class _Fn>
@@ -507,13 +507,13 @@ struct __fn
     return __pipeable(_CUDA_VSTD::__bind_back(*this, _CUDA_VSTD::forward<_Fn>(__f)));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto transform = __transform::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
 

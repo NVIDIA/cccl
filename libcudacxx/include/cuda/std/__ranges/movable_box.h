@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // __movable_box allows turning a type that is move-constructible (but maybe not move-assignable) into
 // a type that is both move-constructible and move-assignable. It does that by introducing an empty state
@@ -403,7 +403,7 @@ struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
   _CCCL_HIDE_FROM_ABI constexpr __movable_box() = default;
 };
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

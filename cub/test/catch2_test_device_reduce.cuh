@@ -51,7 +51,7 @@
 // Half support is provided by SM53+. We currently test against a few older architectures.
 // The specializations below can be removed once we drop these architectures.
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <>
 _CCCL_API inline __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
@@ -75,7 +75,7 @@ _CCCL_API inline __half maximum<void>::operator()<__half, __half>(const __half& 
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 CUB_NAMESPACE_BEGIN
 

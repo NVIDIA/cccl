@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 _CCCL_API constexpr bool is_constant_evaluated() noexcept
@@ -44,7 +44,7 @@ _CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
 }
 #endif // !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

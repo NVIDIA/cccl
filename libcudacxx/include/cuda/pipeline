@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 // Forward declaration in barrier of pipeline
 enum class pipeline_role
@@ -326,18 +326,18 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
   return pipeline<_Scope>(reinterpret_cast<char*>(__shared_state->__stages), _Stages_count, true);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <uint8_t _Prior>
 _CCCL_DEVICE void __pipeline_consumer_wait(pipeline<thread_scope_thread>& __pipeline);
 
 _CCCL_DEVICE inline void __pipeline_consumer_wait(pipeline<thread_scope_thread>& __pipeline, uint8_t __prior);
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <>
 class pipeline<thread_scope_thread>
@@ -409,9 +409,9 @@ private:
     const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <uint8_t _Prior>
 _CCCL_DEVICE void __pipeline_consumer_wait([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline)
@@ -455,9 +455,9 @@ _CCCL_DEVICE inline void __pipeline_consumer_wait(pipeline<thread_scope_thread>&
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_API inline pipeline<thread_scope_thread> make_pipeline()
 {
@@ -570,7 +570,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_
     __pipeline);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

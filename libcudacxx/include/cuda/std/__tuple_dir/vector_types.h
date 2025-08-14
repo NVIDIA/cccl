@@ -83,7 +83,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(char, signed char)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uchar, unsigned char)
@@ -275,7 +275,7 @@ _LIBCUDACXX_SPECIALIZE_GET(__half2, __half)
 _LIBCUDACXX_SPECIALIZE_GET(__nv_bfloat162, __nv_bfloat16)
 #  endif // _CCCL_HAS_NVBF16()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
@@ -188,7 +188,7 @@ _CCCL_API constexpr int ilog10(_Tp __t) noexcept
   return __log10_approx;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

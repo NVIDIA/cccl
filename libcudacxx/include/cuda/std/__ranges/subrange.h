@@ -57,7 +57,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _From, class _To>
@@ -466,11 +466,11 @@ inline constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 template <class _Rp>
 using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 // [range.subrange.general]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using _CUDA_VRANGES::get;
 
@@ -504,7 +504,7 @@ struct tuple_element<1, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
   using type = _Sp;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

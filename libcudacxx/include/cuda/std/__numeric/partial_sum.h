@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
@@ -62,7 +62,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

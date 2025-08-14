@@ -136,7 +136,7 @@ public:
 
 THRUST_NAMESPACE_END
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class... Ts>
 struct __is_tuple_of_iterator_references<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>> : true_type
@@ -153,7 +153,7 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
     : _CUDA_VSTD::tuple_element<Id, _CUDA_VSTD::tuple<Ts...>>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // structured bindings support
 #if !_CCCL_COMPILER(NVRTC)

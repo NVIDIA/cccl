@@ -36,7 +36,7 @@
 
 #    include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
 [[nodiscard]] _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
@@ -92,7 +92,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
   return __token;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #    include <cuda/std/__cccl/epilogue.h>
 

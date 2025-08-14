@@ -46,7 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Iter, class _InputFn, class _OutputFn>
 class __transform_input_output_proxy
@@ -491,7 +491,7 @@ make_transform_input_output_iterator(_Iter __iter, _InputFn __input_fun, _Output
   return transform_input_output_iterator<_Iter, _InputFn, _OutputFn>{__iter, __input_fun, __output_fun};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

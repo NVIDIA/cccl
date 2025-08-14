@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
 [[nodiscard]] _CCCL_API constexpr int __num_bits_impl() noexcept
@@ -116,7 +116,7 @@ inline constexpr int __num_bits_helper_v<complex<_Tp>> = __num_bits_impl<_Tp>() 
 template <typename _Tp>
 inline constexpr int __num_bits_v = __num_bits_helper_v<remove_cvref_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

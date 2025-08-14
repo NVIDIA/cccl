@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 [[nodiscard]] _CCCL_API inline bool is_aligned(const void* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
 {
@@ -40,7 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
   return ::cuda::is_aligned(const_cast<const void*>(__ptr), __alignment);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -33,11 +33,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [ranges.access.rbegin]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__rbegin)
+_CCCL_BEGIN_NAMESPACE_CPO(__rbegin)
 template <class _Tp>
 void rbegin(_Tp&) = delete;
 template <class _Tp>
@@ -128,7 +128,7 @@ struct __fn
   _CCCL_REQUIRES((!__member_rbegin<_Tp> && !__unqualified_rbegin<_Tp> && !__can_reverse<_Tp>) )
   void operator()(_Tp&&) const = delete;
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -137,7 +137,7 @@ _CCCL_GLOBAL_CONSTANT auto rbegin = __rbegin::__fn{};
 
 // [range.access.crbegin]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__crbegin)
+_CCCL_BEGIN_NAMESPACE_CPO(__crbegin)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -160,14 +160,14 @@ struct __fn
     return _CUDA_VRANGES::rbegin(static_cast<const _Tp&&>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crbegin = __crbegin::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

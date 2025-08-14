@@ -42,7 +42,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Size>
 _CCCL_API inline _Size __loadword(const void* __p)
@@ -641,7 +641,7 @@ template <class _Type, class... _Keys>
 using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
   __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 

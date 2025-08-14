@@ -114,7 +114,7 @@ public:
   using __policy_t       = ::cuda::experimental::execution::any_execution_policy;
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
   using __resource_t     = ::cuda::experimental::any_resource<_Properties...>;
-  using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
+  using __resource_ref_t = _CUDA_VMR::resource_ref<_Properties...>;
 
   template <class, class...>
   friend class async_buffer;

@@ -123,8 +123,13 @@ using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(dec
 template <class _Sndr, class _Rcvr>
 using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
 
+#if _CCCL_HOST_COMPILATION()
 template <class _Sndr, class _Rcvr>
 inline constexpr bool __nothrow_connectable = noexcept(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
+template <class _Sndr, class _Rcvr>
+inline constexpr bool __nothrow_connectable = __is_instantiable_with_v<connect_result_t, _Sndr, _Rcvr>;
+#endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 // sender factory algorithms:
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t;

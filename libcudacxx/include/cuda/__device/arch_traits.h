@@ -28,7 +28,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace arch
 {
 
@@ -579,7 +579,7 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 }
 } // namespace arch
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

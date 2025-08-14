@@ -34,7 +34,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
 #  if __cpp_lib_format >= 201907L
 using ::std::format_error;
@@ -54,11 +54,11 @@ public:
 };
 #  endif // ^^^ __cpp_lib_format < 201907L ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[noreturn]] _CCCL_API inline void __throw_format_error(const char* __s)
 {
@@ -69,7 +69,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #endif // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

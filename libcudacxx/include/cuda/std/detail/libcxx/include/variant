@@ -275,7 +275,7 @@ C++20
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
 #  ifdef __cpp_lib_variant
 
@@ -292,7 +292,7 @@ public:
 };
 #  endif // !__cpp_lib_variant
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 
 #  include <cuda/std/__cccl/epilogue.h>
 
@@ -300,7 +300,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[noreturn]] _CCCL_API inline void __throw_bad_variant_access()
 {
@@ -2134,7 +2134,7 @@ _CCCL_API constexpr auto&& __unchecked_get(variant<_Types...>& __v) noexcept
   return _CUDA_VSTD::__unchecked_get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

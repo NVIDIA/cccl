@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
 //! @param __a The dividend
@@ -117,7 +117,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
   return ::cuda::ceil_div(_CUDA_VSTD::to_underlying(__a), _CUDA_VSTD::to_underlying(__b));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

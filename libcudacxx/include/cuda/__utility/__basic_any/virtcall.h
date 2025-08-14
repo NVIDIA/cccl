@@ -34,7 +34,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __virtuals_map
@@ -153,7 +153,7 @@ _CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
   _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_DIAG_POP
 

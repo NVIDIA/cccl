@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp, class _Ep>
 [[nodiscard]] _CCCL_API constexpr _Tp __cccl_ipow_impl_base_pow2(_Tp __b, _Ep __e) noexcept
@@ -100,7 +100,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl
   return static_cast<_Tp>(__res);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

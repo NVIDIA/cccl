@@ -39,28 +39,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
   {
     // Prefer to query _Env
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
-      -> __query_result_t<_Env, _Query>
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
     {
-      return __rcvr_->__env_.query(_Query{});
+      return __rcvr_->__env_.query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     // Fallback to querying the inner receiver's environment, but only for forwarding
     // queries.
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES((!__queryable_with<_Env, _Query>)
-                     _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Rcvr>, _Query>)
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Rcvr>, _Query>) -> __query_result_t<env_of_t<_Rcvr>, _Query>
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES((!__queryable_with<_Env, _Query, _Args...>)
+                     _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Rcvr>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Rcvr>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<_Rcvr>, _Query, _Args...>
     {
       // If _Env has a value for the `get_scheduler` query, then we should not be
       // forwarding a get_domain query to the parent receiver's environment.
       static_assert(!_CUDA_VSTD::is_same_v<_Query, get_domain_t> || !__queryable_with<_Env, get_scheduler_t>,
                     "_Env specifies a scheduler but not a domain.");
-      return execution::get_env(__rcvr_->__base()).query(_Query{});
+      return execution::get_env(__rcvr_->__base()).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     __rcvr_with_env_t const* __rcvr_;

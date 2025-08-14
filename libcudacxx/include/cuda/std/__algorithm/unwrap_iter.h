@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // TODO: Change the name of __unwrap_iter_impl to something more appropriate
 // The job of __unwrap_iter is to remove iterator wrappers (like reverse_iterator or __wrap_iter),
@@ -88,7 +88,7 @@ _CCCL_API constexpr _OrigIter __rewrap_iter(_OrigIter __orig_iter, _Iter __iter)
   return _Impl::__rewrap(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

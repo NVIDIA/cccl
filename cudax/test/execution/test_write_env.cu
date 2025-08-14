@@ -23,7 +23,7 @@ struct my_domain
 {};
 
 // Simple test query
-struct query1_t
+struct query1_t : ex::forwarding_query_t
 {
   template <class Env>
   _CCCL_API auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))

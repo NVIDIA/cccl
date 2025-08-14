@@ -34,11 +34,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [range.prim.data]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__data)
+_CCCL_BEGIN_NAMESPACE_CPO(__data)
 
 template <class _Tp>
 _CCCL_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_t<_Tp>>;
@@ -92,7 +92,7 @@ struct __fn
     return _CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -101,7 +101,7 @@ _CCCL_GLOBAL_CONSTANT auto data = __data::__fn{};
 
 // [range.prim.cdata]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cdata)
+_CCCL_BEGIN_NAMESPACE_CPO(__cdata)
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
@@ -122,14 +122,14 @@ struct __fn
     return _CUDA_VRANGES::data(static_cast<const _Tp&&>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

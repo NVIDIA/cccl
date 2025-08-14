@@ -62,7 +62,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool __cccl_is_string_view_v = false;
@@ -782,9 +782,9 @@ _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __s
 
 _CCCL_DIAG_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _CharT, class _Traits>
 inline constexpr bool enable_view<_CUDA_VSTD::basic_string_view<_CharT, _Traits>> = true;
@@ -792,7 +792,7 @@ inline constexpr bool enable_view<_CUDA_VSTD::basic_string_view<_CharT, _Traits>
 template <class _CharT, class _Traits>
 inline constexpr bool enable_borrowed_range<_CUDA_VSTD::basic_string_view<_CharT, _Traits>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

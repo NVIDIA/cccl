@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __byteswap_impl(_Tp __val) noexcept;
@@ -176,7 +176,7 @@ _CCCL_REQUIRES(is_integral_v<_Integer>)
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

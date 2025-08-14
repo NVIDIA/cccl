@@ -48,7 +48,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _View, class _Pred>
 _CCCL_CONCEPT __take_while_const_is_range = _CCCL_REQUIRES_EXPR((_View, _Pred))(
@@ -221,10 +221,10 @@ public:
 template <class _Range, class _Pred>
 _CCCL_HOST_DEVICE take_while_view(_Range&&, _Pred) -> take_while_view<_CUDA_VIEWS::all_t<_Range>, _Pred>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__take_while)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__take_while)
 
 struct __fn
 {
@@ -244,13 +244,13 @@ struct __fn
     return __pipeable(_CUDA_VSTD::__bind_back(*this, _CUDA_VSTD::forward<_Pred>(__pred)));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto take_while = __take_while::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
 

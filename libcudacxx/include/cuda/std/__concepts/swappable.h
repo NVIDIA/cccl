@@ -43,11 +43,11 @@
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [concept.swappable]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
+_CCCL_BEGIN_NAMESPACE_CPO(__swap)
 
 template <class _Tp>
 void swap(_Tp&, _Tp&) = delete;
@@ -153,15 +153,15 @@ template <class _Tp, class _Up>
 inline constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =
   noexcept(__swap::__fn{}(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Up&>()));
 
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto swap = __swap::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -195,7 +195,7 @@ template <class _Tp, class _Up>
 _CCCL_CONCEPT swappable_with = _CCCL_FRAGMENT(__swappable_with_, _Tp, _Up);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(MSVC)
 _CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored

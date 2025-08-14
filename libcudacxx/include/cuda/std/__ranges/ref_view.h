@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Range>
 struct __conversion_tester
@@ -114,7 +114,7 @@ _CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter,
@@ -73,12 +73,12 @@ _CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.advance]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__advance)
+_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__advance)
 struct __fn
 {
 private:
@@ -214,14 +214,14 @@ public:
     _CCCL_UNREACHABLE();
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -32,7 +32,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_70__();
 
@@ -57,7 +57,7 @@ warp_match_all(const _Tp& __data, lane_mask __lane_mask = lane_mask::all())
   return __ret;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

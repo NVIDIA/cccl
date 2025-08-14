@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_parse_context;
@@ -77,7 +77,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(format_args)
 #endif // _CCCL_HAS_WCHAR_T()
     basic_format_args;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -87,7 +87,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunknown-warning-option") // "unknown warning group '-Wc++26-extensions'"
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions") // "pack indexing is a C++26 extension"
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVHPC)
 // GCC (as of v14) does not implement the resolution of CWG1835
@@ -501,7 +501,7 @@ template <size_t _Index, class _Tuple>
 using __tuple_element_t _CCCL_NODEBUG_ALIAS =
   decltype(_CUDA_VSTD::__remove_rvalue_ref(_CUDA_VSTD::__get<_Index>(declval<_Tuple>())));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #ifndef _LIBCUDACXX_MEMCPY_ASYNC_PRE_TESTING
 #  define _LIBCUDACXX_MEMCPY_ASYNC_PRE_ASSERT(_Cond, _Msg) _CCCL_ASSERT(_Cond, _Msg)
@@ -72,7 +72,7 @@ _CCCL_API inline bool __memcpy_async_check_pre(void* __dst, const void* __src, _
   return ::cuda::__memcpy_async_check_pre(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __size);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

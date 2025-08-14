@@ -293,7 +293,7 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
   }
 
 #include <cuda/std/tuple>
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
@@ -316,7 +316,7 @@ template <typename... T>
   _CUDA_VSTD::print_elem<0>(os, tup);
   return os << "]";
 }
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 template <>
 struct Catch::StringMaker<cudaError>

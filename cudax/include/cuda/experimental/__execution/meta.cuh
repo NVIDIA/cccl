@@ -44,13 +44,13 @@ namespace cuda::experimental::execution
 template <class...>
 struct _DIAGNOSTIC;
 
-struct _WHERE;
+struct _UNKNOWN;
 
-struct _IN_ALGORITHM;
+struct _WHERE;
 
 struct _WHAT;
 
-struct _WHY;
+struct _IN_ALGORITHM;
 
 struct _WITH_FUNCTION;
 
@@ -69,20 +69,17 @@ struct _WITH_COMPLETION_SIGNATURE;
 
 struct _FUNCTION_IS_NOT_CALLABLE;
 
-struct _UNKNOWN;
+struct _FUNCTION_MUST_RETURN_A_SENDER;
+
+struct _FUNCTION_MUST_RETURN_SENDERS_THAT_ALL_COMPLETE_IN_A_COMMON_DOMAIN;
+
+struct _WITH_RETURN_TYPE;
 
 struct _SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
 
 struct _ARGUMENTS_ARE_NOT_DECAY_COPYABLE;
 
 struct _THE_ENVIRONMENT_OF_THE_RECEIVER_DOES_NOT_HAVE_A_SCHEDULER_FOR_ON_TO_RETURN_TO;
-
-template <class... _Sigs>
-struct _WITH_COMPLETIONS
-{};
-
-struct _NOT_ABLE_TO_DETERMINE_WHAT_STREAM_TO_USE_FOR_THIS_OPERATION
-{};
 
 struct __merror_base
 {

@@ -73,12 +73,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
     return experimental::make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
   }
 
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-    -> decltype(auto)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Query, class... _Args)
+  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+      -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
-    return execution::get_env(__sndr_).query(_Query{});
+    return execution::get_env(__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 
   _Shape __shape_;
