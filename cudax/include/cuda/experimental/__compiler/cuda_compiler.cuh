@@ -478,10 +478,10 @@ public:
   compile_to_ptx(const cuda_compile_source& __cuda_src, const cuda_compile_options& __cuda_opts)
   {
     auto __program = __make_program(__cuda_src);
-    __add_name_expressions(__program, __cuda_src.__name_exprs_);
+    auto __opts    = __make_options(__cuda_opts);
 
-    auto __opts = __make_options(__cuda_opts);
     __add_pchs(__cuda_src, __cuda_opts, __opts);
+    __add_name_expressions(__program, __cuda_src.__name_exprs_);
 
     const bool __success = __compile(__program, _CUDA_VSTD::move(__opts));
 
@@ -534,8 +534,10 @@ public:
   {
     auto __program = __make_program(__cuda_src);
     auto __opts    = __make_options(__cuda_opts);
+
     __opts.__ptrs.push_back("-dlto");
     __add_pchs(__cuda_src, __cuda_opts, __opts);
+
     return compile_cuda_to_ltoir_result{__cuda_src.__id_, __program, __compile(__program, _CUDA_VSTD::move(__opts))};
   }
 };
