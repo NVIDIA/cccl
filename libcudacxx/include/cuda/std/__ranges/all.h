@@ -34,9 +34,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_VIEWS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__all)
+_CCCL_BEGIN_NAMESPACE_CPO(__all)
 
 template <class _Tp>
 _CCCL_CONCEPT __to_ref_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
@@ -75,7 +75,7 @@ struct __fn : __range_adaptor_closure<__fn>
     return _CUDA_VRANGES::owning_view{_CUDA_VSTD::forward<_Tp>(__t)};
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -90,7 +90,7 @@ template <class _Range>
 using all_t = enable_if_t<_CUDA_VRANGES::viewable_range<_Range>, decltype(_CUDA_VIEWS::all(declval<_Range>()))>;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief The \c constant_iterator class represents an iterator in a sequence of repeated values.
 template <class _Tp, class _Index = _CUDA_VSTD::ptrdiff_t>
@@ -250,7 +250,7 @@ template <class _Tp>
   return constant_iterator<_Tp>{_CUDA_VSTD::move(__value), __index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <_CUDA_VSTD::size_t _Alignment>
 struct aligned_size_t
@@ -54,7 +54,7 @@ inline constexpr _CUDA_VSTD::size_t __get_size_align_v = 1;
 template <class _Tp>
 inline constexpr _CUDA_VSTD::size_t __get_size_align_v<_Tp, _CUDA_VSTD::void_t<decltype(_Tp::align)>> = _Tp::align;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

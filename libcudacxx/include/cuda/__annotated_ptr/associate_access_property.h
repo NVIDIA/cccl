@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //----------------------------------------------------------------------------------------------------------------------
 // Private access property methods
@@ -121,7 +121,7 @@ template <typename _Tp, typename _Property>
   return ::cuda::__associate(__ptr, __prop);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

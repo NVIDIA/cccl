@@ -95,7 +95,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION
+_CCCL_BEGIN_NAMESPACE_EXECUTION
 
 namespace __detail
 {
@@ -441,7 +441,7 @@ template <class _Env, class _Query, class _Default>
 using __query_result_or_t _CCCL_NODEBUG_ALIAS =
   decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _CUDA_VSTD::declval<_Query>(), _CUDA_VSTD::declval<_Default>()));
 
-_LIBCUDACXX_END_NAMESPACE_EXECUTION
+_CCCL_END_NAMESPACE_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -34,11 +34,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [range.access.rend]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__rend)
+_CCCL_BEGIN_NAMESPACE_CPO(__rend)
 template <class _Tp>
 void rend(_Tp&) = delete;
 template <class _Tp>
@@ -135,7 +135,7 @@ public:
   _CCCL_REQUIRES((!__member_rend<_Tp> && !__unqualified_rend<_Tp> && !__can_reverse<_Tp>) )
   void operator()(_Tp&&) const = delete;
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -144,7 +144,7 @@ _CCCL_GLOBAL_CONSTANT auto rend = __rend::__fn{};
 
 // [range.access.crend]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__crend)
+_CCCL_BEGIN_NAMESPACE_CPO(__crend)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -167,14 +167,14 @@ struct __fn
     return _CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // We need to detect whether there is already a free function swap that would end up being ambiguous.
 // This can happen when a type pulls in both namespace std and namespace cuda::std via ADL.
@@ -194,7 +194,7 @@ inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_T
 template <class _Tp>
 inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

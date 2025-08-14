@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
@@ -242,7 +242,7 @@ template <typename _Tp, typename _Lhs>
   return {__quotient, __remainder};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

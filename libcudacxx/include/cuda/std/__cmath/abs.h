@@ -35,7 +35,7 @@
 #  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fabs
 
@@ -120,7 +120,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   return _CUDA_VSTD::fabs(__x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

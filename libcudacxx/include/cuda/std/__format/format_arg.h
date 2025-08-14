@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fmt_arg_t : uint8_t
 {
@@ -275,7 +275,7 @@ _CCCL_API decltype(auto) visit_format_arg(_Visitor&& __vis, basic_format_arg<_Co
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

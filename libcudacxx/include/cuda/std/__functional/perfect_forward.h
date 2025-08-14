@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Op, class _Indices, class... _BoundArgs>
 struct __perfect_forward_impl;
@@ -119,7 +119,7 @@ public:
 template <class _Op, class... _Args>
 using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

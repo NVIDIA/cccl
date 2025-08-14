@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // If available, use the host's div_t, ldiv_t, and lldiv_t types because the struct members order is
 // implementation-defined.
@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT lldiv_t
   return _CUDA_VSTD::lldiv(__x, __y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -29,7 +29,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION // purposefully not using versioning namespace
 
 [[noreturn]] _CCCL_API inline void __cccl_terminate() noexcept
 {
@@ -64,7 +64,7 @@ _CCCL_API inline  terminate_handler get_terminate() noexcept
   _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 
 _CCCL_DIAG_POP
 

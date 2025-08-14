@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // sqrt
 
@@ -57,7 +57,7 @@ template <class _Tp>
   return _CUDA_VSTD::polar(_CUDA_VSTD::sqrt(_CUDA_VSTD::abs(__x)), _CUDA_VSTD::arg(__x) / _Tp(2));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

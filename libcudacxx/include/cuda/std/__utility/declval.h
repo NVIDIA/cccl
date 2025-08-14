@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // When variable templates and noexcept function types are available, a faster
 // implementation of declval is available. It compiles approximately 2x faster
@@ -56,7 +56,7 @@ _CCCL_API inline decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
 
 #endif // default impl
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

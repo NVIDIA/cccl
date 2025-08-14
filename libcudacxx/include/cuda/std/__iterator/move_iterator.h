@@ -50,7 +50,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Iter, class = void>
@@ -426,7 +426,7 @@ make_move_iterator(_Iter __i) noexcept(is_nothrow_move_constructible_v<_Iter>)
   return move_iterator<_Iter>{_CUDA_VSTD::move(__i)};
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

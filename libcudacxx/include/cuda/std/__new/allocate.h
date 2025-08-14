@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
 {
@@ -119,7 +119,7 @@ _CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] si
   return _CUDA_VSTD::__cccl_operator_delete(__ptr);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

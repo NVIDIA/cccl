@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! `__basic_any_from`
@@ -89,7 +89,7 @@ using __cvref_basic_any_from_t = decltype(::cuda::__basic_any_from(_CUDA_VSTD::d
 
 template <class _CvInterface>
 using __basic_any_from_t = _CUDA_VSTD::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

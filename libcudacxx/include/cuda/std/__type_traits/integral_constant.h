@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, _Tp __v>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
@@ -55,7 +55,7 @@ using bool_constant = integral_constant<bool, __b>;
 // deprecated [Since 2.7.0]
 #define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

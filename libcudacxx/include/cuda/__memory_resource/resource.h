@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief The \c synchronous_resource concept verifies that a type Resource satisfies the basic requirements of a
 //! memory resource
@@ -119,7 +119,7 @@ _CCCL_CONCEPT __different_resource =
   __different_resource__<_CUDA_VSTD::convertible_to<_OtherResource const&, _Resource const&>>::__value(
     static_cast<_OtherResource*>(nullptr));
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_MR
+_CCCL_END_NAMESPACE_CUDA_MR
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_H

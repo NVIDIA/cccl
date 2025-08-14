@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
 [[nodiscard]] _CCCL_API constexpr _Tp
@@ -65,7 +65,7 @@ transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterat
     __first1, __last1, __first2, _CUDA_VSTD::move(__init), _CUDA_VSTD::plus<>(), _CUDA_VSTD::multiplies<>());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

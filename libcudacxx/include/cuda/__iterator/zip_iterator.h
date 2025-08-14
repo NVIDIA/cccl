@@ -46,7 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class... _Iterators>
 struct __tuple_or_pair_impl
@@ -523,15 +523,15 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... it
   return zip_iterator<Iterators...>{_CUDA_VSTD::move(its)...};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 // GCC and MSVC2019 have issues determining _IsFancyPointer in C++17 because they fail to instantiate pointer_traits
 #if (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)) && _CCCL_STD_VER <= 2017
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class... _Iterators>
 struct _IsFancyPointer<::cuda::zip_iterator<_Iterators...>> : false_type
 {};
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 #endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER <= 2017
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
+_CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 struct __get_tuning_t
 {
@@ -62,7 +62,7 @@ template <class... _Tunings>
   return _CUDA_STD_EXEC::prop{__get_tuning_t{}, __env};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
+_CCCL_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

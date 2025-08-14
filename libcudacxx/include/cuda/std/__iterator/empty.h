@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Cont>
 [[nodiscard]] _CCCL_API constexpr auto empty(const _Cont& __c) noexcept(noexcept(__c.empty())) -> decltype(__c.empty())
@@ -46,7 +46,7 @@ template <class _Ep>
   return __il.size() == 0;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

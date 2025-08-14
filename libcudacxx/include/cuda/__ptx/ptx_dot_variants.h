@@ -61,7 +61,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#operation-types
 enum class dot_sem
@@ -223,7 +223,7 @@ static constexpr kind_tf32_t kind_tf32{};
 template <int n>
 using n32_t = _CUDA_VSTD::integral_constant<int, n>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

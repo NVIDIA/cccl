@@ -33,7 +33,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
 //! @brief A proxy object used to in-place construct a `device` object from an
@@ -159,7 +159,7 @@ namespace __detail
 }
 } // namespace __detail
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the square root of the given non-negative integer rounded down
 //! @param __v The input number
@@ -73,7 +73,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
   return static_cast<_Tp>(__ret);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
 using __expand_to_true = true_type;
@@ -60,7 +60,7 @@ struct conjunction<_Arg, _Args...> : _If<!bool(_Arg::value), _Arg, conjunction<_
 template <class... _Args>
 inline constexpr bool conjunction_v = conjunction<_Args...>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

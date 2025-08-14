@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
@@ -82,7 +82,7 @@ merge(_InputIterator1 __first1,
   return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

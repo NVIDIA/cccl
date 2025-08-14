@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief The \c has_property concept verifies that a Resource satisfies a given Property
 //! @rst
@@ -105,7 +105,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_upstream_resource = _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
+_CCCL_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn
 {
@@ -124,7 +124,7 @@ struct __fn
     return get_property(__res.upstream_resource(), __prop);
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 //! @brief The \c forward_property CRTP template allows Derived to forward all properties of Upstream
 //! @rst
@@ -146,7 +146,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

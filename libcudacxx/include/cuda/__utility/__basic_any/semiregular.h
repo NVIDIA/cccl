@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! semi-regular overrides
@@ -315,7 +315,7 @@ struct __iconvertible_to_<__self const&, _To>
 
 template <class _From, class _To>
 using __iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to_<_From, _To>::template __interface_<>;
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! Interface type traits
@@ -351,7 +351,7 @@ _CCCL_REQUIRES(__is_interface<_Interface> _CCCL_AND _CUDA_VSTD::__is_callable_v<
 {
   return __interface_cast_fn<_Interface>{}(_CUDA_VSTD::forward<Object>(__obj));
 }
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

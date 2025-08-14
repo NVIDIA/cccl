@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is
 //! incremented or decremented.
@@ -314,7 +314,7 @@ template <class _Iter, class _Stride = _CUDA_VSTD::iter_difference_t<_Iter>>
   return strided_iterator<_Iter, _Stride>{_CUDA_VSTD::move(__iter), _CUDA_VSTD::move(__stride)};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

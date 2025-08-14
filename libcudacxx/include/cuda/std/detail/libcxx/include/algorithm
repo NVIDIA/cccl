@@ -139,7 +139,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
 
@@ -1709,7 +1709,7 @@ nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomA
 }
 
 #endif
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #  include <__pstl_algorithm>

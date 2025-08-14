@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Engine, class _UIntType>
 class __independent_bits_engine
@@ -328,7 +328,7 @@ operator>>(basic_istream<_CharT, _Traits>& __is, uniform_int_distribution<_IT>& 
 }
 #endif // Implement stream operators
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

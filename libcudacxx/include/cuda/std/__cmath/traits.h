@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // isgreater
 
@@ -151,7 +151,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
   return _CUDA_VSTD::isnan((type) __x) || _CUDA_VSTD::isnan((type) __y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 struct __get_memory_resource_t;
 
@@ -74,7 +74,7 @@ using get_memory_resource_t = __get_memory_resource_t;
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_MR
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

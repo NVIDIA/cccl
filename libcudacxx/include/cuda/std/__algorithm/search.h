@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
@@ -178,7 +178,7 @@ search(_ForwardIterator __f, _ForwardIterator __l, const _Searcher& __s)
   return __s(__f, __l).first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Helper to get an index_sequence of all slices that are not convertible to index_type
 template <class _IndexType, class... _Slices, size_t... _FilteredIndices>
@@ -186,7 +186,7 @@ template <class _Extents, class... _Slices>
 using __get_subextents_t =
   decltype(_CUDA_VSTD::submdspan_extents(_CUDA_VSTD::declval<_Extents>(), _CUDA_VSTD::declval<_Slices>()...));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
