@@ -136,8 +136,6 @@ C2H_TEST("Compile cuda to ltoir", "[cuda.compile.cuda_to_ltoir]")
   cuda_opts.set_std_version(cudax::cuda_std_version::cxx17);
   cuda_opts.set_virtual_arch(cuda::arch::id::sm_75);
 
-  constexpr auto name_expr = "test_kernel<int>";
-
   cudax::cuda_compile_source src{"test.cu", test_cuda_src};
 
   cudax::cuda_compiler compiler{};
