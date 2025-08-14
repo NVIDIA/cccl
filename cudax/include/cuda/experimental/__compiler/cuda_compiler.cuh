@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILER_COMPILER_CUH
-#define _CUDAX___COMPILER_COMPILER_CUH
+#ifndef _CUDAX___COMPILER_CUDA_COMPILER_CUH
+#define _CUDAX___COMPILER_CUDA_COMPILER_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -24,18 +24,19 @@
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/span>
 #include <cuda/std/string_view>
 
-#include <cuda/experimental/__compiler/compile_options.cuh>
-#include <cuda/experimental/__compiler/compile_result.cuh>
-#include <cuda/experimental/__compiler/compile_source.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_options.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_result.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_source.cuh>
+#include <cuda/experimental/__compiler/ptx_compile_options.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <string>
 #include <vector>
 
-#include <nvPTXCompiler.h>
 #include <nvrtc.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -43,20 +44,26 @@
 namespace cuda::experimental
 {
 
-struct __compile_options
+//! @brief Helper structure for nvrtc options
+struct __nvrtc_compile_options
 {
-  ::std::vector<const char*> __opt_ptrs;
-  ::std::vector<::std::string> __opt_strs;
+  ::std::vector<const char*> __opt_ptrs; //!< The option pointers
+  ::std::vector<::std::string> __opt_strs; //!< The option strings
 };
 
-/// @brief A class representing a CUDA compiler.
+//! @brief A class representing a CUDA compiler.
 class cuda_compiler
 {
-  bool __enable_internal_cache_{true};
-  unsigned __thread_limit_{1};
-  bool __pch_auto_{false};
-  ::std::string __pch_dir_{};
+  bool __enable_internal_cache_{true}; //!< Enable internal cache
+  unsigned __thread_limit_{1}; //!< The thread limit (0 means no limit)
+  bool __pch_auto_{false}; //!< Enable automatic precompiled headers
+  ::std::string __pch_dir_{}; //!< The directory for precompiled headers
 
+  //! @brief Create a NVRTC program from the CUDA source code.
+  //!
+  //! @param __src The CUDA source code to compile.
+  //!
+  //! @return The created NVRTC program.
   [[nodiscard]] static ::nvrtcProgram __make_program(const cuda_compile_source& __src)
   {
     ::nvrtcProgram __program{};
@@ -68,9 +75,12 @@ class cuda_compiler
     return __program;
   }
 
-  [[nodiscard]] __compile_options __make_options() const
+  //! @brief Create NVRTC compile options from the compiler settings.
+  //!
+  //! @return The created NVRTC compile options.
+  [[nodiscard]] __nvrtc_compile_options __make_options() const
   {
-    __compile_options __ret{};
+    __nvrtc_compile_options __ret{};
 
     // enable internal cache
     if (!__enable_internal_cache_)
@@ -101,9 +111,14 @@ class cuda_compiler
     return __ret;
   }
 
-  [[nodiscard]] __compile_options __make_options(const cuda_compile_options& __cuda_opts) const
+  //! @brief Create NVRTC compile options from the compiler settings and the cuda compile options.
+  //!
+  //! @param __cuda_opts The CUDA compile options.
+  //!
+  //! @return The created NVRTC compile options.
+  [[nodiscard]] __nvrtc_compile_options __make_options(const cuda_compile_options& __cuda_opts) const
   {
-    __compile_options __ret = __make_options();
+    __nvrtc_compile_options __ret = __make_options();
 
     // disable automatic addition of source's directory to the include path
     __ret.__opt_ptrs.push_back("-no-source-include");
@@ -182,7 +197,14 @@ class cuda_compiler
     return __ret;
   }
 
-  [[nodiscard]] __compile_options
+  //! @brief Create NVRTC compile options from the compiler settings, the cuda compile options, and the PTX compile
+  //!        options.
+  //!
+  //! @param __cuda_opts The CUDA compile options.
+  //! @param __ptx_opts The PTX compile options.
+  //!
+  //! @return The created NVRTC compile options.
+  [[nodiscard]] __nvrtc_compile_options
   __make_options(const cuda_compile_options& __cuda_opts, const ptx_compile_options& __ptx_opts) const
   {
     auto __ret = __make_options(__cuda_opts);
@@ -283,6 +305,12 @@ class cuda_compiler
     return __ret;
   }
 
+  //! @brief Add name expressions to the NVRTC program.
+  //!
+  //! @param __program The NVRTC program.
+  //! @param __name_exprs The name expressions to add.
+  //!
+  //! @note This function must be called before __compile() is called.
   static void __add_name_expressions(::nvrtcProgram __program, _CUDA_VSTD::span<const ::std::string> __name_exprs)
   {
     for (const auto& __name_expr : __name_exprs)
@@ -294,12 +322,26 @@ class cuda_compiler
     }
   }
 
+  //! @brief Compile the NVRTC program with the given options.
+  //!
+  //! @param __program The NVRTC program.
+  //! @param __opt_ptrs The compilation options.
+  //!
+  //! @return `true` if the compilation was successful; otherwise, `false`.
   [[nodiscard]] static bool __compile(::nvrtcProgram __program, _CUDA_VSTD::span<const char*> __opt_ptrs)
   {
     const auto __result = ::nvrtcCompileProgram(__program, static_cast<int>(__opt_ptrs.size()), __opt_ptrs.data());
     return __result == ::NVRTC_SUCCESS;
   }
 
+  //! @brief Gets the vector of lowered names for the given name expressions.
+  //!
+  //! @param __program The NVRTC program.
+  //! @param __name_exprs The name expressions to lower.
+  //!
+  //! @return The vector of lowered names.
+  //!
+  //! @note This function must be called after __compile() has been called.
   [[nodiscard]] static ::std::vector<_CUDA_VSTD::string_view>
   __get_lowered_names(::nvrtcProgram __program, _CUDA_VSTD::span<const ::std::string> __name_exprs)
   {
@@ -445,192 +487,8 @@ public:
   }
 };
 
-//! @brief A class representing a PTX compiler.
-class ptx_compiler
-{
-  unsigned __thread_limit_{1};
-
-  [[nodiscard]] static ::nvPTXCompilerHandle __make_handle(const ptx_compile_source& __ptx_src)
-  {
-    ::nvPTXCompilerHandle __handle{};
-    if (::nvPTXCompilerCreate(&__handle, __ptx_src.__code_.size(), __ptx_src.__code_.data()) != ::NVPTXCOMPILE_SUCCESS)
-    {
-      // todo: throw an exception if the program creation failed
-    }
-    return __handle;
-  }
-
-  [[nodiscard]] __compile_options __make_options() const
-  {
-    __compile_options __ret{};
-
-    // set thread limit
-    if (__thread_limit_ != 1)
-    {
-      __ret.__opt_ptrs.push_back("-split-compile");
-      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back(::std::to_string(__thread_limit_)).c_str());
-    }
-    return __ret;
-  }
-
-  [[nodiscard]] __compile_options __make_options(const ptx_compile_options& __ptx_opts) const
-  {
-    __compile_options __ret = __make_options();
-
-    // device debug flag
-    if (__ptx_opts.__device_debug_)
-    {
-      __ret.__opt_ptrs.push_back("--device-debug");
-    }
-
-    // line info flag
-    if (__ptx_opts.__line_info_)
-    {
-      __ret.__opt_ptrs.push_back("-line-info");
-    }
-
-    // fmad flag
-    __ret.__opt_ptrs.push_back(__ptx_opts.__fmad_ ? "-fmad=true" : "-fmad=false");
-
-    // max register count
-    if (__ptx_opts.__max_reg_count_ >= 0)
-    {
-      __ret.__opt_ptrs.push_back(__ret.__opt_strs.emplace_back("--maxrregcount").c_str());
-      __ret.__opt_strs.back().append(::std::to_string(__ptx_opts.__max_reg_count_));
-    }
-
-    // optimization level
-    switch (__ptx_opts.__optimization_level_)
-    {
-      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O0):
-        __ret.__opt_ptrs.push_back("-O0");
-        break;
-      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O1):
-        __ret.__opt_ptrs.push_back("-O1");
-        break;
-      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O2):
-        __ret.__opt_ptrs.push_back("-O2");
-        break;
-      case _CUDA_VSTD::to_underlying(ptx_optimization_level::O3):
-        __ret.__opt_ptrs.push_back("-O3");
-        break;
-      default:
-        _CCCL_UNREACHABLE();
-    }
-
-    // position independent code flag
-    __ret.__opt_ptrs.push_back(__ptx_opts.__pic_ ? "-pic=true" : "-pic=false");
-
-    // binary architecture
-    switch (__ptx_opts.__binary_arch_)
-    {
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_75):
-        __ret.__opt_ptrs.push_back("-arch=sm_75");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_80):
-        __ret.__opt_ptrs.push_back("-arch=sm_80");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_86):
-        __ret.__opt_ptrs.push_back("-arch=sm_86");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_89):
-        __ret.__opt_ptrs.push_back("-arch=sm_89");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90):
-        __ret.__opt_ptrs.push_back("-arch=sm_90");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100):
-        __ret.__opt_ptrs.push_back("-arch=sm_100");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103):
-        __ret.__opt_ptrs.push_back("-arch=sm_103");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120):
-        __ret.__opt_ptrs.push_back("-arch=sm_120");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_90a):
-        __ret.__opt_ptrs.push_back("-arch=sm_90a");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_100a):
-        __ret.__opt_ptrs.push_back("-arch=sm_100a");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_103a):
-        __ret.__opt_ptrs.push_back("-arch=sm_103a");
-        break;
-      case _CUDA_VSTD::to_underlying(cuda::arch::id::sm_120a):
-        __ret.__opt_ptrs.push_back("-arch=sm_120a");
-        break;
-      default:
-        _CCCL_UNREACHABLE();
-    }
-
-    return __ret;
-  }
-
-  [[nodiscard]] static bool __compile(::nvPTXCompilerHandle __handle, _CUDA_VSTD::span<const char*> __opt_ptrs)
-  {
-    const auto __result = ::nvPTXCompilerCompile(__handle, static_cast<int>(__opt_ptrs.size()), __opt_ptrs.data());
-    return __result == ::NVPTXCOMPILE_SUCCESS;
-  }
-
-public:
-  //! @brief Get the version of the nvPTX compiler.
-  //!
-  //! @return The version of the nvPTX compiler as an integer, where the major version is multiplied by 100 and added to
-  //!         the minor version.
-  [[nodiscard]] static int version()
-  {
-    unsigned __major{};
-    unsigned __minor{};
-    if (::nvPTXCompilerGetVersion(&__major, &__minor) != ::NVPTXCOMPILE_SUCCESS)
-    {
-      // Handle error
-    }
-    return static_cast<int>(__major * 100 + __minor);
-  }
-
-  //! @brief Set the thread limit for compilation.
-  //!
-  //! @param __limit The maximum number of threads to use for compilation. 0 means no limit.
-  void set_thread_limit(unsigned __limit) noexcept
-  {
-    __thread_limit_ = __limit;
-  }
-
-  //! @brief Compile PTX source code to CUBIN.
-  //!
-  //! @param __ptx_src The PTX source code to compile.
-  //! @param __ptx_opts The PTX compilation options to use.
-  //! @param __lowered_names Optional names to lower.
-  //!
-  //! @return A compile_ptx_to_cubin_result object.
-  [[nodiscard]] compile_ptx_to_cubin_result
-  compile_to_cubin(const ptx_compile_source& __ptx_src, const ptx_compile_options& __ptx_opts)
-  {
-    auto __handle = __make_handle(__ptx_src);
-
-    auto [__opt_ptrs, __opt_strings] = __make_options(__ptx_opts);
-
-    __opt_ptrs.push_back("-e");
-    ::std::string __tmp{"\""};
-    for (_CUDA_VSTD::size_t __i = 0; __i < __ptx_src.__symbols_.size(); ++__i)
-    {
-      if (__i > 0)
-      {
-        __tmp.append(",");
-      }
-      __tmp.append(__ptx_src.__symbols_[__i].begin(), __ptx_src.__symbols_[__i].end());
-    }
-    __tmp.append("\"");
-    __opt_strings.emplace_back(_CUDA_VSTD::move(__tmp));
-    __opt_ptrs.push_back(__opt_strings.back().c_str());
-
-    return compile_ptx_to_cubin_result{__handle, __compile(__handle, __opt_ptrs)};
-  }
-};
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILER_COMPILER_CUH
+#endif // _CUDAX___COMPILER_CUDA_COMPILER_CUH

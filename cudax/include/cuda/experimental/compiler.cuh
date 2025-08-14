@@ -11,9 +11,13 @@
 #ifndef _CUDAX_COMPILATON_CUH
 #define _CUDAX_COMPILATON_CUH
 
-#include <cuda/experimental/__compiler/compile_options.cuh>
-#include <cuda/experimental/__compiler/compile_result.cuh>
-#include <cuda/experimental/__compiler/compile_source.cuh>
-#include <cuda/experimental/__compiler/compiler.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_options.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_result.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_source.cuh>
+#include <cuda/experimental/__compiler/cuda_compiler.cuh>
+#include <cuda/experimental/__compiler/ptx_compile_options.cuh>
+#include <cuda/experimental/__compiler/ptx_compile_result.cuh>
+#include <cuda/experimental/__compiler/ptx_compile_source.cuh>
+#include <cuda/experimental/__compiler/ptx_compiler.cuh>
 
 #endif // _CUDAX_COMPILATON_CUH

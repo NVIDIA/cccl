@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILER_COMPILE_RESULT_CUH
-#define _CUDAX___COMPILER_COMPILE_RESULT_CUH
+#ifndef _CUDAX___COMPILER_CUDA_COMPILE_RESULT_CUH
+#define _CUDAX___COMPILER_CUDA_COMPILE_RESULT_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -24,15 +24,15 @@
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/string_view>
 
-#include <cuda/experimental/__compiler/compile_source.cuh>
+#include <cuda/experimental/__compiler/cuda_compile_source.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <string>
 #include <vector>
 
-#include <nvPTXCompiler.h>
 #include <nvrtc.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -43,11 +43,17 @@ namespace cuda::experimental
 class __nvrtc_compile_result_base
 {
 protected:
-  __cuda_compile_source_id __src_id_;
-  ::nvrtcProgram __program_;
-  bool __success_;
-  ::std::vector<_CUDA_VSTD::string_view> __lowered_names_;
+  __cuda_compile_source_id __src_id_{}; //!< The ID of the cuda compile source object
+  ::nvrtcProgram __program_{}; //!< The NVRTC program object
+  bool __success_{}; //!< The compilation success flag
+  ::std::vector<_CUDA_VSTD::string_view> __lowered_names_{}; //!< The vector of lowered names, ptx and cubin only
 
+  //! @brief Constructor for the NVRTC compile result base.
+  //!
+  //! @param __src_id The ID of the cuda compile source object.
+  //! @param __program The NVRTC program object.
+  //! @param __success The compilation success flag.
+  //! @param __lowered_names The vector of lowered names (optional).
   __nvrtc_compile_result_base(__cuda_compile_source_id __src_id,
                               ::nvrtcProgram __program,
                               bool __success,
@@ -58,6 +64,7 @@ protected:
       , __lowered_names_{_CUDA_VSTD::move(__lowered_names)}
   {}
 
+  //! @brief Destroy the NVRTC program.
   void __destroy() noexcept
   {
     if (__program_ != nullptr)
@@ -72,10 +79,7 @@ public:
   //! @brief Constructor for an uninitialized result.
   //!
   //! @param __uninit An uninitialized tag.
-  __nvrtc_compile_result_base(no_init_t) noexcept
-      : __program_{nullptr}
-      , __success_{false}
-  {}
+  __nvrtc_compile_result_base(no_init_t) noexcept {}
 
   __nvrtc_compile_result_base(const __nvrtc_compile_result_base&) = delete;
 
@@ -83,8 +87,10 @@ public:
   //!
   //! @param __other The other result to move from.
   __nvrtc_compile_result_base(__nvrtc_compile_result_base&& __other) noexcept
-      : __program_{_CUDA_VSTD::exchange(__other.__program_, nullptr)}
+      : __src_id_{_CUDA_VSTD::exchange(__other.__src_id_, __cuda_compile_source_id{})}
+      , __program_{_CUDA_VSTD::exchange(__other.__program_, nullptr)}
       , __success_{_CUDA_VSTD::exchange(__other.__success_, false)}
+      , __lowered_names_{_CUDA_VSTD::move(__other.__lowered_names_)}
   {}
 
   //! @brief Destructor.
@@ -105,8 +111,10 @@ public:
     if (this != _CUDA_VSTD::addressof(__other))
     {
       __destroy();
-      __program_ = _CUDA_VSTD::exchange(__other.__program_, nullptr);
-      __success_ = _CUDA_VSTD::exchange(__other.__success_, false);
+      __src_id_        = _CUDA_VSTD::exchange(__other.__src_id_, __cuda_compile_source_id{});
+      __program_       = _CUDA_VSTD::exchange(__other.__program_, nullptr);
+      __success_       = _CUDA_VSTD::exchange(__other.__success_, false);
+      __lowered_names_ = _CUDA_VSTD::move(__other.__lowered_names_);
     }
     return *this;
   }
@@ -281,127 +289,8 @@ struct compile_cuda_to_ltoir_result : public __nvrtc_compile_result_base
   }
 };
 
-//! @brief Result of compiling PTX to CUBIN.
-class compile_ptx_to_cubin_result
-{
-  friend class ptx_compiler;
-
-  ::nvPTXCompilerHandle __handle_;
-  bool __success_;
-
-  compile_ptx_to_cubin_result(::nvPTXCompilerHandle __handle, bool __success) noexcept
-      : __handle_{__handle}
-      , __success_{__success}
-  {}
-
-  void __destroy() noexcept
-  {
-    if (__handle_ != nullptr)
-    {
-      [[maybe_unused]] auto __status = ::nvPTXCompilerDestroy(&__handle_);
-    }
-  }
-
-public:
-  compile_ptx_to_cubin_result() = delete;
-
-  //! @brief Constructor for an uninitialized result.
-  //!
-  //! @param __uninit An uninitialized tag.
-  compile_ptx_to_cubin_result(no_init_t) noexcept
-      : __handle_{nullptr}
-      , __success_{false}
-  {}
-
-  compile_ptx_to_cubin_result(const compile_ptx_to_cubin_result&) = delete;
-
-  //! @brief Move constructor.
-  //!
-  //! @param __other The other result to move from.
-  compile_ptx_to_cubin_result(compile_ptx_to_cubin_result&& __other) noexcept
-      : __handle_{_CUDA_VSTD::exchange(__other.__handle_, nullptr)}
-      , __success_{_CUDA_VSTD::exchange(__other.__success_, false)}
-  {}
-
-  //! @brief Destructor.
-  ~compile_ptx_to_cubin_result() noexcept
-  {
-    __destroy();
-  }
-
-  compile_ptx_to_cubin_result& operator=(const compile_ptx_to_cubin_result&) = delete;
-
-  //! @brief Move assignment operator.
-  //!
-  //! @param __other The other result to move from.
-  //!
-  //! @return A reference to this result.
-  compile_ptx_to_cubin_result& operator=(compile_ptx_to_cubin_result&& __other) noexcept
-  {
-    if (this != _CUDA_VSTD::addressof(__other))
-    {
-      __destroy();
-      __handle_  = _CUDA_VSTD::exchange(__other.__handle_, nullptr);
-      __success_ = _CUDA_VSTD::exchange(__other.__success_, false);
-    }
-    return *this;
-  }
-
-  //! @brief Was the compilation successful?
-  //!
-  //! @return `true` if the compilation was successful, `false` otherwise.
-  [[nodiscard]] bool success() const noexcept
-  {
-    return __success_;
-  }
-
-  //! @brief Convert the result to a boolean value.
-  //!
-  //! @return `true` if the compilation was successful, `false` otherwise.
-  explicit operator bool() const noexcept
-  {
-    return __success_;
-  }
-
-  //! @brief Get the log.
-  //!
-  //! @return A string containing the log.
-  [[nodiscard]] ::std::string log() const
-  {
-    _CUDA_VSTD::size_t __size{};
-    if (::nvPTXCompilerGetErrorLogSize(__handle_, &__size) != ::NVPTXCOMPILE_SUCCESS)
-    {
-      // todo: throw
-    }
-    ::std::string __log(__size, '\0');
-    if (::nvPTXCompilerGetErrorLog(__handle_, __log.data()) != ::NVPTXCOMPILE_SUCCESS)
-    {
-      // todo: throw
-    }
-    return __log;
-  }
-
-  //! @brief Get the compiled CUBIN.
-  //!
-  //! @return A vector containing the compiled CUBIN.
-  [[nodiscard]] ::std::vector<_CUDA_VSTD_NOVERSION::byte> cubin() const
-  {
-    _CUDA_VSTD::size_t __size{};
-    if (::nvPTXCompilerGetCompiledProgramSize(__handle_, &__size) != ::NVPTXCOMPILE_SUCCESS)
-    {
-      // todo: throw
-    }
-    ::std::vector<_CUDA_VSTD_NOVERSION::byte> __code(__size);
-    if (::nvPTXCompilerGetCompiledProgram(__handle_, __code.data()) != ::NVPTXCOMPILE_SUCCESS)
-    {
-      // todo: throw
-    }
-    return __code;
-  }
-};
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILER_COMPILE_CUH
+#endif // _CUDAX___COMPILER_CUDA_COMPILE_RESULT_CUH

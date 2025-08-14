@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___COMPILER_COMPILE_SOURCE_CUH
-#define _CUDAX___COMPILER_COMPILE_SOURCE_CUH
+#ifndef _CUDAX___COMPILER_CUDA_COMPILE_SOURCE_CUH
+#define _CUDAX___COMPILER_CUDA_COMPILE_SOURCE_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__detail/utility.cuh>
 
@@ -36,13 +38,14 @@ namespace cuda::experimental
 //! @brief An identifier for a CUDA source code.
 enum class __cuda_compile_source_id : _CUDA_VSTD::uint64_t
 {
+  __invalid = 0, //!< Invalid source ID
 };
 
 //! @brief An identifier for a name expression within a CUDA source code.
 struct __cuda_name_expression_id
 {
-  __cuda_compile_source_id __src_id_;
-  _CUDA_VSTD::size_t __expr_idx_;
+  __cuda_compile_source_id __src_id_; //!< The source code identifier.
+  _CUDA_VSTD::size_t __expr_idx_; //!< The index of the name expression in the name expression vector.
 };
 
 //! @brief A class representing a source code to be compiled by the CUDA compiler.
@@ -50,11 +53,11 @@ class cuda_compile_source
 {
   friend class cuda_compiler;
 
-  ::std::string __name_;
-  ::std::string __code_;
-  ::std::vector<::std::string> __name_exprs_;
-  ::std::vector<::std::string> __pch_headers_;
-  __cuda_compile_source_id __id_;
+  ::std::string __name_{}; //!< The name of the source code.
+  ::std::string __code_{}; //!< The source code to be compiled.
+  ::std::vector<::std::string> __name_exprs_{}; //!< The name expressions in the source code.
+  ::std::vector<::std::string> __pch_headers_{}; //!< The precompiled headers for the source code.
+  __cuda_compile_source_id __id_{}; //!< The unique identifier for the source code.
 
   //! @brief Makes an unique id.
   //!
@@ -113,60 +116,8 @@ public:
   }
 };
 
-//! @brief A class representing a PTX source code to be compiled by the CUDA compiler.
-class ptx_compile_source
-{
-  friend class ptx_compiler;
-
-  ::std::string __name_;
-  ::std::string __code_;
-  ::std::vector<::std::string> __symbols_;
-
-public:
-  ptx_compile_source() = delete;
-
-  //! @brief Constructor that initializes the object to move-from state.
-  ptx_compile_source(no_init_t) noexcept {}
-
-  //! @brief Constructor that initializes the object with the given name and code.
-  //!
-  //! @param __name The name of the source code.
-  //! @param __code The source code to be compiled.
-  ptx_compile_source(::std::string __name, ::std::string __code) noexcept
-      : __name_{_CUDA_VSTD::move(__name)}
-      , __code_{_CUDA_VSTD::move(__code)}
-      , __symbols_{}
-  {}
-
-  ptx_compile_source(const ptx_compile_source&) = delete;
-
-  //! @brief Move constructor.
-  ptx_compile_source(ptx_compile_source&&) noexcept = default;
-
-  ptx_compile_source& operator=(const ptx_compile_source&) = delete;
-
-  //! @brief Move assignment operator.
-  ptx_compile_source& operator=(ptx_compile_source&&) noexcept = default;
-
-  //! @brief Adds a kernel symbol to be kept in the PTX source code.
-  //!
-  //! @param __symbol The kernel symbol to be added.
-  void add_kernel_symbol(::std::string __symbol)
-  {
-    __symbols_.push_back(_CUDA_VSTD::move(__symbol));
-  }
-
-  //! @brief Adds a function symbol to be kept in the PTX source code.
-  //!
-  //! @param __symbol The function symbol to be added.
-  void add_function_symbol(::std::string __symbol)
-  {
-    __symbols_.push_back(_CUDA_VSTD::move(__symbol));
-  }
-};
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX___COMPILER_COMPILE_SOURCE_CUH
+#endif // _CUDAX___COMPILER_CUDA_COMPILE_SOURCE_CUH
