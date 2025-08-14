@@ -319,7 +319,7 @@ struct DispatchSegmentedSort
         , d_offset_end(d_offset_end)
     {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
     {
       const OffsetT segment_size =
         d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
@@ -341,7 +341,7 @@ struct DispatchSegmentedSort
         , d_offset_end(d_offset_end)
     {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
     {
       const OffsetT segment_size =
         d_offset_end[base_segment_offset + segment_id] - d_offset_begin[base_segment_offset + segment_id];
@@ -769,35 +769,46 @@ private:
 
 #else // CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE                                                          \
-    error =                                                                             \
-      launcher_factory(1, 1, 0, stream)                                                 \
-        .doit(kernel_source.SegmentedSortContinuationKernel(),                          \
-              large_kernel,                                                             \
-              small_kernel,                                                             \
-              current_num_segments,                                                     \
-              d_keys.Current(),                                                         \
-              GetFinalOutput<KeyT>(wrapped_policy.LargeSegmentRadixBits(), d_keys),     \
-              d_keys_double_buffer,                                                     \
-              d_values.Current(),                                                       \
-              GetFinalOutput<ValueT>(wrapped_policy.LargeSegmentRadixBits(), d_values), \
-              d_values_double_buffer,                                                   \
-              current_begin_offset,                                                     \
-              current_end_offset,                                                       \
-              group_sizes.get(),                                                        \
-              large_and_medium_segments_indices.get(),                                  \
-              small_segments_indices.get());                                            \
-    error = CubDebug(error);                                                            \
-                                                                                        \
-    if (cudaSuccess != error)                                                           \
-    {                                                                                   \
-      return error;                                                                     \
-    }                                                                                   \
-                                                                                        \
-    error = CubDebug(detail::DebugSyncStream(stream));                                  \
-    if (cudaSuccess != error)                                                           \
-    {                                                                                   \
-      return error;                                                                     \
+#  define CUB_TEMP_DEVICE_CODE                                                      \
+    error =                                                                         \
+      launcher_factory(1, 1, 0, stream)                                             \
+        .doit(                                                                      \
+          detail::segmented_sort::DeviceSegmentedSortContinuationKernel<            \
+            WrappedPolicyT,                                                         \
+            LargeKernelT,                                                           \
+            SmallKernelT,                                                           \
+            KeyT,                                                                   \
+            ValueT,                                                                 \
+            BeginOffsetIteratorT,                                                   \
+            EndOffsetIteratorT,                                                     \
+            KernelLauncherFactory>,                                                 \
+          large_kernel,                                                             \
+          small_kernel,                                                             \
+          current_num_segments,                                                     \
+          d_keys.Current(),                                                         \
+          GetFinalOutput<KeyT>(wrapped_policy.LargeSegmentRadixBits(), d_keys),     \
+          d_keys_double_buffer,                                                     \
+          d_values.Current(),                                                       \
+          GetFinalOutput<ValueT>(wrapped_policy.LargeSegmentRadixBits(), d_values), \
+          d_values_double_buffer,                                                   \
+          current_begin_offset,                                                     \
+          current_end_offset,                                                       \
+          group_sizes.get(),                                                        \
+          large_and_medium_segments_indices.get(),                                  \
+          small_segments_indices.get(),                                             \
+          launcher_factory,                                                         \
+          wrapped_policy);                                                          \
+    error = CubDebug(error);                                                        \
+                                                                                    \
+    if (cudaSuccess != error)                                                       \
+    {                                                                               \
+      return error;                                                                 \
+    }                                                                               \
+                                                                                    \
+    error = CubDebug(detail::DebugSyncStream(stream));                              \
+    if (cudaSuccess != error)                                                       \
+    {                                                                               \
+      return error;                                                                 \
     }
 
 #endif // CUB_RDC_ENABLED
