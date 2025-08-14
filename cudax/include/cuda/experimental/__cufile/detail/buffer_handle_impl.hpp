@@ -12,7 +12,7 @@
 // This file provides the implementation of buffer_handle methods
 // It's included after the class definition
 
-#include "cuda/experimental/__cufile/buffer_handle.hpp"
+#include <cuda/experimental/__cufile/buffer_handle.hpp>
 
 namespace cuda::experimental::cufile
 {
