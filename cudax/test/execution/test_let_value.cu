@@ -10,6 +10,7 @@
 
 #include <cuda/experimental/execution.cuh>
 
+// IWYU pragma: keep
 #include "common/checked_receiver.cuh"
 #include "common/error_scheduler.cuh" // IWYU pragma: keep
 #include "common/impulse_scheduler.cuh" // IWYU pragma: keep
@@ -33,23 +34,27 @@ struct let_value_test_domain
   }
 };
 
-// C2H_TEST("let_value returns a sender", "[adaptors][let_value]")
-// {
-//   auto sndr = ex::let_value(ex::just(), [] {
-//     return ex::just();
-//   });
-//   static_assert(ex::sender<decltype(sndr)>);
-//   (void) sndr;
-// }
+C2H_TEST("let_value returns a sender", "[adaptors][let_value]")
+{
+  auto sndr  = ex::let_value(ex::just(), [] {
+    return ex::just();
+  });
+  using Sndr = decltype(sndr);
+  static_assert(ex::sender<Sndr>);
+  static_assert(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
+  (void) sndr;
+}
 
-// C2H_TEST("let_value with environment returns a sender", "[adaptors][let_value]")
-// {
-//   auto sndr = ex::let_value(ex::just(), [] {
-//     return ex::just();
-//   });
-//   static_assert(ex::sender_in<decltype(sndr), ex::env<>>);
-//   (void) sndr;
-// }
+C2H_TEST("let_value with environment returns a sender", "[adaptors][let_value]")
+{
+  auto sndr  = ex::let_value(ex::just(), [] {
+    return ex::just();
+  });
+  using Sndr = decltype(sndr);
+  static_assert(ex::sender_in<Sndr, ex::env<>>);
+  static_assert(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
+  (void) sndr;
+}
 
 C2H_TEST("let_value simple example", "[adaptors][let_value]")
 {
@@ -296,33 +301,32 @@ C2H_TEST("let_value exposes a parameter that is destructed when the main operati
   CHECK(param_destructed);
 }
 
-// NOT YET SUPPORTED
-// C2H_TEST("let_value works when changing threads", "[adaptors][let_value]")
-// {
-//   exec::static_thread_pool pool{2};
-//   std::atomic<bool> called{false};
-//   {
-//     // lunch some work on the thread pool
-//     auto sndr = ex::transfer_just(pool.get_scheduler(), 7) //
-//              | ex::let_value([]_CCCL_HOST_DEVICE(int& x) {
-//                  return ex::just(x * 2 - 1);
-//                }) //
-//              | ex::then([&]_CCCL_HOST_DEVICE(int x) {
-//                  CHECK(x == 13);
-//                  called.store(true);
-//                });
-//     ex::start_detached(std::move(sndr));
-//   }
-//   // wait for the work to be executed, with timeout
-//   // perform a poor-man's sync
-//   // NOTE: it's a shame that the `join` method in static_thread_pool is not public
-//   for (int i = 0; i < 1000 && !called.load(); i++)
-//   {
-//     std::this_thread::sleep_for(1ms);
-//   }
-//   // the work should be executed
-//   REQUIRE(called);
-// }
+C2H_TEST("let_value works when changing threads", "[adaptors][let_value]")
+{
+  ex::thread_context worker;
+  cuda::std::atomic<bool> called{false};
+  {
+    // lunch some work on the worker thread
+    auto sndr =
+      ex::just(7) //
+      | ex::continues_on(worker.get_scheduler()) //
+      | ex::let_value([](int& x) {
+          return ex::just(x * 2 - 1);
+        }) //
+      | ex::then([&](int x) {
+          CHECK(x == 13);
+          called.store(true);
+        });
+
+    using Sndr = decltype(sndr);
+
+    static_assert(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::asynchronous);
+    ex::start_detached(std::move(sndr));
+  }
+  worker.join();
+  // the work should be executed
+  REQUIRE(called);
+}
 
 C2H_TEST("let_value has the values_type corresponding to the given values", "[adaptors][let_value]")
 {
@@ -413,7 +417,7 @@ C2H_TEST("let_value can nest", "[adaptors][let_value]")
   wait_for_value(std::move(work), 2);
 }
 
-constexpr struct test_query_t
+constexpr struct test_query_t : ex::forwarding_query_t
 {
   template <class Env>
   _CCCL_API constexpr auto operator()(const Env& env) const noexcept -> decltype(env.query(*this))
@@ -466,6 +470,28 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 // }
 
 #endif // _CCCL_HOST_COMPILATION()
+
+#if !_CCCL_CUDA_COMPILER(NVCC)
+// This example causes nvcc to segfault
+struct let_value_test_domain2
+{};
+
+C2H_TEST("let_value predecessor's domain is accessible via the receiver connected to the secondary sender",
+         "[adaptors][let_value]")
+{
+  auto attrs  = ex::prop{ex::get_domain, let_value_test_domain2{}};
+  using Sndr2 = decltype(ex::read_env(ex::get_domain));
+
+  auto sndr = ex::just() //
+            | ex::write_attrs(attrs) //
+            | ex::let_value([]() noexcept -> Sndr2 {
+                return ex::read_env(ex::get_domain);
+              });
+  auto [result] = ex::sync_wait(std::move(sndr)).value();
+  static_assert(_CUDA_VSTD::is_same_v<decltype(result), let_value_test_domain2>);
+  (void) result;
+}
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
 
 C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
 {

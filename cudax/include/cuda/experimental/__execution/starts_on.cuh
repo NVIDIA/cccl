@@ -155,12 +155,13 @@ struct starts_on_t
       return __query_result_or_t<_Sch, get_domain_t, default_domain>{};
     }
 
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Env, _Query>)
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
-      -> __query_result_t<_Env, _Query>
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Env, _Query, _Args...>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
     {
-      return __env_.query(_Query{});
+      return __env_.query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     _Sch __sch_;
@@ -242,20 +243,31 @@ struct starts_on_t
     __state_t<_Sch, _CvSndr, _Rcvr> __state_;
   };
 
-  template <class _Domain, class _Sndr>
+  template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
+    using __domain_t _CCCL_NODEBUG_ALIAS = __query_result_or_t<_Sch, get_domain_t, default_domain>;
+
     [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept
     {
-      return _Domain{};
+      return __domain_t{};
     }
 
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, const _Env&...) noexcept
     {
-      return execution::get_env(__sndr_).query(_Query{});
+      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, _Env...>(),
+                               execution::get_completion_behavior<_Sndr, _Env...>());
+    }
+
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
+    {
+      return execution::get_env(__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     _Sndr const& __sndr_;
@@ -272,8 +284,7 @@ public:
 template <class _Sch, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 {
-  using sender_concept                 = sender_t;
-  using __domain_t _CCCL_NODEBUG_ALIAS = __query_result_or_t<_Sch, get_domain_t, default_domain>;
+  using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -305,7 +316,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     return __opstate_t<_Sch, const _Sndr&, _Rcvr>{__sch_, __sndr_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<__domain_t, _Sndr>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
   {
     return {__sndr_};
   }
