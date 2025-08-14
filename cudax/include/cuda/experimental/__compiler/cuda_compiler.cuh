@@ -191,7 +191,22 @@ class cuda_compiler
     // process dynamic options
     for (const auto& __dopt : __cuda_opts.__dyn_opts_)
     {
-      __ret.__opt_ptrs.push_back(__dopt.c_str());
+      switch (__dopt.__kind_)
+      {
+        case cuda_compile_options::_DynOptKind::__macro_def:
+          __ret.__opt_ptrs.push_back("-D");
+          break;
+        case cuda_compile_options::_DynOptKind::__macro_undef:
+          __ret.__opt_ptrs.push_back("-U");
+          break;
+        case cuda_compile_options::_DynOptKind::__include_path:
+          __ret.__opt_ptrs.push_back("-I");
+          break;
+        case cuda_compile_options::_DynOptKind::__force_include:
+          __ret.__opt_ptrs.push_back("-include");
+          break;
+      }
+      __ret.__opt_ptrs.push_back(__dopt.__value_.c_str());
     }
 
     return __ret;

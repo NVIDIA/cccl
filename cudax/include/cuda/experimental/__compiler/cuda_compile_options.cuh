@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__device/arch_traits.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/string_view>
 
@@ -48,7 +49,21 @@ class cuda_compile_options
 {
   friend class cuda_compiler;
 
-  ::std::vector<::std::string> __dyn_opts_; //!< Dynamic compilation options.
+  enum class _DynOptKind
+  {
+    __macro_def,
+    __macro_undef,
+    __include_path,
+    __force_include,
+  };
+
+  struct _DynOpt
+  {
+    _DynOptKind __kind_;
+    ::std::string __value_;
+  };
+
+  ::std::vector<_DynOpt> __dyn_opts_; //!< Dynamic compilation options.
   unsigned __std_version_ : 8; //!< C++ standard version.
   int __virtual_arch_; //!< Virtual architecture.
 
@@ -63,29 +78,21 @@ public:
   //! @brief Adds a macro definition to the list of options.
   //!
   //! @param __name The name of the macro to define. If the `__name` is empty, no action is taken.
-  void add_macro_definition(_CUDA_VSTD::string_view __name)
+  void add_macro_definition(::std::string __name)
   {
-    constexpr _CUDA_VSTD::string_view __prefix{"-D"};
-
     if (__name.empty())
     {
       return;
     }
-    ::std::string __str{};
-    __str.reserve(__name.size() + __prefix.size());
-    __str.append(__prefix.begin(), __prefix.end());
-    __str.append(__name.begin(), __name.end());
-    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
+    __dyn_opts_.push_back({_DynOptKind::__macro_def, _CUDA_VSTD::move(__name)});
   }
 
   //! @brief Adds a macro definition to the list of options.
   //!
   //! @param __name The name of the macro to define. If the `__name` is empty, no action is taken. If the `__value` is
   //! empty, the macro is defined without a value.
-  void add_macro_definition(_CUDA_VSTD::string_view __name, _CUDA_VSTD::string_view __value)
+  void add_macro_definition(::std::string __name, _CUDA_VSTD::string_view __value)
   {
-    constexpr _CUDA_VSTD::string_view __prefix{"-D"};
-
     if (__name.empty())
     {
       return;
@@ -94,60 +101,45 @@ public:
     {
       return add_macro_definition(__name);
     }
-    ::std::string __str{};
-    __str.reserve(__name.size() + __value.size() + __prefix.size() + 1); // +1 for '='
-    __str.append(__prefix.begin(), __prefix.end());
-    __str.append(__name.begin(), __name.end());
-    __str.append("=");
-    __str.append(__value.begin(), __value.end());
-    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
+    __name.append("=");
+    __name.append(__value.begin(), __value.end());
+    __dyn_opts_.push_back({_DynOptKind::__macro_def, _CUDA_VSTD::move(__name)});
   }
 
   //! @brief Adds a macro undefinition to the list of options.
   //!
   //! @param __name The name of the macro to undefine. If the `__name` is empty, no action is taken.
-  void add_macro_undefinition(_CUDA_VSTD::string_view __name)
+  void add_macro_undefinition(::std::string __name)
   {
-    constexpr _CUDA_VSTD::string_view __prefix{"-U"};
-
     if (__name.empty())
     {
       return;
     }
-    ::std::string __str{};
-    __str.reserve(__name.size() + __prefix.size());
-    __str.append(__prefix.begin(), __prefix.end());
-    __str.append(__name.begin(), __name.end());
-    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
+    __dyn_opts_.push_back({_DynOptKind::__macro_undef, _CUDA_VSTD::move(__name)});
   }
 
   //! @brief Adds an include path to the list of options.
   //!
   //! @param __path The include path to add. If the `__path` is empty, no action is taken.
-  void add_include_path(_CUDA_VSTD::string_view __path)
+  void add_include_path(::std::string __path)
   {
-    constexpr _CUDA_VSTD::string_view __prefix{"-I"};
-
-    ::std::string __str{};
-    __str.reserve(__path.size() + __prefix.size());
-    __str.append(__prefix.begin(), __prefix.end());
-    __str.append(__path.begin(), __path.end());
-    __dyn_opts_.push_back(_CUDA_VSTD::move(__str));
+    if (__path.empty())
+    {
+      return;
+    }
+    __dyn_opts_.push_back({_DynOptKind::__include_path, _CUDA_VSTD::move(__path)});
   }
 
   //! @brief Adds a file to be force-included in the compilation.
   //!
   //! @param __file_name The file to force include. If the `__file_name` is empty, no action is taken.
-  void add_force_include(_CUDA_VSTD::string_view __file_name)
+  void add_force_include(::std::string __file_name)
   {
-    constexpr _CUDA_VSTD::string_view __prefix{"-include"};
-
     if (__file_name.empty())
     {
       return;
     }
-    __dyn_opts_.push_back(::std::string{__prefix.begin(), __prefix.end()});
-    __dyn_opts_.push_back(::std::string{__file_name.begin(), __file_name.end()});
+    __dyn_opts_.push_back({_DynOptKind::__force_include, _CUDA_VSTD::move(__file_name)});
   }
 
   //! @brief Sets the C++ standard version for the compilation.
