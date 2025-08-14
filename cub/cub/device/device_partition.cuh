@@ -384,7 +384,9 @@ private:
             typename EndOffsetIteratorT,
             typename PolicyHub,
             typename KernelSource,
-            typename KernelLauncherFactory>
+            typename KernelLauncherFactory,
+            typename PartitionPolicyHub,
+            typename PartitionKernelSource>
   friend class DispatchSegmentedSort;
 
   // Internal version without NVTX range
