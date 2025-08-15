@@ -29,6 +29,7 @@ permissions:
   pages: write
   pull-requests: write
   id-token: write
+  actions: read
 
 jobs:
   build-and-deploy-preview:
@@ -51,9 +52,10 @@ jobs:
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: _site/
-          pages-base-url: https://nvidia.github.io/cccl/
+          pages-base-url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
           umbrella-dir: pr-preview
           action: deploy
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   cleanup-preview:
     name: Cleanup Documentation Preview
@@ -64,6 +66,7 @@ jobs:
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: _site/
-          pages-base-url: https://nvidia.github.io/cccl/
+          pages-base-url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
           umbrella-dir: pr-preview
           action: remove
+          token: ${{ secrets.GITHUB_TOKEN }}
