@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cleanup PR Documentation Preview
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pages: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  cleanup-preview:
+    name: Remove Documentation Preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove documentation preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          action: remove
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
