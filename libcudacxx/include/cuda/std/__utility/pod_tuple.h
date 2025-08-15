@@ -56,7 +56,7 @@
 // Unroll tuples of size 1-8 to bring down the number of template instantiations and to
 // permit __tuple to be used to initialize a structured binding without resorting to the
 // heavy-weight std::tuple protocol. This code was generated with the following macros,
-// which can be found here: https://godbolt.org/z/v6aac9v7E
+// which can be found here: https://godbolt.org/z/WEGoa9n4q
 
 /*
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_Tp, _Idx)
@@ -71,6 +71,7 @@
     _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;                                                               \
     _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                          \
                                                                                                        \
+    _CCCL_EXEC_CHECK_DISABLE                                                                           \
     template <class _Fn, class _Self, class... _Us>                                                    \
     _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us)         \
     _CCCL_ARROW(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...,                                  \
@@ -120,6 +121,7 @@ struct __tupl_base;
 template <size_t... _Index, class... _Ts>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tupl_base<index_sequence<_Index...>, _Ts...> : __box<_Index, _Ts>...
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us)
     _CCCL_ARROW(static_cast<_Fn&&>(__fn)(
@@ -143,6 +145,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
   _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
   _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -178,6 +181,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
       static_cast<_Self&&>(__self).__val7);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5, class _Tp6>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6>
 {
@@ -189,6 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
   _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
   _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -221,6 +226,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
       static_cast<_Self&&>(__self).__val6);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
 {
@@ -231,6 +237,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
   _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
   _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -260,6 +267,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
       static_cast<_Self&&>(__self).__val5);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
 {
@@ -269,6 +277,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
   _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
   _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -295,6 +304,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
       static_cast<_Self&&>(__self).__val4);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
 {
@@ -303,6 +313,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
   _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
   _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -326,6 +337,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
       static_cast<_Self&&>(__self).__val3);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
 {
@@ -333,6 +345,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
   _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
   _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -353,12 +366,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
       static_cast<_Self&&>(__self).__val2);
   }
 };
+
 template <class _Tp0, class _Tp1>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
   _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
@@ -370,11 +385,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1>
       __fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__val0, static_cast<_Self&&>(__self).__val1);
   }
 };
+
 template <class _Tp0>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     noexcept(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__val0)))
