@@ -225,6 +225,7 @@ C++20
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
@@ -258,6 +259,7 @@ C++20
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/__variant/bad_variant_access.h>
 #include <cuda/std/__variant/sfinae_helpers.h>
+#include <cuda/std/__variant/variant_traits.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
@@ -271,87 +273,6 @@ C++20
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <class... _Types>
-class _CCCL_TYPE_VISIBILITY_DEFAULT variant;
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size;
-
-template <class _Tp>
-inline constexpr size_t variant_size_v = variant_size<_Tp>::value;
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<const _Tp> : variant_size<_Tp>
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<volatile _Tp> : variant_size<_Tp>
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<const volatile _Tp> : variant_size<_Tp>
-{};
-
-template <class... _Types>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_size<variant<_Types...>> : integral_constant<size_t, sizeof...(_Types)>
-{};
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative;
-
-template <size_t _Ip, class _Tp>
-using variant_alternative_t = typename variant_alternative<_Ip, _Tp>::type;
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, const _Tp> : add_const<variant_alternative_t<_Ip, _Tp>>
-{};
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-variant_alternative<_Ip, volatile _Tp> : add_volatile<variant_alternative_t<_Ip, _Tp>>
-{};
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-variant_alternative<_Ip, const volatile _Tp> : add_cv<variant_alternative_t<_Ip, _Tp>>
-{};
-
-template <size_t _Ip, class... _Types>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
-{
-  static_assert(_Ip < sizeof...(_Types), "Index out of bounds in ::cuda::std::variant_alternative<>");
-  using type = __type_index_c<_Ip, _Types...>;
-};
-
-inline constexpr size_t variant_npos = static_cast<size_t>(-1);
-
-_CCCL_API constexpr int __choose_index_type(unsigned int __num_elem)
-{
-  constexpr unsigned char __small   = static_cast<unsigned char>(-1);
-  constexpr unsigned short __medium = static_cast<unsigned short>(-1);
-  if (__num_elem < static_cast<unsigned int>(__small))
-  {
-    return 0;
-  }
-  if (__num_elem < static_cast<unsigned int>(__medium))
-  {
-    return 1;
-  }
-  return 2;
-}
-
-template <size_t _NumAlts>
-using __variant_index_t =
-  conditional_t<__choose_index_type(_NumAlts) == 0,
-                unsigned char,
-                conditional_t<__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
-
-template <class _IndexType>
-constexpr _IndexType __variant_npos = static_cast<_IndexType>(-1);
-
-template <class... _Types>
-class _CCCL_TYPE_VISIBILITY_DEFAULT variant;
 
 template <class... _Types>
 _CCCL_API constexpr variant<_Types...>& __as_variant(variant<_Types...>& __vs) noexcept
@@ -419,55 +340,6 @@ struct __find_unambiguous_index_sfinae : __find_unambiguous_index_sfinae_impl<__
 
 namespace __variant_detail
 {
-
-struct __valueless_t
-{};
-
-enum class _Trait
-{
-  _TriviallyAvailable,
-  _Available,
-  _Unavailable
-};
-
-template <typename _Tp, template <typename> class _IsTriviallyAvailable, template <typename> class _IsAvailable>
-constexpr _Trait __trait =
-  _IsTriviallyAvailable<_Tp>::value ? _Trait::_TriviallyAvailable
-  : _IsAvailable<_Tp>::value
-    ? _Trait::_Available
-    : _Trait::_Unavailable;
-
-_CCCL_API constexpr _Trait __common_trait(initializer_list<_Trait> __traits)
-{
-  _Trait __result = _Trait::_TriviallyAvailable;
-  for (_Trait __t : __traits)
-  {
-    if (static_cast<int>(__t) > static_cast<int>(__result))
-    {
-      __result = __t;
-    }
-  }
-  return __result;
-}
-
-template <typename... _Types>
-struct __traits
-{
-  static constexpr _Trait __copy_constructible_trait =
-    __variant_detail::__common_trait({__trait<_Types, is_trivially_copy_constructible, is_copy_constructible>...});
-
-  static constexpr _Trait __move_constructible_trait =
-    __variant_detail::__common_trait({__trait<_Types, is_trivially_move_constructible, is_move_constructible>...});
-
-  static constexpr _Trait __copy_assignable_trait = __variant_detail::__common_trait(
-    {__copy_constructible_trait, __trait<_Types, is_trivially_copy_assignable, is_copy_assignable>...});
-
-  static constexpr _Trait __move_assignable_trait = __variant_detail::__common_trait(
-    {__move_constructible_trait, __trait<_Types, is_trivially_move_assignable, is_move_assignable>...});
-
-  static constexpr _Trait __destructible_trait =
-    __variant_detail::__common_trait({__trait<_Types, is_trivially_destructible, is_destructible>...});
-};
 
 namespace __access
 {
