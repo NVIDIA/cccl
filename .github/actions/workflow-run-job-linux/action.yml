@@ -181,11 +181,7 @@ runs:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
 
-        # Dump artifact matrix for upload step:
-        ( # Subshell to contain the set -x log
-          set -x
-          printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
-        )
+        exit_code=0
 
         # Launch this container using the host's docker daemon
         ( # Subshell to contain the set -x log
@@ -216,13 +212,15 @@ runs:
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
             -- ./ci.sh
-        )
+        ) || exit_code=$?
 
         # Dump artifact matrix for upload step:
         ( # Subshell to contain the set -x log
           set -x
           printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
         )
+
+        exit $exit_code
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
