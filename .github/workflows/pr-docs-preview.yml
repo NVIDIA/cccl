@@ -19,7 +19,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, closed]
 
-concurrency: 
+concurrency:
   group: docs-preview-${{ github.ref }}
   cancel-in-progress: true
 
@@ -56,7 +56,7 @@ jobs:
           action: deploy
 
   cleanup-preview:
-    name: Cleanup Documentation Preview  
+    name: Cleanup Documentation Preview
     runs-on: ubuntu-latest
     if: github.event.action == 'closed'
     steps:
