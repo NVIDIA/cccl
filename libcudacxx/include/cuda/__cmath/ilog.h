@@ -44,7 +44,7 @@ _CCCL_API constexpr int ilog2(_Tp __t) noexcept
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
   auto __log2_approx = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
-  _CCCL_ASSUME(__log2_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
+  _CCCL_BUILTIN_ASSUME(__log2_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
   return __log2_approx;
 }
 
@@ -184,7 +184,7 @@ _CCCL_API constexpr int ilog10(_Tp __t) noexcept
     }
   }
 #endif // _CCCL_HAS_INT128()
-  _CCCL_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
+  _CCCL_BUILTIN_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
   return __log10_approx;
 }
 

@@ -50,7 +50,7 @@ template <typename _Tp>
       return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(const_cast<_Up*>(__ptr), 32));
   }
 #else
-  _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
+  _CCCL_BUILTIN_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
   return __ptr;
 #endif // defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
 }
