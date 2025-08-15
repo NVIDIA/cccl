@@ -67,7 +67,12 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   }
   else
 #endif // _CCCL_HAS_NVBF16()
-    if constexpr (!is_integral_v<_Tp>)
+    if constexpr (is_integral_v<_Tp>)
+    {
+      using __ret = conditional_t<is_integral_v<_Tp>, double, _Tp>;
+      return __x < __y ? static_cast<__ret>(__y) : static_cast<__ret>(__x);
+    }
+    else
     {
       if (::cuda::std::isnan(__x))
       {
@@ -77,9 +82,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return __x;
       }
+      return __x < __y ? __y : __x;
     }
-  using __ret = conditional_t<is_integral_v<_Tp>, double, _Tp>;
-  return __x < __y ? static_cast<__ret>(__y) : static_cast<__ret>(__x);
 }
 
 [[nodiscard]] _CCCL_API constexpr float fmaxf(float __x, float __y) noexcept
@@ -134,7 +138,12 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   }
   else
 #endif // _CCCL_HAS_NVBF16()
-    if constexpr (!is_integral_v<_Tp>)
+    if constexpr (is_integral_v<_Tp>)
+    {
+      using __ret = conditional_t<is_integral_v<_Tp>, double, _Tp>;
+      return __y < __x ? static_cast<__ret>(__y) : static_cast<__ret>(__x);
+    }
+    else
     {
       if (::cuda::std::isnan(__x))
       {
@@ -144,9 +153,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
       {
         return __x;
       }
+      return __y < __x ? __y : __x;
     }
-  using __ret = conditional_t<is_integral_v<_Tp>, double, _Tp>;
-  return __y < __x ? static_cast<__ret>(__y) : static_cast<__ret>(__x);
 }
 
 [[nodiscard]] _CCCL_API constexpr float fminf(float __x, float __y) noexcept
