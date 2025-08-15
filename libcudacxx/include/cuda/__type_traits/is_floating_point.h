@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! Tells whether a type is a floating point type, including extended floating point types.
 //! Users are allowed to specialize this template for their own types.
@@ -40,7 +40,7 @@ inline constexpr bool is_floating_point_v =
 template <class _Tp>
 using is_floating_point = _CUDA_VSTD::bool_constant<is_floating_point_v<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

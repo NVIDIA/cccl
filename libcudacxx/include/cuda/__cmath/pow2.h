@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
@@ -67,7 +67,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
   return _CUDA_VSTD::bit_floor(static_cast<_Up>(__t));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

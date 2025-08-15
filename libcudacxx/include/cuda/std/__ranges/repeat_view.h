@@ -48,13 +48,13 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__take)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__take)
 struct __fn;
-_LIBCUDACXX_END_NAMESPACE_CPO
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_VIEWS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Tp>
 _CCCL_CONCEPT __integer_like_with_usable_difference_type =
@@ -302,11 +302,11 @@ private:
 template <class _Tp, class _Bound>
 _CCCL_HOST_DEVICE repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 // clang-format off
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__repeat)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn {
   template <class _Tp>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value) const
@@ -321,16 +321,16 @@ struct __fn {
     -> repeat_view<remove_cvref_t<_Tp>, remove_cvref_t<_Bound>>
     { return          ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value), _CUDA_VSTD::forward<_Bound>(__bound_sentinel)); }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 // clang-format on
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Tp>
 inline constexpr bool __is_repeat_specialization = false;
@@ -338,7 +338,7 @@ inline constexpr bool __is_repeat_specialization = false;
 template <class _Tp, class _Bound>
 inline constexpr bool __is_repeat_specialization<repeat_view<_Tp, _Bound>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

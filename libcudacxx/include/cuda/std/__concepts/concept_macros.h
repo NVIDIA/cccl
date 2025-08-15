@@ -97,8 +97,8 @@ _CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
 {}
 
 // So that we can refer to the ::cuda::std namespace below
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
 // where a requirement such as:

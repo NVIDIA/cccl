@@ -641,6 +641,9 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   }
 }
 
+// Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
+// https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
+// didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
 template <typename BulkCopyPolicy,
           typename Offset,
           typename Predicate,

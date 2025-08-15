@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Specialization of 1/sqrt(x) to use rsqrt on device when available.
 // Curiously, for its use here in csqrt, since the device fp32 rsqrtf
@@ -200,7 +200,7 @@ _CCCL_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

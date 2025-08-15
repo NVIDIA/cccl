@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! \brief Casts one __basic_any reference type to another __basic_any type using
 //! runtime information to determine the validity of the conversion.
@@ -100,7 +100,7 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const*, __basic_any<
   return __dst;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

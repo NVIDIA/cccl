@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp
@@ -55,7 +55,7 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
   return __init;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

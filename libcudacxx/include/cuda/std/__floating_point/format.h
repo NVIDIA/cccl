@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_format
 {
@@ -155,7 +155,7 @@ inline constexpr __fp_format __fp_format_of_v<const volatile _Tp> = __fp_format_
 template <__fp_format _Fmt>
 inline constexpr __fp_format __fp_format_of_v<__cccl_fp<_Fmt>> = _Fmt;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

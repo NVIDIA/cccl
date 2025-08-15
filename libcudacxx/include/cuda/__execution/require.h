@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
+_CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 class __requirement
 {};
@@ -67,7 +67,7 @@ template <class... _Requirements>
   return _CUDA_STD_EXEC::prop{__get_requirements_t{}, __env};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
+_CCCL_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

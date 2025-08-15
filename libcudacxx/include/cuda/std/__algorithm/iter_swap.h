@@ -27,10 +27,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 //! Intentionally not an algorithm to avoid breaking types that pull in `::std::iter_swap` via ADL
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
+_CCCL_BEGIN_NAMESPACE_CPO(__iter_swap)
 // "Poison pill" overload to intentionally create ambiguity with the unconstrained
 // `std::iter_swap` function.
 template <class _ForwardIterator1, class _ForwardIterator2>
@@ -67,7 +67,7 @@ struct __fn
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -75,7 +75,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

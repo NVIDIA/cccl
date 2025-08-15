@@ -1268,7 +1268,7 @@ _CCCL_API inline void swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTy
   return __x.swap(__y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 

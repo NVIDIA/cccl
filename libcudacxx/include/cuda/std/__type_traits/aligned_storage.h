@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __align_type
@@ -142,7 +142,7 @@ _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x4000);
 
 #undef _CREATE_ALIGNED_STORAGE_SPECIALIZATION
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

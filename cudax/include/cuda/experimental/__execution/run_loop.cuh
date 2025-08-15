@@ -149,40 +149,41 @@ public:
         return __opstate_t<_Rcvr>{&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
       }
 
-      template <class _Self, class _Env>
+      template <class _Self>
       [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
       {
-#if _CCCL_HAS_EXCEPTIONS()
-        if constexpr (!noexcept(get_stop_token(declval<_Env>()).stop_requested()))
-        {
-          return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>{};
-        }
-        else
-#endif // !_CCCL_HAS_EXCEPTIONS()
-          return completion_signatures<set_value_t(), set_stopped_t()>{};
+        return completion_signatures<set_value_t(), set_stopped_t()>{};
       }
 
     private:
       friend scheduler;
 
-      struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
+      struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
       {
         run_loop* __loop_;
 
-        _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
+        [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept
+          -> scheduler
         {
           return __loop_->get_scheduler();
         }
 
-        _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
+        [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept
+          -> scheduler
         {
           return __loop_->get_scheduler();
+        }
+
+        [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+        {
+          return completion_behavior::asynchronous;
         }
       };
 
-      _CCCL_API constexpr auto get_env() const noexcept -> __env_t
+    public:
+      _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
       {
-        return __env_t{__loop_};
+        return __attrs_t{__loop_};
       }
 
     private:

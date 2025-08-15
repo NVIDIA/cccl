@@ -36,7 +36,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
@@ -643,7 +643,7 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
   return __expected;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 

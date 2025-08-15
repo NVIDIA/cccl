@@ -75,6 +75,14 @@ private:
     __tuple_t __values_;
   };
 
+  struct __attrs_t
+  {
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    {
+      return completion_behavior::inline_completion;
+    }
+  };
+
   template <class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
@@ -126,6 +134,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
   connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>) -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  {
+    return __attrs_t{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;

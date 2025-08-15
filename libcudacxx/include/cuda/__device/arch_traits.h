@@ -28,7 +28,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace arch
 {
 
@@ -73,7 +73,7 @@ struct traits_t
   const int max_block_dim_z = 64;
 
   // Maximum x-dimension of a grid
-  const int max_grid_dim_x = cuda::std::numeric_limits<int32_t>::max();
+  const int max_grid_dim_x = ::cuda::std::numeric_limits<int32_t>::max();
 
   // Maximum y-dimension of a grid
   const int max_grid_dim_y = 64 * 1024 - 1;
@@ -579,7 +579,7 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 }
 } // namespace arch
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

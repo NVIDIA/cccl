@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! conversions
@@ -162,7 +162,7 @@ _CCCL_CONCEPT __any_convertible_to =
   __extension_of<typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type,
                  typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

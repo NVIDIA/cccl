@@ -32,7 +32,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
 //! @brief A random-access range of all available CUDA devices
@@ -231,7 +231,7 @@ inline const arch::traits_t& device_ref::arch_traits() const
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

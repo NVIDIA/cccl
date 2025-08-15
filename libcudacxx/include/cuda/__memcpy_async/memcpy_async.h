@@ -38,7 +38,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************
  * memcpy_async code:
@@ -170,7 +170,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_S
     __barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

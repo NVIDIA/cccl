@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _CCCL_API constexpr _SizeT __cccl_str_find(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
@@ -289,7 +289,7 @@ _CCCL_API constexpr _SizeT __cccl_str_find_last_not_of(const _CharT* __p, _SizeT
   return __npos;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

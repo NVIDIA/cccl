@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp>
@@ -123,10 +123,10 @@ public:
 template <class _Tp>
 _CCCL_HOST_DEVICE single_view(_Tp) -> single_view<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__single_view)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__single_view)
 
 template <class _Tp>
 _CCCL_CONCEPT __can_single_view = _CCCL_REQUIRES_EXPR((_Tp))(typename(single_view<decay_t<_Tp>>));
@@ -141,14 +141,14 @@ struct __fn : __range_adaptor_closure<__fn>
     return single_view<decay_t<_Tp>>(_CUDA_VSTD::forward<_Tp>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto single = __single_view::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 

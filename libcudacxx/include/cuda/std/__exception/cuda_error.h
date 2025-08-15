@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HAS_CTK()
 using __cuda_error_t = ::cudaError_t;
@@ -135,7 +135,7 @@ public:
 }
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

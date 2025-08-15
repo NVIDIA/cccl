@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED.
@@ -313,7 +313,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, co
   return false;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

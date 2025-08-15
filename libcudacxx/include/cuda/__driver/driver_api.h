@@ -30,7 +30,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DRIVER
+_CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
 // Get the driver function by name using this macro
 #  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
@@ -322,7 +322,7 @@ _CCCL_HOST_API inline void __eventElapsedTime(::CUevent __start, ::CUevent __end
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DRIVER
+_CCCL_END_NAMESPACE_CUDA_DRIVER
 
 #  include <cuda/std/__cccl/epilogue.h>
 

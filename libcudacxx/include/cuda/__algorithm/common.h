@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
 using __as_span_t = _CUDA_VSTD::span<_CUDA_VSTD::remove_reference_t<_CUDA_VRANGES::range_reference_t<_Tp>>>;
@@ -60,7 +60,7 @@ template <typename _Tp>
   return _CUDA_VSTD::forward<_Tp>(__value);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

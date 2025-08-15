@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the *unsigned* absolute value of the given number.
 //! @param __v The input number
@@ -50,7 +50,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

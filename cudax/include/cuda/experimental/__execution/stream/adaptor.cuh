@@ -356,6 +356,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
     return __sndr_.__get_stream_(__sndr_.__sndr_, env{});
   }
 
+  // This sender executes asynchronously with respect to 'start()':
+  [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+  {
+    return completion_behavior::asynchronous;
+  }
+
   // This forwards even non-forwarding queries. A stream sender adaptor is not an ordinary
   // sender adaptor, like `then` or `let_value`. A stream sender adaptor is an
   // implementation detail that is not visible to the user. It should be as transparent as

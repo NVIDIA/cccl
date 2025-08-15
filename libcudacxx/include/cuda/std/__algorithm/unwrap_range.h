@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __unwrap_range and __rewrap_range are used to unwrap ranges which may have different iterator and sentinel types.
 // __unwrap_iter and __rewrap_iter don't work for this, because they assume that the iterator and sentinel have
@@ -119,7 +119,7 @@ _CCCL_API constexpr _Iter __rewrap_range(_Iter __orig_iter, _Unwrapped __iter)
 }
 #endif // _CCCL_STD_VER <= 2017
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

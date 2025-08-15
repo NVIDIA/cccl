@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _Ep, size_t _Sp = 0>
 struct __make_tuple_indices
@@ -37,7 +37,7 @@ struct __make_tuple_indices
 template <size_t _Ep, size_t _Sp = 0>
 using __make_tuple_indices_t = typename __make_tuple_indices<_Ep, _Sp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

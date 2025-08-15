@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __exception_guard is a helper class for writing code with the strong exception guarantee.
 //
@@ -154,7 +154,7 @@ _CCCL_API constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollbac
   return __exception_guard<_Rollback>(_CUDA_VSTD::move(__rollback));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

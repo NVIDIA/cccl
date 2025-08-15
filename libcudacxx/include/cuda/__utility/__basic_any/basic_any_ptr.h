@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __basic_any<_Interface*>
@@ -297,7 +297,7 @@ _CCCL_REQUIRES(__is_interface<_Interface<_Super>>)
 _CCCL_PUBLIC_API __basic_any(_Interface<_Super> const*) //
   -> __basic_any<__normalized_interface_of<__basic_any<_Super> const*>>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief \p permutation_iterator is an iterator which represents a pointer into a reordered view of a given range.
 //! \p permutation_iterator is an imprecise name; the reordered view need not be a strict permutation. This iterator is
@@ -414,7 +414,7 @@ make_permutation_iterator(_Iter __iter, _Index __index) noexcept(
   return permutation_iterator<_Iter, _Index>{__iter, __index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

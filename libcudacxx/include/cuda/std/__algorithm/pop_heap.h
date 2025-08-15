@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
@@ -87,7 +87,7 @@ _CCCL_API constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIt
   _CUDA_VSTD::pop_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
