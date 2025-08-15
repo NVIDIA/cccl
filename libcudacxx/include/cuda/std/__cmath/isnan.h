@@ -21,16 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_CUDA_COMPILER(NVRTC)
 #  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -156,14 +154,12 @@ template <class _Tp>
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 #if _CCCL_HAS_FLOAT128()
+
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISNAN)
-  return _CCCL_BUILTIN_ISNAN(__x);
-#  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
-  return _CUDA_VSTD::__isnan_impl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
+  return __x != __x;
 }
+
 #endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
