@@ -94,6 +94,22 @@ class context
       };
     }
 
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
+    }
+
     auto& set_symbol(::std::string s) &
     {
       payload->*[&](auto& self) {
@@ -164,6 +180,7 @@ class context
     ::std::variant<T1, T2> payload;
   };
 
+public:
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -192,6 +209,38 @@ class context
         self.set_symbol(mv(s));
       };
       return mv(*this);
+    }
+
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
+    }
+
+    auto& start()
+    {
+      payload->*[&](auto& self) {
+        self.start();
+      };
+      return *this;
+    }
+
+    auto& end()
+    {
+      payload->*[&](auto& self) {
+        self.end();
+      };
+      return *this;
     }
 
     /**
@@ -234,11 +283,20 @@ class context
       };
     }
 
+    cudaStream_t get_stream() const
+    {
+      if (auto p = ::std::get_if<stream_task<Deps...>>(&payload))
+      {
+        return p->get_stream();
+      }
+
+      return nullptr;
+    }
+
   private:
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
 
-public:
   /**
    * @brief Default constructor for the context class.
    */
@@ -1505,6 +1563,32 @@ UNITTEST("token vector")
   ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
   ctx.task(tokens[1].read(), tokens[2].read(), tokens[3].write())->*[](cudaStream_t) {};
 
+  ctx.finalize();
+};
+
+UNITTEST("get_stream")
+{
+  context ctx;
+
+  auto token = ctx.token();
+  auto t     = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  EXPECT(s != nullptr);
+  t.end();
+  ctx.finalize();
+};
+
+UNITTEST("get_stream graph")
+{
+  context ctx = graph_ctx();
+
+  auto token = ctx.token();
+  auto t     = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  EXPECT(s == nullptr);
+  t.end();
   ctx.finalize();
 };
 
