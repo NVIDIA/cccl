@@ -39,6 +39,7 @@
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>
 
+#include <exception>
 #include <system_error>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -135,7 +136,7 @@ struct sync_wait_t
     }
 
     template <class _Error>
-    _CCCL_API constexpr void set_error(_Error&& __err) noexcept
+    _CCCL_API void set_error(_Error&& __err) noexcept
     {
       _CCCL_TRY
       {
