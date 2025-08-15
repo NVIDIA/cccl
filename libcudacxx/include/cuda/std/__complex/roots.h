@@ -64,12 +64,12 @@ template <class _Tp>
 
   if (_CUDA_VSTD::isinf(__im))
   {
-    return complex<_Tp>(numeric_limits<_Tp>::infinity(), __im);
+    return complex<_Tp>{numeric_limits<_Tp>::infinity(), __im};
   }
 
   if ((__re == _Tp(0)) && (__im == _Tp(0)))
   {
-    return complex<_Tp>(_Tp(0), __im);
+    return complex<_Tp>{_Tp(0), __im};
   }
 
   // pre-check to see if we over/underflow:
@@ -181,7 +181,7 @@ template <class _Tp>
   const _Tp __ans_re = __im_part_is_hard ? __easy_part : _CUDA_VSTD::fabs(__hard_part);
   const _Tp __ans_im = __im_part_is_hard ? _CUDA_VSTD::fabs(__hard_part) : __easy_part;
 
-  return complex<_Tp>(__ans_re, _CUDA_VSTD::copysign(__ans_im, __im));
+  return complex<_Tp>{__ans_re, _CUDA_VSTD::copysign(__ans_im, __im)};
 }
 
 #if _LIBCUDACXX_HAS_NVBF16()
