@@ -256,6 +256,7 @@ C++20
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/unreachable.h>
+#include <cuda/std/__variant/bad_variant_access.h>
 #include <cuda/std/__variant/sfinae_helpers.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
@@ -267,50 +268,9 @@ C++20
 #  include <cuda/std/detail/libcxx/include/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-#if _CCCL_HAS_EXCEPTIONS()
-#  ifdef __cpp_lib_variant
-#    include <variant>
-#  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
-#    include <exception>
-#  endif // !__cpp_lib_variant
-
-#  include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
-
-#  ifdef __cpp_lib_variant
-
-using ::std::bad_variant_access;
-
-#  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
-class _CCCL_TYPE_VISIBILITY_DEFAULT bad_variant_access : public ::std::exception
-{
-public:
-  const char* what() const noexcept override
-  {
-    return "bad access to cuda::std::variant";
-  }
-};
-#  endif // !__cpp_lib_variant
-
-_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
-
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CCCL_HAS_EXCEPTIONS()
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-[[noreturn]] _CCCL_API inline void __throw_bad_variant_access()
-{
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::std::bad_variant_access();), (::cuda::std::terminate();))
-#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-  ::cuda::std::terminate();
-#endif // _CCCL_HAS_EXCEPTIONS()
-}
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT variant;
