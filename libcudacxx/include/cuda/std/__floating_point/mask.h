@@ -57,6 +57,14 @@ inline constexpr auto __fp_exp_mant_mask_v =
 template <class _Tp>
 inline constexpr auto __fp_exp_mant_mask_of_v = __fp_exp_mant_mask_v<__fp_format_of_v<_Tp>>;
 
+template <__fp_format _Fmt>
+inline constexpr auto __fp_explicit_bit_mask_v = static_cast<__fp_storage_t<_Fmt>>(
+  (static_cast<__fp_storage_t<_Fmt>>(!__fp_has_implicit_bit_v<_Fmt>)
+   << (__fp_mant_nbits_v<_Fmt> - !__fp_has_implicit_bit_v<_Fmt>) ));
+
+template <class _Tp>
+inline constexpr auto __fp_explicit_bit_mask_of_v = __fp_explicit_bit_mask_v<__fp_format_of_v<_Tp>>;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
