@@ -664,7 +664,7 @@ void bulk_can_throw_and_set_error_will_be_called()
             | ex::bulk(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
+  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -676,7 +676,7 @@ void bulk_chunked_can_throw_and_set_error_will_be_called()
             | ex::bulk_chunked(ex::par, n, [](int, int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
+  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -688,7 +688,7 @@ void bulk_unchunked_can_throw_and_set_error_will_be_called()
             | ex::bulk_unchunked(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
+  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 #endif // _CCCL_HAS_EXCEPTIONS() && !defined(__CUDA_ARCH__)
