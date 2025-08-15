@@ -21,10 +21,13 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename T, int ItemsPerThread, typename ValueT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void vectorized_fill(T (&data)[ItemsPerThread], ValueT value)
+template <typename T, int ItemsPerThread>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void vectorized_fill(T (&data)[ItemsPerThread], T value)
 {
-  if constexpr (sizeof(T) < sizeof(::cuda::std::uint32_t) && std::is_trivially_copyable_v<T>)
+  // Attempt vectorization only for small types, if the type is trivially copyable and, to avoid potential complication
+  // from involved alignment requirements, also require the type to be arithmetic.
+  if constexpr (sizeof(T) < sizeof(::cuda::std::uint32_t)
+                && ::cuda::std::is_trivially_copyable_v<T> && ::cuda::std::is_arithmetic_v<T>)
   {
     constexpr int items_per_dword = sizeof(::cuda::std::uint32_t) / sizeof(T);
     constexpr int dword_count     = ItemsPerThread / items_per_dword;
@@ -34,6 +37,10 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void vectorized_fill(T (&data)[ItemsPerThrea
     {
       ::cuda::std::memcpy(reinterpret_cast<T*>(&vectorized_default) + i, &value, sizeof(T));
     }
+
+    // Assertion to check if the address of 'data' is correctly aligned.
+    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(&data) % 4 == 0,
+                 "Target array must be four-byte aligned to avoid misaligned writes below.");
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < dword_count; ++i)
