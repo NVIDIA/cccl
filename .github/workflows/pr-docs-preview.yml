@@ -34,7 +34,7 @@ jobs:
   build-and-deploy-preview:
     name: Build and Deploy Documentation Preview
     runs-on: ubuntu-latest
-    if: github.event.action != 'closed')
+    if: github.event.action != 'closed'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
