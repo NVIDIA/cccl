@@ -393,7 +393,7 @@ struct DispatchReduceDeterministic
           MaxPolicyT,
           input_unwrapped_it_t,
           OutputIteratorT,
-          OffsetT,
+          int,
           reduction_op_t,
           InitT,
           deterministic_accum_t,
@@ -461,8 +461,6 @@ struct DispatchReduceDeterministic
     cudaStream_t stream       = {},
     TransformOpT transform_op = {})
   {
-    static_assert(sizeof(OffsetT) <= 4, "OffsetT must be 4 bytes or less for deterministic reduction");
-
     cudaError error = cudaSuccess;
 
     // Get PTX version
