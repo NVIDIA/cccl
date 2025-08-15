@@ -75,8 +75,8 @@
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 // _CCCL_ASSUME
-
-#if _CCCL_HAS_CPP_ATTRIBUTE(assume)
+// NVCC does not properly respect [[assume()]], so use _CCCL_BUILTIN_ASSUME, see nvbug5458663
+#if _CCCL_HAS_CPP_ATTRIBUTE(assume) && !_CCCL_CUDA_COMPILER(NVCC)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
 #else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
