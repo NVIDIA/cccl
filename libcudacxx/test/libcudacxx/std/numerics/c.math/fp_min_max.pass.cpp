@@ -14,6 +14,7 @@
 #include <cuda/std/cmath>
 #include <cuda/std/type_traits>
 
+#include "comparison.h"
 #include "test_macros.h"
 
 template <class T>
@@ -21,12 +22,12 @@ __host__ __device__ constexpr void test_fmax(T val)
 {
   if constexpr (cuda::std::is_integral_v<T>)
   {
-    assert(cuda::std::fmax(val, T()) == val);
+    assert(eq(cuda::std::fmax(val, T()), val));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::fmax(val, T())), double>);
   }
   else
   {
-    assert(cuda::std::fmax(val, cuda::std::__fp_zero<T>()) == val);
+    assert(eq(cuda::std::fmax(val, cuda::std::__fp_zero<T>()), val));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::fmax(val, cuda::std::__fp_zero<T>())), T>);
 
     // Ensure that we can have different arguments
@@ -41,19 +42,21 @@ __host__ __device__ constexpr void test_fmax(T val)
     // We always return the other value when passing a NaN
     if constexpr (cuda::std::__fp_has_nan_v<cuda::std::__fp_format_of_v<T>>)
     {
-      assert(cuda::std::fmax(val, cuda::std::numeric_limits<T>::quiet_NaN()) == val);
-      assert(cuda::std::fmax(cuda::std::numeric_limits<T>::quiet_NaN(), val) == val);
-      assert(cuda::std::fmax(val, cuda::std::numeric_limits<T>::signaling_NaN()) == val);
-      assert(cuda::std::fmax(cuda::std::numeric_limits<T>::signaling_NaN(), val) == val);
+      assert(eq(cuda::std::fmax(val, cuda::std::numeric_limits<T>::quiet_NaN()), val));
+      assert(eq(cuda::std::fmax(cuda::std::numeric_limits<T>::quiet_NaN(), val), val));
+      assert(eq(cuda::std::fmax(val, cuda::std::numeric_limits<T>::signaling_NaN()), val));
+      assert(eq(cuda::std::fmax(cuda::std::numeric_limits<T>::signaling_NaN(), val), val));
     }
 
     // check infinities
-    assert(cuda::std::fmax(val, cuda::std::numeric_limits<T>::infinity()) == cuda::std::numeric_limits<T>::infinity());
-    assert(cuda::std::fmax(cuda::std::numeric_limits<T>::infinity(), val) == cuda::std::numeric_limits<T>::infinity());
+    assert(
+      eq(cuda::std::fmax(val, cuda::std::numeric_limits<T>::infinity()), cuda::std::numeric_limits<T>::infinity()));
+    assert(
+      eq(cuda::std::fmax(cuda::std::numeric_limits<T>::infinity(), val), cuda::std::numeric_limits<T>::infinity()));
     if constexpr (cuda::std::__fp_is_signed_v<cuda::std::__fp_format_of_v<T>>)
     {
-      assert(cuda::std::fmax(val, -cuda::std::numeric_limits<T>::infinity()) == val);
-      assert(cuda::std::fmax(-cuda::std::numeric_limits<T>::infinity(), val) == val);
+      assert(eq(cuda::std::fmax(val, -cuda::std::numeric_limits<T>::infinity()), val));
+      assert(eq(cuda::std::fmax(-cuda::std::numeric_limits<T>::infinity(), val), val));
     }
   }
 }
@@ -68,7 +71,7 @@ __host__ __device__ constexpr void test_fmin(T val)
   }
   else
   {
-    assert(cuda::std::fmin(val, cuda::std::__fp_zero<T>()) == cuda::std::__fp_zero<T>());
+    assert(eq(cuda::std::fmin(val, cuda::std::__fp_zero<T>()), cuda::std::__fp_zero<T>()));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::fmin(val, cuda::std::__fp_zero<T>())), T>);
 
     // Ensure that we can have different arguments
@@ -83,22 +86,22 @@ __host__ __device__ constexpr void test_fmin(T val)
     // We always return the other value when passing a NaN
     if constexpr (cuda::std::__fp_has_nan_v<cuda::std::__fp_format_of_v<T>>)
     {
-      assert(cuda::std::fmin(val, cuda::std::numeric_limits<T>::quiet_NaN()) == val);
-      assert(cuda::std::fmin(cuda::std::numeric_limits<T>::quiet_NaN(), val) == val);
-      assert(cuda::std::fmin(val, cuda::std::numeric_limits<T>::signaling_NaN()) == val);
-      assert(cuda::std::fmin(cuda::std::numeric_limits<T>::signaling_NaN(), val) == val);
+      assert(eq(cuda::std::fmin(val, cuda::std::numeric_limits<T>::quiet_NaN()), val));
+      assert(eq(cuda::std::fmin(cuda::std::numeric_limits<T>::quiet_NaN(), val), val));
+      assert(eq(cuda::std::fmin(val, cuda::std::numeric_limits<T>::signaling_NaN()), val));
+      assert(eq(cuda::std::fmin(cuda::std::numeric_limits<T>::signaling_NaN(), val), val));
     }
 
     // check infinities
-    assert(cuda::std::fmin(val, cuda::std::numeric_limits<T>::infinity()) == val);
-    assert(cuda::std::fmin(cuda::std::numeric_limits<T>::infinity(), val) == val);
+    assert(eq(cuda::std::fmin(val, cuda::std::numeric_limits<T>::infinity()), val));
+    assert(eq(cuda::std::fmin(cuda::std::numeric_limits<T>::infinity(), val), val));
 
     if constexpr (cuda::std::__fp_is_signed_v<cuda::std::__fp_format_of_v<T>>)
     {
-      assert(cuda::std::fmin(val, -cuda::std::numeric_limits<T>::infinity())
-             == -cuda::std::numeric_limits<T>::infinity());
-      assert(cuda::std::fmin(-cuda::std::numeric_limits<T>::infinity(), val)
-             == -cuda::std::numeric_limits<T>::infinity());
+      assert(
+        eq(cuda::std::fmin(val, -cuda::std::numeric_limits<T>::infinity()), -cuda::std::numeric_limits<T>::infinity()));
+      assert(
+        eq(cuda::std::fmin(-cuda::std::numeric_limits<T>::infinity(), val), -cuda::std::numeric_limits<T>::infinity()));
     }
   }
 }
@@ -138,8 +141,8 @@ __host__ __device__ bool test(float val)
   test<signed long long>(static_cast<signed long long>(val));
   test<unsigned long long>(static_cast<unsigned long long>(val));
 #if _CCCL_HAS_INT128()
-  test<__int128_t>(static_cast<__int128_t>(val));
-  test<__uint128_t>(static_cast<__uint128_t>(val));
+  test<__int128_t>(static_cast<__int128_t>(static_cast<int>(val)));
+  test<__uint128_t>(static_cast<__uint128_t>(static_cast<int>(val)));
 #endif // _CCCL_HAS_INT128()
 
   return true;
