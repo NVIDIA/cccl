@@ -414,7 +414,7 @@ public:
 };
 } // namespace cuda::experimental
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Here be dragons: We need to ensure that the iterator can work with legacy interfaces that take a pointer.
 // This will obviously eat all of our execution checks
@@ -434,7 +434,7 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

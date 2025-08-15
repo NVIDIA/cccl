@@ -67,7 +67,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #define _CCCL_STD_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_ONLY_SUPPORTS_TYPES<__VA_ARGS__>)
 
@@ -414,7 +414,7 @@ template <class _Tp>
 #  define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
 #endif
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

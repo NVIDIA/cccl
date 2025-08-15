@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface, class _Tp = __remove_ireference_t<_Interface>>
 using __overrides_for_t _CCCL_NODEBUG_ALIAS = typename _Interface::template overrides<_Tp>;
@@ -57,7 +57,7 @@ struct __overrides_list<__iunknown>
   using __vptr_t _CCCL_NODEBUG_ALIAS = __rtti const*;
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

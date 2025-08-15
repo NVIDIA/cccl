@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_overflow_handler_kind
 {
@@ -132,7 +132,7 @@ inline constexpr bool __fp_is_overflow_handler_v<const volatile _Tp> = __fp_is_o
 template <__fp_overflow_handler_kind _Kind>
 inline constexpr bool __fp_is_overflow_handler_v<__fp_overflow_handler<_Kind>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

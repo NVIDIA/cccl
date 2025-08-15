@@ -29,7 +29,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
@@ -98,7 +98,7 @@ _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, _CUDA_VSTD::
   ::cuda::__detail::__fill_bytes_impl(__stream, __as_mdspan(_CUDA_VSTD::forward<_DstTy>(__dst)), __value);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

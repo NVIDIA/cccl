@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief The default alignment by a cudaMalloc{...} call
 inline constexpr size_t default_cuda_malloc_alignment = 256;
@@ -62,7 +62,7 @@ template <class... _Properties>
 inline constexpr bool __contains_execution_space_property =
   __is_host_accessible<_Properties...> || __is_device_accessible<_Properties...>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_MR
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

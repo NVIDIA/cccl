@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __single_thread_group
 {
@@ -92,7 +92,7 @@ _CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
   return __memcpy_completion_impl::__defer(__cm, __group, __size, __barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

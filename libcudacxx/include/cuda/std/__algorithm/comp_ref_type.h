@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Compare>
 struct __debug_less
@@ -78,7 +78,7 @@ template <class _Comp>
 using __comp_ref_type = _Comp&;
 #endif // !_LIBCUDACXX_ENABLE_DEBUG_MODE
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

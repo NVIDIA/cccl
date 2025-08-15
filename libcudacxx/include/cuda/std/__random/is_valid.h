@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [rand.req.genl]/1.4:
 // The effect of instantiating a template that has a template type parameter
@@ -99,7 +99,7 @@ inline constexpr bool __libcpp_random_is_valid_urng<
   enable_if_t<is_unsigned_v<typename _Gp::result_type>
               && is_same_v<decltype(_CUDA_VSTD::declval<_Gp&>()()), typename _Gp::result_type>>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

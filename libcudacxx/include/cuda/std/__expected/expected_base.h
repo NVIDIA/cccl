@@ -52,7 +52,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -1042,7 +1042,7 @@ struct __expected_move_assign<void, _Err, __smf_availability::__available> : __e
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

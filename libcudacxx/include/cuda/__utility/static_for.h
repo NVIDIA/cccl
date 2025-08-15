@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _SizeType, _SizeType _Start, _SizeType _Step, typename _Operator, _SizeType... _Indices, typename... _TArgs>
 _CCCL_API constexpr void
@@ -72,7 +72,7 @@ _CCCL_API constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept
   ::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

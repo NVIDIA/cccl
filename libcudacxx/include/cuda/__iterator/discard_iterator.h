@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief \p discard_iterator is an iterator which represents a special kind of pointer that ignores values written to
 //! it upon dereference. This iterator is useful for ignoring the output of certain algorithms without wasting memory
@@ -307,7 +307,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
   return discard_iterator{__index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

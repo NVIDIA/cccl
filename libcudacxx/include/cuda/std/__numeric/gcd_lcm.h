@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 constexpr _CCCL_API inline _Tp __gcd(_Tp __m, _Tp __n)
@@ -71,7 +71,7 @@ constexpr _CCCL_API inline common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
   return static_cast<_Rp>(__val1 * __val2);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -36,14 +36,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class>
 inline constexpr bool disable_sized_range = false;
 
 // [range.prim.size]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__size)
+_CCCL_BEGIN_NAMESPACE_CPO(__size)
 template <class _Tp>
 void size(_Tp&) = delete;
 template <class _Tp>
@@ -152,7 +152,7 @@ struct __fn
     return _CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__t) - _CUDA_VRANGES::begin(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -161,7 +161,7 @@ _CCCL_GLOBAL_CONSTANT auto size = __size::__fn{};
 
 // [range.prim.ssize]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__ssize)
+_CCCL_BEGIN_NAMESPACE_CPO(__ssize)
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __can_ssize = requires(_Tp&& __t) { _CUDA_VRANGES::size(__t); };
@@ -185,14 +185,14 @@ struct __fn
     return static_cast<_Result>(_CUDA_VRANGES::size(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

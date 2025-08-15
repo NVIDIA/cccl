@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_API inline _Up* ptr_rebind(_Tp* __ptr) noexcept
@@ -68,7 +68,7 @@ template <typename _Up, typename _Tp>
   return ::cuda::ptr_rebind<const volatile _Up>(const_cast<_Tp*>(__ptr));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

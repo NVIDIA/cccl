@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! Uses static_cast to cast a value \p __from to type \p _To. \p _To needs to be constructible from \p _From, and \p
 //! implement operator!=. This function is intended to show that narrowing and a potential change of the value is
@@ -101,7 +101,7 @@ template <class _To, class _From>
   return __converted;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

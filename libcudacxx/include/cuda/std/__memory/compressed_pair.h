@@ -42,7 +42,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Tag used to default initialize one or both of the pair's elements.
 struct __default_init_tag
@@ -218,7 +218,7 @@ _CCCL_API constexpr void swap(__compressed_pair<_T1, _T2>& __x, __compressed_pai
   __x.swap(__y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

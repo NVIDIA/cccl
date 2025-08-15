@@ -58,7 +58,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Iter, class = void>
 inline constexpr bool __noexcept_rev_iter_iter_move = false;
@@ -364,7 +364,7 @@ struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, __b>
     : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

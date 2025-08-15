@@ -84,6 +84,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       return {};
     }
 
+    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    {
+      return completion_behavior::asynchronous;
+    }
+
     stream_ref __stream_;
   };
 

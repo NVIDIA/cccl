@@ -55,7 +55,7 @@
 #  endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
 #endif // LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __get_complex_impl;
@@ -669,7 +669,7 @@ template <class _Tp, class _CharT, class _Traits>
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

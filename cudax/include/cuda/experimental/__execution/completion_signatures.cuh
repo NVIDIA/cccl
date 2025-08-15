@@ -588,9 +588,9 @@ struct __gather_sigs_fn<set_stopped_t>
   using __call _CCCL_NODEBUG_ALIAS = __stopped_types<_Sigs, _Variant, _Tuple<>>;
 };
 
-template <class _Sigs, class _WantedTag, template <class...> class _TaggedTuple, template <class...> class _Variant>
+template <class _Sigs, class _WantedTag, template <class...> class _Tuple, template <class...> class _Variant>
 using __gather_completion_signatures _CCCL_NODEBUG_ALIAS =
-  typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _TaggedTuple, _Variant>;
+  typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _Tuple, _Variant>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // __eptr_completion and __eptr_completion_if

@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Since CCCL doesn't support localization, we don't implement the locale() method
 template <class _OutIt, class _CharT>
@@ -85,7 +85,7 @@ __fmt_make_format_context(_OutIt __out_it, basic_format_args<basic_format_contex
   return basic_format_context{_CUDA_VSTD::move(__out_it), __args};
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

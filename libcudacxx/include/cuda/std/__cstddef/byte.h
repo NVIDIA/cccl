@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
 enum class byte : unsigned char
 {
@@ -106,7 +106,7 @@ _CCCL_API constexpr _Integer to_integer(byte __b) noexcept
   return static_cast<_Integer>(__b);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 
 #include <cuda/std/__cccl/epilogue.h>
 

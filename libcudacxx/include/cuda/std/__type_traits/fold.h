@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Use fold expressions when possible to implement __fold_and[_v] and
 // __fold_or[_v].
@@ -40,7 +40,7 @@ using __fold_and = bool_constant<bool((_Preds && ...))>; // cast to bool to avoi
 template <bool... _Preds>
 using __fold_or = bool_constant<bool((_Preds || ...))>; // cast to bool to avoid error from gcc < 8
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

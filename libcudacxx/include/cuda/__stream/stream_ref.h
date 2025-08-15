@@ -33,7 +33,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
@@ -287,7 +287,7 @@ inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
   _CUDA_DRIVER::__ctxPush(__ctx);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

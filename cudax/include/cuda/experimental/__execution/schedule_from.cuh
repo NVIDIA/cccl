@@ -112,14 +112,24 @@ struct __transfer_sndr_t
       return {};
     }
 
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, const _Env&...) noexcept
+    {
+      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, _Env...>(),
+                               execution::get_completion_behavior<_Sndr, _Env...>());
+    }
+
     // The following overload will not be considered when _Query is get_domain_override_t
     // because get_domain_override_t is not a forwarding query.
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_Query, get_completion_behavior_t>)
+                     _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
     {
-      return execution::get_env(__self_->__sndr_).query(_Query{});
+      return execution::get_env(__self_->__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     const __transfer_sndr_t* __self_;

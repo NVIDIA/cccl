@@ -113,8 +113,8 @@ public:
   using __env_t          = ::cuda::experimental::env_t<_Properties...>;
   using __policy_t       = ::cuda::experimental::execution::any_execution_policy;
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
-  using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
+  using __resource_t     = ::cuda::experimental::any_resource<_Properties...>;
+  using __resource_ref_t = _CUDA_VMR::resource_ref<_Properties...>;
 
   template <class, class...>
   friend class async_buffer;
@@ -151,7 +151,7 @@ private:
       ? (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice)
       : (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice);
 
-  //! @brief Helper to return an async_resource_ref to the currently used resource. Used to grow the async_buffer
+  //! @brief Helper to return an resource_ref to the currently used resource. Used to grow the async_buffer
   __resource_ref_t __borrow_resource() const noexcept
   {
     return const_cast<__resource_t&>(__buf_.memory_resource());
@@ -646,9 +646,7 @@ void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFro
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
-  stream_ref __stream,
-  any_async_resource<_TargetProperties...> __mr,
-  const async_buffer<_Tp, _SourceProperties...>& __source)
+  stream_ref __stream, any_resource<_TargetProperties...> __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), no_init};
@@ -673,7 +671,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer
 
 // Empty buffer make function
 template <class _Tp, class... _Properties>
-async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr)
+async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env};
@@ -691,7 +689,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
 // Size-only make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, size_t __size)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __size};
@@ -709,7 +707,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size)
 // Size and value make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, const _Tp& __value)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, size_t __size, const _Tp& __value)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __size, __value};
@@ -727,7 +725,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, con
 // Size with no initialization make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...> make_async_buffer(
-  stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, ::cuda::experimental::no_init_t)
+  stream_ref __stream, any_resource<_Properties...> __mr, size_t __size, ::cuda::experimental::no_init_t)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __size, ::cuda::experimental::no_init};
@@ -746,7 +744,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::c
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter)
 _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Iter __first, _Iter __last)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Iter __first, _Iter __last)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __first, __last};
@@ -764,8 +762,8 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _It
 
 // Initializer list make function
 template <class _Tp, class... _Properties>
-async_buffer<_Tp, _Properties...> make_async_buffer(
-  stream_ref __stream, any_async_resource<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __ilist};
@@ -784,7 +782,7 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _CUDA_VSTD::initia
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Range)
 _CCCL_REQUIRES(_CUDA_VRANGES::forward_range<_Range>)
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Range&& __range)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Range&& __range)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, _CUDA_VSTD::forward<_Range>(__range)};

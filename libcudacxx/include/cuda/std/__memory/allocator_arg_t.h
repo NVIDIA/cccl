@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t
 {
@@ -77,7 +77,7 @@ __user_alloc_construct_impl(integral_constant<int, 2>, _Tp* __storage, const _Al
   new (__storage) _Tp(_CUDA_VSTD::forward<_Args>(__args)..., __a);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

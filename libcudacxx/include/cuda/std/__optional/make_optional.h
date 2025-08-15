@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _Tp = nullopt_t::__secret_tag, class _Up)
 _CCCL_REQUIRES(is_same_v<_Tp, nullopt_t::__secret_tag>)
@@ -54,7 +54,7 @@ _CCCL_API constexpr optional<_Tp> make_optional(initializer_list<_Up> __il, _Arg
   return optional<_Tp>(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

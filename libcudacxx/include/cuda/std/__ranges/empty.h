@@ -27,11 +27,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [range.prim.empty]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__empty)
+_CCCL_BEGIN_NAMESPACE_CPO(__empty)
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -95,14 +95,14 @@ struct __fn
     return _CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t);
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto empty = __empty::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

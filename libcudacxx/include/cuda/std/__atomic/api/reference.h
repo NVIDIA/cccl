@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp, typename _Sco>
 struct __atomic_ref_common
@@ -111,7 +111,7 @@ using __atomic_ref_impl =
               __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
               __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
