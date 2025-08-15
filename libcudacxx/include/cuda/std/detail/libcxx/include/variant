@@ -275,30 +275,6 @@ C++20
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class... _Types>
-_CCCL_API constexpr variant<_Types...>& __as_variant(variant<_Types...>& __vs) noexcept
-{
-  return __vs;
-}
-
-template <class... _Types>
-_CCCL_API constexpr const variant<_Types...>& __as_variant(const variant<_Types...>& __vs) noexcept
-{
-  return __vs;
-}
-
-template <class... _Types>
-_CCCL_API constexpr variant<_Types...>&& __as_variant(variant<_Types...>&& __vs) noexcept
-{
-  return ::cuda::std::move(__vs);
-}
-
-template <class... _Types>
-_CCCL_API constexpr const variant<_Types...>&& __as_variant(const variant<_Types...>&& __vs) noexcept
-{
-  return ::cuda::std::move(__vs);
-}
-
 namespace __find_detail
 {
 
@@ -1833,6 +1809,30 @@ _CCCL_API constexpr bool operator>=(const variant<_Types...>& __lhs, const varia
     return false;
   }
   return __variant_binary_visitor::__visit(__lhs.index(), __convert_to_bool<greater_equal<>>{}, __lhs, __rhs);
+}
+
+template <class... _Types>
+_CCCL_API constexpr variant<_Types...>& __as_variant(variant<_Types...>& __vs) noexcept
+{
+  return __vs;
+}
+
+template <class... _Types>
+_CCCL_API constexpr const variant<_Types...>& __as_variant(const variant<_Types...>& __vs) noexcept
+{
+  return __vs;
+}
+
+template <class... _Types>
+_CCCL_API constexpr variant<_Types...>&& __as_variant(variant<_Types...>&& __vs) noexcept
+{
+  return ::cuda::std::move(__vs);
+}
+
+template <class... _Types>
+_CCCL_API constexpr const variant<_Types...>&& __as_variant(const variant<_Types...>&& __vs) noexcept
+{
+  return ::cuda::std::move(__vs);
 }
 
 template <class... _Vs>
