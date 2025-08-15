@@ -170,6 +170,35 @@ void lib_call_token(async_resources_handle& handle, cudaStream_t stream, double*
   ctx.submit();
 }
 
+template <typename Ctx_t>
+void lib_call_epoch(async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
+{
+  Ctx_t ctx(stream, handle);
+  auto epoch = ctx.epoch();
+
+  ctx.task(epoch /*lA.write()*/)->*[=](cudaStream_t s) {
+    initA<<<128, 32, 0, s>>>(d_ptrA, N);
+  };
+
+  ctx.task(epoch /*lB.write()*/)->*[=](cudaStream_t s) {
+    initB<<<128, 32, 0, s>>>(d_ptrB, N);
+  };
+
+  epoch++;
+
+  ctx.task(epoch /*lA.read(), lB.rw()*/)->*[=](cudaStream_t s) {
+    axpy<<<128, 32, 0, s>>>(3.0, d_ptrA, d_ptrB, N);
+  };
+
+  ctx.task()->*[](cudaStream_t s) {
+    empty_kernel<<<16, 8, 0, s>>>();
+  };
+
+  ctx.submit();
+}
+
+
+
 int main()
 {
   double *d_ptrA, *d_ptrB;
@@ -247,4 +276,10 @@ int main()
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
   r_token.end();
+
+  nvtx_range r_epoch("epoch");
+  for (size_t i = 0; i < NITER; i++)
+  {
+    lib_call_epoch<context>(handle, stream, d_ptrA, d_ptrB, N);
+  }
 }
