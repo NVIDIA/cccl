@@ -51,7 +51,7 @@ jobs:
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: _site/
-          preview-url: https://nvidia.github.io/cccl/
+          pages-base-url: https://nvidia.github.io/cccl/
           umbrella-dir: pr-preview
           action: deploy
 
@@ -64,6 +64,6 @@ jobs:
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: _site/
-          preview-url: https://nvidia.github.io/cccl/
+          pages-base-url: https://nvidia.github.io/cccl/
           umbrella-dir: pr-preview
           action: remove
