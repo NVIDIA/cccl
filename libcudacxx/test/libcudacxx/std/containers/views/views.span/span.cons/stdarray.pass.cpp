@@ -23,11 +23,19 @@
 #include <cuda/std/cassert>
 #include <cuda/std/span>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <array>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 #include "test_macros.h"
 
-__host__ __device__ void checkCV()
+struct A
+{};
+
+template <template <class, size_t> class array>
+__host__ __device__ constexpr void checkCV()
 {
-  cuda::std::array<int, 3> arr = {1, 2, 3};
+  array<int, 3> arr = {1, 2, 3};
   //  STL says these are not cromulent
   //  std::array<const int,3> carr = {4,5,6};
   //  std::array<volatile int, 3> varr = {7,8,9};
@@ -60,57 +68,70 @@ __host__ __device__ void checkCV()
   }
 }
 
-template <typename T, typename U>
-__host__ __device__ constexpr bool testConstructorArray()
+template <template <class, size_t> class array, typename T, typename U>
+__host__ __device__ constexpr void test()
 {
-  cuda::std::array<U, 2> val = {U(), U()};
-  static_assert(noexcept(cuda::std::span<T>{val}));
-  static_assert(noexcept(cuda::std::span<T, 2>{val}));
-  cuda::std::span<T> s1{val};
-  cuda::std::span<T, 2> s2{val};
-  return s1.data() == &val[0] && s1.size() == 2 && s2.data() == &val[0] && s2.size() == 2;
+  {
+    array<U, 2> val = {U(), U()};
+    static_assert(noexcept(cuda::std::span<T>{val}));
+    static_assert(noexcept(cuda::std::span<T, 2>{val}));
+    cuda::std::span<T> s1{val};
+    cuda::std::span<T, 2> s2{val};
+    assert(s1.data() == &val[0]);
+    assert(s1.size() == 2);
+    assert(s2.data() == &val[0]);
+    assert(s2.size() == 2);
+  }
+
+  {
+    const array<U, 2> val = {U(), U()};
+    static_assert(noexcept(cuda::std::span<const T>{val}));
+    static_assert(noexcept(cuda::std::span<const T, 2>{val}));
+    cuda::std::span<const T> s1{val};
+    cuda::std::span<const T, 2> s2{val};
+    assert(s1.data() == &val[0]);
+    assert(s1.size() == 2);
+    assert(s2.data() == &val[0]);
+    assert(s2.size() == 2);
+  }
 }
 
-template <typename T, typename U>
-__host__ __device__ constexpr bool testConstructorConstArray()
+template <template <class, size_t> class array, typename T>
+__host__ __device__ constexpr void test()
 {
-  const cuda::std::array<U, 2> val = {U(), U()};
-  static_assert(noexcept(cuda::std::span<const T>{val}));
-  static_assert(noexcept(cuda::std::span<const T, 2>{val}));
-  cuda::std::span<const T> s1{val};
-  cuda::std::span<const T, 2> s2{val};
-  return s1.data() == &val[0] && s1.size() == 2 && s2.data() == &val[0] && s2.size() == 2;
+  test<array, T, T>();
+  test<array, const T, const T>();
+  test<array, const T, T>();
 }
 
-template <typename T>
-__host__ __device__ constexpr bool testConstructors()
+template <template <class, size_t> class array>
+__host__ __device__ constexpr void test()
 {
-  static_assert((testConstructorArray<T, T>()));
-  static_assert((testConstructorArray<const T, const T>()));
-  static_assert((testConstructorArray<const T, T>()));
-  static_assert((testConstructorConstArray<T, T>()));
-  static_assert((testConstructorConstArray<const T, const T>()));
-  static_assert((testConstructorConstArray<const T, T>()));
+  test<array, int>();
+  test<array, long>();
+  test<array, double>();
+  test<array, A>();
 
-  return testConstructorArray<T, T>() && testConstructorArray<const T, const T>() && testConstructorArray<const T, T>()
-      && testConstructorConstArray<T, T>() && testConstructorConstArray<const T, const T>()
-      && testConstructorConstArray<const T, T>();
+  test<array, int*>();
+  test<array, const int*>();
+
+  checkCV<array>();
 }
 
-struct A
-{};
+__host__ __device__ constexpr bool test()
+{
+  test<cuda::std::array>();
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<std::array>();));
+#endif // !TEST_COMPILER(NVRTC)
+
+  return true;
+}
 
 int main(int, char**)
 {
-  assert(testConstructors<int>());
-  assert(testConstructors<long>());
-  assert(testConstructors<double>());
-  assert(testConstructors<A>());
-
-  assert(testConstructors<int*>());
-  assert(testConstructors<const int*>());
-
-  checkCV();
+  test();
+  static_assert(test());
 
   return 0;
 }
