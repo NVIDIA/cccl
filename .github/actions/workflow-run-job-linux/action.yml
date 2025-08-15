@@ -47,6 +47,8 @@ runs:
         echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
         echo "::endgroup::"
 
+        echo "ARTIFACT_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" >> "${GITHUB_ENV}"
+
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -57,6 +59,20 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
+    - id: sccache-preprocessor-cache
+      name: Setup sccache preprocessor cache
+      uses: actions/cache@v4
+      with:
+        path: .cache/sccache/preprocessor
+        restore-keys: sccache-preprocessor-cache-${{runner.os}}-${{inputs.id}}
+        key: sccache-preprocessor-cache-${{runner.os}}-${{inputs.id}}-${{env.ARTIFACT_SLUG}}
+    - id: sccache-dist-toolchains-cache
+      name: Setup sccache-dist client toolchains cache
+      uses: actions/cache@v4
+      with:
+        path: .cache/sccache-dist-client
+        restore-keys: sccache-toolchains-cache-${{runner.os}}-${{inputs.id}}
+        key: sccache-toolchains-cache-${{runner.os}}-${{inputs.id}}-${{env.ARTIFACT_SLUG}}
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
