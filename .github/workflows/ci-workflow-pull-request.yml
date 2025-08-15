@@ -178,6 +178,9 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
     permissions:
       contents: read
+      pages: write
+      pull-requests: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -189,6 +192,14 @@ jobs:
         with:
           upload_workflow_artifact: "true"
           upload_pages_artifact: "false"
+
+      - name: Deploy documentation preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: _site/
+          action: deploy
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
   build-rapids:
     name: Build RAPIDS (optional)
