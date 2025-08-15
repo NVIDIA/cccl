@@ -7,4 +7,4 @@ Sorting
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__sorting*
+   ${repo_docs_api_path}/*group__sorting*

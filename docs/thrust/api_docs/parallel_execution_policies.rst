@@ -10,4 +10,4 @@ Parallel Execution Policies
    :glob:
    :maxdepth: 2
 
-   ${repo_docs_api_path}/*variable_group__execution__policies*
+   ${repo_docs_api_path}/*group__execution__policies*

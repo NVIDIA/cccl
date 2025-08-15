@@ -122,7 +122,6 @@ public:
     return __event_ != nullptr;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `event_ref`s for equality
   //!
   //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
@@ -148,7 +147,6 @@ public:
   {
     return __lhs.__event_ != __rhs.__event_;
   }
-#  endif // _CCCL_DOXYGEN_INVOKED
 };
 
 _CCCL_END_NAMESPACE_CUDA
