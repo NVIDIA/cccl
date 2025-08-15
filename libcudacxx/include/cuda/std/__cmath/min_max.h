@@ -44,26 +44,26 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
   if constexpr (is_same_v<_Tp, __half>)
   {
-#  if _LIBCUDACXX_HAS_NVFP16()
+#  if _CCCL_CTK_AT_LEAST(12, 2)
     return ::__hmax(__x, __y);
-#  else // ^^^ _LIBCUDACXX_HAS_NVFP16() ^^^ / vvv !_LIBCUDACXX_HAS_NVFP16() vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__hmax(__x, __y);),
                       (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
-#  endif // !_LIBCUDACXX_HAS_NVFP16
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
     if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
-#  if _LIBCUDACXX_HAS_NVBF16()
+#  if _CCCL_CTK_AT_LEAST(12, 2)
     return ::__hmax(__x, __y);
-#  else // ^^^ _LIBCUDACXX_HAS_NVBF16() ^^^ / vvv !_LIBCUDACXX_HAS_NVBF16() vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__hmax(__x, __y);),
                       (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
-#  endif // !_LIBCUDACXX_HAS_NVBF16
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
 #endif // _CCCL_HAS_NVBF16()
@@ -115,26 +115,26 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _CCCL_HAS_NVFP16()
   if constexpr (is_same_v<_Tp, __half>)
   {
-#  if _LIBCUDACXX_HAS_NVFP16()
+#  if _CCCL_CTK_AT_LEAST(12, 2)
     return ::__hmin(__x, __y);
-#  else // ^^^ _LIBCUDACXX_HAS_NVFP16() ^^^ / vvv !_LIBCUDACXX_HAS_NVFP16() vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__hmin(__x, __y);),
                       (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
-#  endif // !_LIBCUDACXX_HAS_NVFP16
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
     if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
-#  if _LIBCUDACXX_HAS_NVBF16()
+#  if _CCCL_CTK_AT_LEAST(12, 2)
     return ::__hmin(__x, __y);
-#  else // ^^^ _LIBCUDACXX_HAS_NVBF16() ^^^ / vvv !_LIBCUDACXX_HAS_NVBF16() vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (return ::__hmin(__x, __y);),
                       (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
-#  endif // !_LIBCUDACXX_HAS_NVBF16
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
   else
 #endif // _CCCL_HAS_NVBF16()
