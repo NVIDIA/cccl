@@ -98,7 +98,7 @@
 
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
-#elif _CCCL_COMPILER(GCC)
+#elif _CCCL_COMPILER(GCC, >=, 13)
 #  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
