@@ -259,6 +259,7 @@ C++20
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/__variant/bad_variant_access.h>
 #include <cuda/std/__variant/sfinae_helpers.h>
+#include <cuda/std/__variant/variant_access.h>
 #include <cuda/std/__variant/variant_traits.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
@@ -340,44 +341,6 @@ struct __find_unambiguous_index_sfinae : __find_unambiguous_index_sfinae_impl<__
 
 namespace __variant_detail
 {
-
-namespace __access
-{
-
-struct __union
-{
-  template <class _Vp>
-  _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v, in_place_index_t<0>)
-  {
-    return ::cuda::std::forward<_Vp>(__v).__head;
-  }
-
-  template <class _Vp, size_t _Ip>
-  _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v, in_place_index_t<_Ip>)
-  {
-    return __get_alt(::cuda::std::forward<_Vp>(__v).__tail, in_place_index<_Ip - 1>);
-  }
-};
-
-struct __base
-{
-  template <size_t _Ip, class _Vp>
-  _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v)
-  {
-    return __union::__get_alt(::cuda::std::forward<_Vp>(__v).__data, in_place_index<_Ip>);
-  }
-};
-
-struct __variant
-{
-  template <size_t _Ip, class _Vp>
-  _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v)
-  {
-    return __base::__get_alt<_Ip>(::cuda::std::forward<_Vp>(__v).__impl_);
-  }
-};
-
-} // namespace __access
 
 namespace __visitation
 {
@@ -609,8 +572,8 @@ union _CCCL_TYPE_VISIBILITY_DEFAULT __union<_DestructibleTrait, _Index>
                                                                                  \
 private:                                                                         \
   char __dummy;                                                                  \
-  __alt<_Index, _Tp> __head;                                                     \
-  __union<destructible_trait, _Index + 1, _Types...> __tail;                     \
+  __alt<_Index, _Tp> __head_;                                                    \
+  __union<destructible_trait, _Index + 1, _Types...> __tail_;                    \
                                                                                  \
   friend struct __access::__union;                                               \
                                                                                  \
@@ -621,12 +584,12 @@ public:                                                                         
                                                                                  \
   template <class... _Args>                                                      \
   _CCCL_API explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-      : __head(in_place, ::cuda::std::forward<_Args>(__args)...)                 \
+      : __head_(in_place, ::cuda::std::forward<_Args>(__args)...)                \
   {}                                                                             \
                                                                                  \
   template <size_t _Ip, class... _Args>                                          \
   _CCCL_API explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args) \
-      : __tail(in_place_index<_Ip - 1>, ::cuda::std::forward<_Args>(__args)...)  \
+      : __tail_(in_place_index<_Ip - 1>, ::cuda::std::forward<_Args>(__args)...) \
   {}                                                                             \
                                                                                  \
   _CCCL_HIDE_FROM_ABI __union(const __union&)            = default;              \
@@ -664,13 +627,13 @@ public:
   using __index_t = __variant_index_t<sizeof...(_Types)>;
 
   _CCCL_API explicit constexpr __base(__valueless_t __tag) noexcept
-      : __data(__tag)
+      : __data_(__tag)
       , __index(__variant_npos<__index_t>)
   {}
 
   template <size_t _Ip, class... _Args>
   _CCCL_API explicit constexpr __base(in_place_index_t<_Ip>, _Args&&... __args)
-      : __data(in_place_index<_Ip>, ::cuda::std::forward<_Args>(__args)...)
+      : __data_(in_place_index<_Ip>, ::cuda::std::forward<_Args>(__args)...)
       , __index(_Ip)
   {}
 
@@ -710,7 +673,7 @@ protected:
     return sizeof...(_Types);
   }
 
-  __union<_DestructibleTrait, 0, _Types...> __data;
+  __union<_DestructibleTrait, 0, _Types...> __data_;
   __index_t __index;
 
   friend struct __access::__base;
