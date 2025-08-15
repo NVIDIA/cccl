@@ -628,13 +628,13 @@ public:
 
   _CCCL_API explicit constexpr __base(__valueless_t __tag) noexcept
       : __data_(__tag)
-      , __index(__variant_npos<__index_t>)
+      , __index_(__variant_npos<__index_t>)
   {}
 
   template <size_t _Ip, class... _Args>
   _CCCL_API explicit constexpr __base(in_place_index_t<_Ip>, _Args&&... __args)
       : __data_(in_place_index<_Ip>, ::cuda::std::forward<_Args>(__args)...)
-      , __index(_Ip)
+      , __index_(_Ip)
   {}
 
   _CCCL_API constexpr bool valueless_by_exception() const noexcept
@@ -644,7 +644,7 @@ public:
 
   _CCCL_API constexpr size_t index() const noexcept
   {
-    return __index == __variant_npos<__index_t> ? variant_npos : __index;
+    return __index_ == __variant_npos<__index_t> ? variant_npos : __index_;
   }
 
 protected:
@@ -674,7 +674,7 @@ protected:
   }
 
   __union<_DestructibleTrait, 0, _Types...> __data_;
-  __index_t __index;
+  __index_t __index_;
 
   friend struct __access::__base;
 };
@@ -705,7 +705,7 @@ __dtor<__traits<_Types...>, _Trait::_TriviallyAvailable> : public __base<_Trait:
 protected:
   _CCCL_API inline void __destroy() noexcept
   {
-    this->__index = __variant_npos<__index_t>;
+    this->__index_ = __variant_npos<__index_t>;
   }
 };
 
@@ -736,27 +736,27 @@ protected:
     if (!this->valueless_by_exception())
     {
       constexpr size_t __np = remove_cvref_t<__dtor>::__size();
-      __destroy(integral_constant<size_t, __np - 1>{}, this->__index);
+      __destroy(integral_constant<size_t, __np - 1>{}, this->__index_);
     }
-    this->__index = __variant_npos<__index_t>;
+    this->__index_ = __variant_npos<__index_t>;
   }
 
 private:
   template <size_t _CurrentIndex>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN void
-  __destroy(integral_constant<size_t, _CurrentIndex>, const size_t __index) noexcept
+  __destroy(integral_constant<size_t, _CurrentIndex>, const size_t __index_) noexcept
   {
-    if (__index == _CurrentIndex)
+    if (__index_ == _CurrentIndex)
     {
       using __alt_type = remove_cvref_t<decltype(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()))>;
       __access::__base::__get_alt<_CurrentIndex>(this->__as_base()).~__alt_type();
       return;
     }
-    __destroy(integral_constant<size_t, _CurrentIndex - 1>{}, __index);
+    __destroy(integral_constant<size_t, _CurrentIndex - 1>{}, __index_);
   }
-  _CCCL_API inline _CCCL_VISIBILITY_HIDDEN void __destroy(integral_constant<size_t, 0>, const size_t __index) noexcept
+  _CCCL_API inline _CCCL_VISIBILITY_HIDDEN void __destroy(integral_constant<size_t, 0>, const size_t __index_) noexcept
   {
-    if (__index == 0)
+    if (__index_ == 0)
     {
       using __alt_type = remove_cvref_t<decltype(__access::__base::__get_alt<0>(this->__as_base()))>;
       __access::__base::__get_alt<0>(this->__as_base()).~__alt_type();
@@ -787,9 +787,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
 
   template <size_t _CurrentIndex, class _Rhs>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr void
-  __generic_construct_impl(integral_constant<size_t, _CurrentIndex>, const size_t __index, __ctor& __lhs, _Rhs&& __rhs)
+  __generic_construct_impl(integral_constant<size_t, _CurrentIndex>, const size_t __index_, __ctor& __lhs, _Rhs&& __rhs)
   {
-    if (__index == _CurrentIndex)
+    if (__index_ == _CurrentIndex)
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
@@ -798,14 +798,14 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
       return;
     }
     __generic_construct_impl(
-      integral_constant<size_t, _CurrentIndex - 1>{}, __index, __lhs, ::cuda::std::forward<_Rhs>(__rhs));
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index_, __lhs, ::cuda::std::forward<_Rhs>(__rhs));
   }
 
   template <class _Rhs>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr void
-  __generic_construct_impl(integral_constant<size_t, 0>, const size_t __index, __ctor& __lhs, _Rhs&& __rhs)
+  __generic_construct_impl(integral_constant<size_t, 0>, const size_t __index_, __ctor& __lhs, _Rhs&& __rhs)
   {
-    if (__index == 0)
+    if (__index_ == 0)
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
@@ -838,7 +838,7 @@ protected:
       constexpr size_t __np = remove_cvref_t<__ctor>::__size();
       __generic_construct_impl(
         integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, ::cuda::std::forward<_Rhs>(__rhs));
-      __lhs.__index = static_cast<decltype(__lhs.__index)>(__rhs.index());
+      __lhs.__index_ = static_cast<decltype(__lhs.__index_)>(__rhs.index());
     }
   }
 };
@@ -919,23 +919,24 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Tr
 
   template <size_t _CurrentIndex, class _Other>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN constexpr void
-  __generic_assign(integral_constant<size_t, _CurrentIndex>, const size_t __index, _Other&& __rhs)
+  __generic_assign(integral_constant<size_t, _CurrentIndex>, const size_t __index_, _Other&& __rhs)
   {
-    if (__index == _CurrentIndex)
+    if (__index_ == _CurrentIndex)
     {
       this->__assign_alt(
         __access::__base::__get_alt<_CurrentIndex>(this->__as_base()),
         __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Other>(__rhs).__as_base()).__value);
       return;
     }
-    this->__generic_assign(integral_constant<size_t, _CurrentIndex - 1>{}, __index, ::cuda::std::forward<_Other>(__rhs));
+    this->__generic_assign(
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index_, ::cuda::std::forward<_Other>(__rhs));
   }
 
   template <class _Other>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN constexpr void
-  __generic_assign(integral_constant<size_t, 0>, const size_t __index, _Other&& __rhs)
+  __generic_assign(integral_constant<size_t, 0>, const size_t __index_, _Other&& __rhs)
   {
-    if (__index == 0)
+    if (__index_ == 0)
     {
       this->__assign_alt(__access::__base::__get_alt<0>(this->__as_base()),
                          __access::__base::__get_alt<0>(::cuda::std::forward<_Other>(__rhs).__as_base()).__value);
@@ -955,7 +956,7 @@ public:
     this->__destroy();
     auto& __res =
       this->__construct_alt(__access::__base::__get_alt<_Ip>(*this), ::cuda::std::forward<_Args>(__args)...);
-    this->__index = _Ip;
+    this->__index_ = _Ip;
     return __res;
   }
 
@@ -1093,22 +1094,22 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_
 
   template <size_t _CurrentIndex>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr void
-  __swap_value(integral_constant<size_t, _CurrentIndex>, const size_t __index, __impl& __lhs, __impl& __rhs)
+  __swap_value(integral_constant<size_t, _CurrentIndex>, const size_t __index_, __impl& __lhs, __impl& __rhs)
   {
-    if (__index == _CurrentIndex)
+    if (__index_ == _CurrentIndex)
     {
       using ::cuda::std::swap;
       swap(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base()).__value,
            __access::__base::__get_alt<_CurrentIndex>(__rhs.__as_base()).__value);
       return;
     }
-    __swap_value(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __lhs, __rhs);
+    __swap_value(integral_constant<size_t, _CurrentIndex - 1>{}, __index_, __lhs, __rhs);
   }
 
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr void
-  __swap_value(integral_constant<size_t, 0>, const size_t __index, __impl& __lhs, __impl& __rhs)
+  __swap_value(integral_constant<size_t, 0>, const size_t __index_, __impl& __lhs, __impl& __rhs)
   {
-    if (__index == 0)
+    if (__index_ == 0)
     {
       using ::cuda::std::swap;
       swap(__access::__base::__get_alt<0>(__lhs.__as_base()).__value,
@@ -1637,10 +1638,10 @@ struct __variant_binary_visitor
 {
   template <class _BinaryOp, class _LeftVariant, class _RightVariant>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr auto
-  __visit(const size_t __index, _BinaryOp&& __op, const _LeftVariant& __lhs, const _RightVariant& __rhs)
+  __visit(const size_t __index_, _BinaryOp&& __op, const _LeftVariant& __lhs, const _RightVariant& __rhs)
   {
     return __visit(integral_constant<size_t, variant_size_v<_LeftVariant> - 1>{},
-                   __index,
+                   __index_,
                    ::cuda::std::forward<_BinaryOp>(__op),
                    __lhs,
                    __rhs);
@@ -1650,28 +1651,28 @@ private:
   template <size_t _CurrentIndex, class _BinaryOp, class _LeftVariant, class _RightVariant>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr auto
   __visit(integral_constant<size_t, _CurrentIndex>,
-          const size_t __index,
+          const size_t __index_,
           _BinaryOp&& __op,
           const _LeftVariant& __lhs,
           const _RightVariant& __rhs)
   {
-    if (__index == _CurrentIndex)
+    if (__index_ == _CurrentIndex)
     {
       return __op(::cuda::std::get<_CurrentIndex>(__lhs), ::cuda::std::get<_CurrentIndex>(__rhs));
     }
     return __visit(
-      integral_constant<size_t, _CurrentIndex - 1>{}, __index, ::cuda::std::forward<_BinaryOp>(__op), __lhs, __rhs);
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index_, ::cuda::std::forward<_BinaryOp>(__op), __lhs, __rhs);
   }
 
   template <class _BinaryOp, class _LeftVariant, class _RightVariant>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static constexpr auto
   __visit(integral_constant<size_t, 0>,
-          const size_t __index,
+          const size_t __index_,
           _BinaryOp&& __op,
           const _LeftVariant& __lhs,
           const _RightVariant& __rhs)
   {
-    if (__index == 0)
+    if (__index_ == 0)
     {
       return __op(::cuda::std::get<0>(__lhs), ::cuda::std::get<0>(__rhs));
     }
@@ -1687,8 +1688,8 @@ private:
 template <class... _Types>
 _CCCL_API constexpr bool operator==(const variant<_Types...>& __lhs, const variant<_Types...>& __rhs)
 {
-  const auto __index = __lhs.index();
-  if (__index != __rhs.index())
+  const auto __index_ = __lhs.index();
+  if (__index_ != __rhs.index())
   {
     return false;
   }
@@ -1697,7 +1698,7 @@ _CCCL_API constexpr bool operator==(const variant<_Types...>& __lhs, const varia
     return true;
   }
 
-  return __variant_binary_visitor::__visit(__index, __convert_to_bool<equal_to<>>{}, __lhs, __rhs);
+  return __variant_binary_visitor::__visit(__index_, __convert_to_bool<equal_to<>>{}, __lhs, __rhs);
 }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -1880,19 +1881,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
 
   template <size_t _CurrentIndex>
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static size_t
-  __hash(integral_constant<size_t, _CurrentIndex>, const size_t __index, const argument_type& __v) noexcept
+  __hash(integral_constant<size_t, _CurrentIndex>, const size_t __index_, const argument_type& __v) noexcept
   {
-    if (__index == _CurrentIndex)
+    if (__index_ == _CurrentIndex)
     {
       using __value_type = remove_const_t<__type_index_c<_CurrentIndex, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value);
     }
-    __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __v);
+    __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index_, __v);
   }
   _CCCL_API inline _CCCL_VISIBILITY_HIDDEN static size_t
-  __hash(integral_constant<size_t, 0>, const size_t __index, const argument_type& __v) noexcept
+  __hash(integral_constant<size_t, 0>, const size_t __index_, const argument_type& __v) noexcept
   {
-    if (__index == 0)
+    if (__index_ == 0)
     {
       using __value_type = remove_const_t<__type_index_c<0, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
