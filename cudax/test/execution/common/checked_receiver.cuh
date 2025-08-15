@@ -10,6 +10,9 @@
 
 #pragma once
 
+#include <cuda/std/string_view> // IWYU pragma: keep
+#include <cuda/std/type_traits>
+
 #include <cuda/experimental/execution.cuh>
 
 #include <exception>
@@ -23,7 +26,7 @@ struct checked_value_receiver
 {
   using receiver_concept = cudax_async::receiver_t;
 
-  checked_value_receiver(Values... values)
+  _CCCL_HOST_DEVICE checked_value_receiver(Values... values)
       : _values{values...}
   {}
 
@@ -97,6 +100,42 @@ struct checked_error_receiver
       CUDAX_FAIL("expected an error completion; got a different error");
     }
   }
+
+#if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
+  void set_error(::std::exception_ptr eptr) && noexcept
+  {
+    try
+    {
+      ::std::rethrow_exception(eptr);
+    }
+    catch (Error& e)
+    {
+      if constexpr (cuda::std::derived_from<Error, ::std::exception>)
+      {
+        CUDAX_CHECK(cuda::std::string_view{e.what()} == _error.what());
+      }
+      else
+      {
+        SUCCEED();
+      }
+    }
+    catch (::std::exception& e)
+    {
+      INFO("expected an error completion; got a different error. what: "
+           << e.what()
+#  ifndef _CCCL_NO_RTTI
+           << ", type: " << typeid(e).name()
+#  endif
+      );
+      CHECK(false);
+    }
+    catch (...)
+    {
+      INFO("expected an error completion; got a different error");
+      CHECK(false);
+    }
+  }
+#endif
 
   _CCCL_HOST_DEVICE void set_stopped() && noexcept
   {
