@@ -37,8 +37,8 @@ __host__ __device__ void test_fp_nans()
 template <class T, cuda::std::enable_if_t<cuda::std::__fp_has_nans_v<cuda::std::__fp_format_of_v<T>>, int> = 0>
 __host__ __device__ void test_fp_nans()
 {
-  constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
-  const auto result  = cuda::std::__fp_nans<T>();
+  // constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
+  const auto result = cuda::std::__fp_nans<T>();
   assert(cuda::std::isnan(result));
 
   // todo: make this work, see issue #5555
