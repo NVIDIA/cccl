@@ -24,6 +24,9 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
+  # For testing only
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
