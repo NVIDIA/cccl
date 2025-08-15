@@ -75,11 +75,9 @@
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 // _CCCL_ASSUME
-// NVCC does not properly respect [[assume()]], so use _CCCL_BUILTIN_ASSUME, see nvbug5458663
-// Hoewever, GCC does not support that at all, so take to workaround to always use `__builtin_assume` on device
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  define _CCCL_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
+// NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
 #else
