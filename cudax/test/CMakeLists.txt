@@ -1,6 +1,13 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit)
+
+# Find the cu++filt library.
+find_library(cudax_cufilt_lib "cufilt" PATHS "${CUDAToolkit_LIBRARY_DIR}" NO_DEFAULT_PATH)
+if (NOT cudax_cufilt_lib)
+  message(FATAL_ERROR "cudax: cu++filt library (libcufilt.a) not found.")
+endif()
 
 ## cudax_add_test
 #
@@ -25,6 +32,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     cccl.c2h.main
+    ${cudax_cufilt_lib}
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -57,6 +65,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target hierarchy ${cn_target}
     hierarchy/hierarchy_smoke.cu
     hierarchy/hierarchy_custom_types.cu
+  )
+
+  cudax_add_catch2_test(test_target binutils_demangle ${cn_target}
+    binutils/demangle.cu
   )
 
   cudax_add_catch2_test(test_target launch ${cn_target}
