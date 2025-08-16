@@ -55,6 +55,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -805,9 +806,9 @@ struct AgentSelectIf
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
-    // To avoid misaligned writes in vectorized_fill, we need to ensure that the items are aligned to at least four
+    // To avoid misaligned writes in vectorized_fill, we need to ensure that the array is aligned to at least four
     // bytes
-    alignas(::cuda::std::max(4, static_cast<int>(alignof(T)))) InputT items[ITEMS_PER_THREAD];
+    alignas(::cuda::std::max(4, static_cast<int>(alignof(InputT)))) InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
@@ -893,7 +894,7 @@ struct AgentSelectIf
   {
     // To avoid misaligned writes in vectorized_fill, we need to ensure that the items are aligned to at least four
     // bytes
-    alignas(::cuda::std::max(4, static_cast<int>(alignof(T)))) InputT items[ITEMS_PER_THREAD];
+    alignas(::cuda::std::max(4, static_cast<int>(alignof(InputT)))) InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
