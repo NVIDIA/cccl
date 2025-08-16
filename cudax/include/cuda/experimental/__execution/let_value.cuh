@@ -63,14 +63,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     __gather_completion_signatures<_Completions, _SetTag, _CUDA_VSTD::__decayed_tuple, __variant>;
 
   // This environment is part of the receiver used to connect the secondary sender.
-  template <class _SetTag, class _Attrs>
-  _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs) noexcept
+  template <class _SetTag, class _Attrs, class... _Env>
+  _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
   {
-    if constexpr (_CUDA_VSTD::__is_callable_v<get_completion_scheduler_t<_SetTag>, _Attrs>)
+    if constexpr (_CUDA_VSTD::__is_callable_v<get_completion_scheduler_t<_SetTag>, const _Attrs&, const _Env&...>)
     {
-      return __sch_env_t{get_completion_scheduler<_SetTag>(__attrs)};
+      return __sch_env_t{get_completion_scheduler<_SetTag>(__attrs, __env...)};
     }
-    else if constexpr (_CUDA_VSTD::__is_callable_v<get_domain_t, _Attrs>)
+    // else if constexpr (_CUDA_VSTD::__is_callable_v<get_completion_domain_t<_SetTag>, const _Attrs&, const _Env&...>)
+    // TODO
+    else if constexpr (_CUDA_VSTD::__is_callable_v<get_domain_t, const _Attrs&>)
     {
       return prop{get_domain, get_domain(__attrs)};
     }
@@ -80,8 +82,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     }
   }
 
-  template <class _SetTag, class _Attrs>
-  using __env2_t _CCCL_NODEBUG_ALIAS = decltype(__let_t::__mk_env2<_SetTag>(_CUDA_VSTD::declval<_Attrs>()));
+  template <class _SetTag, class _Attrs, class... _Env>
+  using __env2_t _CCCL_NODEBUG_ALIAS =
+    decltype(__let_t::__mk_env2<_SetTag>(_CUDA_VSTD::declval<_Attrs>(), _CUDA_VSTD::declval<_Env>()...));
+
   template <class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr2_fn
   {
@@ -113,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   };
 
   template <class _SetTag, class _Fn, class _Rcvr, class _Env2, class _Completions>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __let_t::__state_base_t<_Fn, _Rcvr, _Env2>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Fn, _Rcvr, _Env2>
   {
     using __sndr2_opstate_t _CCCL_NODEBUG_ALIAS =
       __gather_completion_signatures<_Completions,
@@ -200,14 +204,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   {
     using operation_state_concept = operation_state_t;
     using __completions_t         = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
-    using __env2_t                = __env2_t<_SetTag, env_of_t<_CvSndr>>;
+    using __env2_t                = __env2_t<_SetTag, env_of_t<_CvSndr>, env_of_t<_Rcvr>>;
     using __sndr1_rcvr_t          = __sndr1_rcvr_t<_SetTag, _Fn, _Rcvr, __env2_t, __completions_t>;
 
-    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
-      __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
-        : __state_{{{static_cast<_Rcvr&&>(__rcvr), __let_t::__mk_env2<_SetTag>(execution::get_env(__sndr))},
-                    static_cast<_Fn&&>(__fn)}}
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr& __sndr, _Fn& __fn, _Rcvr& __rcvr, __env2_t&& __env2) noexcept(
+      __nothrow_decay_copyable<_Fn, _Rcvr, __env2_t> && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
+        : __state_{{{static_cast<_Rcvr&&>(__rcvr), static_cast<__env2_t&&>(__env2)}, static_cast<_Fn&&>(__fn)}}
         , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __sndr1_rcvr_t{&__state_}))
+    {}
+
+    _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
+      __nothrow_decay_copyable<_Fn, _Rcvr, __env2_t> && __nothrow_connectable<_CvSndr, __sndr1_rcvr_t>)
+        : __opstate_t(
+            __sndr, __fn, __rcvr, __let_t::__mk_env2<_SetTag>(execution::get_env(__sndr), execution::get_env(__rcvr)))
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
@@ -405,9 +414,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
-      using __sch_t    = __query_result_or_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>, __nil>;
+      using __sch_t    = __query_result_or_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>, __nil, _Env...>;
       using __domain_t = __detail::__domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<__set_tag_t>>;
-      using __env2_t   = __let_t::__env2_t<__set_tag_t, env_of_t<_Sndr>>;
+      using __env2_t   = __let_t::__env2_t<__set_tag_t, env_of_t<_Sndr>, _Env...>;
       using __completion_domain_t = __completion_domain_of_t<__set_tag_t, _Sndr, _Fn>;
       using __transform_fn_t      = __transform_args_fn<_LetTag, _Fn, __env2_t, _Env...>;
 

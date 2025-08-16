@@ -37,29 +37,6 @@
 
 namespace cuda::experimental::execution
 {
-// NOLINTBEGIN(misc-unused-using-decls)
-using _CUDA_STD_EXEC::__forwarding_query;
-using _CUDA_STD_EXEC::__unwrap_reference_t;
-using _CUDA_STD_EXEC::env;
-using _CUDA_STD_EXEC::env_of_t;
-using _CUDA_STD_EXEC::forwarding_query;
-using _CUDA_STD_EXEC::forwarding_query_t;
-using _CUDA_STD_EXEC::get_env;
-using _CUDA_STD_EXEC::get_env_t;
-using _CUDA_STD_EXEC::prop;
-
-using _CUDA_STD_EXEC::__nothrow_queryable_with;
-using _CUDA_STD_EXEC::__query_result_t;
-using _CUDA_STD_EXEC::__queryable_with;
-
-using _CUDA_STD_EXEC::__query_or;
-using _CUDA_STD_EXEC::__query_result_or_t;
-// NOLINTEND(misc-unused-using-decls)
-
-template <class _Env, class _Query, bool _Default>
-_CCCL_CONCEPT __nothrow_queryable_with_or =
-  bool(__queryable_with<_Env, _Query> ? __nothrow_queryable_with<_Env, _Query> : _Default);
-
 template <class _DomainOrTag, class... _Args>
 using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
 
