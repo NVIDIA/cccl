@@ -817,20 +817,12 @@ struct AgentSelectIf
     {
       const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
 
-      // Pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the equality operator
-      InputT oob_value = *src;
-      // For performance reasons, we only attempt vectorization for DeviceSelect::Unique
+      // For unique, we need to pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the
+      // equality operator
       if constexpr (SELECT_METHOD == USE_DISCONTINUITY)
       {
+        InputT oob_value = *src;
         vectorized_fill(items, oob_value);
-      }
-      else
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < ITEMS_PER_THREAD; ++i)
-        {
-          items[i] = oob_value;
-        }
       }
       BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
     }
@@ -915,20 +907,12 @@ struct AgentSelectIf
     {
       const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
 
-      // Pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the equality operator
-      InputT oob_value = *src;
-      // For performance reasons, we only attempt vectorization for DeviceSelect::Unique
+      // For unique, we need to pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the
+      // equality operator
       if constexpr (SELECT_METHOD == USE_DISCONTINUITY)
       {
+        InputT oob_value = *src;
         vectorized_fill(items, oob_value);
-      }
-      else
-      {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = 0; i < ITEMS_PER_THREAD; ++i)
-        {
-          items[i] = oob_value;
-        }
       }
       BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
     }
