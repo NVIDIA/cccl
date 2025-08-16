@@ -108,6 +108,37 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     utility/ensure_current_device.cu
   )
 
+  # cuFILE tests (conditionally build only when cuFILE headers are available)
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
+  check_cxx_source_compiles("#if defined(__has_include) && __has_include(<cufile.h>)\nint main(){return 0;}\n#else\n#error no\n#endif" CUDAX_BUILD_CUFILE)
+  if (CUDAX_BUILD_CUFILE)
+    # Try to locate the cuFile library for linking runtime tests
+    find_library(CUFILE_LIBRARY NAMES cufile)
+    if (NOT CUFILE_LIBRARY)
+      message(WARNING "cuFile headers found but lib 'cufile' not found for linking tests. Tests may fail to link at build time.")
+    endif()
+
+    cudax_add_catch2_test(test_target cufile_driver ${cn_target}
+      ../test/cufile/driver_functions.cu
+    )
+    if (CUFILE_LIBRARY)
+      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
+    endif()
+    cudax_add_catch2_test(test_target cufile_utils ${cn_target}
+      ../test/cufile/utils_functions.cu
+    )
+    if (CUFILE_LIBRARY)
+      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
+    endif()
+    cudax_add_catch2_test(test_target cufile_file ${cn_target}
+      ../test/cufile/file_handle_functions.cu
+    )
+    if (CUFILE_LIBRARY)
+      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
+    endif()
+  endif()
+
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
     containers/uninitialized_async_buffer.cu
@@ -145,7 +176,47 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     algorithm/copy.cu
   )
 
+  option(CUDAX_ENABLE_CUFILE_TESTS "Enable cuFile tests (may fail due to cuFile library issues)" ON)
+  if(CUDAX_ENABLE_CUFILE_TESTS)
+    # Driver functions tests
+    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
+      cufile/driver_functions.cu
+    )
+
+    # File handle functions tests
+    cudax_add_catch2_test(cufile_file_handle_target cufile_file_handle ${cn_target}
+      cufile/file_handle_functions.cu
+      cufile/test_utils.cu
+    )
+
+    # Utils functions tests
+    cudax_add_catch2_test(cufile_utils_target cufile_utils ${cn_target}
+      cufile/utils_functions.cu
+      cufile/test_utils.cu
+    )
+
+    # Link cuFile library for all cufile tests
+    set(cufile_test_targets ${cufile_driver_target} ${cufile_file_handle_target} ${cufile_utils_target})
+    foreach(cufile_test_target IN LISTS cufile_test_targets)
+      find_library(CUFILE_LIBRARY cufile
+        HINTS ${CUDAToolkit_LIBRARY_DIR}
+        PATH_SUFFIXES lib64 lib
+      )
+      if(CUFILE_LIBRARY)
+        message(STATUS "Found cuFile library: ${CUFILE_LIBRARY}")
+        target_link_libraries(${cufile_test_target} PRIVATE ${CUFILE_LIBRARY})
+      else()
+        message(STATUS "cuFile library not found via find_library, trying direct linking")
+        # Try direct linking to cufile
+        target_link_libraries(${cufile_test_target} PRIVATE cufile)
+      endif()
+    endforeach()
+  else()
+    message(STATUS "cuFile tests disabled - set CUDAX_ENABLE_CUFILE_TESTS=ON to enable")
+  endif()
+
 endforeach()
+
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
