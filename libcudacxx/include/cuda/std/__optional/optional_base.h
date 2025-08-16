@@ -47,6 +47,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // suppress bogus unreachable code warning
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __optional_construct_from_invoke_tag
@@ -419,6 +422,8 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__deleted> : __optio
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
