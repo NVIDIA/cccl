@@ -177,7 +177,7 @@ C2H_TEST("let_value can throw, and set_error will be called", "[adaptors][let_va
             | ex::let_value([](int&) -> decltype(ex::just(0)) {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(std::move(sndr), checked_error_receiver{::std::exception_ptr{}});
+  auto op = ex::connect(std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 

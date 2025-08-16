@@ -63,10 +63,16 @@ private:
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
-    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
-    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
-    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
-    using __rcvr_t                       = sync_wait_t::__rcvr_t<__values_t, __errors_t, _Env>;
+    using __partial_completions_t = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
+    using __all_nothrow_t =
+      typename __partial_completions_t::template __transform_q<__nothrow_decay_copyable_t, _CUDA_VSTD::_And>;
+
+    using __completions_t =
+      __concat_completion_signatures_t<__partial_completions_t, __eptr_completion_if_t<!__all_nothrow_t::value>>;
+
+    using __values_t = __value_types<__completions_t, __decayed_tuple, _CUDA_VSTD::__type_self_t>;
+    using __errors_t = __error_types<__completions_t, __decayed_variant>;
+    using __rcvr_t   = sync_wait_t::__rcvr_t<__values_t, __errors_t, _Env>;
 
     _CCCL_HOST_API explicit __state_t(_Sndr&& __sndr, _Env&& __env)
         : __result_{}
