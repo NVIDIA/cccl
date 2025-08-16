@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cuda/std/__cccl/rtti.h>
 #include <cuda/std/string_view> // IWYU pragma: keep
 #include <cuda/std/type_traits>
 
@@ -121,12 +122,11 @@ struct checked_error_receiver
     }
     catch (::std::exception& e)
     {
-      INFO("expected an error completion; got a different error. what: "
-           << e.what()
 #  ifndef _CCCL_NO_RTTI
-           << ", type: " << typeid(e).name()
+      INFO("expected an error completion; got a different error. what: " << e.what() << ", type: " << typeid(e).name());
+#  else
+      INFO("expected an error completion; got a different error. what: " << e.what());
 #  endif
-      );
       CHECK(false);
     }
     catch (...)
