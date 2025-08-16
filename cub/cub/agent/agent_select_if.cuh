@@ -49,11 +49,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/vectorized_fill.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -804,15 +806,25 @@ struct AgentSelectIf
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
-    InputT items[ITEMS_PER_THREAD];
+    // To avoid misaligned writes in vectorized_fill, we need to ensure that the array is aligned to at least four
+    // bytes
+    alignas(::cuda::std::max(4, static_cast<int>(alignof(InputT)))) InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items)
-        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+      const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
+
+      // For unique, we need to pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the
+      // equality operator
+      if constexpr (SELECT_METHOD == USE_DISCONTINUITY)
+      {
+        InputT oob_value = *src;
+        vectorized_fill(items, oob_value);
+      }
+      BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
     }
     else
     {
@@ -884,15 +896,25 @@ struct AgentSelectIf
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(
     int num_tile_items, int tile_idx, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
-    InputT items[ITEMS_PER_THREAD];
+    // To avoid misaligned writes in vectorized_fill, we need to ensure that the items are aligned to at least four
+    // bytes
+    alignas(::cuda::std::max(4, static_cast<int>(alignof(InputT)))) InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items)
-        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+      const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
+
+      // For unique, we need to pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the
+      // equality operator
+      if constexpr (SELECT_METHOD == USE_DISCONTINUITY)
+      {
+        InputT oob_value = *src;
+        vectorized_fill(items, oob_value);
+      }
+      BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
     }
     else
     {
