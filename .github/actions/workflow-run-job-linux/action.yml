@@ -92,6 +92,7 @@ runs:
         SCCACHE_DIST_MAX_RETRIES: "inf"
         # Never fallback to building locally, fail instead
         SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
+        SCCACHE_IDLE_TIMEOUT: 0
       run: |
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
