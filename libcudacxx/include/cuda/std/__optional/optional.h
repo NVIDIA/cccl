@@ -48,6 +48,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // suppress bogus unreachable code warning
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Constraints
@@ -846,6 +849,8 @@ swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
