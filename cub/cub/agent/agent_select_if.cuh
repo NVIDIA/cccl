@@ -571,17 +571,6 @@ struct AgentSelectIf
           .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
       }
     }
-
-    // Set selection flags for out-of-bounds items
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-    {
-      // Set selection_flags for out-of-bounds items
-      if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
-      {
-        selection_flags[ITEM] = 1;
-      }
-    }
   }
 
   //---------------------------------------------------------------------
