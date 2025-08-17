@@ -49,13 +49,11 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/detail/vectorized_fill.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -328,7 +326,7 @@ struct AgentSelectIf
   WrappedInputIteratorT d_in; ///< Input items
   OutputIteratorWrapperT d_selected_out; ///< Output iterator for the selected items
   WrappedFlagsInputIteratorT d_flags_in; ///< Input selection flags (if applicable)
-  InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
+  EqualityOpT equality_op; ///< T equality operator
   SelectOpT select_op; ///< Selection operator
   OffsetT num_items; ///< Total number of input items
 
@@ -377,7 +375,7 @@ struct AgentSelectIf
       , d_in(d_in)
       , d_selected_out(d_selected_out)
       , d_flags_in(d_flags_in)
-      , inequality_op(equality_op)
+      , equality_op(equality_op)
       , select_op(select_op)
       , num_items(num_items)
       , streaming_context(streaming_context)
@@ -502,8 +500,20 @@ struct AgentSelectIf
     {
       __syncthreads();
 
-      // Set head selection_flags.  First tile sets the first flag for the first item
-      BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, inequality_op);
+      if constexpr (IS_LAST_TILE)
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        detail::guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
+      }
+      else
+      {
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op});
+      }
     }
     else
     {
@@ -515,8 +525,21 @@ struct AgentSelectIf
 
       __syncthreads();
 
-      BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
-        .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
+      if constexpr (IS_LAST_TILE)
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        detail::guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
+      }
+      else
+      {
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
+      }
     }
 
     // Set selection flags for out-of-bounds items
@@ -806,25 +829,15 @@ struct AgentSelectIf
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
-    // To avoid misaligned writes in vectorized_fill, we need to ensure that the array is aligned to at least four
-    // bytes
-    alignas(::cuda::std::max(4, static_cast<int>(alignof(InputT)))) InputT items[ITEMS_PER_THREAD];
+    InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
     if (IS_LAST_TILE)
     {
-      const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
-
-      // For unique, we need to pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the
-      // equality operator
-      if constexpr (SELECT_METHOD == USE_DISCONTINUITY)
-      {
-        InputT oob_value = *src;
-        vectorized_fill(items, oob_value);
-      }
-      BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items)
+        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {
@@ -896,25 +909,15 @@ struct AgentSelectIf
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(
     int num_tile_items, int tile_idx, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
-    // To avoid misaligned writes in vectorized_fill, we need to ensure that the items are aligned to at least four
-    // bytes
-    alignas(::cuda::std::max(4, static_cast<int>(alignof(InputT)))) InputT items[ITEMS_PER_THREAD];
+    InputT items[ITEMS_PER_THREAD];
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
     // Load items
     if (IS_LAST_TILE)
     {
-      const auto src = (d_in + streaming_context.input_offset()) + tile_offset;
-
-      // For unique, we need to pre-initialize such that invalid items for out-of-bounds indexes won't be passed to the
-      // equality operator
-      if constexpr (SELECT_METHOD == USE_DISCONTINUITY)
-      {
-        InputT oob_value = *src;
-        vectorized_fill(items, oob_value);
-      }
-      BlockLoadT(temp_storage.load_items).Load(src, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items)
+        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {

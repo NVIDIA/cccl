@@ -189,36 +189,6 @@ struct AgentReduceByKey
   // Tile status descriptor interface type
   using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
-  // Guarded inequality functor
-  template <typename _EqualityOpT>
-  struct GuardedInequalityWrapper
-  {
-    /// Wrapped equality operator
-    _EqualityOpT op;
-
-    /// Items remaining
-    int num_remaining;
-
-    /// Constructor
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
-        : op(op)
-        , num_remaining(num_remaining)
-    {}
-
-    /// Boolean inequality operator, returns <tt>(a != b)</tt>
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
-    {
-      if (idx < num_remaining)
-      {
-        return !op(a, b); // In bounds
-      }
-
-      // Return true if first out-of-bounds item, false otherwise
-      return (idx == num_remaining);
-    }
-  };
-
   // Constants
   static constexpr int BLOCK_THREADS     = AgentReduceByKeyPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
@@ -599,7 +569,7 @@ struct AgentReduceByKey
     if (IS_LAST_TILE)
     {
       // Use custom flag operator to additionally flag the first out-of-bounds item
-      GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
+      detail::guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
