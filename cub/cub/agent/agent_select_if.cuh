@@ -530,6 +530,8 @@ struct AgentSelectIf
     {
       __syncthreads();
 
+      if constexpr (sizeof(InputT) == 4)
+      {
         if constexpr (IS_LAST_TILE)
         {
           // Use custom flag operator to additionally flag the first out-of-bounds item
@@ -543,6 +545,15 @@ struct AgentSelectIf
           // Set head selection_flags.  First tile sets the first flag for the first item
           BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
             .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op});
+        }
+      }
+      else
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
       }
     }
     else
@@ -555,6 +566,8 @@ struct AgentSelectIf
 
       __syncthreads();
 
+      if constexpr (sizeof(InputT) == 4)
+      {
         if constexpr (IS_LAST_TILE)
         {
           // Use custom flag operator to additionally flag the first out-of-bounds item
@@ -569,6 +582,16 @@ struct AgentSelectIf
           // Set head selection_flags.  First tile sets the first flag for the first item
           BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
             .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
+        }
+      }
+      else
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
       }
     }
   }
