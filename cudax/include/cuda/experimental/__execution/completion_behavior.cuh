@@ -146,10 +146,28 @@ struct get_completion_behavior_t
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
 {
-  template <__completion_behavior::completion_behavior... _CBs>
+  using __completion_behavior_t = __completion_behavior::completion_behavior;
+
+  [[nodiscard]] _CCCL_API static constexpr auto __minimum(const __completion_behavior_t* __cbs, size_t __count) noexcept
+    -> __completion_behavior_t
+  {
+    auto __result = __completion_behavior::completion_behavior::inline_completion;
+    for (; __count != 0; --__count, ++__cbs)
+    {
+      if (*__cbs < __result)
+      {
+        __result = *__cbs;
+      }
+    }
+    return __result;
+  }
+
+  template <__completion_behavior_t... _CBs>
   [[nodiscard]] _CCCL_API constexpr auto operator()(completion_behavior::__constant_t<_CBs>...) const noexcept
   {
-    constexpr auto __behavior = ::cuda::std::min({_CBs...});
+    constexpr __completion_behavior_t __s_cbs[] = {_CBs..., __completion_behavior_t::inline_completion};
+    constexpr auto __behavior                   = __minimum(__s_cbs, sizeof...(_CBs));
+
     if constexpr (__behavior == completion_behavior::unknown)
     {
       return completion_behavior::unknown;

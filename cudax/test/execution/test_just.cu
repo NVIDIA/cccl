@@ -13,46 +13,51 @@
 #include <system_error>
 
 #include "common/checked_receiver.cuh"
-#include "common/inline_scheduler.cuh"
 
 namespace ex = cuda::experimental::execution;
 
 C2H_TEST("simple test of just sender factory", "[just]")
 {
+  ex::run_loop loop;
+  auto sch   = loop.get_scheduler();
+  auto env   = ex::prop{ex::get_scheduler, sch};
   auto sndr  = ex::just(42);
   using Sndr = decltype(sndr);
   STATIC_REQUIRE(ex::__is_sender<Sndr>);
   STATIC_REQUIRE(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
-  CHECK(
-    ex::get_completion_scheduler<ex::set_value_t>(ex::get_env(sndr), ex::prop{ex::get_scheduler, inline_scheduler{}})
-    == inline_scheduler{});
+  STATIC_REQUIRE(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_value_t>, ex::env_of_t<Sndr>>);
+  CHECK(ex::get_completion_scheduler<ex::set_value_t>(ex::get_env(sndr), env) == sch);
   auto op = ex::connect(sndr, checked_value_receiver{42});
   ex::start(op);
 }
 
 C2H_TEST("simple test of just_error sender factory", "[just]")
 {
+  ex::run_loop loop;
+  auto sch   = loop.get_scheduler();
+  auto env   = ex::prop{ex::get_scheduler, sch};
   auto ec    = ::std::errc::invalid_argument;
   auto sndr  = ex::just_error(ec);
   using Sndr = decltype(sndr);
   STATIC_REQUIRE(ex::__is_sender<Sndr>);
   STATIC_REQUIRE(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
-  CHECK(
-    ex::get_completion_scheduler<ex::set_error_t>(ex::get_env(sndr), ex::prop{ex::get_scheduler, inline_scheduler{}})
-    == inline_scheduler{});
+  STATIC_REQUIRE(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_error_t>, ex::env_of_t<Sndr>>);
+  CHECK(ex::get_completion_scheduler<ex::set_error_t>(ex::get_env(sndr), env) == sch);
   auto op = ex::connect(sndr, checked_error_receiver{ec});
   ex::start(op);
 }
 
 C2H_TEST("simple test of just_stopped sender factory", "[just]")
 {
+  ex::run_loop loop;
+  auto sch   = loop.get_scheduler();
+  auto env   = ex::prop{ex::get_scheduler, sch};
   auto sndr  = ex::just_stopped();
   using Sndr = decltype(sndr);
   STATIC_REQUIRE(ex::__is_sender<Sndr>);
   STATIC_REQUIRE(ex::get_completion_behavior<Sndr>() == ex::completion_behavior::inline_completion);
-  CHECK(
-    ex::get_completion_scheduler<ex::set_stopped_t>(ex::get_env(sndr), ex::prop{ex::get_scheduler, inline_scheduler{}})
-    == inline_scheduler{});
+  STATIC_REQUIRE(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_stopped_t>, ex::env_of_t<Sndr>>);
+  CHECK(ex::get_completion_scheduler<ex::set_stopped_t>(ex::get_env(sndr), env) == sch);
   auto op = ex::connect(sndr, checked_stopped_receiver{});
   ex::start(op);
 }

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -298,9 +299,8 @@ template <class _Sndr, class... _Env>
   else
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
-    using _NewSndr _CCCL_NODEBUG_ALIAS =
-      __call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
-    return execution::__get_completion_signatures_helper<_NewSndr, _Env...>();
+    using __new_sndr_t = __call_result_t<transform_sender_t, __domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
+    return execution::__get_completion_signatures_helper<__new_sndr_t, _Env...>();
   }
 }
 
@@ -340,6 +340,12 @@ template <class _Sndr>
   return ::cuda::std::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif // ^^^ no constexpr exceptions ^^^
+
+template <class _SetTag, class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_completions_for = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
+  ( //
+    requires(execution::get_completion_signatures<_Sndr, _Env...>().count(_SetTag{}) != 0) //
+  );
 
 } // namespace cuda::experimental::execution
 

@@ -28,9 +28,12 @@
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/initializer_list>
@@ -248,6 +251,38 @@ public:
 template <class... _Fns>
 _CCCL_HOST_DEVICE __first_callable(_Fns...) -> __first_callable<_Fns...>;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// __call_or
+namespace __detail
+{
+// query an environment, or return a default value if the query is not supported
+struct __call_or_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Fn, class _Default, class... _Args)
+  _CCCL_REQUIRES(__callable<_Fn, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __fn, _Default&&, _Args&&... __args) const
+    noexcept(__nothrow_callable<_Fn, _Args...>) -> __call_result_t<_Fn, _Args...>
+  {
+    return static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Default, class... _Args>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
+    noexcept(__nothrow_movable<_Default>) -> _Default
+  {
+    return static_cast<_Default&&>(__default);
+  }
+};
+} // namespace __detail
+
+_CCCL_GLOBAL_CONSTANT __detail::__call_or_t __call_or{};
+
+template <class _Fn, class _Default, class... _Args>
+using __call_result_or_t _CCCL_NODEBUG_ALIAS =
+  decltype(__call_or(::cuda::std::declval<_Fn>(), ::cuda::std::declval<_Default>(), ::cuda::std::declval<_Args>()...));
+
 //! \brief A callable that always return a value of type _Ty, regardless of the arguments
 //! passed to it.
 template <class _Ty>
@@ -270,6 +305,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 
 template <class _Ty>
 _CCCL_HOST_DEVICE __always(_Ty) -> __always<_Ty>;
+
+template <class _Ty, class... _Us>
+using __unless_one_of_t = ::cuda::std::enable_if_t<__none_of<_Ty, _Us...>, _Ty>;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")

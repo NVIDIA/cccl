@@ -35,6 +35,7 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
@@ -47,27 +48,33 @@ namespace cuda::experimental
 {
 namespace execution
 {
+namespace __detail
+{
 template <class _Env, class _Query>
-_CCCL_CONCEPT __statically_queryable_with = //
-  _CCCL_REQUIRES_EXPR((_Env, _Query)) //
-  ( //
-    (::cuda::std::remove_cvref_t<_Env>::query(_Query{})) //
-  );
+using __statically_queryable_with_t = decltype(::cuda::std::remove_cvref_t<_Env>::query(std::declval<_Query>()));
+} // namespace __detail
+
+template <class _Env, class _Query>
+_CCCL_CONCEPT __statically_queryable_with =
+  __is_instantiable_with<__detail::__statically_queryable_with_t, _Env, _Query>;
 
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __env_ref
 
 //! \brief __env_ref_ is a utility that builds a queryable object from a reference
 //! to another queryable object.
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_
 {
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
-    -> __query_result_t<_Env, _Query>
+  _CCCL_TEMPLATE(class _Query, class... _As)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query, _As...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _As&&... __args) const
+    noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
   {
-    return __env_.query(_Query{});
+    return __env_.query(_Query{}, static_cast<_As&&>(__args)...);
   }
 
   _Env const& __env_;
@@ -115,6 +122,9 @@ using __env_ref_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__env_ref_fn, 
 
 _CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// __fwd_env
+
 //! \brief __fwd_env_ is a utility that forwards queries to a given queryable object
 //! provided those queries that satisfy the __forwarding_query concept.
 template <class _Env>
@@ -149,13 +159,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
-    -> decltype(auto)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env) const noexcept
   {
-    if constexpr (::cuda::__is_specialization_of_v<::cuda::std::remove_cvref_t<_Env>, __fwd_env_>)
+    static_assert(__nothrow_movable<_Env>);
+    // If the environment is already a forwarding environment, we can just return it.
+    if constexpr (__is_specialization_of_v<::cuda::std::remove_cvref_t<_Env>, __fwd_env_>)
     {
-      // If the environment is already a forwarding environment, we can just return it.
-      return static_cast<_Env>(static_cast<_Env&&>(__env)); // take care to not return an rvalue reference
+      return static_cast<_Env&&>(__env);
     }
     else
     {
@@ -170,27 +180,136 @@ using __fwd_env_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__fwd_env_fn, 
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 
-//! \brief __sch_env_t is a utility that builds a queryable object from a scheduler. It
+//////////////////////////////////////////////////////////////////////////////////////////
+// __sch_env
+
+//! \brief __sch_env_t is a utility that builds an environment from a scheduler. It
 //! defines the `get_scheduler` query and provides a default for the `get_domain` query.
+template <class _Sch, class... _PrevSch>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t;
+
 template <class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t<_Sch>
 {
   [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
   {
     return __sch_;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(get_domain_t) const noexcept
   {
-    return __query_result_or_t<_Sch, get_domain_t, default_domain>{};
+    return __query_result_or_t<_Sch, get_completion_domain_t<set_value_t>, default_domain>{};
+  }
+
+  _Sch __sch_;
+};
+
+template <class _Sch, class _PrevSch>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t<_Sch, _PrevSch>
+{
+  [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
+  {
+    return __sch_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto query(get_domain_t) const noexcept
+  {
+    return __query_result_or_t<_Sch, get_completion_domain_t<set_value_t>, default_domain>{};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto query(get_previous_scheduler_t) const noexcept -> _PrevSch
+  {
+    return __prev_sch_;
+  }
+
+  _Sch __sch_;
+  _PrevSch __prev_sch_;
+};
+
+template <class _Sch, class... _PrevSch>
+_CCCL_HOST_DEVICE __sch_env_t(_Sch, _PrevSch...) -> __sch_env_t<_Sch, _PrevSch...>;
+
+struct __mk_sch_env_t
+{
+  template <class _Sch, class... _Env>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sch __sch, const _Env&... __env) const noexcept
+  {
+    if constexpr ((__callable<get_scheduler_t, const _Env&> || ...))
+    {
+      return __sch_env_t{__sch, get_scheduler(__env)...};
+    }
+    else
+    {
+      return __sch_env_t{__sch};
+    }
+  }
+};
+
+_CCCL_GLOBAL_CONSTANT __mk_sch_env_t __mk_sch_env{};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __sch_attrs
+
+//! \brief __sch_attrs_t is a utility that builds an attributes queryable from a
+//! scheduler. It defines the `get_completion_scheduler` query and provides a default for
+//! the `get_completion_domain` query.
+template <class _Sch>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_attrs_t
+{
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
+  {
+    return __sch_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept
+  {
+    return __call_result_or_t<get_completion_domain_t<set_value_t>, default_domain, _Sch>{};
   }
 
   _Sch __sch_;
 };
 
 template <class _Sch>
-_CCCL_HOST_DEVICE __sch_env_t(_Sch) -> __sch_env_t<_Sch>;
+_CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// __join_env
+namespace __detail
+{
+struct __join_env_fn
+{
+  template <class _Env>
+  _CCCL_API constexpr auto operator()(_Env&& __env, env<> = {}) const noexcept -> _Env
+  {
+    static_assert(__nothrow_movable<_Env>);
+    return static_cast<_Env&&>(__env);
+  }
+
+  template <class _Env>
+  _CCCL_API constexpr auto operator()(env<>, _Env&& __env) const noexcept -> __fwd_env_t<_Env>
+  {
+    return __fwd_env(static_cast<_Env&&>(__env));
+  }
+
+  _CCCL_API constexpr auto operator()(env<>, env<>) const noexcept -> env<>
+  {
+    return {};
+  }
+
+  template <class _First, class _Second>
+  _CCCL_API constexpr auto operator()(_First&& __first, _Second&& __second) const noexcept
+    -> env<_First, __fwd_env_t<_Second>>
+  {
+    static_assert(__nothrow_movable<_First>);
+    return {static_cast<_First&&>(__first), __fwd_env(static_cast<_Second&&>(__second))};
+  }
+};
+} // namespace __detail
+
+_CCCL_GLOBAL_CONSTANT __detail::__join_env_fn __join_env{};
+
+template <class... _Envs>
+using __join_env_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__join_env_fn, _Envs...>;
 } // namespace execution
 
 template <class... _Properties>

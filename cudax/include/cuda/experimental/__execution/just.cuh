@@ -34,6 +34,14 @@
 
 namespace cuda::experimental::execution
 {
+struct __just_attrs_t
+{
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+  {
+    return completion_behavior::inline_completion;
+  }
+};
+
 template <class _JustTag, class _SetTag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t
 {
@@ -73,14 +81,6 @@ private:
 
     _Rcvr __rcvr_;
     __tuple_t __values_;
-  };
-
-  struct __attrs_t
-  {
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
-    {
-      return completion_behavior::inline_completion;
-    }
   };
 
   template <class... _Ts>
@@ -139,7 +139,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 
   [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
   {
-    return __attrs_t{};
+    return __just_attrs_t{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
