@@ -125,6 +125,36 @@ namespace detail
 namespace select
 {
 
+// Guarded inequality functor
+template <typename EqualityOpT>
+struct guarded_inequality_op
+{
+  /// Wrapped equality operator
+  EqualityOpT op;
+
+  /// Items remaining
+  int num_remaining;
+
+  /// Constructor
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE guarded_inequality_op(EqualityOpT op, int num_remaining)
+      : op(op)
+      , num_remaining(num_remaining)
+  {}
+
+  /// Boolean inequality operator, returns <tt>(a != b)</tt>
+  template <typename T>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+  {
+    if (idx < num_remaining)
+    {
+      return !op(a, b); // In bounds
+    }
+
+    // Return true if first out-of-bounds item, false otherwise
+    return (idx == num_remaining);
+  }
+};
+
 template <typename SelectedOutputItT, typename RejectedOutputItT>
 struct partition_distinct_output_t
 {
@@ -503,7 +533,7 @@ struct AgentSelectIf
       if constexpr (IS_LAST_TILE)
       {
         // Use custom flag operator to additionally flag the first out-of-bounds item
-        detail::guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
 
         // Set head selection_flags.  First tile sets the first flag for the first item
         BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
@@ -528,7 +558,7 @@ struct AgentSelectIf
       if constexpr (IS_LAST_TILE)
       {
         // Use custom flag operator to additionally flag the first out-of-bounds item
-        detail::guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
 
         // Set head selection_flags.  First tile sets the first flag for the first item
         BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)

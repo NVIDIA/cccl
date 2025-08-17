@@ -402,36 +402,6 @@ struct ReduceByKeyOp
 namespace detail
 {
 
-// Guarded inequality functor
-template <typename EqualityOpT>
-struct guarded_inequality_op
-{
-  /// Wrapped equality operator
-  EqualityOpT op;
-
-  /// Items remaining
-  int num_remaining;
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE guarded_inequality_op(EqualityOpT op, int num_remaining)
-      : op(op)
-      , num_remaining(num_remaining)
-  {}
-
-  /// Boolean inequality operator, returns <tt>(a != b)</tt>
-  template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
-  {
-    if (idx < num_remaining)
-    {
-      return !op(a, b); // In bounds
-    }
-
-    // Return true if first out-of-bounds item, false otherwise
-    return (idx == num_remaining);
-  }
-};
-
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
