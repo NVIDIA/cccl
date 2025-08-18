@@ -3,7 +3,7 @@
 
 exit
 ^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // exit; // PTX ISA 10, SM_50
    template <typename = void>

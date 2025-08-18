@@ -3,7 +3,7 @@
 
 tcgen05.st.sync.aligned.16x64b.x1.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x1.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -13,7 +13,7 @@ tcgen05.st.sync.aligned.16x64b.x1.b32
 
 tcgen05.st.sync.aligned.16x64b.x1.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x1.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -23,7 +23,7 @@ tcgen05.st.sync.aligned.16x64b.x1.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x2.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x2.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -33,7 +33,7 @@ tcgen05.st.sync.aligned.16x64b.x2.b32
 
 tcgen05.st.sync.aligned.16x64b.x2.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x2.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -43,7 +43,7 @@ tcgen05.st.sync.aligned.16x64b.x2.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x4.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x4.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -53,7 +53,7 @@ tcgen05.st.sync.aligned.16x64b.x4.b32
 
 tcgen05.st.sync.aligned.16x64b.x4.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x4.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -63,7 +63,7 @@ tcgen05.st.sync.aligned.16x64b.x4.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x8.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x8.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -73,7 +73,7 @@ tcgen05.st.sync.aligned.16x64b.x8.b32
 
 tcgen05.st.sync.aligned.16x64b.x8.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x8.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -83,7 +83,7 @@ tcgen05.st.sync.aligned.16x64b.x8.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x16.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x16.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -93,7 +93,7 @@ tcgen05.st.sync.aligned.16x64b.x16.b32
 
 tcgen05.st.sync.aligned.16x64b.x16.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x16.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -103,7 +103,7 @@ tcgen05.st.sync.aligned.16x64b.x16.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x32.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x32.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -113,7 +113,7 @@ tcgen05.st.sync.aligned.16x64b.x32.b32
 
 tcgen05.st.sync.aligned.16x64b.x32.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x32.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -123,7 +123,7 @@ tcgen05.st.sync.aligned.16x64b.x32.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x64.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x64.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -133,7 +133,7 @@ tcgen05.st.sync.aligned.16x64b.x64.b32
 
 tcgen05.st.sync.aligned.16x64b.x64.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x64.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -143,7 +143,7 @@ tcgen05.st.sync.aligned.16x64b.x64.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x64b.x128.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x128.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -153,7 +153,7 @@ tcgen05.st.sync.aligned.16x64b.x128.b32
 
 tcgen05.st.sync.aligned.16x64b.x128.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x64b.x128.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -163,7 +163,7 @@ tcgen05.st.sync.aligned.16x64b.x128.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x1.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x1.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -173,7 +173,7 @@ tcgen05.st.sync.aligned.16x128b.x1.b32
 
 tcgen05.st.sync.aligned.16x128b.x1.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x1.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -183,7 +183,7 @@ tcgen05.st.sync.aligned.16x128b.x1.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x2.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x2.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -193,7 +193,7 @@ tcgen05.st.sync.aligned.16x128b.x2.b32
 
 tcgen05.st.sync.aligned.16x128b.x2.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x2.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -203,7 +203,7 @@ tcgen05.st.sync.aligned.16x128b.x2.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x4.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x4.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -213,7 +213,7 @@ tcgen05.st.sync.aligned.16x128b.x4.b32
 
 tcgen05.st.sync.aligned.16x128b.x4.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x4.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -223,7 +223,7 @@ tcgen05.st.sync.aligned.16x128b.x4.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x8.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x8.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -233,7 +233,7 @@ tcgen05.st.sync.aligned.16x128b.x8.b32
 
 tcgen05.st.sync.aligned.16x128b.x8.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x8.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -243,7 +243,7 @@ tcgen05.st.sync.aligned.16x128b.x8.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x16.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x16.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -253,7 +253,7 @@ tcgen05.st.sync.aligned.16x128b.x16.b32
 
 tcgen05.st.sync.aligned.16x128b.x16.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x16.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -263,7 +263,7 @@ tcgen05.st.sync.aligned.16x128b.x16.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x32.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x32.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -273,7 +273,7 @@ tcgen05.st.sync.aligned.16x128b.x32.b32
 
 tcgen05.st.sync.aligned.16x128b.x32.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x32.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -283,7 +283,7 @@ tcgen05.st.sync.aligned.16x128b.x32.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x128b.x64.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x64.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -293,7 +293,7 @@ tcgen05.st.sync.aligned.16x128b.x64.b32
 
 tcgen05.st.sync.aligned.16x128b.x64.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x128b.x64.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -303,7 +303,7 @@ tcgen05.st.sync.aligned.16x128b.x64.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x256b.x1.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x1.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -313,7 +313,7 @@ tcgen05.st.sync.aligned.16x256b.x1.b32
 
 tcgen05.st.sync.aligned.16x256b.x1.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x1.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -323,7 +323,7 @@ tcgen05.st.sync.aligned.16x256b.x1.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x256b.x2.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x2.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -333,7 +333,7 @@ tcgen05.st.sync.aligned.16x256b.x2.b32
 
 tcgen05.st.sync.aligned.16x256b.x2.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x2.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -343,7 +343,7 @@ tcgen05.st.sync.aligned.16x256b.x2.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x256b.x4.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x4.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -353,7 +353,7 @@ tcgen05.st.sync.aligned.16x256b.x4.b32
 
 tcgen05.st.sync.aligned.16x256b.x4.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x4.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -363,7 +363,7 @@ tcgen05.st.sync.aligned.16x256b.x4.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x256b.x8.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x8.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -373,7 +373,7 @@ tcgen05.st.sync.aligned.16x256b.x8.b32
 
 tcgen05.st.sync.aligned.16x256b.x8.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x8.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -383,7 +383,7 @@ tcgen05.st.sync.aligned.16x256b.x8.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x256b.x16.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x16.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -393,7 +393,7 @@ tcgen05.st.sync.aligned.16x256b.x16.b32
 
 tcgen05.st.sync.aligned.16x256b.x16.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x16.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -403,7 +403,7 @@ tcgen05.st.sync.aligned.16x256b.x16.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x256b.x32.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x32.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -413,7 +413,7 @@ tcgen05.st.sync.aligned.16x256b.x32.b32
 
 tcgen05.st.sync.aligned.16x256b.x32.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x256b.x32.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -423,7 +423,7 @@ tcgen05.st.sync.aligned.16x256b.x32.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x1.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x1.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -433,7 +433,7 @@ tcgen05.st.sync.aligned.32x32b.x1.b32
 
 tcgen05.st.sync.aligned.32x32b.x1.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x1.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -443,7 +443,7 @@ tcgen05.st.sync.aligned.32x32b.x1.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x2.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x2.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -453,7 +453,7 @@ tcgen05.st.sync.aligned.32x32b.x2.b32
 
 tcgen05.st.sync.aligned.32x32b.x2.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x2.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -463,7 +463,7 @@ tcgen05.st.sync.aligned.32x32b.x2.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x4.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x4.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -473,7 +473,7 @@ tcgen05.st.sync.aligned.32x32b.x4.b32
 
 tcgen05.st.sync.aligned.32x32b.x4.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x4.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -483,7 +483,7 @@ tcgen05.st.sync.aligned.32x32b.x4.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x8.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x8.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -493,7 +493,7 @@ tcgen05.st.sync.aligned.32x32b.x8.b32
 
 tcgen05.st.sync.aligned.32x32b.x8.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x8.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -503,7 +503,7 @@ tcgen05.st.sync.aligned.32x32b.x8.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x16.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x16.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -513,7 +513,7 @@ tcgen05.st.sync.aligned.32x32b.x16.b32
 
 tcgen05.st.sync.aligned.32x32b.x16.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x16.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -523,7 +523,7 @@ tcgen05.st.sync.aligned.32x32b.x16.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x32.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x32.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -533,7 +533,7 @@ tcgen05.st.sync.aligned.32x32b.x32.b32
 
 tcgen05.st.sync.aligned.32x32b.x32.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x32.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -543,7 +543,7 @@ tcgen05.st.sync.aligned.32x32b.x32.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x64.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x64.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -553,7 +553,7 @@ tcgen05.st.sync.aligned.32x32b.x64.b32
 
 tcgen05.st.sync.aligned.32x32b.x64.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x64.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -563,7 +563,7 @@ tcgen05.st.sync.aligned.32x32b.x64.unpack::16b.b32
 
 tcgen05.st.sync.aligned.32x32b.x128.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x128.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -573,7 +573,7 @@ tcgen05.st.sync.aligned.32x32b.x128.b32
 
 tcgen05.st.sync.aligned.32x32b.x128.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.32x32b.x128.unpack::16b.b32 [taddr], values; // PTX ISA 86, SM_100a, SM_110a
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -583,7 +583,7 @@ tcgen05.st.sync.aligned.32x32b.x128.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x1.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x1.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -594,7 +594,7 @@ tcgen05.st.sync.aligned.16x32bx2.x1.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x1.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x1.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -605,7 +605,7 @@ tcgen05.st.sync.aligned.16x32bx2.x1.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x2.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x2.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -616,7 +616,7 @@ tcgen05.st.sync.aligned.16x32bx2.x2.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x2.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x2.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -627,7 +627,7 @@ tcgen05.st.sync.aligned.16x32bx2.x2.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x4.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x4.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -638,7 +638,7 @@ tcgen05.st.sync.aligned.16x32bx2.x4.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x4.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x4.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -649,7 +649,7 @@ tcgen05.st.sync.aligned.16x32bx2.x4.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x8.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x8.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -660,7 +660,7 @@ tcgen05.st.sync.aligned.16x32bx2.x8.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x8.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x8.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -671,7 +671,7 @@ tcgen05.st.sync.aligned.16x32bx2.x8.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x16.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x16.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -682,7 +682,7 @@ tcgen05.st.sync.aligned.16x32bx2.x16.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x16.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x16.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -693,7 +693,7 @@ tcgen05.st.sync.aligned.16x32bx2.x16.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x32.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x32.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -704,7 +704,7 @@ tcgen05.st.sync.aligned.16x32bx2.x32.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x32.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x32.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -715,7 +715,7 @@ tcgen05.st.sync.aligned.16x32bx2.x32.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x64.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x64.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -726,7 +726,7 @@ tcgen05.st.sync.aligned.16x32bx2.x64.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x64.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x64.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -737,7 +737,7 @@ tcgen05.st.sync.aligned.16x32bx2.x64.unpack::16b.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x128.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x128.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -748,7 +748,7 @@ tcgen05.st.sync.aligned.16x32bx2.x128.b32
 
 tcgen05.st.sync.aligned.16x32bx2.x128.unpack::16b.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.st.sync.aligned.16x32bx2.x128.unpack::16b.b32 [taddr], immHalfSplitoff, values; // PTX ISA 86, SM_100a, SM_110a
    template <int N32, typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>

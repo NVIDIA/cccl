@@ -3,7 +3,7 @@
 
 barrier.cluster.arrive
 ^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // barrier.cluster.arrive; // PTX ISA 78, SM_90
    // Marked volatile and as clobbering memory
@@ -12,7 +12,7 @@ barrier.cluster.arrive
 
 barrier.cluster.wait
 ^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // barrier.cluster.wait; // PTX ISA 78, SM_90
    // Marked volatile and as clobbering memory
@@ -21,7 +21,7 @@ barrier.cluster.wait
 
 barrier.cluster.arrive.release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // barrier.cluster.arrive.sem; // PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -32,7 +32,7 @@ barrier.cluster.arrive.release
 
 barrier.cluster.arrive.relaxed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // barrier.cluster.arrive.sem; // PTX ISA 80, SM_90
    // .sem       = { .relaxed }
@@ -43,7 +43,7 @@ barrier.cluster.arrive.relaxed
 
 barrier.cluster.wait.acquire
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // barrier.cluster.wait.sem; // PTX ISA 80, SM_90
    // .sem       = { .acquire }

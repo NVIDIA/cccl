@@ -3,7 +3,7 @@
 
 tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.alloc.cta_group.sync.aligned.shared::cta.b32 [dst], nCols; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -15,7 +15,7 @@ tcgen05.alloc.cta_group::1.sync.aligned.shared::cta.b32
 
 tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.alloc.cta_group.sync.aligned.shared::cta.b32 [dst], nCols; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -27,7 +27,7 @@ tcgen05.alloc.cta_group::2.sync.aligned.shared::cta.b32
 
 tcgen05.dealloc.cta_group::1.sync.aligned.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.dealloc.cta_group.sync.aligned.b32 taddr, nCols; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -39,7 +39,7 @@ tcgen05.dealloc.cta_group::1.sync.aligned.b32
 
 tcgen05.dealloc.cta_group::2.sync.aligned.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.dealloc.cta_group.sync.aligned.b32 taddr, nCols; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -51,7 +51,7 @@ tcgen05.dealloc.cta_group::2.sync.aligned.b32
 
 tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.relinquish_alloc_permit.cta_group.sync.aligned; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -61,7 +61,7 @@ tcgen05.relinquish_alloc_permit.cta_group::1.sync.aligned
 
 tcgen05.relinquish_alloc_permit.cta_group::2.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.relinquish_alloc_permit.cta_group.sync.aligned; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }

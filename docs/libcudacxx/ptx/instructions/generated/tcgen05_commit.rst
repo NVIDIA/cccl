@@ -3,7 +3,7 @@
 
 tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.commit.cta_group.mbarrier::arrive::one.shared::cluster.b64 [smem_bar]; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -14,7 +14,7 @@ tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.b64
 
 tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.commit.cta_group.mbarrier::arrive::one.shared::cluster.b64 [smem_bar]; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -25,7 +25,7 @@ tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.b64
 
 tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.commit.cta_group.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -37,7 +37,7 @@ tcgen05.commit.cta_group::1.mbarrier::arrive::one.shared::cluster.multicast::clu
 
 tcgen05.commit.cta_group::2.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.commit.cta_group.mbarrier::arrive::one.shared::cluster.multicast::cluster.b64 [smem_bar], ctaMask; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }

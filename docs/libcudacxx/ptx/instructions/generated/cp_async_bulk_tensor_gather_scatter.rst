@@ -3,7 +3,7 @@
 
 cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::gather4.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar]; // PTX ISA 86, SM_100
    // .dst       = { .shared::cta }
@@ -19,7 +19,7 @@ cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::
 
 cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::1
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::gather4.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords], [smem_bar]; // PTX ISA 86, SM_100a, SM_110a
    // .dst       = { .shared::cta }
@@ -37,7 +37,7 @@ cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::
 
 cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::bytes.cta_group::2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::gather4.mbarrier::complete_tx::bytes.cta_group [dstMem], [tensorMap, tensorCoords], [smem_bar]; // PTX ISA 86, SM_100a, SM_110a
    // .dst       = { .shared::cta }
@@ -55,7 +55,7 @@ cp.async.bulk.tensor.2d.shared::cta.global.tile::gather4.mbarrier::complete_tx::
 
 cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // PTX ISA 86, SM_100a, SM_110a
    // .dst       = { .shared::cluster }
@@ -72,7 +72,7 @@ cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_
 
 cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::1
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster.cta_group [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // PTX ISA 86, SM_100a, SM_110a
    // .dst       = { .shared::cluster }
@@ -91,7 +91,7 @@ cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_
 
 cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster.cta_group::2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::gather4.mbarrier::complete_tx::bytes.multicast::cluster.cta_group [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // PTX ISA 86, SM_100a, SM_110a
    // .dst       = { .shared::cluster }
@@ -110,7 +110,7 @@ cp.async.bulk.tensor.2d.shared::cluster.global.tile::gather4.mbarrier::complete_
 
 cp.async.bulk.tensor.2d.global.shared::cta.tile::scatter4.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // cp.async.bulk.tensor.2d.dst.src.tile::scatter4.bulk_group [tensorMap, tensorCoords], [srcMem]; // PTX ISA 86, SM_100a, SM_110a
    // .dst       = { .global }

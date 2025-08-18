@@ -3,7 +3,7 @@
 
 fence.mbarrier_init.release.cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // fence.mbarrier_init.sem.scope; // 3. PTX ISA 80, SM_90
    // .sem       = { .release }

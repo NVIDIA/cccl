@@ -3,7 +3,7 @@
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -21,7 +21,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -39,7 +39,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -57,7 +57,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -75,7 +75,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -92,7 +92,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -109,7 +109,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -126,7 +126,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -143,7 +143,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -161,7 +161,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -179,7 +179,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -197,7 +197,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -215,7 +215,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -232,7 +232,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -249,7 +249,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -266,7 +266,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -283,7 +283,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -301,7 +301,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -319,7 +319,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -337,7 +337,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -355,7 +355,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -372,7 +372,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -389,7 +389,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -406,7 +406,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -423,7 +423,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -441,7 +441,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -459,7 +459,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -477,7 +477,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -495,7 +495,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -512,7 +512,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -529,7 +529,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -546,7 +546,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -563,7 +563,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -581,7 +581,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -599,7 +599,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -617,7 +617,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -635,7 +635,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -652,7 +652,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -669,7 +669,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -686,7 +686,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -703,7 +703,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -721,7 +721,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -739,7 +739,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -757,7 +757,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -775,7 +775,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -792,7 +792,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -809,7 +809,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -826,7 +826,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -843,7 +843,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -861,7 +861,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -879,7 +879,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -897,7 +897,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -915,7 +915,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -932,7 +932,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -949,7 +949,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -966,7 +966,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -983,7 +983,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1001,7 +1001,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1019,7 +1019,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1037,7 +1037,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1055,7 +1055,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1072,7 +1072,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1089,7 +1089,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1106,7 +1106,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b0::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1123,7 +1123,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b0::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1141,7 +1141,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1159,7 +1159,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1177,7 +1177,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1195,7 +1195,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1212,7 +1212,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1229,7 +1229,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1246,7 +1246,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1263,7 +1263,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1281,7 +1281,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1299,7 +1299,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1317,7 +1317,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1335,7 +1335,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1352,7 +1352,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1369,7 +1369,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1386,7 +1386,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1403,7 +1403,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1421,7 +1421,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1439,7 +1439,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1457,7 +1457,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1475,7 +1475,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1492,7 +1492,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1509,7 +1509,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1526,7 +1526,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1543,7 +1543,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1561,7 +1561,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1579,7 +1579,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1597,7 +1597,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1615,7 +1615,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1632,7 +1632,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1649,7 +1649,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1666,7 +1666,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1683,7 +1683,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1701,7 +1701,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1719,7 +1719,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1737,7 +1737,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1755,7 +1755,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1772,7 +1772,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1789,7 +1789,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1806,7 +1806,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1823,7 +1823,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1841,7 +1841,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1859,7 +1859,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1877,7 +1877,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1895,7 +1895,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1912,7 +1912,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1929,7 +1929,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1946,7 +1946,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1963,7 +1963,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1981,7 +1981,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -1999,7 +1999,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2017,7 +2017,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2035,7 +2035,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2052,7 +2052,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2069,7 +2069,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2086,7 +2086,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2103,7 +2103,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2121,7 +2121,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2139,7 +2139,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2157,7 +2157,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2175,7 +2175,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2192,7 +2192,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2209,7 +2209,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2226,7 +2226,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b1::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2243,7 +2243,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b1::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2261,7 +2261,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2279,7 +2279,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2297,7 +2297,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2315,7 +2315,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2332,7 +2332,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2349,7 +2349,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2366,7 +2366,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2383,7 +2383,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2401,7 +2401,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2419,7 +2419,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2437,7 +2437,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2455,7 +2455,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2472,7 +2472,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2489,7 +2489,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2506,7 +2506,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2523,7 +2523,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2541,7 +2541,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2559,7 +2559,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2577,7 +2577,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2595,7 +2595,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2612,7 +2612,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2629,7 +2629,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2646,7 +2646,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2663,7 +2663,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2681,7 +2681,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2699,7 +2699,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2717,7 +2717,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2735,7 +2735,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2752,7 +2752,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2769,7 +2769,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2786,7 +2786,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2803,7 +2803,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2821,7 +2821,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2839,7 +2839,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2857,7 +2857,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2875,7 +2875,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2892,7 +2892,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2909,7 +2909,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2926,7 +2926,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2943,7 +2943,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2961,7 +2961,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2979,7 +2979,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -2997,7 +2997,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3015,7 +3015,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3032,7 +3032,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3049,7 +3049,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3066,7 +3066,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3083,7 +3083,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3101,7 +3101,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3119,7 +3119,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3137,7 +3137,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3155,7 +3155,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3172,7 +3172,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3189,7 +3189,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3206,7 +3206,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3223,7 +3223,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3241,7 +3241,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3259,7 +3259,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3277,7 +3277,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3295,7 +3295,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3312,7 +3312,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3329,7 +3329,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3346,7 +3346,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b2::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3363,7 +3363,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b2::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3381,7 +3381,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3399,7 +3399,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3417,7 +3417,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3435,7 +3435,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3452,7 +3452,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3469,7 +3469,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3486,7 +3486,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3503,7 +3503,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3521,7 +3521,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3539,7 +3539,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3557,7 +3557,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3575,7 +3575,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3592,7 +3592,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3609,7 +3609,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3626,7 +3626,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::fill [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3643,7 +3643,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::fill
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3661,7 +3661,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3679,7 +3679,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3697,7 +3697,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3715,7 +3715,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3732,7 +3732,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3749,7 +3749,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3766,7 +3766,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3783,7 +3783,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3801,7 +3801,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3819,7 +3819,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3837,7 +3837,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3855,7 +3855,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3872,7 +3872,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3889,7 +3889,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3906,7 +3906,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::use [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3923,7 +3923,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::use
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3941,7 +3941,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3959,7 +3959,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3977,7 +3977,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -3995,7 +3995,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4012,7 +4012,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4029,7 +4029,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4046,7 +4046,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4063,7 +4063,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4081,7 +4081,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4099,7 +4099,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4117,7 +4117,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4135,7 +4135,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4152,7 +4152,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4169,7 +4169,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4186,7 +4186,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::lastuse [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4203,7 +4203,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::lastuse
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4221,7 +4221,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4239,7 +4239,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4257,7 +4257,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4275,7 +4275,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4292,7 +4292,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4309,7 +4309,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4326,7 +4326,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], a_desc, b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4343,7 +4343,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4361,7 +4361,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4379,7 +4379,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4397,7 +4397,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, zero_column_mask_desc; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4415,7 +4415,7 @@ tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4432,7 +4432,7 @@ tcgen05.mma.ws.cta_group::1.kind::f16.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4449,7 +4449,7 @@ tcgen05.mma.ws.cta_group::1.kind::tf32.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
@@ -4466,7 +4466,7 @@ tcgen05.mma.ws.cta_group::1.kind::f8f6f4.collector::b3::discard
 
 tcgen05.mma.ws.cta_group::1.kind::i8.collector::b3::discard
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: cuda
+.. code:: cuda
 
    // tcgen05.mma.ws.cta_group.kind.collector::b3::discard [d_tmem], [a_tmem], b_desc, idesc, enable_input_d; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1 }
