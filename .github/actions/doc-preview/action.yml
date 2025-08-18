@@ -16,11 +16,7 @@ inputs:
     description: "PR number for the preview"
     required: true
     type: string
-  preview-url:
-    description: "Base URL where the preview will be hosted"
-    required: false
-    default: "https://nvidia.github.io/cccl"
-    type: string
+
   github-token:
     description: "GitHub token for deployments and comments"
     required: false
@@ -51,7 +47,7 @@ runs:
         message: |
           ## 📖 Doc Preview CI
 
-          🚀 **Preview URL:** [${{ inputs.preview-url }}/pr-preview/pr-${{ inputs.pr-number }}/](${{ inputs.preview-url }}/pr-preview/pr-${{ inputs.pr-number }}/)
+          🚀 **Preview URL:** [https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr-number }}/](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-preview/pr-${{ inputs.pr-number }}/)
 
           > **Note:** Preview will be ready when the GitHub Pages deployment is complete.
 
