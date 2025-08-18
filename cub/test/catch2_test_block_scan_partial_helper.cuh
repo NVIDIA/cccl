@@ -159,6 +159,6 @@ struct params_t
   static constexpr int items_per_thread = c2h::get<3, TestType>::value;
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 
-  static constexpr cub::BlockScanAlgorithm algorithm = c2h::get<4, TestType>::value;
-  static constexpr scan_mode mode                    = c2h::get<5, TestType>::value;
+  static constexpr cub::BlockScanAlgorithm algo = c2h::get<4, TestType>::value;
+  static constexpr scan_mode mode               = c2h::get<5, TestType>::value;
 };

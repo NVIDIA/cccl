@@ -253,12 +253,12 @@ using modes = c2h::enum_type_list<scan_mode, scan_mode::exclusive>;
 using int_gen_t = Catch::Generators::GeneratorWrapper<int>;
 
 template <typename T, int tile_size>
-int_gen_t valid_items_fixed_vals(cub::BlockScanAlgorithm algorithm, int items_per_thread) noexcept
+int_gen_t valid_items_fixed_vals(cub::BlockScanAlgorithm algo, int items_per_thread) noexcept
 {
   const int items_per_warp           = cub::detail::warp_threads * items_per_thread;
   const int items_per_raking_segment = cub::BlockRakingLayout<T, tile_size>::SEGMENT_LENGTH;
   const int items_per_segment =
-    algorithm == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
+    algo == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
 
   using namespace Catch::Generators;
   return values({-1, 0, 1, items_per_segment - 1, items_per_segment, items_per_segment + 1, tile_size, tile_size + 1});
@@ -295,12 +295,12 @@ C2H_TEST("Partial block scan works with custom sum",
     valid_items_rand_below(),
     valid_items_rand_inside(params::tile_size),
     valid_items_rand_above(params::tile_size),
-    valid_items_fixed_vals<type, params::tile_size>(params::algorithm, params::items_per_thread));
+    valid_items_fixed_vals<type, params::tile_size>(params::algo, params::items_per_thread));
   c2h::device_vector<type> d_out(params::tile_size);
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<params::algorithm, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in, d_out, sum_op_t<params::mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
@@ -325,12 +325,12 @@ C2H_TEST("Partial block scan works with custom sum single",
     valid_items_rand_below(),
     valid_items_rand_inside(params::tile_size),
     valid_items_rand_above(params::tile_size),
-    valid_items_fixed_vals<type, params::tile_size>(params::algorithm, params::items_per_thread));
+    valid_items_fixed_vals<type, params::tile_size>(params::algo, params::items_per_thread));
   c2h::device_vector<type> d_out(params::tile_size);
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan_single<params::algorithm, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan_single<params::algo, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in, d_out, sum_single_op_t<params::mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
@@ -346,13 +346,13 @@ C2H_TEST("Partial block scan works with custom sum single",
 
 C2H_TEST("Partial block scan works with vec types", "[scan][block]", vec_types, algorithm, modes)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 256;
-  constexpr int block_dim_y                   = 1;
-  constexpr int block_dim_z                   = 1;
-  constexpr int tile_size                     = items_per_thread * block_dim_x * block_dim_y * block_dim_z;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<1, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<2, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 256;
+  constexpr int block_dim_y              = 1;
+  constexpr int block_dim_z              = 1;
+  constexpr int tile_size                = items_per_thread * block_dim_x * block_dim_y * block_dim_z;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<1, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<2, TestType>::value;
 
   using type = typename c2h::get<0, TestType>;
 
@@ -360,14 +360,13 @@ C2H_TEST("Partial block scan works with vec types", "[scan][block]", vec_types, 
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
   CAPTURE(valid_items, c2h::type_name<type>(), d_in);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, sum_op_t<mode>{}, valid_items);
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, sum_op_t<mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(mode, h_out, std::plus<type>{}, valid_items);
@@ -382,13 +381,13 @@ C2H_TEST("Partial block scan works with vec types", "[scan][block]", vec_types, 
 
 C2H_TEST("Partial block scan works with custom types", "[scan][block]", algorithm, modes)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 256;
-  constexpr int block_dim_y                   = 1;
-  constexpr int block_dim_z                   = 1;
-  constexpr int tile_size                     = items_per_thread * block_dim_x * block_dim_y * block_dim_z;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 256;
+  constexpr int block_dim_y              = 1;
+  constexpr int block_dim_z              = 1;
+  constexpr int tile_size                = items_per_thread * block_dim_x * block_dim_y * block_dim_z;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 
@@ -396,13 +395,12 @@ C2H_TEST("Partial block scan works with custom types", "[scan][block]", algorith
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, sum_op_t<mode>{}, valid_items);
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, sum_op_t<mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(mode, h_out, std::plus<type>{}, valid_items);
@@ -417,14 +415,14 @@ C2H_TEST("Partial block scan works with custom types", "[scan][block]", algorith
 
 C2H_TEST("Partial block scan returns valid block aggregate", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 64;
+  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
+  constexpr int block_dim_z              = block_dim_y;
+  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
+  constexpr int tile_size                = items_per_thread * threads_in_block;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 
@@ -434,13 +432,13 @@ C2H_TEST("Partial block scan returns valid block aggregate", "[scan][block]", al
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_block_aggregate(1);
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
     d_in,
     d_out,
     sum_aggregate_op_t<type, mode>{target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())},
@@ -463,14 +461,14 @@ C2H_TEST("Partial block scan returns valid block aggregate", "[scan][block]", al
 
 C2H_TEST("Partial block scan supports prefix op", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 64;
+  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
+  constexpr int block_dim_z              = block_dim_y;
+  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
+  constexpr int tile_size                = items_per_thread * threads_in_block;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = int;
 
@@ -480,12 +478,12 @@ C2H_TEST("Partial block scan supports prefix op", "[scan][block]", algorithm, mo
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
     d_in, d_out, sum_prefix_op_t<type, mode>{prefix}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
@@ -496,14 +494,14 @@ C2H_TEST("Partial block scan supports prefix op", "[scan][block]", algorithm, mo
 
 C2H_TEST("Partial block scan supports custom scan op", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 64;
+  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
+  constexpr int block_dim_z              = block_dim_y;
+  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
+  constexpr int tile_size                = items_per_thread * threads_in_block;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = int;
 
@@ -511,13 +509,12 @@ C2H_TEST("Partial block scan supports custom scan op", "[scan][block]", algorith
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, min_op_t<mode>{}, valid_items);
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, min_op_t<mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
@@ -541,14 +538,14 @@ C2H_TEST("Partial block scan supports custom scan op", "[scan][block]", algorith
 
 C2H_TEST("Partial block custom op scan works with initial value", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 64;
+  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
+  constexpr int block_dim_z              = block_dim_y;
+  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
+  constexpr int tile_size                = items_per_thread * threads_in_block;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = int;
 
@@ -556,14 +553,14 @@ C2H_TEST("Partial block custom op scan works with initial value", "[scan][block]
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
     d_in, d_out, min_init_value_op_t<type, mode>{initial_value}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
@@ -585,14 +582,14 @@ C2H_TEST("Partial block custom op scan with initial value returns valid block ag
          modes,
          block_dim_yz)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 64;
+  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
+  constexpr int block_dim_z              = block_dim_y;
+  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
+  constexpr int tile_size                = items_per_thread * threads_in_block;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = int;
 
@@ -600,7 +597,7 @@ C2H_TEST("Partial block custom op scan with initial value returns valid block ag
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in, 0, 1);
@@ -612,7 +609,7 @@ C2H_TEST("Partial block custom op scan with initial value returns valid block ag
 
   c2h::device_vector<type> d_block_aggregate(1);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
     d_in,
     d_out,
     min_init_value_aggregate_op_t<type, mode>{
@@ -638,14 +635,14 @@ C2H_TEST("Partial block custom op scan with initial value returns valid block ag
 
 C2H_TEST("Partial block scan supports prefix op and custom scan op", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z                   = block_dim_y;
-  constexpr int threads_in_block              = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                     = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algorithm = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode                    = c2h::get<1, TestType>::value;
+  constexpr int items_per_thread         = 3;
+  constexpr int block_dim_x              = 64;
+  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
+  constexpr int block_dim_z              = block_dim_y;
+  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
+  constexpr int tile_size                = items_per_thread * threads_in_block;
+  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
 
   using type = int;
 
@@ -655,12 +652,12 @@ C2H_TEST("Partial block scan supports prefix op and custom scan op", "[scan][blo
     valid_items_rand_below(),
     valid_items_rand_inside(tile_size),
     valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algorithm, items_per_thread));
+    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
   c2h::device_vector<type> d_out(tile_size);
   c2h::device_vector<type> d_in(tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algorithm, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
     d_in, d_out, min_prefix_op_t<type, mode>{prefix}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
