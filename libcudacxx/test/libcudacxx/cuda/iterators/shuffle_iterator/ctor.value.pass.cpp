@@ -19,9 +19,6 @@
 #include "test_macros.h"
 #include "types.h"
 
-template <class>
-void print() = delete;
-
 template <class Bijection>
 __host__ __device__ constexpr bool test(Bijection fun)
 {

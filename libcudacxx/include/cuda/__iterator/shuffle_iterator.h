@@ -56,7 +56,8 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
   requires(
     ::cuda::std::is_same_v<decltype(__fun(typename _Bijection::index_type(0))), typename _Bijection::index_type>));
 
-//! @brief shuffle_iterator is an iterator which generates a sequence of values representing a random permutation.
+//! @brief shuffle_iterator is an iterator which generates a sequence of integral values representing a random
+//! permutation.
 //! @tparam _IndexType The type of the index to shuffle. Defaults to uint64_t
 //! @tparam _BijectionFunc The bijection to use. This should be a bijective function that maps [0..n) -> [0..n). It must
 //! be deterministic and stateless. Defaults to cuda::random_biijection<_IndexType>
@@ -66,14 +67,14 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
 //! shuffle iterator is also useful for sampling from a range by selecting only a subset of the elements in the
 //! permutation.
 //!
-//! The following code snippet demonstrates how to create a @param shuffle_iterator which generates a random permutation
+//! The following code snippet demonstrates how to create a @c shuffle_iterator which generates a random permutation
 //! of the range[0, 4)
 //!
 //! @code
 //! #include <cuda/iterator>
 //! ...
 //! // create a shuffle iterator
-//! cuda::shuffle_iterator iterator{4, cuda::std::minstd_rand(0xDEADBEEF)};
+//! cuda::shuffle_iterator iterator{cuda::random_bijection{4, cuda::std::minstd_rand(0xDEADBEEF)}};
 //! // iterator[0] returns 1
 //! // iterator[1] returns 3
 //! // iterator[2] returns 2
@@ -260,12 +261,12 @@ _CCCL_HOST_DEVICE shuffle_iterator(_Bijection, _Integral)
 
 //! @brief make_shuffle_iterator creates a \p shuffle_iterator from an integer \p __num_elements and a bijection
 //! function \p __bijection
-//! @param __num_elements The number of elements we want to shuffle
 //! @param __fun The bijection function used for shuffling
-template <class _IndexType, class _Bijection>
-[[nodiscard]] _CCCL_API constexpr auto make_shuffle_iterator(_IndexType __num_elements, _Bijection __fun)
+//! @param __start The starting position of the shuffle_iterator
+template <class _Bijection, class _IndexType>
+[[nodiscard]] _CCCL_API constexpr auto make_shuffle_iterator(_Bijection __fun, _IndexType __start = 0)
 {
-  return shuffle_iterator<_IndexType, _Bijection>{__num_elements, ::cuda::std::move(__fun)};
+  return shuffle_iterator<_IndexType, _Bijection>{::cuda::std::move(__fun), __start};
 }
 
 _CCCL_END_NAMESPACE_CUDA
