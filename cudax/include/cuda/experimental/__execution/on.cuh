@@ -85,11 +85,6 @@ namespace cuda::experimental::execution
 struct on_t
 {
   _CUDAX_SEMI_PRIVATE :
-  struct __not_a_scheduler
-  {
-    using scheduler_concept = scheduler_t;
-  };
-
   template <class _Env>
   struct __not_a_sender
   {
@@ -105,6 +100,16 @@ struct on_t
     }
   };
 
+  template <class _Env>
+  struct __not_a_scheduler
+  {
+    using scheduler_concept = scheduler_t;
+    [[nodiscard]] _CCCL_API static constexpr auto schedule() noexcept
+    {
+      return __not_a_sender<_Env>{};
+    }
+  };
+
   template <class _Sndr, class _NewSch, class _Env, class... _Closure>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __lowered_sndr_t;
 
@@ -113,7 +118,7 @@ struct on_t
     template <class _Sndr, class _NewSch, class _Env>
     [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _NewSch __new_sch, _Env const& __env) const
     {
-      auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler{});
+      auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{});
       return continues_on(starts_on(static_cast<_NewSch&&>(__new_sch), static_cast<_Sndr&&>(__sndr)), __old_sch);
     }
 
@@ -121,8 +126,7 @@ struct on_t
     [[nodiscard]] _CCCL_API constexpr auto
     operator()(_Sndr __sndr, _NewSch __new_sch, _Env const& __env, _Closure __closure) const
     {
-      auto __old_sch = __query_or(
-        get_env(__sndr), get_completion_scheduler<set_value_t>, __query_or(__env, get_scheduler, __not_a_scheduler{}));
+      auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{});
 
       return write_env( //
         continues_on( //
@@ -234,9 +238,9 @@ public:
     if constexpr (__is_scheduler<decltype(__data)>)
     {
       auto __new_sch = __data;
-      auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler());
+      auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{});
 
-      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler>)
+      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
       {
         return __not_a_sender<_Env>{};
       }
@@ -249,10 +253,11 @@ public:
     else
     {
       auto& [__new_sch, __closure] = __data;
-      auto __old_sch               = __query_or(
-        get_env(__child), get_completion_scheduler<set_value_t>, __query_or(__env, get_scheduler, __not_a_scheduler{}));
+      auto __old_sch               = __query_or(get_env(__child),
+                                  get_completion_scheduler<set_value_t>,
+                                  __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{}));
 
-      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler>)
+      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
       {
         return __not_a_sender<_Env>{};
       }
