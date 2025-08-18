@@ -102,7 +102,6 @@ _CCCL_DEVICE void transform_kernel_prefetch(
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   (..., prefetch_tile<block_threads>(ins, valid_items));
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -129,6 +128,9 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   {
     process_tile(::cuda::std::false_type{}, ins...);
   }
+
+  // benchmarking showed that triggering at the end is 1% better than right after prefetching
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 #if _CCCL_CTK_BELOW(13, 0)
