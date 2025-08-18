@@ -50,9 +50,10 @@ struct TestFn
 
 int main(int, char**)
 {
-  NV_DISPATCH_TARGET(
-    NV_IS_HOST, TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();
-    , NV_PROVIDES_SM_70, (TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();))
+  NV_DISPATCH_TARGET(NV_IS_HOST,
+                     (TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();),
+                     NV_PROVIDES_SM_70,
+                     (TestFn<__half, local_memory_selector, cuda::thread_scope::thread_scope_thread>()();))
 
   NV_IF_TARGET(NV_IS_DEVICE,
                (TestFn<__half, shared_memory_selector, cuda::thread_scope::thread_scope_thread>()();
