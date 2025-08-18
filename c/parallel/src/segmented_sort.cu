@@ -112,18 +112,6 @@ struct segmented_sort_runtime_policy
   }
 };
 
-// Function to create runtime policy from JSON
-segmented_sort_runtime_policy from_json(const nlohmann::json& j)
-{
-  return segmented_sort_runtime_policy{
-    .partitioning_threshold       = j["PartitioningThreshold"].get<int>(),
-    .large_segment_radix_bits     = j["LargeSegmentRadixBits"].get<int>(),
-    .segments_per_small_block     = j["SegmentsPerSmallBlock"].get<int>(),
-    .segments_per_medium_block    = j["SegmentsPerMediumBlock"].get<int>(),
-    .small_policy_items_per_tile  = j["SmallPolicyItemsPerTile"].get<int>(),
-    .medium_policy_items_per_tile = j["MediumPolicyItemsPerTile"].get<int>()};
-}
-
 std::string get_device_segmented_sort_fallback_kernel_name(
   std::string_view /* key_iterator_t */,
   std::string_view /* value_iterator_t */,
@@ -516,7 +504,9 @@ struct __align__({1}) storage_t {{
 
     nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
 
-    auto segmented_sort_policy = segmented_sort::from_json(runtime_policy);
+    using cub::detail::RuntimeSegmentedSortAgentPolicy;
+    auto [segmented_sort_policy, segmented_sort_policy_str] =
+      RuntimeSegmentedSortAgentPolicy::from_json(runtime_policy, "SegmentedSortPolicy");
 
     // Extract sub-policy information if available
     std::string small_and_medium_policy_str;
