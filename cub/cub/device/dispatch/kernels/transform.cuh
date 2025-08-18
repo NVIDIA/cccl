@@ -524,8 +524,8 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
   // work for inputs in host stack memory ...
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
                   : copy_and_return_smem_dst_fallback<block_threads>(
