@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -227,7 +228,7 @@ struct starts_on_t
   template <class _Sch, class _CvSndr, class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using operation_state_concept = operation_state_t;
 
     _CCCL_API constexpr explicit __opstate_t(_Sch __sch, _CvSndr&& __sndr, _Rcvr __rcvr)
         : __state_{__sch, static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr)}

@@ -29,12 +29,12 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
@@ -111,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
 } // namespace __detail
 
 template <class _Env>
-using __env_ref_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<__detail::__env_ref_fn, _Env>;
+using __env_ref_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__env_ref_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
 
@@ -166,7 +166,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 } // namespace __detail
 
 template <class _Env>
-using __fwd_env_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<__detail::__fwd_env_fn, _Env>;
+using __fwd_env_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__fwd_env_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 
@@ -228,7 +228,7 @@ public:
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<_Env, env_t>) _CCCL_AND __is_compatible_env<_Env>)
+  _CCCL_REQUIRES((!__same_as<_Env, env_t>) _CCCL_AND __is_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
       : __mr_(__env.query(::cuda::mr::get_memory_resource))
       , __stream_(__env.query(::cuda::get_stream))

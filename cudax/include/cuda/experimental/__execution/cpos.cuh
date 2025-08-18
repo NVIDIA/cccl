@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
@@ -58,8 +58,7 @@ struct set_value_t : __completion_tag<__disposition::__value>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
   {
-    static_assert(
-      ::cuda::std::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...)), void>);
+    static_assert(__same_as<decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...)), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...)));
     static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...);
   }
@@ -72,8 +71,7 @@ struct set_error_t : __completion_tag<__disposition::__error>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e)))
   {
-    static_assert(
-      ::cuda::std::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e))), void>);
+    static_assert(__same_as<decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e))), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e))));
     static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e));
   }
@@ -86,7 +84,7 @@ struct set_stopped_t : __completion_tag<__disposition::__stopped>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Rcvr&& __rcvr) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
   {
-    static_assert(::cuda::std::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
+    static_assert(__same_as<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_stopped()));
     static_cast<_Rcvr&&>(__rcvr).set_stopped();
   }
@@ -98,7 +96,7 @@ struct start_t
   template <class _OpState>
   _CCCL_TRIVIAL_API constexpr auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
-    static_assert(::cuda::std::is_same_v<decltype(__opstate.start()), void>);
+    static_assert(__same_as<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
     __opstate.start();
   }
@@ -138,8 +136,8 @@ private:
 public:
   template <class _Sndr, class _Rcvr>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(::cuda::std::__is_nothrow_callable_v<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>)
-      -> ::cuda::std::__call_result_t<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>
+    noexcept(__nothrow_callable<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>)
+      -> __call_result_t<__impl_t<_Sndr, _Rcvr>, _Sndr, _Rcvr>
   {
     return __impl_t<_Sndr, _Rcvr>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));
   }

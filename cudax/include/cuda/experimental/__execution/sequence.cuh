@@ -91,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
   template <class _Rcvr, class _Sndr1, class _Sndr2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using operation_state_concept = operation_state_t;
 
     _CCCL_API __opstate_t(_Sndr1&& __sndr1, _Sndr2&& __sndr2, _Rcvr&& __rcvr)
         : __state_(static_cast<_Rcvr&&>(__rcvr), static_cast<_Sndr2&&>(__sndr2))
@@ -120,7 +120,7 @@ public:
 template <class _Sndr1, class _Sndr2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
