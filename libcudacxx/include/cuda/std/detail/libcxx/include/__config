@@ -146,6 +146,15 @@ extern "C++" {
 #    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #  endif
 
+// Clang provides 128b atomics as a builtin
+#  if _CCCL_COMPILER(CLANG) || defined(LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS)
+#    define _LIBCUDACXX_USE_BUILTIN_128_ATOMICS
+// GCC does not provide 128b atomics, but they may be available as a library, this requires opt-in usage.
+// See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html "-mcx16" for more
+#  elif _CCCL_COMPILER(GCC)
+#    define _LIBCUDACXX_USE_LIBRARY_128_ATOMICS
+#  endif
+
 #  define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
 // Enable bypassing automatic storage checks in atomics when using CTK 12.2 and below and if NDEBUG is defined.
 // #  if _CCCL_CUDACC_BELOW(12, 2) && !defined(NDEBUG)
