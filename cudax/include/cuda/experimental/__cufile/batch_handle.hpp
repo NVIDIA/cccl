@@ -24,8 +24,9 @@
 #include <functional>
 #include <vector>
 
-#include "detail/error_handling.hpp"
-#include "detail/raii_resource.hpp"
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
+#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
+#include <sys/types.h>
 
 namespace cuda::experimental::cufile
 {
@@ -47,7 +48,15 @@ struct batch_io_params_span
   void* cookie; ///< User data for tracking
 
   // Constructor
-  batch_io_params_span(cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr);
+  batch_io_params_span(cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr)
+      : buffer(buf)
+      , file_offset(f_off)
+      , buffer_offset(b_off)
+      , opcode(op)
+      , cookie(ck)
+  {
+    static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  }
 };
 
 /**
@@ -59,9 +68,9 @@ struct batch_io_result
   CUfileStatus_t status; ///< Operation status
   size_t result; ///< Bytes transferred or error code
 
-  bool is_complete() const noexcept;
-  bool is_failed() const noexcept;
-  bool has_error() const noexcept;
+  bool is_complete() const noexcept { return status == CUFILE_COMPLETE; }
+  bool is_failed() const noexcept { return status == CUFILE_FAILED; }
+  bool has_error() const noexcept { return static_cast<ssize_t>(result) < 0; }
 };
 
 /**

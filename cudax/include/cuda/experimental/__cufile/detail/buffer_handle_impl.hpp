@@ -22,7 +22,7 @@ template <typename T>
 buffer_handle::buffer_handle(cuda::std::span<T> buffer, int flags)
     : buffer_(cuda::std::as_bytes(buffer))
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
   detail::check_cufile_result(error, "cuFileBufRegister");
@@ -36,7 +36,7 @@ template <typename T>
 buffer_handle::buffer_handle(cuda::std::span<const T> buffer, int flags)
     : buffer_(cuda::std::as_bytes(buffer))
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
   detail::check_cufile_result(error, "cuFileBufRegister");
@@ -87,7 +87,7 @@ inline cuda::std::span<cuda::std::byte> buffer_handle::as_writable_bytes() const
 template <typename T>
 cuda::std::span<T> buffer_handle::as_span() const noexcept
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
   return cuda::std::span<T>(reinterpret_cast<T*>(const_cast<cuda::std::byte*>(buffer_.data())),
                             buffer_.size() / sizeof(T));
 }
@@ -95,7 +95,7 @@ cuda::std::span<T> buffer_handle::as_span() const noexcept
 template <typename T>
 cuda::std::span<const T> buffer_handle::as_const_span() const noexcept
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
   return cuda::std::span<const T>(reinterpret_cast<const T*>(buffer_.data()), buffer_.size() / sizeof(T));
 }
 

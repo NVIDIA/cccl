@@ -25,7 +25,7 @@
 
 #include <cufile.h>
 
-#include "detail/error_handling.hpp"
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -198,4 +198,4 @@ public:
 
 } // namespace cuda::experimental::cufile
 
-#include "detail/driver_impl.hpp"
+#include <cuda/experimental/__cufile/detail/driver_impl.hpp>

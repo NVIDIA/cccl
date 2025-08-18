@@ -12,7 +12,7 @@
 // This file provides the implementation of batch_handle methods
 // It's included after the class definition to avoid circular dependency issues
 
-#include "cuda/experimental/__cufile/batch_handle.hpp"
+#include <cuda/experimental/__cufile/batch_handle.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -20,34 +20,7 @@ namespace cuda::experimental::cufile
 // Forward declaration to avoid including file_handle.hpp in batch_handle.hpp
 class file_handle_base;
 
-// batch_io_params_span constructor implementation
-template <typename T>
-batch_io_params_span<T>::batch_io_params_span(
-  cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck)
-    : buffer(buf)
-    , file_offset(f_off)
-    , buffer_offset(b_off)
-    , opcode(op)
-    , cookie(ck)
-{
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
-}
-
-// batch_io_result method implementations
-inline bool batch_io_result::is_complete() const noexcept
-{
-  return status == CUFILE_COMPLETE;
-}
-
-inline bool batch_io_result::is_failed() const noexcept
-{
-  return status == CUFILE_FAILED;
-}
-
-inline bool batch_io_result::has_error() const noexcept
-{
-  return static_cast<ssize_t>(result) < 0;
-}
+// batch_io_params_span and batch_io_result trivial functions are now defined inline in the header
 
 // batch_handle constructor implementation
 inline batch_handle::batch_handle(unsigned int max_operations)

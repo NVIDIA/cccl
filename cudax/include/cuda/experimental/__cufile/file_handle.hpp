@@ -29,11 +29,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "batch_handle.hpp"
-#include "buffer_handle.hpp"
-#include "detail/error_handling.hpp"
-#include "detail/raii_resource.hpp"
-#include "stream_handle.hpp"
+#include <cuda/experimental/__cufile/batch_handle.hpp>
+#include <cuda/experimental/__cufile/buffer_handle.hpp>
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
+#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
+#include <cuda/experimental/__cufile/stream_handle.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -169,5 +169,5 @@ public:
 
 } // namespace cuda::experimental::cufile
 
-#include "detail/batch_handle_impl.hpp"
-#include "detail/file_handle_impl.hpp"
+#include <cuda/experimental/__cufile/detail/batch_handle_impl.hpp>
+#include <cuda/experimental/__cufile/detail/file_handle_impl.hpp>
