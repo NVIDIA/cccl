@@ -29,6 +29,7 @@
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -98,9 +99,24 @@ public:
 
   _CCCL_HIDE_FROM_ABI constexpr shuffle_iterator() noexcept = default;
 
+  //! @brief Constructs a shuffle iterator from a given bijection and an optional start position
+  //! @param __bijection The bijection representing the shuffled integer sequence
+  //! @param __start The position of the iterator in the shuffled integer sequence
   _CCCL_API constexpr shuffle_iterator(_Bijection __bijection, value_type __start = 0) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Bijection>)
       : __bijection_(::cuda::std::move(__bijection))
+      , __current_(__start)
+  {}
+
+  //! @brief Constructs a shuffle iterator representing a sequence of size @param __num_elements from a random number
+  //! generator @param __gen and an optional start position @param __start
+  //! It constructs the bijection function @tparam _Bijection from the desired size of the sequence and a random number
+  //! generator
+  template <class _RNG>
+  // constraining here breaks CTAD
+  _CCCL_API explicit constexpr shuffle_iterator(value_type __num_elements, _RNG&& __gen, value_type __start = 0) //
+    noexcept(_CUDA_VSTD::is_nothrow_constructible_v<_Bijection, value_type, _RNG>)
+      : __bijection_(__num_elements, _CUDA_VSTD::forward<_RNG>(__gen))
       , __current_(__start)
   {}
 

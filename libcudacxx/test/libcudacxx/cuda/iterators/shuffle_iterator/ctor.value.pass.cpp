@@ -103,6 +103,30 @@ __host__ __device__ constexpr bool test(Bijection fun)
     }
   }
 
+  // feistel projection with our fake_rng takes a ton of time to converge so just sipit
+  if constexpr (cuda::std::is_constructible_v<Bijection, int, fake_rng>
+                && !cuda::std::is_same_v<Bijection, cuda::random_bijection<short>>
+                && !cuda::std::is_same_v<Bijection, cuda::random_bijection<int, cuda::__feistel_bijection>>)
+  { // shuffle_iterator(index, RNG, index = 0)
+    {
+      cuda::shuffle_iterator<int, Bijection> iter{num_elements, fake_rng{}};
+      using value_type = cuda::std::iter_value_t<decltype(iter)>;
+      // in the range of  [0, num_elements)
+      assert(*iter >= 0);
+      assert((*iter < static_cast<value_type>(num_elements)));
+      assert(*iter == 4); // the fake bijection returns 4 as the first element
+    }
+
+    {
+      cuda::shuffle_iterator<int, Bijection> iter{num_elements, fake_rng{}, 3};
+      using value_type = cuda::std::iter_value_t<decltype(iter)>;
+      // in the range of  [0, num_elements)
+      assert(*iter >= 0);
+      assert((*iter < static_cast<value_type>(num_elements)));
+      assert(*iter == 0); // the fake bijection returns 0 as the third element
+    }
+  }
+
   return true;
 }
 

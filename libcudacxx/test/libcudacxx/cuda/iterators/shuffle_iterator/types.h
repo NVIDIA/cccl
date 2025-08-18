@@ -25,6 +25,17 @@ struct fake_rng
     return __random_indices[__start++ % 5];
   }
 
+  // Needed for uniform_int_distribution
+  [[nodiscard]] __host__ __device__ static constexpr result_type min() noexcept
+  {
+    return 0;
+  }
+
+  [[nodiscard]] __host__ __device__ static constexpr result_type max() noexcept
+  {
+    return 5;
+  }
+
   uint32_t __start{0};
   uint32_t __random_indices[5] = {4, 1, 2, 0, 3};
 };
