@@ -1572,12 +1572,13 @@ struct generate_edge_case_offsets_dispatch
   {
     NV_IF_TARGET(
       NV_IS_HOST,
-      (using SmallAndMediumPolicyT = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT;
-       using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
+      (using SmallPolicyT        = typename ActivePolicyT::SmallSegmentPolicy;
+       using MediumPolicyT       = typename ActivePolicyT::MediumSegmentPolicy;
+       using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
 
-       small_segment_max_segment_size  = SmallAndMediumPolicyT::SmallPolicyT::ITEMS_PER_TILE;
-       items_per_small_segment         = SmallAndMediumPolicyT::SmallPolicyT::ITEMS_PER_THREAD;
-       medium_segment_max_segment_size = SmallAndMediumPolicyT::MediumPolicyT::ITEMS_PER_TILE;
+       small_segment_max_segment_size  = SmallPolicyT::ITEMS_PER_TILE;
+       items_per_small_segment         = SmallPolicyT::ITEMS_PER_THREAD;
+       medium_segment_max_segment_size = MediumPolicyT::ITEMS_PER_TILE;
        single_thread_segment_size      = items_per_small_segment;
        large_cached_segment_max_segment_size =
          LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD; //

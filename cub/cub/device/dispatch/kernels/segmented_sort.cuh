@@ -139,7 +139,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 {
   using ActivePolicyT       = typename ChainedPolicyT::ActivePolicy;
   using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
-  using MediumPolicyT       = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT::MediumPolicyT;
+  using MediumPolicyT       = typename ActivePolicyT::MediumSegmentPolicy;
 
   const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
@@ -303,7 +303,7 @@ template <SortOrder Order,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT>
-__launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolicyT::BLOCK_THREADS)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::SmallSegmentPolicy::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
     local_segment_index_t small_segments,
     local_segment_index_t medium_segments,
@@ -322,10 +322,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   const local_segment_index_t tid = threadIdx.x;
   const local_segment_index_t bid = blockIdx.x;
 
-  using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
-  using SmallAndMediumPolicyT = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT;
-  using MediumPolicyT         = typename SmallAndMediumPolicyT::MediumPolicyT;
-  using SmallPolicyT          = typename SmallAndMediumPolicyT::SmallPolicyT;
+  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
+  using SmallPolicyT  = typename ActivePolicyT::SmallSegmentPolicy;
+  using MediumPolicyT = typename ActivePolicyT::MediumSegmentPolicy;
 
   constexpr auto threads_per_medium_segment = static_cast<local_segment_index_t>(MediumPolicyT::WARP_THREADS);
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
@@ -336,11 +335,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   using SmallAgentWarpMergeSortT =
     sub_warp_merge_sort::AgentSubWarpSort<Order == SortOrder::Descending, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
-  constexpr auto segments_per_medium_block =
-    static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
+  constexpr auto segments_per_medium_block = static_cast<local_segment_index_t>(MediumPolicyT::SEGMENTS_PER_BLOCK);
 
-  constexpr auto segments_per_small_block =
-    static_cast<local_segment_index_t>(SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
+  constexpr auto segments_per_small_block = static_cast<local_segment_index_t>(SmallPolicyT::SEGMENTS_PER_BLOCK);
 
   __shared__ union
   {

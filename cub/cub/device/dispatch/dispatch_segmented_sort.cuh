@@ -111,11 +111,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     _CubLog("Invoking "
             "DeviceSegmentedSortKernelLarge<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(blocks_in_grid),
-            wrapped_policy.BlockThreads(wrapped_policy.LargeSegment()),
+            wrapped_policy.LargeSegment().BlockThreads(),
             (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-    launcher_factory(blocks_in_grid, wrapped_policy.BlockThreads(wrapped_policy.LargeSegment()), 0, stream)
+    launcher_factory(blocks_in_grid, wrapped_policy.LargeSegment().BlockThreads(), 0, stream)
       .doit(large_kernel,
             large_and_medium_segments_indices,
             d_current_keys,
@@ -159,14 +159,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
     _CubLog("Invoking "
             "DeviceSegmentedSortKernelSmall<<<%d, %d, 0, %lld>>>()\n",
             static_cast<int>(small_and_medium_blocks_in_grid),
-            wrapped_policy.BlockThreads(wrapped_policy.SmallAndMediumSegmentedSort()),
+            wrapped_policy.SmallSegment().BlockThreads(),
             (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-    launcher_factory(small_and_medium_blocks_in_grid,
-                     wrapped_policy.BlockThreads(wrapped_policy.SmallAndMediumSegmentedSort()),
-                     0,
-                     stream)
+    launcher_factory(small_and_medium_blocks_in_grid, wrapped_policy.SmallSegment().BlockThreads(), 0, stream)
       .doit(small_kernel,
             small_segments,
             medium_segments,
@@ -394,30 +391,16 @@ struct DispatchSegmentedSort
   {
     auto wrapped_policy = detail::segmented_sort::MakeSegmentedSortPolicyWrapper(policy);
 
-    // using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
-    // using SmallAndMediumPolicyT = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT;
-
     wrapped_policy.CheckLoadModifierIsNotLDG();
-
-    // static_assert(LargeSegmentPolicyT::LOAD_MODIFIER != CacheLoadModifier::LOAD_LDG,
-    //               "The memory consistency model does not apply to texture accesses");
 
     if constexpr (!KEYS_ONLY)
     {
       wrapped_policy.CheckLoadAlgorithmIsNotStriped();
     }
-    // static_assert(KEYS_ONLY || LargeSegmentPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED
-    //                 || SmallAndMediumPolicyT::MediumPolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED
-    //                 || SmallAndMediumPolicyT::SmallPolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED,
-    //               "Striped load will make this algorithm unstable");
 
     wrapped_policy.CheckStoreAlgorithmIsNotStriped();
-    // static_assert(SmallAndMediumPolicyT::MediumPolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED
-    //                 || SmallAndMediumPolicyT::SmallPolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED,
-    //               "Striped stores will produce unsorted results");
 
     const int radix_bits = wrapped_policy.LargeSegmentRadixBits();
-    // constexpr int radix_bits = LargeSegmentPolicyT::RADIX_BITS;
 
     cudaError error = cudaSuccess;
 
@@ -920,9 +903,8 @@ private:
   {
     cudaError_t error = cudaSuccess;
 
-    const auto blocks_in_grid = static_cast<local_segment_index_t>(num_segments);
-    constexpr auto threads_in_block =
-      static_cast<unsigned int>(wrapped_policy.BlockThreads(wrapped_policy.LargeSegment()));
+    const auto blocks_in_grid       = static_cast<local_segment_index_t>(num_segments);
+    constexpr auto threads_in_block = static_cast<unsigned int>(wrapped_policy.LargeSegment().BlockThreads());
 
 // Log kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -931,7 +913,7 @@ private:
             blocks_in_grid,
             threads_in_block,
             (long long) stream,
-            wrapped_policy.ItemsPerThread(wrapped_policy.LargeSegment()),
+            wrapped_policy.LargeSegment().ItemsPerThread(),
             wrapped_policy.LargeSegmentRadixBits());
 #endif // CUB_DEBUG_LOG
 
