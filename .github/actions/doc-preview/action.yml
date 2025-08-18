@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Preview or clean up docs built from PRs
+description: "Deploy documentation preview for PRs or clean up when merged/closed"
+
+# A re-implementation based on the logic of https://github.com/rossjrw/pr-preview-action/blob/41a957c44a456a34718e9bcf825363194db5e6d5/README.md
+
+inputs:
+  source-folder:
+    description: "Path to the built documentation folder"
+    required: true
+    type: string
+  pr-number:
+    description: "PR number for the preview"
+    required: true
+    type: string
+  preview-url:
+    description: "Base URL where the preview will be hosted"
+    required: false
+    default: "https://nvidia.github.io/cccl"
+    type: string
+  github-token:
+    description: "GitHub token for deployments and comments"
+    required: false
+    default: ${{ github.token }}
+    type: string
+
+runs:
+  using: composite
+  steps:
+    # The steps below are executed only when testing in a PR.
+    # Note: the PR previews will be removed once merged to main (see below)
+    - name: Deploy doc preview
+      if: ${{ github.ref_name != 'main' }}
+      uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8  # v4.7.3
+      with:
+        folder: ${{ inputs.source-folder }}
+        target-folder: pr-preview/pr-${{ inputs.pr-number }}/
+        token: ${{ inputs.github-token }}
+
+    - name: Leave a comment after deployment
+      if: ${{ github.ref_name != 'main' }}
+      uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+      with:
+        header: pr-preview
+        number: ${{ inputs.pr-number }}
+        skip_unchanged: true
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        message: |
+          ## 📖 Doc Preview CI
+
+          🚀 **Preview URL:** [${{ inputs.preview-url }}/pr-preview/pr-${{ inputs.pr-number }}/](${{ inputs.preview-url }}/pr-preview/pr-${{ inputs.pr-number }}/)
+
+          > **Note:** Preview will be ready when the GitHub Pages deployment is complete.
+
+    # The steps below are executed only when building on main.
+    - name: Remove doc preview
+      if: ${{ github.ref_name == 'main' }}
+      uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8  # v4.7.3
+      with:
+        folder: ${{ inputs.source-folder }}
+        target-folder: pr-preview/pr-${{ inputs.pr-number }}/
+        clean: true
+        token: ${{ inputs.github-token }}
+
+    - name: Leave a comment after removal
+      if: ${{ github.ref_name == 'main' }}
+      uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+      with:
+        header: pr-preview
+        number: ${{ inputs.pr-number }}
+        hide_and_recreate: true
+        hide_classify: "OUTDATED"
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        message: |
+          ## 📖 Doc Preview CI
+
+          Preview removed because the pull request was closed or merged.

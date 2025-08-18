@@ -179,6 +179,7 @@ jobs:
   verify-docs:
     name: Build and Verify Docs
     if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
+    needs: build-workflow
     permissions:
       contents: write
       pull-requests: write
@@ -194,12 +195,12 @@ jobs:
           upload_workflow_artifact: "true"
           upload_pages_artifact: "false"
 
-      - name: Deploy documentation preview
-        uses: rossjrw/pr-preview-action@v1
+      - name: Deploy or clean up documentation preview
+        uses: ./.github/actions/doc-preview
         with:
-          source-dir: _site/
-          action: deploy
-          token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
+          source-folder: _site/
+          pr-number: ${{ needs.build-workflow.outputs.pr_number }}
+          github-token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
   build-rapids:
