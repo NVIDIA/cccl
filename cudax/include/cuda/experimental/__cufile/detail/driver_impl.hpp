@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
-#include "../driver.hpp"
-#include "error_handling.hpp"
+#include <cuda/experimental/__cufile/driver.hpp>
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -276,56 +276,38 @@ inline size_t get_bar_size_kb(int gpu_index)
 
 inline bool is_cufile_library_available() noexcept
 {
-  try
-  {
-    // Try to get version - if it succeeds, library is available
-    int version         = 0;
-    CUfileError_t error = cuFileGetVersion(&version);
-    return (error.err == CU_FILE_SUCCESS);
-  }
-  catch (...)
-  {
-    return false;
-  }
+  int version         = 0;
+  CUfileError_t error = cuFileGetVersion(&version);
+  return (error.err == CU_FILE_SUCCESS);
 }
 
 inline bool is_cufile_available() noexcept
 {
-  try
-  {
-    get_driver_properties();
-    return true;
-  }
-  catch (...)
-  {
-    return false;
-  }
+  CUfileDrvProps_t props;
+  CUfileError_t error = cuFileDriverGetProperties(&props);
+  return (error.err == CU_FILE_SUCCESS);
 }
 
 inline bool is_batch_api_available() noexcept
 {
-  try
-  {
-    auto props = get_driver_properties();
-    return props.batch_io_supported();
-  }
-  catch (...)
+  CUfileDrvProps_t props = {};
+  CUfileError_t error    = cuFileDriverGetProperties(&props);
+  if (error.err != CU_FILE_SUCCESS)
   {
     return false;
   }
+  return (props.fflags & (1 << CU_FILE_BATCH_IO_SUPPORTED)) != 0;
 }
 
 inline bool is_stream_api_available() noexcept
 {
-  try
-  {
-    auto props = get_driver_properties();
-    return props.streams_supported();
-  }
-  catch (...)
+  CUfileDrvProps_t props = {};
+  CUfileError_t error    = cuFileDriverGetProperties(&props);
+  if (error.err != CU_FILE_SUCCESS)
   {
     return false;
   }
+  return (props.fflags & (1 << CU_FILE_STREAMS_SUPPORTED)) != 0;
 }
 
 } // namespace cuda::experimental::cufile

@@ -21,8 +21,8 @@
 
 #include <functional>
 
-#include "detail/error_handling.hpp"
-#include "detail/raii_resource.hpp"
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
+#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -60,4 +60,4 @@ public:
 
 } // namespace cuda::experimental::cufile
 
-#include "detail/stream_handle_impl.hpp"
+#include <cuda/experimental/__cufile/detail/stream_handle_impl.hpp>

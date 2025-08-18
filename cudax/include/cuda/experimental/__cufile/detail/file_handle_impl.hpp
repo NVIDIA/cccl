@@ -22,7 +22,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "cuda/experimental/__cufile/file_handle.hpp"
+#include <cuda/experimental/__cufile/file_handle.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -164,7 +164,7 @@ inline file_handle_ref::file_handle_ref(int fd)
 template <typename T>
 size_t file_handle_base::read(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset)
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // Convert span to void* and size for cuFile API
   void* buffer_ptr  = static_cast<void*>(buffer.data());
@@ -177,7 +177,7 @@ size_t file_handle_base::read(cuda::std::span<T> buffer, off_t file_offset, off_
 template <typename T>
 size_t file_handle_base::write(cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset)
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // Convert span to void* and size for cuFile API
   const void* buffer_ptr = static_cast<const void*>(buffer.data());
@@ -191,7 +191,7 @@ template <typename T>
 void file_handle_base::read_async(
   cuda::stream_ref stream, cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, ssize_t& bytes_read)
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // cuFile async API requires size parameters to be passed by pointer
   size_t size_bytes = buffer.size_bytes();
@@ -210,7 +210,7 @@ void file_handle_base::write_async(
   off_t buffer_offset,
   ssize_t& bytes_written)
 {
-  static_assert(::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // cuFile async API requires size parameters to be passed by pointer
   size_t size_bytes      = buffer.size_bytes();
