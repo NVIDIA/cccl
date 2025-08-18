@@ -246,7 +246,8 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     };
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     (load_tile_vectorized(ins, inputs), ...);
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    // Benchmarks showed up to 38% slowdown on H200 (some improvements as well), so omitted. See #5249 for details.
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // process
     _CCCL_PRAGMA_UNROLL_FULL()
