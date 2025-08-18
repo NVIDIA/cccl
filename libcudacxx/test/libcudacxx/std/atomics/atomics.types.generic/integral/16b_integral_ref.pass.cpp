@@ -6,8 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
+// UNSUPPORTED: pre-sm-90
 // UNSUPPORTED: windows
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -mcx16
+// UNSUPPORTED: aarch64-unknown-linux-gnu
 
 // <cuda/std/atomic>
 
@@ -191,8 +193,8 @@ int main(int, char**)
 
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
-    (), // TODO: Host support TBD, ARM Clang is only target that will work OOTB and even then I'm slightly concerned
-        // about linkage with `__aarch64_**16` instructions
+    (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
+     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();),
     NV_PROVIDES_SM_90,
     (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
