@@ -26,6 +26,7 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/math.h>
+#include <cuda/std/__floating_point/mask.h>
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -80,9 +81,11 @@ template <class _Tp>
   // overflow bound = sqrt(MAX_FLOAT / 2)
   // underflow bound similar, but tweaked to allow for normalizing denormal calculation.
   constexpr __uint_t __overflow_bound_exp =
-    static_cast<__uint_t>((static_cast<__uint_t>(__max_exponent - 1) >> 1) + __exp_bias) << __mant_nbits;
+    (static_cast<__uint_t>((static_cast<__uint_t>(__max_exponent - 1) >> 1) + __exp_bias) << __mant_nbits)
+    | __fp_explicit_bit_mask_of_v<_Tp>;
   constexpr __uint_t __underflow_bound_exp =
-    static_cast<__uint_t>((static_cast<__uint_t>(-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __mant_nbits;
+    (static_cast<__uint_t>((static_cast<__uint_t>(-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __mant_nbits)
+    | __fp_explicit_bit_mask_of_v<_Tp>;
 
   _Tp __overflow_bound  = _CUDA_VSTD::__fp_from_storage<_Tp>(__overflow_bound_exp);
   _Tp __underflow_bound = _CUDA_VSTD::__fp_from_storage<_Tp>(__underflow_bound_exp);
@@ -110,11 +113,13 @@ template <class _Tp>
     constexpr int __reduced_exponent = __reduction_exponent - (1 - (__reduction_exponent & 0x1));
 
     // Negate, add bias, and shift into the exponent mask.
-    constexpr __uint_t __lxexp_1_uint = __uint_t(__exp_bias - __reduced_exponent) << __uint_t(__mant_nbits);
+    constexpr __uint_t __lxexp_1_uint =
+      (__uint_t(__exp_bias - __reduced_exponent) << __uint_t(__mant_nbits)) | __fp_explicit_bit_mask_of_v<_Tp>;
 
     // __ldexp_factor_2 = 1/sqrt(2*ldexp_factor_1)
     constexpr __uint_t __lxexp_2_uint =
-      (__exp_bias + (__uint_t(__reduced_exponent - 1) >> 1)) << __uint_t(__mant_nbits);
+      ((__exp_bias + (__uint_t(__reduced_exponent - 1) >> 1)) << __uint_t(__mant_nbits))
+      | __fp_explicit_bit_mask_of_v<_Tp>;
 
     // Set our scaling values:
     __ldexp_factor_1 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_1_uint);
@@ -131,8 +136,10 @@ template <class _Tp>
     constexpr int __reduction_exponent = ((__min_denom_exponent - 1) >> 1) - 2;
     constexpr int __reduced_exponent   = __reduction_exponent + (1 - (__reduction_exponent & 0x1));
 
-    constexpr __uint_t __lxexp_1_uint = __uint_t(__exp_bias - __reduced_exponent) << __uint_t(__mant_nbits);
-    constexpr __uint_t __lxexp_2_uint = (__exp_bias + (__uint_t(__reduced_exponent) >> 1)) << __uint_t(__mant_nbits);
+    constexpr __uint_t __lxexp_1_uint =
+      (__uint_t(__exp_bias - __reduced_exponent) << __uint_t(__mant_nbits)) | __fp_explicit_bit_mask_of_v<_Tp>;
+    constexpr __uint_t __lxexp_2_uint =
+      ((__exp_bias + (__uint_t(__reduced_exponent) >> 1)) << __uint_t(__mant_nbits)) | __fp_explicit_bit_mask_of_v<_Tp>;
 
     // Set our scaling values:
     __ldexp_factor_1 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_1_uint);
