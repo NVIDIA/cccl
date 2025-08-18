@@ -817,7 +817,7 @@ OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value);
 
-/** 
+/*! 
  * \} end group replacing
  */
 

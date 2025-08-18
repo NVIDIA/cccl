@@ -171,7 +171,7 @@ private:
    */
 }; // end system_error
 
-/** 
+/*! 
  * \} end group system_diagnostics
  */
 

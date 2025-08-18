@@ -206,7 +206,7 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
 template <typename BidirectionalIterator, typename OutputIterator>
 OutputIterator reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result);
 
-/** 
+/*! 
  * \} end group reordering
  */
 

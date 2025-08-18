@@ -844,7 +844,7 @@ _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y);
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y);
 
-/** 
+/*! 
  * \} end group complex_numbers
  * \} end group numerics
  */ 
