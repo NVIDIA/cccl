@@ -52,7 +52,7 @@ template <typename _Key>
 {
   static_assert(sizeof(_Key) == 4, "Key type must be 4 bytes in size.");
 
-  _CUDA_VSTD::uint32_t __h = static_cast<_CUDA_VSTD::uint32_t>(__key) ^ __seed;
+  _CUDA_VSTD::uint32_t __h = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint32_t>(__key) ^ __seed;
   __h ^= __h >> 16;
   __h *= 0x85ebca6b;
   __h ^= __h >> 13;
@@ -67,7 +67,7 @@ template <typename _Key>
 {
   static_assert(sizeof(_Key) == 8, "Key type must be 8 bytes in size.");
 
-  _CUDA_VSTD::uint64_t __h = static_cast<_CUDA_VSTD::uint64_t>(__key) ^ __seed;
+  _CUDA_VSTD::uint64_t __h = _CUDA_VSTD::bit_cast<_CUDA_VSTD::uint64_t>(__key) ^ __seed;
   __h ^= __h >> 33;
   __h *= 0xff51afd7ed558ccdULL;
   __h ^= __h >> 33;
@@ -86,14 +86,14 @@ struct _MurmurHash3_32
   static constexpr _CUDA_VSTD::uint32_t __c1 = 0xcc9e2d51;
   static constexpr _CUDA_VSTD::uint32_t __c2 = 0x1b873593;
 
-  static constexpr size_t __block_size = 4;
-  static constexpr size_t __chunk_size = 4;
+  static constexpr _CUDA_VSTD::uint32_t __block_size = 4;
+  static constexpr _CUDA_VSTD::uint32_t __chunk_size = 4;
 
   _CCCL_API constexpr _MurmurHash3_32(_CUDA_VSTD::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t operator()(_Key const& __key) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, _CUDA_VSTD::uint32_t>;
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__key));
@@ -118,7 +118,7 @@ private:
     // body
     if constexpr (_Holder::__num_blocks > 0)
     {
-      cuda::static_for<_Holder::__num_blocks>([&](auto __i) {
+      ::cuda::static_for<_Holder::__num_blocks>([&](auto __i) {
         _CUDA_VSTD::uint32_t __k1 = __holder.__blocks[__i];
         __k1 *= __c1;
         __k1 = _CUDA_VSTD::rotl(__k1, 15);
@@ -154,16 +154,16 @@ private:
     //----------
     // finalization
     __h1 ^= _CUDA_VSTD::uint32_t{sizeof(_Holder)};
-    __h1 = __fmix32(__h1);
+    __h1 = ::cuda::experimental::cuco::__detail::__fmix32(__h1);
     return __h1;
   }
 
   [[nodiscard]] _CCCL_API _CUDA_VSTD::uint32_t __compute_hash_span(_CUDA_VSTD::span<const _Key> __keys) const noexcept
   {
-    auto const __bytes = _CUDA_VSTD::as_bytes(__keys).data();
-    auto const __size  = __keys.size_bytes();
+    const auto __bytes = _CUDA_VSTD::as_bytes(__keys).data();
+    const auto __size  = __keys.size_bytes();
 
-    auto const __nblocks = __size / __block_size;
+    const auto __nblocks = __size / __block_size;
 
     _CUDA_VSTD::uint32_t __h1 = __seed_;
 
@@ -171,7 +171,8 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nblocks)> __i = 0; __i < __nblocks; __i++)
     {
-      _CUDA_VSTD::uint32_t __k1 = __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __i);
+      _CUDA_VSTD::uint32_t __k1 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __i);
       __k1 *= __c1;
       __k1 = _CUDA_VSTD::rotl(__k1, 15);
       __k1 *= __c2;
@@ -182,7 +183,7 @@ private:
     //----------
     // tail
     _CUDA_VSTD::uint32_t __k1 = 0;
-    switch (__size & 3)
+    switch (__size % 4)
     {
       case 3:
         __k1 ^= ::cuda::std::to_integer<_CUDA_VSTD::uint32_t>(__bytes[__nblocks * __block_size + 2]) << 16;
@@ -200,7 +201,7 @@ private:
     //----------
     // finalization
     __h1 ^= __size;
-    __h1 = __fmix32(__h1);
+    __h1 = ::cuda::experimental::cuco::__detail::__fmix32(__h1);
     return __h1;
   }
 
@@ -218,15 +219,15 @@ private:
   static constexpr _CUDA_VSTD::uint32_t __c3 = 0x38b34ae5;
   static constexpr _CUDA_VSTD::uint32_t __c4 = 0xa1e38b93;
 
-  static constexpr size_t __block_size = 4;
-  static constexpr size_t __chunk_size = 16;
+  static constexpr _CUDA_VSTD::uint32_t __block_size = 4;
+  static constexpr _CUDA_VSTD::uint32_t __chunk_size = 16;
 
 public:
   _CCCL_HOST_DEVICE constexpr _MurmurHash3_x86_128(_CUDA_VSTD::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(_Key const& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, _CUDA_VSTD::uint32_t>;
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__key));
@@ -243,10 +244,11 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
   {
     _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, 4> __h{__seed_, __seed_, __seed_, __seed_};
+    const auto __size = _CUDA_VSTD::uint32_t{sizeof(_Holder)};
 
     if constexpr (_Holder::__num_chunks > 0)
     {
-      cuda::static_for<_Holder::__num_chunks>([&](auto __i) {
+      ::cuda::static_for<_Holder::__num_chunks>([&](auto __i) {
         _CUDA_VSTD::uint32_t __k1 = __holder.__blocks[4 * __i];
         _CUDA_VSTD::uint32_t __k2 = __holder.__blocks[4 * __i + 1];
         _CUDA_VSTD::uint32_t __k3 = __holder.__blocks[4 * __i + 2];
@@ -289,9 +291,6 @@ private:
         __h[3] = __h[3] * 5 + 0x32ac3b17;
       });
     }
-
-    auto const __size = _CUDA_VSTD::uint32_t{sizeof(_Holder)};
-
     // tail
     if constexpr (_Holder::__tail_size > 0)
     {
@@ -300,7 +299,7 @@ private:
       _CUDA_VSTD::uint32_t __k3 = 0;
       _CUDA_VSTD::uint32_t __k4 = 0;
 
-      auto const __tail = __holder.__bytes;
+      const auto __tail = __holder.__bytes;
       switch (__size % __chunk_size)
       {
         case 15:
@@ -382,10 +381,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = __fmix32(__h[0]);
-    __h[1] = __fmix32(__h[1]);
-    __h[2] = __fmix32(__h[2]);
-    __h[3] = __fmix32(__h[3]);
+    __h[0] = ::cuda::experimental::cuco::__detail::__fmix32(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__detail::__fmix32(__h[1]);
+    __h[2] = ::cuda::experimental::cuco::__detail::__fmix32(__h[2]);
+    __h[3] = ::cuda::experimental::cuco::__detail::__fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -400,20 +399,24 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t
   __compute_hash_span(_CUDA_VSTD::span<const _Key> __keys) const noexcept
   {
-    auto const __bytes = _CUDA_VSTD::as_bytes(__keys).data();
-    auto const __size  = __keys.size_bytes();
+    const auto __bytes = _CUDA_VSTD::as_bytes(__keys).data();
+    const auto __size  = __keys.size_bytes();
 
-    auto const __nchunks = __size / __chunk_size;
+    const auto __nchunks = __size / __chunk_size;
 
     _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, 4> __h{__seed_, __seed_, __seed_, __seed_};
 
     // body
     for (_CUDA_VSTD::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
-      _CUDA_VSTD::uint32_t __k1 = __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i);
-      _CUDA_VSTD::uint32_t __k2 = __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i + 1);
-      _CUDA_VSTD::uint32_t __k3 = __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i + 2);
-      _CUDA_VSTD::uint32_t __k4 = __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i + 3);
+      _CUDA_VSTD::uint32_t __k1 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i);
+      _CUDA_VSTD::uint32_t __k2 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i + 1);
+      _CUDA_VSTD::uint32_t __k3 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i + 2);
+      _CUDA_VSTD::uint32_t __k4 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, 4 * __i + 3);
 
       __k1 *= __c1;
       __k1 = _CUDA_VSTD::rotl(__k1, 15);
@@ -459,8 +462,8 @@ private:
     _CUDA_VSTD::uint32_t __k4 = 0;
 
     // TODO: Do we need to reinterpret_cast here? __bytes is of type `const ::cuda::std::byte*`
-    // auto const __tail = reinterpret_cast<const uint8_t*>(__bytes) + __nblocks * __chunk_size;
-    auto const __tail = __bytes + __nchunks * __chunk_size;
+    // const auto __tail = reinterpret_cast<const uint8_t*>(__bytes) + __nblocks * __chunk_size;
+    const auto __tail = __bytes + __nchunks * __chunk_size;
 
     switch (__size % __chunk_size)
     {
@@ -542,10 +545,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = __fmix32(__h[0]);
-    __h[1] = __fmix32(__h[1]);
-    __h[2] = __fmix32(__h[2]);
-    __h[3] = __fmix32(__h[3]);
+    __h[0] = ::cuda::experimental::cuco::__detail::__fmix32(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__detail::__fmix32(__h[1]);
+    __h[2] = ::cuda::experimental::cuco::__detail::__fmix32(__h[2]);
+    __h[3] = ::cuda::experimental::cuco::__detail::__fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -568,15 +571,15 @@ private:
   static constexpr _CUDA_VSTD::uint64_t __c1 = 0x87c37b91114253d5ull;
   static constexpr _CUDA_VSTD::uint64_t __c2 = 0x4cf5ad432745937full;
 
-  static constexpr size_t __block_size = 8;
-  static constexpr size_t __chunk_size = 16;
+  static constexpr _CUDA_VSTD::uint32_t __block_size = 8;
+  static constexpr _CUDA_VSTD::uint32_t __chunk_size = 16;
 
 public:
   _CCCL_HOST_DEVICE constexpr _MurmurHash3_x64_128(_CUDA_VSTD::uint64_t __seed = 0)
       : __seed_{__seed}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(_Key const& __key) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, _CUDA_VSTD::uint64_t>;
     return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__key));
@@ -593,10 +596,11 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t __compute_hash(_Holder __holder) const noexcept
   {
     _CUDA_VSTD::array<_CUDA_VSTD::uint64_t, 2> __h{__seed_, __seed_};
+    const auto __size = _CUDA_VSTD::uint64_t{sizeof(_Holder)};
 
     if constexpr (_Holder::__num_chunks > 0)
     {
-      cuda::static_for<_Holder::__num_chunks>([&](auto __i) {
+      ::cuda::static_for<_Holder::__num_chunks>([&](auto __i) {
         _CUDA_VSTD::uint64_t __k1 = __holder.__blocks[2 * __i];
         _CUDA_VSTD::uint64_t __k2 = __holder.__blocks[2 * __i + 1];
 
@@ -619,16 +623,13 @@ private:
         __h[1] = __h[1] * 5 + 0x38495ab5;
       });
     }
-
-    auto const __size = _CUDA_VSTD::uint64_t{sizeof(_Holder)};
-
     // tail
     if constexpr (_Holder::__tail_size > 0)
     {
       _CUDA_VSTD::uint64_t __k1 = 0;
       _CUDA_VSTD::uint64_t __k2 = 0;
 
-      auto const __tail = __holder.__bytes;
+      const auto __tail = __holder.__bytes;
       switch (__size % __chunk_size)
       {
         case 15:
@@ -705,18 +706,20 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t
   __compute_hash_span(_CUDA_VSTD::span<const _Key> __keys) const noexcept
   {
-    auto const __bytes = _CUDA_VSTD::as_bytes(__keys).data();
-    auto const __size  = __keys.size_bytes();
+    const auto __bytes = _CUDA_VSTD::as_bytes(__keys).data();
+    const auto __size  = __keys.size_bytes();
 
-    auto const __nchunks = __size / __chunk_size;
+    const auto __nchunks = __size / __chunk_size;
 
     _CUDA_VSTD::array<_CUDA_VSTD::uint64_t, 2> __h{__seed_, __seed_};
 
     // body
     for (_CUDA_VSTD::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
-      _CUDA_VSTD::uint64_t __k1 = __load_chunk<_CUDA_VSTD::uint64_t>(__bytes, 2 * __i);
-      _CUDA_VSTD::uint64_t __k2 = __load_chunk<_CUDA_VSTD::uint64_t>(__bytes, 2 * __i + 1);
+      _CUDA_VSTD::uint64_t __k1 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint64_t>(__bytes, 2 * __i);
+      _CUDA_VSTD::uint64_t __k2 =
+        ::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint64_t>(__bytes, 2 * __i + 1);
 
       __k1 *= __c1;
       __k1 = _CUDA_VSTD::rotl(__k1, 31);
@@ -740,7 +743,7 @@ private:
     // tail
     _CUDA_VSTD::uint64_t __k1 = 0;
     _CUDA_VSTD::uint64_t __k2 = 0;
-    auto const __tail         = __bytes + __nchunks * __chunk_size;
+    const auto __tail         = __bytes + __nchunks * __chunk_size;
 
     switch (__size % __chunk_size)
     {
