@@ -32,7 +32,7 @@ __host__ __device__ bool eq(__half lhs, __half rhs) noexcept
 #  if _CCCL_CTK_AT_LEAST(12, 2)
   return ::__heq(lhs, rhs);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__heq(lhs, rhs);), (return ::__half2float(lhs) == ::__half2float(rhs);))
+  return ::__half2float(lhs) == ::__half2float(rhs);
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
 }
 #endif // _CCCL_HAS_NVFP16()
@@ -43,8 +43,7 @@ __host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
 #  if _CCCL_CTK_AT_LEAST(12, 2)
   return ::__heq(lhs, rhs);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::__heq(lhs, rhs);), (return ::__bfloat162float(lhs) == ::__bfloat162float(rhs);))
+  return ::__bfloat162float(lhs) == ::__bfloat162float(rhs);
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
 }
 #endif // _CCCL_HAS_NVBF16()

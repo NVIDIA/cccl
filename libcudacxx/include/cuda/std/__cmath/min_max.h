@@ -69,8 +69,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #endif // _CCCL_HAS_NVBF16()
     if constexpr (is_integral_v<_Tp>)
     {
-      using __ret = conditional_t<is_integral_v<_Tp>, double, _Tp>;
-      return __x < __y ? static_cast<__ret>(__y) : static_cast<__ret>(__x);
+      return __x < __y ? static_cast<double>(__y) : static_cast<double>(__x);
     }
     else
     {
@@ -140,8 +139,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #endif // _CCCL_HAS_NVBF16()
     if constexpr (is_integral_v<_Tp>)
     {
-      using __ret = conditional_t<is_integral_v<_Tp>, double, _Tp>;
-      return __y < __x ? static_cast<__ret>(__y) : static_cast<__ret>(__x);
+      return __y < __x ? static_cast<double>(__y) : static_cast<double>(__x);
     }
     else
     {
