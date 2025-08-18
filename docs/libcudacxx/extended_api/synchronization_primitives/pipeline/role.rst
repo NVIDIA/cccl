@@ -5,7 +5,7 @@ cuda::pipeline_role
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    enum class pipeline_role : /* unspecified */ {
      producer,

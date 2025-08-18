@@ -3,7 +3,7 @@
 ``cuda::bitfield_insert``
 =========================
 
-.. code-block:: cpp
+.. code:: cpp
 
    template <typename T>
    [[nodiscard]] constexpr T
@@ -50,7 +50,7 @@ The function performs the following operations in CUDA for ``uint8_t``, ``uint16
 Example
 -------
 
-.. code-block:: cpp
+.. code:: cpp
 
     #include <cuda/bit>
     #include <cuda/std/cassert>

@@ -5,7 +5,7 @@ cuda::atomic::atomic_thread_fence
 
 Defined in header ``<cuda/atomic>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    __host__ __device__
    void cuda::atomic_thread_fence(cuda::std::memory_order order,
@@ -20,7 +20,7 @@ Example
 
 The following code is an example of the :ref:`MessagePassing <libcudacxx-extended-api-memory-model-message-passing>` pattern:
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cstdio>
    #include <cuda/atomic>

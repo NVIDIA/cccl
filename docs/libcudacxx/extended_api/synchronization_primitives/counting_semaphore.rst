@@ -5,7 +5,7 @@
 
 Defined in header ``<cuda/semaphore>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <cuda::thread_scope Scope,
              cuda::std::ptrdiff_t LeastMaxValue = /* implementation-defined */>
@@ -51,7 +51,7 @@ For each :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-s
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/semaphore>
 

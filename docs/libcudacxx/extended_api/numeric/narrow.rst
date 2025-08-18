@@ -3,7 +3,7 @@
 ``cuda::narrow``
 =====================
 
-.. code-block:: cpp
+.. code:: cpp
 
    struct narrowing_error;
 
@@ -32,7 +32,7 @@ See also the C++ Core Guidelines
 Example
 -------
 
-.. code-block:: cpp
+.. code:: cpp
 
     #include <cuda/numeric>
 

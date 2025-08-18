@@ -562,7 +562,7 @@ efficiently.
 previous kernel as a scalar input to a CUB device-scope algorithm
 without unnecessary synchronization:
 
-.. code-block:: cpp
+.. code:: cpp
 
    int *d_intermediate_result = ...;
    intermediate_kernel<<<blocks, threads>>>(d_intermediate_result,  // output

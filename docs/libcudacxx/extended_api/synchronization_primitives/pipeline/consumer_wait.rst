@@ -5,7 +5,7 @@ cuda::pipeline::consumer_wait
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    // (1)
    template <cuda::thread_scope Scope>

@@ -5,7 +5,7 @@ cuda::device::barrier_expect_tx
 
 Defined in header ``<cuda/barrier>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    __device__
    void cuda::device::barrier_expect_tx(
@@ -34,7 +34,7 @@ This function can only be used under CUDA Compute Capability 9.0 (Hopper) or hig
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/barrier>
    #include <cuda/std/utility> // cuda::std::move

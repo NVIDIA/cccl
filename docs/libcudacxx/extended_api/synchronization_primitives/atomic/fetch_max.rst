@@ -5,7 +5,7 @@ cuda::atomic::fetch_max
 
 Defined in header ``<cuda/atomic>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <typename T, cuda::thread_scope Scope>
    __host__ __device__
@@ -20,7 +20,7 @@ and ``val``. The maximum is found using
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/atomic>
 

@@ -312,7 +312,7 @@ compute their results, many do not. For example, multiple
 ``thrust::for_each`` invocations can be launched without waiting for
 earlier calls to complete:
 
-.. code-block:: cpp
+.. code:: cpp
 
    // Queue three `for_each` kernels:
    thrust::for_each(thrust::cuda::par_nosync, vec1.begin(), vec1.end(), Op{});

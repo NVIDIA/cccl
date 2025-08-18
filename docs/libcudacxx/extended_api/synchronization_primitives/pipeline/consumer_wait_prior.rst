@@ -5,7 +5,7 @@ cuda::pipeline_consumer_wait_prior
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <cuda::std::uint8_t Prior>
    __host__ __device__
@@ -40,7 +40,7 @@ All stages up to *Stage* (exclusive) are implicitly released.
 
 .. rubric:: Example
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/pipeline>
 

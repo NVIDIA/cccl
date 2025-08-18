@@ -43,7 +43,7 @@ Thrust API Example
 The following example generates random numbers serially and then transfers them
   to a parallel device where they are sorted.
 
-.. code-block:: cpp
+.. code:: cpp
 
    #include <thrust/host_vector.h>
    #include <thrust/device_vector.h>
@@ -74,7 +74,7 @@ The following example generates random numbers serially and then transfers them
 
 This example demonstrates computing the sum of some random numbers in parallel:
 
-.. code-block:: cpp
+.. code:: cpp
 
    #include <thrust/host_vector.h>
    #include <thrust/device_vector.h>

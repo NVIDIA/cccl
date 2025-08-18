@@ -3,7 +3,7 @@
 ``cuda::align_down``
 ====================
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline
@@ -35,7 +35,7 @@ The function returns the original pointer or closest pointer smaller than ``ptr`
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
     #include <cuda/memory>
 

@@ -14,7 +14,7 @@
 
 Defined in header ``<cuda/barrier>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <cuda::thread_scope Scope,
              typename CompletionFunction = /* unspecified */>
@@ -70,7 +70,7 @@ of ISO/IEC IS 14882 (the C++ Standard) are modified as follows:
 When using libcu++ with NVCC, a ``__shared__`` ``cuda::barrier`` will lead to the following warning because
 ``__shared__`` variables are not initialized:
 
-.. code-block:: bash
+.. code:: bash
 
    warning: dynamic initialization is not supported for a function-scope static
    __shared__ variable within a __device__/__global__ function
@@ -142,7 +142,7 @@ For each :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-s
 
 .. rubric:: Example
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/barrier>
 

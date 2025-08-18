@@ -5,7 +5,7 @@ cuda::pipeline_producer_commit
 
 Defined in header ``<cuda/pipeline>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <cuda::thread_scope Scope>
    __host__ __device__
@@ -34,7 +34,7 @@ current phase to account for the subsequent ``cuda::barrier::arrive``, resulting
 
 .. rubric:: Example
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/pipeline>
 

@@ -5,7 +5,7 @@
 
 Defined in headers ``<cuda/memory>``, ``<cuda/barrier>`` and ``<cuda/pipeline>``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <cuda::std::size_t Alignment>
    struct cuda::aligned_size_t {
@@ -70,7 +70,7 @@ the behavior is undefined.
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/memory>
 

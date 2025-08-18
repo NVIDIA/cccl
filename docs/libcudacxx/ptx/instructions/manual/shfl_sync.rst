@@ -2,7 +2,7 @@
 shfl.sync
 ^^^^^^^^^
 
-.. code-block:: cuda
+.. code:: cuda
 
    // PTX ISA 6.0
    // shfl.sync.mode.b32  d[|p], a, b, c, membermask;

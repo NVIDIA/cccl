@@ -3,7 +3,7 @@
 ``cuda::is_floating_point``
 ===========================
 
-.. code-block:: cuda
+.. code:: cuda
 
    namespace cuda {
 

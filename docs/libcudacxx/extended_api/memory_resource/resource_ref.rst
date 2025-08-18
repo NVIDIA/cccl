@@ -11,7 +11,7 @@ resources, both compile time and binary size might increase considerably.
 The type-erased ``resource_ref`` and ``synchronous_resource_ref`` resource wrappers aid in efficiently coalescing such APIs
 into a single function.
 
-.. code-block:: cpp
+.. code:: cpp
 
    void* do_allocate(cuda::mr::resource_ref<> resource, cuda::stream_ref stream, std::size_t size, std::size_t align) {
        return resource.allocate(stream, size, align);
@@ -29,7 +29,7 @@ satisfies ``cuda::mr::{synchronous_}resource``.
 
 Properties may also be passed to ``cuda::mr::{synchronous_}resource_ref`` just as with ``cuda::mr::resource_with``.
 
-.. code-block:: cpp
+.. code:: cpp
 
    struct required_alignment{};
    void* do_allocate_with_alignment(cuda::mr::resource_ref<required_alignment> resource, cuda::stream_ref stream, std::size_t size) {
@@ -38,7 +38,7 @@ Properties may also be passed to ``cuda::mr::{synchronous_}resource_ref`` just a
 
 However, the type erasure comes with the cost that arbitrary properties cannot be queried:
 
-.. code-block:: cpp
+.. code:: cpp
 
    struct required_alignment{};
    void* buggy_allocate_with_alignment(cuda::mr::resource_ref<> resource, cuda::stream_ref stream, std::size_t size) {

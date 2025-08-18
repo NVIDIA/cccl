@@ -3,7 +3,7 @@
 ``cuda::ipow``
 ====================================
 
-.. code-block:: cpp
+.. code:: cpp
 
    template <typename T, typename E>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -32,7 +32,7 @@ The function computes the integer ``base`` raised to the power of ``exp``.
 Example
 -------
 
-.. code-block:: cpp
+.. code:: cpp
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>

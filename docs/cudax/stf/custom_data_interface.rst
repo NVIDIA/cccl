@@ -17,7 +17,7 @@ For the sake of simplicity, we consider a very simple representation of
 matrix, only defined by the dimensions m and n, and by the base address
 of the matrix which we assume to be contiguous.
 
-.. code-block:: c++
+.. code:: c++
 
    template <typename T>
    class matrix {
@@ -41,7 +41,7 @@ data instance will have its own base address.
 To define what is the shape of a matrix, we need to specialize the
 ``cudastf::shape_of`` trait class.
 
-.. code-block:: c++
+.. code:: c++
 
    template <typename T>
    class cudastf::shape_of<matrix<T>> {
@@ -106,7 +106,7 @@ In code snippet, we are using the ``cudastf::hash_combine`` helper which
 updates a hash value with another value. This function is available from
 the ``cudastf/utility/hash.h`` header.
 
-.. code-block:: c++
+.. code:: c++
 
    template <typename T>
    struct std::hash<matrix<T>> {
@@ -128,7 +128,7 @@ based on CUDA streams, ``matrix_stream_interface`` inherits from
 ``stream_data_interface_simple<matrix<T>>`` which contains pure virtual
 functions that need to be implemented.
 
-.. code-block:: c++
+.. code:: c++
 
    template <typename T>
    class matrix_stream_interface : public stream_data_interface_simple<matrix<T>> {
@@ -254,7 +254,7 @@ specialize the ``cudastf::streamed_interface_of`` trait class.
 The resulting class must simply define a type named ``type`` which is
 the type of the data interface for the CUDA stream backend.
 
-.. code-block:: c++
+.. code:: c++
 
    template <typename T>
    class cudastf::streamed_interface_of<matrix<T>> {
@@ -265,7 +265,7 @@ the type of the data interface for the CUDA stream backend.
 Once we have defined this trait class, it is for example possible to
 initialize a logical data from a matrix, or from a matrix shape :
 
-.. code-block:: c++
+.. code:: c++
 
        std::vector<int> v(m * n, 0);
        matrix M(m, n, &v[0]);
@@ -286,7 +286,7 @@ finally check that the content is correct, by the means of the
 write-back mechanism that automatically updates the reference data
 instance of a logical data when calling ``ctx.sync()``.
 
-.. code-block:: c++
+.. code:: c++
 
    template <typename T>
    __global__ void kernel(matrix<T> M) {

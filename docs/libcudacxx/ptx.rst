@@ -38,7 +38,7 @@ The API does not guarantee stability of template parameters. The order and
 number of template parameters may change. Use arguments to driver overload
 resolution as in the code below to ensure forward-compatibility:
 
-.. code-block:: cuda
+.. code:: cuda
 
    // Use arguments to drive overload resolution:
    cuda::ptx::mbarrier_arrive_expect_tx(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, &bar, 1);
@@ -52,7 +52,7 @@ resolution as in the code below to ensure forward-compatibility:
 **PTX ISA version and compute capability.** Each binding notes under
 which PTX ISA version and SM version it may be used. Example:
 
-.. code-block:: cuda
+.. code:: cuda
 
    // mbarrier.arrive.shared::cta.b64 state, [addr]; // 1.  PTX ISA 70, SM_80
    __device__ inline uint64_t mbarrier_arrive(
@@ -63,7 +63,7 @@ which PTX ISA version and SM version it may be used. Example:
 
 To check if the current compiler is recent enough, use:
 
-.. code-block:: cuda
+.. code:: cuda
 
    #if __cccl_ptx_isa >= 700
    cuda::ptx::mbarrier_arrive(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, &bar, 1);
@@ -72,7 +72,7 @@ To check if the current compiler is recent enough, use:
 Ensure that you only call the function when compiling for a recent
 enough compute capability (SM version), like this:
 
-.. code-block:: cuda
+.. code:: cuda
 
    NV_IF_TARGET(NV_PROVIDES_SM_80,(
      cuda::ptx::mbarrier_arrive(cuda::ptx::sem_release, cuda::ptx::scope_cta, cuda::ptx::space_shared, &bar, 1);

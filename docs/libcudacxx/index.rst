@@ -47,7 +47,7 @@ you know how to use libcu++.
 
 All you have to do is add ``cuda/std/`` to the start of your includes and ``cuda::`` before any uses of ``std::``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/std/atomic>
    cuda::std::atomic<int> x;
@@ -71,7 +71,7 @@ that controls the strength of the memory fence.
 
 To use utilities that are extensions to Standard Library features, drop the ``std``:
 
-.. code-block:: cuda
+.. code:: cuda
 
    #include <cuda/atomic>
    cuda::atomic<int, cuda::thread_scope_device> x;
@@ -105,7 +105,7 @@ Summary: ``std::``, ``cuda::`` and ``cuda::std::``
 
 Any libcu++ feature that works in ``__host__`` code also works when being compiled by a non-CUDA compiler (e.g., GCC).
 
-.. code-block:: cuda
+.. code:: cuda
 
    // Standard C++, __host__ only.
    #include <atomic>

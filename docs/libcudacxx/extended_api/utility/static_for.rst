@@ -5,7 +5,7 @@
 
 Defined in ``<cuda/utility>`` header.
 
-.. code-block:: cuda
+.. code:: cuda
 
     namespace cuda {
 
@@ -54,7 +54,7 @@ Defined in ``<cuda/utility>`` header.
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
     #include <cuda/utility>
     #include <cstdio>

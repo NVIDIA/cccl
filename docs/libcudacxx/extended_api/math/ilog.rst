@@ -3,19 +3,19 @@
 ``cuda::ilog2`` and ``cuda::ilog10``
 ====================================
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
    int ilog2(T value) noexcept;
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
    int ceil_ilog2(T value) noexcept;
 
-.. code-block:: cuda
+.. code:: cuda
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline constexpr
@@ -51,7 +51,7 @@ The function performs the following operations in device code:
 Example
 -------
 
-.. code-block:: cpp
+.. code:: cpp
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>

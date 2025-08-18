@@ -3,7 +3,7 @@
 ``cuda::is_aligned``
 ====================
 
-.. code-block:: cuda
+.. code:: cuda
 
    [[nodiscard]] __host__ __device__ inline
    bool is_aligned(const void* ptr, size_t alignment) noexcept
@@ -26,7 +26,7 @@ The function determines if a pointer is aligned to a specific alignment.
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
     #include <cuda/memory>
 

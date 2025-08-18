@@ -7,7 +7,7 @@ Defined in ``<cuda/warp>`` header.
 
 ``warp_shuffle_idx``:
 
-.. code-block:: cuda
+.. code:: cuda
 
     namespace cuda::device {
 
@@ -28,7 +28,7 @@ Defined in ``<cuda/warp>`` header.
 
 ``warp_shuffle_up``:
 
-.. code-block:: cuda
+.. code:: cuda
 
     namespace cuda::device {
 
@@ -49,7 +49,7 @@ Defined in ``<cuda/warp>`` header.
 
 ``warp_shuffle_down``:
 
-.. code-block:: cuda
+.. code:: cuda
 
     namespace cuda::device {
 
@@ -70,7 +70,7 @@ Defined in ``<cuda/warp>`` header.
 
 ``warp_shuffle_xor``:
 
-.. code-block:: cuda
+.. code:: cuda
 
     namespace cuda::device {
 
@@ -91,7 +91,7 @@ Defined in ``<cuda/warp>`` header.
 
 Result type:
 
-.. code-block:: cuda
+.. code:: cuda
 
     namespace cuda::device {
 
@@ -150,7 +150,7 @@ The functions allow to exchange data of any data size, including raw arrays, poi
 Example
 -------
 
-.. code-block:: cuda
+.. code:: cuda
 
     #include <cuda/std/array>
     #include <cuda/std/type_traits>
