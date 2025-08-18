@@ -8,10 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
-#include <thrust/host_vector.h>
-#include <thrust/logical.h>
+#include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
@@ -134,7 +131,7 @@ struct test_murmurhash3_x86_128
 {
   hash_test<cudax::cuco::hash_algorithm::murmurhash3_x86_128> murmurhash3_x86_128_test;
 
-  _CCCL_HOST_DEVICE constexpr __uint128_t conv(cuda::std::array<uint32_t, 4> const& arr) const
+  _CCCL_HOST_DEVICE __uint128_t conv(cuda::std::array<uint32_t, 4> const& arr) const
   {
     return cuda::std::bit_cast<__uint128_t>(arr);
   }
@@ -172,7 +169,7 @@ struct test_murmurhash3_x64_128
 {
   hash_test<cudax::cuco::hash_algorithm::murmurhash3_x64_128> murmurhash3_x64_128_test;
 
-  _CCCL_HOST_DEVICE constexpr __uint128_t conv(cuda::std::array<uint64_t, 2> const& arr) const
+  _CCCL_HOST_DEVICE __uint128_t conv(cuda::std::array<uint64_t, 2> const& arr) const
   {
     return cuda::std::bit_cast<__uint128_t>(arr);
   }
