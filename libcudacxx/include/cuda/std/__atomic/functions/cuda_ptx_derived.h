@@ -279,6 +279,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(_Type* __ptr, _Type& __d
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
     _Sco{});
 }
+
 template <class _Type, class _Order, class _Operand, class _Sco, __cuda_atomic_enable_non_native_arithmetic<_Operand> = 0>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(_Type* __ptr, _Type& __dst, _Type __op, _Order, _Operand, _Sco)
 {
