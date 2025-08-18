@@ -8,7 +8,9 @@
 //
 // UNSUPPORTED: pre-sm-90
 // UNSUPPORTED: windows
-
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -mcx16
+// UNSUPPORTED: aarch64-unknown-linux-gnu
+//
 // <cuda/atomic>
 
 #define LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS
@@ -18,8 +20,7 @@
 
 #include "test_macros.h"
 
-// This test specifically checks that GCC triggers a static assertion when detecting non-builtin use of 128b sized
-// atomics.
+// This test covers the escape hatch for missing builtins on GCC/Clang. Requires -mcx16
 template <class T>
 __host__ __device__ void do_test()
 {

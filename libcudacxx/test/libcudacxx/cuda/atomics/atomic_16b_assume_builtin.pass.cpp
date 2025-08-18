@@ -9,6 +9,7 @@
 // XFAIL: gcc
 // UNSUPPORTED: pre-sm-90
 // UNSUPPORTED: windows
+// UNSUPPORTED: aarch64-unknown-linux-gnu
 
 // <cuda/atomic>
 
