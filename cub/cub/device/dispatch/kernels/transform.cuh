@@ -496,6 +496,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
+// note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
 template <typename LdgstsPolicy,
           typename Offset,
           typename Predicate,
@@ -524,7 +525,6 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
   // work for inputs in host stack memory ...
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   // TODO(bgruber): if we used SMEM offsets instead of pointers, we need less registers (but no perf increase)
   [[maybe_unused]] const auto smem_ptrs = ::cuda::std::tuple<const InTs*...>{
     (inner_blocks ? copy_and_return_smem_dst<block_threads>(aligned_ptrs, smem_offset, offset, smem, valid_items)
@@ -533,7 +533,6 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
 
   asm volatile("cp.async.wait_group %0;" : : "n"(0)); // same as: __pipeline_wait_prior(0);
   __syncthreads();
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
