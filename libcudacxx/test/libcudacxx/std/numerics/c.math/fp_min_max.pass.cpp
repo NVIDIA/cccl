@@ -123,12 +123,12 @@ __host__ __device__ bool test(float val)
   test<long double>(val);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _CCCL_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>(::__float2half(val));
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__nv_bfloat16>(::__float2bfloat16(val));
-#endif // _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
   test<signed char>(static_cast<signed char>(val));
   test<unsigned char>(static_cast<unsigned char>(val));

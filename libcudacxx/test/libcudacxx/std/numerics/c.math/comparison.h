@@ -49,7 +49,7 @@ __host__ __device__ bool eq(__nv_bfloat16 lhs, __nv_bfloat16 rhs) noexcept
 }
 #endif // _CCCL_HAS_NVBF16()
 
-template <class Integer>
+template <class Integer, cuda::std::enable_if_t<cuda::std::is_integral_v<Integer>, int> = 0>
 __host__ __device__ bool is_about(Integer x, Integer y)
 {
   return true;
