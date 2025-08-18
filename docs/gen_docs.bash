@@ -2,7 +2,7 @@
 
 # This script builds CCCL documentation using Sphinx directly
 #
-# Usage: 
+# Usage:
 #   ./gen_docs.bash           - Build documentation
 #   ./gen_docs.bash clean     - Clean build directory
 #   ./gen_docs.bash clean --all - Clean build directory and Doxygen build
@@ -71,22 +71,22 @@ fi
 # Function to build Doxygen 1.9.6
 build_doxygen() {
     echo "Building Doxygen 1.9.6..."
-    
+
     # Clone Doxygen if not already cloned
     if [ ! -d "${DOXYGEN_SRC_DIR}" ]; then
         echo "Cloning Doxygen repository..."
         git clone https://github.com/doxygen/doxygen.git "${DOXYGEN_SRC_DIR}"
     fi
-    
+
     # Checkout Release_1_9_6
     cd "${DOXYGEN_SRC_DIR}"
     git fetch
     git checkout Release_1_9_6
-    
+
     # Create build directory
     mkdir -p "${DOXYGEN_BUILD_DIR}"
     cd "${DOXYGEN_BUILD_DIR}"
-    
+
     # Configure based on platform
     echo "Configuring Doxygen build..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -112,11 +112,11 @@ build_doxygen() {
             -Duse_libclang=NO \
             "${DOXYGEN_SRC_DIR}"
     fi
-    
+
     # Build Doxygen
     echo "Building Doxygen (this may take a few minutes)..."
     ninja
-    
+
     echo "Doxygen 1.9.6 built successfully at ${DOXYGEN_BIN}"
     cd "${SCRIPT_PATH}"
 }
@@ -124,20 +124,20 @@ build_doxygen() {
 # Check if custom Doxygen needs to be built
 if [ ! -f "${DOXYGEN_BIN}" ]; then
     echo "Custom Doxygen 1.9.6 not found, building it now..."
-    
+
     # Check for required build tools
     if ! command -v cmake &> /dev/null; then
         echo "Error: cmake is required to build Doxygen"
         echo "Please install cmake and try again"
         exit 1
     fi
-    
+
     if ! command -v ninja &> /dev/null; then
         echo "Error: ninja is required to build Doxygen"
         echo "Please install ninja-build and try again"
         exit 1
     fi
-    
+
     build_doxygen
     DOXYGEN="${DOXYGEN_BIN}"
 else
@@ -171,20 +171,20 @@ fi
 if which ${DOXYGEN} > /dev/null 2>&1; then
     echo "Generating Doxygen XML..."
     mkdir -p ${BUILDDIR}/doxygen/cub ${BUILDDIR}/doxygen/thrust ${BUILDDIR}/doxygen/cudax ${BUILDDIR}/doxygen/libcudacxx
-    
+
     # Copy all images to Doxygen XML output directories where they're expected
     for project in cub thrust cudax libcudacxx; do
         mkdir -p ${BUILDDIR}/doxygen/${project}/xml
         cp img/*.png ${BUILDDIR}/doxygen/${project}/xml/ 2>/dev/null || true
     done
-    
+
     # Run all Doxygen builds in parallel
     (cd cub && ${DOXYGEN} Doxyfile) &
     (cd thrust && ${DOXYGEN} Doxyfile) &
     (cd cudax && ${DOXYGEN} Doxyfile) &
     (cd libcudacxx && ${DOXYGEN} Doxyfile) &
     wait
-    
+
     echo "Doxygen complete"
 else
     echo "Skipping Doxygen (not installed)"

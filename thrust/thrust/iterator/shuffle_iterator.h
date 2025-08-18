@@ -125,9 +125,9 @@ struct make_shuffle_iterator_base
 //!
 //! \see make_shuffle_iterator
 template <class IndexType, class BijectionFunc = thrust::detail::random_bijection<IndexType>>
-class shuffle_iterator 
+class shuffle_iterator
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-: public detail::make_shuffle_iterator_base<IndexType, BijectionFunc>::type
+    : public detail::make_shuffle_iterator_base<IndexType, BijectionFunc>::type
 #endif // _CCCL_DOXYGEN_INVOKED
 {
   //! \cond

@@ -1,15 +1,15 @@
 # CCCL Documentation Configuration File
 # Generated to replace repo-docs with direct Sphinx usage
 
-from datetime import datetime
 import os
 import sys
+from datetime import datetime
 
 # Add extension directory to path
-sys.path.insert(0, os.path.abspath('_ext'))
+sys.path.insert(0, os.path.abspath("_ext"))
 
 # Add Python CCCL package to path for autodoc
-python_package_path = os.path.abspath('../python/cuda_cccl')
+python_package_path = os.path.abspath("../python/cuda_cccl")
 if os.path.exists(python_package_path):
     sys.path.insert(0, python_package_path)
 
@@ -26,7 +26,7 @@ author = "NVIDIA Corporation"
 try:
     with open("VERSION.md", "r") as f:
         version = f.read().strip()
-except:
+except Exception:
     version = "latest"
 
 release = version
@@ -61,12 +61,12 @@ breathe_projects = {
 }
 
 breathe_default_project = "cub"
-breathe_default_members = ('members', 'undoc-members')
+breathe_default_members = ("members", "undoc-members")
 breathe_show_enumvalue_initializer = True
 breathe_domain_by_extension = {"cuh": "cpp", "h": "cpp", "hpp": "cpp"}
 
 # Configure cpp domain to handle cub namespace
-cpp_index_common_prefix = ['cub::']
+cpp_index_common_prefix = ["cub::"]
 
 # Preprocessor definitions for Breathe to handle CCCL macros
 cpp_id_attributes = [
@@ -81,7 +81,7 @@ cpp_id_attributes = [
     "_CCCL_FORCEINLINE",
     "_CUDAX_API",
     "_CUDAX_HOST_API",
-    "_CUDAX_DEVICE_API"
+    "_CUDAX_DEVICE_API",
 ]
 cpp_paren_attributes = ["__declspec", "__align__"]
 
@@ -182,7 +182,7 @@ autodoc_typehints = "description"
 autodoc_type_aliases = {}
 
 # Set Python domain primary for intersphinx
-primary_domain = 'py'
+primary_domain = "py"
 
 # Mock imports for Python documentation - these modules may not be installed
 autodoc_mock_imports = [
@@ -213,7 +213,7 @@ autodoc_mock_imports = [
     "numpydoc_test_module",  # Mock to avoid import errors
     "cupy",
     "cuda.cccl.parallel.experimental._bindings",
-    "cuda.cccl.parallel.experimental._bindings_impl"
+    "cuda.cccl.parallel.experimental._bindings_impl",
 ]
 
 # External links configuration
