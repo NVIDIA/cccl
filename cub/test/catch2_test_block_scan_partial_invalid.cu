@@ -204,7 +204,7 @@ int_gen_t valid_items_fixed_vals() noexcept
   const int items_per_warp           = cub::detail::warp_threads * Params::items_per_thread;
   const int items_per_raking_segment = cub::BlockRakingLayout<typename Params::type, Params::tile_size>::SEGMENT_LENGTH;
   const int items_per_segment =
-    Params::algorithm == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
+    Params::algo == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
 
   using namespace Catch::Generators;
   return values(
@@ -265,7 +265,7 @@ C2H_TEST("Partial block scan (single) does not apply op to invalid items",
   thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin());
 
   c2h::device_vector<bool> error_flag(1);
-  block_scan_single<params::algorithm, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan_single<params::algo, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in, d_out, merge_single_op_t<params::mode>{thrust::raw_pointer_cast(error_flag.data())}, valid_items);
   REQUIRE(false == error_flag.front());
 
@@ -306,7 +306,7 @@ C2H_TEST("Partial block scan (multi) does not apply op to invalid elements",
   thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin());
 
   c2h::device_vector<bool> error_flag(1);
-  block_scan<params::algorithm, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in, d_out, merge_op_t<params::mode>{thrust::raw_pointer_cast(error_flag.data())}, valid_items);
   REQUIRE(false == error_flag.front());
 
@@ -351,7 +351,7 @@ C2H_TEST("Partial block scan (multi) does not apply op to invalid elements and r
   thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin());
 
   c2h::device_vector<bool> error_flag(1);
-  block_scan<params::algorithm, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in,
     d_out,
     merge_aggregate_op_t<params::mode>{
@@ -402,7 +402,7 @@ C2H_TEST("Partial block scan (multi) does not apply op to invalid elements and w
   const segment initial_value = segment{0, 1};
 
   c2h::device_vector<bool> error_flag(1);
-  block_scan<params::algorithm, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in,
     d_out,
     merge_init_value_op_t<params::mode>{initial_value, thrust::raw_pointer_cast(error_flag.data())},
@@ -449,7 +449,7 @@ C2H_TEST("Partial block scan (multi) with initial value does not apply op to inv
   c2h::device_vector<segment> d_block_aggregate(1);
 
   c2h::device_vector<bool> error_flag(1);
-  block_scan<params::algorithm, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in,
     d_out,
     merge_init_value_aggregate_op_t<params::mode>{
@@ -499,7 +499,7 @@ C2H_TEST("Partial block scan (multi) supports prefix op and does not apply op to
   thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin());
 
   c2h::device_vector<bool> error_flag(1);
-  block_scan<params::algorithm, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in, d_out, merge_prefix_op_t<params::mode>{prefix, thrust::raw_pointer_cast(error_flag.data())}, valid_items);
   REQUIRE(false == error_flag.front());
 
