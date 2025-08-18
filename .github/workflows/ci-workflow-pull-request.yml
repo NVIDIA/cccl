@@ -201,7 +201,7 @@ jobs:
         with:
           source-dir: _site/
           action: deploy
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
   build-rapids:
