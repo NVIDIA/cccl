@@ -8,10 +8,8 @@ on:
     types: [closed]
 
 permissions:
-  contents: read
-  pages: write
+  contents: write
   pull-requests: write
-  id-token: write
 
 jobs:
   cleanup-preview:
@@ -22,5 +20,5 @@ jobs:
         uses: rossjrw/pr-preview-action@v1
         with:
           action: remove
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
         continue-on-error: true

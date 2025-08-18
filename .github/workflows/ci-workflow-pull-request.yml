@@ -180,10 +180,8 @@ jobs:
     name: Build and Verify Docs
     if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
     permissions:
-      contents: read
-      pages: write
+      contents: write
       pull-requests: write
-      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
