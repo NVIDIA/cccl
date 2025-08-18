@@ -411,9 +411,11 @@ struct policy_hub<RequiresStableAddress,
     // complex, so let's fall back in this case.
     static constexpr int max_alignment =
       ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
-    static constexpr int tile_sizes_retain_alignment =
+    static constexpr bool tile_sizes_retain_alignment =
       (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
-    static constexpr bool fallback_to_vectorized = exhaust_smem || !tile_sizes_retain_alignment || no_input_streams;
+    static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
+    static constexpr bool fallback_to_vectorized =
+      exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams;
 
   public:
     static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
