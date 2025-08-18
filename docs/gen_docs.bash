@@ -100,9 +100,7 @@ build_doxygen() {
         else
             cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-                -Duse_libclang=YES \
-                -DLLVM_DIR="$(brew --prefix llvm)/lib/cmake/llvm" \
-                -DClang_DIR="$(brew --prefix llvm)/lib/cmake/clang" \
+                -Duse_libclang=NO \
                 -DBISON_EXECUTABLE="$(brew --prefix bison)/bin/bison" \
                 "${DOXYGEN_SRC_DIR}"
         fi
@@ -111,7 +109,7 @@ build_doxygen() {
         echo "Configuring for Linux/Ubuntu..."
         cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -Duse_libclang=YES \
+            -Duse_libclang=NO \
             "${DOXYGEN_SRC_DIR}"
     fi
     
