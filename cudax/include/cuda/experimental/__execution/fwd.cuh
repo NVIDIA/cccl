@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -49,6 +50,29 @@ namespace __detail
 {
 using namespace cuda::experimental::__detail; // NOLINT(misc-unused-using-decls)
 } // namespace __detail
+
+// NOLINTBEGIN(misc-unused-using-decls)
+using _CUDA_STD_EXEC::__forwarding_query;
+using _CUDA_STD_EXEC::__unwrap_reference_t;
+using _CUDA_STD_EXEC::env;
+using _CUDA_STD_EXEC::env_of_t;
+using _CUDA_STD_EXEC::forwarding_query;
+using _CUDA_STD_EXEC::forwarding_query_t;
+using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::get_env_t;
+using _CUDA_STD_EXEC::prop;
+
+using _CUDA_STD_EXEC::__nothrow_queryable_with;
+using _CUDA_STD_EXEC::__query_result_t;
+using _CUDA_STD_EXEC::__queryable_with;
+
+using _CUDA_STD_EXEC::__query_or;
+using _CUDA_STD_EXEC::__query_result_or_t;
+// NOLINTEND(misc-unused-using-decls)
+
+template <class _Env, class _Query, bool _Default>
+_CCCL_CONCEPT __nothrow_queryable_with_or =
+  bool(__queryable_with<_Env, _Query> ? __nothrow_queryable_with<_Env, _Query> : _Default);
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT receiver_t
 {};

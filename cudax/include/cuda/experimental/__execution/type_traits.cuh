@@ -21,19 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_valid_expansion.h>
+#include <cuda/std/__type_traits/type_list.h>
 
-#include <cuda/experimental/__detail/type_traits.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
+#include <cuda/experimental/__detail/type_traits.cuh> // IWYU pragma: export
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

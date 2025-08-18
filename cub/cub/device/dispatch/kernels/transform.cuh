@@ -175,12 +175,6 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
 template <typename VectorizedPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InputT>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
@@ -216,18 +210,20 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     out += offset;
   }
 
-  constexpr int load_store_size  = VectorizedPolicy::load_store_word_size;
-  using load_store_t             = decltype(load_store_type<load_store_size>());
-  using result_t                 = ::cuda::std::invoke_result_t<F, const InputT&...>;
-  using output_t                 = it_value_t<RandomAccessIteratorOut>;
-  constexpr int input_type_size  = int{first_item(sizeof(InputT)...)};
-  constexpr int load_store_count = (items_per_thread * input_type_size) / load_store_size;
-  static_assert((items_per_thread * input_type_size) % load_store_size == 0);
-  static_assert(load_store_size % input_type_size == 0);
+  constexpr int load_store_size = VectorizedPolicy::load_store_word_size;
+  using load_store_t            = decltype(load_store_type<load_store_size>());
+  using output_t                = it_value_t<RandomAccessIteratorOut>;
+  using result_t                = ::cuda::std::invoke_result_t<F, const InputT&...>;
+  // picks output type size if there are no inputs
+  constexpr int element_size     = int{first_item(sizeof(InputT)..., size_of<output_t>)};
+  constexpr int load_store_count = (items_per_thread * element_size) / load_store_size;
+
+  static_assert((items_per_thread * element_size) % load_store_size == 0);
+  static_assert(load_store_size % element_size == 0);
 
   constexpr bool can_vectorize_store =
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && size_of<output_t> == input_type_size;
+    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t> && size_of<output_t> == element_size;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
@@ -271,7 +267,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   else
   {
     // serial path
-    constexpr int elems = load_store_size / input_type_size;
+    constexpr int elems = load_store_size / element_size;
     out += threadIdx.x * elems;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
