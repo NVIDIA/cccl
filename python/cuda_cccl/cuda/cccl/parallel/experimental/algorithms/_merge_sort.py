@@ -185,6 +185,20 @@ def merge_sort(
     num_items: int,
     stream=None,
 ):
+    """
+    Performs device-wide merge sort using the single-phase API.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in_keys: Device array or iterator containing the input sequence of keys
+        d_in_items: Device array or iterator containing the input sequence of items (optional)
+        d_out_keys: Device array to store the sorted keys
+        d_out_items: Device array to store the sorted items (optional)
+        op: Comparison operator for sorting
+        num_items: Number of items to sort
+        stream: CUDA stream for the operation (optional)
+    """
     sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
         None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream

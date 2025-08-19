@@ -156,6 +156,19 @@ def exclusive_scan(
     num_items: int,
     stream=None,
 ):
+    """
+    Performs device-wide exclusive scan using the single-phase API.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array or iterator to store the result of the scan
+        op: Binary scan operator
+        h_init: Initial value for the scan
+        num_items: Number of items to scan
+        stream: CUDA stream for the operation (optional)
+    """
     scanner = make_exclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
@@ -202,6 +215,19 @@ def inclusive_scan(
     num_items: int,
     stream=None,
 ):
+    """
+    Performs device-wide inclusive scan using the single-phase API.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array or iterator to store the result of the scan
+        op: Binary scan operator
+        h_init: Initial value for the scan
+        num_items: Number of items to scan
+        stream: CUDA stream for the operation (optional)
+    """
     scanner = make_inclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
