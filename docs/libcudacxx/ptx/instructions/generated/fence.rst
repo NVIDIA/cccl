@@ -3,7 +3,7 @@
 
 fence.sc.cta
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 1. PTX ISA 60, SM_70
    // .sem       = { .sc }
@@ -15,7 +15,7 @@ fence.sc.cta
 
 fence.sc.gpu
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 1. PTX ISA 60, SM_70
    // .sem       = { .sc }
@@ -27,7 +27,7 @@ fence.sc.gpu
 
 fence.sc.sys
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 1. PTX ISA 60, SM_70
    // .sem       = { .sc }
@@ -39,7 +39,7 @@ fence.sc.sys
 
 fence.sc.cluster
 ^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 2. PTX ISA 78, SM_90
    // .sem       = { .sc }
@@ -51,7 +51,7 @@ fence.sc.cluster
 
 fence.acq_rel.cta
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 1. PTX ISA 60, SM_70
    // .sem       = { .acq_rel }
@@ -63,7 +63,7 @@ fence.acq_rel.cta
 
 fence.acq_rel.gpu
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 1. PTX ISA 60, SM_70
    // .sem       = { .acq_rel }
@@ -75,7 +75,7 @@ fence.acq_rel.gpu
 
 fence.acq_rel.sys
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 1. PTX ISA 60, SM_70
    // .sem       = { .acq_rel }
@@ -87,7 +87,7 @@ fence.acq_rel.sys
 
 fence.acq_rel.cluster
 ^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // 2. PTX ISA 78, SM_90
    // .sem       = { .acq_rel }
@@ -99,7 +99,7 @@ fence.acq_rel.cluster
 
 fence.acquire.cta
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .acquire }
@@ -111,7 +111,7 @@ fence.acquire.cta
 
 fence.acquire.cluster
 ^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .acquire }
@@ -123,7 +123,7 @@ fence.acquire.cluster
 
 fence.acquire.gpu
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .acquire }
@@ -135,7 +135,7 @@ fence.acquire.gpu
 
 fence.acquire.sys
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .acquire }
@@ -147,7 +147,7 @@ fence.acquire.sys
 
 fence.release.cta
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .release }
@@ -159,7 +159,7 @@ fence.release.cta
 
 fence.release.cluster
 ^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .release }
@@ -171,7 +171,7 @@ fence.release.cluster
 
 fence.release.gpu
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .release }
@@ -183,7 +183,7 @@ fence.release.gpu
 
 fence.release.sys
 ^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.sem.scope; // PTX ISA 86, SM_90
    // .sem       = { .release }

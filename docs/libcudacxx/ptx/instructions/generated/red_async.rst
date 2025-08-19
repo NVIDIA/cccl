@@ -3,7 +3,7 @@
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
@@ -17,7 +17,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
@@ -31,7 +31,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
@@ -45,7 +45,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
@@ -59,7 +59,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
@@ -73,7 +73,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .s32 }
@@ -87,7 +87,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .s32 }
@@ -101,7 +101,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .s32 }
@@ -115,7 +115,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .b32 }
@@ -129,7 +129,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .b32 }
@@ -143,7 +143,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .b32 }
@@ -157,7 +157,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.type  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u64 }
@@ -171,7 +171,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64
 
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.op.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
    // .op        = { .add }

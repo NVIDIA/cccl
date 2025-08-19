@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>

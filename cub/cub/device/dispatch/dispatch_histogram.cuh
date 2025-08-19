@@ -411,9 +411,6 @@ public:
    *
    * @param stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   *
-   * @param is_byte_sample
-   *   type indicating whether or not SampleT is a 8b type
    */
   // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
   template <typename MaxPolicyT = typename ::cuda::std::_If<
@@ -599,8 +596,6 @@ public:
    * @param stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
-   * @param is_byte_sample
-   *   Marker type indicating whether or not SampleT is a 8b type
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
@@ -744,8 +739,6 @@ public:
    * @param stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
-   * @param is_byte_sample
-   *   Marker type indicating whether or not SampleT is a 8b type
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
@@ -945,8 +938,6 @@ public:
    * @param stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
-   * @param is_byte_sample
-   *   type indicating whether or not SampleT is a 8b type
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,

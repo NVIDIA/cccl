@@ -3,7 +3,7 @@
 
 fence.proxy.async::generic.acquire.sync_restrict::shared::cluster.cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.async::generic.sem.sync_restrict::space.scope; // PTX ISA 86, SM_90
    // .sem       = { .acquire }
@@ -17,7 +17,7 @@ fence.proxy.async::generic.acquire.sync_restrict::shared::cluster.cluster
 
 fence.proxy.async::generic.release.sync_restrict::shared::cta.cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // fence.proxy.async::generic.sem.sync_restrict::space.scope; // PTX ISA 86, SM_90
    // .sem       = { .release }

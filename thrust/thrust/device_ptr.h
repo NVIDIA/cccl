@@ -81,7 +81,7 @@ public:
 
   /*! \brief Construct a null \c device_ptr.
    *
-   *  \param ptr A null pointer.
+   *  This constructor accepts a \c std::nullptr_t value.
    *
    *  \post <tt>get() == nullptr</tt>.
    */
@@ -142,7 +142,7 @@ public:
 
   /*! \brief Set this \c device_ptr to null.
    *
-   *  \param ptr A null pointer.
+   *  This operator accepts a \c std::nullptr_t value.
    *
    *  \post <tt>get() == nullptr</tt>.
    *

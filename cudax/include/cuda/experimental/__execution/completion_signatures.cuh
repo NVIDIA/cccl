@@ -619,6 +619,11 @@ template <bool _PotentiallyThrowing>
   }
 }
 
+using __eptr_completion_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_completion());
+
+template <bool _PotentiallyThrowing>
+using __eptr_completion_if_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_completion_if<_PotentiallyThrowing>());
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // invalid_completion_signature
 #if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
