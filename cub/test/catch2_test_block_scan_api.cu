@@ -28,10 +28,11 @@
 #include <cub/block/block_scan.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 
-#include <cuda/std/numeric>
+#include <cuda/cmath>
+#include <cuda/functional>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 
 #include <c2h/catch2_test_helper.h>
 
