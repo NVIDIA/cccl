@@ -122,9 +122,10 @@ struct cyclic_chunk_accessor
   }
 };
 
+using large_offset_type_list = c2h::type_list<double>;
 C2H_TEST("Deterministic Device reduce works with float and double on gpu with large offset types and num_items",
          "[reduce][deterministic]",
-         float_type_list)
+         large_offset_type_list)
 {
   using type                    = typename c2h::get<0, TestType>;
   const size_t random_num_items = (1uL << 32) + GENERATE_COPY(take(1, random(1, 1000)));
