@@ -50,15 +50,15 @@ __global__ void InclusiveBlockScanKernel(int* output)
 
   int initial_value = 1;
   int thread_data[] = {
-    +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
-    -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
+    +1 * ((int) threadIdx.x * 2), // item 0
+    -1 * ((int) threadIdx.x * 2 + 1) // item 1
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
   // Collectively compute the block-wide inclusive scan max
   block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cuda::maximum<>{});
 
-  // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
+  // output: {[1, 1], [2, 2], [4, 4], ... [126, 126]}
   // ...
   // example-end inclusive-scan-array-init-value
   output[threadIdx.x * 2]     = thread_data[0];
@@ -100,8 +100,8 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
 
   int initial_value = 1;
   int thread_data[] = {
-    +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
-    -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
+    +1 * ((int) threadIdx.x * 2), // item 0
+    -1 * ((int) threadIdx.x * 2 + 1) // item 1
   };
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
@@ -109,7 +109,7 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
   int block_aggregate;
   block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cuda::maximum<>{}, block_aggregate);
 
-  // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
+  // output: {[1, 1], [2, 2], [4, 4], ... [126, 126]}
   // block_aggregate = 126;
   // ...
   // example-end inclusive-scan-array-aggregate-init-value
@@ -143,4 +143,147 @@ C2H_TEST("Block array-based inclusive scan with block aggregate works with initi
 
   REQUIRE(d_out == expected);
   REQUIRE(d_block_aggregate[0] == 126);
+}
+
+constexpr int num_blocks = 3;
+
+// example-begin inclusive-scan-partial-tile-array-init-value
+__global__ void InclusiveBlockScanPartialTileKernel(int* output)
+{
+  // Specialize BlockScan for a 1D block of 64 threads of type int
+  using block_scan_t   = cub::BlockScan<int, 64>;
+  using temp_storage_t = block_scan_t::TempStorage;
+
+  // Allocate shared memory for BlockScan
+  __shared__ temp_storage_t temp_storage;
+
+  int initial_value = 1;
+  int thread_data[] = {
+    +1 * ((int) threadIdx.x * 2), // item 0
+    -1 * ((int) threadIdx.x * 2 + 1) // item 1
+  };
+  //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
+  int valid_items = -7 + (int) blockIdx.x * 69;
+  // 1st block: -7 (effectively 0); 2nd block: 62; 3rd block: 131 (effectively 128)
+
+  // Collectively compute the block-wide inclusive scan max
+  block_scan_t(temp_storage)
+    .InclusiveScanPartialTile(thread_data, thread_data, initial_value, cuda::maximum<>{}, valid_items);
+
+  // 1st block output: {[0, -1], [2, -3], [4, -5], ...                           [126, -127]}
+  // 2nd block output: {[1,  1], [2,  2], [4,  4], ... [60, 60], [62, -63], ..., [126, -127]}
+  // 3rd block output: {[1,  1], [2,  2], [4,  4], ...                           [126,  126]}
+  // ...
+  // example-end inclusive-scan-partial-tile-array-init-value
+  const int block_offset                     = block_num_threads * num_items_per_thread * blockIdx.x;
+  output[block_offset + threadIdx.x * 2]     = thread_data[0];
+  output[block_offset + threadIdx.x * 2 + 1] = thread_data[1];
+}
+
+C2H_TEST("Block array-based partial inclusive scan works with initial value", "[scan][block]")
+{
+  c2h::device_vector<int> d_out(num_blocks * block_num_threads * num_items_per_thread);
+
+  InclusiveBlockScanPartialTileKernel<<<num_blocks, block_num_threads>>>(thrust::raw_pointer_cast(d_out.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<int> expected(d_out.size());
+  for (int block = 0; block < num_blocks; ++block)
+  {
+    constexpr int num_items_per_block = block_num_threads * num_items_per_thread;
+    const int block_offset            = num_items_per_block * block;
+    const int valid_items             = -7 + block * 69;
+    const int bounded_valid_items     = cuda::std::clamp(valid_items, 0, block_num_threads * num_items_per_thread);
+
+    for (int i = 0; i < bounded_valid_items; ++i)
+    {
+      expected[block_offset + i] = cuda::std::max(cuda::round_down(i, 2), 1);
+    }
+    for (int i = bounded_valid_items; i < num_items_per_block; ++i)
+    {
+      expected[block_offset + i] = (i % 2 == 0) ? i : -i;
+    }
+  }
+
+  REQUIRE(expected == d_out);
+}
+
+// example-begin inclusive-scan-partial-tile-array-aggregate-init-value
+__global__ void InclusiveBlockScanPartialTileKernelAggregate(int* output, int* d_block_aggregate)
+{
+  // Specialize BlockScan for a 1D block of 64 threads of type int
+  using block_scan_t   = cub::BlockScan<int, 64>;
+  using temp_storage_t = block_scan_t::TempStorage;
+
+  // Allocate shared memory for BlockScan
+  __shared__ temp_storage_t temp_storage;
+
+  int initial_value = 1;
+  int thread_data[] = {
+    +1 * ((int) threadIdx.x * 2), // item 0
+    -1 * ((int) threadIdx.x * 2 + 1) // item 1
+  };
+  //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
+  int valid_items = -7 + (int) blockIdx.x * 69;
+  // 1st block: -7 (effectively 0); 2nd block: 62; 3rd block: 131 (effectively 128)
+
+  // Collectively compute the block-wide inclusive scan max
+  int block_aggregate;
+  block_scan_t(temp_storage)
+    .InclusiveScanPartialTile(thread_data, thread_data, initial_value, cuda::maximum<>{}, valid_items, block_aggregate);
+
+  // 1st block output: {[0, -1], [2, -3], [4, -5], ...                          [126, -127]}; block_aggregate:   ?
+  // 2nd block output: {[1,  1], [2,  2], [4,  4], ... [60, 60], [62, -63], ... [126, -127]}; block_aggergate:  60
+  // 3rd block output: {[1,  1], [2,  2], [4,  4], ...                          [126,  126]}; block_aggregate: 126
+  // ...
+  // example-end inclusive-scan-partial-tile-array-aggregate-init-value
+
+  d_block_aggregate[blockIdx.x]              = block_aggregate;
+  const int block_offset                     = block_num_threads * num_items_per_thread * blockIdx.x;
+  output[block_offset + threadIdx.x * 2]     = thread_data[0];
+  output[block_offset + threadIdx.x * 2 + 1] = thread_data[1];
+}
+
+C2H_TEST("Block array-based partial inclusive scan with block aggregate works with initial value", "[scan][block]")
+{
+  c2h::device_vector<int> d_out(num_blocks * block_num_threads * num_items_per_thread);
+
+  c2h::device_vector<int> d_block_aggregate(num_blocks);
+  InclusiveBlockScanPartialTileKernelAggregate<<<num_blocks, block_num_threads>>>(
+    thrust::raw_pointer_cast(d_out.data()), thrust::raw_pointer_cast(d_block_aggregate.data()));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::host_vector<int> expected(d_out.size());
+  c2h::host_vector<int> expected_agg(d_block_aggregate.size());
+  for (int block = 0; block < num_blocks; ++block)
+  {
+    constexpr int num_items_per_block = block_num_threads * num_items_per_thread;
+    const int block_offset            = num_items_per_block * block;
+    const int valid_items             = -7 + block * 69;
+    const int bounded_valid_items     = cuda::std::clamp(valid_items, 0, block_num_threads * num_items_per_thread);
+
+    for (int i = 0; i < bounded_valid_items; ++i)
+    {
+      expected[block_offset + i] = cuda::std::max(cuda::round_down(i, 2), 1);
+    }
+    for (int i = bounded_valid_items; i < num_items_per_block; ++i)
+    {
+      expected[block_offset + i] = (i % 2 == 0) ? i : -i;
+    }
+
+    if (valid_items > 0)
+    {
+      expected_agg[block] = expected[block_offset + bounded_valid_items - 1];
+    }
+    else
+    {
+      // Undefined
+      expected_agg[block] = d_block_aggregate[block];
+    }
+  }
+
+  REQUIRE(d_out == expected);
+  REQUIRE(d_block_aggregate == expected_agg);
 }
