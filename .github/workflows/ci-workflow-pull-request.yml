@@ -195,12 +195,15 @@ jobs:
           upload_workflow_artifact: "true"
           upload_pages_artifact: "false"
 
+      - name: Set up empty docs folder for cleanup
+        shell: bash
+        run: mkdir -p empty_docs
+
       - name: Deploy or clean up documentation preview
         uses: ./.github/actions/doc-preview
         with:
-          source-folder: _site/
+          source-folder: ${{ (github.ref_name != 'main' && '_site') || 'empty_docs' }}
           pr-number: ${{ needs.build-workflow.outputs.pr_number }}
-          github-token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
   build-rapids:

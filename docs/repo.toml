@@ -17,6 +17,11 @@ social_media     = [
 
 sphinx_version = "4.5.0.2-py3.10-${platform}"
 
+# Configure base URL - docs served under /docs/ path
+sphinx_conf_extra = """
+html_baseurl = "docs"
+"""
+
 enhanced_search_enabled = true
 api_output_directory = "api"
 use_fast_doxygen_conversion = true
