@@ -149,8 +149,6 @@ runs:
         chmod 0600 "${aws_dir}/credentials"
         chmod 0664 "${aws_dir}/config"
 
-        CPUS="$(nproc --all)"
-
         declare -a extra_launch_args=()
 
         # Configure the sccache client to use the build cluster
@@ -174,11 +172,11 @@ runs:
           if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
             if ! grep -q '_python.sh' <<< "$COMMAND"; then
               extra_launch_args+=(
-                --env "PARALLEL_LEVEL=$(((CPUS * 4) < 64 ? 64 : (CPUS * 4)))"
+                --env "PARALLEL_LEVEL=$(ulimit -Hn)"
               )
             else
               extra_launch_args+=(
-                --env "PARALLEL_LEVEL=$CPUS"
+                --env "PARALLEL_LEVEL=$(nproc --all)"
               )
             fi
           fi
