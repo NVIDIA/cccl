@@ -72,14 +72,14 @@ using __get_stream_from_env_t   = decltype(__get_stream_from_env);
 struct __get_stream_fn
 {
   _CCCL_TEMPLATE(class _Sndr, class _Env)
-  _CCCL_REQUIRES((_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>>
+  _CCCL_REQUIRES((_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>
                   || _CUDA_VSTD::__is_callable_v<__get_stream_from_env_t, _Env>) )
   _CCCL_API constexpr auto operator()(const _Sndr& __sndr, const _Env& __env) const noexcept -> stream_ref
   {
-    if constexpr (_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>>)
+    if constexpr (_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>)
     {
       // If the sender's attributes have a stream, use it.
-      return __get_stream_from_attrs(execution::get_env(__sndr));
+      return __get_stream_from_attrs(execution::get_env(__sndr), __env);
     }
     else
     {

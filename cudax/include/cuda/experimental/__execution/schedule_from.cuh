@@ -180,8 +180,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   struct __send_result_fn
   {
     template <class _Rcvr, class _Tag, class... _As>
-    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&&... __args) const noexcept
+    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&... __args) const noexcept
     {
+      // moves from lvalues here is intentional:
       _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_As&&>(__args)...);
     }
   };
@@ -190,9 +191,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   struct __send_result_visitor
   {
     template <class _Tuple>
-    _CCCL_API constexpr void operator()(_Tuple&& __tuple) const noexcept
+    _CCCL_API constexpr void operator()(_Tuple& __tuple) const noexcept
     {
-      _CUDA_VSTD::__apply(__send_result_fn{}, static_cast<_Tuple&&>(__tuple), __rcvr_);
+      _CUDA_VSTD::__apply(__send_result_fn{}, static_cast<_Tuple&>(__tuple), __rcvr_);
     }
 
     _Rcvr& __rcvr_;

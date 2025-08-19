@@ -90,9 +90,6 @@ using _CUDA_VSTD::pair;
 using _CUDA_VSTD::get;
 using _CUDA_VSTD::make_pair;
 
-/*! \endcond
- */
-
 /*! \} // pair
  */
 

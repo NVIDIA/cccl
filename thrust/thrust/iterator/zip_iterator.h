@@ -305,8 +305,10 @@ private:
   //! \endcond
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class... Iterators>
 _CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!

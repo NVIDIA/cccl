@@ -44,9 +44,9 @@ The CMake options are divided into these categories:
 4. `CUDA Specific CMake Options <#cuda-specific-cmake-options>`__
    Options that control CUDA compilation. Only available when one or
    more configurations targets the CUDA system.
-5. `TBB Specific CMake Options <#tbb-specific-cmake-options>`__ Options
-   that control TBB compilation. Only available when one or more
-   configurations targets the TBB system.
+5. `TBB Specific CMake Options <#tbb-specific-cmake-options>`__
+   Options that control TBB compilation. Only available when one or
+   more configurations targets the TBB system.
 
 Generic CMake Options
 ---------------------
@@ -175,3 +175,11 @@ CUDA Specific CMake Options
    -  Targets that explicitly require RDC to be enabled or disabled will
       ignore this setting.
    -  Default is ``OFF``.
+
+TBB Specific CMake Options
+--------------------------
+
+When using TBB as a host or device system, Thrust will automatically find and
+link against an installed Intel TBB. The TBB installation is discovered through
+CMake's standard ``find_package(TBB)`` mechanism. No additional Thrust-specific
+options are provided for TBB configuration.

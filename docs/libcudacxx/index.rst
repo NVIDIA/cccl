@@ -13,6 +13,7 @@ libcu++
    ptx
    releases
    contributing
+   api/index
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++
 developers easier.

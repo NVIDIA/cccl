@@ -130,9 +130,6 @@ using _CUDA_VSTD::get;
 using _CUDA_VSTD::make_tuple;
 using _CUDA_VSTD::tie;
 
-/*! \endcond
- */
-
 /*! \} // tuple
  */
 

@@ -3,7 +3,7 @@
 
 tcgen05.shift.cta_group::1.down
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
@@ -14,7 +14,7 @@ tcgen05.shift.cta_group::1.down
 
 tcgen05.shift.cta_group::2.down
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
