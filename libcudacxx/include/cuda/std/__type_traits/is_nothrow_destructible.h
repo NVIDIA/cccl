@@ -51,7 +51,7 @@ struct __cccl_is_nothrow_destructible : false_type
 
 template <class _Tp>
 struct __cccl_is_nothrow_destructible<_Tp, true>
-    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp())>
+    : public integral_constant<bool, noexcept(::cuda::std::declval<_Tp>().~_Tp())>
 {};
 
 template <class _Tp>

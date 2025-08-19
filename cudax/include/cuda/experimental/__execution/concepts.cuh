@@ -49,17 +49,17 @@ template <class _Rcvr>
 _CCCL_CONCEPT receiver = //
   _CCCL_REQUIRES_EXPR((_Rcvr)) //
   ( //
-    requires(__is_receiver<_CUDA_VSTD::decay_t<_Rcvr>>), //
-    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Rcvr>>), //
-    requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Rcvr>, _Rcvr>), //
-    requires(_CUDA_VSTD::is_nothrow_move_constructible_v<_CUDA_VSTD::decay_t<_Rcvr>>) //
+    requires(__is_receiver<::cuda::std::decay_t<_Rcvr>>), //
+    requires(::cuda::std::move_constructible<::cuda::std::decay_t<_Rcvr>>), //
+    requires(::cuda::std::constructible_from<::cuda::std::decay_t<_Rcvr>, _Rcvr>), //
+    requires(::cuda::std::is_nothrow_move_constructible_v<::cuda::std::decay_t<_Rcvr>>) //
   );
 
 template <class _Rcvr, class _Sig>
 inline constexpr bool __valid_completion_for = false;
 
 template <class _Rcvr, class _Tag, class... _As>
-inline constexpr bool __valid_completion_for<_Rcvr, _Tag(_As...)> = _CUDA_VSTD::__is_callable_v<_Tag, _Rcvr, _As...>;
+inline constexpr bool __valid_completion_for<_Rcvr, _Tag(_As...)> = ::cuda::std::__is_callable_v<_Tag, _Rcvr, _As...>;
 
 template <class _Rcvr, class _Completions>
 inline constexpr bool __has_completions = false;
@@ -73,12 +73,12 @@ _CCCL_CONCEPT receiver_of = //
   _CCCL_REQUIRES_EXPR((_Rcvr, _Completions)) //
   ( //
     requires(receiver<_Rcvr>), //
-    requires(__has_completions<_CUDA_VSTD::decay_t<_Rcvr>, _Completions>) //
+    requires(__has_completions<::cuda::std::decay_t<_Rcvr>, _Completions>) //
   );
 
 // Queryable traits:
 template <class _Ty>
-_CCCL_CONCEPT __queryable = _CUDA_VSTD::destructible<_Ty>;
+_CCCL_CONCEPT __queryable = ::cuda::std::destructible<_Ty>;
 
 // Awaitable traits:
 template <class>
@@ -123,9 +123,9 @@ template <class _Sndr>
 _CCCL_CONCEPT sender = //
   _CCCL_REQUIRES_EXPR((_Sndr)) //
   ( //
-    requires(enable_sender<_CUDA_VSTD::decay_t<_Sndr>>), //
-    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Sndr>>), //
-    requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Sndr>, _Sndr>) //
+    requires(enable_sender<::cuda::std::decay_t<_Sndr>>), //
+    requires(::cuda::std::move_constructible<::cuda::std::decay_t<_Sndr>>), //
+    requires(::cuda::std::constructible_from<::cuda::std::decay_t<_Sndr>, _Sndr>) //
   );
 
 template <class _Sndr, class... _Env>

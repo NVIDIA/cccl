@@ -185,14 +185,14 @@ private:
         __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
         __pool_properties.location.id   = __id;
 #else // _CCCL_CTK_BELOW(12, 6)
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+        ::cuda::std::__throw_invalid_argument(
           "Host pinned memory pools are unavailable in this CUDA "
           "version");
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
         break;
       }
       default:
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid memory pool location type");
+        ::cuda::std::__throw_invalid_argument("Invalid memory pool location type");
     }
 
     ::cudaMemPool_t __cuda_pool_handle{};
@@ -296,13 +296,13 @@ public:
     {
       case ::cudaMemPoolAttrReservedMemCurrent:
       case ::cudaMemPoolAttrUsedMemCurrent:
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
+        ::cuda::std::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
         break;
       case ::cudaMemPoolAttrReservedMemHigh:
       case ::cudaMemPoolAttrUsedMemHigh:
         if (__value != 0)
         {
-          _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+          ::cuda::std::__throw_invalid_argument(
             "set_attribute: It is illegal to set this "
             "attribute to a non-zero value.");
         }

@@ -175,7 +175,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   enum
   {
     // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = _CUDA_VSTD::min(4, ITEMS_PER_THREAD),
+    MAX_VEC_SIZE = ::cuda::std::min(4, ITEMS_PER_THREAD),
 
     // Vector size must be a power of two and an even divisor of the items per thread
     VEC_SIZE =

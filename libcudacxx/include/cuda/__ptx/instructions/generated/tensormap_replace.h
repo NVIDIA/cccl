@@ -15,7 +15,7 @@ __device__ static inline void tensormap_replace_global_address(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_address_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true>
+template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void tensormap_replace_global_address(space_global_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -24,7 +24,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_address(space_global_t,
     || __CUDA_ARCH_FEAT_SM110_ALL
   asm("tensormap.replace.tile.global_address.global.b1024.b64 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -45,7 +45,7 @@ __device__ static inline void tensormap_replace_global_address(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_address_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true>
+template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void tensormap_replace_global_address(space_shared_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -54,7 +54,7 @@ _CCCL_DEVICE static inline void tensormap_replace_global_address(space_shared_t,
     || __CUDA_ARCH_FEAT_SM110_ALL
   asm("tensormap.replace.tile.global_address.shared::cta.b1024.b64 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -74,7 +74,7 @@ __device__ static inline void tensormap_replace_rank(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_replace_rank_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tensormap_replace_rank(space_global_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -83,7 +83,7 @@ _CCCL_DEVICE static inline void tensormap_replace_rank(space_global_t, void* __t
     || __CUDA_ARCH_FEAT_SM110_ALL
   asm("tensormap.replace.tile.rank.global.b1024.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+      : "l"(__as_ptr_gmem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -103,7 +103,7 @@ __device__ static inline void tensormap_replace_rank(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_replace_rank_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void tensormap_replace_rank(space_shared_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -112,7 +112,7 @@ _CCCL_DEVICE static inline void tensormap_replace_rank(space_shared_t, void* __t
     || __CUDA_ARCH_FEAT_SM110_ALL
   asm("tensormap.replace.tile.rank.shared::cta.b1024.b32 [%0], %1;"
       :
-      : "r"(__as_ptr_smem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+      : "r"(__as_ptr_smem(__tm_addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -133,7 +133,7 @@ __device__ static inline void tensormap_replace_box_dim(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_replace_box_dim_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_box_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -145,7 +145,7 @@ tensormap_replace_box_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B
       :
       : "l"(__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -166,7 +166,7 @@ __device__ static inline void tensormap_replace_box_dim(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_replace_box_dim_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_box_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -178,7 +178,7 @@ tensormap_replace_box_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B
       :
       : "r"(__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -199,7 +199,7 @@ __device__ static inline void tensormap_replace_global_dim(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_replace_global_dim_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_global_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -211,7 +211,7 @@ tensormap_replace_global_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord,
       :
       : "l"(__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -232,7 +232,7 @@ __device__ static inline void tensormap_replace_global_dim(
 */
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void __cuda_ptx_tensormap_replace_global_dim_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_global_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -244,7 +244,7 @@ tensormap_replace_global_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord,
       :
       : "r"(__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -266,7 +266,7 @@ __device__ static inline void tensormap_replace_global_stride(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_stride_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true>
+template <int _N32, typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_global_stride(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B64 __new_val)
 {
@@ -278,7 +278,7 @@ tensormap_replace_global_stride(space_global_t, void* __tm_addr, n32_t<_N32> __o
       :
       : "l"(__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
-        "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
+        "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -300,7 +300,7 @@ __device__ static inline void tensormap_replace_global_stride(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_stride_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true>
+template <int _N32, typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_global_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B64 __new_val)
 {
@@ -312,7 +312,7 @@ tensormap_replace_global_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __o
       :
       : "r"(__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
-        "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__new_val))
+        "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -335,7 +335,7 @@ __device__ static inline void tensormap_replace_element_stride(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_stride_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_element_stride(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -347,7 +347,7 @@ tensormap_replace_element_stride(space_global_t, void* __tm_addr, n32_t<_N32> __
       :
       : "l"(__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -370,7 +370,7 @@ __device__ static inline void tensormap_replace_element_stride(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_stride_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_element_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -382,7 +382,7 @@ tensormap_replace_element_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __
       :
       : "r"(__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -405,7 +405,7 @@ __device__ static inline void tensormap_replace_element_size(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_size_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_element_size(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -417,7 +417,7 @@ tensormap_replace_element_size(space_global_t, void* __tm_addr, n32_t<_N32> __or
       :
       : "l"(__as_ptr_gmem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -440,7 +440,7 @@ __device__ static inline void tensormap_replace_element_size(
 #if __cccl_ptx_isa >= 830
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_size_is_not_supported_before_SM_90a_SM_100a_SM_110a__();
-template <int _N32, typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
 tensormap_replace_element_size(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
 {
@@ -452,7 +452,7 @@ tensormap_replace_element_size(space_shared_t, void* __tm_addr, n32_t<_N32> __or
       :
       : "r"(__as_ptr_smem(__tm_addr)),
         "n"(__ord.value),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__new_val))
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__new_val))
       : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message

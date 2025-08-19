@@ -38,7 +38,7 @@ template <typename _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
     }
@@ -53,7 +53,7 @@ template <typename _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
     }
@@ -64,27 +64,27 @@ template <typename _Tp>
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp rotl(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
     __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
-    return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
+    return ::cuda::std::__cccl_rotr_impl(__v, __cnt);
   }
-  return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
+  return ::cuda::std::__cccl_rotl_impl(__v, __cnt);
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp rotr(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
     __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
-    return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
+    return ::cuda::std::__cccl_rotl_impl(__v, __cnt);
   }
-  return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
+  return ::cuda::std::__cccl_rotr_impl(__v, __cnt);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

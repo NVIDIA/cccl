@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreater(_A1 __x, _A1 __y) noexcept
 {
-  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
@@ -55,7 +55,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::isgreater((type) __x, (type) __y);),
-                    (return _CUDA_VSTD::__device_isgreater((type) __x, (type) __y);))
+                    (return ::cuda::std::__device_isgreater((type) __x, (type) __y);))
 }
 
 // isgreaterequal
@@ -63,7 +63,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreaterequal(_A1 __x, _A1 __y) noexcept
 {
-  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
@@ -76,7 +76,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::isgreaterequal((type) __x, (type) __y);),
-                    (return _CUDA_VSTD::__device_isgreaterequal((type) __x, (type) __y);))
+                    (return ::cuda::std::__device_isgreaterequal((type) __x, (type) __y);))
 }
 
 // isless
@@ -84,7 +84,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isless(_A1 __x, _A1 __y) noexcept
 {
-  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
@@ -97,7 +97,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::isless((type) __x, (type) __y);),
-                    (return _CUDA_VSTD::__device_isless((type) __x, (type) __y);))
+                    (return ::cuda::std::__device_isless((type) __x, (type) __y);))
 }
 
 // islessequal
@@ -105,7 +105,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessequal(_A1 __x, _A1 __y) noexcept
 {
-  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
@@ -118,7 +118,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::islessequal((type) __x, (type) __y);),
-                    (return _CUDA_VSTD::__device_islessequal((type) __x, (type) __y);))
+                    (return ::cuda::std::__device_islessequal((type) __x, (type) __y);))
 }
 
 // islessgreater
@@ -126,7 +126,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessgreater(_A1 __x, _A1 __y) noexcept
 {
-  if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) || ::cuda::std::isnan(__y))
   {
     return false;
   }
@@ -139,7 +139,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::islessgreater((type) __x, (type) __y);),
-                    (return _CUDA_VSTD::__device_islessgreater((type) __x, (type) __y);))
+                    (return ::cuda::std::__device_islessgreater((type) __x, (type) __y);))
 }
 
 // isunordered
@@ -148,7 +148,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 [[nodiscard]] _CCCL_API inline bool isunordered(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
-  return _CUDA_VSTD::isnan((type) __x) || _CUDA_VSTD::isnan((type) __y);
+  return ::cuda::std::isnan((type) __x) || ::cuda::std::isnan((type) __y);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

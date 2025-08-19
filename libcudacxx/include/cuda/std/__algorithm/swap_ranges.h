@@ -42,7 +42,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
     ++__first2;
   }
 
-  return pair<_ForwardIterator1, _ForwardIterator2>(_CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__first2));
+  return pair<_ForwardIterator1, _ForwardIterator2>(::cuda::std::move(__first1), ::cuda::std::move(__first2));
 }
 
 // 2+1 iterators: size2 >= size1.
@@ -58,7 +58,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
     ++__first2;
   }
 
-  return pair<_ForwardIterator1, _ForwardIterator2>(_CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__first2));
+  return pair<_ForwardIterator1, _ForwardIterator2>(::cuda::std::move(__first1), ::cuda::std::move(__first2));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -66,8 +66,8 @@ template <class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_API constexpr _ForwardIterator2
 swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
-  return _CUDA_VSTD::__swap_ranges<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__last1), _CUDA_VSTD::move(__first2))
+  return ::cuda::std::__swap_ranges<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__first2))
     .second;
 }
 

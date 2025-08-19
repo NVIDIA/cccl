@@ -48,9 +48,9 @@ inline constexpr bool __destructible_impl<_Tp,
 #  if _CCCL_COMPILER(GCC)
                                           enable_if_t<is_destructible_v<_Tp>>>
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
-                                          void_t<decltype(_CUDA_VSTD::declval<_Tp>().~_Tp())>>
+                                          void_t<decltype(::cuda::std::declval<_Tp>().~_Tp())>>
 #  endif // !_CCCL_COMPILER(GCC)
-  = noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp());
+  = noexcept(::cuda::std::declval<_Tp>().~_Tp());
 
 template <class _Tp>
 inline constexpr bool __destructible = __destructible_impl<_Tp>;

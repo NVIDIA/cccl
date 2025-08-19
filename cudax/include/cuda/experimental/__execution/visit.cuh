@@ -32,7 +32,7 @@
 
 #define _CCCL_BIND_CHILD(_Ord) , _CCCL_PP_CAT(__child, _Ord)
 #define _CCCL_FWD_CHILD(_Ord)  , _CCCL_FWD_LIKE(_Sndr, _CCCL_PP_CAT(__child, _Ord))
-#define _CCCL_FWD_LIKE(_X, _Y) static_cast<_CUDA_VSTD::__copy_cvref_t<_X&&, decltype(_Y)>>(_Y)
+#define _CCCL_FWD_LIKE(_X, _Y) static_cast<::cuda::std::__copy_cvref_t<_X&&, decltype(_Y)>>(_Y)
 
 namespace cuda::experimental::execution
 {
@@ -55,7 +55,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-field-initializers")
 
 // use the "magic tuple" trick to get the arity of a structured binding
 // see https://github.com/apolukhin/magic_get
-template <class _Ty, bool = _CUDA_VSTD::is_aggregate_v<_Ty>>
+template <class _Ty, bool = ::cuda::std::is_aggregate_v<_Ty>>
 struct __arity_of_t
 {
   template <class... _Ts, class _Uy = _Ty, class _Uy2 = decltype(_Uy{_Ts{}...}), class _Self = __arity_of_t>
@@ -113,9 +113,9 @@ struct __unpack
 {
   // This is to generate a compile-time error if the sender type cannot be used to
   // initialize a structured binding.
-  _CCCL_API void operator()(_CUDA_VSTD::__ignore_t,
+  _CCCL_API void operator()(::cuda::std::__ignore_t,
                             __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity>,
-                            _CUDA_VSTD::__ignore_t) const;
+                            ::cuda::std::__ignore_t) const;
 };
 
 #  define _CCCL_UNPACK_SENDER(_Arity)                                                                               \

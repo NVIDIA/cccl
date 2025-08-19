@@ -13,10 +13,10 @@ __device__ static inline bool mbarrier_try_wait(
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline bool mbarrier_try_wait(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint64_t& __state)
+_CCCL_DEVICE static inline bool mbarrier_try_wait(::cuda::std::uint64_t* __addr, const ::cuda::std::uint64_t& __state)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __waitComplete;
+  ::cuda::std::uint32_t __waitComplete;
   asm("{\n\t .reg .pred P_OUT; \n\t"
       "mbarrier.try_wait.shared::cta.b64         P_OUT, [%1], %2;                                      // 5a. \n\t"
       "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -45,10 +45,10 @@ __device__ static inline bool mbarrier_try_wait(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint64_t& __state, const _CUDA_VSTD::uint32_t& __suspendTimeHint)
+  ::cuda::std::uint64_t* __addr, const ::cuda::std::uint64_t& __state, const ::cuda::std::uint32_t& __suspendTimeHint)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __waitComplete;
+  ::cuda::std::uint32_t __waitComplete;
   asm("{\n\t .reg .pred P_OUT; \n\t"
       "mbarrier.try_wait.shared::cta.b64         P_OUT, [%1], %2, %3;                    // 5b. \n\t"
       "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -81,12 +81,12 @@ __device__ static inline bool mbarrier_try_wait(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  sem_acquire_t, scope_t<_Scope> __scope, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint64_t& __state)
+  sem_acquire_t, scope_t<_Scope> __scope, ::cuda::std::uint64_t* __addr, const ::cuda::std::uint64_t& __state)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __waitComplete;
+  ::cuda::std::uint32_t __waitComplete;
   if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
@@ -135,14 +135,14 @@ template <dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
   sem_acquire_t,
   scope_t<_Scope> __scope,
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint64_t& __state,
-  const _CUDA_VSTD::uint32_t& __suspendTimeHint)
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint64_t& __state,
+  const ::cuda::std::uint32_t& __suspendTimeHint)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __waitComplete;
+  ::cuda::std::uint32_t __waitComplete;
   if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
@@ -190,14 +190,14 @@ template <dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
   sem_relaxed_t,
   scope_t<_Scope> __scope,
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint64_t& __state,
-  const _CUDA_VSTD::uint32_t& __suspendTimeHint)
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint64_t& __state,
+  const ::cuda::std::uint32_t& __suspendTimeHint)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __waitComplete;
+  ::cuda::std::uint32_t __waitComplete;
   if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"
@@ -242,12 +242,12 @@ __device__ static inline bool mbarrier_try_wait(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  sem_relaxed_t, scope_t<_Scope> __scope, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint64_t& __state)
+  sem_relaxed_t, scope_t<_Scope> __scope, ::cuda::std::uint64_t* __addr, const ::cuda::std::uint64_t& __state)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __waitComplete;
+  ::cuda::std::uint32_t __waitComplete;
   if constexpr (__scope == scope_cta)
   {
     asm("{\n\t .reg .pred P_OUT; \n\t"

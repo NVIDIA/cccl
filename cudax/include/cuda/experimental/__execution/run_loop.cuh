@@ -44,7 +44,7 @@ public:
   _CCCL_API void run() noexcept
   {
     // execute work items until the __finishing_ flag is set:
-    while (!__finishing_.load(_CUDA_VSTD::memory_order_acquire))
+    while (!__finishing_.load(::cuda::std::memory_order_acquire))
     {
       __queue_.wait_for_item();
       __execute_all();
@@ -57,7 +57,7 @@ public:
 
   _CCCL_API void finish() noexcept
   {
-    if (!__finishing_.exchange(true, _CUDA_VSTD::memory_order_acq_rel))
+    if (!__finishing_.exchange(true, ::cuda::std::memory_order_acq_rel))
     {
       // push an empty work item to the queue to wake up the consuming thread
       // and let it finish:
@@ -250,7 +250,7 @@ private:
 
   _CCCL_API static void __noop_(__task*) noexcept {}
 
-  _CUDA_VSTD::atomic<bool> __finishing_{false};
+  ::cuda::std::atomic<bool> __finishing_{false};
   __atomic_intrusive_queue<&__task::__next_> __queue_{};
   __task __noop_task{&__noop_};
 };

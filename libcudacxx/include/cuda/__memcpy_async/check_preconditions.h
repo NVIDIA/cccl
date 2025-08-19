@@ -47,7 +47,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class _Size>
 _CCCL_API inline bool __memcpy_async_check_pre(_Tp* __dst, const _Tp* __src, _Size __size)
 {
-  constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
+  constexpr auto __align = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
 
   const auto __dst_val = reinterpret_cast<uintptr_t>(__dst);
   const auto __src_val = reinterpret_cast<uintptr_t>(__src);

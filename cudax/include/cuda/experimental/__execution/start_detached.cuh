@@ -56,7 +56,7 @@ private:
     template <class _Error>
     constexpr void set_error(_Error&&) noexcept
     {
-      _CUDA_VSTD_NOVERSION::terminate();
+      ::cuda::std::terminate();
     }
 
     constexpr void set_stopped() noexcept

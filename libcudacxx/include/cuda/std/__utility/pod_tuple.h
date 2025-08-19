@@ -417,15 +417,15 @@ _CCCL_TRIVIAL_API constexpr auto __apply(_Fn&& __fn, _Tuple&& __tuple, _Us&&... 
       decltype(declval<_Tuple>().__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...));
 
 template <class _Fn, class _Tuple, class... _Us>
-_CCCL_CONCEPT __applicable = _CUDA_VSTD::_IsValidExpansion<__apply_result_t, _Fn, _Tuple, _Us...>::value;
+_CCCL_CONCEPT __applicable = ::cuda::std::_IsValidExpansion<__apply_result_t, _Fn, _Tuple, _Us...>::value;
 
 template <class _Fn, class _Tuple, class... _Us>
 using __nothrow_applicable_detail_t =
-  _CUDA_VSTD::enable_if_t<noexcept(declval<_Tuple>().__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...))>;
+  ::cuda::std::enable_if_t<noexcept(declval<_Tuple>().__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...))>;
 
 template <class _Fn, class _Tuple, class... _Us>
 _CCCL_CONCEPT __nothrow_applicable =
-  _CUDA_VSTD::_IsValidExpansion<__nothrow_applicable_detail_t, _Fn, _Tuple, _Us...>::value;
+  ::cuda::std::_IsValidExpansion<__nothrow_applicable_detail_t, _Fn, _Tuple, _Us...>::value;
 
 //
 // __get<I>(tupl)
@@ -447,13 +447,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn
 #else // ^^^ _CCCL_HAS_PACK_INDEXING() ^^^ / vvv !_CCCL_HAS_PACK_INDEXING() vvv
 
 template <size_t>
-using __ignore_t = _CUDA_VSTD::__ignore_t;
+using __ignore_t = ::cuda::std::__ignore_t;
 
-template <size_t _Idx, class = _CUDA_VSTD::make_index_sequence<_Idx>>
+template <size_t _Idx, class = ::cuda::std::make_index_sequence<_Idx>>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn;
 
 template <size_t _Idx, size_t... _Is>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn<_Idx, _CUDA_VSTD::index_sequence<_Is...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn<_Idx, ::cuda::std::index_sequence<_Is...>>
 {
   template <class _Ty, class... _Rest>
   _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t<_Is>..., _Ty&& __ty, _Rest&&...) noexcept -> _Ty&&
@@ -516,7 +516,7 @@ _CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
 
 template <size_t _Index, class _Tuple>
 using __tuple_element_t _CCCL_NODEBUG_ALIAS =
-  decltype(_CUDA_VSTD::__remove_rvalue_ref(_CUDA_VSTD::__get<_Index>(declval<_Tuple>())));
+  decltype(::cuda::std::__remove_rvalue_ref(::cuda::std::__get<_Index>(declval<_Tuple>())));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -279,7 +279,7 @@ struct __get_complex_impl<__half>
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr __half&& get(complex<__half>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+    return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
@@ -291,7 +291,7 @@ struct __get_complex_impl<__half>
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr const __half&& get(const complex<__half>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+    return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 };
 

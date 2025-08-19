@@ -44,7 +44,7 @@ namespace pmr
 {
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
-using basic_string = _CUDA_VSTD::basic_string<_CharT, _Traits, polymorphic_allocator<_CharT>>;
+using basic_string = ::cuda::std::basic_string<_CharT, _Traits, polymorphic_allocator<_CharT>>;
 
 using string  = basic_string<char>;
 using wstring = basic_string<wchar_t>;

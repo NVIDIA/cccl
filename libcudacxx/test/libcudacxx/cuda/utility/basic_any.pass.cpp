@@ -70,7 +70,7 @@ template <>
 struct SmallOrLarge<false>
 {
   unsigned int cookie = 0xDEADBEEF;
-  _CUDA_VSTD_NOVERSION::byte buffer[cuda::__default_small_object_size]{};
+  ::cuda::std::byte buffer[cuda::__default_small_object_size]{};
 };
 
 constexpr bool Small = true;
@@ -177,18 +177,18 @@ struct any_regular_ref : cuda::__basic_any<iregular<>&>
 template <class TestType>
 struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 {
-  static constexpr bool IsSmall = _CUDA_VSTD::is_same_v<TestType, SmallType>;
+  static constexpr bool IsSmall = ::cuda::std::is_same_v<TestType, SmallType>;
 
   _CCCL_HOST_DEVICE void test_type_traits()
   {
-    static_assert(_CUDA_VSTD::is_standard_layout_v<cuda::__basic_any<iregular<>>>);
-    static_assert(_CUDA_VSTD::is_standard_layout_v<cuda::__basic_any<iregular<>*>>);
-    static_assert(_CUDA_VSTD::is_standard_layout_v<cuda::__basic_any<iregular<>&>>);
+    static_assert(::cuda::std::is_standard_layout_v<cuda::__basic_any<iregular<>>>);
+    static_assert(::cuda::std::is_standard_layout_v<cuda::__basic_any<iregular<>*>>);
+    static_assert(::cuda::std::is_standard_layout_v<cuda::__basic_any<iregular<>&>>);
   }
 
   _CCCL_HOST_DEVICE void test_empty_interface_can_hold_anything()
   {
-    static_assert(!_CUDA_VSTD::move_constructible<cuda::__basic_any<iempty<>>>);
+    static_assert(!::cuda::std::move_constructible<cuda::__basic_any<iempty<>>>);
     cuda::__basic_any<iempty<>> a{42};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(int));
@@ -210,10 +210,10 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
   _CCCL_HOST_DEVICE void test_interface_with_one_member_function()
   {
-    static_assert(_CUDA_VSTD::move_constructible<cuda::__basic_any<ibase<>>>);
-    static_assert(!_CUDA_VSTD::copy_constructible<cuda::__basic_any<ibase<>>>);
+    static_assert(::cuda::std::move_constructible<cuda::__basic_any<ibase<>>>);
+    static_assert(!::cuda::std::copy_constructible<cuda::__basic_any<ibase<>>>);
 
-    cuda::__basic_any<ibase<>> a{_CUDA_VSTD::in_place_type<Foo<IsSmall>>, 42, this};
+    cuda::__basic_any<ibase<>> a{::cuda::std::in_place_type<Foo<IsSmall>>, 42, this};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Foo<IsSmall>));
     assert(a.interface() == _CCCL_TYPEID(ibase<>));
@@ -234,10 +234,10 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
   _CCCL_HOST_DEVICE void test_single_interface_extension()
   {
-    static_assert(_CUDA_VSTD::move_constructible<cuda::__basic_any<iderived<>>>);
-    static_assert(_CUDA_VSTD::copy_constructible<cuda::__basic_any<iderived<>>>);
+    static_assert(::cuda::std::move_constructible<cuda::__basic_any<iderived<>>>);
+    static_assert(::cuda::std::copy_constructible<cuda::__basic_any<iderived<>>>);
 
-    cuda::__basic_any<iderived<>> a{_CUDA_VSTD::in_place_type<Bar<IsSmall>>, 42, this};
+    cuda::__basic_any<iderived<>> a{::cuda::std::in_place_type<Bar<IsSmall>>, 42, this};
     assert(a.has_value() == true);
     assert(a.type() == _CCCL_TYPEID(Bar<IsSmall>));
     assert(a.interface() == _CCCL_TYPEID(iderived<>));
@@ -248,7 +248,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(cuda::__any_cast<Bar<IsSmall>>(&a)->j == 42);
 
     // construct a base any from a derived any:
-    cuda::__basic_any<ibase<>> b{_CUDA_VSTD::move(a)};
+    cuda::__basic_any<ibase<>> b{::cuda::std::move(a)};
     assert(b.has_value() == true);
     assert(b.type() == _CCCL_TYPEID(Bar<IsSmall>));
     assert(b.interface() == _CCCL_TYPEID(iderived<>));
@@ -259,7 +259,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
     a.emplace<Bar<IsSmall>>(-1, this);
     assert(a.foo(2) == 1);
-    b = _CUDA_VSTD::move(a);
+    b = ::cuda::std::move(a);
     assert(b.foo(2) == 1);
     assert(cuda::__any_cast<Bar<IsSmall>>(&b)->j == -1);
 
@@ -271,7 +271,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
   _CCCL_HOST_DEVICE void test_any_iempty_pointer_to_model()
   {
-    static_assert(_CUDA_VSTD::regular<cuda::__basic_any<iempty<>*>>);
+    static_assert(::cuda::std::regular<cuda::__basic_any<iempty<>*>>);
     static_assert(sizeof(cuda::__basic_any<iempty<>*>) == 2 * sizeof(void*));
 
     assert(cuda::__basic_any<iempty<>*>{} == nullptr);
@@ -299,7 +299,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(nullptr != a);
     assert(pi == &i);
 
-    int* const* ppi = cuda::__any_cast<int*>(&_CUDA_VSTD::as_const(a));
+    int* const* ppi = cuda::__any_cast<int*>(&::cuda::std::as_const(a));
     assert(&pi == ppi);
 
     cuda::__basic_any<iempty<> const*> b = a;
@@ -316,7 +316,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
     int const k                                                     = 0;
     [[maybe_unused]] cuda::__basic_any<cuda::__imovable<> const*> c = &k;
-    static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<>>, decltype(*c)>);
+    static_assert(!::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<>>, decltype(*c)>);
   }
 
   _CCCL_HOST_DEVICE void test_any_ibase_pointer_to_model()
@@ -344,24 +344,25 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
   _CCCL_HOST_DEVICE void test_any_pointers_from_derived_to_base_conversions()
   {
-    static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<ibase<>*>, cuda::__basic_any<iderived<>*>>);
-    static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<ibase<> const*>, cuda::__basic_any<iderived<>*>>);
-    static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<iderived<> const*>, cuda::__basic_any<iderived<>*>>);
-
-    static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<>*>>);
-    static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<> const*>>);
+    static_assert(::cuda::std::constructible_from<cuda::__basic_any<ibase<>*>, cuda::__basic_any<iderived<>*>>);
+    static_assert(::cuda::std::constructible_from<cuda::__basic_any<ibase<> const*>, cuda::__basic_any<iderived<>*>>);
     static_assert(
-      !_CUDA_VSTD::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<iderived<> const*>>);
-    static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<iderived<>*>*>);
+      ::cuda::std::constructible_from<cuda::__basic_any<iderived<> const*>, cuda::__basic_any<iderived<>*>>);
 
-    static_assert(!_CUDA_VSTD::convertible_to<cuda::__basic_any<ibase<>*>, cuda::__basic_any<iderived<>*>>);
-    static_assert(!_CUDA_VSTD::convertible_to<cuda::__basic_any<ibase<> const*>, cuda::__basic_any<iderived<>*>>);
-    static_assert(!_CUDA_VSTD::convertible_to<cuda::__basic_any<iderived<> const*>, cuda::__basic_any<iderived<>*>>);
+    static_assert(!::cuda::std::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<>*>>);
+    static_assert(!::cuda::std::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<> const*>>);
+    static_assert(
+      !::cuda::std::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<iderived<> const*>>);
+    static_assert(!::cuda::std::constructible_from<cuda::__basic_any<iderived<>*>, cuda::__basic_any<iderived<>*>*>);
 
-    static_assert(_CUDA_VSTD::convertible_to<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<>*>>);
-    static_assert(_CUDA_VSTD::convertible_to<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<> const*>>);
-    static_assert(_CUDA_VSTD::convertible_to<cuda::__basic_any<iderived<>*>, cuda::__basic_any<iderived<> const*>>);
-    static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<iderived<>*>*, cuda::__basic_any<iderived<>*>>);
+    static_assert(!::cuda::std::convertible_to<cuda::__basic_any<ibase<>*>, cuda::__basic_any<iderived<>*>>);
+    static_assert(!::cuda::std::convertible_to<cuda::__basic_any<ibase<> const*>, cuda::__basic_any<iderived<>*>>);
+    static_assert(!::cuda::std::convertible_to<cuda::__basic_any<iderived<> const*>, cuda::__basic_any<iderived<>*>>);
+
+    static_assert(::cuda::std::convertible_to<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<>*>>);
+    static_assert(::cuda::std::convertible_to<cuda::__basic_any<iderived<>*>, cuda::__basic_any<ibase<> const*>>);
+    static_assert(::cuda::std::convertible_to<cuda::__basic_any<iderived<>*>, cuda::__basic_any<iderived<> const*>>);
+    static_assert(!::cuda::std::constructible_from<cuda::__basic_any<iderived<>*>*, cuda::__basic_any<iderived<>*>>);
 
     Bar<IsSmall> bar{42, this};
     cuda::__basic_any<iderived<>*> a{&bar};
@@ -389,7 +390,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     Bar<IsSmall> bar2{-1, this};
     a.emplace<Bar<IsSmall>*>(&bar2);
     assert(a->foo(2) == 1);
-    b = _CUDA_VSTD::move(a);
+    b = ::cuda::std::move(a);
     assert(b->foo(2) == 1);
     assert(cuda::__any_cast<Bar<IsSmall>*>(&b));
     assert((*cuda::__any_cast<Bar<IsSmall>*>(&b))->j == -1);
@@ -402,7 +403,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
   _CCCL_HOST_DEVICE void test_any_value_pointer_interop()
   {
-    cuda::__basic_any<iderived<>> a{_CUDA_VSTD::in_place_type<Bar<IsSmall>>, 42, this};
+    cuda::__basic_any<iderived<>> a{::cuda::std::in_place_type<Bar<IsSmall>>, 42, this};
     assert(a.__in_situ() == IsSmall);
     assert(this->objects == 1);
 
@@ -437,13 +438,13 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(bar.j == -2);
 
     bar.j = 10;
-    a     = _CUDA_VSTD::move(*pb3);
+    a     = ::cuda::std::move(*pb3);
     assert(a.foo(2) == 12);
     assert(bar.j == 10);
 
     cuda::__basic_any<iderived<>*> pb4 = &bar;
     bar.j                              = 20;
-    a                                  = _CUDA_VSTD::move(*pb4);
+    a                                  = ::cuda::std::move(*pb4);
     assert(a.foo(2) == 22);
     assert(bar.j == INT_MAX); // bar is moved from
   }
@@ -486,19 +487,19 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(a.bar(2) == -2);
 
     static_assert(
-      _CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<>>, cuda::__basic_any<cuda::__imovable<>>>);
+      ::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<>>, cuda::__basic_any<cuda::__imovable<>>>);
     static_assert(
-      !_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<>>, cuda::__basic_any<cuda::__imovable<>&>>);
-    static_assert(!_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<>>,
-                                                  cuda::__basic_any<cuda::__imovable<> const&>>);
+      !::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<>>, cuda::__basic_any<cuda::__imovable<>&>>);
+    static_assert(!::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<>>,
+                                                   cuda::__basic_any<cuda::__imovable<> const&>>);
 
     static_assert(
-      !_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<>>, cuda::__basic_any<cuda::__imovable<>*>>);
+      !::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<>>, cuda::__basic_any<cuda::__imovable<>*>>);
 
-    static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<> const&>,
-                                                 cuda::__basic_any<cuda::__imovable<>>>);
-    static_assert(_CUDA_VSTD::constructible_from<cuda::__basic_any<cuda::__imovable<> const&>,
-                                                 cuda::__basic_any<cuda::__imovable<>>&>);
+    static_assert(::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<> const&>,
+                                                  cuda::__basic_any<cuda::__imovable<>>>);
+    static_assert(::cuda::std::constructible_from<cuda::__basic_any<cuda::__imovable<> const&>,
+                                                  cuda::__basic_any<cuda::__imovable<>>&>);
   }
 
   struct cast_to_derived
@@ -510,21 +511,21 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
 
   _CCCL_HOST_DEVICE void test_cuda_dynamic_any_cast()
   {
-    static_assert(!_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>>&>);
-    static_assert(!_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>&>>);
-    static_assert(_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<cuda::__ireference<ibase<>>>>);
-    static_assert(!_CUDA_VSTD::__is_callable_v<cast_to_derived, cuda::__basic_any<cuda::__ireference<ibase<>>>&>);
+    static_assert(!::cuda::std::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>>&>);
+    static_assert(!::cuda::std::__is_callable_v<cast_to_derived, cuda::__basic_any<ibase<>&>>);
+    static_assert(::cuda::std::__is_callable_v<cast_to_derived, cuda::__basic_any<cuda::__ireference<ibase<>>>>);
+    static_assert(!::cuda::std::__is_callable_v<cast_to_derived, cuda::__basic_any<cuda::__ireference<ibase<>>>&>);
 
     // dynamic cast to a value
-    cuda::__basic_any<iderived<>> a{_CUDA_VSTD::in_place_type<Bar<IsSmall>>, 42, this};
+    cuda::__basic_any<iderived<>> a{::cuda::std::in_place_type<Bar<IsSmall>>, 42, this};
     cuda::__basic_any<ibase<>> b = a;
-    auto c                       = cuda::__dynamic_any_cast<iderived<>>(_CUDA_VSTD::move(b));
+    auto c                       = cuda::__dynamic_any_cast<iderived<>>(::cuda::std::move(b));
     assert(c.has_value());
     assert(a.bar(2) == c.bar(2));
     assert(cuda::__any_cast<Bar<IsSmall>>(&a) != cuda::__any_cast<Bar<IsSmall>>(&c));
 
     cuda::__basic_any<ibase<>*> pa = &a;
-    auto d                         = cuda::__dynamic_any_cast<iderived<>>(_CUDA_VSTD::move(*pa));
+    auto d                         = cuda::__dynamic_any_cast<iderived<>>(::cuda::std::move(*pa));
     assert(d.has_value());
     assert(cuda::__any_cast<Bar<IsSmall>>(&a)->j == INT_MAX); // moved from
     assert(cuda::__any_cast<Bar<IsSmall>>(&d)->j == 42);
@@ -541,7 +542,7 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     cuda::__basic_any<iregular<>> a{42};
     cuda::__basic_any<iregular<>> b{42};
     cuda::__basic_any<iregular<>> c{43};
-    cuda::__basic_any<iregular<>> d{_CUDA_VSTD::in_place_type<Regular>, 42};
+    cuda::__basic_any<iregular<>> d{::cuda::std::in_place_type<Regular>, 42};
 
     assert(a == a);
     assert(a == b);

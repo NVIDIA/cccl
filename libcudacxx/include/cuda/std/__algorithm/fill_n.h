@@ -41,7 +41,7 @@ _CCCL_API constexpr _OutputIterator __fill_n(_OutputIterator __first, _Size __n,
 template <class _OutputIterator, class _Size, class _Tp>
 _CCCL_API constexpr _OutputIterator fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
-  return _CUDA_VSTD::__fill_n(__first, __convert_to_integral(__n), __value_);
+  return ::cuda::std::__fill_n(__first, __convert_to_integral(__n), __value_);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

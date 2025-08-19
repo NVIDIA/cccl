@@ -55,7 +55,7 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
 [[nodiscard]] _CCCL_API inline void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
+                    (return ::cuda::std::__aligned_alloc_host(__nbytes, __align);),
                     (return ::__cuda_syscall_aligned_malloc(__nbytes, __align);))
 }
 

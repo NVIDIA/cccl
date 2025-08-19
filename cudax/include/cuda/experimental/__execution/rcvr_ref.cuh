@@ -41,7 +41,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
   using receiver_concept = receiver_t;
 
   _CCCL_API explicit constexpr __rcvr_ref(_Rcvr& __rcvr) noexcept
-      : __rcvr_{_CUDA_VSTD::addressof(__rcvr)}
+      : __rcvr_{::cuda::std::addressof(__rcvr)}
   {}
 
   template <class... _As>
@@ -95,7 +95,7 @@ template <class _Rcvr>
 }
 
 template <class _Rcvr>
-using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(execution::__ref_rcvr(_CUDA_VSTD::declval<_Rcvr&>()));
+using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(execution::__ref_rcvr(::cuda::std::declval<_Rcvr&>()));
 
 } // namespace cuda::experimental::execution
 

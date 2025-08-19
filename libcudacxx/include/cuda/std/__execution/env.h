@@ -101,12 +101,12 @@ namespace __detail
 {
 template <class _Env, class _Query, class... _Args>
 _CCCL_API auto __query_result_()
-  -> decltype(_CUDA_VSTD::declval<_Env>().query(_Query(), _CUDA_VSTD::declval<_Args>()...));
+  -> decltype(::cuda::std::declval<_Env>().query(_Query(), ::cuda::std::declval<_Args>()...));
 
 #if _CCCL_HAS_EXCEPTIONS()
 template <class _Env, class _Query, class... _Args>
 using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS =
-  enable_if_t<noexcept(_CUDA_VSTD::declval<_Env>().query(_Query{}, _CUDA_VSTD::declval<_Args>()...))>;
+  enable_if_t<noexcept(::cuda::std::declval<_Env>().query(_Query{}, ::cuda::std::declval<_Args>()...))>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
@@ -268,7 +268,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     constexpr size_t __idx   = __detail::__find_pos(__flags, __flags + sizeof...(_Envs));
     if constexpr (__idx != __detail::__npos)
     {
-      return _CUDA_VSTD::__get<__idx>(__self.__envs_);
+      return ::cuda::std::__get<__idx>(__self.__envs_);
     }
   }
 
@@ -279,7 +279,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   //!
   //! @tparam _Query The type of the query to be performed.
   template <class _Query, class... _Args>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query, _Args...>(_CUDA_VSTD::declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG_ALIAS =
+    decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
 
   //! @brief Queries the first environment that satisfies the given query type.
   //!
@@ -335,7 +336,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   }
 
   template <class _Query, class... _Args>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query, _Args...>(_CUDA_VSTD::declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG_ALIAS =
+    decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
@@ -368,7 +370,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 struct get_env_t
 {
   template <class _Ty>
-  using __env_of _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::declval<_Ty>().get_env());
+  using __env_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::declval<_Ty>().get_env());
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty>
@@ -387,7 +389,7 @@ struct get_env_t
 _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 
 template <class _Ty>
-using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(_CUDA_VSTD::declval<_Ty>()));
+using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(::cuda::std::declval<_Ty>()));
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // forwarding_query_t
@@ -401,7 +403,7 @@ _CCCL_GLOBAL_CONSTANT struct forwarding_query_t
       static_assert(noexcept(_Tag().query(*this)));
       return _Tag().query(*this);
     }
-    return _CUDA_VSTD::derived_from<_Tag, forwarding_query_t>;
+    return ::cuda::std::derived_from<_Tag, forwarding_query_t>;
   }
 } forwarding_query{};
 
@@ -427,8 +429,8 @@ struct __query_or_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Default, class... _Args>
   [[nodiscard]] _CCCL_API constexpr auto
-  operator()(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _Default&& __default, _Args&&...) const
-    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Default>) -> _Default
+  operator()(::cuda::std::__ignore_t, ::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
+    noexcept(::cuda::std::is_nothrow_move_constructible_v<_Default>) -> _Default
   {
     return static_cast<_Default&&>(__default);
   }
@@ -439,10 +441,10 @@ _CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default, class... _Args>
 using __query_result_or_t _CCCL_NODEBUG_ALIAS = decltype(__query_or(
-  _CUDA_VSTD::declval<_Env>(),
-  _CUDA_VSTD::declval<_Query>(),
-  _CUDA_VSTD::declval<_Default>(),
-  _CUDA_VSTD::declval<_Args>()...));
+  ::cuda::std::declval<_Env>(),
+  ::cuda::std::declval<_Query>(),
+  ::cuda::std::declval<_Default>(),
+  ::cuda::std::declval<_Args>()...));
 
 _CCCL_END_NAMESPACE_EXECUTION
 

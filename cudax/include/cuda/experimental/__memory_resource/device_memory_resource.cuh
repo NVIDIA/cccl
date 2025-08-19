@@ -81,8 +81,8 @@ public:
       : __memory_resource_base(__get_default_device_mem_pool(__device.get()))
   {}
 
-  device_memory_resource(int)                   = delete;
-  device_memory_resource(_CUDA_VSTD::nullptr_t) = delete;
+  device_memory_resource(int)                    = delete;
+  device_memory_resource(::cuda::std::nullptr_t) = delete;
 
   //! @brief  Constructs the device_memory_resource from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
@@ -104,7 +104,7 @@ public:
   using default_queries = properties_list<device_accessible>;
 #endif // _CCCL_DOXYGEN_INVOKED
 };
-static_assert(_CUDA_VMR::synchronous_resource_with<device_memory_resource, device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<device_memory_resource, device_accessible>, "");
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -82,14 +82,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     template <class... _As>
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
-      if constexpr (!_CUDA_VSTD::__is_callable_v<_Pred, _As&...>)
+      if constexpr (!::cuda::std::__is_callable_v<_Pred, _As&...>)
       {
         return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
                                             _WITH_FUNCTION(_Pred),
                                             _WITH_ARGUMENTS(_As & ...)>();
       }
-      else if constexpr (!_CUDA_VSTD::is_convertible_v<_CUDA_VSTD::__call_result_t<_Pred, _As&...>, bool>)
+      else if constexpr (!::cuda::std::is_convertible_v<::cuda::std::__call_result_t<_Pred, _As&...>, bool>)
       {
         return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE),
@@ -99,8 +99,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
       else
       {
         return concat_completion_signatures(
-          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
-          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
+          get_completion_signatures<::cuda::std::__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
+          get_completion_signatures<::cuda::std::__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
       }
     }
   };
@@ -111,9 +111,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     using __params_t = __closure_base_t<_Pred, _Then, _Else>;
 
     template <class... _As>
-    using __opstate_list_t = _CUDA_VSTD::__type_list<
-      connect_result_t<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
-      connect_result_t<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
+    using __opstate_list_t = ::cuda::std::__type_list<
+      connect_result_t<::cuda::std::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
+      connect_result_t<::cuda::std::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
 
     using __next_ops_variant_t _CCCL_NODEBUG_ALIAS =
       __value_types<_Completions, __opstate_list_t, __type_concat_into_quote<__variant>::__call>;

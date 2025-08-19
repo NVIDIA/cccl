@@ -37,13 +37,14 @@ struct __get_memory_resource_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
-  requires(resource<_CUDA_VSTD::remove_cvref_t<decltype(__t.get_memory_resource())>>));
+  requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_resource<_Env>),
   requires(
-    resource<_CUDA_VSTD::remove_cvref_t<_CUDA_STD_EXEC::__query_result_t<const _Env&, __get_memory_resource_t>>>));
+    resource<
+      ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, __get_memory_resource_t>>>));
 
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource

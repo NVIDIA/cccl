@@ -40,7 +40,7 @@ public:
   {
     if constexpr (sizeof...(_Args) != 0)
     {
-      if constexpr (_CUDA_VSTD::__fmt_use_packed_format_arg_store(sizeof...(_Args)))
+      if constexpr (::cuda::std::__fmt_use_packed_format_arg_store(sizeof...(_Args)))
       {
         __packed_.__values = __store.__storage.__values_;
         __packed_.__types  = __store.__storage.__types_;
@@ -59,10 +59,10 @@ public:
       return basic_format_arg<_Context>{};
     }
 
-    if (_CUDA_VSTD::__fmt_use_packed_format_arg_store(__size_))
+    if (::cuda::std::__fmt_use_packed_format_arg_store(__size_))
     {
       return basic_format_arg<_Context>{
-        _CUDA_VSTD::__fmt_get_packed_type(__packed_.__types, __id), __packed_.__values[__id]};
+        ::cuda::std::__fmt_get_packed_type(__packed_.__types, __id), __packed_.__values[__id]};
     }
 
     return __unpacked_.__args[__id];

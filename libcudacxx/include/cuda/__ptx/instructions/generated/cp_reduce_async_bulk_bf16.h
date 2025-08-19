@@ -27,7 +27,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   op_min_t,
   __nv_bfloat16* __dstMem,
   const __nv_bfloat16* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -69,7 +69,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   op_max_t,
   __nv_bfloat16* __dstMem,
   const __nv_bfloat16* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -111,7 +111,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   op_add_t,
   __nv_bfloat16* __dstMem,
   const __nv_bfloat16* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
