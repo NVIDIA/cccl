@@ -13,7 +13,7 @@
       "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CUDA_ARCHITECTURES": "75-real;80-real;90-real;100-real;120",
+        "CMAKE_CUDA_ARCHITECTURES": "75-real;80-real;90",
         "CCCL_ENABLE_UNSTABLE": true,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUB": false,
