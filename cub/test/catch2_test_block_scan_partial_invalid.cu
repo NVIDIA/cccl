@@ -196,48 +196,6 @@ using modes = c2h::enum_type_list<scan_mode, scan_mode::inclusive>;
 using modes = c2h::enum_type_list<scan_mode, scan_mode::exclusive>;
 #endif
 
-using int_gen_t = Catch::Generators::GeneratorWrapper<int>;
-
-template <typename Params>
-int_gen_t valid_items_fixed_vals() noexcept
-{
-  const int items_per_warp           = cub::detail::warp_threads * Params::items_per_thread;
-  const int items_per_raking_segment = cub::BlockRakingLayout<typename Params::type, Params::tile_size>::SEGMENT_LENGTH;
-  const int items_per_segment =
-    Params::algo == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
-
-  using namespace Catch::Generators;
-  return values(
-    {-1,
-     0,
-     1,
-     items_per_segment - 1,
-     items_per_segment,
-     items_per_segment + 1,
-     Params::tile_size,
-     Params::tile_size + 1});
-}
-
-int_gen_t valid_items_rand_below() noexcept
-{
-  using namespace Catch::Generators;
-  return take(1, random(cuda::std::numeric_limits<int>::min(), -2));
-}
-
-template <typename Params>
-int_gen_t valid_items_rand_inside() noexcept
-{
-  using namespace Catch::Generators;
-  return take(1, random(2, cuda::std::max(Params::tile_size - 1, 2)));
-}
-
-template <typename Params>
-int_gen_t valid_items_rand_above() noexcept
-{
-  using namespace Catch::Generators;
-  return take(1, random(Params::tile_size + 2, cuda::std::numeric_limits<int>::max()));
-}
-
 C2H_TEST("Partial block scan (single) does not apply op to invalid items",
          "[scan][block]",
          invalid_types,
@@ -247,13 +205,14 @@ C2H_TEST("Partial block scan (single) does not apply op to invalid items",
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
+  using params          = params_t<TestType>;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside<params>(),
-    valid_items_rand_above<params>(),
-    valid_items_fixed_vals<params>());
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::tile_size);
   CAPTURE(params::tile_size, valid_items);
   c2h::device_vector<segment> d_out(params::tile_size);
@@ -289,13 +248,14 @@ C2H_TEST("Partial block scan (multi) does not apply op to invalid elements",
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
+  using params          = params_t<TestType>;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside<params>(),
-    valid_items_rand_above<params>(),
-    valid_items_fixed_vals<params>());
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::tile_size);
   c2h::device_vector<segment> d_out(params::tile_size);
   c2h::device_vector<segment> d_in(params::tile_size);
@@ -331,15 +291,16 @@ C2H_TEST("Partial block scan (multi) does not apply op to invalid elements and r
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
+  using params          = params_t<TestType>;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside<params>(),
-    valid_items_rand_above<params>(),
-    valid_items_fixed_vals<params>());
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::tile_size);
   c2h::device_vector<segment> d_block_aggregate(1);
   c2h::device_vector<segment> d_out(params::tile_size);
@@ -383,13 +344,14 @@ C2H_TEST("Partial block scan (multi) does not apply op to invalid elements and w
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
+  using params          = params_t<TestType>;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside<params>(),
-    valid_items_rand_above<params>(),
-    valid_items_fixed_vals<params>());
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::tile_size);
   c2h::device_vector<segment> d_out(params::tile_size);
   c2h::device_vector<segment> d_in(params::tile_size);
@@ -425,13 +387,14 @@ C2H_TEST("Partial block scan (multi) with initial value does not apply op to inv
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
+  using params          = params_t<TestType>;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside<params>(),
-    valid_items_rand_above<params>(),
-    valid_items_fixed_vals<params>());
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::tile_size);
   c2h::device_vector<segment> d_out(params::tile_size);
   c2h::device_vector<segment> d_in(params::tile_size);
@@ -479,15 +442,16 @@ C2H_TEST("Partial block scan (multi) supports prefix op and does not apply op to
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
+  using params          = params_t<TestType>;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const segment prefix = segment{0, 1};
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside<params>(),
-    valid_items_rand_above<params>(),
-    valid_items_fixed_vals<params>());
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   const int bounded_valid_items = cuda::std::clamp(valid_items, 0, params::tile_size);
   CAPTURE(params::tile_size, valid_items);
   c2h::device_vector<segment> d_out(params::tile_size);
