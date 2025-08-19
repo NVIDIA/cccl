@@ -1246,7 +1246,6 @@ auto make_stateless_transform_input_iterator(
   return transform_it;
 }
 
-/*! @brief Generate source code for zip iterator that combines multiple iterators */
 inline std::tuple<std::string, std::string, std::string> make_zip_iterator_sources(
   std::string_view zip_it_state_name,
   std::string_view zip_it_advance_fn_name,
@@ -1315,7 +1314,6 @@ inline std::tuple<std::string, std::string, std::string> make_zip_iterator_sourc
   return std::make_tuple(zip_it_state_src, zip_it_advance_fn_src, zip_it_dereference_fn_src);
 }
 
-/*! @brief Create a zip iterator that combines multiple iterators */
 template <typename TupleValueT, typename... IteratorStateTs>
 auto make_zip_iterator(std::string_view tuple_value_type,
                        std::vector<name_source_t> base_it_states,

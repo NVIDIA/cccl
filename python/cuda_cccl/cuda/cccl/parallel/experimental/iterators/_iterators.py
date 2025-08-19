@@ -224,16 +224,6 @@ def pointer_add_intrinsic(context, ptr, offset):
     return ptr(ptr, offset), codegen
 
 
-@intrinsic
-def alloca_temp_intrinsic(context, temp_type):
-    def codegen(context, builder, sig, args):
-        temp_value_type = context.get_value_type(temp_type)
-        temp_ptr = builder.alloca(temp_value_type)
-        return temp_ptr
-
-    return types.CPointer(temp_type)(temp_type), codegen
-
-
 @overload(operator.add)
 def pointer_add(ptr, offset):
     if not isinstance(ptr, numba.types.CPointer) or not isinstance(
