@@ -174,14 +174,14 @@ def to_cccl_iter(array_or_iterator) -> Iterator:
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
+def get_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
         data = array_or_struct.data.cast("B")
         return data
     else:
         # it's a GpuStruct, use the array underlying it
-        return to_cccl_value_state(array_or_struct._data)
+        return get_cccl_value_state(array_or_struct._data)
 
 
 def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
@@ -298,6 +298,19 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
             cccl_it.state = state_
         else:
             cccl_it.state = make_pointer_object(state_, input_it)
+
+
+def get_cccl_iterator_state(cccl_it: Iterator, input_it):
+    if cccl_it.is_kind_pointer():
+        ptr = get_data_pointer(input_it)
+        ptr_obj = make_pointer_object(ptr, input_it)
+        return ptr_obj
+    else:
+        state_ = input_it.state
+        if isinstance(state_, (IteratorState, Pointer)):
+            return state_
+        else:
+            return make_pointer_object(state_, input_it)
 
 
 @functools.lru_cache()
