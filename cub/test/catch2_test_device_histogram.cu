@@ -330,7 +330,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
 
     // Compute reference result
     auto fp_scales = array<LevelT, ActiveChannels>{}; // only used when LevelT is floating point
-    std::ignore    = fp_scales; // casting to void was insufficient. TODO(bgruber): use [[maybe_unsued]] in C++17
+    std::ignore    = fp_scales; // casting to void was insufficient. TODO(bgruber): use [[maybe_unused]] in C++17
     for (size_t c = 0; c < ActiveChannels; ++c)
     {
       if constexpr (!cs::is_integral<LevelT>::value)

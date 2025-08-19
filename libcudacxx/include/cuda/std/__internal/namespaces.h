@@ -100,6 +100,21 @@
 #  define _CUDA_EXEC           ::cuda::execution::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_DRIVER         ::cuda::__driver::_LIBCUDACXX_ABI_NAMESPACE
 
+// We sometimes need the host library namespace
+#if defined(_STD_BEGIN) // MSVC STL
+#  define _CCCL_BEGIN_NAMESPACE_STD _STD_BEGIN
+#  define _CCCL_END_NAMESPACE_STD   _STD_END
+#elif defined(_LIBCPP_BEGIN_NAMESPACE_STD) // libc++
+#  define _CCCL_BEGIN_NAMESPACE_STD _LIBCPP_BEGIN_NAMESPACE_STD
+#  define _CCCL_END_NAMESPACE_STD   _LIBCPP_END_NAMESPACE_STD
+#elif _GLIBCXX_INLINE_VERSION // libstdc++
+#  define _CCCL_BEGIN_NAMESPACE_STD namespace std { inline _GLIBCXX_BEGIN_NAMESPACE_VERSION
+#  define _CCCL_END_NAMESPACE_STD   _GLIBCXX_END_NAMESPACE_VERSION }
+#else // Do not use an inline namespace
+#  define _CCCL_BEGIN_NAMESPACE_STD namespace std {
+#  define _CCCL_END_NAMESPACE_STD   }
+#endif
+
 // clang-format on
 
 #endif // _LIBCUDACXX___INTERNAL_NAMESPACES_H

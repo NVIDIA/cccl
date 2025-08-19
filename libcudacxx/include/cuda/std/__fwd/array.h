@@ -24,6 +24,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+_CCCL_BEGIN_NAMESPACE_STD
+template <class _Tp, size_t _Size>
+struct array;
+_CCCL_END_NAMESPACE_STD
+#endif // !_CCCL_COMPILER(NVRTC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, size_t _Size>
@@ -34,6 +41,11 @@ inline constexpr bool __is_std_array_v = false;
 
 template <class _Tp, size_t _Sz>
 inline constexpr bool __is_std_array_v<array<_Tp, _Sz>> = true;
+
+#if !_CCCL_COMPILER(NVRTC)
+template <class _Tp, size_t _Sz>
+inline constexpr bool __is_std_array_v<::std::array<_Tp, _Sz>> = true;
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
