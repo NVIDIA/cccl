@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 
 import cuda.cccl.parallel.experimental as parallel
-from cuda.cccl.parallel.experimental.op import OpKind
 
 
 @pytest.fixture(params=["i4", "u4", "i8", "u8"])
@@ -286,6 +285,7 @@ def test_segmented_reduce_well_known_plus():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
 def test_segmented_reduce_well_known_maximum():
     """Test segmented reduce with well-known MAXIMUM operation."""
     dtype = np.int32
@@ -304,4 +304,25 @@ def test_segmented_reduce_well_known_maximum():
 
     # Check the result is correct
     expected = np.array([9, 4, 8])  # max of each segment
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_opkind_enum():
+    """Test segmented reduce with OpKind enum for type safety."""
+    dtype = np.int32
+    h_init = np.array([1], dtype=dtype)
+
+    # Create segmented data: [2, 3] | [4, 5]
+    d_input = cp.array([2, 3, 4, 5], dtype=dtype)
+    d_starts = cp.array([0, 2], dtype=np.int32)
+    d_ends = cp.array([2, 4], dtype=np.int32)
+    d_output = cp.empty(2, dtype=dtype)
+
+    # Run segmented reduce with OpKind enum
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, OpKind.MULTIPLIES, h_init, 2
+    )
+
+    # Check the result is correct
+    expected = np.array([6, 20])  # products of each segment
     np.testing.assert_equal(d_output.get(), expected)
