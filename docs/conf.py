@@ -138,6 +138,9 @@ if os.path.exists("img"):
 
 html_title = "CUDA Core Compute Libraries"
 
+# Configure base URL for proper subdirectory deployment
+html_baseurl = "/docs/"
+
 # -- Options for extensions --------------------------------------------------
 
 # Intersphinx mapping
