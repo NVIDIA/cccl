@@ -41,77 +41,12 @@ struct device_segmented_sort_policy;
 using OffsetT = long;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be long");
 
-// check we can map OffsetT to ::cuda::std::int64_t
+// check we can map OffsetT to cuda::std::int64_t
 static_assert(std::is_signed_v<OffsetT>);
-static_assert(sizeof(OffsetT) == sizeof(::cuda::std::int64_t));
+static_assert(sizeof(OffsetT) == sizeof(cuda::std::int64_t));
 
 namespace segmented_sort
 {
-
-// Runtime policy structure for segmented sort
-struct segmented_sort_runtime_policy
-{
-  int partitioning_threshold;
-  int large_segment_radix_bits;
-  int segments_per_small_block;
-  int segments_per_medium_block;
-  int small_policy_items_per_tile;
-  int medium_policy_items_per_tile;
-
-  // Required methods for SegmentedSortPolicyWrapper
-  constexpr int PartitioningThreshold() const
-  {
-    return partitioning_threshold;
-  }
-  constexpr int LargeSegmentRadixBits() const
-  {
-    return large_segment_radix_bits;
-  }
-  constexpr int SegmentsPerSmallBlock() const
-  {
-    return segments_per_small_block;
-  }
-  constexpr int SegmentsPerMediumBlock() const
-  {
-    return segments_per_medium_block;
-  }
-  constexpr int SmallPolicyItemsPerTile() const
-  {
-    return small_policy_items_per_tile;
-  }
-  constexpr int MediumPolicyItemsPerTile() const
-  {
-    return medium_policy_items_per_tile;
-  }
-
-  // Additional methods expected by SegmentedSortPolicyWrapper
-  constexpr void CheckLoadModifierIsNotLDG() const {} // No-op validation
-  constexpr void CheckLoadAlgorithmIsNotStriped() const {} // No-op validation
-  constexpr void CheckStoreAlgorithmIsNotStriped() const {} // No-op validation
-
-  // Policy accessor methods
-  constexpr int BlockThreads(int /* large_segment_policy */) const
-  {
-    return 256;
-  } // Default block size
-  constexpr int LargeSegment() const
-  {
-    return 0;
-  } // Return index for large segment policy
-  constexpr auto SmallAndMediumSegmentedSort() const
-  {
-    return *this;
-  } // Return policy for small/medium segments
-
-  using MaxPolicy = segmented_sort_runtime_policy;
-
-  template <typename F>
-  cudaError_t Invoke(int, F& op)
-  {
-    return op.template Invoke<segmented_sort_runtime_policy>(*this);
-  }
-};
-
 std::string get_device_segmented_sort_fallback_kernel_name(
   std::string_view /* key_iterator_t */,
   std::string_view /* value_iterator_t */,
@@ -257,7 +192,6 @@ struct partition_kernel_source
 struct segmented_sort_runtime_tuning_policy
 {
   cub::detail::RuntimeRadixSortDownsweepAgentPolicy large_segment;
-  cub::detail::RuntimeSmallAndMediumSegmentedSortAgentPolicy small_and_medium_segment;
   cub::detail::RuntimeSubWarpMergeSortAgentPolicy small_segment;
   cub::detail::RuntimeSubWarpMergeSortAgentPolicy medium_segment;
   int partitioning_threshold;
@@ -266,9 +200,15 @@ struct segmented_sort_runtime_tuning_policy
   {
     return large_segment;
   }
-  auto SmallAndMediumSegmentedSort() const
+
+  auto SmallSegment() const
   {
-    return small_and_medium_segment;
+    return small_segment;
+  }
+
+  auto MediumSegment() const
+  {
+    return medium_segment;
   }
 
   void CheckLoadModifierIsNotLDG() const
@@ -310,12 +250,12 @@ struct segmented_sort_runtime_tuning_policy
 
   int SegmentsPerSmallBlock() const
   {
-    return small_and_medium_segment.SegmentsPerSmallBlock();
+    return small_segment.SegmentsPerBlock();
   }
 
   int SegmentsPerMediumBlock() const
   {
-    return small_and_medium_segment.SegmentsPerMediumBlock();
+    return medium_segment.SegmentsPerBlock();
   }
 
   int SmallPolicyItemsPerTile() const
@@ -326,18 +266,6 @@ struct segmented_sort_runtime_tuning_policy
   int MediumPolicyItemsPerTile() const
   {
     return medium_segment.ItemsPerTile();
-  }
-
-  template <typename PolicyT>
-  int BlockThreads(PolicyT policy) const
-  {
-    return policy.BlockThreads();
-  }
-
-  template <typename PolicyT>
-  int ItemsPerThread(PolicyT policy) const
-  {
-    return policy.ItemsPerThread();
   }
 
   using MaxPolicy = segmented_sort_runtime_tuning_policy;
@@ -504,50 +432,16 @@ struct __align__({1}) storage_t {{
 
     nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
 
-    using cub::detail::RuntimeSegmentedSortAgentPolicy;
-    auto [segmented_sort_policy, segmented_sort_policy_str] =
-      RuntimeSegmentedSortAgentPolicy::from_json(runtime_policy, "SegmentedSortPolicy");
+    using cub::detail::RuntimeRadixSortDownsweepAgentPolicy;
+    auto [large_segment_policy, large_segment_policy_str] =
+      RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "LargeSegmentPolicy");
 
-    // Extract sub-policy information if available
-    std::string small_and_medium_policy_str;
-    if (runtime_policy.contains("SmallAndMediumSegmentedSort"))
-    {
-      auto sub_policy          = runtime_policy["SmallAndMediumSegmentedSort"];
-      auto block_threads       = sub_policy["BlockThreads"].get<int>();
-      auto segments_per_medium = sub_policy["SegmentsPerMediumBlock"].get<int>();
-      auto segments_per_small  = sub_policy["SegmentsPerSmallBlock"].get<int>();
+    using cub::detail::RuntimeSubWarpMergeSortAgentPolicy;
+    auto [small_segment_policy, small_segment_policy_str] =
+      RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "SmallSegmentPolicy");
 
-      small_and_medium_policy_str = std::format(
-        R"XXX(
-    // Small and Medium Segment Policy
-    static constexpr int SMALL_MEDIUM_BLOCK_THREADS = {0};
-    static constexpr int SMALL_MEDIUM_SEGMENTS_PER_MEDIUM_BLOCK = {1};
-    static constexpr int SMALL_MEDIUM_SEGMENTS_PER_SMALL_BLOCK = {2};)XXX",
-        block_threads,
-        segments_per_medium,
-        segments_per_small);
-    }
-
-    // Build the policy structure manually
-    const std::string segmented_sort_policy_str = std::format(
-      R"XXX(
-    static constexpr int PARTITIONING_THRESHOLD = {0};
-    static constexpr int LARGE_SEGMENT_RADIX_BITS = {1};
-    static constexpr int SEGMENTS_PER_SMALL_BLOCK = {2};
-    static constexpr int SEGMENTS_PER_MEDIUM_BLOCK = {3};
-    static constexpr int SMALL_POLICY_ITEMS_PER_TILE = {4};
-    static constexpr int MEDIUM_POLICY_ITEMS_PER_TILE = {5};{6}
-    using MaxPolicy = cub::detail::segmented_sort::policy_hub<{7}, {8}>::MaxPolicy;
-)XXX",
-      segmented_sort_policy.partitioning_threshold, // 0
-      segmented_sort_policy.large_segment_radix_bits, // 1
-      segmented_sort_policy.segments_per_small_block, // 2
-      segmented_sort_policy.segments_per_medium_block, // 3
-      segmented_sort_policy.small_policy_items_per_tile, // 4
-      segmented_sort_policy.medium_policy_items_per_tile, // 5
-      small_and_medium_policy_str, // 6
-      key_t, // 7
-      value_t); // 8
+    auto [medium_segment_policy, medium_segment_policy_str] =
+      RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "MediumSegmentPolicy");
 
     // agent_policy_t is to specify parameters like policy_hub does in dispatch_segmented_sort.cuh
     constexpr std::string_view program_preamble_template = R"XXX(
@@ -557,6 +451,8 @@ struct __align__({1}) storage_t {{
 struct device_segmented_sort_policy {{
   struct ActivePolicy {{
     {2}
+    {3}
+    {4}
   }};
 }};
 )XXX";
@@ -565,7 +461,9 @@ struct device_segmented_sort_policy {{
       program_preamble_template,
       jit_template_header_contents, // 0
       dependent_definitions_src, // 1
-      segmented_sort_policy_str); // 2
+      large_segment_policy_str, // 2
+      small_segment_policy_str, // 3
+      medium_segment_policy_str); // 4
 
     std::string segmented_sort_fallback_kernel_name = segmented_sort::get_device_segmented_sort_fallback_kernel_name(
       keys_in_iterator_name,
@@ -655,7 +553,8 @@ struct device_segmented_sort_policy {{
     build_ptr->cubin      = (void*) result.data.release();
     build_ptr->cubin_size = result.size;
     // Use the runtime policy extracted via from_json
-    build_ptr->runtime_policy = new segmented_sort::segmented_sort_runtime_policy{segmented_sort_policy};
+    build_ptr->runtime_policy = new segmented_sort::segmented_sort_runtime_tuning_policy{
+      large_segment_policy, small_segment_policy, medium_segment_policy};
   }
   catch (const std::exception& exc)
   {
@@ -724,7 +623,7 @@ CUresult cccl_device_segmented_sort(
         /* kernel_source */ {build},
         /* partition_kernel_source */ {build},
         /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        /* policy */ *reinterpret_cast<segmented_sort::segmented_sort_runtime_policy*>(build.runtime_policy),
+        /* policy */ *reinterpret_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build.runtime_policy),
         /* partition_policy */
         *reinterpret_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
 
@@ -760,7 +659,7 @@ CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_res
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
 
     // Clean up the runtime policy
-    delete static_cast<segmented_sort::segmented_sort_runtime_policy*>(build_ptr->runtime_policy);
+    delete static_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build_ptr->runtime_policy);
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
