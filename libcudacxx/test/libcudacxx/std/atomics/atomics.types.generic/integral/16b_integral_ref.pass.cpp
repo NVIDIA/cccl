@@ -88,6 +88,8 @@
 //     integral operator^=(integral op);
 // };
 
+#define LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS
+
 #include <cuda/atomic>
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
