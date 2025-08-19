@@ -17,7 +17,7 @@ available.
    ptx/instructions
 
 Versions and compatibility
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------
 
 The ``cuda/ptx`` header is intended to present a stable API within one major
 version of the CTK on a best effort basis. This means that:

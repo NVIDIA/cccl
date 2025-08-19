@@ -13,7 +13,7 @@ CUB
    benchmarking
    tuning
    releases
-   ${repo_docs_api_path}/cub_api
+   api/index
 
 What is CUB?
 ==================================================

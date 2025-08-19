@@ -337,38 +337,6 @@ struct DeviceRleDispatch
    * @tparam DeviceRleSweepKernelPtr
    *   Function type of cub::DeviceRleSweepKernelPtr
    *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to
-   *   `temp_storage_bytes` and no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_in
-   *   Pointer to the input sequence of data items
-   *
-   * @param d_offsets_out
-   *   Pointer to the output sequence of run-offsets
-   *
-   * @param d_lengths_out
-   *   Pointer to the output sequence of run-lengths
-   *
-   * @param d_num_runs_out
-   *   Pointer to the total number of runs encountered (i.e., length of `d_offsets_out`)
-   *
-   * @param equality_op
-   *   Equality operator for input items
-   *
-   * @param num_items
-   *   Total number of input items (i.e., length of `d_in`)
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   *
-   * @param ptx_version
-   *   PTX version of dispatch kernels
-   *
    * @param device_scan_init_kernel
    *   Kernel function pointer to parameterization of cub::DeviceScanInitKernel
    *
