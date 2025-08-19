@@ -221,9 +221,9 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    ::cuda::std::execution::__queryable_with<_Env, ::cuda::mr::get_memory_resource_t> //
-    && ::cuda::std::execution::__queryable_with<_Env, ::cuda::get_stream_t>
-    && ::cuda::std::execution::__queryable_with<_Env, execution::get_execution_policy_t>;
+    (::cuda::std::execution::__queryable_with<_Env, ::cuda::mr::get_memory_resource_t>) //
+    &&(::cuda::std::execution::__queryable_with<_Env, ::cuda::get_stream_t>)
+    && (::cuda::std::execution::__queryable_with<_Env, execution::get_execution_policy_t>);
 
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information

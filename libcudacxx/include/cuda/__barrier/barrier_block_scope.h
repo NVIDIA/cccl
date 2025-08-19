@@ -60,7 +60,7 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   using __barrier_base = ::cuda::std::__barrier_base<::cuda::std::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
-  _CCCL_DEVICE friend inline ::cuda::std::uint64_t* ::cuda::device::barrier_native_handle(
+  _CCCL_DEVICE friend inline ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
     barrier<thread_scope_block>& b);
 
   template <typename _Barrier>

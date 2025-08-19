@@ -136,7 +136,7 @@ private:
 
   //! @brief Helper to check container is compatible with this async_buffer
   template <class _Range>
-  static constexpr bool __compatible_range = ::cuda::std::ranges::__container_compatible_range<_Range, _Tp>;
+  static constexpr bool __compatible_range = (::cuda::std::ranges::__container_compatible_range<_Range, _Tp>);
 
   //! @brief Helper to check whether a different async_buffer still satisfies all properties of this one
   template <class... _OtherProperties>

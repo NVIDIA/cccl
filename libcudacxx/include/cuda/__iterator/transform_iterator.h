@@ -64,7 +64,7 @@ struct __transform_iterator_category_base<_Iter, _Fn, ::cuda::std::enable_if_t<:
     ::cuda::std::input_iterator_tag>;
 };
 
-template <class _Fn, class _Iter, bool = ::cuda::std::random_access_iterator<_Iter>>
+template <class _Fn, class _Iter, bool = (::cuda::std::random_access_iterator<_Iter>)>
 inline constexpr bool __transform_iterator_nothrow_subscript = false;
 
 template <class _Fn, class _Iter>
