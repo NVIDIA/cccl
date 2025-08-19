@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Segmented reduction examples demonstrating reduction operations on segmented data.
+Segmented reduction examples demonstrating reduction operations on segmented data with both
+custom operations and well-known operations.
 """
 
 import cupy as cp

@@ -5,6 +5,125 @@
 import pytest
 
 
+def test_device_reduce_well_known_plus():
+    """Test reduce with well-known PLUS operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known PLUS operation
+    parallel.reduce_into(d_input, d_output, parallel.OpKind.PLUS, len(d_input), h_init)
+
+    # Check the result is correct
+    expected_output = 15  # 1+2+3+4+5
+    assert (d_output == expected_output).all()
+
+
+def test_device_reduce_well_known_minimum():
+    """Test reduce with well-known MINIMUM operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([100], dtype=dtype)
+    d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known MINIMUM operation
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.MINIMUM, len(d_input), h_init
+    )
+
+    # Check the result is correct
+    expected_output = 0  # minimum value
+    assert (d_output == expected_output).all()
+
+
+def test_device_reduce_well_known_maximum():
+    """Test reduce with well-known MAXIMUM operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([-100], dtype=dtype)
+    d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known MAXIMUM operation
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.MAXIMUM, len(d_input), h_init
+    )
+
+    # Check the result is correct
+    expected_output = 9  # maximum value
+    assert (d_output == expected_output).all()
+
+
+def test_device_reduce_well_known_multiplies():
+    """Test reduce with well-known MULTIPLIES operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([1], dtype=dtype)
+    d_input = cp.array([2, 3, 4], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known MULTIPLIES operation
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.MULTIPLIES, len(d_input), h_init
+    )
+
+    # Check the result is correct
+    expected_output = 24  # 1*2*3*4
+    assert (d_output == expected_output).all()
+
+
+def test_device_reduce_opkind_enum():
+    """Test reduce with OpKind enum for type safety."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+    from cuda.cccl.parallel.experimental import OpKind
+
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with OpKind enum for better type safety
+    parallel.reduce_into(d_input, d_output, OpKind.PLUS, len(d_input), h_init)
+
+    # Check the result is correct
+    expected_output = 15  # 1+2+3+4+5
+    assert (d_output == expected_output).all()
+
+    # Test another operation with OpKind
+    h_init_min = np.array([1000], dtype=dtype)
+    d_input_min = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
+    d_output_min = cp.empty(1, dtype=dtype)
+
+    parallel.reduce_into(
+        d_input_min, d_output_min, OpKind.MINIMUM, len(d_input_min), h_init_min
+    )
+
+    expected_min = 0
+    assert (d_output_min == expected_min).all()
+
+
 def test_device_reduce():
     # example-begin reduce-min
     import cupy as cp

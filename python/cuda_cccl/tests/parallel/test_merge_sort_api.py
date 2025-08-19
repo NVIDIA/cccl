@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+import cupy as cp
+import numpy as np
+
+import cuda.cccl.parallel.experimental as parallel
+
+
 def test_merge_sort():
     # example-begin merge-sort
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental as parallel
 
     def compare_op(lhs, rhs):
         return np.uint8(lhs < rhs)

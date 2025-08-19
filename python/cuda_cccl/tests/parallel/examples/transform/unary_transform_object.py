@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Unary transform example demonstrating the object API.
+Unary transform examples demonstrating the object API and well-known operations.
 """
 
 import cupy as cp
@@ -32,7 +32,41 @@ def unary_transform_object_example():
     print("Unary transform object API example passed.")
 
 
+def negate_transform_example():
+    """Demonstrate unary transform using well-known NEGATE operation."""
+
+    dtype = np.int32
+    d_input = cp.array([1, -2, 3, -4, 5], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run unary transform with well-known NEGATE operation
+    parallel.unary_transform(d_input, d_output, parallel.OpKind.NEGATE, len(d_input))
+
+    expected_output = np.array([-1, 2, -3, 4, -5])
+    assert cp.all(d_output.get() == expected_output)
+    print(f"NEGATE transform result: {d_output.get()}")
+    return d_output.get()
+
+
+def identity_transform_example():
+    """Demonstrate unary transform using well-known IDENTITY operation."""
+
+    dtype = np.int32
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run unary transform with well-known IDENTITY operation
+    parallel.unary_transform(d_input, d_output, parallel.OpKind.IDENTITY, len(d_input))
+
+    expected_output = np.array([1, 2, 3, 4, 5])
+    assert cp.all(d_output.get() == expected_output)
+    print(f"IDENTITY transform result: {d_output.get()}")
+    return d_output.get()
+
+
 if __name__ == "__main__":
-    print("Running unary_transform_object_example...")
+    print("Running unary transform examples...")
     unary_transform_object_example()
-    print("All examples completed successfully!")
+    negate_transform_example()
+    identity_transform_example()
+    print("All unary transform examples completed successfully!")

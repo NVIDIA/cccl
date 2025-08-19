@@ -345,3 +345,33 @@ def test_unique_by_key_with_stream(cuda_stream):
 
     np.testing.assert_array_equal(h_out_keys, expected_keys)
     np.testing.assert_array_equal(h_out_items, expected_items)
+
+
+def test_unique_by_key_well_known_equal_to():
+    """Test unique by key with well-known EQUAL_TO operation."""
+    dtype = np.int32
+
+    # Create input keys and values: keys=[1,1,1,2,2,3] values=[10,20,30,40,50,60]
+    d_in_keys = cp.array([1, 1, 1, 2, 2, 3], dtype=dtype)
+    d_in_values = cp.array([10, 20, 30, 40, 50, 60], dtype=dtype)
+    d_out_keys = cp.empty_like(d_in_keys)
+    d_out_values = cp.empty_like(d_in_values)
+    d_num_selected = cp.empty(1, dtype=dtype)
+
+    # Run unique by key with well-known EQUAL_TO operation
+    parallel.unique_by_key(
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        d_num_selected,
+        parallel.OpKind.EQUAL_TO,
+        len(d_in_keys),
+    )
+
+    # Check the result is correct
+    assert d_num_selected.get()[0] == 3  # three unique keys
+    expected_keys = [1, 2, 3]
+    expected_values = [10, 40, 60]  # first occurrence of each key
+    np.testing.assert_equal(d_out_keys.get()[:3], expected_keys)
+    np.testing.assert_equal(d_out_values.get()[:3], expected_values)

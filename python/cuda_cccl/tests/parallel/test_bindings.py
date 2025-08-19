@@ -26,7 +26,7 @@ def cccl_type_enum(request):
 
 @pytest.fixture(params=["STATEFUL", "STATELESS"])
 def cccl_op_kind(request):
-    return getattr(bindings.OpKind, request.param)
+    return getattr(bindings.Enumeration_OpKind, request.param)
 
 
 @pytest.fixture(params=["POINTER", "ITERATOR"])
