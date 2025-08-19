@@ -1,4 +1,5 @@
 import ctypes
+from enum import Enum
 from typing import Any, Optional
 
 from typing_extensions import Buffer
@@ -43,10 +44,57 @@ class Enumeration_CCCLType:
     def STORAGE(self) -> IntEnumerationMember: ...
 
 class Enumeration_OpKind:
-    @property
-    def STATELESS(self) -> IntEnumerationMember: ...
-    @property
-    def STATEFUL(self) -> IntEnumerationMember: ...
+    STATELESS = IntEnumerationMember
+    STATEFUL = IntEnumerationMember
+    # Well-known operations
+    PLUS: IntEnumerationMember
+    MINUS: IntEnumerationMember
+    MULTIPLIES: IntEnumerationMember
+    DIVIDES: IntEnumerationMember
+    MODULUS: IntEnumerationMember
+    EQUAL_TO: IntEnumerationMember
+    NOT_EQUAL_TO: IntEnumerationMember
+    GREATER: IntEnumerationMember
+    LESS: IntEnumerationMember
+    GREATER_EQUAL: IntEnumerationMember
+    LESS_EQUAL: IntEnumerationMember
+    LOGICAL_AND: IntEnumerationMember
+    LOGICAL_OR: IntEnumerationMember
+    LOGICAL_NOT: IntEnumerationMember
+    BIT_AND: IntEnumerationMember
+    BIT_OR: IntEnumerationMember
+    BIT_XOR: IntEnumerationMember
+    BIT_NOT: IntEnumerationMember
+    IDENTITY: IntEnumerationMember
+    NEGATE: IntEnumerationMember
+    MINIMUM: IntEnumerationMember
+    MAXIMUM: IntEnumerationMember
+
+class OpKind(Enum):
+    STATELESS = IntEnumerationMember
+    STATEFUL = IntEnumerationMember
+    PLUS = IntEnumerationMember
+    MINUS = IntEnumerationMember
+    MULTIPLIES = IntEnumerationMember
+    DIVIDES = IntEnumerationMember
+    MODULUS = IntEnumerationMember
+    EQUAL_TO = IntEnumerationMember
+    NOT_EQUAL_TO = IntEnumerationMember
+    GREATER = IntEnumerationMember
+    LESS = IntEnumerationMember
+    GREATER_EQUAL = IntEnumerationMember
+    LESS_EQUAL = IntEnumerationMember
+    LOGICAL_AND = IntEnumerationMember
+    LOGICAL_OR = IntEnumerationMember
+    LOGICAL_NOT = IntEnumerationMember
+    BIT_AND = IntEnumerationMember
+    BIT_OR = IntEnumerationMember
+    BIT_XOR = IntEnumerationMember
+    BIT_NOT = IntEnumerationMember
+    IDENTITY = IntEnumerationMember
+    NEGATE = IntEnumerationMember
+    MINIMUM = IntEnumerationMember
+    MAXIMUM = IntEnumerationMember
 
 class Enumeration_IteratorKind:
     @property
@@ -61,7 +109,6 @@ class Enumeration_SortOrder:
     def DESCENDING(self) -> IntEnumerationMember: ...
 
 TypeEnum: Enumeration_CCCLType
-OpKind: Enumeration_OpKind
 IteratorKind: Enumeration_IteratorKind
 SortOrder: Enumeration_SortOrder
 
@@ -74,7 +121,7 @@ class Op:
     def __init__(
         self,
         name: Optional[str] = ...,
-        operator_type: IntEnumerationMember = ...,
+        operator_type: OpKind = ...,
         ltoir=None,
         state=None,
         state_alignment: int = 1,
