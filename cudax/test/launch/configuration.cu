@@ -8,29 +8,37 @@
 //
 //===----------------------------------------------------------------------===//
 
-cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, const void* kernel, void** args);
+#include <cuda.h>
 
-// Test translation of launch function arguments to cudaLaunchConfig_t sent to cudaLaunchKernelEx internally
-// We replace cudaLaunchKernelEx with a test function here through a macro to intercept the cudaLaunchConfig_t
-#define cudaLaunchKernelExC cudaLaunchKernelExTestReplacement
+void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, void* args[]);
+
+// This is a replacement for the launch kernel function that is used to test
+// the configuration of the launch kernel. It checks if the configuration
+// matches the expected configuration and calls the original launch kernel
+// function if it does. If the configuration does not match, it will fail the
+// test.
+#define _CUDAX_LAUNCH_CONFIG_TEST
 #include <cuda/experimental/launch.cuh>
-#undef cudaLaunchKernelExC
 
 #include <host_device.cuh>
 
-static cudaLaunchConfig_t expectedConfig;
+static CUlaunchConfig expectedConfig;
 static bool replacementCalled = false;
 
-cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, const void* kernel, void** args)
+void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, void* args[])
 {
   replacementCalled = true;
   bool has_cluster  = false;
 
-  CUDAX_CHECK(expectedConfig.numAttrs == config->numAttrs);
-  CUDAX_CHECK(expectedConfig.blockDim == config->blockDim);
-  CUDAX_CHECK(expectedConfig.gridDim == config->gridDim);
-  CUDAX_CHECK(expectedConfig.stream == config->stream);
-  CUDAX_CHECK(expectedConfig.dynamicSmemBytes == config->dynamicSmemBytes);
+  CUDAX_CHECK(expectedConfig.gridDimX == config.gridDimX);
+  CUDAX_CHECK(expectedConfig.gridDimY == config.gridDimY);
+  CUDAX_CHECK(expectedConfig.gridDimZ == config.gridDimZ);
+  CUDAX_CHECK(expectedConfig.blockDimX == config.blockDimX);
+  CUDAX_CHECK(expectedConfig.blockDimY == config.blockDimY);
+  CUDAX_CHECK(expectedConfig.blockDimZ == config.blockDimZ);
+  CUDAX_CHECK(expectedConfig.sharedMemBytes == config.sharedMemBytes);
+  CUDAX_CHECK(expectedConfig.hStream == config.hStream);
+  CUDAX_CHECK(expectedConfig.numAttrs == config.numAttrs);
 
   for (unsigned int i = 0; i < expectedConfig.numAttrs; ++i)
   {
@@ -38,22 +46,22 @@ cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, 
     unsigned int j;
     for (j = 0; j < expectedConfig.numAttrs; ++j)
     {
-      auto& actualAttr = config->attrs[j];
+      auto& actualAttr = config.attrs[j];
       if (expectedAttr.id == actualAttr.id)
       {
         switch (expectedAttr.id)
         {
-          case cudaLaunchAttributeClusterDimension:
-            CUDAX_CHECK(expectedAttr.val.clusterDim.x == actualAttr.val.clusterDim.x);
-            CUDAX_CHECK(expectedAttr.val.clusterDim.y == actualAttr.val.clusterDim.y);
-            CUDAX_CHECK(expectedAttr.val.clusterDim.z == actualAttr.val.clusterDim.z);
+          case CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION:
+            CUDAX_CHECK(expectedAttr.value.clusterDim.x == actualAttr.value.clusterDim.x);
+            CUDAX_CHECK(expectedAttr.value.clusterDim.y == actualAttr.value.clusterDim.y);
+            CUDAX_CHECK(expectedAttr.value.clusterDim.z == actualAttr.value.clusterDim.z);
             has_cluster = true;
             break;
-          case cudaLaunchAttributeCooperative:
-            CUDAX_CHECK(expectedAttr.val.cooperative == actualAttr.val.cooperative);
+          case CU_LAUNCH_ATTRIBUTE_COOPERATIVE:
+            CUDAX_CHECK(expectedAttr.value.cooperative == actualAttr.value.cooperative);
             break;
-          case cudaLaunchAttributePriority:
-            CUDAX_CHECK(expectedAttr.val.priority == actualAttr.val.priority);
+          case CU_LAUNCH_ATTRIBUTE_PRIORITY:
+            CUDAX_CHECK(expectedAttr.value.priority == actualAttr.value.priority);
             break;
           default:
             CUDAX_CHECK(false);
@@ -68,11 +76,7 @@ cudaError_t cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, 
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
   {
-    return cudaLaunchKernelExC(config, kernel, args);
-  }
-  else
-  {
-    return cudaSuccess;
+    return _CUDA_DRIVER::__launchKernel(config, kernel, args);
   }
 }
 
@@ -92,38 +96,43 @@ auto make_test_dims(const dim3& grid_dims, const dim3& block_dims, const dim3& c
   }
 }
 
-auto add_cluster(const dim3& cluster_dims, cudaLaunchAttribute& attr)
+auto add_cluster(const dim3& cluster_dims, CUlaunchAttribute& attr)
 {
-  attr.id             = cudaLaunchAttributeClusterDimension;
-  attr.val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
+  attr.id               = CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
+  attr.value.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
 }
 
 template <bool HasCluster, typename... Dims>
 auto configuration_test(
   ::cuda::stream_ref stream, const dim3& grid_dims, const dim3& block_dims, const dim3& cluster_dims = dim3())
 {
-  auto dims             = make_test_dims<HasCluster>(grid_dims, block_dims, cluster_dims);
-  expectedConfig        = {};
-  expectedConfig.stream = stream.get();
+  auto dims              = make_test_dims<HasCluster>(grid_dims, block_dims, cluster_dims);
+  expectedConfig         = {};
+  expectedConfig.hStream = stream.get();
   if constexpr (HasCluster)
   {
-    expectedConfig.gridDim =
-      dim3(grid_dims.x * cluster_dims.x, grid_dims.y * cluster_dims.y, grid_dims.z * cluster_dims.z);
+    expectedConfig.gridDimX = grid_dims.x * cluster_dims.x;
+    expectedConfig.gridDimY = grid_dims.y * cluster_dims.y;
+    expectedConfig.gridDimZ = grid_dims.z * cluster_dims.z;
   }
   else
   {
-    expectedConfig.gridDim = grid_dims;
+    expectedConfig.gridDimX = grid_dims.x;
+    expectedConfig.gridDimY = grid_dims.y;
+    expectedConfig.gridDimZ = grid_dims.z;
   }
-  expectedConfig.blockDim = block_dims;
+  expectedConfig.blockDimX = block_dims.x;
+  expectedConfig.blockDimY = block_dims.y;
+  expectedConfig.blockDimZ = block_dims.z;
 
   SECTION("Simple cooperative launch")
   {
-    cudaLaunchAttribute attrs[2];
-    auto config                             = cudax::make_config(dims, cudax::cooperative_launch());
-    expectedConfig.numAttrs                 = 1 + HasCluster;
-    expectedConfig.attrs                    = &attrs[0];
-    expectedConfig.attrs[0].id              = cudaLaunchAttributeCooperative;
-    expectedConfig.attrs[0].val.cooperative = 1;
+    CUlaunchAttribute attrs[2];
+    auto config                               = cudax::make_config(dims, cudax::cooperative_launch());
+    expectedConfig.numAttrs                   = 1 + HasCluster;
+    expectedConfig.attrs                      = &attrs[0];
+    expectedConfig.attrs[0].id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
+    expectedConfig.attrs[0].value.cooperative = 1;
     if constexpr (HasCluster)
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
@@ -133,16 +142,16 @@ auto configuration_test(
 
   SECTION("Priority and dynamic smem")
   {
-    cudaLaunchAttribute attrs[2];
+    CUlaunchAttribute attrs[2];
     const int priority = 42;
     const int num_ints = 128;
     auto config =
       cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int>(num_ints));
-    expectedConfig.dynamicSmemBytes      = num_ints * sizeof(int);
-    expectedConfig.numAttrs              = 1 + HasCluster;
-    expectedConfig.attrs                 = &attrs[0];
-    expectedConfig.attrs[0].id           = cudaLaunchAttributePriority;
-    expectedConfig.attrs[0].val.priority = priority;
+    expectedConfig.sharedMemBytes          = num_ints * sizeof(int);
+    expectedConfig.numAttrs                = 1 + HasCluster;
+    expectedConfig.attrs                   = &attrs[0];
+    expectedConfig.attrs[0].id             = CU_LAUNCH_ATTRIBUTE_PRIORITY;
+    expectedConfig.attrs[0].value.priority = priority;
     if constexpr (HasCluster)
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
@@ -158,11 +167,11 @@ auto configuration_test(
     {
       int arr[13 * 1024];
     };
-    cudaLaunchAttribute attrs[1];
-    auto config                     = cudax::make_config(dims, cudax::dynamic_shared_memory<S, 1, true>());
-    expectedConfig.dynamicSmemBytes = sizeof(S);
-    expectedConfig.numAttrs         = HasCluster;
-    expectedConfig.attrs            = &attrs[0];
+    CUlaunchAttribute attrs[1];
+    auto config                   = cudax::make_config(dims, cudax::dynamic_shared_memory<S, 1, true>());
+    expectedConfig.sharedMemBytes = sizeof(S);
+    expectedConfig.numAttrs       = HasCluster;
+    expectedConfig.attrs          = &attrs[0];
     if constexpr (HasCluster)
     {
       add_cluster(cluster_dims, expectedConfig.attrs[0]);
