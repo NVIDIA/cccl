@@ -250,34 +250,37 @@ using modes = c2h::enum_type_list<scan_mode, scan_mode::inclusive>;
 using modes = c2h::enum_type_list<scan_mode, scan_mode::exclusive>;
 #endif
 
-using int_gen_t = Catch::Generators::GeneratorWrapper<int>;
+template <class TestType, typename T>
+struct algo_mode_params_t
+{
+  using type = T;
 
-template <typename T, int tile_size>
-int_gen_t valid_items_fixed_vals(cub::BlockScanAlgorithm algo, int items_per_thread) noexcept
-{
-  const int items_per_warp           = cub::detail::warp_threads * items_per_thread;
-  const int items_per_raking_segment = cub::BlockRakingLayout<T, tile_size>::SEGMENT_LENGTH;
-  const int items_per_segment =
-    algo == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
+  static constexpr int block_dim_x      = 256;
+  static constexpr int block_dim_y      = 1;
+  static constexpr int block_dim_z      = 1;
+  static constexpr int threads_in_block = block_dim_x * block_dim_y * block_dim_z;
+  static constexpr int items_per_thread = 3;
+  static constexpr int tile_size        = items_per_thread * threads_in_block;
 
-  using namespace Catch::Generators;
-  return values({-1, 0, 1, items_per_segment - 1, items_per_segment, items_per_segment + 1, tile_size, tile_size + 1});
-}
-int_gen_t valid_items_rand_below() noexcept
+  static constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  static constexpr scan_mode mode               = c2h::get<1, TestType>::value;
+};
+
+template <class TestType, typename T>
+struct algo_mode_yz_params_t
 {
-  using namespace Catch::Generators;
-  return take(1, random(cuda::std::numeric_limits<int>::min(), -2));
-}
-int_gen_t valid_items_rand_inside(int tile_size) noexcept
-{
-  using namespace Catch::Generators;
-  return take(1, random(2, cuda::std::max(tile_size - 1, 2)));
-}
-int_gen_t valid_items_rand_above(int tile_size) noexcept
-{
-  using namespace Catch::Generators;
-  return take(1, random(tile_size + 2, cuda::std::numeric_limits<int>::max()));
-}
+  using type = T;
+
+  static constexpr int block_dim_x      = 64;
+  static constexpr int block_dim_y      = c2h::get<2, TestType>::value;
+  static constexpr int block_dim_z      = block_dim_y;
+  static constexpr int threads_in_block = block_dim_x * block_dim_y * block_dim_z;
+  static constexpr int items_per_thread = 3;
+  static constexpr int tile_size        = items_per_thread * threads_in_block;
+
+  static constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
+  static constexpr scan_mode mode               = c2h::get<1, TestType>::value;
+};
 
 C2H_TEST("Partial block scan works with custom sum",
          "[scan][block]",
@@ -288,14 +291,15 @@ C2H_TEST("Partial block scan works with custom sum",
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
-  using type   = typename params::type;
+  using params          = params_t<TestType>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(params::tile_size),
-    valid_items_rand_above(params::tile_size),
-    valid_items_fixed_vals<type, params::tile_size>(params::algo, params::items_per_thread));
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   c2h::device_vector<type> d_out(params::tile_size);
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
@@ -318,14 +322,15 @@ C2H_TEST("Partial block scan works with custom sum single",
          algorithm,
          modes)
 {
-  using params = params_t<TestType>;
-  using type   = typename params::type;
+  using params          = params_t<TestType>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(params::tile_size),
-    valid_items_rand_above(params::tile_size),
-    valid_items_fixed_vals<type, params::tile_size>(params::algo, params::items_per_thread));
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   c2h::device_vector<type> d_out(params::tile_size);
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
@@ -344,34 +349,29 @@ C2H_TEST("Partial block scan works with custom sum single",
   REQUIRE_APPROX_EQ(h_out, d_out);
 }
 
-C2H_TEST("Partial block scan works with vec types", "[scan][block]", vec_types, algorithm, modes)
+C2H_TEST("Partial block scan works with vec types", "[scan][block]", algorithm, modes, vec_types)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 256;
-  constexpr int block_dim_y              = 1;
-  constexpr int block_dim_z              = 1;
-  constexpr int tile_size                = items_per_thread * block_dim_x * block_dim_y * block_dim_z;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<1, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<2, TestType>::value;
-
-  using type = typename c2h::get<0, TestType>;
+  using params          = algo_mode_params_t<TestType, c2h::get<2, TestType>>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
   CAPTURE(valid_items, c2h::type_name<type>(), d_in);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, sum_op_t<mode>{}, valid_items);
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+    d_in, d_out, sum_op_t<params::mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
-  host_scan(mode, h_out, std::plus<type>{}, valid_items);
+  host_scan(params::mode, h_out, std::plus<type>{}, valid_items);
 
-  if constexpr (mode == scan_mode::exclusive)
+  if constexpr (params::mode == scan_mode::exclusive)
   {
     // Undefined
     h_out[0] = d_out[0];
@@ -381,31 +381,26 @@ C2H_TEST("Partial block scan works with vec types", "[scan][block]", vec_types, 
 
 C2H_TEST("Partial block scan works with custom types", "[scan][block]", algorithm, modes)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 256;
-  constexpr int block_dim_y              = 1;
-  constexpr int block_dim_z              = 1;
-  constexpr int tile_size                = items_per_thread * block_dim_x * block_dim_y * block_dim_z;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
-
-  using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
+  using params = algo_mode_params_t<TestType, c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>>;
+  using type   = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, sum_op_t<mode>{}, valid_items);
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+    d_in, d_out, sum_op_t<params::mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
-  host_scan(mode, h_out, std::plus<type>{}, valid_items);
+  host_scan(params::mode, h_out, std::plus<type>{}, valid_items);
 
-  if constexpr (mode == scan_mode::exclusive)
+  if constexpr (params::mode == scan_mode::exclusive)
   {
     // Undefined
     h_out[0] = d_out[0];
@@ -415,39 +410,32 @@ C2H_TEST("Partial block scan works with custom types", "[scan][block]", algorith
 
 C2H_TEST("Partial block scan returns valid block aggregate", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 64;
-  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z              = block_dim_y;
-  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
+  using params = algo_mode_yz_params_t<TestType, c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>>;
+  using type   = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
-  using type = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
-
-  const int target_thread_id = GENERATE_COPY(take(2, random(0, threads_in_block - 1)));
+  const int target_thread_id = GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
   c2h::device_vector<type> d_block_aggregate(1);
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in,
     d_out,
-    sum_aggregate_op_t<type, mode>{target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())},
+    sum_aggregate_op_t<type, params::mode>{target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())},
     valid_items);
 
   c2h::host_vector<type> h_out = d_in;
-  type block_aggregate         = host_scan(mode, h_out, std::plus<type>{}, valid_items);
+  type block_aggregate         = host_scan(params::mode, h_out, std::plus<type>{}, valid_items);
 
-  if constexpr (mode == scan_mode::exclusive)
+  if constexpr (params::mode == scan_mode::exclusive)
   {
     // Undefined
     h_out[0] = d_out[0];
@@ -461,64 +449,51 @@ C2H_TEST("Partial block scan returns valid block aggregate", "[scan][block]", al
 
 C2H_TEST("Partial block scan supports prefix op", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 64;
-  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z              = block_dim_y;
-  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
+  using params          = algo_mode_yz_params_t<TestType, int>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
-  using type = int;
-
-  const type prefix = GENERATE_COPY(take(2, random(0, tile_size)));
+  const type prefix = GENERATE_COPY(take(2, random(0, params::tile_size)));
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, sum_prefix_op_t<type, mode>{prefix}, valid_items);
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+    d_in, d_out, sum_prefix_op_t<type, params::mode>{prefix}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
-  host_scan(mode, h_out, std::plus<type>{}, valid_items, prefix);
+  host_scan(params::mode, h_out, std::plus<type>{}, valid_items, prefix);
 
   REQUIRE(h_out == d_out);
 }
 
 C2H_TEST("Partial block scan supports custom scan op", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 64;
-  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z              = block_dim_y;
-  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
-
-  using type = int;
+  using params          = algo_mode_yz_params_t<TestType, int>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(d_in, d_out, min_op_t<mode>{}, valid_items);
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+    d_in, d_out, min_op_t<params::mode>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
-    mode,
+    params::mode,
     h_out,
     [](type l, type r) {
       return std::min(l, r);
@@ -526,7 +501,7 @@ C2H_TEST("Partial block scan supports custom scan op", "[scan][block]", algorith
     valid_items,
     INT_MAX);
 
-  if constexpr (mode == scan_mode::exclusive)
+  if constexpr (params::mode == scan_mode::exclusive)
   {
     //! With no initial value, the output computed for *thread*\ :sub:`0` is undefined.
     d_out.erase(d_out.begin());
@@ -538,34 +513,27 @@ C2H_TEST("Partial block scan supports custom scan op", "[scan][block]", algorith
 
 C2H_TEST("Partial block custom op scan works with initial value", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 64;
-  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z              = block_dim_y;
-  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
-
-  using type = int;
+  using params          = algo_mode_yz_params_t<TestType, int>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
+  const auto initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, params::tile_size))));
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, min_init_value_op_t<type, mode>{initial_value}, valid_items);
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+    d_in, d_out, min_init_value_op_t<type, params::mode>{initial_value}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
-    mode,
+    params::mode,
     h_out,
     [](type l, type r) {
       return std::min(l, r);
@@ -582,43 +550,36 @@ C2H_TEST("Partial block custom op scan with initial value returns valid block ag
          modes,
          block_dim_yz)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 64;
-  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z              = block_dim_y;
-  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
-
-  using type = int;
+  using params          = algo_mode_yz_params_t<TestType, int>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in, 0, 1);
 
-  const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, tile_size))));
+  const auto initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, params::tile_size))));
 
-  const int target_thread_id = GENERATE_COPY(take(2, random(0, threads_in_block - 1)));
-  CAPTURE(valid_items, initial_value, target_thread_id, tile_size, d_in);
+  const int target_thread_id = GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
+  CAPTURE(valid_items, initial_value, target_thread_id, params::tile_size, d_in);
 
   c2h::device_vector<type> d_block_aggregate(1);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
     d_in,
     d_out,
-    min_init_value_aggregate_op_t<type, mode>{
+    min_init_value_aggregate_op_t<type, params::mode>{
       target_thread_id, initial_value, thrust::raw_pointer_cast(d_block_aggregate.data())},
     valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   type h_block_aggregate       = host_scan(
-    mode,
+    params::mode,
     h_out,
     [](type l, type r) {
       return std::min(l, r);
@@ -635,34 +596,27 @@ C2H_TEST("Partial block custom op scan with initial value returns valid block ag
 
 C2H_TEST("Partial block scan supports prefix op and custom scan op", "[scan][block]", algorithm, modes, block_dim_yz)
 {
-  constexpr int items_per_thread         = 3;
-  constexpr int block_dim_x              = 64;
-  constexpr int block_dim_y              = c2h::get<2, TestType>::value;
-  constexpr int block_dim_z              = block_dim_y;
-  constexpr int threads_in_block         = block_dim_x * block_dim_y * block_dim_z;
-  constexpr int tile_size                = items_per_thread * threads_in_block;
-  constexpr cub::BlockScanAlgorithm algo = c2h::get<0, TestType>::value;
-  constexpr scan_mode mode               = c2h::get<1, TestType>::value;
+  using params          = algo_mode_yz_params_t<TestType, int>;
+  using type            = typename params::type;
+  using valid_items_gen = valid_items_generators_t<params>;
 
-  using type = int;
-
-  const type prefix = GENERATE_COPY(take(2, random(0, tile_size)));
+  const type prefix = GENERATE_COPY(take(2, random(0, params::tile_size)));
 
   const int valid_items = GENERATE_COPY(
-    valid_items_rand_below(),
-    valid_items_rand_inside(tile_size),
-    valid_items_rand_above(tile_size),
-    valid_items_fixed_vals<type, tile_size>(algo, items_per_thread));
-  c2h::device_vector<type> d_out(tile_size);
-  c2h::device_vector<type> d_in(tile_size);
+    valid_items_gen::rand_below(),
+    valid_items_gen::rand_inside(),
+    valid_items_gen::rand_above(),
+    valid_items_gen::fixed_vals());
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(C2H_SEED(10), d_in);
 
-  block_scan<algo, items_per_thread, block_dim_x, block_dim_y, block_dim_z>(
-    d_in, d_out, min_prefix_op_t<type, mode>{prefix}, valid_items);
+  block_scan<params::algo, params::items_per_thread, params::block_dim_x, params::block_dim_y, params::block_dim_z>(
+    d_in, d_out, min_prefix_op_t<type, params::mode>{prefix}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
-    mode,
+    params::mode,
     h_out,
     [](type a, type b) {
       return std::min(a, b);

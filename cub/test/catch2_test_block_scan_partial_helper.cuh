@@ -147,6 +147,50 @@ T host_scan(scan_mode mode, c2h::host_vector<T>& result, ScanOpT scan_op, int va
   return block_accumulator;
 }
 
+template <typename Params>
+struct valid_items_generators_t
+{
+  using int_gen_t = Catch::Generators::GeneratorWrapper<int>;
+
+  [[nodiscard]] static int_gen_t fixed_vals() noexcept
+  {
+    static constexpr int items_per_warp = cub::detail::warp_threads * Params::items_per_thread;
+    static constexpr int items_per_raking_segment =
+      cub::BlockRakingLayout<typename Params::type, Params::tile_size>::SEGMENT_LENGTH;
+    static constexpr int items_per_segment =
+      Params::algo == cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS ? items_per_warp : items_per_raking_segment;
+
+    using namespace Catch::Generators;
+    return values(
+      {-1,
+       0,
+       1,
+       items_per_segment - 1,
+       items_per_segment,
+       items_per_segment + 1,
+       Params::tile_size,
+       Params::tile_size + 1});
+  }
+
+  [[nodiscard]] static int_gen_t rand_below() noexcept
+  {
+    using namespace Catch::Generators;
+    return take(1, random(cuda::std::numeric_limits<int>::min(), -2));
+  }
+
+  [[nodiscard]] static int_gen_t rand_inside() noexcept
+  {
+    using namespace Catch::Generators;
+    return take(1, random(2, cuda::std::max(Params::tile_size - 1, 2)));
+  }
+
+  [[nodiscard]] static int_gen_t rand_above() noexcept
+  {
+    using namespace Catch::Generators;
+    return take(1, random(Params::tile_size + 2, cuda::std::numeric_limits<int>::max()));
+  }
+};
+
 template <class TestType>
 struct params_t
 {
