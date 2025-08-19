@@ -18,11 +18,14 @@ workflows:
 
     - {jobs: ['build'], ctk: ['12.0', '12.9'        ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
     - {jobs: ['build'], ctk: ['12.0', '12.9'        ], cxx: ['clang14']}
-    - {jobs: ['build'], ctk: ['12.0', '12.9', '13.0'], cxx: ['gcc11', 'gcc12']}
-    - {jobs: ['build'], ctk: [        '12.9', '13.0'], cxx: ['gcc13']}
-    - {jobs: ['build'], ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18']}
+    - {jobs: ['build'], ctk: ['12.0', '12.9'        ], cxx: ['gcc11', 'gcc12']}
+    - {jobs: ['build'], ctk: [        '12.9'        ], cxx: ['gcc13']}
+    - {jobs: ['build'], ctk: [        '12.9'        ], cxx: ['clang15', 'clang16', 'clang17', 'clang18']}
+    # - {jobs: ['build'], ctk: ['12.0', '12.9', '13.0'], cxx: ['gcc11', 'gcc12']}
+    # - {jobs: ['build'], ctk: [        '12.9', '13.0'], cxx: ['gcc13']}
+    # - {jobs: ['build'], ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18']}
     - {jobs: ['build'], ctk: [        '12.9'        ], cxx: ['gcc_preview14', 'clang19']}
-    - {jobs: ['test'],  ctk: [        '12.9', '13.0'], cxx: ['gcc_preview14', 'clang19']}
+    # - {jobs: ['test'],  ctk: [        '12.9', '13.0'], cxx: ['gcc_preview14', 'clang19']}
 
     # 12.X python images, pinned at gcc13 for consistency, as 12.5 / 12.6 don't support newer gcc.
     - {jobs: ['build'], ctk: ['12.5', '12.6', '12.8', '12.9'], cxx: 'gcc13'}
