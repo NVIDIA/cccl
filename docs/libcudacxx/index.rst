@@ -10,7 +10,6 @@ libcu++
    Overview <self>
    setup
    releases
-   contributing
    standard_api
    extended_api
    ptx_api
