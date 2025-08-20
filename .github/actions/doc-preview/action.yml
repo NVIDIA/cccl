@@ -13,13 +13,34 @@ inputs:
     description: "PR number for the preview"
     required: true
     type: string
+  github-token:
+    description: "GitHub token for authentication"
+    required: true
+    type: string
 
 runs:
   using: composite
   steps:
+    - name: Debug deployment before action
+      shell: bash
+      run: |
+        echo "=== Pre-deployment debugging ==="
+        echo "Source folder: ${{ inputs.source-folder }}"
+        echo "Target folder: docs/pr-preview/pr-${{ inputs.pr-number }}/"
+        echo "Clean mode: ${{ github.ref_name == 'main' }}"
+        echo "Files in source folder:"
+        ls -la ${{ inputs.source-folder }}/ | head -10
+        if [ -d "${{ inputs.source-folder }}/_static" ]; then
+          echo "✅ _static exists in source"
+          ls -la ${{ inputs.source-folder }}/_static/ | head -3
+        else
+          echo "❌ _static missing from source"
+        fi
+
     - name: Deploy or clean up doc preview
       uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8  # v4.7.3
       with:
+        github-token: ${{ inputs.github-token }}
         folder: ${{ inputs.source-folder }}
         target-folder: docs/pr-preview/pr-${{ inputs.pr-number }}/
         clean: ${{ github.ref_name == 'main' }}

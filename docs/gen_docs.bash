@@ -4,6 +4,7 @@
 #
 # Usage:
 #   ./gen_docs.bash           - Build documentation
+#   ./gen_docs.bash fast      - Build documentation (skip Doxygen for faster iteration)
 #   ./gen_docs.bash clean     - Clean build directory
 #   ./gen_docs.bash clean --all - Clean build directory and Doxygen build
 #
@@ -46,7 +47,7 @@ rm -rf img
 mkdir -p img
 
 # Pull cub images
-if [ ! -d cubimg ]; then
+if [[ "$1" != "fast" ]] && [ ! -d cubimg ]; then
     git clone -b gh-pages https://github.com/NVlabs/cub.git cubimg
 fi
 
@@ -57,15 +58,17 @@ fi
 if [ ! -n "$(find img -name '*.png')" ]; then
     wget -q https://docs.nvidia.com/cuda/_static/Logo_and_CUDA.png -O img/logo.png
 
-    # Parse files and collects unique names ending with .png
-    imgs=( $(grep -R -o -h '[[:alpha:][:digit:]_]*.png' ../cub/cub | uniq) )
-    imgs+=( "cub_overview.png" "nested_composition.png" "tile.png" "blocked.png" "striped.png" )
+    if [[ "$1" != "fast" ]]; then
+        # Parse files and collects unique names ending with .png
+        imgs=( $(grep -R -o -h '[[:alpha:][:digit:]_]*.png' ../cub/cub | uniq) )
+        imgs+=( "cub_overview.png" "nested_composition.png" "tile.png" "blocked.png" "striped.png" )
 
-    for img in "${imgs[@]}"
-    do
-        echo ${img}
-        cp cubimg/${img} img/${img}
-    done
+        for img in "${imgs[@]}"
+        do
+            echo ${img}
+            cp cubimg/${img} img/${img}
+        done
+    fi
 fi
 
 # Function to build Doxygen 1.9.6
@@ -168,7 +171,9 @@ if ! python -c "import sphinx" 2>/dev/null; then
 fi
 
 # Generate Doxygen XML in parallel (if doxygen is available)
-if which ${DOXYGEN} > /dev/null 2>&1; then
+if [[ "$1" == "fast" ]]; then
+    echo "⚡ FAST BUILD: Skipping Doxygen"
+elif which ${DOXYGEN} > /dev/null 2>&1; then
     echo "Generating Doxygen XML..."
     mkdir -p ${BUILDDIR}/doxygen/cub ${BUILDDIR}/doxygen/thrust ${BUILDDIR}/doxygen/cudax ${BUILDDIR}/doxygen/libcudacxx
 
