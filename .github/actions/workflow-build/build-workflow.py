@@ -437,7 +437,7 @@ def generate_dispatch_job_runner(matrix_job, job_type):
             if ("clang" not in matrix_job["cudacxx"]) and (
                 "msvc" not in matrix_job["cxx"]
             ):
-                return f"{runner_os}-{cpu}-cpu4"
+                return f"{runner_os}-{cpu}-cpu8"
         return f"{runner_os}-{cpu}-cpu16"
 
     gpu = get_gpu(matrix_job["gpu"])
