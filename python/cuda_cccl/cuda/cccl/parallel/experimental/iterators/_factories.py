@@ -184,7 +184,7 @@ def ZipIterator(*iterators):
         The code snippet below demonstrates the usage of a ``ZipIterator``
         combining two device arrays:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/iterator/zip_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/zip_iterator.py
             :language: python
             :pyobject: zip_iterator_example
 

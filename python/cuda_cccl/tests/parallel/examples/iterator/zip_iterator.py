@@ -12,7 +12,45 @@ import numpy as np
 import cuda.cccl.parallel.experimental as parallel
 
 
-def zip_iterator_example():
+def zip_iterator_elementwise_sum_example():
+    """Demonstrate elementwise sum with zip iterator combining two arrays."""
+
+    # Create input arrays
+    d_input1 = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_input2 = cp.array([10, 20, 30, 40, 50], dtype=np.int32)
+
+    # Create zip iterator that pairs elements from both arrays
+    zip_it = parallel.ZipIterator(d_input1, d_input2)
+
+    # Create output array to store the elementwise sums
+    num_items = len(d_input1)
+    d_output = cp.empty(num_items, dtype=np.int32)
+
+    # Define the transform operation that extracts and sums the paired values
+    def sum_paired_values(pair):
+        """Extract values from the zip iterator pair and sum them."""
+        # The zip iterator provides tuples, so we access elements by index
+        return pair[0] + pair[1]
+
+    # Apply the unary transform to perform elementwise sum
+    parallel.unary_transform(zip_it, d_output, sum_paired_values, num_items)
+
+    # Calculate expected results
+    expected = d_input1.get() + d_input2.get()  # [11, 22, 33, 44, 55]
+    result = d_output.get()
+
+    # Verify results
+    np.testing.assert_allclose(result, expected)
+
+    print(f"Input array 1: {d_input1.get()}")
+    print(f"Input array 2: {d_input2.get()}")
+    print(f"Elementwise sum result: {result}")
+    print(f"Expected result: {expected}")
+
+    return result
+
+
+def zip_iterator_reduction_example():
     """Demonstrate reduction with zip iterator combining two arrays."""
 
     @parallel.gpu_struct
@@ -53,7 +91,7 @@ def zip_iterator_example():
     return result
 
 
-def zip_iterator_counting_example():
+def zip_iterator_counting_reduction_example():
     """Demonstrate zip iterator with counting iterator and array."""
 
     @parallel.gpu_struct
@@ -95,6 +133,7 @@ def zip_iterator_counting_example():
 
 if __name__ == "__main__":
     print("Running zip iterator examples...")
-    zip_iterator_example()
-    zip_iterator_counting_example()
+    zip_iterator_elementwise_sum_example()
+    zip_iterator_reduction_example()
+    zip_iterator_counting_reduction_example()
     print("Zip iterator examples completed successfully!")
