@@ -1,5 +1,5 @@
-CUB Modules
-==================================================
+CUB Primitives Overview
+=======================
 
 .. toctree::
    :hidden:
@@ -12,9 +12,7 @@ CUB Modules
 
 
 CUB provides state-of-the-art, reusable software components for every layer
-of the CUDA programming model:
-
-* **Parallel primitives**
+of the CUDA programming model. It offers the following parallel primitives:
 
   * :ref:`Thread <thread-module>` primitives
 
