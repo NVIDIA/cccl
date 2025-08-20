@@ -9,11 +9,11 @@ libcu++
 
    Overview <self>
    setup
-   standard_api
-   extended_api
-   ptx
    releases
    contributing
+   standard_api
+   extended_api
+   ptx_api
    api/index
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++

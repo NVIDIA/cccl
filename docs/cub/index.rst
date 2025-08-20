@@ -13,7 +13,7 @@ CUB
    tuning
    developer_overview
    releases
-   api
+   API documentation <api>
    api/index
 
 What is CUB?
