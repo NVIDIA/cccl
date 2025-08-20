@@ -150,8 +150,8 @@ struct guarded_inequality_op
       return !op(a, b); // In bounds
     }
 
-    // Return true if first out-of-bounds item, false otherwise
-    return (idx >= num_remaining);
+    // Flag out-of-bounds items as selected (as they are discounted for in the agent implementation)
+    return true;
   }
 };
 
@@ -1070,7 +1070,15 @@ struct AgentSelectIf
     // Blocks are launched in increasing order, so just assign one tile per block
     // TODO (elstehle): replacing this term with just `blockIdx.x` degrades perf for partition. Once we get to re-tune
     // the algorithm, we want to replace this term with `blockIdx.x`
-    int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx{};
+    if constexpr (SELECT_METHOD != USE_DISCONTINUITY)
+    {
+      tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    }
+    else
+    {
+      tile_idx = blockIdx.x; // Current tile index
+    }
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
 
     if (tile_idx < num_tiles - 1)
