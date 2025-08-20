@@ -109,7 +109,7 @@ __host__ __device__ constexpr bool test(Bijection fun)
                 && !cuda::std::is_same_v<Bijection, cuda::random_bijection<int, cuda::__feistel_bijection>>)
   { // shuffle_iterator(index, RNG, index = 0)
     {
-      cuda::shuffle_iterator<int, Bijection> iter{num_elements, fake_rng{}};
+      cuda::shuffle_iterator<int, Bijection> iter{static_cast<int>(num_elements), fake_rng{}};
       using value_type = cuda::std::iter_value_t<decltype(iter)>;
       // in the range of  [0, num_elements)
       assert(*iter >= 0);
@@ -118,7 +118,7 @@ __host__ __device__ constexpr bool test(Bijection fun)
     }
 
     {
-      cuda::shuffle_iterator<int, Bijection> iter{num_elements, fake_rng{}, 3};
+      cuda::shuffle_iterator<int, Bijection> iter{static_cast<int>(num_elements), fake_rng{}, 3};
       using value_type = cuda::std::iter_value_t<decltype(iter)>;
       // in the range of  [0, num_elements)
       assert(*iter >= 0);
