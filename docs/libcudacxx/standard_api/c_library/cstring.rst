@@ -15,7 +15,7 @@ See `std::memset <https://en.cppreference.com/w/cpp/string/byte/memset.html>`_ f
 
 **Preconditions**
 
-Since CCCL 3.2.x / CUDA Toolkit 13.2:
+The following preconditions are only enabled with the CUDA Toolkit 13.1 or later:
 
     - ``dest`` is a valid pointer
     - ``dest + count`` is a valid pointer
@@ -34,7 +34,7 @@ See `std::memcpy <https://en.cppreference.com/w/cpp/string/byte/memcpy.html>`_  
 
 **Preconditions**
 
-Since CCCL 3.2.x / CUDA Toolkit 13.2:
+The following preconditions are only enabled with the CUDA Toolkit 13.1 or later:
 
     - ``src`` is a valid pointer
     - ``src + count`` is a valid pointer
