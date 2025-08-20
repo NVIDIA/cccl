@@ -76,15 +76,14 @@ struct scan_build
   {
     // Check compute capability (existing logic)
     bool cc_allows_check = (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
-    
+
     // Check CTK version for nvrtc LDL/STL bug (resolves nvbug 5243118)
 #if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
-    bool ctk_allows_check = (__CUDACC_VER_MAJOR__ > 13) || 
-                           (__CUDACC_VER_MAJOR__ == 13 && __CUDACC_VER_MINOR__ >= 1);
+    bool ctk_allows_check = (__CUDACC_VER_MAJOR__ > 13) || (__CUDACC_VER_MAJOR__ == 13 && __CUDACC_VER_MINOR__ >= 1);
 #else
     bool ctk_allows_check = false; // Conservative: disable if version unknown
 #endif
-    
+
     return cc_allows_check && ctk_allows_check;
   }
 };
