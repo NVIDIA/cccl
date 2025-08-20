@@ -542,18 +542,18 @@ struct AgentSelectIf
       __syncthreads();
 
       if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
-        {
-          // Use custom flag operator to additionally flag the first out-of-bounds item
-          guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
 
-          // Set head selection_flags.  First tile sets the first flag for the first item
-          BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
-        }
-        else
-        {
-          // Set head selection_flags.  First tile sets the first flag for the first item
-          BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
-            .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op});
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
+      }
+      else
+      {
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op});
       }
     }
     else
@@ -567,19 +567,19 @@ struct AgentSelectIf
       __syncthreads();
 
       if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
-        {
-          // Use custom flag operator to additionally flag the first out-of-bounds item
-          guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
 
-          // Set head selection_flags.  First tile sets the first flag for the first item
-          BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
-            .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
-        }
-        else
-        {
-          // Set head selection_flags.  First tile sets the first flag for the first item
-          BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
-            .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
+      }
+      else
+      {
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
       }
     }
 
@@ -879,9 +879,9 @@ struct AgentSelectIf
 
     // Load items
     if (IS_LAST_TILE)
-      {
-        BlockLoadT(temp_storage.load_items)
-          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+    {
+      BlockLoadT(temp_storage.load_items)
+        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {
@@ -959,9 +959,9 @@ struct AgentSelectIf
 
     // Load items
     if (IS_LAST_TILE)
-      {
-        BlockLoadT(temp_storage.load_items)
-          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+    {
+      BlockLoadT(temp_storage.load_items)
+        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
     }
     else
     {
