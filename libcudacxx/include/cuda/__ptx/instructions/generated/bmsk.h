@@ -13,25 +13,17 @@ __device__ static inline uint32_t bmsk_clamp(
 #if __cccl_ptx_isa >= 760
 extern "C" _CCCL_DEVICE void __cuda_ptx_bmsk_clamp_is_not_supported_before_SM_70__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bmsk_clamp(
-  ::cuda::std::uint32_t __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline ::cuda::std::uint32_t bmsk_clamp(::cuda::std::uint32_t __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-    ::cuda::std::uint32_t __dest;
-    asm (
-      "bmsk.clamp.b32 %0, %1, %2;"
-      : "=r"(__dest)
-      : "r"(__a_reg),
-        "r"(__b_reg)
-      :
-    );
-    return __dest;
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_bmsk_clamp_is_not_supported_before_SM_70__();
-    return 0;
-  #endif
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  ::cuda::std::uint32_t __dest;
+  asm("bmsk.clamp.b32 %0, %1, %2;" : "=r"(__dest) : "r"(__a_reg), "r"(__b_reg) :);
+  return __dest;
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_bmsk_clamp_is_not_supported_before_SM_70__();
+  return 0;
+#  endif
 }
 #endif // __cccl_ptx_isa >= 760
 
@@ -45,25 +37,17 @@ __device__ static inline uint32_t bmsk_wrap(
 #if __cccl_ptx_isa >= 760
 extern "C" _CCCL_DEVICE void __cuda_ptx_bmsk_wrap_is_not_supported_before_SM_70__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t bmsk_wrap(
-  ::cuda::std::uint32_t __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline ::cuda::std::uint32_t bmsk_wrap(::cuda::std::uint32_t __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-    ::cuda::std::uint32_t __dest;
-    asm (
-      "bmsk.wrap.b32 %0, %1, %2;"
-      : "=r"(__dest)
-      : "r"(__a_reg),
-        "r"(__b_reg)
-      :
-    );
-    return __dest;
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_bmsk_wrap_is_not_supported_before_SM_70__();
-    return 0;
-  #endif
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+  ::cuda::std::uint32_t __dest;
+  asm("bmsk.wrap.b32 %0, %1, %2;" : "=r"(__dest) : "r"(__a_reg), "r"(__b_reg) :);
+  return __dest;
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_bmsk_wrap_is_not_supported_before_SM_70__();
+  return 0;
+#  endif
 }
 #endif // __cccl_ptx_isa >= 760
 

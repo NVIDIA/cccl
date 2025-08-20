@@ -15,25 +15,19 @@ __device__ static inline void multimem_st(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void multimem_st(
-  sem_weak_t,
-  _B32* __addr,
-  _B32 __val)
+_CCCL_DEVICE static inline void multimem_st(sem_weak_t, _B32* __addr, _B32 __val)
 {
   // __sem == sem_weak (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-    asm (
-      "multimem.st.weak.global.b32 [%0], %1;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  asm("multimem.st.weak.global.b32 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__addr)),
-        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-      : "memory"
-    );
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
-  #endif
+      : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+      : "memory");
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
+#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -51,85 +45,72 @@ __device__ static inline void multimem_st(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_st(
-  sem_t<_Sem> __sem,
-  scope_t<_Scope> __scope,
-  _B32* __addr,
-  _B32 __val)
+_CCCL_DEVICE static inline void multimem_st(sem_t<_Sem> __sem, scope_t<_Scope> __scope, _B32* __addr, _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   static_assert(sizeof(_B32) == 4, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-    if constexpr (__sem == sem_relaxed && __scope == scope_cta) {
-      asm (
-        "multimem.st.relaxed.cta.global.b32 [%0], %1;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
+  {
+    asm("multimem.st.relaxed.cta.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_relaxed && __scope == scope_cluster) {
-      asm (
-        "multimem.st.relaxed.cluster.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
+  {
+    asm("multimem.st.relaxed.cluster.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_relaxed && __scope == scope_gpu) {
-      asm (
-        "multimem.st.relaxed.gpu.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
+  {
+    asm("multimem.st.relaxed.gpu.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_relaxed && __scope == scope_sys) {
-      asm (
-        "multimem.st.relaxed.sys.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
+  {
+    asm("multimem.st.relaxed.sys.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_cta) {
-      asm (
-        "multimem.st.release.cta.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_cta)
+  {
+    asm("multimem.st.release.cta.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_cluster) {
-      asm (
-        "multimem.st.release.cluster.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_cluster)
+  {
+    asm("multimem.st.release.cluster.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_gpu) {
-      asm (
-        "multimem.st.release.gpu.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_gpu)
+  {
+    asm("multimem.st.release.gpu.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_sys) {
-      asm (
-        "multimem.st.release.sys.global.b32 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_sys)
+  {
+    asm("multimem.st.release.sys.global.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
-        : "memory"
-      );
-    }
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
-  #endif
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
+        : "memory");
+  }
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
+#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -145,25 +126,19 @@ __device__ static inline void multimem_st(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void multimem_st(
-  sem_weak_t,
-  _B64* __addr,
-  _B64 __val)
+_CCCL_DEVICE static inline void multimem_st(sem_weak_t, _B64* __addr, _B64 __val)
 {
   // __sem == sem_weak (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-    asm (
-      "multimem.st.weak.global.b64 [%0], %1;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  asm("multimem.st.weak.global.b64 [%0], %1;"
       :
-      : "l"(__as_ptr_gmem(__addr)),
-        "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-      : "memory"
-    );
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
-  #endif
+      : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+      : "memory");
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
+#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -181,85 +156,72 @@ __device__ static inline void multimem_st(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_st(
-  sem_t<_Sem> __sem,
-  scope_t<_Scope> __scope,
-  _B64* __addr,
-  _B64 __val)
+_CCCL_DEVICE static inline void multimem_st(sem_t<_Sem> __sem, scope_t<_Scope> __scope, _B64* __addr, _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   static_assert(sizeof(_B64) == 8, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-    if constexpr (__sem == sem_relaxed && __scope == scope_cta) {
-      asm (
-        "multimem.st.relaxed.cta.global.b64 [%0], %1;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  if constexpr (__sem == sem_relaxed && __scope == scope_cta)
+  {
+    asm("multimem.st.relaxed.cta.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_relaxed && __scope == scope_cluster) {
-      asm (
-        "multimem.st.relaxed.cluster.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
+  {
+    asm("multimem.st.relaxed.cluster.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_relaxed && __scope == scope_gpu) {
-      asm (
-        "multimem.st.relaxed.gpu.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
+  {
+    asm("multimem.st.relaxed.gpu.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_relaxed && __scope == scope_sys) {
-      asm (
-        "multimem.st.relaxed.sys.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
+  {
+    asm("multimem.st.relaxed.sys.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_cta) {
-      asm (
-        "multimem.st.release.cta.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_cta)
+  {
+    asm("multimem.st.release.cta.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_cluster) {
-      asm (
-        "multimem.st.release.cluster.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_cluster)
+  {
+    asm("multimem.st.release.cluster.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_gpu) {
-      asm (
-        "multimem.st.release.gpu.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_gpu)
+  {
+    asm("multimem.st.release.gpu.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    } else if constexpr (__sem == sem_release && __scope == scope_sys) {
-      asm (
-        "multimem.st.release.sys.global.b64 [%0], %1;"
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+  else if constexpr (__sem == sem_release && __scope == scope_sys)
+  {
+    asm("multimem.st.release.sys.global.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)),
-          "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
-        : "memory"
-      );
-    }
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
-  #endif
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
+        : "memory");
+  }
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_multimem_st_is_not_supported_before_SM_90__();
+#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 

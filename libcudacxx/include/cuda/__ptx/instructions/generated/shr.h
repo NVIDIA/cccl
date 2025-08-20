@@ -13,28 +13,23 @@ __device__ static inline B16 shr(
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 shr(
-  _B16 __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline _B16 shr(_B16 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B16) == 2, "");
   static_assert(sizeof(_B16) == 2, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-    ::cuda::std::uint16_t __dest;
-    asm (
-      "shr.b16 %0, %1, %2;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  ::cuda::std::uint16_t __dest;
+  asm("shr.b16 %0, %1, %2;"
       : "=h"(__dest)
-      : "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__a_reg)),
-        "r"(__b_reg)
-      :
-    );
-    return *reinterpret_cast<_B16*>(&__dest);
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_shr_is_not_supported_before_SM_50__();
-    ::cuda::std::uint16_t __err_out_var = 0;
-    return *reinterpret_cast<_B16*>(&__err_out_var);
-  #endif
+      : "h"(/*as_b16*/ *reinterpret_cast<const ::cuda::std::int16_t*>(&__a_reg)), "r"(__b_reg)
+      :);
+  return *reinterpret_cast<_B16*>(&__dest);
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_shr_is_not_supported_before_SM_50__();
+  ::cuda::std::uint16_t __err_out_var = 0;
+  return *reinterpret_cast<_B16*>(&__err_out_var);
+#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -48,28 +43,23 @@ __device__ static inline B32 shr(
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 shr(
-  _B32 __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline _B32 shr(_B32 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-    ::cuda::std::uint32_t __dest;
-    asm (
-      "shr.b32 %0, %1, %2;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  ::cuda::std::uint32_t __dest;
+  asm("shr.b32 %0, %1, %2;"
       : "=r"(__dest)
-      : "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__a_reg)),
-        "r"(__b_reg)
-      :
-    );
-    return *reinterpret_cast<_B32*>(&__dest);
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_shr_is_not_supported_before_SM_50__();
-    ::cuda::std::uint32_t __err_out_var = 0;
-    return *reinterpret_cast<_B32*>(&__err_out_var);
-  #endif
+      : "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__a_reg)), "r"(__b_reg)
+      :);
+  return *reinterpret_cast<_B32*>(&__dest);
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_shr_is_not_supported_before_SM_50__();
+  ::cuda::std::uint32_t __err_out_var = 0;
+  return *reinterpret_cast<_B32*>(&__err_out_var);
+#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -83,28 +73,23 @@ __device__ static inline B64 shr(
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 shr(
-  _B64 __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline _B64 shr(_B64 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B64) == 8, "");
   static_assert(sizeof(_B64) == 8, "");
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-    ::cuda::std::uint64_t __dest;
-    asm (
-      "shr.b64 %0, %1, %2;"
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  ::cuda::std::uint64_t __dest;
+  asm("shr.b64 %0, %1, %2;"
       : "=l"(__dest)
-      : "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__a_reg)),
-        "r"(__b_reg)
-      :
-    );
-    return *reinterpret_cast<_B64*>(&__dest);
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_shr_is_not_supported_before_SM_50__();
-    ::cuda::std::uint64_t __err_out_var = 0;
-    return *reinterpret_cast<_B64*>(&__err_out_var);
-  #endif
+      : "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__a_reg)), "r"(__b_reg)
+      :);
+  return *reinterpret_cast<_B64*>(&__dest);
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_shr_is_not_supported_before_SM_50__();
+  ::cuda::std::uint64_t __err_out_var = 0;
+  return *reinterpret_cast<_B64*>(&__err_out_var);
+#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -118,25 +103,17 @@ __device__ static inline int16_t shr(
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int16_t shr(
-  ::cuda::std::int16_t __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline ::cuda::std::int16_t shr(::cuda::std::int16_t __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-    ::cuda::std::int16_t __dest;
-    asm (
-      "shr.s16 %0, %1, %2;"
-      : "=h"(__dest)
-      : "h"(__a_reg),
-        "r"(__b_reg)
-      :
-    );
-    return __dest;
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_shr_is_not_supported_before_SM_50__();
-    return 0;
-  #endif
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  ::cuda::std::int16_t __dest;
+  asm("shr.s16 %0, %1, %2;" : "=h"(__dest) : "h"(__a_reg), "r"(__b_reg) :);
+  return __dest;
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_shr_is_not_supported_before_SM_50__();
+  return 0;
+#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -150,25 +127,17 @@ __device__ static inline int32_t shr(
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t shr(
-  ::cuda::std::int32_t __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline ::cuda::std::int32_t shr(::cuda::std::int32_t __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-    ::cuda::std::int32_t __dest;
-    asm (
-      "shr.s32 %0, %1, %2;"
-      : "=r"(__dest)
-      : "r"(__a_reg),
-        "r"(__b_reg)
-      :
-    );
-    return __dest;
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_shr_is_not_supported_before_SM_50__();
-    return 0;
-  #endif
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  ::cuda::std::int32_t __dest;
+  asm("shr.s32 %0, %1, %2;" : "=r"(__dest) : "r"(__a_reg), "r"(__b_reg) :);
+  return __dest;
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_shr_is_not_supported_before_SM_50__();
+  return 0;
+#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 
@@ -182,25 +151,17 @@ __device__ static inline int64_t shr(
 #if __cccl_ptx_isa >= 100
 extern "C" _CCCL_DEVICE void __cuda_ptx_shr_is_not_supported_before_SM_50__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t shr(
-  ::cuda::std::int64_t __a_reg,
-  ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE static inline ::cuda::std::int64_t shr(::cuda::std::int64_t __a_reg, ::cuda::std::uint32_t __b_reg)
 {
-  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-    ::cuda::std::int64_t __dest;
-    asm (
-      "shr.s64 %0, %1, %2;"
-      : "=l"(__dest)
-      : "l"(__a_reg),
-        "r"(__b_reg)
-      :
-    );
-    return __dest;
-  #else
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_shr_is_not_supported_before_SM_50__();
-    return 0;
-  #endif
+#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+  ::cuda::std::int64_t __dest;
+  asm("shr.s64 %0, %1, %2;" : "=l"(__dest) : "l"(__a_reg), "r"(__b_reg) :);
+  return __dest;
+#  else
+  // Unsupported architectures will have a linker error with a semi-decent error message
+  __cuda_ptx_shr_is_not_supported_before_SM_50__();
+  return 0;
+#  endif
 }
 #endif // __cccl_ptx_isa >= 100
 

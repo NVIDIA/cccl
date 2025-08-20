@@ -1,5 +1,5 @@
 // This file was automatically generated. Do not edit.
-            
+
 // We use a special strategy to force the generation of the PTX. This is mainly
 // a fight against dead-code-elimination in the NVVM layer.
 //
@@ -14,39 +14,43 @@
 // Because `fn_ptr` is possibly visible outside this translation unit, the
 // compiler must compile all the functions which are stored.
 
-__global__ void test_barrier_cluster(void ** fn_ptr) {
+__global__ void test_barrier_cluster(void** fn_ptr)
+{
 #if __cccl_ptx_isa >= 780
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // barrier.cluster.arrive;
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::barrier_cluster_arrive));
-  ));
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                   // barrier.cluster.arrive;
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::barrier_cluster_arrive));));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 780
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // barrier.cluster.wait;
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::barrier_cluster_wait));
-  ));
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                   // barrier.cluster.wait;
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::barrier_cluster_wait));));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // barrier.cluster.arrive.release;
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_release_t)>(cuda::ptx::barrier_cluster_arrive));
-  ));
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                   // barrier.cluster.arrive.release;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<void (*)(cuda::ptx::sem_release_t)>(cuda::ptx::barrier_cluster_arrive));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // barrier.cluster.arrive.relaxed;
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_relaxed_t)>(cuda::ptx::barrier_cluster_arrive));
-  ));
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                   // barrier.cluster.arrive.relaxed;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<void (*)(cuda::ptx::sem_relaxed_t)>(cuda::ptx::barrier_cluster_arrive));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // barrier.cluster.wait.acquire;
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_acquire_t)>(cuda::ptx::barrier_cluster_wait));
-  ));
+  NV_IF_TARGET(NV_PROVIDES_SM_90,
+               (
+                   // barrier.cluster.wait.acquire;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<void (*)(cuda::ptx::sem_acquire_t)>(cuda::ptx::barrier_cluster_wait));));
 #endif // __cccl_ptx_isa >= 800
 }

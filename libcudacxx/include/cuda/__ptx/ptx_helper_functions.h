@@ -31,17 +31,17 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-#if defined(__CUDACC__) || defined(_NVHPC_CUDA) || defined(__CUDACC_RTC__)
-#  define _CUDA_PTX_CUDACC_MAJOR() __CUDACC_VER_MAJOR__
-#elif defined(__CUDA__) && defined(__clang__)
-#  define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
-#endif // ^^^ has cuda compiler ^^^
+#  if defined(__CUDACC__) || defined(_NVHPC_CUDA) || defined(__CUDACC_RTC__)
+#    define _CUDA_PTX_CUDACC_MAJOR() __CUDACC_VER_MAJOR__
+#  elif defined(__CUDA__) && defined(__clang__)
+#    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
+#  endif // ^^^ has cuda compiler ^^^
 
-#if _CUDA_PTX_CUDACC_MAJOR() <= 12
-using longlong4_32a = longlong4;
+#  if _CUDA_PTX_CUDACC_MAJOR() <= 12
+using longlong4_32a  = longlong4;
 using ulonglong4_32a = ulonglong4;
-using double4_32a = double4;
-#endif // _CUDA_PTX_CUDACC_MAJOR() <= 12
+using double4_32a    = double4;
+#  endif // _CUDA_PTX_CUDACC_MAJOR() <= 12
 
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 

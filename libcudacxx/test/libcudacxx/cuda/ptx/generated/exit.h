@@ -1,5 +1,5 @@
 // This file was automatically generated. Do not edit.
-            
+
 // We use a special strategy to force the generation of the PTX. This is mainly
 // a fight against dead-code-elimination in the NVVM layer.
 //
@@ -14,11 +14,12 @@
 // Because `fn_ptr` is possibly visible outside this translation unit, the
 // compiler must compile all the functions which are stored.
 
-__global__ void test_exit(void ** fn_ptr) {
+__global__ void test_exit(void** fn_ptr)
+{
 #if __cccl_ptx_isa >= 100
-  NV_IF_TARGET(NV_PROVIDES_SM_50, (
-    // exit;
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::exit));
-  ));
+  NV_IF_TARGET(NV_PROVIDES_SM_50,
+               (
+                   // exit;
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::exit));));
 #endif // __cccl_ptx_isa >= 100
 }
