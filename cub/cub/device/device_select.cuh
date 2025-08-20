@@ -43,11 +43,38 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+#include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/type_traits>
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+
+// TODO(gevtushenko): move cudax `device_memory_resource` to `cuda::__device_memory_resource` and use it here
+struct device_memory_resource
+{
+  void* allocate(::cuda::stream_ref stream, size_t bytes)
+  {
+    void* ptr{nullptr};
+    _CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
+    return ptr;
+  }
+
+  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t /* bytes */)
+  {
+    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
+  }
+};
+
+} // namespace detail
 
 //! @rst
 //! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
@@ -800,6 +827,340 @@ struct DeviceSelect
         EqualityOp(),
         num_items,
         stream);
+  }
+
+  //! @rst
+  //! Uses the ``select_op`` functor to selectively compact items in ``d_data``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! - | Copies of the selected items are compacted in ``d_data`` and maintain
+  //!   | their original relative ordering.
+  //! - By default, provides "run-to-run" determinism.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access input iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam SelectOp
+  //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] select_op
+  //!   Unary selection operator
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename IteratorT, 
+            typename NumSelectedIteratorT, 
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  If(IteratorT d_data,
+     NumSelectedIteratorT d_num_selected_out,
+     ::cuda::std::int64_t num_items,
+     SelectOp select_op,
+     EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
+
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Only run_to_run determinism is supported for DeviceSelect
+    static_assert(::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::run_to_run_t>,
+                  "Only run_to_run determinism is supported for DeviceSelect operations");
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr = ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    // Query the required temporary storage size
+    cudaError_t error = If(d_temp_storage, temp_storage_bytes, d_data, d_num_selected_out, num_items, select_op, stream.get());
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    error = If(d_temp_storage, temp_storage_bytes, d_data, d_num_selected_out, num_items, select_op, stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error = CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+    if (error != cudaSuccess)
+    {
+      // Select error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
+  }
+
+  //! @rst
+  //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively copy the
+  //! corresponding items from ``d_in`` into ``d_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
+  //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
+  //! - Copies of the selected items are compacted into ``d_out`` and maintain
+  //!   their original relative ordering.
+  //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
+  //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
+  //! - By default, provides "run-to-run" determinism.
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam FlagIterator
+  //!   **[inferred]** Random-access input iterator type for reading selection flags @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam SelectOp
+  //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[in] d_flags
+  //!   Pointer to the input sequence of selection flags
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output sequence of selected data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!   (i.e., length of `d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] select_op
+  //!   Unary selection operator
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t FlaggedIf(
+    InputIteratorT d_in,
+    FlagIterator d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    SelectOp select_op,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
+
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Only run_to_run determinism is supported for DeviceSelect
+    static_assert(::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::run_to_run_t>,
+                  "Only run_to_run determinism is supported for DeviceSelect operations");
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr = ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    // Query the required temporary storage size
+    cudaError_t error = FlaggedIf(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, select_op, stream.get());
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    error = FlaggedIf(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, select_op, stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error = CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+    if (error != cudaSuccess)
+    {
+      // Select error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
+  }
+
+  //! @rst
+  //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively compact the
+  //! corresponding items in ``d_data``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
+  //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
+  //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
+  //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
+  //!   | ``[d_flags, d_flags + num_items)`` in any other way.
+  //! - By default, provides "run-to-run" determinism.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing selected items @iterator
+  //!
+  //! @tparam FlagIterator
+  //!   **[inferred]** Random-access input iterator type for reading selection flags @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam SelectOp
+  //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[in] d_flags
+  //!   Pointer to the input sequence of selection flags
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] select_op
+  //!   Unary selection operator
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename IteratorT, 
+            typename FlagIterator, 
+            typename NumSelectedIteratorT, 
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t FlaggedIf(
+    IteratorT d_data,
+    FlagIterator d_flags,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    SelectOp select_op,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
+
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Only run_to_run determinism is supported for DeviceSelect
+    static_assert(::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::run_to_run_t>,
+                  "Only run_to_run determinism is supported for DeviceSelect operations");
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr = ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    // Query the required temporary storage size
+    cudaError_t error = FlaggedIf(d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, select_op, stream.get());
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    error = FlaggedIf(d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, select_op, stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    cudaError_t deallocate_error = CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+    if (error != cudaSuccess)
+    {
+      // Select error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
   }
 
   //! @rst
