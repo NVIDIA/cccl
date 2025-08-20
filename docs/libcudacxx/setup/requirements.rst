@@ -27,7 +27,7 @@ section <libcudacxx-extended-api>`, and :ref:`release section <libcudacxx-releas
 to find which features require newer releases.
 
 Releases of libcu++ are tested as part of CCCL against the latest releases of NVHPC
-and the two latest versions of CUDA.
+and the two latest major versions of CUDA.
 
 . It may be possible to use a newer version of libcu++ with an
 older NVHPC or CUDA installation by using a libcu++ release from GitHub,
