@@ -837,6 +837,18 @@ struct DeviceSelect
   //!   | their original relative ordering.
   //! - By default, provides "run-to-run" determinism.
   //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the use of the environment-based API
+  //! for device-wide selection with a custom predicate.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-if-env-determinism
+  //!     :end-before: example-end select-if-env-determinism
+  //!
   //! @endrst
   //!
   //! @tparam IteratorT
@@ -941,6 +953,18 @@ struct DeviceSelect
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
   //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
   //! - By default, provides "run-to-run" determinism.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the use of the environment-based API
+  //! for device-wide flagged selection.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-flaggedif-env-determinism
+  //!     :end-before: example-end select-flaggedif-env-determinism
   //!
   //! @endrst
   //!
@@ -1062,6 +1086,18 @@ struct DeviceSelect
   //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
   //!   | ``[d_flags, d_flags + num_items)`` in any other way.
   //! - By default, provides "run-to-run" determinism.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the use of the environment-based API
+  //! for device-wide in-place flagged selection.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-flaggedif-inplace-env-determinism
+  //!     :end-before: example-end select-flaggedif-inplace-env-determinism
   //!
   //! @endrst
   //!
