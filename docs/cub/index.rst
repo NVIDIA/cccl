@@ -14,7 +14,7 @@ CUB
    developer_overview
    releases
    API documentation <api>
-   api/index
+   API reference <api/index>
 
 What is CUB?
 ==================================================

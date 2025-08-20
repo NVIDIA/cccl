@@ -13,7 +13,7 @@ Thrust
    release_process
    api
    API documentation <api>
-   api/index
+   API reference <api/index>
 
 Thrust is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the
 C++ Standard Library. Thrust's **high-level** interface greatly enhances programmer **productivity** while

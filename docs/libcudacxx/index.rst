@@ -14,7 +14,7 @@ libcu++
    standard_api
    extended_api
    ptx_api
-   api/index
+   API reference <api/index>
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++
 developers easier.
