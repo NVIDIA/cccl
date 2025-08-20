@@ -577,7 +577,7 @@ struct AgentReduceByKey
       }
       else
       {
-        tile_predecessor = (tile_idx == 0) ? keys[0] : d_keys_in[tile_offset - 1];
+        tile_predecessor = (tile_idx == 0) ? keys[0] : static_cast<KeyOutputT>(d_keys_in[tile_offset - 1]);
       }
     }
 
