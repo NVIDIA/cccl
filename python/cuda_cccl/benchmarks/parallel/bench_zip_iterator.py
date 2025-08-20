@@ -1,5 +1,6 @@
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.cccl.parallel.experimental as parallel
 
@@ -84,19 +85,15 @@ def transform_zip_array_iterator(zip_iter1, zip_iter2, size, build_only):
         # We need to extract the values and create a new Pair
         return Pair(a[0] + b[0], a[1] + b[1])
 
-    parallel.binary_transform(zip_iter1, zip_iter2, res, my_transform, size)
+    alg = parallel.make_binary_transform(zip_iter1, zip_iter2, res, my_transform)
 
-    # Return a zip iterator that combines the result with a counting iterator
-    # This creates a zip iterator that pairs the transformed result with indices
-    counting_iter = parallel.CountingIterator(np.int32(0))
-    result_zip_iter = parallel.ZipIterator(res, counting_iter)
+    if not build_only:
+        alg(zip_iter1, zip_iter2, res, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
-    return result_zip_iter
 
-
-def bench_compile_reduce_zip_array(compile_benchmark):
+def benchcompile_reduce_zip_array(compile_benchmark):
     input_array = cp.arange(1000, dtype=cp.int32)
 
     def run():
@@ -127,11 +124,8 @@ def bench_compile_transform_zip_array_iterator(compile_benchmark):
     input_array = cp.arange(1000, dtype=cp.int32)
 
     # Create two zip iterators with consistent Pair structures
-    # First zip iterator: pairs input array values with counting iterator (0,1,2,...)
     counting_iter1 = parallel.CountingIterator(np.int32(0))
     zip_iter1 = parallel.ZipIterator(input_array, counting_iter1)
-
-    # Second zip iterator: pairs input array values (shifted by 1) with counting iterator (1,2,3,...)
     counting_iter2 = parallel.CountingIterator(np.int32(1))
     zip_iter2 = parallel.ZipIterator(input_array, counting_iter2)
 
@@ -168,7 +162,54 @@ def bench_reduce_zip_array_iterator(benchmark):
     benchmark(run)
 
 
-def bench_transform_zip_array_iterator(benchmark):
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_zip_array(bench_fixture, request):
+    input_array = cp.arange(1000, dtype=cp.int32)
+
+    def run():
+        reduce_zip_array(input_array, build_only=(bench_fixture == "compile_benchmark"))
+
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_reduce_into, run)
+    else:
+        fixture(run)
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_zip_iterator(bench_fixture, request):
+    inp = parallel.CountingIterator(np.int32(0))
+
+    def run():
+        reduce_zip_iterator(
+            inp, 1000, build_only=(bench_fixture == "compile_benchmark")
+        )
+
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_reduce_into, run)
+    else:
+        fixture(run)
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_zip_array_iterator(bench_fixture, request):
+    input_array = cp.arange(1000, dtype=cp.int32)
+
+    def run():
+        reduce_zip_array_iterator(
+            input_array, 1000, build_only=(bench_fixture == "compile_benchmark")
+        )
+
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_reduce_into, run)
+    else:
+        fixture(run)
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_transform_zip_array_iterator(bench_fixture, request):
     input_array = cp.arange(1000, dtype=cp.int32)
 
     # Create two zip iterators with consistent Pair structures
@@ -181,6 +222,15 @@ def bench_transform_zip_array_iterator(benchmark):
     zip_iter2 = parallel.ZipIterator(input_array, counting_iter2)
 
     def run():
-        transform_zip_array_iterator(zip_iter1, zip_iter2, 1000, build_only=False)
+        transform_zip_array_iterator(
+            zip_iter1,
+            zip_iter2,
+            1000,
+            build_only=(bench_fixture == "compile_benchmark"),
+        )
 
-    benchmark(run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_binary_transform, run)
+    else:
+        fixture(run)
