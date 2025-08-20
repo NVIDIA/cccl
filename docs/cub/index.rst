@@ -7,6 +7,7 @@ CUB
    :hidden:
    :maxdepth: 3
 
+   Overview <self>
    test_overview
    benchmarking
    tuning

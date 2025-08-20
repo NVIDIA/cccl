@@ -7,6 +7,7 @@ libcu++
    :hidden:
    :maxdepth: 3
 
+   Overview <self>
    setup
    standard_api
    extended_api
