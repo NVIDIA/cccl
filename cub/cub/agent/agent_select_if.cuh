@@ -269,16 +269,6 @@ struct AgentSelectIf
     USE_STENCIL_WITH_OP
   };
 
-  // Only for unique: we previously invoked the equality operator on out-of-bounds items
-  // While fixing that issue there were some performance regressions that we had to work around
-  // To avoid invoking equality operator on unexpected values we are doing on of two things:
-  // (1) for primitive types AND ::cuda::std::equal_to, we are initializing out-of-bounds items
-  // (2) otherwise, we are guarding against invoking the equality operator on out-of-bounds items
-  static constexpr bool initialize_oob_items =
-    ::cuda::std::is_arithmetic_v<InputT>
-    && (::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<>>
-        || ::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<InputT>>);
-
   static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
   static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
   static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
@@ -536,13 +526,22 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_DISCONTINUITY> /*select_method*/)
   {
+    // We previously invoked the equality operator on out-of-bounds items
+    // While fixing that issue there were some performance regressions that we had to work around
+    // To avoid invoking equality operator on unexpected values we are doing on of two things:
+    // (1) for primitive types AND ::cuda::std::equal_to: we compare all items, including out-of-bounds items and later
+    // correct the flags of the out-of-bounds items
+    // (2) otherwise, we are guarding against invoking the equality operator on out-of-bounds items
+    static constexpr bool use_flag_fixup_code_path =
+      ::cuda::std::is_arithmetic_v<InputT>
+      && (::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<>>
+          || ::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<InputT>>);
+
     if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
       __syncthreads();
 
-      if constexpr (sizeof(InputT) == 4)
-      {
-        if constexpr (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
         {
           // Use custom flag operator to additionally flag the first out-of-bounds item
           guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
@@ -555,15 +554,6 @@ struct AgentSelectIf
           // Set head selection_flags.  First tile sets the first flag for the first item
           BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
             .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op});
-        }
-      }
-      else
-      {
-        // Use custom flag operator to additionally flag the first out-of-bounds item
-        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
-
-        // Set head selection_flags.  First tile sets the first flag for the first item
-        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
       }
     }
     else
@@ -576,9 +566,7 @@ struct AgentSelectIf
 
       __syncthreads();
 
-      if constexpr (sizeof(InputT) == 4)
-      {
-        if constexpr (IS_LAST_TILE)
+      if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
         {
           // Use custom flag operator to additionally flag the first out-of-bounds item
           guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
@@ -592,21 +580,11 @@ struct AgentSelectIf
           // Set head selection_flags.  First tile sets the first flag for the first item
           BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
             .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
-        }
-      }
-      else
-      {
-        // Use custom flag operator to additionally flag the first out-of-bounds item
-        guarded_inequality_op<EqualityOpT> flag_op(equality_op, num_tile_items);
-
-        // Set head selection_flags.  First tile sets the first flag for the first item
-        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
-          .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
       }
     }
 
     // For primitive types with default equality operator, we need to fix up the flags for the out-of-bounds items
-    if constexpr (initialize_oob_items)
+    if constexpr (use_flag_fixup_code_path)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -901,21 +879,9 @@ struct AgentSelectIf
 
     // Load items
     if (IS_LAST_TILE)
-    {
-      if constexpr (SELECT_METHOD == USE_DISCONTINUITY && initialize_oob_items)
-      {
-        // If we are using unique with primitive types and default equality comparison, we need to fill the items
-        // with the out-of-bounds value, so that the equality operator does not get invoked on uninitialized memory
-        auto src         = d_in + streaming_context.input_offset() + tile_offset;
-        InputT oob_value = *src;
-        BlockLoadT(temp_storage.load_items)
-          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items, oob_value);
-      }
-      else
       {
         BlockLoadT(temp_storage.load_items)
           .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
-      }
     }
     else
     {
@@ -993,21 +959,9 @@ struct AgentSelectIf
 
     // Load items
     if (IS_LAST_TILE)
-    {
-      if constexpr (SELECT_METHOD == USE_DISCONTINUITY && initialize_oob_items)
-      {
-        // If we are using unique with primitive types and default equality comparison, we need to fill the items
-        // with the out-of-bounds value, so that the equality operator does not get invoked on uninitialized memory
-        auto src         = d_in + streaming_context.input_offset() + tile_offset;
-        InputT oob_value = *src;
-        BlockLoadT(temp_storage.load_items)
-          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items, oob_value);
-      }
-      else
       {
         BlockLoadT(temp_storage.load_items)
           .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
-      }
     }
     else
     {
