@@ -20,6 +20,8 @@ __device__ int foo(const int& x)
 template <cuda::arch::id Arch>
 __global__ void arch_specific_kernel_mock_do_not_launch()
 {
+  NV_IF_TARGET(NV_PROVIDES_SM_60,
+  (
   // I will try to pack something like this into an API
   if constexpr (cuda::arch::traits<Arch>().compute_capability != cuda::arch::current_traits().compute_capability)
   {
@@ -47,6 +49,7 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
   // Confirm trait value is defined device code and usable as a reference
   foo(cuda::arch::traits<Arch>().compute_capability);
   foo(cuda::arch::current_traits().compute_capability);
+  ))
 }
 
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_70>();
