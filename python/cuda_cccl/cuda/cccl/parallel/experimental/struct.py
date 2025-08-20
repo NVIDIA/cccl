@@ -27,20 +27,6 @@ from numba.extending import as_numba_type, lower_builtin
 from .typing import GpuStruct
 
 
-def _get_default_value(numba_type: types.Type):
-    """Get a default value for a numba type."""
-    if isinstance(numba_type, types.Integer):
-        return 0
-    elif isinstance(numba_type, types.Float):
-        return 0.0
-    elif isinstance(numba_type, types.Boolean):
-        return False
-    elif isinstance(numba_type, types.CPointer):
-        return 0  # Null pointer
-    else:
-        return None
-
-
 def _setup_numba_struct(struct_class: Type, field_types: Dict[str, types.Type]):
     """Set up a class to work as a numba struct type."""
 
@@ -165,15 +151,8 @@ def gpu_struct_from_numba_types(
                     f"Expected {len(field_types)} arguments, got {len(args)}"
                 )
 
-            for i, (field_name, arg_value) in enumerate(zip(field_names, args)):
+            for _, (field_name, arg_value) in enumerate(zip(field_names, args)):
                 setattr(self, field_name, arg_value)
-
-            # Initialize any remaining fields with defaults (shouldn't happen with positional args)
-            for field_name in field_dict:
-                if not hasattr(self, field_name):
-                    setattr(
-                        self, field_name, _get_default_value(field_dict[field_name])
-                    )
 
     StructClass.__name__ = name
 
