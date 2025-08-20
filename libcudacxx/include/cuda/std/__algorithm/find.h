@@ -33,7 +33,7 @@ template <class _Iter, class _Sent, class _Tp, class _Proj>
 {
   for (; __first != __last; ++__first)
   {
-    if (_CUDA_VSTD::__invoke(__proj, *__first) == __value)
+    if (::cuda::std::__invoke(__proj, *__first) == __value)
     {
       break;
     }

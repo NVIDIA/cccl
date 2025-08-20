@@ -73,7 +73,7 @@ template <class _Xp, class _Yp>
 using __cond_res = typename __cond_res_workaround<_Xp, _Yp>::type;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Xp, class _Yp>
-using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_VSTD::declval<_Yp (&)()>()());
+using __cond_res = decltype(false ? ::cuda::std::declval<_Xp (&)()>()() : ::cuda::std::declval<_Yp (&)()>()());
 #endif // !_CCCL_COMPILER(MSVC)
 
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`

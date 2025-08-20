@@ -97,7 +97,7 @@ template <class _Gp>
 inline constexpr bool __libcpp_random_is_valid_urng<
   _Gp,
   enable_if_t<is_unsigned_v<typename _Gp::result_type>
-              && is_same_v<decltype(_CUDA_VSTD::declval<_Gp&>()()), typename _Gp::result_type>>> = true;
+              && is_same_v<decltype(::cuda::std::declval<_Gp&>()()), typename _Gp::result_type>>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -134,8 +134,8 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
     __config.numAttrs++;
   }
 
-  const void* __pArgs[] = {_CUDA_VSTD::addressof(__args)...};
-  return __do_launch(_CUDA_VSTD::forward<_Dst>(__dst), __config, __kernel_fn, const_cast<void**>(__pArgs));
+  const void* __pArgs[] = {::cuda::std::addressof(__args)...};
+  return __do_launch(::cuda::std::forward<_Dst>(__dst), __config, __kernel_fn, const_cast<void**>(__pArgs));
 }
 
 _CCCL_TEMPLATE(typename _GraphInserter)
@@ -154,7 +154,7 @@ _CCCL_TEMPLATE(typename _GraphInserter)
 _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
 _CCCL_HOST_API _GraphInserter&& __forward_or_cast_to_stream_ref(_GraphInserter&& __inserter)
 {
-  return _CUDA_VSTD::forward<_GraphInserter>(__inserter);
+  return ::cuda::std::forward<_GraphInserter>(__inserter);
 }
 
 // cast to stream_ref to avoid instantiating launch_impl for every type convertible to stream_ref
@@ -165,7 +165,8 @@ _CCCL_HOST_API cuda::stream_ref __forward_or_cast_to_stream_ref(cuda::stream_ref
 }
 
 template <typename _Submitter>
-_CCCL_CONCEPT work_submitter = graph_inserter<_Submitter> || _CUDA_VSTD::is_convertible_v<_Submitter, cuda::stream_ref>;
+_CCCL_CONCEPT work_submitter =
+  graph_inserter<_Submitter> || ::cuda::std::is_convertible_v<_Submitter, cuda::stream_ref>;
 
 //! @brief Launch a kernel functor with specified configuration and arguments
 //!
@@ -218,12 +219,12 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   auto __combined = __conf.combine_with_default(__kernel);
   if constexpr (::cuda::std::is_invocable_v<_Kernel,
                                             kernel_config<_Dimensions, _Config...>,
-                                            _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>)
+                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>)
   {
     auto __launcher =
-      __kernel_launcher<decltype(__combined), _Kernel, _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>;
+      __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
     return __launch_impl(
-      __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
+      __forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __combined,
@@ -232,11 +233,11 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<_Kernel, _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>);
+    static_assert(::cuda::std::is_invocable_v<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>);
     auto __launcher =
-      __kernel_launcher_no_config<_Kernel, _CUDA_VSTD::decay_t<transformed_device_argument_t<_Args>>...>;
+      __kernel_launcher_no_config<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
     return __launch_impl(
-      __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)),
+      __forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
       __combined,
       reinterpret_cast<void*>(__launcher),
       __kernel,
@@ -346,7 +347,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_device __dev_setter{__submitter};
   return __launch_impl<_ExpArgs...>(
-    __forward_or_cast_to_stream_ref<_Submitter>(_CUDA_VSTD::forward<_Submitter>(__submitter)), //
+    __forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
     __conf,
     reinterpret_cast<void*>(__kernel),
     device_transform(__stream_or_invalid(__submitter), std::forward<_ActArgs>(__args))...);
@@ -373,7 +374,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __kernel_t __tag_{};
-  _CUDA_VSTD::__tuple<_Config, _Fn, _Args...> __args_;
+  ::cuda::std::__tuple<_Config, _Fn, _Args...> __args_;
 };
 
 template <class _Dimensions, class... _Config, class _Fn, class... _Args>

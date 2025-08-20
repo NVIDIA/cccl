@@ -92,7 +92,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53,
     (return ::__hfma(__x, __y, __z);),
-    (return ::__float2half(_CUDA_VSTD::fma(::__half2float(__x), ::__half2float(__y), ::__half2float(__z)));))
+    (return ::__float2half(::cuda::std::fma(::__half2float(__x), ::__half2float(__y), ::__half2float(__z)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -103,7 +103,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
     NV_PROVIDES_SM_80,
     (return ::__hfma(__x, __y, __z);),
     (return ::__float2bfloat16(
-              _CUDA_VSTD::fma(::__bfloat162float(__x), ::__bfloat162float(__y), ::__bfloat162float(__z)));))
+              ::cuda::std::fma(::__bfloat162float(__x), ::__bfloat162float(__y), ::__bfloat162float(__z)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -115,7 +115,7 @@ template <class _A1,
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
   static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>) );
-  return _CUDA_VSTD::fma((__result_type) __x, (__result_type) __y, (__result_type) __z);
+  return ::cuda::std::fma((__result_type) __x, (__result_type) __y, (__result_type) __z);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

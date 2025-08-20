@@ -32,7 +32,7 @@ template <template <class...> class, class...>
 _CCCL_API inline false_type __sfinae_test_impl(...);
 
 template <template <class...> class _Templ, class... _Args>
-using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));
+using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::__sfinae_test_impl<_Templ, _Args...>(0));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

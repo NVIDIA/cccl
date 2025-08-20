@@ -59,7 +59,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     {
       // If _Env has a value for the `get_scheduler` query, then we should not be
       // forwarding a get_domain query to the parent receiver's environment.
-      static_assert(!_CUDA_VSTD::is_same_v<_Query, get_domain_t> || !__queryable_with<_Env, get_scheduler_t>,
+      static_assert(!::cuda::std::is_same_v<_Query, get_domain_t> || !__queryable_with<_Env, get_scheduler_t>,
                     "_Env specifies a scheduler but not a domain.");
       return execution::get_env(__rcvr_->__base()).query(_Query{}, static_cast<_Args&&>(__args)...);
     }

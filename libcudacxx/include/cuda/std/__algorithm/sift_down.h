@@ -91,7 +91,7 @@ _CCCL_API constexpr void __sift_down(
 
     // check if we are in heap-order
   } while (!__comp(*__child_i, __top));
-  *__start = _CUDA_VSTD::move(__top);
+  *__start = ::cuda::std::move(__top);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

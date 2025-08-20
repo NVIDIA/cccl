@@ -60,7 +60,7 @@ struct __decay_transform
 {
   template <class... _Ts>
   _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept
-    -> completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...)>
+    -> completion_signatures<_Tag(::cuda::std::decay_t<_Ts>...)>
   {
     return {};
   }
@@ -80,7 +80,7 @@ template <class _Ay, class... _As, class _Fn>
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>
 [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
-  -> _CUDA_VSTD::__call_result_t<const _Fn&>
+  -> ::cuda::std::__call_result_t<const _Fn&>
 {
   return __fn();
 }
@@ -100,7 +100,7 @@ template <class... _As, class _Fn>
   {
     using __completions _CCCL_NODEBUG_ALIAS = __transform_expr_t<_Fn, _As...>;
     if constexpr (__valid_completion_signatures<__completions> || __type_is_error<__completions>
-                  || _CUDA_VSTD::is_base_of_v<dependent_sender_error, __completions>)
+                  || ::cuda::std::is_base_of_v<dependent_sender_error, __completions>)
     {
       return execution::__transform_expr<_As...>(__fn);
     }

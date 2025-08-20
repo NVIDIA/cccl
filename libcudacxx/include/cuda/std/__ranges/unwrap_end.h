@@ -35,12 +35,12 @@ _CCCL_REQUIRES(forward_range<_Range>)
 {
   if constexpr (common_range<_Range>)
   {
-    return _CUDA_VRANGES::end(__range);
+    return ::cuda::std::ranges::end(__range);
   }
   else
   {
-    auto __ret = _CUDA_VRANGES::begin(__range);
-    _CUDA_VRANGES::advance(__ret, _CUDA_VRANGES::end(__range));
+    auto __ret = ::cuda::std::ranges::begin(__range);
+    ::cuda::std::ranges::advance(__ret, ::cuda::std::ranges::end(__range));
     return __ret;
   }
   _CCCL_UNREACHABLE();

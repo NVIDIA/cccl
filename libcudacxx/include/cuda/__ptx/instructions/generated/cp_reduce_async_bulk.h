@@ -22,15 +22,15 @@ __device__ static inline void cp_reduce_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_and_op_t,
   _B32* __dstMem,
   const _B32* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -71,15 +71,15 @@ __device__ static inline void cp_reduce_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_or_op_t,
   _B32* __dstMem,
   const _B32* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -119,15 +119,15 @@ __device__ static inline void cp_reduce_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_xor_op_t,
   _B32* __dstMem,
   const _B32* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -173,10 +173,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_min_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -222,10 +222,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_max_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -271,10 +271,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -320,10 +320,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_inc_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -369,10 +369,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_dec_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -418,10 +418,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_min_t,
-  _CUDA_VSTD::int32_t* __dstMem,
-  const _CUDA_VSTD::int32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::int32_t* __dstMem,
+  const ::cuda::std::int32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -467,10 +467,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_max_t,
-  _CUDA_VSTD::int32_t* __dstMem,
-  const _CUDA_VSTD::int32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::int32_t* __dstMem,
+  const ::cuda::std::int32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -516,10 +516,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::int32_t* __dstMem,
-  const _CUDA_VSTD::int32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::int32_t* __dstMem,
+  const ::cuda::std::int32_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -565,10 +565,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::uint64_t* __dstMem,
-  const _CUDA_VSTD::uint64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::uint64_t* __dstMem,
+  const ::cuda::std::uint64_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -614,10 +614,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_cluster_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::int64_t* __dstMem,
-  const _CUDA_VSTD::int64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  ::cuda::std::int64_t* __dstMem,
+  const ::cuda::std::int64_t* __srcMem,
+  ::cuda::std::uint32_t __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -658,7 +658,7 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t, space_shared_t, op_and_op_t, _Type* __dstMem, const _Type* __srcMem, _CUDA_VSTD::uint32_t __size)
+  space_global_t, space_shared_t, op_and_op_t, _Type* __dstMem, const _Type* __srcMem, ::cuda::std::uint32_t __size)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -705,7 +705,7 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t, space_shared_t, op_or_op_t, _Type* __dstMem, const _Type* __srcMem, _CUDA_VSTD::uint32_t __size)
+  space_global_t, space_shared_t, op_or_op_t, _Type* __dstMem, const _Type* __srcMem, ::cuda::std::uint32_t __size)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -752,7 +752,7 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename _Type>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t, space_shared_t, op_xor_op_t, _Type* __dstMem, const _Type* __srcMem, _CUDA_VSTD::uint32_t __size)
+  space_global_t, space_shared_t, op_xor_op_t, _Type* __dstMem, const _Type* __srcMem, ::cuda::std::uint32_t __size)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -802,9 +802,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_min_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -844,9 +844,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_max_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -886,9 +886,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -928,9 +928,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_inc_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -970,9 +970,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_dec_t,
-  _CUDA_VSTD::uint32_t* __dstMem,
-  const _CUDA_VSTD::uint32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint32_t* __dstMem,
+  const ::cuda::std::uint32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1012,9 +1012,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_min_t,
-  _CUDA_VSTD::int32_t* __dstMem,
-  const _CUDA_VSTD::int32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::int32_t* __dstMem,
+  const ::cuda::std::int32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1054,9 +1054,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_max_t,
-  _CUDA_VSTD::int32_t* __dstMem,
-  const _CUDA_VSTD::int32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::int32_t* __dstMem,
+  const ::cuda::std::int32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1096,9 +1096,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::int32_t* __dstMem,
-  const _CUDA_VSTD::int32_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::int32_t* __dstMem,
+  const ::cuda::std::int32_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1138,9 +1138,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_min_t,
-  _CUDA_VSTD::uint64_t* __dstMem,
-  const _CUDA_VSTD::uint64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint64_t* __dstMem,
+  const ::cuda::std::uint64_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1180,9 +1180,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_max_t,
-  _CUDA_VSTD::uint64_t* __dstMem,
-  const _CUDA_VSTD::uint64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint64_t* __dstMem,
+  const ::cuda::std::uint64_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1222,9 +1222,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::uint64_t* __dstMem,
-  const _CUDA_VSTD::uint64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::uint64_t* __dstMem,
+  const ::cuda::std::uint64_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1264,9 +1264,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_min_t,
-  _CUDA_VSTD::int64_t* __dstMem,
-  const _CUDA_VSTD::int64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::int64_t* __dstMem,
+  const ::cuda::std::int64_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1306,9 +1306,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_max_t,
-  _CUDA_VSTD::int64_t* __dstMem,
-  const _CUDA_VSTD::int64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::int64_t* __dstMem,
+  const ::cuda::std::int64_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1345,7 +1345,7 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t, space_shared_t, op_add_t, float* __dstMem, const float* __srcMem, _CUDA_VSTD::uint32_t __size)
+  space_global_t, space_shared_t, op_add_t, float* __dstMem, const float* __srcMem, ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1382,7 +1382,7 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t, space_shared_t, op_add_t, double* __dstMem, const double* __srcMem, _CUDA_VSTD::uint32_t __size)
+  space_global_t, space_shared_t, op_add_t, double* __dstMem, const double* __srcMem, ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -1422,9 +1422,9 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   space_global_t,
   space_shared_t,
   op_add_t,
-  _CUDA_VSTD::int64_t* __dstMem,
-  const _CUDA_VSTD::int64_t* __srcMem,
-  _CUDA_VSTD::uint32_t __size)
+  ::cuda::std::int64_t* __dstMem,
+  const ::cuda::std::int64_t* __srcMem,
+  ::cuda::std::uint32_t __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)

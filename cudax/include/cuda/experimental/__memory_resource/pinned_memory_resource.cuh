@@ -102,8 +102,8 @@ public:
 #  endif // _CCCL_DOXYGEN_INVOKED
 };
 
-static_assert(_CUDA_VMR::resource_with<pinned_memory_resource, device_accessible>, "");
-static_assert(_CUDA_VMR::resource_with<pinned_memory_resource, host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_resource, device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_resource, host_accessible>, "");
 
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 

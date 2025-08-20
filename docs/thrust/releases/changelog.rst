@@ -1859,7 +1859,7 @@ Bug Fixes
    CUDA backend.
 -  #651: ``thrust::copy`` between host and device now accepts execution
    policies with streams attached,
-   i.e. ``thrust::::cuda::par.on(stream)``.
+   i.e. ``thrust::cuda::par.on(stream)``.
 -  #664: ``thrust::for_each`` and algorithms based on it no longer
    ignore streams attached to execution policies.
 

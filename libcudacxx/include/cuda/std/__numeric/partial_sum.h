@@ -38,7 +38,7 @@ _CCCL_API constexpr _OutputIterator partial_sum(_InputIterator __first, _InputIt
     *__result = __t;
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
-      __t       = _CUDA_VSTD::move(__t) + *__first;
+      __t       = ::cuda::std::move(__t) + *__first;
       *__result = __t;
     }
   }
@@ -55,7 +55,7 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
     *__result = __t;
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
-      __t       = __binary_op(_CUDA_VSTD::move(__t), *__first);
+      __t       = __binary_op(::cuda::std::move(__t), *__first);
       *__result = __t;
     }
   }

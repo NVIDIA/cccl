@@ -63,7 +63,7 @@ _CCCL_API constexpr _OutputIterator copy_n(_InputIterator __first, _Size __orig_
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
   _IntegralSize __n   = static_cast<_IntegralSize>(__orig_n);
-  return _CUDA_VSTD::copy(__first, __first + __n, __result);
+  return ::cuda::std::copy(__first, __first + __n, __result);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

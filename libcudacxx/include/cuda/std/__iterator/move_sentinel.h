@@ -40,7 +40,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr move_sentinel() = default;
 
   _CCCL_API constexpr explicit move_sentinel(_Sent __s)
-      : __last_(_CUDA_VSTD::move(__s))
+      : __last_(::cuda::std::move(__s))
   {}
 
   _CCCL_TEMPLATE(class _S2)

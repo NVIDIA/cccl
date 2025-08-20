@@ -43,7 +43,7 @@ namespace linalg
 _CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 
 template <class _Type>
-_CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(_CUDA_VSTD::conj(__a)));
+_CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
 struct __conj_if_needed
 {
@@ -56,7 +56,7 @@ struct __conj_if_needed
     }
     else
     {
-      return _CUDA_VSTD::conj(__t);
+      return ::cuda::std::conj(__t);
     }
     _CCCL_UNREACHABLE();
   }

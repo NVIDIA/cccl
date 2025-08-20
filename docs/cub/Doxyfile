@@ -146,9 +146,6 @@ PREDEFINED             = __device__= \
                         _CCCL_TRY=try \
                         _CCCL_CATCH=catch \
                         "_CCCL_CATCH_ALL=catch (...)" \
-                        _CUDA_VMR=cuda::mr \
-                        _CUDA_VRANGES=cuda::std::ranges \
-                        _CUDA_VSTD=cuda::std \
                         _CCCL_PUBLIC_API=inline \
                         _CCCL_PUBLIC_DEVICE_API=inline \
                         _CCCL_PUBLIC_HOST_API=inline \

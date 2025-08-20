@@ -34,7 +34,8 @@ template <class _ForwardIterator, class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
-  __first = _CUDA_VSTD::lower_bound<_ForwardIterator, _Tp, __comp_ref_type<_Compare>>(__first, __last, __value, __comp);
+  __first =
+    ::cuda::std::lower_bound<_ForwardIterator, _Tp, __comp_ref_type<_Compare>>(__first, __last, __value, __comp);
   return __first != __last && !__comp(__value, *__first);
 }
 
@@ -42,7 +43,7 @@ template <class _ForwardIterator, class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
-  return _CUDA_VSTD::binary_search(__first, __last, __value, __less{});
+  return ::cuda::std::binary_search(__first, __last, __value, __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

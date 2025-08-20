@@ -64,7 +64,7 @@ struct graph_node_ref
   graph_node_ref(int, int = 0) = delete;
 
   /// Disallow construction from `nullptr`.
-  graph_node_ref(_CUDA_VSTD::nullptr_t, _CUDA_VSTD::nullptr_t = nullptr) = delete;
+  graph_node_ref(::cuda::std::nullptr_t, ::cuda::std::nullptr_t = nullptr) = delete;
 
   //! \brief Constructs a graph_node_ref with a given CUDA graph node and graph.
   //! \param __node The CUDA graph node.
@@ -103,7 +103,7 @@ struct graph_node_ref
   //! \brief Test whether a `graph_node_ref` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator==(_CUDA_VSTD::nullptr_t, const graph_node_ref& __rhs) noexcept
+  operator==(::cuda::std::nullptr_t, const graph_node_ref& __rhs) noexcept
   {
     return !static_cast<bool>(__rhs);
   }
@@ -111,7 +111,7 @@ struct graph_node_ref
   //! \brief Test whether a `graph_node_ref` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator==(const graph_node_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+  operator==(const graph_node_ref& __lhs, ::cuda::std::nullptr_t) noexcept
   {
     return !static_cast<bool>(__lhs);
   }
@@ -119,7 +119,7 @@ struct graph_node_ref
   //! \brief Test whether a `graph_node_ref` object is not null.
   //! \return `true` if `__rhs` is not null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator!=(_CUDA_VSTD::nullptr_t, const graph_node_ref& __rhs) noexcept
+  operator!=(::cuda::std::nullptr_t, const graph_node_ref& __rhs) noexcept
   {
     return static_cast<bool>(__rhs);
   }
@@ -127,7 +127,7 @@ struct graph_node_ref
   //! \brief Test whether a `graph_node_ref` object is not null.
   //! \return `true` if `__lhs` is not null, `false` otherwise.
   [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
-  operator!=(const graph_node_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+  operator!=(const graph_node_ref& __lhs, ::cuda::std::nullptr_t) noexcept
   {
     return static_cast<bool>(__lhs);
   }
@@ -155,8 +155,8 @@ struct graph_node_ref
   //! \param __other The other graph_node_ref to swap with.
   _CCCL_HOST_API constexpr void swap(graph_node_ref& __other) noexcept
   {
-    _CUDA_VSTD::swap(__node_, __other.__node_);
-    _CUDA_VSTD::swap(__graph_, __other.__graph_);
+    ::cuda::std::swap(__node_, __other.__node_);
+    ::cuda::std::swap(__graph_, __other.__graph_);
   }
 
   //! \brief Swaps the contents of two graph_node_ref objects.
@@ -206,7 +206,7 @@ struct graph_node_ref
   _CCCL_HOST_API constexpr void depends_on(const _Nodes&... __nodes)
   {
     cudaGraphNode_t __deps[]{__nodes.get()...};
-    return depends_on(_CUDA_VSTD::span{__deps});
+    return depends_on(::cuda::std::span{__deps});
   }
 
   //! \brief Establishes dependencies between this node and other nodes.
@@ -228,7 +228,7 @@ struct graph_node_ref
   //! - If the number of dependencies is small, a stack-allocated buffer is used; otherwise,
   //!   a dynamically allocated array is used to store the dependant nodes.
   template <size_t _Extent>
-  _CCCL_HOST_API _CCCL_CONSTEXPR_CXX23 void depends_on(_CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps)
+  _CCCL_HOST_API _CCCL_CONSTEXPR_CXX23 void depends_on(::cuda::std::span<cudaGraphNode_t, _Extent> __deps)
   {
     _CCCL_ASSERT(__node_ != nullptr, "cannot add dependencies to a null graph node");
     if (!__deps.empty())
@@ -236,12 +236,12 @@ struct graph_node_ref
       // Initialize an array of "dependant" nodes that correspond to the dependencies. All
       // dependant nodes are __node_; thus, each node in __deps becomes a dependency of the
       // newly created node.
-      using __src_arr_t = _CUDA_VSTD::unique_ptr<cudaGraphNode_t[], void (*)(cudaGraphNode_t*) noexcept>;
-      cudaGraphNode_t __small_buffer[_Extent == _CUDA_VSTD::dynamic_extent ? 4 : _Extent];
-      bool const __is_small = __deps.size() <= _CUDA_VRANGES::size(__small_buffer);
+      using __src_arr_t = ::cuda::std::unique_ptr<cudaGraphNode_t[], void (*)(cudaGraphNode_t*) noexcept>;
+      cudaGraphNode_t __small_buffer[_Extent == ::cuda::std::dynamic_extent ? 4 : _Extent];
+      bool const __is_small = __deps.size() <= ::cuda::std::ranges::size(__small_buffer);
       auto const __src_arr  = __is_small ? __src_arr_t{__small_buffer, &__noop_deleter}
                                          : __src_arr_t{::new cudaGraphNode_t[__deps.size()], &__array_deleter};
-      _CUDA_VSTD::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
+      ::cuda::std::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
 
       // Add the dependencies using __src_arr array and the span of dependencies.
       _CCCL_TRY_CUDA_API(
@@ -259,7 +259,7 @@ private:
 
   template <class... _Nodes>
   friend _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
-    -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
+    -> ::cuda::std::array<cudaGraphNode_t, sizeof...(_Nodes)>;
 
   _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node) noexcept
       : __node_{__node}

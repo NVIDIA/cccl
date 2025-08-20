@@ -71,13 +71,13 @@ public:
   {
     if (__indexing_ == _Indexing::__manual)
     {
-      _CUDA_VSTD::__throw_format_error("using automatic argument numbering in manual argument numbering mode");
+      ::cuda::std::__throw_format_error("using automatic argument numbering in manual argument numbering mode");
     }
     if (__indexing_ == _Indexing::__unknown)
     {
       __indexing_ = _Indexing::__automatic;
     }
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       _CCCL_VERIFY(__next_arg_id_ < __num_args_, "argument index outside the valid range");
     }
@@ -88,13 +88,13 @@ public:
   {
     if (__indexing_ == _Indexing::__automatic)
     {
-      _CUDA_VSTD::__throw_format_error("using manual argument numbering in automatic argument numbering mode");
+      ::cuda::std::__throw_format_error("using manual argument numbering in automatic argument numbering mode");
     }
     if (__indexing_ == _Indexing::__unknown)
     {
       __indexing_ = _Indexing::__manual;
     }
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       _CCCL_VERIFY(__id < __num_args_, "argument index outside the valid range");
     }

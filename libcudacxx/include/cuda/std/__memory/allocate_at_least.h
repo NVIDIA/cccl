@@ -55,7 +55,7 @@ allocate_at_least(_Alloc& __alloc, size_t __n)
 template <class _Alloc>
 [[nodiscard]] _CCCL_API constexpr auto __allocate_at_least(_Alloc& __alloc, size_t __n)
 {
-  return _CUDA_VSTD::allocate_at_least(__alloc, __n);
+  return ::cuda::std::allocate_at_least(__alloc, __n);
 }
 #else // ^^^ _CCCL_STD_VER >= 2023 ^^^ / vvv _CCCL_STD_VER < 2023 vvv
 template <class _Pointer>

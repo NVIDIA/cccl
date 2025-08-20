@@ -38,7 +38,7 @@ _CCCL_API inline void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global))
+     if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global))
      {
        return;
      }
@@ -62,7 +62,7 @@ _CCCL_API inline void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global))
+     if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global))
      {
        return;
      }

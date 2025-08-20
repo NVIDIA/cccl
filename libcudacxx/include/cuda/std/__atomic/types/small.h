@@ -56,7 +56,7 @@ template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
-  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
+  ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -64,7 +64,7 @@ template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _Tp __temp{};
-  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
+  ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 

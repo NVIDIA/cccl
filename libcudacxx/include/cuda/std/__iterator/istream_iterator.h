@@ -62,7 +62,7 @@ public:
   {}
 
   _CCCL_API istream_iterator(istream_type& __s)
-      : __in_stream_(_CUDA_VSTD::addressof(__s))
+      : __in_stream_(::cuda::std::addressof(__s))
   {
     if (!(*__in_stream_ >> __value_))
     {
@@ -77,7 +77,7 @@ public:
 
   [[nodiscard]] _CCCL_API const _Tp* operator->() const noexcept
   {
-    return _CUDA_VSTD::addressof((operator*()));
+    return ::cuda::std::addressof((operator*()));
   }
 
   _CCCL_API istream_iterator& operator++()

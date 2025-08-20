@@ -56,7 +56,7 @@ private:
   _Engine_result_type __mask1_;
 
   static constexpr const _Working_result_type _Rp = _Engine::max() - _Engine::min() + _Working_result_type(1);
-  static constexpr const size_t __m               = _CUDA_VSTD::__bit_log2<_Working_result_type>(_Rp);
+  static constexpr const size_t __m               = ::cuda::std::__bit_log2<_Working_result_type>(_Rp);
   static constexpr const size_t _WDt              = numeric_limits<_Working_result_type>::digits;
   static constexpr const size_t _EDt              = numeric_limits<_Engine_result_type>::digits;
 
@@ -238,7 +238,7 @@ public:
       return static_cast<result_type>(_Eng(__g, __dt)());
     }
 
-    size_t __w = __dt - _CUDA_VSTD::countl_zero(__rp) - 1;
+    size_t __w = __dt - ::cuda::std::countl_zero(__rp) - 1;
     if ((__rp & ((numeric_limits<_UIntType>::max)() >> (__dt - __w))) != 0)
     {
       ++__w;

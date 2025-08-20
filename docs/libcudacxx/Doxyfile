@@ -67,9 +67,6 @@ PREDEFINED = \
     "_LIBCUDACXX_HIDE_FROM_ABI=" \
     "_LIBCUDACXX_INLINE_VISIBILITY=" \
     "_LIBCUDACXX_TEMPLATE_VIS=" \
-    "_CUDA_VSTD=cuda::std" \
-    "_CUDA_VRANGES=cuda::std::ranges" \
-    "_CUDA_VMR=cuda::mr" \
     "__cccl_lib_mdspan" \
     "_CCCL_AND=&&" \
     "_CCCL_API=inline" \

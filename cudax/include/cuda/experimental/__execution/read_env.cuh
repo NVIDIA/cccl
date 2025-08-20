@@ -112,14 +112,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   template <class _Self, class _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    if constexpr (!_CUDA_VSTD::__is_callable_v<_Query, _Env>)
+    if constexpr (!::cuda::std::__is_callable_v<_Query, _Env>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY),
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (_CUDA_VSTD::is_void_v<_CUDA_VSTD::__call_result_t<_Query, _Env>>)
+    else if constexpr (::cuda::std::is_void_v<::cuda::std::__call_result_t<_Query, _Env>>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY),
@@ -128,7 +128,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
     }
     else
     {
-      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{}
+      return completion_signatures<set_value_t(::cuda::std::__call_result_t<_Query, _Env>)>{}
            + __eptr_completion_if<!__nothrow_callable<_Query, _Env>>();
     }
 

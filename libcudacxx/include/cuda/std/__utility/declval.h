@@ -52,7 +52,7 @@ _CCCL_API inline _Tp __declval(long);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-_CCCL_API inline decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
+_CCCL_API inline decltype(::cuda::std::__declval<_Tp>(0)) declval() noexcept;
 
 #endif // default impl
 

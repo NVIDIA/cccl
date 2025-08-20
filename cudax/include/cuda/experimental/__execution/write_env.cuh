@@ -138,7 +138,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   template <class _Self, class... _RcvrEnv>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    using _Child _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
+    using _Child _CCCL_NODEBUG_ALIAS = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
     return execution::get_completion_signatures<_Child, __env_t<_Env, _RcvrEnv...>>();
   }
 
