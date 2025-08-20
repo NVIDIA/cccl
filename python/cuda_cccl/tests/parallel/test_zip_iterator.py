@@ -3,38 +3,41 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.cccl.parallel.experimental as parallel
 
 
-def test_zip_iterator_basic():
+@pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
+def test_zip_iterator_basic(num_items):
     @parallel.gpu_struct
     class Pair:
-        first: np.int32
+        first: np.int64
         second: np.float32
 
     def sum_pairs(p1, p2):
         return Pair(p1[0] + p2[0], p1[1] + p2[1])
 
-    d_input1 = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
-    d_input2 = cp.array([1.0, 2.0, 3.0, 4.0, 5.0], dtype=np.float32)
+    d_input1 = cp.arange(num_items, dtype=np.int64)
+    d_input2 = cp.arange(num_items, dtype=np.float32)
 
     zip_it = parallel.ZipIterator(d_input1, d_input2)
 
     d_output = cp.empty(1, dtype=Pair.dtype)
     h_init = Pair(0, 0.0)
 
-    parallel.reduce_into(zip_it, d_output, sum_pairs, len(d_input1), h_init)
+    parallel.reduce_into(zip_it, d_output, sum_pairs, num_items, h_init)
 
-    expected_first = sum(d_input1.get())  # 1+2+3+4+5 = 15
-    expected_second = sum(d_input2.get())  # 1.0+2.0+3.0+4.0+5.0 = 15.0
+    expected_first = d_input1.sum().get()
+    expected_second = d_input2.sum().get()
 
     result = d_output.get()[0]
-    assert result["first"] == expected_first
-    assert result["second"] == expected_second
+    cp.testing.assert_array_equal(result["first"], expected_first)
+    cp.testing.assert_allclose(result["second"], expected_second, rtol=1e-6)
 
 
-def test_zip_iterator_with_counting_iterator():
+@pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
+def test_zip_iterator_with_counting_iterator(num_items):
     """Test ZipIterator with two counting iterators."""
 
     @parallel.gpu_struct
@@ -46,45 +49,11 @@ def test_zip_iterator_with_counting_iterator():
         # Return the pair with the larger value
         return p1 if p1[1] > p2[1] else p2
 
-    counting_it1 = parallel.CountingIterator(np.int32(0))  # 0, 1, 2, 3, 4
-    counting_it2 = parallel.CountingIterator(np.int32(10))  # 10, 11, 12, 13, 14
-
-    zip_it = parallel.ZipIterator(counting_it1, counting_it2)
-
-    num_items = 5
-    d_output = cp.empty(1, dtype=IndexValuePair.dtype)
-    h_init = IndexValuePair(-1, -1)
-
-    parallel.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
-
-    result = d_output.get()[0]
-
-    assert result["index"] == 4
-    assert result["value"] == 14
-
-
-def test_zip_iterator_with_counting_iterator_and_array():
-    """Test ZipIterator with counting iterator and array."""
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental as parallel
-
-    @parallel.gpu_struct
-    class IndexValuePair:
-        index: np.int32
-        value: np.int32
-
-    def max_by_value(p1, p2):
-        # Return the pair with the larger value
-        return p1 if p1[1] > p2[1] else p2
-
-    counting_it = parallel.CountingIterator(np.int32(0))  # 0, 1, 2, 3, 4
-    arr = cp.asarray([0, 1, 2, 4, 7, 3, 5, 6], dtype=np.int32)
+    counting_it = parallel.CountingIterator(np.int32(0))
+    arr = cp.arange(num_items, dtype=np.int32)
 
     zip_it = parallel.ZipIterator(counting_it, arr)
 
-    num_items = 8
     d_output = cp.empty(1, dtype=IndexValuePair.dtype)
     h_init = IndexValuePair(-1, -1)
 
@@ -92,11 +61,15 @@ def test_zip_iterator_with_counting_iterator_and_array():
 
     result = d_output.get()[0]
 
-    assert result["index"] == 4
-    assert result["value"] == 7
+    expected_index = cp.argmax(arr).get()
+    expected_value = arr[expected_index].get()
+
+    assert result["index"] == expected_index
+    assert result["value"] == expected_value
 
 
-def test_zip_iterator_with_counting_iterator_and_transform():
+@pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
+def test_zip_iterator_with_counting_iterator_and_transform(num_items):
     @parallel.gpu_struct
     class IndexValuePair:
         index: np.int32
@@ -105,19 +78,15 @@ def test_zip_iterator_with_counting_iterator_and_transform():
     def max_by_value(p1, p2):
         return p1 if p1[1] > p2[1] else p2
 
-    counting_it = parallel.CountingIterator(np.int32(0))  # 0, 1, 2, 3, 4
-    arr = cp.asarray([0, 1, 2, 4, 7, 3, 5, 6], dtype=np.int32)
+    counting_it = parallel.CountingIterator(np.int32(0))
+    arr = cp.arange(num_items, dtype=np.int32)
 
     def double_op(x):
         return x * 2
 
-    transform_it = parallel.TransformIterator(
-        arr, double_op
-    )  # 0, 2, 4, 8, 14, 6, 10, 12
+    transform_it = parallel.TransformIterator(arr, double_op)
 
     zip_it = parallel.ZipIterator(counting_it, transform_it)
-
-    num_items = 8
 
     d_output = cp.empty(1, dtype=IndexValuePair.dtype)
 
@@ -128,29 +97,32 @@ def test_zip_iterator_with_counting_iterator_and_transform():
 
     result = d_output.get()[0]
 
-    assert result["index"] == 4
-    assert result["value"] == 14
+    expected_index = cp.argmax(arr).get()
+    expected_value = arr[expected_index].get() * 2
+
+    assert result["index"] == expected_index
+    assert result["value"] == expected_value
 
 
-def test_zip_iterator_n_iterators():
+@pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
+def test_zip_iterator_n_iterators(num_items):
     """Test generalized ZipIterator with N iterators (3 in this case)."""
 
     @parallel.gpu_struct
     class Triple:
-        first: np.int32
+        first: np.int64
         second: np.float32
         third: np.int64
 
     def sum_triples(t1, t2):
         return Triple(t1[0] + t2[0], t1[1] + t2[1], t1[2] + t2[2])
 
-    d_input1 = cp.array([1, 2, 3, 4], dtype=np.int32)
-    d_input2 = cp.array([1.5, 2.5, 3.5, 4.5], dtype=np.float32)
-    counting_it = parallel.CountingIterator(np.int64(10))  # 10, 11, 12, 13
+    d_input1 = cp.arange(num_items, dtype=np.int64)
+    d_input2 = cp.arange(num_items, dtype=np.float32)
+    counting_it = parallel.CountingIterator(np.int64(10))
 
     zip_it = parallel.ZipIterator(d_input1, d_input2, counting_it)
 
-    num_items = 4
     d_output = cp.empty(1, dtype=Triple.dtype)
     h_init = Triple(0, 0.0, 0)
 
@@ -158,66 +130,30 @@ def test_zip_iterator_n_iterators():
 
     result = d_output.get()[0]
 
-    # Expected results:
-    # first: 1 + 2 + 3 + 4 = 10
-    # second: 1.5 + 2.5 + 3.5 + 4.5 = 12.0
-    # third: 10 + 11 + 12 + 13 = 46
+    expected_first = d_input1.sum().get()
+    expected_second = d_input2.sum().get()
+    expected_third = cp.arange(10, 10 + num_items).sum().get()
 
-    assert result["first"] == 10
-    assert result["second"] == 12.0
-    assert result["third"] == 46
-
-
-def test_zip_iterator_four_iterators():
-    """Test generalized ZipIterator with 4 iterators."""
-
-    @parallel.gpu_struct
-    class Quad:
-        a: np.int32
-        b: np.float32
-        c: np.int64
-        d: np.float64
-
-    def sum_quads(q1, q2):
-        return Quad(q1[0] + q2[0], q1[1] + q2[1], q1[2] + q2[2], q1[3] + q2[3])
-
-    arr1 = cp.array([1, 2, 3], dtype=np.int32)
-    arr2 = cp.array([0.1, 0.2, 0.3], dtype=np.float32)
-    counting_it1 = parallel.CountingIterator(np.int64(100))  # 100, 101, 102
-    counting_it2 = parallel.CountingIterator(np.float64(5.0))  # 5.0, 6.0, 7.0
-
-    zip_it = parallel.ZipIterator(arr1, arr2, counting_it1, counting_it2)
-
-    num_items = 3
-    d_output = cp.empty(1, dtype=Quad.dtype)
-    h_init = Quad(0, 0.0, 0, 0.0)
-
-    parallel.reduce_into(zip_it, d_output, sum_quads, num_items, h_init)
-
-    result = d_output.get()[0]
-
-    assert result["a"] == 6
-    np.testing.assert_allclose(result["b"], 0.6)
-    assert result["c"] == 303
-    np.testing.assert_allclose(result["d"], 18.0)
+    cp.testing.assert_array_equal(result["first"], expected_first)
+    cp.testing.assert_allclose(result["second"], expected_second, rtol=1e-6)
+    cp.testing.assert_array_equal(result["third"], expected_third)
 
 
-def test_zip_iterator_single_iterator():
+@pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
+def test_zip_iterator_single_iterator(num_items):
     """Test ZipIterator with a single iterator."""
 
     @parallel.gpu_struct
     class Single:
-        value: np.int32
+        value: np.int64
 
     def sum_singles(s1, s2):
         return Single(s1[0] + s2[0])
 
-    d_input = cp.array([10, 20, 30, 40], dtype=np.int32)
+    d_input = cp.arange(num_items, dtype=np.int64)
 
-    # Create zip iterator with only one iterator
     zip_it = parallel.ZipIterator(d_input)
 
-    num_items = 4
     d_output = cp.empty(1, dtype=Single.dtype)
     h_init = Single(0)
 
@@ -225,5 +161,73 @@ def test_zip_iterator_single_iterator():
 
     result = d_output.get()[0]
 
-    # Expected result: 10 + 20 + 30 + 40 = 100
-    assert result["value"] == 100
+    expected_value = d_input.sum().get()
+    assert result["value"] == expected_value
+
+
+@pytest.mark.parametrize("num_items", [10, 1_000])
+def test_zip_iterator_with_transform(num_items):
+    @parallel.gpu_struct
+    class TransformedPair:
+        sum_indices: np.int32
+        product_values: np.int64
+
+    def binary_transform(pair1, pair2):
+        return TransformedPair(pair1[0] + pair2[0], pair1[1] * pair2[1])
+
+    counting_it1 = parallel.CountingIterator(np.int32(0))
+    arr1 = cp.arange(num_items, dtype=np.int32)
+    zip_it1 = parallel.ZipIterator(counting_it1, arr1)
+
+    counting_it2 = parallel.CountingIterator(np.int32(0))
+    arr2 = cp.arange(num_items, dtype=np.int32)
+    zip_it2 = parallel.ZipIterator(counting_it2, arr2)
+
+    d_output = cp.empty(num_items, dtype=TransformedPair.dtype)
+
+    parallel.binary_transform(zip_it1, zip_it2, d_output, binary_transform, num_items)
+
+    result = d_output.get()
+
+    expected_sum_indices = (arr1 + arr2).get()
+    expected_product_values = (arr1 * arr2).get()
+
+    for i, result_item in enumerate(result):
+        assert result_item["sum_indices"] == expected_sum_indices[i]
+        assert result[i]["product_values"] == expected_product_values[i]
+
+
+@pytest.mark.parametrize("num_items", [10, 1_000])
+def test_zip_iterator_with_scan(num_items):
+    """Test ZipIterator with scan operations."""
+
+    @parallel.gpu_struct
+    class Pair:
+        first_min: np.int64
+        second_min: np.int64
+
+    def min_pairs(p1, p2):
+        # p1 is the accumulated result, p2 is the current input
+        # Compute running minimums for both arrays
+        return Pair(min(p1[0], p2[0]), min(p1[1], p2[1]))
+
+    # Create two randomized arrays to make min operations interesting
+    arr1 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
+    arr2 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
+
+    zip_it = parallel.ZipIterator(arr1, arr2)
+
+    d_output = cp.empty(num_items, dtype=Pair.dtype)
+    h_init = Pair(cp.iinfo(np.int64).max, cp.iinfo(np.int64).max)
+
+    parallel.inclusive_scan(zip_it, d_output, min_pairs, h_init, num_items)
+
+    result = d_output.get()
+
+    # Verify the scan operation produces running minimums for both arrays
+    expected_first_running_mins = np.minimum.accumulate(arr1.get())
+    expected_second_running_mins = np.minimum.accumulate(arr2.get())
+
+    for i, result_item in enumerate(result):
+        assert result_item["first_min"] == expected_first_running_mins[i]
+        assert result_item["second_min"] == expected_second_running_mins[i]
