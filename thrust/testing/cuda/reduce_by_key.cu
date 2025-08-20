@@ -1,11 +1,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
+#include <cuda/iterator>
 #include <cuda/std/functional>
 
 #include <cstdint>
@@ -117,7 +116,7 @@ void initialize_values(Vector& values)
 // Checks whether the equality operator is ever invoked on out-of-bounds items
 struct check_valid_item_op
 {
-  ::cuda::std::uint32_t* error_counter{};
+  cuda::std::uint32_t* error_counter{};
   int expected_upper_bound{};
 
   __device__ bool operator()(const int lhs, const int rhs) const
@@ -137,12 +136,11 @@ struct check_valid_item_op
 template <typename ReturnedT>
 struct check_accumulator_t_op
 {
-  ::cuda::std::uint32_t* error_counter{};
+  cuda::std::uint32_t* error_counter{};
 
-  template <typename T, typename U, 
-            typename = ::cuda::std::enable_if_t<
-              ::cuda::std::is_same_v<T, U> && 
-              !::cuda::std::is_same_v<T, ReturnedT>>>
+  template <typename T,
+            typename U,
+            typename = cuda::std::enable_if_t<cuda::std::is_same_v<T, U> && !cuda::std::is_same_v<T, ReturnedT>>>
   _CCCL_DEVICE ReturnedT operator()(const T lhs, const U& rhs) const
   {
     return static_cast<ReturnedT>(lhs + rhs);
@@ -489,16 +487,16 @@ DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
 
 void TestReduceByKeyWithCustomEqualityOp()
 {
-  using key_vector_t = thrust::device_vector<int>;
-  using val_vector_t = thrust::device_vector<int>;
+  using key_vector_t = thrust::device_vector<cuda::std::int32_t>;
+  using val_vector_t = thrust::device_vector<cuda::std::int32_t>;
   using key_t        = key_vector_t::value_type;
   using val_t        = val_vector_t::value_type;
 
   auto constexpr num_items = 1000;
-  auto keys                = thrust::make_counting_iterator(key_t{0});
-  auto values              = thrust::make_counting_iterator(val_t{42});
+  auto keys                = cuda::make_counting_iterator(key_t{0});
+  auto values              = cuda::make_counting_iterator(val_t{42});
 
-  thrust::device_vector<::cuda::std::uint32_t> error_counter(1, 0);
+  thrust::device_vector<cuda::std::uint32_t> error_counter(1, 0);
   auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());
 
   key_vector_t unique_out(num_items);
@@ -518,7 +516,7 @@ void TestReduceByKeyWithCustomEqualityOp()
   ASSERT_EQUAL(num_aggregates_out, num_items);
 
   // Verify that the equality operator was never invoked on out-of-bounds items
-  ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
+  ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
 
   // Verify that unique keys are correct
   bool all_keys_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), keys);
@@ -533,17 +531,17 @@ DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
 
 void TestReduceByKeyWithDifferentAccumulatorT()
 {
-  using key_t          = ::cuda::std::uint32_t;
-  using val_t          = ::cuda::std::uint8_t;
-  using reduction_op_t = check_accumulator_t_op<::cuda::std::uint32_t>;
+  using key_t          = cuda::std::uint32_t;
+  using val_t          = cuda::std::uint8_t;
+  using reduction_op_t = check_accumulator_t_op<cuda::std::uint32_t>;
 
   auto constexpr num_items            = 20000;
   auto constexpr expected_num_uniques = 1;
   constexpr auto unique_key           = key_t{42U};
-  auto keys                           = thrust::make_constant_iterator(unique_key);
-  auto values                         = thrust::make_counting_iterator(val_t{0});
+  auto keys                           = cuda::make_constant_iterator(unique_key);
+  auto values                         = cuda::make_counting_iterator(val_t{0});
 
-  thrust::device_vector<::cuda::std::uint32_t> error_counter(1, 0);
+  thrust::device_vector<cuda::std::uint32_t> error_counter(1, 0);
   auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());
 
   thrust::device_vector<key_t> unique_out(expected_num_uniques);
@@ -554,7 +552,7 @@ void TestReduceByKeyWithDifferentAccumulatorT()
     values,
     unique_out.begin(),
     aggregates_out.begin(),
-    ::cuda::std::equal_to<>{},
+    cuda::std::equal_to<>{},
     reduction_op_t{error_counter_ptr});
 
   // Verify that the number of unique keys is correct
@@ -564,13 +562,13 @@ void TestReduceByKeyWithDifferentAccumulatorT()
   ASSERT_EQUAL(num_aggregates_out, expected_num_uniques);
 
   // Verify that the equality operator was never invoked on out-of-bounds items
-  ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
+  ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
 
   // Verify that the unique key is correct
   ASSERT_EQUAL(unique_out[0], unique_key);
 
   // // Verify that the aggregate is correct
-  constexpr auto mod_val            = 0x01 << ::cuda::std::numeric_limits<val_t>::digits;
+  constexpr auto mod_val            = 0x01 << cuda::std::numeric_limits<val_t>::digits;
   constexpr auto sum                = ((num_items * (num_items - 1)) / 2);
   constexpr auto expected_aggregate = static_cast<val_t>(sum % mod_val);
   ASSERT_EQUAL(aggregates_out[0], expected_aggregate);
