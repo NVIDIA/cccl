@@ -312,8 +312,43 @@ def get_includes() -> List[str]:
     return opts
 
 
+def _get_ctk_version():
+    """Get CUDA Toolkit version from nvcc.
+    
+    Returns:
+        tuple: (major, minor) version numbers, or (0, 0) if detection fails
+    """
+    try:
+        import subprocess
+        result = subprocess.run(['nvcc', '--version'], capture_output=True, text=True)
+        if result.returncode != 0:
+            return (0, 0)
+        
+        # Parse version from output like "Cuda compilation tools, release 12.9, V12.9.85"
+        import re
+        version_match = re.search(r'release (\d+)\.(\d+)', result.stdout)
+        if version_match:
+            major = int(version_match.group(1))
+            minor = int(version_match.group(2))
+            return (major, minor)
+        return (0, 0)
+    except (FileNotFoundError, subprocess.SubprocessError, ValueError):
+        return (0, 0)
+
+
+def _should_check_ldl_stl():
+    """Check if current CTK version should enforce LDL/STL instruction checks."""
+    major, minor = _get_ctk_version()
+    return (major > 13) or (major == 13 and minor >= 1)
+
+
 def _check_compile_result(cubin: bytes):
-    # check compiled code for LDL/STL instructions
+    # Check if we should perform LDL/STL instruction validation
+    if not _should_check_ldl_stl():
+        # Skip LDL/STL checks on CTK < 13.1 due to nvrtc bug
+        return
+    
+    # Check compiled code for LDL/STL instructions
     temp_cubin_file = tempfile.NamedTemporaryFile(delete=False)
     try:
         temp_cubin_file.write(cubin)
@@ -329,8 +364,8 @@ def _check_compile_result(cubin: bytes):
     finally:
         os.unlink(temp_cubin_file.name)
 
-    assert "LDL" not in sass, "LDL instruction found in SASS"
-    assert "STL" not in sass, "STL instruction found in SASS"
+    assert "LDL" not in sass, f"LDL instruction found in SASS (CTK {_get_ctk_version()})"
+    assert "STL" not in sass, f"STL instruction found in SASS (CTK {_get_ctk_version()})"
 
 
 # this global variable controls whether the compile result is checked
