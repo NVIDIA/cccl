@@ -49,6 +49,22 @@ CCCL_C_API CUresult cccl_device_merge_sort_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
+// Extended version with build configuration
+CCCL_C_API CUresult cccl_device_merge_sort_build_ex(
+  cccl_device_merge_sort_build_result_t* build,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
 CCCL_C_API CUresult cccl_device_merge_sort(
   cccl_device_merge_sort_build_result_t build,
   void* d_temp_storage,
