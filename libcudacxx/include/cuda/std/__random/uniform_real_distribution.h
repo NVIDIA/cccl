@@ -97,7 +97,7 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__libcpp_random_is_valid_urng<_URng>, "");
+    static_assert(__cccl_random_is_valid_urng<_URng>, "");
     return (__p.b() - __p.a()) * ::cuda::std::generate_canonical<_RealType, numeric_limits<_RealType>::digits>(__g)
          + __p.a();
   }
