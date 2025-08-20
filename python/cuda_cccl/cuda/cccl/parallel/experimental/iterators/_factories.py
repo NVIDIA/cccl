@@ -189,7 +189,7 @@ def ZipIterator(*iterators):
             :pyobject: zip_iterator_example
 
     Args:
-        *iterators: Variable number of iterators to zip (minimum 2)
+        *iterators: Variable number of iterators to zip (at least 1)
 
     Returns:
         A ``ZipIterator`` object that yields combined values from all input iterators
