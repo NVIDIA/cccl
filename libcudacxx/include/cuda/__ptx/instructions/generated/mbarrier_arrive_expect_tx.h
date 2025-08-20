@@ -28,29 +28,32 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_expect_tx(
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  ::cuda::std::uint64_t __state;
-  if constexpr (__scope == scope_cta)
-  {
-    asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
+  // __space == space_shared (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    ::cuda::std::uint64_t __state;
+    if constexpr (__scope == scope_cta) {
+      asm (
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
-        : "r"(__as_ptr_smem(__addr)), "r"(__tx_count)
-        : "memory");
-  }
-  else if constexpr (__scope == scope_cluster)
-  {
-    asm("mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
+        : "r"(__as_ptr_smem(__addr)),
+          "r"(__tx_count)
+        : "memory"
+      );
+    } else if constexpr (__scope == scope_cluster) {
+      asm (
+        "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
-        : "r"(__as_ptr_smem(__addr)), "r"(__tx_count)
-        : "memory");
-  }
-  return __state;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
+        : "r"(__as_ptr_smem(__addr)),
+          "r"(__tx_count)
+        : "memory"
+      );
+    }
+    return __state;
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+    return 0;
+  #endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -77,18 +80,21 @@ _CCCL_DEVICE static inline void mbarrier_arrive_expect_tx(
   ::cuda::std::uint64_t* __addr,
   const ::cuda::std::uint32_t& __tx_count)
 {
-// __sem == sem_release (due to parameter type constraint)
-// __scope == scope_cluster (due to parameter type constraint)
-// __space == space_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
+  // __sem == sem_release (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
+  // __space == space_cluster (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    asm (
+      "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
       :
-      : "r"(__as_ptr_remote_dsmem(__addr)), "r"(__tx_count)
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-#  endif
+      : "r"(__as_ptr_remote_dsmem(__addr)),
+        "r"(__tx_count)
+      : "memory"
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -117,29 +123,32 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_expect_tx(
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-// __space == space_shared (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  ::cuda::std::uint64_t __state;
-  if constexpr (__scope == scope_cta)
-  {
-    asm("mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 %0, [%1], %2;"
+  // __space == space_shared (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    ::cuda::std::uint64_t __state;
+    if constexpr (__scope == scope_cta) {
+      asm (
+        "mbarrier.arrive.expect_tx.relaxed.cta.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__state)
-        : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
-        : "memory");
-  }
-  else if constexpr (__scope == scope_cluster)
-  {
-    asm("mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 %0, [%1], %2;"
+        : "r"(__as_ptr_dsmem(__addr)),
+          "r"(__txCount)
+        : "memory"
+      );
+    } else if constexpr (__scope == scope_cluster) {
+      asm (
+        "mbarrier.arrive.expect_tx.relaxed.cluster.shared::cta.b64 %0, [%1], %2;"
         : "=l"(__state)
-        : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
-        : "memory");
-  }
-  return __state;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
+        : "r"(__as_ptr_dsmem(__addr)),
+          "r"(__txCount)
+        : "memory"
+      );
+    }
+    return __state;
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+    return 0;
+  #endif
 }
 #endif // __cccl_ptx_isa >= 860
 
@@ -160,20 +169,27 @@ __device__ static inline void mbarrier_arrive_expect_tx(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void mbarrier_arrive_expect_tx(
-  sem_relaxed_t, scope_cluster_t, space_cluster_t, ::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __txCount)
+  sem_relaxed_t,
+  scope_cluster_t,
+  space_cluster_t,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint32_t& __txCount)
 {
-// __sem == sem_relaxed (due to parameter type constraint)
-// __scope == scope_cluster (due to parameter type constraint)
-// __space == space_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm("mbarrier.arrive.expect_tx.relaxed.cluster.shared::cluster.b64 _, [%0], %1;"
+  // __sem == sem_relaxed (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
+  // __space == space_cluster (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    asm (
+      "mbarrier.arrive.expect_tx.relaxed.cluster.shared::cluster.b64 _, [%0], %1;"
       :
-      : "r"(__as_ptr_dsmem(__addr)), "r"(__txCount)
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-#  endif
+      : "r"(__as_ptr_dsmem(__addr)),
+        "r"(__txCount)
+      : "memory"
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 860
 

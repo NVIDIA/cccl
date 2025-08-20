@@ -1,5 +1,5 @@
 // This file was automatically generated. Do not edit.
-
+            
 // We use a special strategy to force the generation of the PTX. This is mainly
 // a fight against dead-code-elimination in the NVVM layer.
 //
@@ -14,32 +14,17 @@
 // Because `fn_ptr` is possibly visible outside this translation unit, the
 // compiler must compile all the functions which are stored.
 
-__global__ void test_tensormap_cp_fenceproxy(void** fn_ptr)
-{
+__global__ void test_tensormap_cp_fenceproxy(void ** fn_ptr) {
 #if __cccl_ptx_isa >= 830
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-        // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned  [dst], [src], size;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, void*, const void*, cuda::ptx::n32_t<128>)>(
-            cuda::ptx::tensormap_cp_fenceproxy));
-          // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned  [dst], [src],
-          // size;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, void*, const void*, cuda::ptx::n32_t<128>)>(
-                cuda::ptx::tensormap_cp_fenceproxy));
-          // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned  [dst], [src], size;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::sem_release_t, cuda::ptx::scope_gpu_t, void*, const void*, cuda::ptx::n32_t<128>)>(
-                cuda::ptx::tensormap_cp_fenceproxy));
-          // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned  [dst], [src], size;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::sem_release_t, cuda::ptx::scope_sys_t, void*, const void*, cuda::ptx::n32_t<128>)>(
-                cuda::ptx::tensormap_cp_fenceproxy));));
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (
+    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned  [dst], [src], size;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, void* , const void* , cuda::ptx::n32_t<128>)>(cuda::ptx::tensormap_cp_fenceproxy));
+    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned  [dst], [src], size;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, void* , const void* , cuda::ptx::n32_t<128>)>(cuda::ptx::tensormap_cp_fenceproxy));
+    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned  [dst], [src], size;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_gpu_t, void* , const void* , cuda::ptx::n32_t<128>)>(cuda::ptx::tensormap_cp_fenceproxy));
+    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned  [dst], [src], size;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_sys_t, void* , const void* , cuda::ptx::n32_t<128>)>(cuda::ptx::tensormap_cp_fenceproxy));
+  ));
 #endif // __cccl_ptx_isa >= 830
 }

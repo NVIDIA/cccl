@@ -14,17 +14,24 @@ __device__ static inline void st_bulk(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_st_bulk_is_not_supported_before_SM_100__();
 template <int _N32>
-_CCCL_DEVICE static inline void st_bulk(void* __addr, ::cuda::std::uint64_t __size, n32_t<_N32> __initval)
+_CCCL_DEVICE static inline void st_bulk(
+  void* __addr,
+  ::cuda::std::uint64_t __size,
+  n32_t<_N32> __initval)
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
-  asm("st.bulk.weak.shared::cta [%0], %1, %2;"
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
+    asm (
+      "st.bulk.weak.shared::cta [%0], %1, %2;"
       :
-      : "r"(__as_ptr_smem(__addr)), "l"(__size), "n"(__initval.value)
-      : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_st_bulk_is_not_supported_before_SM_100__();
-#  endif
+      : "r"(__as_ptr_smem(__addr)),
+        "l"(__size),
+        "n"(__initval.value)
+      : "memory"
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_st_bulk_is_not_supported_before_SM_100__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 860
 

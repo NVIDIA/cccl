@@ -17,17 +17,25 @@ __device__ static inline void fence_sync_restrict(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence_sync_restrict(sem_acquire_t, space_cluster_t, scope_cluster_t)
+_CCCL_DEVICE static inline void fence_sync_restrict(
+  sem_acquire_t,
+  space_cluster_t,
+  scope_cluster_t)
 {
-// __sem == sem_acquire (due to parameter type constraint)
-// __space == space_cluster (due to parameter type constraint)
-// __scope == scope_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm volatile("fence.acquire.sync_restrict::shared::cluster.cluster;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
-#  endif
+  // __sem == sem_acquire (due to parameter type constraint)
+  // __space == space_cluster (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    asm volatile (
+      "fence.acquire.sync_restrict::shared::cluster.cluster;"
+      :
+      :
+      : "memory"
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 860
 
@@ -45,17 +53,25 @@ __device__ static inline void fence_sync_restrict(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence_sync_restrict(sem_release_t, space_shared_t, scope_cluster_t)
+_CCCL_DEVICE static inline void fence_sync_restrict(
+  sem_release_t,
+  space_shared_t,
+  scope_cluster_t)
 {
-// __sem == sem_release (due to parameter type constraint)
-// __space == space_shared (due to parameter type constraint)
-// __scope == scope_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  asm volatile("fence.release.sync_restrict::shared::cta.cluster;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
-#  endif
+  // __sem == sem_release (due to parameter type constraint)
+  // __space == space_shared (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    asm volatile (
+      "fence.release.sync_restrict::shared::cta.cluster;"
+      :
+      :
+      : "memory"
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 860
 

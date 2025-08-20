@@ -14,18 +14,25 @@ __device__ static inline uint32_t getctarank(
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t getctarank(space_cluster_t, const void* __addr)
+_CCCL_DEVICE static inline ::cuda::std::uint32_t getctarank(
+  space_cluster_t,
+  const void* __addr)
 {
-// __space == space_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  ::cuda::std::uint32_t __dest;
-  asm("getctarank.shared::cluster.u32 %0, %1;" : "=r"(__dest) : "r"(__as_ptr_smem(__addr)) :);
-  return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
+  // __space == space_cluster (due to parameter type constraint)
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+    ::cuda::std::uint32_t __dest;
+    asm (
+      "getctarank.shared::cluster.u32 %0, %1;"
+      : "=r"(__dest)
+      : "r"(__as_ptr_smem(__addr))
+      :
+    );
+    return __dest;
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
+    return 0;
+  #endif
 }
 #endif // __cccl_ptx_isa >= 780
 

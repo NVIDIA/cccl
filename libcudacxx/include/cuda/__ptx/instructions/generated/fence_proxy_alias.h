@@ -13,12 +13,17 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_befor
 template <typename = void>
 _CCCL_DEVICE static inline void fence_proxy_alias()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  asm volatile("fence.proxy.alias; // 4." : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
-#  endif
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
+    asm volatile (
+      "fence.proxy.alias; // 4."
+      :
+      :
+      : "memory"
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 750
 

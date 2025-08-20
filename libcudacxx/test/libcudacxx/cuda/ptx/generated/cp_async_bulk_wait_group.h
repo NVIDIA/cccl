@@ -1,5 +1,5 @@
 // This file was automatically generated. Do not edit.
-
+            
 // We use a special strategy to force the generation of the PTX. This is mainly
 // a fight against dead-code-elimination in the NVVM layer.
 //
@@ -14,21 +14,18 @@
 // Because `fn_ptr` is possibly visible outside this translation unit, the
 // compiler must compile all the functions which are stored.
 
-__global__ void test_cp_async_bulk_wait_group(void** fn_ptr)
-{
+__global__ void test_cp_async_bulk_wait_group(void ** fn_ptr) {
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (
-                   // cp.async.bulk.wait_group N;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(cuda::ptx::n32_t<128>)>(cuda::ptx::cp_async_bulk_wait_group));));
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (
+    // cp.async.bulk.wait_group N;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<128>)>(cuda::ptx::cp_async_bulk_wait_group));
+  ));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (
-                   // cp.async.bulk.wait_group.read N;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(cuda::ptx::n32_t<128>)>(cuda::ptx::cp_async_bulk_wait_group_read));));
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (
+    // cp.async.bulk.wait_group.read N;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<128>)>(cuda::ptx::cp_async_bulk_wait_group_read));
+  ));
 #endif // __cccl_ptx_isa >= 800
 }

@@ -13,12 +13,17 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_exit_is_not_supported_before_SM_50__();
 template <typename = void>
 _CCCL_DEVICE static inline void exit()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
-  asm volatile("exit;" : : :);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_exit_is_not_supported_before_SM_50__();
-#  endif
+  #if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
+    asm volatile (
+      "exit;"
+      :
+      :
+      :
+    );
+  #else
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_exit_is_not_supported_before_SM_50__();
+  #endif
 }
 #endif // __cccl_ptx_isa >= 100
 
