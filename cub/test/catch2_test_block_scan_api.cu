@@ -159,7 +159,7 @@ __global__ void InclusiveBlockScanPartialTileKernel(int* output)
   __shared__ temp_storage_t temp_storage;
 
   int initial_value = 1;
-  int thread_data[] = {
+  cuda::std::array<int, 2> thread_data{
     +1 * ((int) threadIdx.x * 2), // item 0
     -1 * ((int) threadIdx.x * 2 + 1) // item 1
   };
@@ -221,7 +221,7 @@ __global__ void InclusiveBlockScanPartialTileKernelAggregate(int* output, int* d
   __shared__ temp_storage_t temp_storage;
 
   int initial_value = 1;
-  int thread_data[] = {
+  cuda::std::array<int, 2> thread_data{
     +1 * ((int) threadIdx.x * 2), // item 0
     -1 * ((int) threadIdx.x * 2 + 1) // item 1
   };

@@ -52,7 +52,7 @@ struct has_binary_call_operator<
  * Array-like type traits
  **********************************************************************************************************************/
 
-template <typename T>
+template <typename R>
 inline constexpr bool is_fixed_size_random_access_range_v = false;
 
 template <typename T, size_t N>
@@ -89,8 +89,25 @@ template <typename T, typename E, typename L, typename A>
 inline constexpr int static_size_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
   _CUDA_VSTD::enable_if_t<E::rank == 1 && E::rank_dynamic() == 0, int>{E::static_extent(0)};
 
-template <typename T>
-using implicit_prom_t = decltype(+T{});
+/***********************************************************************************************************************
+ * check_fixed_size_ranges: a class bundling static asserts that are needed in many interfaces taking an Input and an
+ * Output range
+ **********************************************************************************************************************/
+
+template <typename Input,
+          typename Output,
+          typename ValueType = ::cuda::std::iter_value_t<Input>,
+          size_t Length      = cub::detail::static_size_v<Input>>
+struct check_fixed_size_ranges_pair
+{
+  static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<Input>, ValueType>, "Value type of Input is wrong");
+  static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<Output>, ValueType>,
+                "Value type of Output is wrong or differs from value type of Input");
+  static_assert(cub::detail::static_size_v<Input> == Length, "Length of Input is wrong");
+  static_assert(cub::detail::static_size_v<Input> == Length,
+                "Length of Output is wrong or differs from length of Input");
+  static_assert(Length > 0, "Length of fixed size ranges must be nonzero");
+};
 
 /***********************************************************************************************************************
  * Extended floating point traits
@@ -166,6 +183,9 @@ template <typename T>
 inline constexpr bool is_any_short2_v = is_any_short2_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 //----------------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+using implicit_prom_t = decltype(+T{});
 
 // - promote small integer types to their corresponding 32-bit promotion type
 // - address the incompatibility between linux/windows for int/long
