@@ -58,7 +58,6 @@ _CCCL_API inline void* memset(void* __dest, int __ch, size_t __count) noexcept
   return ::memset(__dest, __ch, __count);
 }
 
-
 _CCCL_API constexpr char* strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src)
 {
   return _CUDA_VSTD::__cccl_strcpy(__dst, __src);
