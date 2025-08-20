@@ -811,13 +811,6 @@ struct stateful_transform_it_state
   FunctorStateTy functor_state;
 };
 
-// Zip iterator state structure - stores multiple iterator states
-template <typename... IteratorStateTs>
-struct zip_iterator_state_t
-{
-  std::tuple<IteratorStateTs...> iterator_states;
-};
-
 struct name_source_t
 {
   std::string_view name;
@@ -1244,102 +1237,6 @@ auto make_stateless_transform_input_iterator(
     {transform_it_deref_fn_name, transform_it_deref_fn_src});
 
   return transform_it;
-}
-
-inline std::tuple<std::string, std::string, std::string> make_zip_iterator_sources(
-  std::string_view zip_it_state_name,
-  std::string_view zip_it_advance_fn_name,
-  std::string_view zip_it_dereference_fn_name,
-  std::string_view tuple_value_type,
-  std::vector<name_source_t> base_it_states,
-  std::vector<name_source_t> base_it_advance_fns,
-  std::vector<name_source_t> base_it_dereference_fns)
-{
-  // Generate state definition that contains all iterator states
-  std::string state_defs;
-  std::string state_members;
-
-  for (size_t i = 0; i < base_it_states.size(); ++i)
-  {
-    state_defs += base_it_states[i].def_src;
-    state_members += std::format("  {0} it{1}_state;\n", base_it_states[i].name, i);
-  }
-
-  std::string zip_it_state_src =
-    std::format("{0}\nstruct {1} {{\n{2}}};\n", state_defs, zip_it_state_name, state_members);
-
-  // Generate advance function that advances all iterators
-  std::string advance_calls;
-  for (size_t i = 0; i < base_it_advance_fns.size(); ++i)
-  {
-    advance_calls += std::format("  {0}(&(state->it{1}_state), offset);\n", base_it_advance_fns[i].name, i);
-  }
-
-  std::string zip_it_advance_fn_src = std::format(
-    "{0}\nextern \"C\" __device__ void {1}({2}* state, unsigned long long offset) {{\n{3}}}\n",
-    std::accumulate(base_it_advance_fns.begin(),
-                    base_it_advance_fns.end(),
-                    std::string{},
-                    [](const std::string& acc, const name_source_t& fn) {
-                      return acc + std::string{fn.def_src};
-                    }),
-    zip_it_advance_fn_name,
-    zip_it_state_name,
-    advance_calls);
-
-  // Generate dereference function that dereferences all iterators and returns a tuple
-  std::string deref_calls;
-  for (size_t i = 0; i < base_it_dereference_fns.size(); ++i)
-  {
-    deref_calls += std::format("    {0}(&(state->it{1}_state), result.{2})", base_it_dereference_fns[i].name, i, i);
-    if (i < base_it_dereference_fns.size() - 1)
-    {
-      deref_calls += ";\n";
-    }
-  }
-
-  std::string zip_it_dereference_fn_src = std::format(
-    "{0}\nextern \"C\" __device__ void {1}({2}* state, {3}& result) {{\n{4};\n}}\n",
-    std::accumulate(base_it_dereference_fns.begin(),
-                    base_it_dereference_fns.end(),
-                    std::string{},
-                    [](const std::string& acc, const name_source_t& fn) {
-                      return acc + std::string{fn.def_src};
-                    }),
-    zip_it_dereference_fn_name,
-    zip_it_state_name,
-    tuple_value_type,
-    deref_calls);
-
-  return std::make_tuple(zip_it_state_src, zip_it_advance_fn_src, zip_it_dereference_fn_src);
-}
-
-template <typename TupleValueT, typename... IteratorStateTs>
-auto make_zip_iterator(std::string_view tuple_value_type,
-                       std::vector<name_source_t> base_it_states,
-                       std::vector<name_source_t> base_it_advance_fns,
-                       std::vector<name_source_t> base_it_dereference_fns)
-{
-  static constexpr std::string_view zip_it_state_name          = "zip_iterator_state_t";
-  static constexpr std::string_view zip_it_advance_fn_name     = "advance_zip_it";
-  static constexpr std::string_view zip_it_dereference_fn_name = "dereference_zip_it";
-
-  const auto& [zip_it_state_src, zip_it_advance_fn_src, zip_it_dereference_fn_src] = make_zip_iterator_sources(
-    zip_it_state_name,
-    zip_it_advance_fn_name,
-    zip_it_dereference_fn_name,
-    tuple_value_type,
-    base_it_states,
-    base_it_advance_fns,
-    base_it_dereference_fns);
-
-  using ZipStateT = zip_iterator_state_t<IteratorStateTs...>;
-  auto zip_it     = make_iterator<TupleValueT, ZipStateT>(
-    {zip_it_state_name, zip_it_state_src},
-    {zip_it_advance_fn_name, zip_it_advance_fn_src},
-    {zip_it_dereference_fn_name, zip_it_dereference_fn_src});
-
-  return zip_it;
 }
 
 template <class T>
