@@ -8,12 +8,12 @@ CUB
    :maxdepth: 3
 
    modules
-   api/index
    test_overview
    benchmarking
    tuning
    developer_overview
    releases
+   api/index
 
 What is CUB?
 ==================================================
