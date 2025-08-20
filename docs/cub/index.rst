@@ -7,12 +7,12 @@ CUB
    :hidden:
    :maxdepth: 3
 
-   modules
    test_overview
    benchmarking
    tuning
    developer_overview
    releases
+   api
    api/index
 
 What is CUB?

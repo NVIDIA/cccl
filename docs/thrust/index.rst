@@ -8,10 +8,10 @@ Thrust
    :maxdepth: 2
 
    Overview <self>
-   api
    developer_cmake_options
    releases
    release_process
+   api
    api/index
 
 Thrust is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the
