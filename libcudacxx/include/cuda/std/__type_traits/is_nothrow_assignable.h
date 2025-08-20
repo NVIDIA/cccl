@@ -50,7 +50,7 @@ struct __cccl_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
 
 template <class _Tp, class _Arg>
 struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
-    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())>
+    : public integral_constant<bool, noexcept(::cuda::std::declval<_Tp>() = ::cuda::std::declval<_Arg>())>
 {};
 
 template <class _Tp, class _Arg>

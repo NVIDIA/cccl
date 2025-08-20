@@ -356,8 +356,8 @@ long double    truncl(long double x);
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 #if _CCCL_COMPILER(NVRTC)
-#  define INFINITY _CUDA_VSTD::numeric_limits<float>::infinity()
-#  define NAN      _CUDA_VSTD::numeric_limits<float>::quiet_NaN()
+#  define INFINITY ::cuda::std::numeric_limits<float>::infinity()
+#  define NAN      ::cuda::std::numeric_limits<float>::quiet_NaN()
 #endif // _CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
@@ -404,11 +404,11 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(float __x,
 #  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
   {
-    if (_CUDA_VSTD::isnan(__x))
+    if (::cuda::std::isnan(__x))
     {
       return __y;
     }
-    if (_CUDA_VSTD::isnan(__y))
+    if (::cuda::std::isnan(__y))
     {
       return __x;
     }
@@ -423,11 +423,11 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(double __
 #  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
   {
-    if (_CUDA_VSTD::isnan(__x))
+    if (::cuda::std::isnan(__x))
     {
       return __y;
     }
-    if (_CUDA_VSTD::isnan(__y))
+    if (::cuda::std::isnan(__y))
     {
       return __x;
     }
@@ -443,11 +443,11 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX long double __constexpr_fmax(long
 #    if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
   {
-    if (_CUDA_VSTD::isnan(__x))
+    if (::cuda::std::isnan(__x))
     {
       return __y;
     }
-    if (_CUDA_VSTD::isnan(__y))
+    if (::cuda::std::isnan(__y))
     {
       return __x;
     }
@@ -462,7 +462,7 @@ template <class _Tp, class _Up, enable_if_t<is_arithmetic<_Tp>::value && is_arit
 _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __constexpr_fmax(_Tp __x, _Up __y) noexcept
 {
   using __result_type = __promote_t<_Tp, _Up>;
-  return _CUDA_VSTD::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
+  return ::cuda::std::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
@@ -470,7 +470,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __constexpr
 template <class _A1>
 _CCCL_API inline _A1 __constexpr_logb(_A1 __x)
 {
-  return _CUDA_VSTD::logb(__x);
+  return ::cuda::std::logb(__x);
 }
 #else
 template <class _Tp>
@@ -485,17 +485,17 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp __x)
       return -numeric_limits<_Tp>::infinity();
     }
 
-    if (_CUDA_VSTD::isinf(__x))
+    if (::cuda::std::isinf(__x))
     {
       return numeric_limits<_Tp>::infinity();
     }
 
-    if (_CUDA_VSTD::isnan(__x))
+    if (::cuda::std::isnan(__x))
     {
       return numeric_limits<_Tp>::quiet_NaN();
     }
 
-    __x                      = _CUDA_VSTD::fabs(__x);
+    __x                      = ::cuda::std::fabs(__x);
     unsigned long long __exp = 0;
     while (__x >= _Tp(numeric_limits<_Tp>::radix))
     {
@@ -547,7 +547,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_Tp __x, i
       return __x;
     }
 
-    if (_CUDA_VSTD::isinf(__x))
+    if (::cuda::std::isinf(__x))
     {
       return __x;
     }
@@ -557,7 +557,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_Tp __x, i
       return __x;
     }
 
-    if (_CUDA_VSTD::isnan(__x))
+    if (::cuda::std::isnan(__x))
     {
       return numeric_limits<_Tp>::quiet_NaN();
     }

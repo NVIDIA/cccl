@@ -103,11 +103,11 @@ struct __fn
   {
     if constexpr (sized_range<_Rp>)
     {
-      return static_cast<range_difference_t<_Rp>>(_CUDA_VRANGES::size(__r));
+      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::size(__r));
     }
     else
     {
-      return operator()(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r));
+      return operator()(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
     }
     _CCCL_UNREACHABLE();
   }

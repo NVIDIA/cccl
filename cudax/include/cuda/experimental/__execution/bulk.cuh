@@ -106,7 +106,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       // different signatures, so we need to type-check them separately.
       if constexpr (_BulkTag::__is_chunked())
       {
-        if constexpr (_CUDA_VSTD::__is_callable_v<_Fn&, _Shape, _Shape, _Ts&...>)
+        if constexpr (::cuda::std::__is_callable_v<_Fn&, _Shape, _Shape, _Ts&...>)
         {
           return completion_signatures<set_value_t(_Ts...)>{}
                + __eptr_completion_if<!__nothrow_callable<_Fn&, _Shape, _Shape, _Ts&...>>();
@@ -119,7 +119,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
                                               _WITH_ARGUMENTS(_Shape, _Shape, _Ts & ...)>();
         }
       }
-      else if constexpr (_CUDA_VSTD::__is_callable_v<_Fn&, _Shape, _Ts&...>)
+      else if constexpr (::cuda::std::__is_callable_v<_Fn&, _Shape, _Ts&...>)
       {
         return completion_signatures<set_value_t(_Ts...)>{}
              + __eptr_completion_if<!__nothrow_callable<_Fn&, _Shape, _Ts&...>>();
@@ -227,7 +227,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     // not have `connect` functions, since they should never be called. Hence, we
     // constrain these functions with !same_as<_BulkTag, bulk_t>.
     _CCCL_TEMPLATE(class _Rcvr)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_BulkTag, bulk_t>) )
+    _CCCL_REQUIRES((!::cuda::std::same_as<_BulkTag, bulk_t>) )
     [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>
     {
       return __opstate_t<_Sndr, _Shape, _Fn, _Rcvr>{
@@ -238,7 +238,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     }
 
     _CCCL_TEMPLATE(class _Rcvr)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_BulkTag, bulk_t>) )
+    _CCCL_REQUIRES((!::cuda::std::same_as<_BulkTag, bulk_t>) )
     [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>
     {
       return __opstate_t<const _Sndr&, _Shape, _Fn, _Rcvr>{
@@ -269,7 +269,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   template <class _Policy, class _Shape, class _Fn>
   [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
   {
-    static_assert(_CUDA_VSTD::integral<_Shape>);
+    static_assert(::cuda::std::integral<_Shape>);
     static_assert(is_execution_policy_v<_Policy>);
     using __closure_t = typename _BulkTag::template __closure_t<_Policy, _Shape, _Fn>;
     return __closure_t{{__policy, __shape, static_cast<_Fn&&>(__fn)}};
@@ -405,9 +405,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   // This function is called when `connect` is called on a `bulk` sender. It transforms
   // the `bulk` sender into a `bulk_chunked` sender.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t)
+  [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
-    static_assert(_CUDA_VSTD::is_same_v<tag_of_t<_Sndr>, bulk_t>);
+    static_assert(::cuda::std::is_same_v<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;
     auto& [__policy, __shape, __fn] = __data;
 
@@ -415,10 +415,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
 
     // Lower `bulk` to `bulk_chunked`. If `bulk_chunked` has a late customization, we will
     // see the customization.
-    return bulk_chunked(_CUDA_VSTD::forward_like<_Sndr>(__child),
+    return bulk_chunked(::cuda::std::forward_like<_Sndr>(__child),
                         __policy,
                         __shape,
-                        __chunked_fn_t{_CUDA_VSTD::forward_like<_Sndr>(__fn)});
+                        __chunked_fn_t{::cuda::std::forward_like<_Sndr>(__fn)});
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool __is_chunked() noexcept

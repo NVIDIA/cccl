@@ -52,7 +52,7 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
     *__result++                                                 = __init;
     if (++__first != __last)
     {
-      return _CUDA_VSTD::inclusive_scan(__first, __last, __result, __b, __init);
+      return ::cuda::std::inclusive_scan(__first, __last, __result, __b, __init);
     }
   }
 
@@ -63,7 +63,7 @@ template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::inclusive_scan(__first, __last, __result, _CUDA_VSTD::plus<>());
+  return ::cuda::std::inclusive_scan(__first, __last, __result, ::cuda::std::plus<>());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

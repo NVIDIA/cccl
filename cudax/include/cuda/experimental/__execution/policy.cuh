@@ -58,7 +58,7 @@ template <>
 inline constexpr bool is_execution_policy_v<execution::any_execution_policy> = true;
 
 template <class _Ty>
-struct is_execution_policy : _CUDA_VSTD::bool_constant<is_execution_policy_v<_Ty>>
+struct is_execution_policy : ::cuda::std::bool_constant<is_execution_policy_v<_Ty>>
 {};
 
 namespace execution
@@ -101,7 +101,7 @@ struct any_execution_policy
 };
 
 template <__execution_policy _Policy>
-struct _CCCL_DECLSPEC_EMPTY_BASES __policy : _CUDA_VSTD::integral_constant<__execution_policy, _Policy>
+struct _CCCL_DECLSPEC_EMPTY_BASES __policy : ::cuda::std::integral_constant<__execution_policy, _Policy>
 {};
 
 struct sequenced_policy : __policy<__execution_policy::sequenced>
@@ -133,13 +133,13 @@ struct get_execution_policy_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_execution_policy = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
-  requires(_CUDA_VSTD::is_convertible_v<decltype(__t.get_execution_policy()), __execution_policy>));
+  requires(::cuda::std::is_convertible_v<decltype(__t.get_execution_policy()), __execution_policy>));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_execution_policy = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_execution_policy<_Env>),
-  requires(_CUDA_VSTD::is_convertible_v<_CUDA_STD_EXEC::__query_result_t<const _Env&, get_execution_policy_t>,
-                                        __execution_policy>));
+  requires(::cuda::std::is_convertible_v<::cuda::std::execution::__query_result_t<const _Env&, get_execution_policy_t>,
+                                         __execution_policy>));
 
 struct get_execution_policy_t
 {

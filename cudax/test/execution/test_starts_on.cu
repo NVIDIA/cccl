@@ -251,11 +251,11 @@ C2H_TEST("starts_on domain forwarding", "[adaptors][starts_on]")
 
   // Check that the sender has the expected domain
   STATIC_REQUIRE(
-    _CUDA_VSTD::is_same_v<decltype(cudax_async::get_domain(cudax_async::get_env(snd))), cudax_async::default_domain>);
+    ::cuda::std::is_same_v<decltype(cudax_async::get_domain(cudax_async::get_env(snd))), cudax_async::default_domain>);
 
   // Check that the sender has the expected domain override
   STATIC_REQUIRE(
-    _CUDA_VSTD::is_same_v<decltype(cudax_async::get_domain_override(cudax_async::get_env(snd))), test_domain>);
+    ::cuda::std::is_same_v<decltype(cudax_async::get_domain_override(cudax_async::get_env(snd))), test_domain>);
 
   // Verify that the correct lazy transformation from the test_domain is applied:
   auto op = cudax_async::connect(std::move(snd), checked_value_receiver{-1});

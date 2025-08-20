@@ -49,7 +49,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using __tuple_t               = _CUDA_VSTD::__tuple<_Ts...>;
+    using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
     _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
         : __rcvr_{__rcvr}
@@ -67,8 +67,8 @@ private:
 
     _CCCL_API constexpr void start() noexcept
     {
-      _CUDA_VSTD::__apply(
-        _SetTag{}, static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
+      ::cuda::std::__apply(
+        _SetTag{}, static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
     }
 
     _Rcvr __rcvr_;
@@ -127,7 +127,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
     -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{
-      static_cast<_Rcvr&&>(__rcvr), static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_)};
+      static_cast<_Rcvr&&>(__rcvr), static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_)};
   }
 
   template <class _Rcvr>
@@ -143,7 +143,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
-  _CUDA_VSTD::__tuple<_Ts...> __values_;
+  ::cuda::std::__tuple<_Ts...> __values_;
 };
 
 template <class... _Ts>

@@ -32,7 +32,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <>
-class barrier<thread_scope_thread, _CUDA_VSTD::__empty_completion> : private barrier<thread_scope_block>
+class barrier<thread_scope_thread, ::cuda::std::__empty_completion> : private barrier<thread_scope_block>
 {
   using __base = barrier<thread_scope_block>;
 
@@ -40,8 +40,8 @@ public:
   using __base::__base;
 
   _CCCL_API inline friend void init(barrier* __b,
-                                    _CUDA_VSTD::ptrdiff_t __expected,
-                                    _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
+                                    ::cuda::std::ptrdiff_t __expected,
+                                    ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
   {
     init(static_cast<__base*>(__b), __expected, __completion);
   }

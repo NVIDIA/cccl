@@ -66,8 +66,8 @@ template <class _Tp>
 struct __tuple_like_impl<complex<_Tp>> : true_type
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct __tuple_like_impl<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>> : true_type
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct __tuple_like_impl<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : true_type
 {};
 
 template <class... _Tp>

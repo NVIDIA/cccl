@@ -290,7 +290,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     using __sch_sndr _CCCL_NODEBUG_ALIAS   = schedule_result_t<_Sch>;
-    using __child_sndr _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
+    using __child_sndr _CCCL_NODEBUG_ALIAS = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
     _CUDAX_LET_COMPLETIONS(
       auto(__sndr_completions) = execution::get_completion_signatures<__child_sndr, __env_t<_Sch, _Env>...>())
     {

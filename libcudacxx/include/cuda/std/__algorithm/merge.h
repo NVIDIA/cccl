@@ -43,7 +43,7 @@ _CCCL_API constexpr _OutputIterator __merge(
   {
     if (__first2 == __last2)
     {
-      return _CUDA_VSTD::copy(__first1, __last1, __result);
+      return ::cuda::std::copy(__first1, __last1, __result);
     }
     if (__comp(*__first2, *__first1))
     {
@@ -56,7 +56,7 @@ _CCCL_API constexpr _OutputIterator __merge(
       ++__first1;
     }
   }
-  return _CUDA_VSTD::copy(__first2, __last2, __result);
+  return ::cuda::std::copy(__first2, __last2, __result);
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
@@ -68,7 +68,7 @@ merge(_InputIterator1 __first1,
       _OutputIterator __result,
       _Compare __comp)
 {
-  return _CUDA_VSTD::__merge<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __result, __comp);
+  return ::cuda::std::__merge<__comp_ref_type<_Compare>>(__first1, __last1, __first2, __last2, __result, __comp);
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
@@ -79,7 +79,7 @@ merge(_InputIterator1 __first1,
       _InputIterator2 __last2,
       _OutputIterator __result)
 {
-  return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less{});
+  return ::cuda::std::merge(__first1, __last1, __first2, __last2, __result, __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

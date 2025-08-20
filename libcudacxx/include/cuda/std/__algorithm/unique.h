@@ -33,10 +33,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Iter, class _Sent, class _BinaryPredicate>
-[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::pair<_Iter, _Iter>
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::pair<_Iter, _Iter>
 __unique(_Iter __first, _Sent __last, _BinaryPredicate&& __pred)
 {
-  __first = _CUDA_VSTD::adjacent_find(__first, __last, __pred);
+  __first = ::cuda::std::adjacent_find(__first, __last, __pred);
   if (__first != __last)
   {
     // ...  a  a  ?  ...
@@ -50,9 +50,9 @@ __unique(_Iter __first, _Sent __last, _BinaryPredicate&& __pred)
       }
     }
     ++__first;
-    return _CUDA_VSTD::pair<_Iter, _Iter>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__i));
+    return ::cuda::std::pair<_Iter, _Iter>(::cuda::std::move(__first), ::cuda::std::move(__i));
   }
-  return _CUDA_VSTD::pair<_Iter, _Iter>(__first, __first);
+  return ::cuda::std::pair<_Iter, _Iter>(__first, __first);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -60,13 +60,13 @@ template <class _ForwardIterator, class _BinaryPredicate>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 unique(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__unique<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred).first;
+  return ::cuda::std::__unique<_ClassicAlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), __pred).first;
 }
 
 template <class _ForwardIterator>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator unique(_ForwardIterator __first, _ForwardIterator __last)
 {
-  return _CUDA_VSTD::unique(__first, __last, __equal_to{});
+  return ::cuda::std::unique(__first, __last, __equal_to{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

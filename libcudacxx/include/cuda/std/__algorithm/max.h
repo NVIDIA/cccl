@@ -46,13 +46,13 @@ template <class _Tp>
 template <class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr _Tp max(initializer_list<_Tp> __t, _Compare __comp)
 {
-  return *_CUDA_VSTD::__max_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
+  return *::cuda::std::__max_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp max(initializer_list<_Tp> __t)
 {
-  return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less{});
+  return *::cuda::std::max_element(__t.begin(), __t.end(), __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

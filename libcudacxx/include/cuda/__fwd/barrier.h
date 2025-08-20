@@ -28,7 +28,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion>
+template <thread_scope _Sco, class _CompletionF = ::cuda::std::__empty_completion>
 class barrier;
 
 _CCCL_END_NAMESPACE_CUDA

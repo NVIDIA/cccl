@@ -60,7 +60,7 @@ struct __allocation_guard
 
   template <class _AllocT> // we perform the allocator conversion inside the constructor
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(_AllocT __alloc, _Size __n)
-      : __alloc_(_CUDA_VSTD::move(__alloc))
+      : __alloc_(::cuda::std::move(__alloc))
       , __n_(__n)
       , __ptr_(allocator_traits<_Alloc>::allocate(__alloc_, __n_)) // initialization order is important
   {}

@@ -240,14 +240,14 @@ public:
       auto __new_sch = __data;
       auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{});
 
-      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
+      if constexpr (::cuda::std::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
       {
         return __not_a_sender<_Env>{};
       }
       else
       {
         using __sndr_t = __lowered_sndr_t<decltype(__child), decltype(__new_sch), _Env>;
-        return __sndr_t{_CUDA_VSTD::forward_like<_Sndr>(__child), __new_sch, __env};
+        return __sndr_t{::cuda::std::forward_like<_Sndr>(__child), __new_sch, __env};
       }
     }
     else
@@ -257,7 +257,7 @@ public:
                                   get_completion_scheduler<set_value_t>,
                                   __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{}));
 
-      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
+      if constexpr (::cuda::std::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
       {
         return __not_a_sender<_Env>{};
       }
@@ -265,7 +265,7 @@ public:
       {
         using __sndr_t = __lowered_sndr_t<decltype(__child), decltype(__new_sch), _Env, decltype(__closure)>;
         return __sndr_t{
-          _CUDA_VSTD::forward_like<_Sndr>(__child), __new_sch, __env, _CUDA_VSTD::forward_like<_Sndr>(__closure)};
+          ::cuda::std::forward_like<_Sndr>(__child), __new_sch, __env, ::cuda::std::forward_like<_Sndr>(__closure)};
       }
     }
   }
@@ -273,9 +273,9 @@ public:
 
 template <class _Sndr, class _NewSch, class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__lowered_sndr_t<_Sndr, _NewSch, _Env>
-    : _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env>
+    : ::cuda::std::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env>
 {
-  using __base_t = _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env>;
+  using __base_t = ::cuda::std::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env>;
 
   _CCCL_API constexpr __lowered_sndr_t(_Sndr&& __sndr, _NewSch __new_sch, _Env const& __env)
       : __base_t{on_t::__lower_sndr_fn{}(static_cast<_Sndr&&>(__sndr), static_cast<_NewSch&&>(__new_sch), __env)}
@@ -289,9 +289,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__lowered_sndr_t<_Sndr, _NewSch, _Env
 
 template <class _Sndr, class _NewSch, class _Env, class _Closure>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__lowered_sndr_t<_Sndr, _NewSch, _Env, _Closure>
-    : _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure>
+    : ::cuda::std::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure>
 {
-  using __base_t = _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure>;
+  using __base_t = ::cuda::std::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure>;
 
   _CCCL_API constexpr __lowered_sndr_t(_Sndr&& __sndr, _NewSch __new_sch, _Env const& __env, _Closure __closure)
       : __base_t{on_t::__lower_sndr_fn{}(
@@ -327,7 +327,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr, _Closure>
   }
 
   _CCCL_NO_UNIQUE_ADDRESS on_t __tag_;
-  _CUDA_VSTD::__pair<_Sch, _Closure> __sch_closure_;
+  ::cuda::std::__pair<_Sch, _Closure> __sch_closure_;
   _Sndr __sndr_;
 };
 

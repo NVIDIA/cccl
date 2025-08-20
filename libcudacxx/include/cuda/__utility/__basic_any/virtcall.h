@@ -86,7 +86,7 @@ using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
   __virtuals_map<__overrides_for_t<_Interface>, __overrides_for_t<__rebind_interface<_Interface, _Super>>>;
 
 template <auto _Mbr, class _Interface, class _Super>
-extern _CUDA_VSTD::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ctag<_Mbr>> __virtual_fn_for_v;
+extern ::cuda::std::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ctag<_Mbr>> __virtual_fn_for_v;
 
 // This alias indirects through the above variable template to cache the result
 // of the virtuals map lookup.

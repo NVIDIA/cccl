@@ -141,7 +141,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-inline constexpr __fp_format __fp_format_of_v = _CUDA_VSTD::__fp_format_of_v_impl<_Tp>();
+inline constexpr __fp_format __fp_format_of_v = ::cuda::std::__fp_format_of_v_impl<_Tp>();
 
 template <class _Tp>
 inline constexpr __fp_format __fp_format_of_v<const _Tp> = __fp_format_of_v<_Tp>;

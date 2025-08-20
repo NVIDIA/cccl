@@ -41,9 +41,9 @@ template <class _Tp>
 _CCCL_API constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
 {
-  _Tp __t(_CUDA_VSTD::move(__x));
-  __x = _CUDA_VSTD::move(__y);
-  __y = _CUDA_VSTD::move(__t);
+  _Tp __t(::cuda::std::move(__x));
+  __x = ::cuda::std::move(__y);
+  __y = ::cuda::std::move(__t);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

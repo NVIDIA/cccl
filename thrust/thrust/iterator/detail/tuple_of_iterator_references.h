@@ -150,7 +150,7 @@ struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts..
 
 template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : _CUDA_VSTD::tuple_element<Id, _CUDA_VSTD::tuple<Ts...>>
+    : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -167,7 +167,7 @@ struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts..
 
 template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : _CUDA_VSTD::tuple_element<Id, _CUDA_VSTD::tuple<Ts...>>
+    : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
 
 } // namespace std

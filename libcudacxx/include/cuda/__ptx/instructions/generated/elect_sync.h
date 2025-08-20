@@ -12,10 +12,10 @@ __device__ static inline bool elect_sync(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_elect_sync_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline bool elect_sync(const _CUDA_VSTD::uint32_t& __membermask)
+_CCCL_DEVICE static inline bool elect_sync(const ::cuda::std::uint32_t& __membermask)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint32_t __is_elected;
+  ::cuda::std::uint32_t __is_elected;
   asm volatile(
     "{\n\t .reg .pred P_OUT; \n\t"
     "elect.sync _|P_OUT, %1;\n\t"

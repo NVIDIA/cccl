@@ -48,8 +48,8 @@ inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __sr
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (asm volatile("cp.async.ca.shared.global [%0], [%1], %2, %2;" : : "r"(
-                    static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__dest))),
-                  "l"(static_cast<_CUDA_VSTD::uint64_t>(::__cvta_generic_to_global(__src))),
+                    static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__dest))),
+                  "l"(static_cast<::cuda::std::uint64_t>(::__cvta_generic_to_global(__src))),
                   "n"(_Copy_size) : "memory");),
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
@@ -62,15 +62,15 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;" : : "r"(
-                    static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__dest))),
-                  "l"(static_cast<_CUDA_VSTD::uint64_t>(::__cvta_generic_to_global(__src))),
+                    static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__dest))),
+                  "l"(static_cast<::cuda::std::uint64_t>(::__cvta_generic_to_global(__src))),
                   "n"(16) : "memory");),
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 
 template <size_t _Alignment, typename _Group>
 inline _CCCL_DEVICE void
-__cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size)
+__cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, ::cuda::std::size_t __size)
 {
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.

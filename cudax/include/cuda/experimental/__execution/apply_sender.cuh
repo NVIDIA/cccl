@@ -45,8 +45,8 @@ private:
   //! @tparam _Domain The domain to check.
   //! @tparam _Args The arguments to validate against the domain.
   template <class _Domain, class... _Args>
-  using __apply_domain_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::
-    _If<_CUDA_VSTD::_IsValidExpansion<__apply_sender_result_t, _Domain, _Args...>::value, _Domain, default_domain>;
+  using __apply_domain_t _CCCL_NODEBUG_ALIAS = ::cuda::std::
+    _If<::cuda::std::_IsValidExpansion<__apply_sender_result_t, _Domain, _Args...>::value, _Domain, default_domain>;
 
 public:
   //! Applies a sender to a domain, tag, and arguments.

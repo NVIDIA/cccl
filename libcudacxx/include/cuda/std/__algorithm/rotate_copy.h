@@ -30,7 +30,7 @@ template <class _ForwardIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator
 rotate_copy(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::copy(__first, __middle, _CUDA_VSTD::copy(__middle, __last, __result));
+  return ::cuda::std::copy(__first, __middle, ::cuda::std::copy(__middle, __last, __result));
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

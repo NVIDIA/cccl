@@ -56,7 +56,7 @@ struct [[deprecated]] __deprecated
 struct __nil
 {};
 
-_CCCL_API constexpr auto __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept -> size_t
+_CCCL_API constexpr auto __maximum(::cuda::std::initializer_list<size_t> __il) noexcept -> size_t
 {
   size_t __max = 0;
   for (auto i : __il)
@@ -84,7 +84,7 @@ _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const
 template <class _Ty, class... _Ts>
 _CCCL_API constexpr auto __index_of() noexcept -> size_t
 {
-  constexpr bool __same[] = {_CUDA_VSTD::is_same_v<_Ty, _Ts>...};
+  constexpr bool __same[] = {::cuda::std::is_same_v<_Ty, _Ts>...};
   return execution::__find_pos(__same, __same + sizeof...(_Ts));
 }
 
@@ -119,7 +119,7 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 [[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
-  -> _CUDA_VSTD::decay_t<_Ty>
+  -> ::cuda::std::decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }
@@ -161,7 +161,7 @@ struct __managed_box : private __immovable
   _CCCL_HIDE_FROM_ABI __managed_box() = default;
 
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CUDA_VSTD::constructible_from<_Ty, _Args...>)
+  _CCCL_REQUIRES(::cuda::std::constructible_from<_Ty, _Args...>)
   _CCCL_HOST_API explicit __managed_box(_Args&&... __args) noexcept(__nothrow_constructible<_Ty, _Args...>)
       : __value{static_cast<_Args&&>(__args)...}
   {
@@ -170,30 +170,30 @@ struct __managed_box : private __immovable
   }
 
   template <class... _Args>
-  _CCCL_HOST_API static auto __make_unique(_Args&&... __args) -> _CUDA_VSTD::unique_ptr<__managed_box>
+  _CCCL_HOST_API static auto __make_unique(_Args&&... __args) -> ::cuda::std::unique_ptr<__managed_box>
   {
-    return _CUDA_VSTD::make_unique<__managed_box>(static_cast<_Args&&>(__args)...);
+    return ::cuda::std::make_unique<__managed_box>(static_cast<_Args&&>(__args)...);
   }
 
   _CCCL_HOST_API static auto operator new(size_t __size) -> void*
   {
     void* __ptr = nullptr;
     _CCCL_TRY_CUDA_API(::cudaMallocManaged, "cudaMallocManaged failed", &__ptr, __size);
-    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure the memory is allocated before returning it.
+    ::cuda::std::ignore = ::cudaDeviceSynchronize(); // Ensure the memory is allocated before returning it.
     return __ptr;
   }
 
   _CCCL_HOST_API static void operator delete(void* __ptr, size_t) noexcept
   {
-    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure all operations on the memory are complete.
-    _CUDA_VSTD::ignore = ::cudaFree(__ptr);
+    ::cuda::std::ignore = ::cudaDeviceSynchronize(); // Ensure all operations on the memory are complete.
+    ::cuda::std::ignore = ::cudaFree(__ptr);
   }
 
   value_type __value;
 
 private:
   // Prevent the construction of __managed_box without dynamic allocation.
-  friend struct _CUDA_VSTD::default_delete<__managed_box<_Ty>>;
+  friend struct ::cuda::std::default_delete<__managed_box<_Ty>>;
   ~__managed_box() = default;
 };
 
@@ -209,11 +209,11 @@ private:
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {
-      _CUDA_VSTD::__is_callable_v<_CUDA_VSTD::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
+      ::cuda::std::__is_callable_v<::cuda::std::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
     constexpr size_t __idx = execution::__find_pos(__flags, __flags + sizeof...(_Fns));
     if constexpr (__idx != __npos)
     {
-      return _CUDA_VSTD::__get<__idx>(static_cast<_Self&&>(__self).__fns_);
+      return ::cuda::std::__get<__idx>(static_cast<_Self&&>(__self).__fns_);
     }
   }
 
@@ -227,7 +227,7 @@ public:
   template <class... _Args>
   _CCCL_TRIVIAL_API constexpr auto
   operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
-    -> _CUDA_VSTD::__call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
+    -> ::cuda::std::__call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
   {
     return __first_callable::__get_1st<_Args...>(static_cast<__first_callable&&>(*this))(
       static_cast<_Args&&>(__args)...);
@@ -238,12 +238,12 @@ public:
   template <class... _Args>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
-    -> _CUDA_VSTD::__call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
+    -> ::cuda::std::__call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
   {
     return __first_callable::__get_1st<_Args...>(*this)(static_cast<_Args&&>(__args)...);
   }
 
-  _CUDA_VSTD::__tuple<_Fns...> __fns_;
+  ::cuda::std::__tuple<_Fns...> __fns_;
 };
 
 template <class... _Fns>

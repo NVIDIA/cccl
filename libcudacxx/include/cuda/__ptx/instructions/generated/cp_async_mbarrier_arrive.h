@@ -12,7 +12,7 @@ __device__ static inline void cp_async_mbarrier_arrive(
 #if __cccl_ptx_isa >= 700
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_mbarrier_arrive_is_not_supported_before_SM_80__();
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_mbarrier_arrive(_CUDA_VSTD::uint64_t* __addr)
+_CCCL_DEVICE static inline void cp_async_mbarrier_arrive(::cuda::std::uint64_t* __addr)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("cp.async.mbarrier.arrive.b64 [%0];" : : "r"(__as_ptr_smem(__addr)) : "memory");

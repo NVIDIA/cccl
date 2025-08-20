@@ -36,7 +36,7 @@ struct __is_allocator : false_type
 template <typename _Alloc>
 struct __is_allocator<_Alloc,
                       void_t<typename _Alloc::value_type>,
-                      void_t<decltype(_CUDA_VSTD::declval<_Alloc&>().allocate(size_t(0)))>> : true_type
+                      void_t<decltype(::cuda::std::declval<_Alloc&>().allocate(size_t(0)))>> : true_type
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

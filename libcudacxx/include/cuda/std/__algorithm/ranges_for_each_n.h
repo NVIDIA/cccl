@@ -48,10 +48,10 @@ struct __fn
   {
     while (__count-- > 0)
     {
-      _CUDA_VSTD::invoke(__func, _CUDA_VSTD::invoke(__proj, *__first));
+      ::cuda::std::invoke(__func, ::cuda::std::invoke(__proj, *__first));
       ++__first;
     }
-    return {_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__func)};
+    return {::cuda::std::move(__first), ::cuda::std::move(__func)};
   }
 };
 _CCCL_END_NAMESPACE_CPO

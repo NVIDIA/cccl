@@ -90,7 +90,7 @@ public:
   static device_memory_pool from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static device_memory_pool from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static device_memory_pool from_native_handle(::cuda::std::nullptr_t) = delete;
 };
 
 } // namespace cuda::experimental

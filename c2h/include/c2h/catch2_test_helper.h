@@ -305,15 +305,15 @@ enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>
   {
     os << ", ";
   }
-  os << _CUDA_VSTD::get<N>(tup);
-  _CUDA_VSTD::print_elem<N + 1>(os, tup);
+  os << ::cuda::std::get<N>(tup);
+  ::cuda::std::print_elem<N + 1>(os, tup);
 }
 
 template <typename... T>
 ::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
 {
   os << "[";
-  _CUDA_VSTD::print_elem<0>(os, tup);
+  ::cuda::std::print_elem<0>(os, tup);
   return os << "]";
 }
 _CCCL_END_NAMESPACE_CUDA_STD

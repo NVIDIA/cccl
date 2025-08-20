@@ -24,8 +24,8 @@ _CCCL_DEVICE static inline void cp_async_bulk(
   space_global_t,
   void* __dstMem,
   const void* __srcMem,
-  const _CUDA_VSTD::uint32_t& __size,
-  _CUDA_VSTD::uint64_t* __smem_bar)
+  const ::cuda::std::uint32_t& __size,
+  ::cuda::std::uint64_t* __smem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_global (due to parameter type constraint)
@@ -62,8 +62,8 @@ _CCCL_DEVICE static inline void cp_async_bulk(
   space_global_t,
   void* __dstMem,
   const void* __srcMem,
-  const _CUDA_VSTD::uint32_t& __size,
-  _CUDA_VSTD::uint64_t* __smem_bar)
+  const ::cuda::std::uint32_t& __size,
+  ::cuda::std::uint64_t* __smem_bar)
 {
 // __space == space_shared (due to parameter type constraint)
 // __space == space_global (due to parameter type constraint)
@@ -100,8 +100,8 @@ _CCCL_DEVICE static inline void cp_async_bulk(
   space_shared_t,
   void* __dstMem,
   const void* __srcMem,
-  const _CUDA_VSTD::uint32_t& __size,
-  _CUDA_VSTD::uint64_t* __rdsmem_bar)
+  const ::cuda::std::uint32_t& __size,
+  ::cuda::std::uint64_t* __rdsmem_bar)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -136,7 +136,7 @@ __device__ static inline void cp_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
-cp_async_bulk(space_global_t, space_shared_t, void* __dstMem, const void* __srcMem, const _CUDA_VSTD::uint32_t& __size)
+cp_async_bulk(space_global_t, space_shared_t, void* __dstMem, const void* __srcMem, const ::cuda::std::uint32_t& __size)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)
@@ -173,8 +173,8 @@ _CCCL_DEVICE static inline void cp_async_bulk_cp_mask(
   space_shared_t,
   void* __dstMem,
   const void* __srcMem,
-  const _CUDA_VSTD::uint32_t& __size,
-  const _CUDA_VSTD::uint16_t& __byteMask)
+  const ::cuda::std::uint32_t& __size,
+  const ::cuda::std::uint16_t& __byteMask)
 {
 // __space == space_global (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)

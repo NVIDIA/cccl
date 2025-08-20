@@ -11,8 +11,10 @@ CUDA C++ Core Libraries
    cub/index
    thrust/index
    cudax/index
-   CCCL 2.x ‐ CCCL 3.0 migration guide <cccl/3.0_migration_guide>
-   CCCL Development <cccl/development/index>
+   cccl/3.0_migration_guide
+   cccl/development/index
+   cccl/contributing
+   cccl/license
 
 Welcome to the CUDA Core Compute Libraries (CCCL) libraries for C++.
 

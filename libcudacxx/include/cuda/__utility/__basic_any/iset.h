@@ -50,20 +50,20 @@ struct __iset_ : __iset__<_Interfaces...>::template __interface_<>
 
 // flatten any nested sets
 template <class _Interface>
-using __iset_flatten _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__as_type_list<
-  _CUDA_VSTD::
-    conditional_t<__is_specialization_of_v<_Interface, __iset_>, _Interface, _CUDA_VSTD::__type_list<_Interface>>>;
+using __iset_flatten _CCCL_NODEBUG_ALIAS = ::cuda::std::__as_type_list<
+  ::cuda::std::
+    conditional_t<__is_specialization_of_v<_Interface, __iset_>, _Interface, ::cuda::std::__type_list<_Interface>>>;
 
 // flatten all sets into one, remove duplicates, and sort the elements.
 // TODO: sort!
 // template <class... _Interfaces>
-// using __iset _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<
-//   _CUDA_VSTD::__type_unique<_CUDA_VSTD::__type_sort<_CUDA_VSTD::__type_concat<__iset_flatten<_Interfaces>...>>>,
-//   _CUDA_VSTD::__type_quote<__iset_>>;
+// using __iset _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call<
+//   ::cuda::std::__type_unique<::cuda::std::__type_sort<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>>,
+//   ::cuda::std::__type_quote<__iset_>>;
 template <class... _Interfaces>
 using __iset =
-  _CUDA_VSTD::__type_call<_CUDA_VSTD::__type_unique<_CUDA_VSTD::__type_concat<__iset_flatten<_Interfaces>...>>,
-                          _CUDA_VSTD::__type_quote<__iset_>>;
+  ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
+                           ::cuda::std::__type_quote<__iset_>>;
 
 //!
 //! Virtual table pointers
@@ -90,7 +90,7 @@ struct __iset_vptr : __base_vptr
   _CCCL_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
       : __base_vptr(__vptr->__query_interface(__iunknown()))
   {
-    static_assert(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Others...>, _Interfaces...>, "");
+    static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>, "");
     _CCCL_ASSERT(__vptr_->__kind_ == __vtable_kind::__rtti && __vptr_->__cookie_ == 0xDEADBEEF,
                  "query_interface returned a bad pointer to the __iunknown vtable");
   }

@@ -47,7 +47,7 @@ class scaled_accessor
 {
 public:
   using element_type = add_const_t<
-    decltype(_CUDA_VSTD::declval<_ScalingFactor>() * _CUDA_VSTD::declval<typename _NestedAccessor::element_type>())>;
+    decltype(::cuda::std::declval<_ScalingFactor>() * ::cuda::std::declval<typename _NestedAccessor::element_type>())>;
   using reference        = remove_const_t<element_type>;
   using data_handle_type = typename _NestedAccessor::data_handle_type;
   using offset_policy    = scaled_accessor<_ScalingFactor, typename _NestedAccessor::offset_policy>;

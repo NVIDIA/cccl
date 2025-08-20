@@ -20,7 +20,7 @@ __device__ static inline void mbarrier_expect_tx(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_expect_tx_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _CCCL_DEVICE static inline void mbarrier_expect_tx(
-  sem_relaxed_t, scope_t<_Scope> __scope, space_shared_t, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint32_t __txCount)
+  sem_relaxed_t, scope_t<_Scope> __scope, space_shared_t, ::cuda::std::uint64_t* __addr, ::cuda::std::uint32_t __txCount)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
@@ -64,7 +64,11 @@ __device__ static inline void mbarrier_expect_tx(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_expect_tx_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _CCCL_DEVICE static inline void mbarrier_expect_tx(
-  sem_relaxed_t, scope_t<_Scope> __scope, space_cluster_t, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint32_t __txCount)
+  sem_relaxed_t,
+  scope_t<_Scope> __scope,
+  space_cluster_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint32_t __txCount)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");

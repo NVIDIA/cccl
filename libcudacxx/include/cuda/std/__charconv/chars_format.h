@@ -38,22 +38,22 @@ enum class chars_format
 
 [[nodiscard]] _CCCL_API constexpr chars_format operator~(chars_format __v) noexcept
 {
-  return chars_format(~_CUDA_VSTD::to_underlying(__v));
+  return chars_format(~::cuda::std::to_underlying(__v));
 }
 
 [[nodiscard]] _CCCL_API constexpr chars_format operator&(chars_format __lhs, chars_format __rhs) noexcept
 {
-  return chars_format(_CUDA_VSTD::to_underlying(__lhs) & _CUDA_VSTD::to_underlying(__rhs));
+  return chars_format(::cuda::std::to_underlying(__lhs) & ::cuda::std::to_underlying(__rhs));
 }
 
 [[nodiscard]] _CCCL_API constexpr chars_format operator|(chars_format __lhs, chars_format __rhs) noexcept
 {
-  return chars_format(_CUDA_VSTD::to_underlying(__lhs) | _CUDA_VSTD::to_underlying(__rhs));
+  return chars_format(::cuda::std::to_underlying(__lhs) | ::cuda::std::to_underlying(__rhs));
 }
 
 [[nodiscard]] _CCCL_API constexpr chars_format operator^(chars_format __lhs, chars_format __rhs) noexcept
 {
-  return chars_format(_CUDA_VSTD::to_underlying(__lhs) ^ _CUDA_VSTD::to_underlying(__rhs));
+  return chars_format(::cuda::std::to_underlying(__lhs) ^ ::cuda::std::to_underlying(__rhs));
 }
 
 _CCCL_API constexpr chars_format& operator&=(chars_format& __lhs, chars_format __rhs) noexcept

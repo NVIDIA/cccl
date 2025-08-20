@@ -91,7 +91,7 @@ template <class _Tp>
 {
   if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
-    return _CUDA_VSTD::bit_cast<_Tp>(__v);
+    return ::cuda::std::bit_cast<_Tp>(__v);
   }
   else if constexpr (__is_ext_cccl_fp_v<_Tp>)
   {
@@ -181,7 +181,7 @@ template <class _Tp>
 {
   if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
-    return _CUDA_VSTD::bit_cast<__fp_storage_of_t<_Tp>>(__v);
+    return ::cuda::std::bit_cast<__fp_storage_of_t<_Tp>>(__v);
   }
   else if constexpr (__is_ext_cccl_fp_v<_Tp>)
   {

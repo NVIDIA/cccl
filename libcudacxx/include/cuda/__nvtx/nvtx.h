@@ -100,7 +100,7 @@ _CCCL_END_NAMESPACE_CUDA
 // into a dispatch region running only on the host, while preserving the semantic scope where the range is declared.
 #  define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)                                                               \
     _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                            \
-    _CUDA_VSTD::optional<::nvtx3::v1::scoped_range_in<::cuda::detail::NVTXCCCLDomain>> __cuda_nvtx3_range;         \
+    ::cuda::std::optional<::nvtx3::v1::scoped_range_in<::cuda::detail::NVTXCCCLDomain>> __cuda_nvtx3_range;        \
     NV_IF_TARGET(                                                                                                  \
       NV_IS_HOST,                                                                                                  \
       static const ::nvtx3::v1::registered_string_in<::cuda::detail::NVTXCCCLDomain> __cuda_nvtx3_func_name{name}; \

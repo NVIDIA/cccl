@@ -79,11 +79,11 @@ struct __completion_fn<true, true>
 
 template <class _Result, bool _Nothrow>
 using __completion_ _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
+  ::cuda::std::__type_call1<__completion_fn<::cuda::std::is_same_v<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
 using __completion _CCCL_NODEBUG_ALIAS =
-  __completion_<_CUDA_VSTD::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+  __completion_<::cuda::std::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 
 template <class _Fn, class _Rcvr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
@@ -115,7 +115,7 @@ struct __upon_t
     {
       if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
       {
-        if constexpr (_CUDA_VSTD::is_same_v<void, _CUDA_VSTD::__call_result_t<_Fn, _Ts...>>)
+        if constexpr (::cuda::std::is_same_v<void, ::cuda::std::__call_result_t<_Fn, _Ts...>>)
         {
           static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...);
           execution::set_value(static_cast<_Rcvr&&>(__state_->__rcvr_));
@@ -206,7 +206,7 @@ struct __upon_t
     template <class... _Ts>
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
-      if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Ts...>)
+      if constexpr (::cuda::std::__is_callable_v<_Fn, _Ts...>)
       {
         return __upon::__completion<_Fn, _Ts...>{};
       }
@@ -228,14 +228,14 @@ struct __upon_t
                                                        // extended (host/device) lambda
   {
     template <class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> ::cuda::std::__call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
     _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
-      -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+      -> ::cuda::std::__call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
     }

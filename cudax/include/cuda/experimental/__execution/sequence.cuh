@@ -164,7 +164,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     // because get_domain_override_t is not a forwarding query.
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_Query, get_completion_behavior_t>)
+    _CCCL_REQUIRES((!::cuda::std::same_as<_Query, get_completion_behavior_t>)
                      _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr2>, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
       noexcept(__nothrow_queryable_with<env_of_t<_Sndr2>, _Query, _Args...>)
@@ -182,7 +182,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   }
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VSTD::__ignore_t __ign_;
+  _CCCL_NO_UNIQUE_ADDRESS ::cuda::std::__ignore_t __ign_;
   _Sndr1 __sndr1_;
   _Sndr2 __sndr2_;
 };

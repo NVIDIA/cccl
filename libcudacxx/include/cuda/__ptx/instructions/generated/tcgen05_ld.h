@@ -12,8 +12,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -34,8 +34,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -56,8 +56,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -81,8 +81,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -106,8 +106,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -131,8 +131,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -156,8 +156,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -188,8 +188,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -220,8 +220,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -261,8 +261,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -302,8 +302,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -360,8 +360,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -418,8 +418,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -510,8 +510,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -602,8 +602,8 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -761,8 +761,8 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x64b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -920,8 +920,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -945,8 +945,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -970,8 +970,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -995,8 +995,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1020,8 +1020,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1052,8 +1052,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1084,8 +1084,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1125,8 +1125,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1166,8 +1166,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1224,8 +1224,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1282,8 +1282,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1374,8 +1374,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1466,8 +1466,8 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1625,8 +1625,8 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x128b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1784,8 +1784,8 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1809,8 +1809,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1834,8 +1834,8 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1866,8 +1866,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1898,8 +1898,8 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1939,8 +1939,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -1980,8 +1980,8 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2038,8 +2038,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2096,8 +2096,8 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2188,8 +2188,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2280,8 +2280,8 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2439,8 +2439,8 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x256b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2598,8 +2598,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2620,8 +2620,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2642,8 +2642,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2667,8 +2667,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2692,8 +2692,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2717,8 +2717,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2742,8 +2742,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2774,8 +2774,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2806,8 +2806,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2847,8 +2847,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2888,8 +2888,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -2946,8 +2946,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3004,8 +3004,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3096,8 +3096,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3188,8 +3188,8 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3347,8 +3347,8 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_32x32b_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr)
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
+_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3507,9 +3507,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3534,9 +3534,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[1], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3561,9 +3561,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3588,9 +3588,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[2], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3615,9 +3615,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3642,9 +3642,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[4], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3669,9 +3669,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3703,9 +3703,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[8], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3737,9 +3737,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3780,9 +3780,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[16], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3823,9 +3823,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3883,9 +3883,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[32], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -3943,9 +3943,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -4037,9 +4037,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[64], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -4131,9 +4131,9 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
@@ -4292,9 +4292,9 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_not_supported_before_SM_100a_SM_110a__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[128], _CUDA_VSTD::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL

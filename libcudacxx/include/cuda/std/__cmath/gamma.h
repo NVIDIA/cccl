@@ -100,21 +100,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half lgamma(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::lgammaf(__half2float(__x)));
+  return __float2half(::cuda::std::lgammaf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 lgamma(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::lgammaf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::lgammaf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double lgamma(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::lgamma((double) __x);
+  return ::cuda::std::lgamma((double) __x);
 }
 
 // tgamma
@@ -181,21 +181,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half tgamma(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::tgammaf(__half2float(__x)));
+  return __float2half(::cuda::std::tgammaf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 tgamma(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::tgammaf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::tgammaf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double tgamma(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::tgamma((double) __x);
+  return ::cuda::std::tgamma((double) __x);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

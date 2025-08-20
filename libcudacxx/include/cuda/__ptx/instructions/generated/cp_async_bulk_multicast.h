@@ -26,9 +26,9 @@ _CCCL_DEVICE static inline void cp_async_bulk(
   space_global_t,
   void* __dstMem,
   const void* __srcMem,
-  const _CUDA_VSTD::uint32_t& __size,
-  _CUDA_VSTD::uint64_t* __smem_bar,
-  const _CUDA_VSTD::uint16_t& __ctaMask)
+  const ::cuda::std::uint32_t& __size,
+  ::cuda::std::uint64_t* __smem_bar,
+  const ::cuda::std::uint16_t& __ctaMask)
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_global (due to parameter type constraint)

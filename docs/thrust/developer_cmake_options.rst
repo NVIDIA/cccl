@@ -1,20 +1,18 @@
 .. _cmake-options:
 
-Notice
-------
+Developer CMake Options
+=======================
 
-This document details the CMake options used for **developer builds**
-of the Thrust tests and examples included in the CCCL repository.
-The options presented here are not available when using Thrust as an
-end-user via our installed CMake packages, or when using
-``add_subdirectory`` / CPM to add CCCL/Thrust to your project's build system.
-For details and examples of using Thrust as an end-user, please refer
-to the following resources:
+.. important::
 
-- `Thrust + CMake example <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`__
+    This document details the CMake options used for **developer builds**
+    of the Thrust tests and examples included in the CCCL repository.
+    The options presented here are not available when using Thrust as an
+    end-user via our installed CMake packages, or when using
+    ``add_subdirectory`` / CPM to add CCCL/Thrust to your project's build system.
+    For details and examples of using Thrust as an end-user, please refer
+    to the `Thrust + CMake example <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`_
 
-CMake Options
-=============
 
 A Thrust build is configured using CMake options. These may be passed to
 CMake using

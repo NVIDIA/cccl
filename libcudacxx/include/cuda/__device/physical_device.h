@@ -74,8 +74,8 @@ public:
   physical_device(__detail::__emplace_device __ed)
       : physical_device(__ed.__id_)
   {}
-#    endif
-#  endif
+#    endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
 
   //! @brief Retrieve architecture traits of this device.
   //!
@@ -94,8 +94,8 @@ public:
   ::CUcontext primary_context() const
   {
     ::std::call_once(__init_once, [this]() {
-      __device      = _CUDA_DRIVER::__deviceGet(__id_);
-      __primary_ctx = _CUDA_DRIVER::__primaryCtxRetain(__device);
+      __device      = ::cuda::__driver::__deviceGet(__id_);
+      __primary_ctx = ::cuda::__driver::__primaryCtxRetain(__device);
     });
     _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::primary_context failed to get context");
 
@@ -106,7 +106,7 @@ public:
   {
     if (__primary_ctx)
     {
-      _CUDA_DRIVER::__primaryCtxRelease(__device);
+      ::cuda::__driver::__primaryCtxRelease(__device);
     }
   }
 

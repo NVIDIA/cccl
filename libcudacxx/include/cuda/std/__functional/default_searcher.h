@@ -49,14 +49,14 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pair<_ForwardIterator2, _ForwardIterator2>
   operator()(_ForwardIterator2 __f, _ForwardIterator2 __l) const
   {
-    return _CUDA_VSTD::__search(
+    return ::cuda::std::__search(
       __f,
       __l,
       __first_,
       __last_,
       __pred_,
-      typename _CUDA_VSTD::iterator_traits<_ForwardIterator>::iterator_category(),
-      typename _CUDA_VSTD::iterator_traits<_ForwardIterator2>::iterator_category());
+      typename ::cuda::std::iterator_traits<_ForwardIterator>::iterator_category(),
+      typename ::cuda::std::iterator_traits<_ForwardIterator2>::iterator_category());
   }
 
 private:

@@ -184,6 +184,20 @@ def histogram_even(
     num_samples: int,
     stream=None,
 ):
+    """
+    Performs device-wide histogram computation with evenly-spaced bins.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_samples: Device array or iterator containing the input sequence of data samples
+        d_histogram: Device array to store the computed histogram
+        num_output_levels: Number of histogram bin levels (num_bins = num_output_levels - 1)
+        lower_level: Lower sample value bound (inclusive)
+        upper_level: Upper sample value bound (exclusive)
+        num_samples: Number of input samples
+        stream: CUDA stream for the operation (optional)
+    """
     # Histogram can accept multiple channels, with one value per channel for
     # each of these parameters. The API only supports one channel for now but we
     # pass arrays to make_histogram_even to support multiple channels in the

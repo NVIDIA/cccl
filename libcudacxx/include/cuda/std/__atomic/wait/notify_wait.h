@@ -59,7 +59,7 @@ _CCCL_API inline bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __r
 #if _CCCL_CUDA_COMPILATION()
   return __lhs == __rhs;
 #else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-  return _CUDA_VSTD::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
+  return ::cuda::std::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 }
 
@@ -75,11 +75,11 @@ _CCCL_API inline void __atomic_wait(
     }
     if (__i < 12)
     {
-      _CUDA_VSTD::__cccl_thread_yield_processor();
+      ::cuda::std::__cccl_thread_yield_processor();
     }
     else
     {
-      _CUDA_VSTD::__cccl_thread_yield();
+      ::cuda::std::__cccl_thread_yield();
     }
   }
   while (__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))

@@ -36,7 +36,7 @@ transform_reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _Bin
 {
   for (; __first != __last; ++__first)
   {
-    __init = __b(_CUDA_VSTD::move(__init), __u(*__first));
+    __init = __b(::cuda::std::move(__init), __u(*__first));
   }
   return __init;
 }
@@ -52,7 +52,7 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
   {
-    __init = __b1(_CUDA_VSTD::move(__init), __b2(*__first1, *__first2));
+    __init = __b1(::cuda::std::move(__init), __b2(*__first1, *__first2));
   }
   return __init;
 }
@@ -61,8 +61,8 @@ template <class _InputIterator1, class _InputIterator2, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp
 transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
 {
-  return _CUDA_VSTD::transform_reduce(
-    __first1, __last1, __first2, _CUDA_VSTD::move(__init), _CUDA_VSTD::plus<>(), _CUDA_VSTD::multiplies<>());
+  return ::cuda::std::transform_reduce(
+    __first1, __last1, __first2, ::cuda::std::move(__init), ::cuda::std::plus<>(), ::cuda::std::multiplies<>());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
