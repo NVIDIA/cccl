@@ -199,6 +199,31 @@ jobs:
         shell: bash
         run: mkdir -p empty_docs
 
+      - name: Debug _site directory
+        shell: bash
+        run: |
+          echo "=== Debugging _site directory ==="
+          echo "Current working directory: $(pwd)"
+          echo "Contents of current directory:"
+          ls -la
+          echo "Checking if _site exists:"
+          if [ -d "_site" ]; then
+            echo "✅ _site exists"
+            echo "Size of _site:"
+            du -sh _site
+            echo "Contents of _site:"
+            ls -la _site/ | head -10
+            echo "Checking for _static in _site:"
+            if [ -d "_site/_static" ]; then
+              echo "✅ _static exists in _site"
+              ls -la _site/_static/ | head -5
+            else
+              echo "❌ _static missing from _site"
+            fi
+          else
+            echo "❌ _site directory does not exist"
+          fi
+
       - name: Deploy or clean up documentation preview
         uses: ./.github/actions/doc-preview
         with:
