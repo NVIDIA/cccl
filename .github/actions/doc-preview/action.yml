@@ -21,29 +21,23 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Debug deployment before action
-      shell: bash
-      run: |
-        echo "=== Pre-deployment debugging ==="
-        echo "Source folder: ${{ inputs.source-folder }}"
-        echo "Target folder: docs/pr-preview/pr-${{ inputs.pr-number }}/"
-        echo "Clean mode: ${{ github.ref_name == 'main' }}"
-        echo "Files in source folder:"
-        ls -la ${{ inputs.source-folder }}/ | head -10
-        if [ -d "${{ inputs.source-folder }}/_static" ]; then
-          echo "✅ _static exists in source"
-          ls -la ${{ inputs.source-folder }}/_static/ | head -3
-        else
-          echo "❌ _static missing from source"
-        fi
-
-    - name: Deploy or clean up doc preview
-      uses: JamesIves/github-pages-deploy-action@6c2d9db40f9296374acc17b90404b6e8864128c8  # v4.7.3
+    - name: Deploy doc preview
+      if: ${{ github.ref_name != 'main' }}
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        github-token: ${{ inputs.github-token }}
-        folder: ${{ inputs.source-folder }}
-        target-folder: docs/pr-preview/pr-${{ inputs.pr-number }}/
-        clean: ${{ github.ref_name == 'main' }}
+        github_token: ${{ inputs.github-token }}
+        publish_dir: ${{ inputs.source-folder }}
+        destination_dir: docs/pr-preview/pr-${{ inputs.pr-number }}/
+        keep_files: true
+
+    - name: Clean up doc preview
+      if: ${{ github.ref_name == 'main' }}
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ inputs.github-token }}
+        publish_dir: ${{ inputs.source-folder }}
+        destination_dir: docs/pr-preview/pr-${{ inputs.pr-number }}/
+        keep_files: false
 
     - name: Leave a comment after deployment
       if: ${{ github.ref_name != 'main' }}
