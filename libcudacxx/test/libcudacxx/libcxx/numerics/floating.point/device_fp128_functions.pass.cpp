@@ -17,7 +17,7 @@
 
 __device__ void test()
 {
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
   __float128 dummy_f128{};
   int dummy_int{};
 
@@ -67,7 +67,7 @@ __device__ void test()
   assert(__nv_fp128_div(1.q, 1.q) == 1.q);
   assert(__nv_fp128_isnan(1.q) == false);
   assert(__nv_fp128_isunordered(1.q, 1.q) == false);
-#endif // _CCCL_HAS_FLOAT128()
+#endif // _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
 }
 
 int main(int, char**)
