@@ -198,7 +198,7 @@ def segmented_reduce(
     stream=None,
 ):
     """
-    Performs device-wide segmented reduction using the single-phase API.
+    Performs device-wide segmented reduction.
 
     This function automatically handles temporary storage allocation and execution.
 

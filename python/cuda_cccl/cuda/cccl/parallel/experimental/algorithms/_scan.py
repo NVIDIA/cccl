@@ -157,7 +157,7 @@ def exclusive_scan(
     stream=None,
 ):
     """
-    Performs device-wide exclusive scan using the single-phase API.
+    Performs device-wide exclusive scan.
 
     This function automatically handles temporary storage allocation and execution.
 
@@ -216,7 +216,7 @@ def inclusive_scan(
     stream=None,
 ):
     """
-    Performs device-wide inclusive scan using the single-phase API.
+    Performs device-wide inclusive scan.
 
     This function automatically handles temporary storage allocation and execution.
 

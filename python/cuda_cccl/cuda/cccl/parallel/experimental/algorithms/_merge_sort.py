@@ -186,7 +186,7 @@ def merge_sort(
     stream=None,
 ):
     """
-    Performs device-wide merge sort using the single-phase API.
+    Performs device-wide merge sort.
 
     This function automatically handles temporary storage allocation and execution.
 

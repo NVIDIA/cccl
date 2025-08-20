@@ -146,7 +146,7 @@ def reduce_into(
     stream=None,
 ):
     """
-    Performs device-wide reduction using the single-phase API.
+    Performs device-wide reduction.
 
     This function automatically handles temporary storage allocation and execution.
 

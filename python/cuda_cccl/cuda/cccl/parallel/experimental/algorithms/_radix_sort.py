@@ -261,7 +261,7 @@ def radix_sort(
     stream=None,
 ):
     """
-    Performs device-wide radix sort using the single-phase API.
+    Performs device-wide radix sort.
 
     This function automatically handles temporary storage allocation and execution.
 

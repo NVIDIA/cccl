@@ -185,7 +185,7 @@ def histogram_even(
     stream=None,
 ):
     """
-    Performs device-wide histogram computation with evenly-spaced bins using the single-phase API.
+    Performs device-wide histogram computation with evenly-spaced bins.
 
     This function automatically handles temporary storage allocation and execution.
 
