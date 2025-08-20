@@ -269,6 +269,16 @@ struct AgentSelectIf
     USE_STENCIL_WITH_OP
   };
 
+  // Only for unique: we previously invoked the equality operator on out-of-bounds items
+  // While fixing that issue there were some performance regressions that we had to work around
+  // To avoid invoking equality operator on unexpected values we are doing on of two things:
+  // (1) for primitive types AND ::cuda::std::equal_to, we are initializing out-of-bounds items
+  // (2) otherwise, we are guarding against invoking the equality operator on out-of-bounds items
+  static constexpr bool initialize_oob_items =
+    ::cuda::std::is_arithmetic_v<InputT>
+    && (::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<>>
+        || ::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<InputT>>);
+
   static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
   static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
   static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
@@ -594,6 +604,20 @@ struct AgentSelectIf
           .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
       }
     }
+
+    // For primitive types with default equality operator, we need to fix up the flags for the out-of-bounds items
+    if constexpr (initialize_oob_items)
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      {
+        // Set selection_flags for out-of-bounds items
+        if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+        {
+          selection_flags[ITEM] = 1;
+        }
+      }
+    }
   }
 
   //---------------------------------------------------------------------
@@ -878,8 +902,20 @@ struct AgentSelectIf
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items)
-        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+      if constexpr (SELECT_METHOD == USE_DISCONTINUITY && initialize_oob_items)
+      {
+        // If we are using unique with primitive types and default equality comparison, we need to fill the items
+        // with the out-of-bounds value, so that the equality operator does not get invoked on uninitialized memory
+        auto src         = d_in + streaming_context.input_offset() + tile_offset;
+        InputT oob_value = *src;
+        BlockLoadT(temp_storage.load_items)
+          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items, oob_value);
+      }
+      else
+      {
+        BlockLoadT(temp_storage.load_items)
+          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+      }
     }
     else
     {
@@ -958,8 +994,20 @@ struct AgentSelectIf
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items)
-        .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+      if constexpr (SELECT_METHOD == USE_DISCONTINUITY && initialize_oob_items)
+      {
+        // If we are using unique with primitive types and default equality comparison, we need to fill the items
+        // with the out-of-bounds value, so that the equality operator does not get invoked on uninitialized memory
+        auto src         = d_in + streaming_context.input_offset() + tile_offset;
+        InputT oob_value = *src;
+        BlockLoadT(temp_storage.load_items)
+          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items, oob_value);
+      }
+      else
+      {
+        BlockLoadT(temp_storage.load_items)
+          .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
+      }
     }
     else
     {
