@@ -40,7 +40,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 [[nodiscard]] _CCCL_DEVICE_API inline bool
-__is_smem_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcept
+__is_smem_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
 {
   if (::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
   {
@@ -52,12 +52,12 @@ __is_smem_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcep
       })
     );
     // clang-format on
-    if (__n > _CUDA_VSTD::size_t{UINT32_MAX})
+    if (__n > ::cuda::std::size_t{UINT32_MAX})
     {
       return false;
     }
-    auto __limit = _CUDA_VSTD::uintptr_t{UINT32_MAX} - static_cast<_CUDA_VSTD::uintptr_t>(__n);
-    return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
+    auto __limit = ::cuda::std::uintptr_t{UINT32_MAX} - static_cast<::cuda::std::uintptr_t>(__n);
+    return reinterpret_cast<::cuda::std::uintptr_t>(__ptr) <= __limit;
   }
   return true;
 }
@@ -68,7 +68,7 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_API inline bool __is_valid_address_range(const void* __ptr, _CUDA_VSTD::size_t __n) noexcept
+[[nodiscard]] _CCCL_API inline bool __is_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
 {
   // clang-format off
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
@@ -82,8 +82,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
     })
   );
   // clang-format on
-  auto __limit = _CUDA_VSTD::uintptr_t{UINTMAX_MAX} - static_cast<_CUDA_VSTD::uintptr_t>(__n);
-  return reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) <= __limit;
+  auto __limit = ::cuda::std::uintptr_t{UINTMAX_MAX} - static_cast<::cuda::std::uintptr_t>(__n);
+  return reinterpret_cast<::cuda::std::uintptr_t>(__ptr) <= __limit;
 }
 
 [[nodiscard]] _CCCL_API inline bool __is_valid_address(const void* __ptr) noexcept
@@ -92,7 +92,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 }
 
 [[nodiscard]] _CCCL_API inline bool
-__are_ptrs_overlapping(const void* __ptr_lhs, const void* __ptr_rhs, _CUDA_VSTD::size_t __n) noexcept
+__are_ptrs_overlapping(const void* __ptr_lhs, const void* __ptr_rhs, ::cuda::std::size_t __n) noexcept
 {
   auto __ptr1 = static_cast<const char*>(__ptr_lhs);
   auto __ptr2 = static_cast<const char*>(__ptr_rhs);
