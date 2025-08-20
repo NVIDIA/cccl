@@ -44,7 +44,6 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     # Skip sass verification if input is complex
     # as LDL/STL instructions are emitted for complex types.
     # Also skip for CC 9.0+, due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
     if np.issubdtype(input_array.dtype, np.complexfloating) or cc_major >= 9:
         import cuda.cccl.parallel.experimental._cccl_interop
 

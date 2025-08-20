@@ -148,7 +148,6 @@ def test_unique_by_key(dtype, num_items):
 def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
     cc_major, _ = numba.cuda.get_current_device().compute_capability
     # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
     if cc_major >= 9:
         import cuda.cccl.parallel.experimental._cccl_interop
 
