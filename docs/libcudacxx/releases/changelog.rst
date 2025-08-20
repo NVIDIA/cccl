@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. warning::
+    This changelog is no longer maintained since Thrust was merged into the CCCL project.
+    For the latest changes, see the release notes for each CCCL release
+    on `GitHub <https://github.com/NVIDIA/cccl/releases>`_.
+
 libcu++ 2.1.0
 -------------
 
