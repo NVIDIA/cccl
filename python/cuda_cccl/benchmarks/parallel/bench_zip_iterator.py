@@ -93,75 +93,6 @@ def transform_zip_array_iterator(zip_iter1, zip_iter2, size, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-def benchcompile_reduce_zip_array(compile_benchmark):
-    input_array = cp.arange(1000, dtype=cp.int32)
-
-    def run():
-        reduce_zip_array(input_array, build_only=True)
-
-    compile_benchmark(parallel.make_reduce_into, run)
-
-
-def bench_compile_reduce_zip_iterator(compile_benchmark):
-    inp = parallel.CountingIterator(np.int32(0))
-
-    def run():
-        reduce_zip_iterator(inp, 1000, build_only=True)
-
-    compile_benchmark(parallel.make_reduce_into, run)
-
-
-def bench_compile_reduce_zip_array_iterator(compile_benchmark):
-    input_array = cp.arange(1000, dtype=cp.int32)
-
-    def run():
-        reduce_zip_array_iterator(input_array, 1000, build_only=True)
-
-    compile_benchmark(parallel.make_reduce_into, run)
-
-
-def bench_compile_transform_zip_array_iterator(compile_benchmark):
-    input_array = cp.arange(1000, dtype=cp.int32)
-
-    # Create two zip iterators with consistent Pair structures
-    counting_iter1 = parallel.CountingIterator(np.int32(0))
-    zip_iter1 = parallel.ZipIterator(input_array, counting_iter1)
-    counting_iter2 = parallel.CountingIterator(np.int32(1))
-    zip_iter2 = parallel.ZipIterator(input_array, counting_iter2)
-
-    def run():
-        transform_zip_array_iterator(zip_iter1, zip_iter2, 1000, build_only=True)
-
-    compile_benchmark(parallel.make_binary_transform, run)
-
-
-def bench_reduce_zip_array(benchmark):
-    input_array = cp.arange(1000, dtype=cp.int32)
-
-    def run():
-        reduce_zip_array(input_array, build_only=False)
-
-    benchmark(run)
-
-
-def bench_reduce_zip_iterator(benchmark):
-    inp = parallel.CountingIterator(np.int32(0))
-
-    def run():
-        reduce_zip_iterator(inp, 1000, build_only=False)
-
-    benchmark(run)
-
-
-def bench_reduce_zip_array_iterator(benchmark):
-    input_array = cp.arange(1000, dtype=cp.int32)
-
-    def run():
-        reduce_zip_array_iterator(input_array, 1000, build_only=False)
-
-    benchmark(run)
-
-
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
 def bench_zip_array(bench_fixture, request):
     input_array = cp.arange(1000, dtype=cp.int32)
@@ -213,11 +144,8 @@ def bench_transform_zip_array_iterator(bench_fixture, request):
     input_array = cp.arange(1000, dtype=cp.int32)
 
     # Create two zip iterators with consistent Pair structures
-    # First zip iterator: pairs input array values with counting iterator (0,1,2,...)
     counting_iter1 = parallel.CountingIterator(np.int32(0))
     zip_iter1 = parallel.ZipIterator(input_array, counting_iter1)
-
-    # Second zip iterator: pairs input array values (shifted by 1) with counting iterator (1,2,3,...)
     counting_iter2 = parallel.CountingIterator(np.int32(1))
     zip_iter2 = parallel.ZipIterator(input_array, counting_iter2)
 
