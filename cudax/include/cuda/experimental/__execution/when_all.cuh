@@ -115,7 +115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_TRIVIAL_API constexpr void set_value(_Ts&&... __ts) noexcept
+    _CCCL_NODEBUG_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
       constexpr ::cuda::std::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -123,7 +123,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
@@ -293,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __start_all
   {
     template <class... _Ops>
-    _CCCL_TRIVIAL_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_NODEBUG_API void operator()(_Ops&... __ops) const noexcept
     {
       (execution::start(__ops), ...);
     }
@@ -390,7 +390,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
 public:
   template <class... _Sndrs>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
@@ -519,7 +519,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 };
 
 template <class... _Sndrs>
-_CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_NODEBUG_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {

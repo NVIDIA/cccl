@@ -89,7 +89,7 @@
 // to add `inline` to the function declaration. The following macros slice the function
 // attributes differently to avoid this problem:
 // - `_CCCL_API` declares the function host/device and hides the symbol from the ABI
-// - `_CCCL_TRIVIAL_API` does the same while also inlining and hiding the function from
+// - `_CCCL_NODEBUG_API` does the same while also inlining and hiding the function from
 //   debuggers
 #if _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_API        _CCCL_HOST_DEVICE
@@ -101,13 +101,13 @@
 #  define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !_CCCL_COMPILER(NVHPC)
 
-// _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
+// _CCCL_NODEBUG_API force-inlines a function, marks its visibility as hidden, and causes
 // debuggers to skip it. This is useful for trivial internal functions that do dispatching
 // or other plumbing work. It is particularly useful in the definition of customization
 // point objects.
-#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
 
 // Some functions have their addresses appear in public types (e.g., in
 // `cuda::__overrides_for` specializations). If the function is declared

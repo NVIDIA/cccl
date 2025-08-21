@@ -64,7 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of applying the sender operation.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
-  _CCCL_TRIVIAL_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(noexcept(
+  _CCCL_NODEBUG_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(noexcept(
     _Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
   {
     return _Tag{}.apply_sender(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
@@ -79,7 +79,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of transforming the sender with the given environment.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
     noexcept(tag_of_t<_Sndr>{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env)))
     -> __transform_sender_result_t<tag_of_t<_Sndr>, _Sndr, _Env>
   {
@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
   transform_sender(_Sndr&& __sndr) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     // FUTURE TODO: add a transform for the split sender once we have a split sender
@@ -99,7 +99,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
   transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
@@ -120,13 +120,13 @@ struct get_domain_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
     -> decay_t<__query_result_t<_Env, get_domain_t>>
   {
     return {};
   }
 
-  _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept
+  _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept
   {
     return true;
   }
@@ -139,13 +139,13 @@ struct get_domain_override_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
     -> decay_t<__query_result_t<_Env, get_domain_override_t>>
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return false;
   }
@@ -165,13 +165,13 @@ using __domain_of_t = decay_t<__call_result_t<
   _Env>>;
 
 template <class _Sndr, class _Default = default_domain>
-_CCCL_TRIVIAL_API constexpr auto __get_domain_early() noexcept
+_CCCL_NODEBUG_API constexpr auto __get_domain_early() noexcept
 {
   return __domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<set_value_t>, _Default>{};
 }
 
 template <class _Sndr, class _Env, class _Default = default_domain>
-_CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
+_CCCL_NODEBUG_API constexpr auto __get_domain_late() noexcept
 {
   // Check if the sender's attributes has a get_domain_override query. If so, use that.
   // Otherwise, we fall back to using the domain from the receiver's environment.

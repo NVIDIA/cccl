@@ -77,32 +77,32 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(env<>) const noexcept -> env<>
   {
     return {};
   }
 
   _CCCL_TEMPLATE(class _Env, class = _Env*) // not considered if _Env is a reference type
   _CCCL_REQUIRES((!::cuda::__is_specialization_of_v<_Env, __fwd_env_>) )
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
   {
     return static_cast<_Env&&>(__env);
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
   {
     return __env_ref_<_Env>{__env};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __env_ref_<_Env>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __env_ref_<_Env>
   {
     return __env;
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
     -> __fwd_env_<_Env const&>
   {
     return __fwd_env_<_Env const&>{__env.__env_};
@@ -136,20 +136,20 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(env<>) const noexcept -> env<>
   {
     return {};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
     -> __fwd_env_<_Env const&>
   {
     return __fwd_env_<_Env const&>{__env.__env_};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
     -> decltype(auto)
   {
     if constexpr (::cuda::__is_specialization_of_v<::cuda::std::remove_cvref_t<_Env>, __fwd_env_>)

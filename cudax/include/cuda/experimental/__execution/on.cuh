@@ -171,19 +171,19 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) &&
+    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) &&
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __sch_, static_cast<_Closure&&>(__closure_));
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) const&
+    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) const&
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __sch_, __closure_);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __self.__sch_, static_cast<_Closure&&>(__self.__closure_));
     }
@@ -194,7 +194,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Sndr)
   _CCCL_REQUIRES(__is_sender<_Sndr>)
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
     using __domain_t = __query_result_or_t<_Sch, get_domain_t, default_domain>;
     return execution::transform_sender(__domain_t{}, __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr});
@@ -202,13 +202,13 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Closure)
   _CCCL_REQUIRES((!__is_sender<_Closure>) )
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Closure __closure) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Closure __closure) const
   {
     return __closure_t<_Sch, _Closure>{__sch, static_cast<_Closure&&>(__closure)};
   }
 
   template <class _Sndr, class _Sch, class _Closure>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
   {
     using __sndr_t = on_t::__sndr_t<_Sch, _Sndr, _Closure>;
     auto __domain  = __detail::__get_domain_early<_Sndr>();
@@ -288,7 +288,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr>
 {
   using sender_concept = sender_t;
 
-  _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr>
+  _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr>
   {
     return {__sndr_};
   }
@@ -304,7 +304,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr, _Closure>
 {
   using sender_concept = sender_t;
 
-  _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }

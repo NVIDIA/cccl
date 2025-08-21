@@ -98,7 +98,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
 
 public:
   template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct just_from_t : __just_from_t<just_from_t, set_value_t>
@@ -165,7 +165,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_from_t::__sndr_t
 
 template <class _JustFromTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
+_CCCL_NODEBUG_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
   using __sndr_t                          = typename _JustFromTag::template __sndr_t<_Fn>;
   using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;

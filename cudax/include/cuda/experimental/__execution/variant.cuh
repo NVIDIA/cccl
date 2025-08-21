@@ -62,7 +62,7 @@ public:
     _CCCL_ASSERT(false, "cannot visit a stateless variant");
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr size_t __index() noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr size_t __index() noexcept
   {
     return __npos;
   }
@@ -112,12 +112,12 @@ public:
     __destroy();
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API void* __ptr() noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API size_t __index() const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API size_t __index() const noexcept
   {
     return __index_;
   }

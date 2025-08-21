@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \brief Retrieves the underlying CUDA graph execution object.
   //! \return The `cudaGraphExec_t` handle.
   //! \throws None
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraphExec_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get() const noexcept -> cudaGraphExec_t
   {
     return __exec_;
   }
@@ -98,7 +98,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \return The `cudaGraphExec_t` handle, leaving this object in a null state.
   //! \throws None
   //! \post `get() == nullptr`
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraphExec_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto release() noexcept -> cudaGraphExec_t
   {
     return ::cuda::std::exchange(__exec_, nullptr);
   }

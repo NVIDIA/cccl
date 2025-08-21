@@ -71,7 +71,7 @@ public:
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
 
     _CCCL_HIDE_FROM_ABI __task() = default;
-    _CCCL_TRIVIAL_API explicit __task(__execute_fn_t* __execute_fn) noexcept
+    _CCCL_NODEBUG_API explicit __task(__execute_fn_t* __execute_fn) noexcept
         : __execute_fn_(__execute_fn)
     {}
 

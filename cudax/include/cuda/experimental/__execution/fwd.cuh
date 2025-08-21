@@ -119,7 +119,7 @@ template <class... _Sigs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures;
 
 template <class _Sndr, class... _Env>
-_CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures();
+_CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
@@ -214,7 +214,7 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_TRIVIAL_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
+  _CCCL_NODEBUG_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }

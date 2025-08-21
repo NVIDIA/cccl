@@ -45,9 +45,9 @@ AttributeMacros: [
                   '_CCCL_API',
                   '_CCCL_HOST_API',
                   '_CCCL_DEVICE_API',
-                  '_CCCL_TRIVIAL_API',
-                  '_CCCL_TRIVIAL_HOST_API',
-                  '_CCCL_TRIVIAL_DEVICE_API',
+                  '_CCCL_NODEBUG_API',
+                  '_CCCL_NODEBUG_HOST_API',
+                  '_CCCL_NODEBUG_DEVICE_API',
                  ]
 BinPackArguments: false
 BinPackParameters: false
