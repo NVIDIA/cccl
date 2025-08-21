@@ -23,8 +23,8 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[1],
@@ -77,11 +77,11 @@ __device__ static inline void cp_async_bulk_tensor(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
-  cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[1],
@@ -150,8 +150,8 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[2],
@@ -205,11 +205,11 @@ __device__ static inline void cp_async_bulk_tensor(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
-  cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[2],
@@ -280,8 +280,8 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[3],
@@ -336,11 +336,11 @@ __device__ static inline void cp_async_bulk_tensor(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
-  cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[3],
@@ -413,8 +413,8 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[4],
@@ -470,11 +470,11 @@ __device__ static inline void cp_async_bulk_tensor(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
-  cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[4],
@@ -549,8 +549,8 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[5],
@@ -607,11 +607,11 @@ __device__ static inline void cp_async_bulk_tensor(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_cp_async_bulk_tensor_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void cp_async_bulk_tensor(
-  space_cluster_t,
-  space_global_t,
-  cta_group_t<_Cta_Group> __cta_group,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   void* __dstMem,
   const void* __tensorMap,
   const ::cuda::std::int32_t (&__tensorCoords)[5],

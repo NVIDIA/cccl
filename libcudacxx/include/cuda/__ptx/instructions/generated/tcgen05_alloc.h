@@ -16,9 +16,9 @@ __device__ static inline void tcgen05_alloc(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_alloc_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void
-tcgen05_alloc(cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t* __dst, const ::cuda::std::uint32_t& __nCols)
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void tcgen05_alloc(
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t* __dst, const ::cuda::std::uint32_t& __nCols)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -63,9 +63,9 @@ __device__ static inline void tcgen05_dealloc(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_dealloc_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_dealloc(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, const ::cuda::std::uint32_t& __nCols)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, const ::cuda::std::uint32_t& __nCols)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -102,8 +102,8 @@ __device__ static inline void tcgen05_relinquish_alloc_permit(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_relinquish_alloc_permit_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_relinquish_alloc_permit(cta_group_t<_Cta_Group> __cta_group)
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void tcgen05_relinquish_alloc_permit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \

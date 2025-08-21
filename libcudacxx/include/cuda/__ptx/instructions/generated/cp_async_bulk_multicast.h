@@ -22,8 +22,8 @@ __device__ static inline void cp_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_only_supported_on_SM_90a_100a_110a__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk(
-  space_cluster_t,
-  space_global_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::ptx::space_global_t,
   void* __dstMem,
   const void* __srcMem,
   const ::cuda::std::uint32_t& __size,

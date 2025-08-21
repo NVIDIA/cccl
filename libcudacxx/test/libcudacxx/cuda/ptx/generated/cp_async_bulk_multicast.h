@@ -27,9 +27,9 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
                                cuda::ptx::space_global_t,
                                void*,
                                const void*,
-                               const uint32_t&,
-                               uint64_t*,
-                               const uint16_t&)>(cuda::ptx::cp_async_bulk));),
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));),
     NV_HAS_FEATURE_SM_100a,
     (
         // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
@@ -39,9 +39,9 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
                                cuda::ptx::space_global_t,
                                void*,
                                const void*,
-                               const uint32_t&,
-                               uint64_t*,
-                               const uint16_t&)>(cuda::ptx::cp_async_bulk));),
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));),
     NV_HAS_FEATURE_SM_110a,
     (
         // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem],
@@ -51,8 +51,8 @@ __global__ void test_cp_async_bulk_multicast(void** fn_ptr)
                                cuda::ptx::space_global_t,
                                void*,
                                const void*,
-                               const uint32_t&,
-                               uint64_t*,
-                               const uint16_t&)>(cuda::ptx::cp_async_bulk));));
+                               const cuda::std::uint32_t&,
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint16_t&)>(cuda::ptx::cp_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 }

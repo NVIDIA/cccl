@@ -15,8 +15,9 @@ __device__ static inline void tcgen05_commit(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_commit_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_commit(cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar)
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void
+tcgen05_commit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -61,9 +62,9 @@ __device__ static inline void tcgen05_commit_multicast(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_commit_multicast_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_commit_multicast(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar, ::cuda::std::uint16_t __ctaMask)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar, ::cuda::std::uint16_t __ctaMask)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \

@@ -22,10 +22,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -135,10 +135,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -244,10 +244,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -357,10 +357,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -466,10 +466,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -579,10 +579,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -688,10 +688,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -801,10 +801,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -910,10 +910,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -1023,10 +1023,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -1132,10 +1132,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -1245,10 +1245,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -1354,10 +1354,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -1467,10 +1467,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -1576,10 +1576,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -1689,10 +1689,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b0_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -1798,10 +1798,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -1911,10 +1911,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -2020,10 +2020,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -2133,10 +2133,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -2242,10 +2242,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -2355,10 +2355,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -2464,10 +2464,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -2577,10 +2577,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -2686,10 +2686,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -2799,10 +2799,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -2908,10 +2908,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -3021,10 +3021,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -3130,10 +3130,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -3243,10 +3243,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -3352,10 +3352,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -3465,10 +3465,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b1_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -3574,10 +3574,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -3687,10 +3687,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -3796,10 +3796,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -3909,10 +3909,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -4018,10 +4018,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -4131,10 +4131,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -4240,10 +4240,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -4353,10 +4353,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -4462,10 +4462,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -4575,10 +4575,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -4684,10 +4684,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -4797,10 +4797,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -4906,10 +4906,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -5019,10 +5019,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -5128,10 +5128,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -5241,10 +5241,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b2_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -5350,10 +5350,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -5463,10 +5463,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -5572,10 +5572,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -5685,10 +5685,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_fill_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -5794,10 +5794,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -5907,10 +5907,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -6016,10 +6016,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -6129,10 +6129,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_use_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -6238,10 +6238,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -6351,10 +6351,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -6460,10 +6460,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -6573,10 +6573,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_lastuse_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -6682,10 +6682,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -6795,10 +6795,10 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint64_t __a_desc,
   ::cuda::std::uint64_t __b_desc,
@@ -6904,10 +6904,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,
@@ -7017,10 +7017,10 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_mma_ws_tmem_a_collector_b3_discard_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_kind _Kind>
+template <::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
-  cta_group_1_t,
-  kind_t<_Kind> __kind,
+  ::cuda::ptx::cta_group_1_t,
+  ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
   ::cuda::std::uint32_t __a_tmem,
   ::cuda::std::uint64_t __b_desc,

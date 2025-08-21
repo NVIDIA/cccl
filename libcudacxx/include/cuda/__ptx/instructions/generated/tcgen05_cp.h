@@ -15,9 +15,9 @@ __device__ static inline void tcgen05_cp_128x256b(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_128x256b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void
-tcgen05_cp_128x256b(cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void tcgen05_cp_128x256b(
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -55,9 +55,9 @@ __device__ static inline void tcgen05_cp_4x256b(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_4x256b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void
-tcgen05_cp_4x256b(cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void tcgen05_cp_4x256b(
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -95,9 +95,9 @@ __device__ static inline void tcgen05_cp_128x128b(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_128x128b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void
-tcgen05_cp_128x128b(cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void tcgen05_cp_128x128b(
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -136,9 +136,9 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_02_13(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_64x128b_warpx2_02_13_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -177,9 +177,9 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_01_23(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_64x128b_warpx2_01_23_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -218,9 +218,9 @@ __device__ static inline void tcgen05_cp_32x128b_warpx4(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_32x128b_warpx4_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -259,9 +259,9 @@ __device__ static inline void tcgen05_cp_128x256b_b8x16_b6x16_p32(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_128x256b_b8x16_b6x16_p32_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b6x16_p32(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -300,9 +300,9 @@ __device__ static inline void tcgen05_cp_4x256b_b8x16_b6x16_p32(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_4x256b_b8x16_b6x16_p32_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b6x16_p32(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -341,9 +341,9 @@ __device__ static inline void tcgen05_cp_128x128b_b8x16_b6x16_p32(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_128x128b_b8x16_b6x16_p32_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b6x16_p32(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -382,9 +382,9 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -429,9 +429,9 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -476,9 +476,9 @@ __device__ static inline void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -517,9 +517,9 @@ __device__ static inline void tcgen05_cp_128x256b_b8x16_b4x16_p64(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_128x256b_b8x16_b4x16_p64_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b4x16_p64(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -558,9 +558,9 @@ __device__ static inline void tcgen05_cp_4x256b_b8x16_b4x16_p64(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_4x256b_b8x16_b4x16_p64_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b4x16_p64(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -599,9 +599,9 @@ __device__ static inline void tcgen05_cp_128x128b_b8x16_b4x16_p64(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_128x128b_b8x16_b4x16_p64_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b4x16_p64(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -640,9 +640,9 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -687,9 +687,9 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -734,9 +734,9 @@ __device__ static inline void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_depending_on_the_variant__();
-template <dot_cta_group _Cta_Group>
+template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
-  cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
+  ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \

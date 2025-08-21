@@ -17,7 +17,8 @@ __device__ static inline void tensormap_replace_global_address(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_address_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_global_address(space_global_t, void* __tm_addr, _B64 __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_global_address(::cuda::ptx::space_global_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -58,7 +59,8 @@ __device__ static inline void tensormap_replace_global_address(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_address_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_global_address(space_shared_t, void* __tm_addr, _B64 __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_global_address(::cuda::ptx::space_shared_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -99,7 +101,7 @@ __device__ static inline void tensormap_replace_rank(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_rank_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_rank(space_global_t, void* __tm_addr, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_rank(::cuda::ptx::space_global_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -140,7 +142,7 @@ __device__ static inline void tensormap_replace_rank(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_rank_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_rank(space_shared_t, void* __tm_addr, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_rank(::cuda::ptx::space_shared_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -183,7 +185,7 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_box_dim_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
-tensormap_replace_box_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+tensormap_replace_box_dim(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -228,7 +230,7 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_box_dim_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
-tensormap_replace_box_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+tensormap_replace_box_dim(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -272,8 +274,8 @@ __device__ static inline void tensormap_replace_global_dim(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_dim_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_global_dim(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_global_dim(
+  ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -317,8 +319,8 @@ __device__ static inline void tensormap_replace_global_dim(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_dim_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_global_dim(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_global_dim(
+  ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -362,8 +364,8 @@ __device__ static inline void tensormap_replace_global_stride(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_stride_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_global_stride(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B64 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_global_stride(
+  ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -407,8 +409,8 @@ __device__ static inline void tensormap_replace_global_stride(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_global_stride_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_global_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B64 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_global_stride(
+  ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -452,8 +454,8 @@ __device__ static inline void tensormap_replace_element_stride(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_stride_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_element_stride(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_element_stride(
+  ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -497,8 +499,8 @@ __device__ static inline void tensormap_replace_element_stride(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_stride_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_element_stride(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_element_stride(
+  ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -542,8 +544,8 @@ __device__ static inline void tensormap_replace_element_size(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_size_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_element_size(space_global_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_element_size(
+  ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -587,8 +589,8 @@ __device__ static inline void tensormap_replace_element_size(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_element_size_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_element_size(space_shared_t, void* __tm_addr, n32_t<_N32> __ord, _B32 __new_val)
+_CCCL_DEVICE static inline void tensormap_replace_element_size(
+  ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -631,7 +633,8 @@ __device__ static inline void tensormap_replace_elemtype(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_elemtype_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
-_CCCL_DEVICE static inline void tensormap_replace_elemtype(space_global_t, void* __tm_addr, n32_t<_N32> __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_elemtype(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_global (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -671,7 +674,8 @@ __device__ static inline void tensormap_replace_elemtype(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_elemtype_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
-_CCCL_DEVICE static inline void tensormap_replace_elemtype(space_shared_t, void* __tm_addr, n32_t<_N32> __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_elemtype(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -712,7 +716,7 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_interleave_layout_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
 _CCCL_DEVICE static inline void
-tensormap_replace_interleave_layout(space_global_t, void* __tm_addr, n32_t<_N32> __new_val)
+tensormap_replace_interleave_layout(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_global (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -753,7 +757,7 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_interleave_layout_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
 _CCCL_DEVICE static inline void
-tensormap_replace_interleave_layout(space_shared_t, void* __tm_addr, n32_t<_N32> __new_val)
+tensormap_replace_interleave_layout(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -793,7 +797,8 @@ __device__ static inline void tensormap_replace_swizzle_mode(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_swizzle_mode_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
-_CCCL_DEVICE static inline void tensormap_replace_swizzle_mode(space_global_t, void* __tm_addr, n32_t<_N32> __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_swizzle_mode(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_global (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -833,7 +838,8 @@ __device__ static inline void tensormap_replace_swizzle_mode(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_swizzle_mode_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
-_CCCL_DEVICE static inline void tensormap_replace_swizzle_mode(space_shared_t, void* __tm_addr, n32_t<_N32> __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_swizzle_mode(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -873,7 +879,8 @@ __device__ static inline void tensormap_replace_fill_mode(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_fill_mode_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
-_CCCL_DEVICE static inline void tensormap_replace_fill_mode(space_global_t, void* __tm_addr, n32_t<_N32> __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_fill_mode(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_global (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -913,7 +920,8 @@ __device__ static inline void tensormap_replace_fill_mode(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_fill_mode_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
-_CCCL_DEVICE static inline void tensormap_replace_fill_mode(space_shared_t, void* __tm_addr, n32_t<_N32> __new_val)
+_CCCL_DEVICE static inline void
+tensormap_replace_fill_mode(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -954,7 +962,7 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_swizzle_atomicity_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
 _CCCL_DEVICE static inline void
-tensormap_replace_swizzle_atomicity(space_global_t, void* __tm_addr, n32_t<_N32> __new_val)
+tensormap_replace_swizzle_atomicity(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_global (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -994,7 +1002,7 @@ extern "C" _CCCL_DEVICE void
 __cuda_ptx_tensormap_replace_swizzle_atomicity_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f_120a_120f_121a_121f__();
 template <int _N32>
 _CCCL_DEVICE static inline void
-tensormap_replace_swizzle_atomicity(space_shared_t, void* __tm_addr, n32_t<_N32> __new_val)
+tensormap_replace_swizzle_atomicity(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \

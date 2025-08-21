@@ -3886,7 +3886,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -3919,8 +3919,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[1], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -3953,7 +3953,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -3986,8 +3986,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[2], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4020,7 +4020,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4053,8 +4053,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[4], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4087,7 +4087,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4127,8 +4127,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[8], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4168,7 +4168,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4217,8 +4217,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[16], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4267,7 +4267,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4333,8 +4333,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[32], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4400,7 +4400,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4500,8 +4500,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[64], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4601,7 +4601,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_ld_16x32bx2_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
 _CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+tcgen05_ld_16x32bx2(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
@@ -4768,8 +4768,8 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 extern "C" _CCCL_DEVICE void
 __cuda_ptx_tcgen05_ld_16x32bx2_pack_16b_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
-tcgen05_ld_16x32bx2_pack_16b(_B32 (&__out)[128], ::cuda::std::uint32_t __taddr, n32_t<_N32> __immHalfSplitoff)
+_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+  _B32 (&__out)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
