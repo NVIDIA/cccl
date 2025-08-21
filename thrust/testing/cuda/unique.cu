@@ -1,4 +1,6 @@
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/unique.h>
 
 #include <unittest/unittest.h>
@@ -9,6 +11,25 @@ struct is_equal_div_10_unique
   _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
   {
     return ((int) x / 10) == ((int) y / 10);
+  }
+};
+
+struct check_valid_item_op
+{
+  ::cuda::std::uint32_t* error_counter{};
+  int expected_upper_bound{};
+
+  __device__ bool operator()(const int lhs, const int rhs) const
+  {
+    if (lhs > expected_upper_bound || rhs > expected_upper_bound)
+    {
+      if (error_counter)
+      {
+        atomicAdd(error_counter, 1);
+      }
+      return false;
+    }
+    return lhs == rhs;
   }
 };
 
@@ -351,3 +372,65 @@ void TestUniqueCountCudaStreamsNoSync()
   TestUniqueCountCudaStreams(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestUniqueCountCudaStreamsNoSync);
+
+void TestUniqueWithMagnitude(int magnitude)
+{
+  using offset_t      = std::int64_t;
+  using equality_op_t = div_n_equality_op<offset_t>;
+
+  offset_t run_length_of_equal_items = offset_t{10};
+  equality_op_t equality_op          = equality_op_t{run_length_of_equal_items};
+
+  // Prepare input
+  offset_t num_items = offset_t{1ull} << magnitude;
+  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  auto end = begin + num_items;
+  ASSERT_EQUAL(static_cast<offset_t>(cuda::std::distance(begin, end)), num_items);
+
+  offset_t expected_num_unique = ::cuda::ceil_div(num_items, offset_t{10});
+  thrust::device_vector<offset_t> unique_out(expected_num_unique);
+  auto unique_out_end = thrust::unique_copy(begin, end, unique_out.begin(), equality_op);
+
+  // Ensure number of selected items are correct
+  offset_t num_selected_out = static_cast<offset_t>(cuda::std::distance(unique_out.begin(), unique_out_end));
+  ASSERT_EQUAL(num_selected_out, expected_num_unique);
+  unique_out.resize(expected_num_unique);
+
+  // Ensure selected items are correct
+  auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{run_length_of_equal_items});
+  bool all_results_correct = thrust::equal(unique_out.begin(), unique_out.end(), expected_out_it);
+  ASSERT_EQUAL(all_results_correct, true);
+}
+
+void TestUniqueWithLargeNumberOfItems()
+{
+  for (int mag : {30, 31, 32, 33})
+  {
+    TestUniqueWithMagnitude(mag);
+  }
+}
+DECLARE_UNITTEST(TestUniqueWithLargeNumberOfItems);
+
+void TestUniqueWithCustomEqualityOp()
+{
+  using Vector = thrust::device_vector<int>;
+  using T      = Vector::value_type;
+
+  auto constexpr num_items = 1000;
+  auto data                = thrust::make_counting_iterator(T{0});
+
+  thrust::device_vector<::cuda::std::uint32_t> error_counter(1, 0);
+  auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());
+
+  Vector unique_out(num_items);
+  auto unique_out_end = thrust::unique_copy(
+    data, data + num_items, unique_out.begin(), check_valid_item_op{error_counter_ptr, num_items - 1});
+
+  auto num_selected_out = cuda::std::distance(unique_out.begin(), unique_out_end);
+  ASSERT_EQUAL(num_selected_out, num_items);
+  ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
+  bool all_results_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), data);
+  ASSERT_EQUAL(all_results_correct, true);
+}
+
+DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);
