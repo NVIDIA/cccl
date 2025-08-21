@@ -4,7 +4,7 @@ import operator
 import uuid
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple
 
 import numba
 import numpy as np
@@ -59,10 +59,7 @@ class IteratorKind:
         return hash((type(self), self.value_type, self.state_type))
 
 
-@lru_cache(maxsize=None)
 def _get_abi_suffix(kind: IteratorKind):
-    # given an IteratorKind, return a UUID. The value is cached so
-    # that the same UUID is always returned for a given IteratorKind.
     return uuid.uuid4().hex
 
 
@@ -89,7 +86,6 @@ class IteratorBase:
     def __init__(
         self,
         cvalue,
-        numba_type: types.Type,
         state_type: types.Type,
         value_type: types.Type,
         iterator_io: IteratorIOKind,
@@ -99,25 +95,21 @@ class IteratorBase:
         ----------
         cvalue
           A ctypes type representing the object pointed to by the iterator.
-        numba_type
-          A numba type representing the type of the input to the advance
-          and dereference functions.
         state_type
-          A numba type of the iterator state.
+          A numba type representing the type of the input to the advance
+          and dereference functions. This should be a pointer type.
         value_type
           The numba type of the value returned by the dereference operation.
         iterator_io
           An enumerator specifying whether the iterator will be used as an input
           or output. This is used to select what methods that the `advance` and
           `dereference` properties will return.
-        prefix
-          An optional prefix added to the iterator's methods to prevent name
-          collisions.
         """
         self.cvalue = cvalue
-        self.numba_type = numba_type
         self.state_type = state_type
+        self.state_ptr_type = types.CPointer(state_type)
         self.value_type = value_type
+
         self.iterator_io = iterator_io
         self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self.state_ = IteratorState(self.cvalue)
@@ -174,19 +166,10 @@ class IteratorBase:
         raise NotImplementedError("Subclasses must override dereference property")
 
     def __add__(self, offset: int):
-        """
-                self.cvalue = cvalue
-        self.numba_type = numba_type
-        self.state_type = state_type
-        self.value_type = value_type
-        self.iterator_io = iterator_io
-        self.kind_ = self.__class__.iterator_kind_type(
-            self.value_type, self.state_type)
-        self.state_ = IteratorState(self.cvalue)
-        self._ltoirs: Dict[str, bytes] | None = None
-        """
+        # add the offset to the iterator's state, and return a new iterator
+        # with the new state.
         res = type(self).__new__(type(self))
-        res.numba_type = self.numba_type
+        res.state_ptr_type = self.state_ptr_type
         res.state_type = self.state_type
         res.value_type = self.value_type
         res.iterator_io = self.iterator_io
@@ -199,27 +182,28 @@ class IteratorBase:
 
     def _get_advance_signature(self) -> Tuple:
         return (
-            self.numba_type,
+            self.state_ptr_type,
             types.uint64,  # distance type
         )
 
     def _get_dereference_signature(self) -> Tuple:
         if self.iterator_io is IteratorIOKind.INPUT:
-            return (self.numba_type,)
+            # state, result
+            return (self.state_ptr_type, types.CPointer(self.value_type))
         else:
-            return (self.numba_type, self.value_type)
+            # state, value
+            return (self.state_ptr_type, self.value_type)
 
     def copy(self):
         out = object.__new__(self.__class__)
         IteratorBase.__init__(
             out,
             self.cvalue,
-            self.numba_type,
             self.state_type,
             self.value_type,
             self.iterator_io,
         )
-        out.ltoirs = copy.copy(self.ltoirs)
+        out.ltoirs = copy.copy(self._ltoirs)
         return out
 
 
@@ -265,11 +249,9 @@ class RawPointer(IteratorBase):
     ):
         cvalue = ctypes.c_void_p(ptr)
         state_type = types.CPointer(value_type)
-        numba_type = types.CPointer(state_type)
         self.obj = obj  # the container holding the data
         super().__init__(
             cvalue=cvalue,
-            numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
             iterator_io=iterator_io,
@@ -297,8 +279,8 @@ class RawPointer(IteratorBase):
         state[0] = state[0] + distance
 
     @staticmethod
-    def input_dereference(state):
-        return state[0][0]
+    def input_dereference(state, result):
+        result[0] = state[0][0]
 
     @staticmethod
     def output_dereference(state, x):
@@ -346,10 +328,8 @@ class CacheModifiedPointer(IteratorBase):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
         state_type = types.CPointer(value_type)
-        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
-            numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
             iterator_io=IteratorIOKind.INPUT,
@@ -372,8 +352,8 @@ class CacheModifiedPointer(IteratorBase):
         state[0] = state[0] + distance
 
     @staticmethod
-    def input_dereference(state):
-        return load_cs(state[0])
+    def input_dereference(state, result):
+        result[0] = load_cs(state[0])
 
 
 class ConstantIteratorKind(IteratorKind):
@@ -387,10 +367,8 @@ class ConstantIterator(IteratorBase):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
         state_type = value_type
-        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
-            numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
             iterator_io=IteratorIOKind.INPUT,
@@ -413,8 +391,8 @@ class ConstantIterator(IteratorBase):
         pass
 
     @staticmethod
-    def input_dereference(state):
-        return state[0]
+    def input_dereference(state, result):
+        result[0] = state[0]
 
 
 class CountingIteratorKind(IteratorKind):
@@ -428,10 +406,8 @@ class CountingIterator(IteratorBase):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
         state_type = value_type
-        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
-            numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
             iterator_io=IteratorIOKind.INPUT,
@@ -454,8 +430,8 @@ class CountingIterator(IteratorBase):
         state[0] = state[0] + distance
 
     @staticmethod
-    def input_dereference(state):
-        return state[0]
+    def input_dereference(state, result):
+        result[0] = state[0]
 
 
 class ReverseInputIteratorKind(IteratorKind):
@@ -494,7 +470,6 @@ def make_reverse_iterator(
             self._it = it
             super().__init__(
                 cvalue=it.cvalue,
-                numba_type=it.numba_type,
                 state_type=it.state_type,
                 value_type=it.value_type,
                 iterator_io=iterator_io,
@@ -524,12 +499,12 @@ def make_reverse_iterator(
             return it_advance(state, -distance)
 
         @staticmethod
-        def input_dereference(state):
-            return it_dereference(state)
+        def input_dereference(state, result):
+            it_dereference(state, result)
 
         @staticmethod
         def output_dereference(state, x):
-            return it_dereference(state, x)
+            it_dereference(state, x)
 
     return ReverseIterator(it)
 
@@ -546,6 +521,17 @@ def make_transform_iterator(it, op: Callable):
     it_advance = cuda.jit(it.advance, device=True)
     it_dereference = cuda.jit(it.dereference, device=True)
     op = cuda.jit(op, device=True)
+    underlying_value_type = it.value_type
+
+    # Create a specialized intrinsic for allocating temp storage of the underlying type
+    @intrinsic
+    def alloca_temp_for_underlying_type(context):
+        def codegen(context, builder, sig, args):
+            temp_value_type = context.get_value_type(underlying_value_type)
+            temp_ptr = builder.alloca(temp_value_type)
+            return temp_ptr
+
+        return types.CPointer(underlying_value_type)(), codegen
 
     class TransformIterator(IteratorBase):
         iterator_kind_type = TransformIteratorKind
@@ -554,7 +540,6 @@ def make_transform_iterator(it, op: Callable):
             self._it = it
             self._op = CachableFunction(op.py_func)
             state_type = it.state_type
-            numba_type = it.numba_type
             # TODO: it would be nice to not need to compile `op` to get
             # its return type, but there's nothing in the numba API
             # to do that (yet),
@@ -567,13 +552,12 @@ def make_transform_iterator(it, op: Callable):
             value_type = op_retty
             super().__init__(
                 cvalue=it.cvalue,
-                numba_type=numba_type,
                 state_type=state_type,
                 value_type=value_type,
                 iterator_io=it.iterator_io,
             )
             self.kind_ = self.__class__.iterator_kind_type(
-                (value_type, self._it.kind, self._op), state_type
+                (value_type, self._it.kind, self._op), self.state_type
             )
 
         @property
@@ -593,8 +577,13 @@ def make_transform_iterator(it, op: Callable):
             return it_advance(state, distance)
 
         @staticmethod
-        def input_dereference(state):
-            return op(it_dereference(state))
+        def input_dereference(state, result):
+            # Allocate temporary storage for the underlying type
+            temp_ptr = alloca_temp_for_underlying_type()
+            # Call underlying iterator's dereference with temp storage
+            it_dereference(state, temp_ptr)
+            # Apply transformation and store in result
+            result[0] = op(temp_ptr[0])
 
     return TransformIterator(it, op)
 
@@ -613,46 +602,3 @@ def _get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset_to_last_element
-
-
-def _replace_duplicate_values(*ds, replacement_value):
-    # given a sequence of dictionaries, return a sequence of dictionaries
-    # such that for any found duplicate keys, the value is set to `replacement_value`.
-    if len(ds) <= 1:
-        return ds
-    seen = set(ds[0].keys())
-    for d in ds[1:]:
-        for key in d:
-            if key in seen:
-                d[key] = replacement_value
-        seen.update(d.keys())
-    return ds
-
-
-def scrub_duplicate_ltoirs(*maybe_iterators: Any) -> tuple[Any, ...]:
-    """
-    Given a sequence of iterators and/or other objects, return a new sequence
-    with duplicate LTOIRs removed from iterators.
-
-    Note that a copy of the iterators is made, so the original iterators
-    are not modified.
-
-    If the sequence contains iterators with duplicate advance/dereference
-    ltoirs, those are set to the empty byte string b"". This pre-processing
-    step ensures that NVRTC doesn't see the same symbol defined more than
-    once.
-    """
-    # extract just the iterators:
-    iterators = [it.copy() for it in maybe_iterators if isinstance(it, IteratorBase)]
-
-    # replace duplicate ltoirs with empty byte strings:
-    ltoirs = _replace_duplicate_values(
-        *(it.ltoirs for it in iterators), replacement_value=b""
-    )
-    for iterator, ltoir in zip(iterators, ltoirs):
-        iterator.ltoirs = ltoir
-
-    it = iter(iterators)
-    return tuple(
-        next(it) if isinstance(arg, IteratorBase) else arg for arg in maybe_iterators
-    )
