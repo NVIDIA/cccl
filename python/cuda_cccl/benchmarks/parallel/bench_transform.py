@@ -1,5 +1,6 @@
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.cccl.parallel.experimental as parallel
 
@@ -90,104 +91,115 @@ def binary_transform_struct(inp1, inp2, out, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-def bench_compile_unary_transform_pointer(compile_benchmark):
-    size = 100
-    inp = cp.random.randint(0, 10, size)
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_unary_transform_pointer(bench_fixture, request, size):
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    inp = cp.random.randint(0, 10, actual_size)
     out = cp.empty_like(inp)
 
     def run():
-        unary_transform_pointer(inp, out, build_only=True)
+        unary_transform_pointer(
+            inp, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
-    compile_benchmark(parallel.make_unary_transform, run)
-
-
-def bench_compile_unary_transform_iterator(compile_benchmark):
-    size = 100
-    out = cp.empty(size, dtype="int32")
-
-    def run():
-        unary_transform_iterator(size, out, build_only=True)
-
-    compile_benchmark(parallel.make_unary_transform, run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_unary_transform, run)
+    else:
+        fixture(run)
 
 
-def bench_compile_binary_transform_pointer(compile_benchmark):
-    size = 100
-    inp1 = cp.random.randint(0, 10, size)
-    inp2 = cp.random.randint(0, 10, size)
-    out = cp.empty_like(inp1)
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_unary_transform_iterator(bench_fixture, request, size):
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    out = cp.empty(actual_size, dtype="int32")
 
     def run():
-        binary_transform_pointer(inp1, inp2, out, build_only=True)
+        unary_transform_iterator(
+            actual_size, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
-    compile_benchmark(parallel.make_binary_transform, run)
-
-
-def bench_compile_binary_transform_iterator(compile_benchmark):
-    size = 100
-    out = cp.empty(size, dtype="int32")
-
-    def run():
-        binary_transform_iterator(size, out, build_only=True)
-
-    compile_benchmark(parallel.make_binary_transform, run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_unary_transform, run)
+    else:
+        fixture(run)
 
 
-def bench_unary_transform_pointer(benchmark, size):
-    inp = cp.random.randint(0, 10, size)
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_unary_transform_struct(bench_fixture, request, size):
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    inp = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
     out = cp.empty_like(inp)
 
     def run():
-        unary_transform_pointer(inp, out, build_only=False)
+        unary_transform_struct(
+            inp, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
-    benchmark(run)
-
-
-def bench_unary_transform_iterator(benchmark, size):
-    out = cp.empty(size, dtype="int32")
-
-    def run():
-        unary_transform_iterator(size, out, build_only=False)
-
-    benchmark(run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_unary_transform, run)
+    else:
+        fixture(run)
 
 
-def bench_unary_transform_struct(benchmark, size):
-    inp = cp.random.randint(0, 10, (size, 2)).view(MyStruct.dtype)
-    out = cp.empty_like(inp)
-
-    def run():
-        unary_transform_struct(inp, out, build_only=False)
-
-    benchmark(run)
-
-
-def bench_binary_transform_pointer(benchmark, size):
-    inp1 = cp.random.randint(0, 10, size)
-    inp2 = cp.random.randint(0, 10, size)
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_binary_transform_pointer(bench_fixture, request, size):
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    inp1 = cp.random.randint(0, 10, actual_size)
+    inp2 = cp.random.randint(0, 10, actual_size)
     out = cp.empty_like(inp1)
 
     def run():
-        binary_transform_pointer(inp1, inp2, out, build_only=False)
+        binary_transform_pointer(
+            inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
-    benchmark(run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_binary_transform, run)
+    else:
+        fixture(run)
 
 
-def bench_binary_transform_iterator(benchmark, size):
-    out = cp.empty(size, dtype="int32")
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_binary_transform_iterator(bench_fixture, request, size):
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    out = cp.empty(actual_size, dtype="int32")
 
     def run():
-        binary_transform_iterator(size, out, build_only=False)
+        binary_transform_iterator(
+            actual_size, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
-    benchmark(run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_binary_transform, run)
+    else:
+        fixture(run)
 
 
-def bench_binary_transform_struct(benchmark, size):
-    inp1 = cp.random.randint(0, 10, (size, 2)).view(MyStruct.dtype)
-    inp2 = cp.random.randint(0, 10, (size, 2)).view(MyStruct.dtype)
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_binary_transform_struct(bench_fixture, request, size):
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    inp1 = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
+    inp2 = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
     out = cp.empty_like(inp1)
 
     def run():
-        binary_transform_struct(inp1, inp2, out, build_only=False)
+        binary_transform_struct(
+            inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
-    benchmark(run)
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_binary_transform, run)
+    else:
+        fixture(run)
