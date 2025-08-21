@@ -28,8 +28,7 @@ def reduce_pointer_well_known(input_array, build_only):
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
     # Use the well-known PLUS operation from OpKind
-    alg = parallel.make_reduce_into(
-        input_array, res, parallel.OpKind.PLUS, h_init)
+    alg = parallel.make_reduce_into(input_array, res, parallel.OpKind.PLUS, h_init)
     if not build_only:
         temp_storage_bytes = alg(None, input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -85,8 +84,7 @@ def bench_reduce_pointer(bench_fixture, request, size):
     input_array = cp.random.randint(0, 10, actual_size)
 
     def run():
-        reduce_pointer(input_array, build_only=(
-            bench_fixture == "compile_benchmark"))
+        reduce_pointer(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -122,8 +120,7 @@ def bench_reduce_struct(bench_fixture, request, size):
     )
 
     def run():
-        reduce_struct(input_array, build_only=(
-            bench_fixture == "compile_benchmark"))
+        reduce_struct(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -173,8 +170,7 @@ def bench_reduce_iterator_single_phase(benchmark, size):
 
 
 def bench_reduce_struct_single_phase(benchmark, size):
-    input_array = cp.random.randint(
-        0, 10, (size, 2), dtype="int32").view(MyStruct)
+    input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(MyStruct)
 
     # warm up run
     reduce_struct_single_phase(input_array, build_only=False)

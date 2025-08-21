@@ -211,8 +211,7 @@ def merge_sort(
         num_items: Number of items to sort
         stream: CUDA stream for the operation (optional)
     """
-    sorter = make_merge_sort(d_in_keys, d_in_items,
-                             d_out_keys, d_out_items, op)
+    sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
         None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
     )

@@ -133,8 +133,7 @@ class _UniqueByKey:
         set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
-        set_cccl_iterator_state(
-            self.d_out_num_selected_cccl, d_out_num_selected)
+        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:

@@ -75,8 +75,7 @@ class _SegmentedReduce:
         if isinstance(op, OpKind):
             self.op_wrapper = cccl.to_cccl_op(op, None)
         else:
-            self.op_wrapper = cccl.to_cccl_op(
-                op, value_type(value_type, value_type))
+            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
         self.build_result = call_build(
             _bindings.DeviceSegmentedReduceBuildResult,
             self.d_in_cccl,
@@ -131,8 +130,7 @@ class _SegmentedReduce:
 def _to_key(d_in: DeviceArrayLike | IteratorBase):
     "Return key for an input array-like argument or an iterator"
     d_in_key = (
-        d_in.kind if isinstance(
-            d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     return d_in_key
 
