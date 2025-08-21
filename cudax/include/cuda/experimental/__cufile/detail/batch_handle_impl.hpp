@@ -115,7 +115,7 @@ void batch_handle::submit(const file_handle_base& file_handle_ref,
 
   for (const auto& op : operations)
   {
-    CUfileIOParams_t cufile_op      = {};
+    auto& cufile_op      = cufile_ops.emplace_back();
     cufile_op.mode                  = CUFILE_BATCH;
     cufile_op.u.batch.devPtr_base   = op.buffer.data();
     cufile_op.u.batch.file_offset   = op.file_offset;
@@ -124,7 +124,6 @@ void batch_handle::submit(const file_handle_base& file_handle_ref,
     cufile_op.fh                    = file_handle_ref.native_handle();
     cufile_op.opcode                = op.opcode;
     cufile_op.cookie                = op.cookie;
-    cufile_ops.push_back(cufile_op);
   }
 
   CUfileError_t error = cuFileBatchIOSubmit(handle_, cufile_ops.size(), cufile_ops.data(), flags);
