@@ -49,15 +49,9 @@
 #else
 // cuFILE not available on this platform. The header is safe to include, but
 // no cuFILE APIs are provided. Use CUDAX_HAS_CUFILE to conditionally compile code.
-namespace cuda
+namespace cuda::experimental::cufile
 {
-namespace experimental
-{
-namespace cufile
-{
-}
-} // namespace experimental
-} // namespace cuda
+} // namespace [cuda](cuda::experimental::cufile)
 #endif
 
 #endif // __CUDAX_CUFILE_H
