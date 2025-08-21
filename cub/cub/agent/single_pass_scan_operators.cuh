@@ -1267,7 +1267,8 @@ struct TilePrefixCallbackOp
     // Perform a segmented reduction to get the prefix for the current window.
     // Use the swizzled scan operator because we are now scanning *down* towards thread0.
 
-    int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+    int tail_flag =
+      (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE) || predecessor_status == StatusWord(SCAN_TILE_OOB));
     window_aggregate =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
