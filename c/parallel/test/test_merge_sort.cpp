@@ -425,12 +425,14 @@ C2H_TEST("DeviceMergeSort::SortKeys works with output iterators", "[merge_sort]"
     make_iterator<TestType, random_access_iterator_state_t>(
       {"random_access_iterator_state_t", "struct random_access_iterator_state_t { int* d_input; };\n"},
       {"advance",
-       "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
-       "  state->d_input += offset;\n"
+       "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, void* offset_ptr) {\n"
+       "  unsigned long long* offset = static_cast<unsigned long long*>(offset_ptr);\n"
+       "  state->d_input += *offset;\n"
        "}"},
       {"dereference",
-       "extern \"C\" __device__ void dereference(random_access_iterator_state_t* state, int x) {\n"
-       "  *state->d_input = x;\n"
+       "extern \"C\" __device__ void dereference(random_access_iterator_state_t* state, void* x_ptr) {\n"
+       "  int* x = static_cast<int*>(x_ptr);\n"
+       "  *state->d_input = *x;\n"
        "}"});
   std::vector<TestType> input_keys    = make_shuffled_key_ranks_vector<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
@@ -464,13 +466,15 @@ C2H_TEST("DeviceMergeSort::SortPairs works with output iterators for items", "[m
     make_iterator<TestType, item_random_access_iterator_state_t>(
       "struct item_random_access_iterator_state_t { int* d_input; };\n",
       {"advance",
-       "extern \"C\" __device__ void advance(item_random_access_iterator_state_t* state, unsigned long long offset) "
+       "extern \"C\" __device__ void advance(item_random_access_iterator_state_t* state, void* offset_ptr) "
        "{\n"
-       "  state->d_input += offset;\n"
+       "  unsigned long long* offset = static_cast<unsigned long long*>(offset_ptr);\n"
+       "  state->d_input += *offset;\n"
        "}"},
       {"dereference",
-       "extern \"C\" __device__ void dereference(item_random_access_iterator_state_t* state, int x) {\n"
-       "  *state->d_input = x;\n"
+       "extern \"C\" __device__ void dereference(item_random_access_iterator_state_t* state, void* x_ptr) {\n"
+       "  int* x = static_cast<int*>(x_ptr);\n"
+       "  *state->d_input = *x;\n"
        "}"});
 
   pointer_t<TestType> input_keys_it(input_keys);

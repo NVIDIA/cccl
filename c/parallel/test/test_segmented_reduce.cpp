@@ -115,9 +115,10 @@ struct {0} {{
   const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
 
   static constexpr std::string_view it_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
+extern "C" __device__ void {0}({1}* state, void* offset_ptr)
 {{
-  state->linear_id += offset;
+  {2}* offset = static_cast<{2}*>(offset_ptr);
+  state->linear_id += *offset;
 }}
 )XXX";
 
@@ -125,8 +126,9 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
 
   static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2}* result)
+extern "C" __device__ void {0}({1}* state, void* result_ptr)
 {{
+  {2}* result = static_cast<{2}*>(result_ptr);
   *result = (state->linear_id) * (state->row_size);
 }}
 )XXX";
