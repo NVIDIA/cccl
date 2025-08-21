@@ -49,7 +49,7 @@ adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicat
 template <class _ForwardIterator>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator adjacent_find(_ForwardIterator __first, _ForwardIterator __last)
 {
-  return _CUDA_VSTD::adjacent_find(__first, __last, __equal_to{});
+  return ::cuda::std::adjacent_find(__first, __last, __equal_to{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

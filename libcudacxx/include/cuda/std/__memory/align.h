@@ -55,7 +55,7 @@ _CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, si
   //! We need to avoid using __aligned_ptr here, as nvcc looses track of the execution space otherwise
   __ptr = reinterpret_cast<void*>(__char_ptr + __diff);
   __space -= __diff;
-  return _CUDA_VSTD::__runtime_assume_aligned(__ptr, __alignment);
+  return ::cuda::std::__runtime_assume_aligned(__ptr, __alignment);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

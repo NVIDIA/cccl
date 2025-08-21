@@ -67,9 +67,9 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   // We need this to make proxy iterators work because those have a void reference type
   template <class Iter>
   using zip_iterator_reference_t =
-    _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<it_reference_t<Iter>, void>,
-                              decltype(*_CUDA_VSTD::declval<Iter>()),
-                              it_reference_t<Iter>>;
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<it_reference_t<Iter>, void>,
+                               decltype(*::cuda::std::declval<Iter>()),
+                               it_reference_t<Iter>>;
 
   // reference type is the type of the tuple obtained from the iterator's reference types.
   using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
@@ -305,8 +305,10 @@ private:
   //! \endcond
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class... Iterators>
 _CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!

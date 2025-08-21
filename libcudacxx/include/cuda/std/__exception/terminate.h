@@ -44,7 +44,7 @@ using terminate_handler = void (*)();
 #  ifdef __CUDA_ARCH__
 __device__
 #  endif // __CUDA_ARCH__
-  static _CCCL_CONSTINIT _CUDA_VSTD::atomic<terminate_handler>
+  static _CCCL_CONSTINIT ::cuda::std::atomic<terminate_handler>
     __cccl_terminate_handler{&__cccl_terminate};
 
 _CCCL_API inline  terminate_handler set_terminate(terminate_handler __func) noexcept

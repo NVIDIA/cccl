@@ -206,7 +206,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4913)
 
 #define _CUDAX_GET_COMPLSIGS(...) \
-  _CUDA_VSTD::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
+  ::cuda::std::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
 
 #define _CUDAX_CHECKED_COMPLSIGS(...) \
   (static_cast<void>(__VA_ARGS__), void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
@@ -299,7 +299,7 @@ template <class _Sndr, class... _Env>
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
     using _NewSndr _CCCL_NODEBUG_ALIAS =
-      _CUDA_VSTD::__call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
+      ::cuda::std::__call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
     return execution::__get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }
@@ -307,7 +307,7 @@ template <class _Sndr, class... _Env>
 template <class _Parent, class _Child, class... _Env>
 [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_child_completion_signatures()
 {
-  return get_completion_signatures<_CUDA_VSTD::__copy_cvref_t<_Parent, _Child>, __fwd_env_t<_Env>...>();
+  return get_completion_signatures<::cuda::std::__copy_cvref_t<_Parent, _Child>, __fwd_env_t<_Env>...>();
 }
 
 #undef _CUDAX_GET_COMPLSIGS
@@ -337,7 +337,7 @@ template <class _Sndr>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __is_dependent_sender() noexcept -> bool
 {
   using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
-  return _CUDA_VSTD::is_base_of_v<dependent_sender_error, _Completions>;
+  return ::cuda::std::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif // ^^^ no constexpr exceptions ^^^
 

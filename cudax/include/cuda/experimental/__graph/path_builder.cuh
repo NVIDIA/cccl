@@ -134,9 +134,10 @@ struct path_builder
 
   //! \brief Get the dependencies of the path builder.
   //! \return A span of the dependencies of the path builder.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto get_dependencies() const noexcept -> _CUDA_VSTD::span<const cudaGraphNode_t>
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto get_dependencies() const noexcept
+    -> ::cuda::std::span<const cudaGraphNode_t>
   {
-    return _CUDA_VSTD::span(__nodes_.data(), __nodes_.size());
+    return ::cuda::std::span(__nodes_.data(), __nodes_.size());
   }
 
   //! \brief Add the dependencies of another path builder to this path builder.
@@ -158,7 +159,7 @@ struct path_builder
   {
     (
       [this](auto&& __arg) {
-        if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<decltype(__arg)>, graph_node_ref>)
+        if constexpr (::cuda::std::is_same_v<::cuda::std::decay_t<decltype(__arg)>, graph_node_ref>)
         {
           __nodes_.push_back(__arg.get());
         }

@@ -26,7 +26,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_shared_t,
   op_t<_Op> __op,
   const void* __tensorMap,
-  const _CUDA_VSTD::int32_t (&__tensorCoords)[1],
+  const ::cuda::std::int32_t (&__tensorCoords)[1],
   const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
@@ -121,7 +121,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_shared_t,
   op_t<_Op> __op,
   const void* __tensorMap,
-  const _CUDA_VSTD::int32_t (&__tensorCoords)[2],
+  const ::cuda::std::int32_t (&__tensorCoords)[2],
   const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
@@ -216,7 +216,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_shared_t,
   op_t<_Op> __op,
   const void* __tensorMap,
-  const _CUDA_VSTD::int32_t (&__tensorCoords)[3],
+  const ::cuda::std::int32_t (&__tensorCoords)[3],
   const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
@@ -343,7 +343,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_shared_t,
   op_t<_Op> __op,
   const void* __tensorMap,
-  const _CUDA_VSTD::int32_t (&__tensorCoords)[4],
+  const ::cuda::std::int32_t (&__tensorCoords)[4],
   const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
@@ -478,7 +478,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_shared_t,
   op_t<_Op> __op,
   const void* __tensorMap,
-  const _CUDA_VSTD::int32_t (&__tensorCoords)[5],
+  const ::cuda::std::int32_t (&__tensorCoords)[5],
   const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)

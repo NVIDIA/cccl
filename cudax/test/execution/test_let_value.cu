@@ -27,7 +27,7 @@ namespace
 struct let_value_test_domain
 {
   _CCCL_TEMPLATE(class Sender)
-  _CCCL_REQUIRES(_CUDA_VSTD::same_as<ex::tag_of_t<Sender>, ex::let_value_t>)
+  _CCCL_REQUIRES(::cuda::std::same_as<ex::tag_of_t<Sender>, ex::let_value_t>)
   static auto transform_sender(Sender&&)
   {
     return ex::just(std::string{"hallo"});
@@ -177,7 +177,7 @@ C2H_TEST("let_value can throw, and set_error will be called", "[adaptors][let_va
             | ex::let_value([](int&) -> decltype(ex::just(0)) {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(std::move(sndr), checked_error_receiver{::std::exception_ptr{}});
+  auto op = ex::connect(std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -488,7 +488,7 @@ C2H_TEST("let_value predecessor's domain is accessible via the receiver connecte
                 return ex::read_env(ex::get_domain);
               });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
-  static_assert(_CUDA_VSTD::is_same_v<decltype(result), let_value_test_domain2>);
+  static_assert(::cuda::std::is_same_v<decltype(result), let_value_test_domain2>);
   (void) result;
 }
 #endif // !_CCCL_CUDA_COMPILER(NVCC)
@@ -500,7 +500,7 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
                 return ex::write_attrs(ex::just(), attrs);
               });
   auto dom   = ex::get_domain(ex::get_env(sndr));
-  static_assert(_CUDA_VSTD::is_same_v<decltype(dom), let_value_test_domain>);
+  static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }
 
 } // namespace

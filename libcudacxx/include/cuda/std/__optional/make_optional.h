@@ -37,21 +37,21 @@ _CCCL_TEMPLATE(class _Tp = nullopt_t::__secret_tag, class _Up)
 _CCCL_REQUIRES(is_same_v<_Tp, nullopt_t::__secret_tag>)
 _CCCL_API constexpr optional<decay_t<_Up>> make_optional(_Up&& __v)
 {
-  return optional<decay_t<_Up>>(_CUDA_VSTD::forward<_Up>(__v));
+  return optional<decay_t<_Up>>(::cuda::std::forward<_Up>(__v));
 }
 
 _CCCL_TEMPLATE(class _Tp, class... _Args)
 _CCCL_REQUIRES((!is_reference_v<_Tp>) )
 _CCCL_API constexpr optional<_Tp> make_optional(_Args&&... __args)
 {
-  return optional<_Tp>(in_place, _CUDA_VSTD::forward<_Args>(__args)...);
+  return optional<_Tp>(in_place, ::cuda::std::forward<_Args>(__args)...);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up, class... _Args)
 _CCCL_REQUIRES((!is_reference_v<_Tp>) )
 _CCCL_API constexpr optional<_Tp> make_optional(initializer_list<_Up> __il, _Args&&... __args)
 {
-  return optional<_Tp>(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...);
+  return optional<_Tp>(in_place, __il, ::cuda::std::forward<_Args>(__args)...);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

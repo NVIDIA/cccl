@@ -11,4 +11,4 @@ It is recommended to replace `thrust::pair` and `thrust::make_pair` with `cuda::
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*typedef*pair*
+   ../../api/*pair*

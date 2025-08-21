@@ -39,12 +39,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   // When calling connect on a continues_on sender, first transform the sender into a
   // schedule_from sender.
   template <class _Sndr>
-  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept
+  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept
   {
     // _Sndr is a (possibly cvref-qualified) instance of continues_on_t::__sndr_t
     auto&& [__tag, __sch, __child] = static_cast<_Sndr&&>(__sndr);
     // By default, continues_on(sndr, sch) lowers to schedule_from(sch, sndr) in connect:
-    return schedule_from(__sch, _CUDA_VSTD::forward_like<_Sndr>(__child));
+    return schedule_from(__sch, ::cuda::std::forward_like<_Sndr>(__child));
   }
 
   template <class _Sch, class _Sndr>

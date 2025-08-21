@@ -36,7 +36,7 @@ class __barrier_poll_tester_phase
 public:
   _CCCL_API inline __barrier_poll_tester_phase(_Barrier const* __this_, typename _Barrier::arrival_token&& __phase_)
       : __this(__this_)
-      , __phase(_CUDA_VSTD::move(__phase_))
+      , __phase(::cuda::std::move(__phase_))
   {}
 
   [[nodiscard]] _CCCL_API inline bool operator()() const
@@ -66,7 +66,7 @@ public:
 template <class _Barrier>
 [[nodiscard]] _CCCL_API inline bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
 {
-  return __b.__try_wait(_CUDA_VSTD::move(__phase));
+  return __b.__try_wait(::cuda::std::move(__phase));
 }
 
 template <class _Barrier>

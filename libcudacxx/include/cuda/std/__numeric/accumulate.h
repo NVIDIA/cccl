@@ -33,7 +33,7 @@ template <class _InputIterator, class _Tp>
 {
   for (; __first != __last; ++__first)
   {
-    __init = _CUDA_VSTD::move(__init) + *__first;
+    __init = ::cuda::std::move(__init) + *__first;
   }
   return __init;
 }
@@ -44,7 +44,7 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOpe
 {
   for (; __first != __last; ++__first)
   {
-    __init = __binary_op(_CUDA_VSTD::move(__init), *__first);
+    __init = __binary_op(::cuda::std::move(__init), *__first);
   }
   return __init;
 }

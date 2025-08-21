@@ -117,8 +117,8 @@ template <class _Tp>
 inline constexpr bool
   __has_integral_minus<_Tp,
                        enable_if_t<!same_as<_Tp, void*>>,
-                       void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>> =
-    integral<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>;
+                       void_t<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>> =
+    integral<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>;
 
 template <class _Tp>
 struct incrementable_traits<_Tp, enable_if_t<!is_pointer_v<_Tp> && !is_const_v<_Tp> && __has_member_difference_type<_Tp>>>

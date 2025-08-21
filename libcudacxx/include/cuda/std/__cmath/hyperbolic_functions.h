@@ -100,21 +100,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half cosh(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::coshf(__half2float(__x)));
+  return __float2half(::cuda::std::coshf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 cosh(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::coshf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::coshf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double cosh(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::cosh((double) __x);
+  return ::cuda::std::cosh((double) __x);
 }
 
 // sinh
@@ -181,21 +181,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half sinh(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::sinhf(__half2float(__x)));
+  return __float2half(::cuda::std::sinhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 sinh(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::sinhf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::sinhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double sinh(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::sinh((double) __x);
+  return ::cuda::std::sinh((double) __x);
 }
 
 // tanh
@@ -262,21 +262,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half tanh(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::tanhf(__half2float(__x)));
+  return __float2half(::cuda::std::tanhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 tanh(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::tanhf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::tanhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double tanh(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::tanh((double) __x);
+  return ::cuda::std::tanh((double) __x);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

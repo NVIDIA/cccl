@@ -49,7 +49,7 @@ struct __basic_any_access
   _CCCL_TRIVIAL_API static auto __cast_to(_SrcCvAny&& __from, __basic_any<_DstInterface>& __to) noexcept(
     noexcept(__to.__convert_from(static_cast<_SrcCvAny&&>(__from)))) -> void
   {
-    static_assert(__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_SrcCvAny>, __basic_any>);
+    static_assert(__is_specialization_of_v<::cuda::std::remove_cvref_t<_SrcCvAny>, __basic_any>);
     __to.__convert_from(static_cast<_SrcCvAny&&>(__from));
   }
 
@@ -58,7 +58,7 @@ struct __basic_any_access
   _CCCL_TRIVIAL_API static auto
   __cast_to(_SrcCvAny* __from, __basic_any<_DstInterface>& __to) noexcept(noexcept(__to.__convert_from(__from))) -> void
   {
-    static_assert(__is_specialization_of_v<_CUDA_VSTD::remove_const_t<_SrcCvAny>, __basic_any>);
+    static_assert(__is_specialization_of_v<::cuda::std::remove_const_t<_SrcCvAny>, __basic_any>);
     __to.__convert_from(__from);
   }
 

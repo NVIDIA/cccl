@@ -25,12 +25,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -47,7 +47,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -63,7 +63,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -79,7 +79,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -95,7 +95,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -127,10 +127,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -148,7 +148,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -163,7 +163,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -178,7 +178,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -193,7 +193,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -226,12 +226,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -248,7 +248,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -264,7 +264,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -280,7 +280,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -296,7 +296,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -329,10 +329,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -350,7 +350,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -365,7 +365,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -380,7 +380,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -395,7 +395,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -427,12 +427,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -449,7 +449,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -465,7 +465,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -481,7 +481,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -497,7 +497,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -529,10 +529,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -550,7 +550,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -565,7 +565,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -580,7 +580,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -595,7 +595,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -628,12 +628,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -650,7 +650,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -666,7 +666,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -682,7 +682,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -698,7 +698,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -731,10 +731,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -752,7 +752,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -767,7 +767,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -782,7 +782,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -797,7 +797,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -829,12 +829,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -851,7 +851,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -867,7 +867,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -883,7 +883,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -899,7 +899,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -931,10 +931,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -952,7 +952,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -967,7 +967,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -982,7 +982,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -997,7 +997,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -1030,12 +1030,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -1052,7 +1052,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1068,7 +1068,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1084,7 +1084,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1100,7 +1100,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1133,10 +1133,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -1154,7 +1154,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -1169,7 +1169,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -1184,7 +1184,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -1199,7 +1199,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -1231,12 +1231,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -1253,7 +1253,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1269,7 +1269,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1285,7 +1285,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1301,7 +1301,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1333,10 +1333,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -1354,7 +1354,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -1369,7 +1369,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -1384,7 +1384,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -1399,7 +1399,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -1432,12 +1432,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -1454,7 +1454,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1470,7 +1470,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1486,7 +1486,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1502,7 +1502,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1535,10 +1535,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -1556,7 +1556,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -1571,7 +1571,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -1586,7 +1586,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -1601,7 +1601,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -1633,12 +1633,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -1655,7 +1655,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1671,7 +1671,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1687,7 +1687,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1703,7 +1703,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1735,10 +1735,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -1756,7 +1756,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -1771,7 +1771,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -1786,7 +1786,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -1801,7 +1801,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -1834,12 +1834,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -1856,7 +1856,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1872,7 +1872,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1888,7 +1888,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1904,7 +1904,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -1937,10 +1937,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -1958,7 +1958,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -1973,7 +1973,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -1988,7 +1988,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -2003,7 +2003,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -2035,12 +2035,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -2057,7 +2057,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2073,7 +2073,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2089,7 +2089,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2105,7 +2105,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2137,10 +2137,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -2158,7 +2158,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -2173,7 +2173,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -2188,7 +2188,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -2203,7 +2203,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -2236,12 +2236,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -2258,7 +2258,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2274,7 +2274,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2290,7 +2290,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2306,7 +2306,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2339,10 +2339,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -2360,7 +2360,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -2375,7 +2375,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -2390,7 +2390,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -2405,7 +2405,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -2437,12 +2437,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -2459,7 +2459,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2475,7 +2475,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2491,7 +2491,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2507,7 +2507,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2539,10 +2539,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -2560,7 +2560,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -2575,7 +2575,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -2590,7 +2590,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -2605,7 +2605,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -2638,12 +2638,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -2660,7 +2660,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2676,7 +2676,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2692,7 +2692,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2708,7 +2708,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2741,10 +2741,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -2762,7 +2762,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -2777,7 +2777,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -2792,7 +2792,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -2807,7 +2807,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -2839,12 +2839,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -2861,7 +2861,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2877,7 +2877,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2893,7 +2893,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2909,7 +2909,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -2941,10 +2941,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -2962,7 +2962,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -2977,7 +2977,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -2992,7 +2992,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -3007,7 +3007,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -3040,12 +3040,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -3062,7 +3062,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3078,7 +3078,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3094,7 +3094,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3110,7 +3110,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3143,10 +3143,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -3164,7 +3164,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -3179,7 +3179,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -3194,7 +3194,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -3209,7 +3209,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -3241,12 +3241,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -3263,7 +3263,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3279,7 +3279,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3295,7 +3295,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3311,7 +3311,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3343,10 +3343,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -3364,7 +3364,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -3379,7 +3379,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -3394,7 +3394,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -3409,7 +3409,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -3442,12 +3442,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -3464,7 +3464,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3480,7 +3480,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3496,7 +3496,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3512,7 +3512,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3545,10 +3545,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -3566,7 +3566,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -3581,7 +3581,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -3596,7 +3596,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -3611,7 +3611,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -3643,12 +3643,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -3665,7 +3665,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3681,7 +3681,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3697,7 +3697,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3713,7 +3713,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3745,10 +3745,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -3766,7 +3766,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -3781,7 +3781,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -3796,7 +3796,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -3811,7 +3811,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -3844,12 +3844,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -3866,7 +3866,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3882,7 +3882,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3898,7 +3898,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3914,7 +3914,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -3947,10 +3947,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -3968,7 +3968,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -3983,7 +3983,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -3998,7 +3998,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -4013,7 +4013,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -4045,12 +4045,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -4067,7 +4067,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4083,7 +4083,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4099,7 +4099,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4115,7 +4115,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4147,10 +4147,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -4168,7 +4168,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -4183,7 +4183,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -4198,7 +4198,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -4213,7 +4213,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -4246,12 +4246,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -4268,7 +4268,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4284,7 +4284,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4300,7 +4300,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4316,7 +4316,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4349,10 +4349,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -4370,7 +4370,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -4385,7 +4385,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -4400,7 +4400,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -4415,7 +4415,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -4447,12 +4447,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -4469,7 +4469,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4485,7 +4485,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4501,7 +4501,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4517,7 +4517,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4549,10 +4549,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -4570,7 +4570,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -4585,7 +4585,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -4600,7 +4600,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -4615,7 +4615,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -4648,12 +4648,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -4670,7 +4670,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4686,7 +4686,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4702,7 +4702,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4718,7 +4718,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4751,10 +4751,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -4772,7 +4772,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -4787,7 +4787,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -4802,7 +4802,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -4817,7 +4817,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -4849,12 +4849,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -4871,7 +4871,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4887,7 +4887,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4903,7 +4903,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4919,7 +4919,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -4951,10 +4951,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -4972,7 +4972,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -4987,7 +4987,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -5002,7 +5002,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -5017,7 +5017,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -5050,12 +5050,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -5072,7 +5072,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5088,7 +5088,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5104,7 +5104,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5120,7 +5120,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5153,10 +5153,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -5174,7 +5174,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -5189,7 +5189,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -5204,7 +5204,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -5219,7 +5219,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -5251,12 +5251,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -5273,7 +5273,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5289,7 +5289,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5305,7 +5305,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5321,7 +5321,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5353,10 +5353,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -5374,7 +5374,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -5389,7 +5389,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -5404,7 +5404,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -5419,7 +5419,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -5452,12 +5452,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -5474,7 +5474,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5490,7 +5490,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5506,7 +5506,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5522,7 +5522,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5555,10 +5555,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -5576,7 +5576,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -5591,7 +5591,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -5606,7 +5606,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -5621,7 +5621,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -5653,12 +5653,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -5675,7 +5675,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5691,7 +5691,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5707,7 +5707,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5723,7 +5723,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5755,10 +5755,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -5776,7 +5776,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -5791,7 +5791,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -5806,7 +5806,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -5821,7 +5821,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -5854,12 +5854,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -5876,7 +5876,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5892,7 +5892,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5908,7 +5908,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5924,7 +5924,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -5957,10 +5957,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -5978,7 +5978,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -5993,7 +5993,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -6008,7 +6008,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -6023,7 +6023,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -6055,12 +6055,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -6077,7 +6077,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6093,7 +6093,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6109,7 +6109,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6125,7 +6125,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6157,10 +6157,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint64_t __a_desc,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint64_t __a_desc,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -6178,7 +6178,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -6193,7 +6193,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -6208,7 +6208,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -6223,7 +6223,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
         "l"(__a_desc),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else
@@ -6256,12 +6256,12 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d,
-  _CUDA_VSTD::uint64_t __zero_column_mask_desc)
+  ::cuda::std::uint64_t __zero_column_mask_desc)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
   static_assert(__kind == kind_f16 || __kind == kind_tf32 || __kind == kind_f8f6f4 || __kind == kind_i8, "");
@@ -6278,7 +6278,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6294,7 +6294,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6310,7 +6310,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6326,7 +6326,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d)),
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d)),
         "l"(__zero_column_mask_desc)
       : "memory");
   }
@@ -6359,10 +6359,10 @@ template <dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   cta_group_1_t,
   kind_t<_Kind> __kind,
-  _CUDA_VSTD::uint32_t __d_tmem,
-  _CUDA_VSTD::uint32_t __a_tmem,
-  _CUDA_VSTD::uint64_t __b_desc,
-  _CUDA_VSTD::uint32_t __idesc,
+  ::cuda::std::uint32_t __d_tmem,
+  ::cuda::std::uint32_t __a_tmem,
+  ::cuda::std::uint64_t __b_desc,
+  ::cuda::std::uint32_t __idesc,
   bool __enable_input_d)
 {
   // __cta_group == cta_group_1 (due to parameter type constraint)
@@ -6380,7 +6380,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_tf32)
@@ -6395,7 +6395,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_f8f6f4)
@@ -6410,7 +6410,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
   else if constexpr (__kind == kind_i8)
@@ -6425,7 +6425,7 @@ _CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
         "r"(__a_tmem),
         "l"(__b_desc),
         "r"(__idesc),
-        "r"(static_cast<_CUDA_VSTD::uint32_t>(__enable_input_d))
+        "r"(static_cast<::cuda::std::uint32_t>(__enable_input_d))
       : "memory");
   }
 #  else

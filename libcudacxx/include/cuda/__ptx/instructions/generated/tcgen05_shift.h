@@ -14,7 +14,7 @@ __device__ static inline void tcgen05_shift_down(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_shift_down_is_not_supported_before_SM_100a_SM_110a__();
 template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_shift_down(cta_group_t<_Cta_Group> __cta_group, _CUDA_VSTD::uint32_t __taddr)
+_CCCL_DEVICE static inline void tcgen05_shift_down(cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL

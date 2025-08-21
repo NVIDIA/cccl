@@ -3,7 +3,7 @@
 
 tcgen05.fence::before_thread_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tcgen05.fence::before_thread_sync; // PTX ISA 86, SM_100a, SM_110a
    template <typename = void>
@@ -11,7 +11,7 @@ tcgen05.fence::before_thread_sync
 
 tcgen05.fence::after_thread_sync
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tcgen05.fence::after_thread_sync; // PTX ISA 86, SM_100a, SM_110a
    template <typename = void>

@@ -35,7 +35,7 @@ template <class _RealType, size_t __bits, class _URng>
 {
   constexpr size_t __dt = numeric_limits<_RealType>::digits;
   const size_t __b      = __dt < __bits ? __dt : __bits;
-  const size_t __log_r  = _CUDA_VSTD::__bit_log2<uint64_t>((_URng::max) () - (_URng::min) () + uint64_t(1));
+  const size_t __log_r  = ::cuda::std::__bit_log2<uint64_t>((_URng::max) () - (_URng::min) () + uint64_t(1));
   const size_t __k      = __b / __log_r + (__b % __log_r != 0) + (__b == 0);
   const _RealType __rp  = static_cast<_RealType>((_URng::max) () - (_URng::min) ()) + _RealType(1);
   _RealType __base      = __rp;

@@ -56,7 +56,7 @@ public:
 #ifndef NDEBUG
 
   explicit single_threaded_section(mutex_type& m,
-                                   const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+                                   const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
       : mutex(m)
   {
     if (mutex.try_lock())

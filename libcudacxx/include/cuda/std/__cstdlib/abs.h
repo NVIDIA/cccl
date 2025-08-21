@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr long abs(long __val) noexcept
 {
-  return _CUDA_VSTD::labs(__val);
+  return ::cuda::std::labs(__val);
 }
 
 [[nodiscard]] _CCCL_API constexpr long long llabs(long long __val) noexcept
@@ -47,7 +47,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr long long abs(long long __val) noexcept
 {
-  return _CUDA_VSTD::llabs(__val);
+  return ::cuda::std::llabs(__val);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -58,7 +58,7 @@ template <class _To,
                 "The compiler does not support __builtin_bit_cast, so bit_cast additionally requires the destination "
                 "type to be trivially constructible");
   _To __temp;
-  _CUDA_VSTD::memcpy(&__temp, &__from, sizeof(_To));
+  ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
   return __temp;
 #endif // !_CCCL_BUILTIN_BIT_CAST
 }

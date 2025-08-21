@@ -37,29 +37,6 @@
 
 namespace cuda::experimental::execution
 {
-// NOLINTBEGIN(misc-unused-using-decls)
-using _CUDA_STD_EXEC::__forwarding_query;
-using _CUDA_STD_EXEC::__unwrap_reference_t;
-using _CUDA_STD_EXEC::env;
-using _CUDA_STD_EXEC::env_of_t;
-using _CUDA_STD_EXEC::forwarding_query;
-using _CUDA_STD_EXEC::forwarding_query_t;
-using _CUDA_STD_EXEC::get_env;
-using _CUDA_STD_EXEC::get_env_t;
-using _CUDA_STD_EXEC::prop;
-
-using _CUDA_STD_EXEC::__nothrow_queryable_with;
-using _CUDA_STD_EXEC::__query_result_t;
-using _CUDA_STD_EXEC::__queryable_with;
-
-using _CUDA_STD_EXEC::__query_or;
-using _CUDA_STD_EXEC::__query_result_or_t;
-// NOLINTEND(misc-unused-using-decls)
-
-template <class _Env, class _Query, bool _Default>
-_CCCL_CONCEPT __nothrow_queryable_with_or =
-  bool(__queryable_with<_Env, _Query> ? __nothrow_queryable_with<_Env, _Query> : _Default);
-
 template <class _DomainOrTag, class... _Args>
 using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
 
@@ -123,7 +100,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto
-  transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
+  transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
@@ -144,7 +121,7 @@ struct get_domain_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
-    -> _CUDA_VSTD::decay_t<__query_result_t<_Env, get_domain_t>>
+    -> ::cuda::std::decay_t<__query_result_t<_Env, get_domain_t>>
   {
     return {};
   }
@@ -163,7 +140,7 @@ struct get_domain_override_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
-    -> _CUDA_VSTD::decay_t<__query_result_t<_Env, get_domain_override_t>>
+    -> ::cuda::std::decay_t<__query_result_t<_Env, get_domain_override_t>>
   {
     return {};
   }
@@ -183,8 +160,8 @@ namespace __detail
 // - get_domain(_GetScheduler{}(env))
 // - _Default{}
 template <class _Env, class _GetScheduler, class _Default = default_domain>
-using __domain_of_t = _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<
-  __first_callable<get_domain_t, _CUDA_VSTD::__compose_t<get_domain_t, _GetScheduler>, __always<_Default>>,
+using __domain_of_t = ::cuda::std::decay_t<::cuda::std::__call_result_t<
+  __first_callable<get_domain_t, ::cuda::std::__compose_t<get_domain_t, _GetScheduler>, __always<_Default>>,
   _Env>>;
 
 template <class _Sndr, class _Default = default_domain>
@@ -200,7 +177,7 @@ _CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
   // Otherwise, we fall back to using the domain from the receiver's environment.
   if constexpr (__queryable_with<env_of_t<_Sndr>, get_domain_override_t>)
   {
-    return _CUDA_VSTD::decay_t<__query_result_t<env_of_t<_Sndr>, get_domain_override_t>>{};
+    return ::cuda::std::decay_t<__query_result_t<env_of_t<_Sndr>, get_domain_override_t>>{};
   }
   else
   {
@@ -217,11 +194,11 @@ using __late_domain_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__get_domain_l
 
 template <class _Sndr, class... _Env>
 using __domain_of_t _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call<_CUDA_VSTD::_If<sizeof...(_Env) == 0,
-                                          _CUDA_VSTD::__type_quote<__early_domain_of_t>,
-                                          _CUDA_VSTD::__type_quote<__late_domain_of_t>>,
-                          _Sndr,
-                          _Env...>;
+  ::cuda::std::__type_call<::cuda::std::_If<sizeof...(_Env) == 0,
+                                            ::cuda::std::__type_quote<__early_domain_of_t>,
+                                            ::cuda::std::__type_quote<__late_domain_of_t>>,
+                           _Sndr,
+                           _Env...>;
 
 } // namespace cuda::experimental::execution
 

@@ -58,8 +58,8 @@ _CCCL_API constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>> __s
       ++__first2;
     }
   }
-  return _CUDA_VSTD::__copy<_AlgPolicy>(
-    _CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__last1), _CUDA_VSTD::move(__result));
+  return ::cuda::std::__copy<_AlgPolicy>(
+    ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__result));
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
@@ -71,7 +71,7 @@ _CCCL_API constexpr _OutputIterator set_difference(
   _OutputIterator __result,
   _Compare __comp)
 {
-  return _CUDA_VSTD::__set_difference<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
+  return ::cuda::std::__set_difference<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
            __first1, __last1, __first2, __last2, __result, __comp)
     .second;
 }
@@ -84,7 +84,7 @@ _CCCL_API constexpr _OutputIterator set_difference(
   _InputIterator2 __last2,
   _OutputIterator __result)
 {
-  return _CUDA_VSTD::__set_difference<_ClassicAlgPolicy>(__first1, __last1, __first2, __last2, __result, __less{})
+  return ::cuda::std::__set_difference<_ClassicAlgPolicy>(__first1, __last1, __first2, __last2, __result, __less{})
     .second;
 }
 

@@ -35,12 +35,12 @@ _CCCL_API constexpr _ForwardIterator
 partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using difference_type = typename iterator_traits<_ForwardIterator>::difference_type;
-  difference_type __len = _CUDA_VSTD::distance(__first, __last);
+  difference_type __len = ::cuda::std::distance(__first, __last);
   while (__len != 0)
   {
-    difference_type __l2 = _CUDA_VSTD::__half_positive(__len);
+    difference_type __l2 = ::cuda::std::__half_positive(__len);
     _ForwardIterator __m = __first;
-    _CUDA_VSTD::advance(__m, __l2);
+    ::cuda::std::advance(__m, __l2);
     if (__pred(*__m))
     {
       __first = ++__m;

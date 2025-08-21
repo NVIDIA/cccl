@@ -48,7 +48,7 @@ class conjugated_accessor
 {
 private:
   using __nested_element_type = typename _NestedAccessor::element_type;
-  using __nc_result_type      = decltype(conj_if_needed(_CUDA_VSTD::declval<__nested_element_type>()));
+  using __nc_result_type      = decltype(conj_if_needed(::cuda::std::declval<__nested_element_type>()));
 
 public:
   using element_type     = add_const_t<__nc_result_type>;

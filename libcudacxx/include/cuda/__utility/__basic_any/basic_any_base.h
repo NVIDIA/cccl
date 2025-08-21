@@ -73,7 +73,7 @@ private:
   static constexpr size_t __align_ = __buffer_align(_Interface::align);
 
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
-  alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
+  alignas(__align_)::cuda::std::byte __buffer_[__size_];
 };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // Without concepts, we need a base class to correctly implement movability
@@ -117,7 +117,7 @@ private:
   static constexpr size_t __align_ = __buffer_align(_Interface::align);
 
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
-  alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
+  alignas(__align_)::cuda::std::byte __buffer_[__size_];
 };
 
 template <class _Interface>

@@ -104,10 +104,10 @@ namespace __crbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::rbegin(__c)))
-    -> decltype(_CUDA_VSTD::rbegin(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::rbegin(__c)))
+    -> decltype(::cuda::std::rbegin(__c))
   {
-    return _CUDA_VSTD::rbegin(__c);
+    return ::cuda::std::rbegin(__c);
   }
 };
 } // namespace __crbegin
@@ -122,10 +122,10 @@ namespace __crend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::rend(__c)))
-    -> decltype(_CUDA_VSTD::rend(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::rend(__c)))
+    -> decltype(::cuda::std::rend(__c))
   {
-    return _CUDA_VSTD::rend(__c);
+    return ::cuda::std::rend(__c);
   }
 };
 } // namespace __crend

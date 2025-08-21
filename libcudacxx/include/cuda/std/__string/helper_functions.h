@@ -111,7 +111,7 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos,
     return __pos;
   }
 
-  const _CharT* __r = _CUDA_VSTD::__cccl_search_substring<_CharT, _Traits>(__p + __pos, __p + __sz, __s, __s + __n);
+  const _CharT* __r = ::cuda::std::__cccl_search_substring<_CharT, _Traits>(__p + __pos, __p + __sz, __s, __s + __n);
 
   if (__r == __p + __sz)
   {
@@ -149,7 +149,7 @@ template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _CCCL_API constexpr _SizeT
 __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
-  __pos = _CUDA_VSTD::min(__pos, __sz);
+  __pos = ::cuda::std::min(__pos, __sz);
   if (__n < __sz - __pos)
   {
     __pos += __n;
@@ -158,7 +158,7 @@ __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos
   {
     __pos = __sz;
   }
-  const _CharT* __r = _CUDA_VSTD::__find_end(
+  const _CharT* __r = ::cuda::std::__find_end(
     __p, __p + __pos, __s, __s + __n, _Traits::eq, random_access_iterator_tag(), random_access_iterator_tag());
   if (__n > 0 && __r == __p + __pos)
   {
@@ -175,7 +175,7 @@ __cccl_str_find_first_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Siz
   {
     return __npos;
   }
-  const _CharT* __r = _CUDA_VSTD::__find_first_of_ce(__p + __pos, __p + __sz, __s, __s + __n, _Traits::eq);
+  const _CharT* __r = ::cuda::std::__find_first_of_ce(__p + __pos, __p + __sz, __s, __s + __n, _Traits::eq);
   if (__r == __p + __sz)
   {
     return __npos;

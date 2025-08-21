@@ -45,7 +45,7 @@ struct __tag_t
 struct __no_tag_t
 {};
 
-_CCCL_API auto __tag_of(_CUDA_VSTD::__ignore_t) -> __no_tag_t;
+_CCCL_API auto __tag_of(::cuda::std::__ignore_t) -> __no_tag_t;
 
 template <class _Sndr>
 _CCCL_API auto __tag_of(const _Sndr& __sndr) -> tag_of_t<_Sndr>;
@@ -60,10 +60,10 @@ template <class _Sndr, class _GetStream>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
 _CCCL_GLOBAL_CONSTANT auto __get_stream_from_attrs =
-  __first_callable{get_stream, _CUDA_VSTD::__compose(get_stream, get_completion_scheduler<set_value_t>)};
+  __first_callable{get_stream, ::cuda::std::__compose(get_stream, get_completion_scheduler<set_value_t>)};
 
 _CCCL_GLOBAL_CONSTANT auto __get_stream_from_env =
-  __first_callable{get_stream, _CUDA_VSTD::__compose(get_stream, get_scheduler)};
+  __first_callable{get_stream, ::cuda::std::__compose(get_stream, get_scheduler)};
 
 using __get_stream_from_attrs_t = decltype(__get_stream_from_attrs);
 using __get_stream_from_env_t   = decltype(__get_stream_from_env);
@@ -72,14 +72,14 @@ using __get_stream_from_env_t   = decltype(__get_stream_from_env);
 struct __get_stream_fn
 {
   _CCCL_TEMPLATE(class _Sndr, class _Env)
-  _CCCL_REQUIRES((_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>>
-                  || _CUDA_VSTD::__is_callable_v<__get_stream_from_env_t, _Env>) )
+  _CCCL_REQUIRES((::cuda::std::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>
+                  || ::cuda::std::__is_callable_v<__get_stream_from_env_t, _Env>) )
   _CCCL_API constexpr auto operator()(const _Sndr& __sndr, const _Env& __env) const noexcept -> stream_ref
   {
-    if constexpr (_CUDA_VSTD::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>>)
+    if constexpr (::cuda::std::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>)
     {
       // If the sender's attributes have a stream, use it.
-      return __get_stream_from_attrs(execution::get_env(__sndr));
+      return __get_stream_from_attrs(execution::get_env(__sndr), __env);
     }
     else
     {
@@ -108,7 +108,7 @@ struct stream_domain
     // that has already been adapted. The __stream::__adapted_t query is present
     // only on receivers that come from an adapted sender.
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
+    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
       noexcept(__nothrow_decay_copyable<_Sndr>)
     {
       return __stream::__adapt(static_cast<_Sndr&&>(__sndr));
@@ -118,8 +118,8 @@ struct stream_domain
   struct __apply_passthru_t
   {
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const noexcept(__nothrow_movable<_Sndr>)
-      -> _Sndr
+    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
+      noexcept(__nothrow_movable<_Sndr>) -> _Sndr
     {
       return static_cast<_Sndr&&>(__sndr);
     }
@@ -156,19 +156,19 @@ struct stream_domain
 
 public:
   _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
+  _CCCL_REQUIRES(::cuda::std::__is_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
   _CCCL_TRIVIAL_HOST_API static constexpr auto
   apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(__nothrow_callable<__apply_t<_Tag>, _Sndr, _Args...>)
-    -> _CUDA_VSTD::__call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
+    -> ::cuda::std::__call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
     return __apply_t<_Tag>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
   }
 
   _CCCL_TEMPLATE(class _Sndr, class _Env)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
+  _CCCL_REQUIRES(::cuda::std::__is_callable_v<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
   _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
     __nothrow_callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-    -> _CUDA_VSTD::__call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
+    -> ::cuda::std::__call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
   {
     return __transform_strategy_t<_Sndr, _Env>{}(static_cast<_Sndr&&>(__sndr), __env);
   }

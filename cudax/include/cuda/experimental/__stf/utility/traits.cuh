@@ -374,7 +374,7 @@ auto all_convertible(P&&... p)
     }
   };
 
-  auto __guard = _CUDA_VSTD::__make_exception_guard(rollback);
+  auto __guard = ::cuda::std::__make_exception_guard(rollback);
   each_in_pack(
     [&](auto&& e) {
       if constexpr (::std::is_convertible_v<decltype(e), T>)
