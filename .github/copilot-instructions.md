@@ -47,12 +47,31 @@ conda install cccl  # Latest version
 
 # Build libcudacxx - NEVER CANCEL, takes up to 45 minutes
 ./ci/build_libcudacxx.sh -cxx g++ -std 17 -arch "60;70;80"
+
+# Build cudax (experimental) - NEVER CANCEL, takes up to 45 minutes
+./ci/build_cudax.sh -cxx g++ -std 20 -arch "60;70;80"
+
+# Build C parallel library - NEVER CANCEL, takes up to 30 minutes
+./ci/build_cccl_c_parallel.sh -cxx g++ -std 17 -arch "60;70;80"
+
+# Build Python packages - NEVER CANCEL, takes up to 20 minutes
+./ci/build_cuda_cccl_python.sh
 ```
 
 **Available compiler/standard combinations:**
 - Host compilers: `g++`, `clang++` (version 7+ for GCC, 14+ for Clang)
-- C++ standards: `17`, `20` 
-- CUDA architectures: `"60;70;80"` (default), `"70;75;80-virtual"`, `"70-real;80"` etc.
+- C++ standards: `17`, `20` (cudax requires C++20)
+- CUDA architectures: 
+  - `"60;70;80"` (default - PTX + SASS for all)
+  - `"70;75;80-virtual"` (PTX + SASS for 70,75; PTX only for 80) 
+  - `"70-real;80"` (SASS only for 70, PTX + SASS for 80)
+  - `"80"` (single architecture for faster builds)
+  - `"gpu"` (automatically detect current GPU)
+
+**Architecture format:**
+- `XX` - Generate both PTX and SASS
+- `XX-real` - Generate only SASS (device code)  
+- `XX-virtual` - Generate only PTX (forward compatibility)
 
 #### Using CMake Presets (Alternative)
 
@@ -88,10 +107,16 @@ cmake --build --preset=all-dev
 ./ci/test_cub.sh -cxx g++ -std 17 -arch "60;70;80"
 ./ci/test_thrust.sh -cxx g++ -std 17 -arch "60;70;80"  
 ./ci/test_libcudacxx.sh -cxx g++ -std 17 -arch "60;70;80"
+./ci/test_cudax.sh -cxx g++ -std 20 -arch "60;70;80"
+
+# Test C parallel library - NEVER CANCEL, takes up to 10 minutes
+./ci/test_cccl_c_parallel.sh -cxx g++ -std 17 -arch "60;70;80"
 
 # Test Python packages - NEVER CANCEL, takes up to 10 minutes
 ./ci/test_cuda_cccl_parallel_python.sh
 ./ci/test_cuda_cccl_headers_python.sh
+./ci/test_cuda_cccl_examples_python.sh
+./ci/test_cuda_cccl_cooperative_python.sh
 
 # Using CMake presets - NEVER CANCEL, takes up to 15 minutes
 ctest --preset=cub-cpp17
@@ -151,6 +176,13 @@ pre-commit install
    pre-commit run --all-files  # 2-5 min
    ```
 
+5. **Validate packaging and installation:**
+   ```bash
+   ./ci/test_packaging.sh  # 5-10 min
+   ```
+
+**Note on cudax:** Requires C++20 standard and CUDA 12.0+. Use `-std 20` for all cudax operations.
+
 ## Common Tasks
 
 ### Using CCCL as Header-Only Libraries
@@ -186,7 +218,8 @@ cccl/
 ├── libcudacxx/          # CUDA C++ Standard Library headers
 ├── cub/                 # CUB block-level primitives  
 ├── thrust/              # Thrust parallel algorithms
-├── cudax/               # Experimental CUDA features
+├── cudax/               # Experimental CUDA features (C++20)
+├── c/                   # CCCL C parallel library  
 ├── python/cuda_cccl/    # Python bindings and parallel algorithms
 ├── ci/                  # Build and test scripts
 ├── .devcontainer/       # Development container configs
@@ -194,9 +227,13 @@ cccl/
 └── CMakePresets.json    # Standardized build configurations
 ```
 
-**Python components:**
+**Component details:**
+- `libcudacxx/` - CUDA C++ Standard Library (C++17/20)
+- `cub/` - CUDA block/warp-level primitives (C++17/20)  
+- `thrust/` - High-level parallel algorithms (C++17/20)
+- `cudax/` - Experimental CUDA features (C++20 required)
+- `c/` - C parallel library interface
 - `python/cuda_cccl/` - Python packages for CCCL parallel algorithms
-- Test with: `./ci/test_cuda_cccl_parallel_python.sh`, `./ci/test_cuda_cccl_headers_python.sh`
 ```
 cccl/
 ├── libcudacxx/          # CUDA C++ Standard Library headers
