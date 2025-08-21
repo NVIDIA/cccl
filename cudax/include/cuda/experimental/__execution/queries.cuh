@@ -30,6 +30,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/unreachable.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
@@ -83,7 +84,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 } get_stop_token{};
 
 template <class _Ty>
-using stop_token_of_t _CCCL_NODEBUG_ALIAS = ::cuda::std::decay_t<::cuda::std::__call_result_t<get_stop_token_t, _Ty>>;
+using stop_token_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_stop_token_t, _Ty>>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_scheduler
@@ -107,7 +108,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 } get_scheduler{};
 
 template <class _Env>
-using __scheduler_of_t _CCCL_NODEBUG_ALIAS = ::cuda::std::decay_t<::cuda::std::__call_result_t<get_scheduler_t, _Env>>;
+using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_delegation_scheduler
@@ -164,9 +165,9 @@ struct get_completion_scheduler_t
   _CCCL_REQUIRES((!__queryable_with<_Attrs, get_completion_scheduler_t>) _CCCL_AND //
                  (!__queryable_with<_Attrs, get_completion_scheduler_t, const _Env&>) _CCCL_AND //
                    __completes_inline<_Attrs, _Env> _CCCL_AND //
-                 ::cuda::std::__is_callable_v<get_scheduler_t, const _Env&>)
+                     __callable<get_scheduler_t, const _Env&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs&, const _Env& __env) const noexcept
-    -> ::cuda::std::__call_result_t<get_scheduler_t, const _Env&>
+    -> __call_result_t<get_scheduler_t, const _Env&>
   {
     return get_scheduler(__env);
   }

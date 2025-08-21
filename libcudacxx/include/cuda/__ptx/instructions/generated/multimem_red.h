@@ -18,9 +18,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, ::cuda::std::uint32_t* __addr, ::cuda::std::uint32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::uint32_t* __addr,
+  ::cuda::std::uint32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -80,9 +84,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, ::cuda::std::uint64_t* __addr, ::cuda::std::uint64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -142,9 +150,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, ::cuda::std::int32_t* __addr, ::cuda::std::int32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::int32_t* __addr,
+  ::cuda::std::int32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -204,9 +216,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, ::cuda::std::int64_t* __addr, ::cuda::std::int64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::int64_t* __addr,
+  ::cuda::std::int64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -266,9 +282,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, ::cuda::std::uint32_t* __addr, ::cuda::std::uint32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::uint32_t* __addr,
+  ::cuda::std::uint32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -328,9 +348,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, ::cuda::std::uint64_t* __addr, ::cuda::std::uint64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -390,9 +414,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, ::cuda::std::int32_t* __addr, ::cuda::std::int32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::int32_t* __addr,
+  ::cuda::std::int32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -452,9 +480,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, ::cuda::std::int64_t* __addr, ::cuda::std::int64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::int64_t* __addr,
+  ::cuda::std::int64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -514,9 +546,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, ::cuda::std::uint32_t* __addr, ::cuda::std::uint32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::uint32_t* __addr,
+  ::cuda::std::uint32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -576,9 +612,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, ::cuda::std::uint64_t* __addr, ::cuda::std::uint64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -638,9 +678,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, ::cuda::std::int32_t* __addr, ::cuda::std::int32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::int32_t* __addr,
+  ::cuda::std::int32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -700,9 +744,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, ::cuda::std::int64_t* __addr, ::cuda::std::int64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::int64_t* __addr,
+  ::cuda::std::int64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -762,9 +810,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, _B32* __addr, _B32 __val)
+template <typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_and_op_t,
+  _B32* __addr,
+  _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -849,9 +904,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, _B32* __addr, _B32 __val)
+template <typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_or_op_t,
+  _B32* __addr,
+  _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -936,9 +998,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, _B32* __addr, _B32 __val)
+template <typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_xor_op_t,
+  _B32* __addr,
+  _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -1023,9 +1092,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, _B64* __addr, _B64 __val)
+template <typename _B64,
+          ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_and_op_t,
+  _B64* __addr,
+  _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -1110,9 +1186,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, _B64* __addr, _B64 __val)
+template <typename _B64,
+          ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_or_op_t,
+  _B64* __addr,
+  _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -1197,9 +1280,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, _B64* __addr, _B64 __val)
+template <typename _B64,
+          ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_xor_op_t,
+  _B64* __addr,
+  _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");

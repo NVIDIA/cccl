@@ -25,9 +25,9 @@
 #include <cuda/std/__functional/compose.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -121,7 +121,7 @@ struct get_domain_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
-    -> ::cuda::std::decay_t<__query_result_t<_Env, get_domain_t>>
+    -> decay_t<__query_result_t<_Env, get_domain_t>>
   {
     return {};
   }
@@ -140,7 +140,7 @@ struct get_domain_override_t
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env&) const noexcept
-    -> ::cuda::std::decay_t<__query_result_t<_Env, get_domain_override_t>>
+    -> decay_t<__query_result_t<_Env, get_domain_override_t>>
   {
     return {};
   }
@@ -160,7 +160,7 @@ namespace __detail
 // - get_domain(_GetScheduler{}(env))
 // - _Default{}
 template <class _Env, class _GetScheduler, class _Default = default_domain>
-using __domain_of_t = ::cuda::std::decay_t<::cuda::std::__call_result_t<
+using __domain_of_t = decay_t<__call_result_t<
   __first_callable<get_domain_t, ::cuda::std::__compose_t<get_domain_t, _GetScheduler>, __always<_Default>>,
   _Env>>;
 
@@ -177,7 +177,7 @@ _CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
   // Otherwise, we fall back to using the domain from the receiver's environment.
   if constexpr (__queryable_with<env_of_t<_Sndr>, get_domain_override_t>)
   {
-    return ::cuda::std::decay_t<__query_result_t<env_of_t<_Sndr>, get_domain_override_t>>{};
+    return decay_t<__query_result_t<env_of_t<_Sndr>, get_domain_override_t>>{};
   }
   else
   {

@@ -29,6 +29,7 @@
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
@@ -66,13 +67,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   template <class _SetTag, class _Attrs, class... _Env>
   _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
   {
-    if constexpr (::cuda::std::__is_callable_v<get_completion_scheduler_t<_SetTag>, const _Attrs&, const _Env&...>)
+    if constexpr (__callable<get_completion_scheduler_t<_SetTag>, const _Attrs&, const _Env&...>)
     {
       return __sch_env_t{get_completion_scheduler<_SetTag>(__attrs, __env...)};
     }
-    // else if constexpr (::cuda::std::__is_callable_v<get_completion_domain_t<_SetTag>, const _Attrs&, const _Env&...>)
+    // else if constexpr (__callable<get_completion_domain_t<_SetTag>, const _Attrs&, const _Env&...>)
     // TODO
-    else if constexpr (::cuda::std::__is_callable_v<get_domain_t, const _Attrs&>)
+    else if constexpr (__callable<get_domain_t, const _Attrs&>)
     {
       return prop{get_domain, get_domain(__attrs)};
     }
@@ -90,7 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr2_fn
   {
     template <class... _As>
-    using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<_Fn, ::cuda::std::decay_t<_As>&...>;
+    using __call _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, decay_t<_As>&...>;
   };
 
   template <class _Rcvr, class _Env2>
@@ -289,7 +290,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
         return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
                                             _WITH_FUNCTION(_Fn),
-                                            _WITH_ARGUMENTS(::cuda::std::decay_t<_Ts> & ...)>();
+                                            _WITH_ARGUMENTS(decay_t<_Ts> & ...)>();
       }
       else
       {
@@ -299,7 +300,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
           return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                               _WHAT(_FUNCTION_MUST_RETURN_A_SENDER),
                                               _WITH_FUNCTION(_Fn),
-                                              _WITH_ARGUMENTS(::cuda::std::decay_t<_Ts> & ...),
+                                              _WITH_ARGUMENTS(decay_t<_Ts> & ...),
                                               _WITH_RETURN_TYPE(__sndr2_t)>();
         }
         else if constexpr (sizeof...(_Env) == 0)
@@ -344,15 +345,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
                                                   // extended (host/device) lambda
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const
-      -> ::cuda::std::__call_result_t<_LetTag, _Sndr, _Fn>
+    [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
       return _LetTag{}(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
     [[nodiscard]] _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
-      -> ::cuda::std::__call_result_t<_LetTag, _Sndr, _Fn>
+      -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
       return _LetTag{}(static_cast<_Sndr&&>(__sndr), __self.__fn_);
     }
@@ -420,7 +420,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t::__sndr_t
       using __completion_domain_t = __completion_domain_of_t<__set_tag_t, _Sndr, _Fn>;
       using __transform_fn_t      = __transform_args_fn<_LetTag, _Fn, __env2_t, _Env...>;
 
-      if constexpr (::cuda::std::is_same_v<__completion_domain_t, __nil> && sizeof...(_Env) != 0)
+      if constexpr (__same_as<__completion_domain_t, __nil> && sizeof...(_Env) != 0)
       {
         return invalid_completion_signature<_WHERE(_IN_ALGORITHM, _LetTag),
                                             _WHAT(_FUNCTION_MUST_RETURN_SENDERS_THAT_ALL_COMPLETE_IN_A_COMMON_DOMAIN),

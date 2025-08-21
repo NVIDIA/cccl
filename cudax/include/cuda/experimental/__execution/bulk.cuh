@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
@@ -106,7 +107,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
       // different signatures, so we need to type-check them separately.
       if constexpr (_BulkTag::__is_chunked())
       {
-        if constexpr (::cuda::std::__is_callable_v<_Fn&, _Shape, _Shape, _Ts&...>)
+        if constexpr (__callable<_Fn&, _Shape, _Shape, _Ts&...>)
         {
           return completion_signatures<set_value_t(_Ts...)>{}
                + __eptr_completion_if<!__nothrow_callable<_Fn&, _Shape, _Shape, _Ts&...>>();
@@ -119,7 +120,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
                                               _WITH_ARGUMENTS(_Shape, _Shape, _Ts & ...)>();
         }
       }
-      else if constexpr (::cuda::std::__is_callable_v<_Fn&, _Shape, _Ts&...>)
+      else if constexpr (__callable<_Fn&, _Shape, _Ts&...>)
       {
         return completion_signatures<set_value_t(_Ts...)>{}
              + __eptr_completion_if<!__nothrow_callable<_Fn&, _Shape, _Ts&...>>();
@@ -407,7 +408,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   template <class _Sndr>
   [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
-    static_assert(::cuda::std::is_same_v<tag_of_t<_Sndr>, bulk_t>);
+    static_assert(__same_as<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;
     auto& [__policy, __shape, __fn] = __data;
 

@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <memory>
 #include <random>
 #include <string>
 #include <tuple>
@@ -92,21 +93,21 @@ inline std::string compile(const std::string& source)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
-    std::unique_ptr<char[]> log{new char[log_size]};
-    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.get()));
-    printf("%s\r\n", log.get());
+    std::vector<char> log(log_size);
+    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.data()));
+    printf("%s\r\n", log.data());
     REQUIRE(false);
   }
 
   std::size_t ltoir_size{};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIRSize(prog, &ltoir_size));
 
-  std::unique_ptr<char[]> ltoir(new char[ltoir_size]);
+  std::vector<char> ltoir(ltoir_size);
 
-  REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIR(prog, ltoir.get()));
+  REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIR(prog, ltoir.data()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
-  return std::string(ltoir.get(), ltoir_size);
+  return std::string(ltoir.data(), ltoir_size);
 }
 
 template <class T>
@@ -847,12 +848,12 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ {1} {0}({2}* state) {{\n"
-      "  return (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{\n"
+      "  *result = (*state->data){3};\n"
       "}}",
       dereference_fn_name,
-      value_type,
       iterator_state_name,
+      value_type,
       transform);
   }
   else
@@ -904,12 +905,12 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
     iterator_state_name);
 
   std::string dereference_fn_def_src = std::format(
-    "extern \"C\" __device__ {1} {0}({2}* state) {{ \n"
-    "  return state->value;\n"
+    "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{ \n"
+    "  *result = state->value;\n"
     "}}",
     dereference_fn_name,
-    value_type,
-    iterator_state_name);
+    iterator_state_name,
+    value_type);
 
   return std::make_tuple(iterator_state_def_src, advance_fn_def_src, dereference_fn_def_src);
 }
@@ -944,12 +945,12 @@ inline std::tuple<std::string, std::string, std::string> make_constant_iterator_
     advance_fn_name,
     iterator_state_name);
   std::string dereference_fn_src = std::format(
-    "extern \"C\" __device__ {1} {0}({2}* state) {{ \n"
-    "  return state->value;\n"
+    "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{ \n"
+    "  *result = state->value;\n"
     "}}",
     dereference_fn_name,
-    value_type,
-    iterator_state_name);
+    iterator_state_name,
+    value_type);
 
   return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
 }
@@ -991,12 +992,12 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ {1} {0}({2}* state) {{\n"
-      "  return (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{\n"
+      "  *result = (*state->data){3};\n"
       "}}",
       dereference_fn_name,
-      value_type,
       iterator_state_name,
+      value_type,
       transform);
   }
   else
@@ -1037,6 +1038,7 @@ inline std::tuple<std::string, std::string, std::string> make_stateful_transform
   std::string_view transform_it_advance_fn_name,
   std::string_view transform_it_dereference_fn_name,
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1079,10 +1081,12 @@ extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offse
   static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
 {5}
 {6}
-extern "C" __device__ {2} {0}({1} *transform_it_state) {{
-    return {3}(
+extern "C" __device__ void {0}({1} *transform_it_state, {2}* result) {{
+    {7} base_result;
+    {4}(&(transform_it_state->base_it_state), &base_result);
+    *result = {3}(
         &(transform_it_state->functor_state),
-        {4}(&(transform_it_state->base_it_state))
+        base_result
     );
 }}
 )XXX";
@@ -1095,7 +1099,8 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
     /* 3 */ transform_op.name /* transformation functor function name */,
     /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
     /* 5 */ base_it_dereference_fn.def_src,
-    /* 6 */ transform_op.def_src);
+    /* 6 */ transform_op.def_src,
+    /* 7 */ base_value_type);
 
   return std::make_tuple(transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src);
 }
@@ -1103,6 +1108,7 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
 template <typename ValueT, typename BaseIteratorStateT, typename TransformerStateT>
 auto make_stateful_transform_input_iterator(
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1119,6 +1125,7 @@ auto make_stateful_transform_input_iterator(
       transform_it_advance_fn_name,
       transform_it_dereference_fn_name,
       transformed_value_type,
+      base_value_type,
       base_it_state,
       base_it_advance_fn,
       base_it_dereference_fn,
@@ -1140,6 +1147,7 @@ inline std::tuple<std::string, std::string, std::string> make_stateless_transfor
   std::string_view transform_it_advance_fn_name,
   std::string_view transform_it_dereference_fn_name,
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1176,10 +1184,10 @@ extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offse
   static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
 {5}
 {6}
-extern "C" __device__ {2} {0}({1} *transform_it_state) {{
-    return {3}(
-        {4}(&(transform_it_state->base_it_state))
-    );
+extern "C" __device__ void {0}({1} *transform_it_state, {2}* result) {{
+    {7} base_result;
+    {4}(&(transform_it_state->base_it_state), &base_result);
+    *result = {3}(base_result);
 }}
 )XXX";
 
@@ -1191,7 +1199,8 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
     /* 3 */ transform_op.name /* transformation functor function name */,
     /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
     /* 5 */ base_it_dereference_fn.def_src,
-    /* 6 */ transform_op.def_src);
+    /* 6 */ transform_op.def_src,
+    /* 7 */ base_value_type);
 
   return std::make_tuple(transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src);
 }
@@ -1199,6 +1208,7 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
 template <typename ValueT, typename BaseIteratorStateT>
 auto make_stateless_transform_input_iterator(
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1214,6 +1224,7 @@ auto make_stateless_transform_input_iterator(
       transform_it_advance_fn_name,
       transform_it_deref_fn_name,
       transformed_value_type,
+      base_value_type,
       base_it_state,
       base_it_advance_fn,
       base_it_dereference_fn,

@@ -10,7 +10,7 @@ from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
 from ..numba_utils import get_inferred_return_type
 from ..typing import DeviceArrayLike
 
@@ -80,8 +80,6 @@ class _BinaryTransform:
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable,
     ):
-        d_in1, d_in2 = scrub_duplicate_ltoirs(d_in1, d_in2)
-
         self.d_in1_cccl = cccl.to_cccl_iter(d_in1)
         self.d_in2_cccl = cccl.to_cccl_iter(d_in2)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)

@@ -20,41 +20,47 @@ __global__ void test_shr(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // shr.b16 dest, a_reg, b_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int16_t (*)(int16_t, uint32_t)>(cuda::ptx::shr));));
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<int16_t (*)(cuda::std::int16_t, cuda::std::uint32_t)>(cuda::ptx::shr));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // shr.b32 dest, a_reg, b_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(int32_t, uint32_t)>(cuda::ptx::shr));));
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<int32_t (*)(cuda::std::int32_t, cuda::std::uint32_t)>(cuda::ptx::shr));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // shr.b64 dest, a_reg, b_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int64_t (*)(int64_t, uint32_t)>(cuda::ptx::shr));));
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<int64_t (*)(cuda::std::int64_t, cuda::std::uint32_t)>(cuda::ptx::shr));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // shr.s16 dest, a_reg, b_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int16_t (*)(int16_t, uint32_t)>(cuda::ptx::shr));));
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<int16_t (*)(cuda::std::int16_t, cuda::std::uint32_t)>(cuda::ptx::shr));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // shr.s32 dest, a_reg, b_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(int32_t, uint32_t)>(cuda::ptx::shr));));
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<int32_t (*)(cuda::std::int32_t, cuda::std::uint32_t)>(cuda::ptx::shr));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
                    // shr.s64 dest, a_reg, b_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int64_t (*)(int64_t, uint32_t)>(cuda::ptx::shr));));
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<int64_t (*)(cuda::std::int64_t, cuda::std::uint32_t)>(cuda::ptx::shr));));
 #endif // __cccl_ptx_isa >= 100
 }

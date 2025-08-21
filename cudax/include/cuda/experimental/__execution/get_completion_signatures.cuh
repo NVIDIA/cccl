@@ -299,7 +299,7 @@ template <class _Sndr, class... _Env>
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
     using _NewSndr _CCCL_NODEBUG_ALIAS =
-      ::cuda::std::__call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
+      __call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
     return execution::__get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }

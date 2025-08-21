@@ -17,62 +17,66 @@
 __global__ void test_bfind(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 200
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // bfind.u32 dest, a_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(cuda::std::uint32_t)>(cuda::ptx::bfind));));
+#endif // __cccl_ptx_isa >= 200
+
+#if __cccl_ptx_isa >= 200
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
-                   // bfind.u32 dest, a_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(uint32_t)>(cuda::ptx::bfind));));
+                   // bfind.shiftamt.u32 dest, a_reg;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<uint32_t (*)(cuda::std::uint32_t)>(cuda::ptx::bfind_shiftamt));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
     NV_PROVIDES_SM_50,
     (
-        // bfind.shiftamt.u32 dest, a_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(uint32_t)>(cuda::ptx::bfind_shiftamt));));
+        // bfind.u64 dest, a_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(cuda::std::uint64_t)>(cuda::ptx::bfind));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
-                   // bfind.u64 dest, a_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(uint64_t)>(cuda::ptx::bfind));));
+                   // bfind.shiftamt.u64 dest, a_reg;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<uint32_t (*)(cuda::std::uint64_t)>(cuda::ptx::bfind_shiftamt));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
     NV_PROVIDES_SM_50,
     (
-        // bfind.shiftamt.u64 dest, a_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(uint64_t)>(cuda::ptx::bfind_shiftamt));));
+        // bfind.s32 dest, a_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(cuda::std::int32_t)>(cuda::ptx::bfind));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
-                   // bfind.s32 dest, a_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(int32_t)>(cuda::ptx::bfind));));
+                   // bfind.shiftamt.s32 dest, a_reg;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<uint32_t (*)(cuda::std::int32_t)>(cuda::ptx::bfind_shiftamt));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(
     NV_PROVIDES_SM_50,
     (
-        // bfind.shiftamt.s32 dest, a_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(int32_t)>(cuda::ptx::bfind_shiftamt));));
+        // bfind.s64 dest, a_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(cuda::std::int64_t)>(cuda::ptx::bfind));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
   NV_IF_TARGET(NV_PROVIDES_SM_50,
                (
-                   // bfind.s64 dest, a_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(int64_t)>(cuda::ptx::bfind));));
-#endif // __cccl_ptx_isa >= 200
-
-#if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_50,
-    (
-        // bfind.shiftamt.s64 dest, a_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(int64_t)>(cuda::ptx::bfind_shiftamt));));
+                   // bfind.shiftamt.s64 dest, a_reg;
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<uint32_t (*)(cuda::std::int64_t)>(cuda::ptx::bfind_shiftamt));));
 #endif // __cccl_ptx_isa >= 200
 }

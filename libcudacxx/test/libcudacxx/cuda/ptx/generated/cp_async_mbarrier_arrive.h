@@ -17,10 +17,10 @@
 __global__ void test_cp_async_mbarrier_arrive(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 700
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_80,
-    (
-        // cp.async.mbarrier.arrive.b64 [addr];
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint64_t*)>(cuda::ptx::cp_async_mbarrier_arrive));));
+  NV_IF_TARGET(NV_PROVIDES_SM_80,
+               (
+                   // cp.async.mbarrier.arrive.b64 [addr];
+                   * fn_ptr++ = reinterpret_cast<void*>(
+                     static_cast<void (*)(cuda::std::uint64_t*)>(cuda::ptx::cp_async_mbarrier_arrive));));
 #endif // __cccl_ptx_isa >= 700
 }

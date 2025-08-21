@@ -17,26 +17,56 @@
 __global__ void test_tcgen05_fence(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
+  NV_DISPATCH_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
         // tcgen05.fence::before_thread_sync;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));));
-  NV_IF_TARGET(
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));),
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.fence::before_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));),
     NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.fence::before_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));),
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.fence::before_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));),
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.fence::before_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));),
+    NV_HAS_FEATURE_SM_110f,
     (
         // tcgen05.fence::before_thread_sync;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_before_thread_sync));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
+  NV_DISPATCH_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
         // tcgen05.fence::after_thread_sync;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));));
-  NV_IF_TARGET(
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));),
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.fence::after_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));),
     NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.fence::after_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));),
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.fence::after_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));),
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.fence::after_thread_sync;
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));),
+    NV_HAS_FEATURE_SM_110f,
     (
         // tcgen05.fence::after_thread_sync;
         * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::tcgen05_fence_after_thread_sync));));

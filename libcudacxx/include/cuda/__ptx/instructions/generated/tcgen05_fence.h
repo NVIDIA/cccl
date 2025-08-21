@@ -4,39 +4,53 @@
 #define _CUDA_PTX_GENERATED_TCGEN05_FENCE_H_
 
 /*
-// tcgen05.fence::before_thread_sync; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.fence::before_thread_sync; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
 template <typename = void>
 __device__ static inline void tcgen05_fence_before_thread_sync();
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_fence_before_thread_sync_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void
+__cuda_ptx_tcgen05_fence_before_thread_sync_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void tcgen05_fence_before_thread_sync()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
+    || (defined(__CUDA_ARCH_FEAT_SM100_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1000))) \
+    || (defined(__CUDA_ARCH_FEAT_SM103_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1030))) \
+    || (defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100))) \
+    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1000))                            \
+    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1030))                            \
+    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1100))
   asm volatile("tcgen05.fence::before_thread_sync;" : : : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_fence_before_thread_sync_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_fence_before_thread_sync_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.fence::after_thread_sync; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.fence::after_thread_sync; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
 template <typename = void>
 __device__ static inline void tcgen05_fence_after_thread_sync();
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_fence_after_thread_sync_is_not_supported_before_SM_100a_SM_110a__();
+extern "C" _CCCL_DEVICE void
+__cuda_ptx_tcgen05_fence_after_thread_sync_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
 _CCCL_DEVICE static inline void tcgen05_fence_after_thread_sync()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
+    || (defined(__CUDA_ARCH_FEAT_SM100_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1000))) \
+    || (defined(__CUDA_ARCH_FEAT_SM103_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1030))) \
+    || (defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100))) \
+    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1000))                            \
+    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1030))                            \
+    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1100))
   asm volatile("tcgen05.fence::after_thread_sync;" : : : "memory");
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_fence_after_thread_sync_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_fence_after_thread_sync_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

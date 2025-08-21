@@ -17,7 +17,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
 
@@ -75,10 +75,6 @@ class _MergeSort:
         present_in_values = d_in_items is not None
         present_out_values = d_out_items is not None
         assert present_in_values == present_out_values
-
-        d_in_keys, d_in_items, d_out_keys, d_out_items = scrub_duplicate_ltoirs(
-            d_in_keys, d_in_items, d_out_keys, d_out_items
-        )
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)

@@ -33,6 +33,7 @@ from .iterators import (
     ReverseInputIterator,
     ReverseOutputIterator,
     TransformIterator,
+    ZipIterator,
 )
 from .struct import gpu_struct
 
@@ -66,4 +67,5 @@ __all__ = [
     "TransformIterator",
     "unary_transform",
     "unique_by_key",
+    "ZipIterator",
 ]

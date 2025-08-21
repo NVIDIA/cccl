@@ -25,10 +25,10 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
@@ -103,7 +103,7 @@ struct sync_wait_t
   };
 
   template <class... _Ts>
-  using __decayed_tuple = ::cuda::std::tuple<::cuda::std::decay_t<_Ts>...>;
+  using __decayed_tuple = ::cuda::std::tuple<decay_t<_Ts>...>;
 
   template <class _Values, class _Errors, class _Env = env<>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
@@ -171,15 +171,15 @@ struct sync_wait_t
     template <class _Error>
     _CCCL_HOST_API void operator()(_Error __err) const
     {
-      if constexpr (::cuda::std::is_same_v<_Error, ::std::exception_ptr>)
+      if constexpr (__same_as<_Error, ::std::exception_ptr>)
       {
         ::std::rethrow_exception(static_cast<_Error&&>(__err));
       }
-      else if constexpr (::cuda::std::is_same_v<_Error, ::std::error_code>)
+      else if constexpr (__same_as<_Error, ::std::error_code>)
       {
         throw ::std::system_error(__err);
       }
-      else if constexpr (::cuda::std::is_same_v<_Error, cudaError_t>)
+      else if constexpr (__same_as<_Error, cudaError_t>)
       {
         ::cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
       }

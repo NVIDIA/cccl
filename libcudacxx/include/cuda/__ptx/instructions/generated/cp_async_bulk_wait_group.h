@@ -12,7 +12,7 @@ __device__ static inline void cp_async_bulk_wait_group(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_is_not_supported_before_SM_90__();
 template <int _N32>
-_CCCL_DEVICE static inline void cp_async_bulk_wait_group(n32_t<_N32> __N)
+_CCCL_DEVICE static inline void cp_async_bulk_wait_group(::cuda::ptx::n32_t<_N32> __N)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm volatile("cp.async.bulk.wait_group %0;" : : "n"(__N.value) : "memory");
@@ -32,7 +32,7 @@ __device__ static inline void cp_async_bulk_wait_group_read(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_read_is_not_supported_before_SM_90__();
 template <int _N32>
-_CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(n32_t<_N32> __N)
+_CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<_N32> __N)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   asm volatile("cp.async.bulk.wait_group.read %0;" : : "n"(__N.value) : "memory");

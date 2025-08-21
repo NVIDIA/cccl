@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -122,9 +123,9 @@ public:
   }
 
   template <class _Ty>
-  _CCCL_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> ::cuda::std::decay_t<_Ty>&
+  _CCCL_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>&
   {
-    return __emplace<::cuda::std::decay_t<_Ty>, _Ty>(static_cast<_Ty&&>(__value));
+    return __emplace<decay_t<_Ty>, _Ty>(static_cast<_Ty&&>(__value));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -155,9 +156,9 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class... _As>
   _CCCL_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
-    noexcept(__nothrow_callable<_Fn, _As...>) -> ::cuda::std::__call_result_t<_Fn, _As...>&
+    noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<_Fn, _As...>;
+    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
     constexpr size_t __new_index         = execution::__index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
@@ -208,7 +209,7 @@ struct __variant : __variant_impl<::cuda::std::index_sequence_for<_Ts...>, _Ts..
 {};
 
 template <class... _Ts>
-using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<::cuda::std::decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
