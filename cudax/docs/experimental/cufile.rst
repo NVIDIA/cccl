@@ -16,7 +16,7 @@ This feature depends on the cuFILE SDK. The public header defines the feature ma
 
   #include <cuda/experimental/cufile.h>
 
-  #if CUDAX_HAS_CUFILE
+  #if CUDAX_HAS_CUFILE()
   // cuFILE is available on this system
   #endif
 
