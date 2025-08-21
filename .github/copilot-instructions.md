@@ -24,6 +24,11 @@ cd cccl
 # Install CMake 3.21+, Ninja build system, and Python 3.8+
 apt-get update && apt-get install -y cmake ninja-build python3 python3-pip
 pip install pre-commit
+
+# Alternative: Use conda for CCCL headers only
+conda config --add channels conda-forge
+conda install cccl  # Latest version
+# OR conda install cuda-cccl cuda-version=12.4  # Specific CUDA version
 ```
 
 ### Build Commands - NEVER CANCEL, Always Use Long Timeouts
@@ -83,6 +88,10 @@ cmake --build --preset=all-dev
 ./ci/test_cub.sh -cxx g++ -std 17 -arch "60;70;80"
 ./ci/test_thrust.sh -cxx g++ -std 17 -arch "60;70;80"  
 ./ci/test_libcudacxx.sh -cxx g++ -std 17 -arch "60;70;80"
+
+# Test Python packages - NEVER CANCEL, takes up to 10 minutes
+./ci/test_cuda_cccl_parallel_python.sh
+./ci/test_cuda_cccl_headers_python.sh
 
 # Using CMake presets - NEVER CANCEL, takes up to 15 minutes
 ctest --preset=cub-cpp17
@@ -170,6 +179,24 @@ cd build/install && ninja install
 // Use Thrust, CUB, and libcudacxx together
 // Full example available in examples/basic/
 ```
+
+### Repository Structure
+```
+cccl/
+├── libcudacxx/          # CUDA C++ Standard Library headers
+├── cub/                 # CUB block-level primitives  
+├── thrust/              # Thrust parallel algorithms
+├── cudax/               # Experimental CUDA features
+├── python/cuda_cccl/    # Python bindings and parallel algorithms
+├── ci/                  # Build and test scripts
+├── .devcontainer/       # Development container configs
+├── examples/            # Usage examples
+└── CMakePresets.json    # Standardized build configurations
+```
+
+**Python components:**
+- `python/cuda_cccl/` - Python packages for CCCL parallel algorithms
+- Test with: `./ci/test_cuda_cccl_parallel_python.sh`, `./ci/test_cuda_cccl_headers_python.sh`
 ```
 cccl/
 ├── libcudacxx/          # CUDA C++ Standard Library headers
@@ -245,5 +272,40 @@ ls examples/  # Shows: basic, cudax, cudax_stf, thrust_flexible_device_system
 - Limit CUDA architectures to your target hardware only: `-arch "80"` instead of `"60;70;80"`
 - Use `ninja` with parallel builds: `cmake --build --preset=<preset> --parallel <N>`
 - Consider `install` preset for header-only usage without tests/examples
+
+### Common Development Workflows
+
+**1. Quick header-only development** (no build required):
+```bash
+git clone https://github.com/nvidia/cccl.git
+# Include headers directly: -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub
+```
+
+**2. Full development setup with testing:**
+```bash
+git clone https://github.com/nvidia/cccl.git
+cd cccl
+# Open in VSCode, select dev container (recommended)
+# OR install CUDA Toolkit + dependencies manually
+
+# Build and test your changes (60+ min builds, 30+ min tests)
+./ci/build_cub.sh -cxx g++ -std 17 -arch "60;70;80"
+./ci/test_cub.sh -cxx g++ -std 17 -arch "60;70;80"
+pre-commit run --all-files
+```
+
+**3. Contributing workflow:**
+```bash
+# Make changes to code
+# ALWAYS run formatting before committing
+pre-commit run --all-files
+
+# Build and test affected components
+./ci/build_<component>.sh -cxx g++ -std 17 -arch "60;70;80" 
+./ci/test_<component>.sh -cxx g++ -std 17 -arch "60;70;80"
+
+# Commit and push changes
+git add . && git commit -m "Your changes"
+```
 
 **REMINDER**: NEVER CANCEL long-running builds or tests. The timings above are normal and expected. Always wait for completion.
