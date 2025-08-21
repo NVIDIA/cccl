@@ -34,10 +34,8 @@ namespace cuda::experimental::cufile
 // Forward declarations
 class file_handle_base;
 
-/**
- * @brief Batch I/O operation descriptor using span
- * @tparam T Element type (must be trivially copyable)
- */
+//! @brief Batch I/O operation descriptor using span
+//! @tparam T Element type (must be trivially copyable)
 template <typename T>
 struct batch_io_params_span
 {
