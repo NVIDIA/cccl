@@ -55,7 +55,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
   };
 
   template <class _Self, class _Domain, class _Sndr, class... _Env>
-  _CCCL_TRIVIAL_API static constexpr auto __get_transform_strategy() noexcept -> __transform_strategy_t
+  _CCCL_NODEBUG_API static constexpr auto __get_transform_strategy() noexcept -> __transform_strategy_t
   {
     using __dom_t _CCCL_NODEBUG_ALIAS    = __transform_domain_t<_Domain, _Sndr, _Env...>;
     using __result_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom_t, _Sndr, _Env...>;
@@ -89,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__passthru))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const
     noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
@@ -98,7 +98,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__transform))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
     noexcept(__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__nothrow_) -> decltype(auto)
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = __transform_domain_t<_Domain, _Sndr, _Env...>;
@@ -109,7 +109,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_
                   == __strategy::__transform_recurse))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
     noexcept(__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__nothrow_) -> decltype(auto)
   {
     using __dom1_t _CCCL_NODEBUG_ALIAS    = __transform_domain_t<_Domain, _Sndr, _Env...>;

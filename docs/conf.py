@@ -77,11 +77,16 @@ cpp_id_attributes = [
     "_CCCL_HOST_DEVICE",
     "_CCCL_DEVICE",
     "_CCCL_HOST",
-    "_CCCL_HOST_API",
     "_CCCL_FORCEINLINE",
-    "_CUDAX_API",
-    "_CUDAX_HOST_API",
-    "_CUDAX_DEVICE_API",
+    "_CCCL_API",
+    "_CCCL_HOST_API",
+    "_CCCL_DEVICE_API",
+    "_CCCL_NODEBUG_API",
+    "_CCCL_NODEBUG_HOST_API",
+    "_CCCL_NODEBUG_DEVICE_API",
+    "_CCCL_TRIVIAL_API",
+    "_CCCL_TRIVIAL_HOST_API",
+    "_CCCL_TRIVIAL_DEVICE_API",
 ]
 cpp_paren_attributes = ["__declspec", "__align__"]
 

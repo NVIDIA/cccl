@@ -138,7 +138,7 @@ struct get_completion_behavior_t
     return __attrs.query(*this, __env);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }

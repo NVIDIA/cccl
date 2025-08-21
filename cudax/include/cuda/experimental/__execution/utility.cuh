@@ -205,7 +205,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
 private:
   //! \brief Returns the first function that is callable with a given set of arguments.
   template <class... _Args, class _Self>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__callable<::cuda::std::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
@@ -224,7 +224,7 @@ public:
   //! \brief Calls the first function that is callable with a given set of arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr auto
+  _CCCL_NODEBUG_API constexpr auto
   operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
     -> __call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
   {
@@ -235,7 +235,7 @@ public:
   //! \overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
+  _CCCL_NODEBUG_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
     -> __call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
   {
@@ -254,13 +254,13 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 {
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
   {
     return static_cast<_Ty&&>(__value);
   }
 
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
   {
     return __value;
   }
