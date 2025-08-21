@@ -41,4 +41,3 @@ jobs:
           publish_dir: ./_site
           publish_branch: gh-pages
           destination_dir: docs
-          force_orphan: true
