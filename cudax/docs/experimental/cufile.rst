@@ -10,7 +10,7 @@ directly to the underlying cuFILE operations.
 Availability and feature guard
 ------------------------------
 This feature depends on the cuFILE SDK. The public header defines the feature macro
-``CUDAX_HAS_CUFILE`` based on the availability of the C header ``<cufile.h>``:
+``CUDAX_HAS_CUFILE()`` based on the availability of the C header ``<cufile.h>``:
 
 .. code-block:: c++
 
