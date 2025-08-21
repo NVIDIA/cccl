@@ -35,7 +35,6 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action, int valid_items
     const int idx     = thread_offset + item;
     thread_data[item] = in[idx];
   }
-  __syncthreads();
 
   block_scan_t scan(storage);
 
