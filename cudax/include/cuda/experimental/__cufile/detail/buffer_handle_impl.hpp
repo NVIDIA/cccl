@@ -99,7 +99,6 @@ cuda::std::span<const T> buffer_handle::as_const_span() const noexcept
   return cuda::std::span<const T>(reinterpret_cast<const T*>(buffer_.data()), buffer_.size() / sizeof(T));
 }
 
-// is_valid method implementation
 inline bool buffer_handle::is_valid() const noexcept
 {
   return registered_buffer_.has_value();
