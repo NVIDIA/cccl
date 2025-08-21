@@ -68,8 +68,8 @@ struct parameter_mapping<cccl_iterator_t>
     {
       return std::format(
         R"output(
-extern "C" __device__ void {0}(void *, {1});
-extern "C" __device__ void {2}(const void *, {3});
+extern "C" __device__ void {0}(void *, void*);
+extern "C" __device__ void {2}(const void *, void*);
 )output",
         arg.advance.name,
         cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
@@ -79,8 +79,8 @@ extern "C" __device__ void {2}(const void *, {3});
 
     return std::format(
       R"input(
-extern "C" __device__ void {0}(void *, {1});
-extern "C" __device__ void {2}(const void *, {3}*);
+extern "C" __device__ void {0}(void *, void*);
+extern "C" __device__ void {2}(const void *, void*);
 )input",
       arg.advance.name,
       cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
