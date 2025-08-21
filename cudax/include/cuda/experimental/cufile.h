@@ -43,7 +43,7 @@
 // Core Components
 // ================================================================================================
 
-#if CUDAX_HAS_CUFILE
+#if CUDAX_HAS_CUFILE()
 #  include <cuda/experimental/__cufile/cufile.hpp>
 #else
 // cuFILE not available on this platform. The header is safe to include, but
