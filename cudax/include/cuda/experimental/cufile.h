@@ -30,7 +30,7 @@
 // Feature detection: Check if the C cuFILE headers are available
 #ifndef CUDAX_HAS_CUFILE
 #    if _CCCL_HAS_INCLUDE(<cufile.h>)
-#      define CUDAX_HAS_CUFILE 1
+#      define _CUDAX_HAS_CUFILE() 1
 #    else
 #      define CUDAX_HAS_CUFILE 0
 #    endif
