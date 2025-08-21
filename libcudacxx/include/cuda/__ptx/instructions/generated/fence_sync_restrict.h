@@ -17,7 +17,8 @@ __device__ static inline void fence_sync_restrict(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence_sync_restrict(sem_acquire_t, space_cluster_t, scope_cluster_t)
+_CCCL_DEVICE static inline void
+  fence_sync_restrict(::cuda::ptx::sem_acquire_t, ::cuda::ptx::space_cluster_t, ::cuda::ptx::scope_cluster_t)
 {
 // __sem == sem_acquire (due to parameter type constraint)
 // __space == space_cluster (due to parameter type constraint)
@@ -45,7 +46,8 @@ __device__ static inline void fence_sync_restrict(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_sync_restrict_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence_sync_restrict(sem_release_t, space_shared_t, scope_cluster_t)
+_CCCL_DEVICE static inline void
+  fence_sync_restrict(::cuda::ptx::sem_release_t, ::cuda::ptx::space_shared_t, ::cuda::ptx::scope_cluster_t)
 {
 // __sem == sem_release (due to parameter type constraint)
 // __space == space_shared (due to parameter type constraint)

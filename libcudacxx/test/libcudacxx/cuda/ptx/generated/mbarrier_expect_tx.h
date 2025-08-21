@@ -22,14 +22,18 @@ __global__ void test_mbarrier_expect_tx(void** fn_ptr)
     (
         // mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [addr], txCount; // 1.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t*, uint32_t)>(
-            cuda::ptx::mbarrier_expect_tx));
+          static_cast<void (*)(cuda::ptx::sem_relaxed_t,
+                               cuda::ptx::scope_cta_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::mbarrier_expect_tx));
           // mbarrier.expect_tx.relaxed.cluster.shared::cta.b64 [addr], txCount; // 1.
             * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t*, uint32_t)>(
-                cuda::ptx::mbarrier_expect_tx));));
+              static_cast<void (*)(cuda::ptx::sem_relaxed_t,
+                                   cuda::ptx::scope_cluster_t,
+                                   cuda::ptx::space_shared_t,
+                                   cuda::std::uint64_t*,
+                                   cuda::std::uint32_t)>(cuda::ptx::mbarrier_expect_tx));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -38,13 +42,17 @@ __global__ void test_mbarrier_expect_tx(void** fn_ptr)
     (
         // mbarrier.expect_tx.relaxed.cta.shared::cluster.b64 [addr], txCount; // 2.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cta_t, cuda::ptx::space_cluster_t, uint64_t*, uint32_t)>(
-            cuda::ptx::mbarrier_expect_tx));
+          static_cast<void (*)(cuda::ptx::sem_relaxed_t,
+                               cuda::ptx::scope_cta_t,
+                               cuda::ptx::space_cluster_t,
+                               cuda::std::uint64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::mbarrier_expect_tx));
           // mbarrier.expect_tx.relaxed.cluster.shared::cluster.b64 [addr], txCount; // 2.
             * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::sem_relaxed_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_cluster_t, uint64_t*, uint32_t)>(
-                cuda::ptx::mbarrier_expect_tx));));
+              static_cast<void (*)(cuda::ptx::sem_relaxed_t,
+                                   cuda::ptx::scope_cluster_t,
+                                   cuda::ptx::space_cluster_t,
+                                   cuda::std::uint64_t*,
+                                   cuda::std::uint32_t)>(cuda::ptx::mbarrier_expect_tx));));
 #endif // __cccl_ptx_isa >= 800
 }
