@@ -79,9 +79,12 @@ __device__ static inline bool mbarrier_try_wait(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  sem_acquire_t, scope_t<_Scope> __scope, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint64_t& __state)
+  ::cuda::ptx::sem_acquire_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint64_t& __state)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
@@ -131,13 +134,13 @@ __device__ static inline bool mbarrier_try_wait(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  sem_acquire_t,
-  scope_t<_Scope> __scope,
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint64_t& __state,
-  const _CUDA_VSTD::uint32_t& __suspendTimeHint)
+  ::cuda::ptx::sem_acquire_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint64_t& __state,
+  const ::cuda::std::uint32_t& __suspendTimeHint)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
@@ -186,13 +189,13 @@ __device__ static inline bool mbarrier_try_wait(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  sem_relaxed_t,
-  scope_t<_Scope> __scope,
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint64_t& __state,
-  const _CUDA_VSTD::uint32_t& __suspendTimeHint)
+  ::cuda::ptx::sem_relaxed_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint64_t& __state,
+  const ::cuda::std::uint32_t& __suspendTimeHint)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
@@ -240,9 +243,12 @@ __device__ static inline bool mbarrier_try_wait(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
+template <::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline bool mbarrier_try_wait(
-  sem_relaxed_t, scope_t<_Scope> __scope, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint64_t& __state)
+  ::cuda::ptx::sem_relaxed_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint64_t& __state)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
