@@ -41,7 +41,7 @@ class file_handle_base;
 template <typename T>
 struct batch_io_params_span
 {
-  cuda::std::span<T> buffer; ///< Buffer span
+  ::cuda::std::span<T> buffer; ///< Buffer span
   off_t file_offset; ///< File offset
   off_t buffer_offset; ///< Buffer offset (in bytes)
   CUfileOpcode_t opcode; ///< CUFILE_READ or CUFILE_WRITE
