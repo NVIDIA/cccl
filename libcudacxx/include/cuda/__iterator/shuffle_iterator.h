@@ -115,8 +115,8 @@ public:
   template <class _RNG>
   // constraining here breaks CTAD
   _CCCL_API explicit constexpr shuffle_iterator(value_type __num_elements, _RNG&& __gen, value_type __start = 0) //
-    noexcept(_CUDA_VSTD::is_nothrow_constructible_v<_Bijection, value_type, _RNG>)
-      : __bijection_(__num_elements, _CUDA_VSTD::forward<_RNG>(__gen))
+    noexcept(::cuda::std::is_nothrow_constructible_v<_Bijection, value_type, _RNG>)
+      : __bijection_(__num_elements, ::cuda::std::forward<_RNG>(__gen))
       , __current_(__start)
   {}
 
