@@ -448,7 +448,7 @@ public:
             typename T,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
     InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, ReductionOpT reduction_op, T init, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
@@ -627,7 +627,7 @@ public:
             typename OutputIteratorT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
@@ -989,7 +989,7 @@ public:
             typename OutputIteratorT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Min(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Min");
@@ -1271,7 +1271,7 @@ public:
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMin(InputIteratorT d_in,
          ExtremumOutIteratorT d_min_out,
          IndexOutIteratorT d_index_out,
@@ -1657,7 +1657,7 @@ public:
             typename OutputIteratorT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Max(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Max");
@@ -2064,7 +2064,7 @@ public:
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,
          ExtremumOutIteratorT d_max_out,
          IndexOutIteratorT d_index_out,
