@@ -41,13 +41,13 @@ struct input_iterator_t
   __device__ value_type operator*() const
   {
     value_type result;
-    Iterator.dereference(&state, &result);
+    Iterator.dereference(&state, static_cast<void*>(&result));
     return result;
   }
 
   __device__ input_iterator_t& operator+=(difference_type diff)
   {
-    Iterator.advance(&state, diff);
+    Iterator.advance(&state, static_cast<void*>(&diff));
     return *this;
   }
 
