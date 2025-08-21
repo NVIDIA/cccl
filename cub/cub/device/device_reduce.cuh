@@ -210,46 +210,23 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
 
-    if constexpr (::cuda::std::is_same_v<TransformOpT, ::cuda::std::identity>)
-    {
-      (void) transform_op; // suppress unused variable warning
-      using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-      using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using accum_t = ::cuda::std::
+      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
+    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
 
-      using dispatch_t =
-        DispatchReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
+    using dispatch_t =
+      DispatchTransformReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, TransformOpT, T, accum_t, policy_t>;
 
-      return dispatch_t::Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        static_cast<offset_t>(num_items),
-        reduction_op,
-        init,
-        stream,
-        transform_op);
-    }
-    else
-    {
-      using accum_t = ::cuda::std::
-        __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-      using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-
-      using dispatch_t =
-        DispatchTransformReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, TransformOpT, T, accum_t, policy_t>;
-
-      return dispatch_t::Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        static_cast<offset_t>(num_items),
-        reduction_op,
-        init,
-        stream,
-        transform_op);
-    }
+    return dispatch_t::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<offset_t>(num_items),
+      reduction_op,
+      init,
+      stream,
+      transform_op);
   }
 
   template <typename TuningEnvT,
@@ -276,28 +253,14 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
 
-    if constexpr (::cuda::std::is_same_v<TransformOpT, ::cuda::std::identity>)
-    {
-      (void) transform_op; // suppress unused variable warning
-      using accum_t    = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-      using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-      using dispatch_t = detail::
-        DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
+    using accum_t = ::cuda::std::
+      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
+    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t =
+      detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
 
-      return dispatch_t::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
-    }
-    else
-    {
-      using accum_t = ::cuda::std::
-        __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-      using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-      using dispatch_t = detail::
-        DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
-
-      return dispatch_t::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
-    }
+    return dispatch_t::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
   }
 
 public:
