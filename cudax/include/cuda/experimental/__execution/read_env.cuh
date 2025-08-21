@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -49,7 +50,7 @@ private:
   template <class _Rcvr, class _Query>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using operation_state_concept = operation_state_t;
 
     _Rcvr __rcvr_;
 
@@ -107,19 +108,19 @@ public:
 template <class _Query>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  using sender_concept = sender_t;
 
   template <class _Self, class _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    if constexpr (!::cuda::std::__is_callable_v<_Query, _Env>)
+    if constexpr (!__callable<_Query, _Env>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY),
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (::cuda::std::is_void_v<::cuda::std::__call_result_t<_Query, _Env>>)
+    else if constexpr (::cuda::std::is_void_v<__call_result_t<_Query, _Env>>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY),
@@ -128,7 +129,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
     }
     else
     {
-      return completion_signatures<set_value_t(::cuda::std::__call_result_t<_Query, _Env>)>{}
+      return completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>{}
            + __eptr_completion_if<!__nothrow_callable<_Query, _Env>>();
     }
 

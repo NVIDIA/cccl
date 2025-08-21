@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
@@ -186,7 +187,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
-    if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
+    if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
     {
       __complete(execution::set_error, cudaErrorUnknown);
     }
@@ -237,8 +238,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   }
 
 private:
-  using __sndr_config_t       = ::cuda::std::__call_result_t<get_launch_config_t, env_of_t<_CvSndr>>;
-  using __rcvr_config_t       = ::cuda::std::__call_result_t<get_launch_config_t, env_of_t<_Rcvr>>;
+  using __sndr_config_t       = __call_result_t<get_launch_config_t, env_of_t<_CvSndr>>;
+  using __rcvr_config_t       = __call_result_t<get_launch_config_t, env_of_t<_Rcvr>>;
   using __env_t               = __stream::__env_t<env_of_t<_Rcvr>, __sndr_config_t>;
   using __child_completions_t = completion_signatures_of_t<_CvSndr, __env_t>;
   using __completions_t       = decltype(__stream::__with_cuda_error(__child_completions_t{}));
@@ -350,7 +351,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   // If the child sender knows how to provide a stream, make it available via the stream
   // adapter's attributes.
   _CCCL_TEMPLATE(class _GetStream2 = _GetStream)
-  _CCCL_REQUIRES(::cuda::std::__is_callable_v<_GetStream2, _Sndr, env<>>)
+  _CCCL_REQUIRES(__callable<_GetStream2, _Sndr, env<>>)
   [[nodiscard]] _CCCL_API constexpr auto query(get_stream_t) const noexcept -> stream_ref
   {
     return __sndr_.__get_stream_(__sndr_.__sndr_, env{});
@@ -387,7 +388,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     using __cv_sndr_t _CCCL_NODEBUG_ALIAS     = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
-    using __sndr_config_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
+    using __sndr_config_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
     using __env_t                             = __stream::__env_t<_Env, __sndr_config_t>;
     _CUDAX_LET_COMPLETIONS(auto(__completions) = execution::get_completion_signatures<__cv_sndr_t, __env_t>())
     {

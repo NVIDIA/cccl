@@ -137,11 +137,11 @@ public:
     run_loop* __loop_;
 
   public:
-    using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
+    using scheduler_concept = scheduler_t;
 
     struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     {
-      using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+      using sender_concept = sender_t;
 
       template <class _Rcvr>
       [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
