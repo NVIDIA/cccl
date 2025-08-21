@@ -27,17 +27,21 @@ static std::string get_for_kernel_iterator(cccl_iterator_t iter)
 
   constexpr std::string_view stateful_iterator =
     R"XXX(
-extern "C" __device__ {3} {4}(const void *self_ptr);
-extern "C" __device__ void {5}(void *self_ptr, {0} offset);
+extern "C" __device__ void {4}(const void *self_ptr, void* result);
+extern "C" __device__ void {5}(void *self_ptr, void* offset);
 struct __align__({1}) input_iterator_state_t {{;
   using iterator_category = cuda::std::random_access_iterator_tag;
   using value_type = {3};
   using difference_type = {0};
   using pointer = {3}*;
   using reference = {3}&;
-  __device__ inline value_type operator*() const {{ return {4}(this); }}
+  __device__ inline value_type operator*() const {{ 
+    value_type result;
+    {4}(this, &result); 
+    return result;
+  }}
   __device__ inline input_iterator_state_t& operator+=(difference_type diff) {{
-      {5}(this, diff);
+      {5}(this, &diff);
       return *this;
   }}
   __device__ inline value_type operator[](difference_type diff) const {{
@@ -86,9 +90,9 @@ static std::string get_for_kernel_user_op(cccl_op_t user_op, cccl_iterator_t ite
 #define _USER_OP_INPUT_T {2}
 
 #if defined(_STATEFUL_USER_OP)
-extern "C" __device__ void _USER_OP(void*, _USER_OP_INPUT_T*);
+extern "C" __device__ void _USER_OP(void*, void*);
 #else
-extern "C" __device__ void _USER_OP(_USER_OP_INPUT_T*);
+extern "C" __device__ void _USER_OP(void*);
 #endif
 
 #if defined(_STATEFUL_USER_OP)
