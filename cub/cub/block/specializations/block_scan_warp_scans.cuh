@@ -242,11 +242,13 @@ struct BlockScanWarpScans
   {
     T warp_prefix = ComputeWarpPrefix(scan_op, warp_aggregate, block_aggregate);
 
-    warp_prefix = scan_op(initial_value, warp_prefix);
-
     if (warp_id == 0)
     {
       warp_prefix = initial_value;
+    }
+    else
+    {
+      warp_prefix = scan_op(initial_value, warp_prefix);
     }
 
     return warp_prefix;
