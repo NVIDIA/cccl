@@ -85,7 +85,9 @@ def bench_reduce_iterator(bench_fixture, request, size):
     actual_size = 10 if bench_fixture == "compile_benchmark" else size
 
     def run():
-        reduce_iterator(inp, actual_size, build_only=(bench_fixture == "compile_benchmark"))
+        reduce_iterator(
+            inp, actual_size, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -98,7 +100,9 @@ def bench_reduce_iterator(bench_fixture, request, size):
 def bench_reduce_struct(bench_fixture, request, size):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 10 if bench_fixture == "compile_benchmark" else size
-    input_array = cp.random.randint(0, 10, (actual_size, 2), dtype="int32").view(MyStruct)
+    input_array = cp.random.randint(0, 10, (actual_size, 2), dtype="int32").view(
+        MyStruct
+    )
 
     def run():
         reduce_struct(input_array, build_only=(bench_fixture == "compile_benchmark"))

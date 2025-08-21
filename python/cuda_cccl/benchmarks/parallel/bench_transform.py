@@ -99,7 +99,9 @@ def bench_unary_transform_pointer(bench_fixture, request, size):
     out = cp.empty_like(inp)
 
     def run():
-        unary_transform_pointer(inp, out, build_only=(bench_fixture == "compile_benchmark"))
+        unary_transform_pointer(
+            inp, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -115,7 +117,9 @@ def bench_unary_transform_iterator(bench_fixture, request, size):
     out = cp.empty(actual_size, dtype="int32")
 
     def run():
-        unary_transform_iterator(actual_size, out, build_only=(bench_fixture == "compile_benchmark"))
+        unary_transform_iterator(
+            actual_size, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -132,7 +136,9 @@ def bench_unary_transform_struct(bench_fixture, request, size):
     out = cp.empty_like(inp)
 
     def run():
-        unary_transform_struct(inp, out, build_only=(bench_fixture == "compile_benchmark"))
+        unary_transform_struct(
+            inp, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -150,7 +156,9 @@ def bench_binary_transform_pointer(bench_fixture, request, size):
     out = cp.empty_like(inp1)
 
     def run():
-        binary_transform_pointer(inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark"))
+        binary_transform_pointer(
+            inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -166,7 +174,9 @@ def bench_binary_transform_iterator(bench_fixture, request, size):
     out = cp.empty(actual_size, dtype="int32")
 
     def run():
-        binary_transform_iterator(actual_size, out, build_only=(bench_fixture == "compile_benchmark"))
+        binary_transform_iterator(
+            actual_size, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -184,7 +194,9 @@ def bench_binary_transform_struct(bench_fixture, request, size):
     out = cp.empty_like(inp1)
 
     def run():
-        binary_transform_struct(inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark"))
+        binary_transform_struct(
+            inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark")
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":

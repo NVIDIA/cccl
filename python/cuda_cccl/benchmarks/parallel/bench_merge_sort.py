@@ -64,7 +64,13 @@ def bench_merge_sort_pointer(bench_fixture, request, size):
     output_vals = cp.empty_like(vals)
 
     def run():
-        merge_sort_pointer(keys, vals, output_keys, output_vals, build_only=(bench_fixture == "compile_benchmark"))
+        merge_sort_pointer(
+            keys,
+            vals,
+            output_keys,
+            output_vals,
+            build_only=(bench_fixture == "compile_benchmark"),
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -83,7 +89,14 @@ def bench_merge_sort_iterator(bench_fixture, request, size):
     output_vals = cp.empty(actual_size, dtype="int64")
 
     def run():
-        merge_sort_iterator(actual_size, keys, vals, output_keys, output_vals, build_only=(bench_fixture == "compile_benchmark"))
+        merge_sort_iterator(
+            actual_size,
+            keys,
+            vals,
+            output_keys,
+            output_vals,
+            build_only=(bench_fixture == "compile_benchmark"),
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -102,7 +115,14 @@ def bench_merge_sort_struct(bench_fixture, request, size):
     output_vals = cp.empty_like(vals)
 
     def run():
-        merge_sort_struct(actual_size, keys, vals, output_keys, output_vals, build_only=(bench_fixture == "compile_benchmark"))
+        merge_sort_struct(
+            actual_size,
+            keys,
+            vals,
+            output_keys,
+            output_vals,
+            build_only=(bench_fixture == "compile_benchmark"),
+        )
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
