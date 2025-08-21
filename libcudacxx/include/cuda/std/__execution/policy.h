@@ -34,12 +34,42 @@ enum class __execution_policy : uint32_t
   __parallel                 = 1 << 1,
   __unsequenced              = 1 << 2,
   __parallel_unsequenced     = __execution_policy::__parallel | __execution_policy::__unsequenced,
+
+  // The backends we provide
+  __backend_invalid = 1 << 4,
+#if _CCCL_HAS_BACKEND_CUDA()
+  __backend_cuda = 1 << 5,
+#endif // _CCCL_HAS_BACKEND_CUDA()
+#if _CCCL_HAS_BACKEND_OMP()
+  __backend_omp = 1 << 6,
+#endif // _CCCL_HAS_BACKEND_OMP()
+#if _CCCL_HAS_BACKEND_TBB()
+  __backend_tbb = 1 << 7,
+#endif // _CCCL_HAS_BACKEND_TBB()
 };
 
 [[nodiscard]] _CCCL_API constexpr bool
 __satisfies_execution_policy(__execution_policy __lhs, __execution_policy __rhs) noexcept
 {
   return (static_cast<uint32_t>(__lhs) & static_cast<uint32_t>(__rhs)) != 0;
+}
+
+[[nodiscard]] _CCCL_API constexpr __execution_policy __extract_backend(__execution_policy __policy) noexcept
+{
+  constexpr uint32_t __backend_mask = static_cast<uint32_t>(-1) << 4;
+  return static_cast<__execution_policy>(static_cast<uint32_t>(__policy) & __backend_mask);
+}
+
+[[nodiscard]] _CCCL_API constexpr bool
+__requires_matching_backend(__execution_policy __pol, __execution_policy __backend) noexcept
+{
+  return (static_cast<uint32_t>(::cuda::std::execution::__extract_backend(__pol)) & static_cast<uint32_t>(__backend));
+}
+
+[[nodiscard]] _CCCL_API constexpr bool
+__requires_unique_backend(__execution_policy __pol, __execution_policy __backend) noexcept
+{
+  return !(static_cast<uint32_t>(::cuda::std::execution::__extract_backend(__pol)) | ~static_cast<uint32_t>(__backend));
 }
 
 template <__execution_policy _Policy>
