@@ -37,13 +37,26 @@
 #    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
 #  endif // ^^^ has cuda compiler ^^^
 
-#  if _CUDA_PTX_CUDACC_MAJOR() <= 12
-using longlong4_32a  = longlong4;
-using ulonglong4_32a = ulonglong4;
-using double4_32a    = double4;
-#  endif // _CUDA_PTX_CUDACC_MAJOR() <= 12
-
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
+
+#  if _CUDA_PTX_CUDACC_MAJOR() < 13
+struct alignas(32) longlong4_32a
+{
+  long long x, y, z, w;
+};
+struct alignas(32) ulonglong4_32a
+{
+  unsigned long long x, y, z, w;
+};
+struct alignas(32) double4_32a
+{
+  double x, y, z, w;
+};
+#  else
+using ::double4_32a;
+using ::longlong4_32a;
+using ::ulonglong4_32a;
+#  endif // _CUDA_PTX_CUDACC_MAJOR() < 13
 
 /*************************************************************
  *
