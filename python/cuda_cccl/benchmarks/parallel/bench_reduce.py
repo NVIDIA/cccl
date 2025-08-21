@@ -114,8 +114,7 @@ def bench_reduce_struct(bench_fixture, request, size):
         fixture(run)
 
 
-@pytest.mark.parametrize("bench_fixture", ["benchmark"])
-def bench_reduce_pointer_single_phase(bench_fixture, request, size):
+def bench_reduce_pointer_single_phase(benchmark, size):
     input_array = cp.random.randint(0, 10, size)
 
     # warm up run
@@ -125,12 +124,10 @@ def bench_reduce_pointer_single_phase(bench_fixture, request, size):
     def run():
         reduce_pointer_single_phase(input_array, build_only=False)
 
-    fixture = request.getfixturevalue(bench_fixture)
-    fixture(run)
+    benchmark(run)
 
 
-@pytest.mark.parametrize("bench_fixture", ["benchmark"])
-def bench_reduce_iterator_single_phase(bench_fixture, request, size):
+def bench_reduce_iterator_single_phase(benchmark, size):
     inp = parallel.CountingIterator(np.int32(0))
 
     # warm up run
@@ -140,12 +137,10 @@ def bench_reduce_iterator_single_phase(bench_fixture, request, size):
     def run():
         reduce_iterator_single_phase(inp, size, build_only=False)
 
-    fixture = request.getfixturevalue(bench_fixture)
-    fixture(run)
+    benchmark(run)
 
 
-@pytest.mark.parametrize("bench_fixture", ["benchmark"])
-def bench_reduce_struct_single_phase(bench_fixture, request, size):
+def bench_reduce_struct_single_phase(benchmark, size):
     input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(MyStruct)
 
     # warm up run
@@ -155,8 +150,7 @@ def bench_reduce_struct_single_phase(bench_fixture, request, size):
     def run():
         reduce_struct_single_phase(input_array, build_only=False)
 
-    fixture = request.getfixturevalue(bench_fixture)
-    fixture(run)
+    benchmark(run)
 
 
 def reduce_pointer_single_phase(input_array, build_only):
