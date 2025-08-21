@@ -34,9 +34,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::size_t;
 
-// We cannot redefine memcpy before CUDA 13.1 because CUDA Math API has a bug.
+// We cannot redefine memcpy before CUDA 13.2 because of CUDA Math API nvbug 5452563.
 // More in detail, some CUDA Math API functions call 'memcpy' without namespace qualification, causing name ambiguity.
-#if _CCCL_CTK_AT_LEAST(13, 1)
+#if _CCCL_CTK_AT_LEAST(13, 2)
 
 _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) noexcept
 {
@@ -46,11 +46,11 @@ _CCCL_API inline void* memcpy(void* __dest, const void* __src, size_t __count) n
   return ::memcpy(__dest, __src, __count);
 }
 
-#else // < CUDA 13.1
+#else // < CUDA 13.2
 
 using ::memcpy;
 
-#endif // _CCCL_CTK_AT_LEAST(13, 1)
+#endif // _CCCL_CTK_AT_LEAST(13, 2)
 
 _CCCL_API inline void* memset(void* __dest, int __ch, size_t __count) noexcept
 {
