@@ -96,7 +96,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #endif // _CCCL_HAS_NVBF16()
     if constexpr (is_integral_v<_Tp>)
     {
-      return __x < __y ? static_cast<double>(__y) : static_cast<double>(__x);
+      return static_cast<double>(__x < __y ? __y : __x);
     }
     else
     {
@@ -205,7 +205,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #endif // _CCCL_HAS_NVBF16()
     if constexpr (is_integral_v<_Tp>)
     {
-      return __y < __x ? static_cast<double>(__y) : static_cast<double>(__x);
+      return static_cast<double>(__y < __x ? __y : __x);
     }
     else
     {
