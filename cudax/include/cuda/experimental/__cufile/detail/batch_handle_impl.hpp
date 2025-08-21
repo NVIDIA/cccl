@@ -58,8 +58,8 @@ inline ::std::vector<batch_io_result> batch_handle::get_status(unsigned int min_
   ::std::vector<CUfileIOEvents_t> events(max_operations_);
   unsigned int num_events = max_operations_;
 
-  struct timespec timeout_spec = {};
-  struct timespec* timeout_ptr = nullptr;
+  timespec timeout_spec = {};
+  timespec* timeout_ptr = nullptr;
 
   if (timeout_ms > 0)
   {
