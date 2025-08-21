@@ -2,7 +2,7 @@
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
-CCCL is a collection of three main header-only CUDA C++ libraries: **libcudacxx** (CUDA C++ Standard Library), **CUB** (block-level primitives), and **Thrust** (high-level parallel algorithms), plus experimental **cudax** features. The repository uses CMake with Ninja generator and provides standardized presets for consistent builds.
+CCCL is a collection of CUDA C++ libraries and Python packages: **libcudacxx** (CUDA C++ Standard Library), **CUB** (block-level primitives), **Thrust** (high-level parallel algorithms), **cudax** (experimental features), **C parallel library**, and **Python CCCL packages** (cuda-cccl). The repository uses CMake with Ninja generator and provides standardized presets for consistent builds.
 
 ## Working Effectively
 
@@ -55,7 +55,7 @@ conda install cccl  # Latest version
 ./ci/build_cccl_c_parallel.sh -cxx g++ -std 17 -arch "60;70;80"
 
 # Build Python packages - NEVER CANCEL, takes up to 20 minutes
-./ci/build_cuda_cccl_python.sh
+./ci/build_cuda_cccl_python.sh -py-version 3.10
 ```
 
 **Available compiler/standard combinations:**
@@ -72,6 +72,96 @@ conda install cccl  # Latest version
 - `XX` - Generate both PTX and SASS
 - `XX-real` - Generate only SASS (device code)  
 - `XX-virtual` - Generate only PTX (forward compatibility)
+
+### Python CCCL Packages
+
+**CRITICAL**: Python packages require different build parameters than C++ components. Use `-py-version X.Y` format instead of `-cxx` and `-std` parameters.
+
+**Available Python versions:** `3.9`, `3.10`, `3.11`, `3.12`
+
+#### Python Package Components
+
+CCCL provides comprehensive Python bindings and algorithms:
+
+**cuda.cccl.parallel** - Device-level parallel algorithms (experimental):
+- **Algorithms**: `reduce_into`, `exclusive_scan`, `inclusive_scan`, `radix_sort`, `merge_sort`, `histogram_even`, `unique_by_key`, `binary_transform`, `unary_transform`, `segmented_reduce`
+- **Iterators**: `CountingIterator`, `ConstantIterator`, `TransformIterator`, `ReverseInputIterator`, `ZipIterator`, `CacheModifiedInputIterator`
+- **Custom types**: `gpu_struct` decorator for user-defined data types
+- **Performance**: Hand-optimized CUDA kernels, portable across GPU architectures
+
+**cuda.cccl.cooperative** - Block and warp-level cooperative algorithms:
+- **Block-level primitives**: reduce, scan, sort operations within thread blocks
+- **Warp-level primitives**: cooperative operations within warps
+- **Integration**: Designed for use within Numba CUDA kernels
+- **Custom kernels**: Building blocks for advanced CUDA kernel development
+
+**cuda.cccl.headers** - Include paths for CCCL headers in Python:
+- **Header access**: Programmatic access to libcudacxx, CUB, Thrust, and cudax headers
+- **Integration**: Use with Numba, PyCUDA, or other Python CUDA libraries
+- **Path management**: `get_include_paths()` function for compiler integration
+
+#### Python Installation and Usage
+
+**Install from PyPI** (recommended for users):
+```bash
+pip install cuda-cccl
+```
+
+**Install from source** (for development):
+```bash
+git clone https://github.com/NVIDIA/cccl.git
+cd cccl/python/cuda_cccl
+pip install -e .[test]  # Development mode with test dependencies
+```
+
+**Requirements:**
+- Python 3.9+ 
+- CUDA Toolkit 12.x
+- NVIDIA GPU with Compute Capability 6.0+
+- Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0`
+
+**Basic usage examples:**
+```python
+# Device-level parallel reduction
+import cuda.cccl.parallel.experimental as parallel
+result = parallel.reduce_into(input_array, output_scalar, initial_value, binary_op)
+
+# Cooperative block-level reduction in Numba kernel
+import cuda.cccl.cooperative.experimental as cooperative
+@cuda.jit
+def my_kernel(data):
+    cooperative.block.reduce(data, binary_op)
+
+# Header paths for custom compilation
+import cuda.cccl.headers as headers
+include_paths = headers.get_include_paths()
+```
+
+#### Python Build and Test Parameters
+
+**Python build commands** use different parameter format:
+```bash
+# Build Python wheel - NEVER CANCEL, takes up to 20 minutes
+./ci/build_cuda_cccl_python.sh -py-version 3.10
+
+# Test Python modules - NEVER CANCEL, takes up to 10 minutes each
+./ci/test_cuda_cccl_parallel_python.sh -py-version 3.10     # Parallel algorithms
+./ci/test_cuda_cccl_cooperative_python.sh -py-version 3.10  # Cooperative primitives  
+./ci/test_cuda_cccl_headers_python.sh -py-version 3.10      # Header access
+./ci/test_cuda_cccl_examples_python.sh -py-version 3.10     # Example validation
+```
+
+**Python test organization:**
+- **Parallel tests**: Located in `python/cuda_cccl/tests/parallel/` - covers algorithms, iterators, custom types
+- **Cooperative tests**: Located in `python/cuda_cccl/tests/cooperative/` - covers block/warp primitives
+- **Header tests**: Located in `python/cuda_cccl/tests/headers/` - validates include path access
+- **Examples**: Comprehensive example collection demonstrating usage patterns
+
+**Pytest markers and options:**
+- `pytest -n auto` - Parallel test execution
+- `pytest -n 6` - Specific parallel worker count
+- `pytest -m "not large"` - Skip large memory tests
+- `pytest -m "large"` - Run only large memory tests (requires significant GPU memory)
 
 #### Using CMake Presets (Alternative)
 
@@ -113,10 +203,10 @@ cmake --build --preset=all-dev
 ./ci/test_cccl_c_parallel.sh -cxx g++ -std 17 -arch "60;70;80"
 
 # Test Python packages - NEVER CANCEL, takes up to 10 minutes
-./ci/test_cuda_cccl_parallel_python.sh
-./ci/test_cuda_cccl_headers_python.sh
-./ci/test_cuda_cccl_examples_python.sh
-./ci/test_cuda_cccl_cooperative_python.sh
+./ci/test_cuda_cccl_parallel_python.sh -py-version 3.10
+./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
+./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
+./ci/test_cuda_cccl_cooperative_python.sh -py-version 3.10
 
 # Using CMake presets - NEVER CANCEL, takes up to 15 minutes
 ctest --preset=cub-cpp17
@@ -171,12 +261,20 @@ pre-commit install
    ./ci/test_libcudacxx.sh -cxx g++ -std 17 -arch "60;70;80"   # 15+ min
    ```
 
-4. **Always run formatting before committing:**
+4. **After changing Python code:**
+   ```bash
+   ./ci/build_cuda_cccl_python.sh -py-version 3.10              # 20+ min
+   ./ci/test_cuda_cccl_parallel_python.sh -py-version 3.10      # 10+ min
+   ./ci/test_cuda_cccl_cooperative_python.sh -py-version 3.10   # 10+ min
+   ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10       # 5+ min
+   ```
+
+5. **Always run formatting before committing:**
    ```bash
    pre-commit run --all-files  # 2-5 min
    ```
 
-5. **Validate packaging and installation:**
+6. **Validate packaging and installation:**
    ```bash
    ./ci/test_packaging.sh  # 5-10 min
    ```
@@ -233,17 +331,23 @@ cccl/
 - `thrust/` - High-level parallel algorithms (C++17/20)
 - `cudax/` - Experimental CUDA features (C++20 required)
 - `c/` - C parallel library interface
-- `python/cuda_cccl/` - Python packages for CCCL parallel algorithms
+- `python/cuda_cccl/` - Python packages with comprehensive algorithms and bindings
+
+**Python package structure:**
 ```
-cccl/
-├── libcudacxx/          # CUDA C++ Standard Library headers
-├── cub/                 # CUB block-level primitives  
-├── thrust/              # Thrust parallel algorithms
-├── cudax/               # Experimental CUDA features
-├── ci/                  # Build and test scripts
-├── .devcontainer/       # Development container configs
-├── examples/            # Usage examples
-└── CMakePresets.json    # Standardized build configurations
+python/cuda_cccl/
+├── cuda/cccl/
+│   ├── parallel/         # Device-level parallel algorithms (experimental)
+│   │   └── experimental/ # Algorithms, iterators, custom types
+│   ├── cooperative/      # Block and warp-level cooperative algorithms  
+│   │   └── experimental/ # Block/warp primitives for Numba kernels
+│   └── headers/          # Include paths for CCCL headers
+├── tests/                # Comprehensive test suites
+│   ├── parallel/         # Algorithm and iterator tests
+│   ├── cooperative/      # Block/warp primitive tests
+│   └── headers/          # Header access tests
+├── benchmarks/           # Performance benchmarks
+└── pyproject.toml        # Package configuration and dependencies
 ```
 
 ### Key Files to Monitor
@@ -298,11 +402,20 @@ ls examples/  # Shows: basic, cudax, cudax_stf, thrust_flexible_device_system
 - Use `pre-commit run --all-files` to process all files
 
 **Environment requirements:**
-- **Building/compiling**: Requires CUDA Toolkit and nvcc compiler
-- **Testing**: Requires NVIDIA GPU hardware with drivers  
+- **Building/compiling C++**: Requires CUDA Toolkit and nvcc compiler
+- **Building Python packages**: Requires CUDA Toolkit, Python 3.9+, and wheel build environment
+- **Testing C++**: Requires NVIDIA GPU hardware with drivers  
+- **Testing Python**: Requires NVIDIA GPU hardware, drivers, and Python test dependencies
 - **Header usage**: No CUDA required for including headers in CPU code
+- **Python pip install**: Requires compatible CUDA drivers (runtime only)
 - **CMake configuration**: Some presets work without CUDA (e.g., `install`)
 - **Linting/formatting**: No CUDA required, only Python and pre-commit
+
+**Python-specific requirements:**
+- **Runtime**: Python 3.9+, CUDA drivers (no toolkit needed for pip install)
+- **Development**: Python 3.9+, CUDA Toolkit 12.x, compatible GPU (Compute Capability 6.0+)
+- **Dependencies**: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0`
+- **Test dependencies**: `pytest`, `pytest-xdist`, `cupy-cuda12x`, `typing_extensions`
 
 ### Performance Tips
 - Use Development Containers with `sccache` for faster builds (authentication required for NVIDIA employees)
@@ -331,7 +444,30 @@ cd cccl
 pre-commit run --all-files
 ```
 
-**3. Contributing workflow:**
+**3. Python development workflow:**
+```bash
+git clone https://github.com/nvidia/cccl.git
+cd cccl
+
+# Install Python package in development mode
+cd python/cuda_cccl
+pip install -e .[test]
+
+# Build and test Python packages (20+ min builds, 10+ min tests each)
+cd /home/coder/cccl
+./ci/build_cuda_cccl_python.sh -py-version 3.10
+./ci/test_cuda_cccl_parallel_python.sh -py-version 3.10
+./ci/test_cuda_cccl_cooperative_python.sh -py-version 3.10
+./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
+
+# Run specific Python tests manually
+cd python/cuda_cccl
+pytest tests/parallel/ -v       # Test parallel algorithms
+pytest tests/cooperative/ -v    # Test cooperative primitives  
+pytest tests/headers/ -v        # Test header access
+```
+
+**4. Contributing workflow:**
 ```bash
 # Make changes to code
 # ALWAYS run formatting before committing
