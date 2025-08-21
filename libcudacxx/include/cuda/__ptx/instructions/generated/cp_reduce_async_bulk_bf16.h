@@ -22,9 +22,9 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t,
-  space_shared_t,
-  op_min_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::op_min_t,
   __nv_bfloat16* __dstMem,
   const __nv_bfloat16* __srcMem,
   _CUDA_VSTD::uint32_t __size)
@@ -64,9 +64,9 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t,
-  space_shared_t,
-  op_max_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::op_max_t,
   __nv_bfloat16* __dstMem,
   const __nv_bfloat16* __srcMem,
   _CUDA_VSTD::uint32_t __size)
@@ -106,9 +106,9 @@ __device__ static inline void cp_reduce_async_bulk(
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void cp_reduce_async_bulk(
-  space_global_t,
-  space_shared_t,
-  op_add_t,
+  ::cuda::ptx::space_global_t,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::ptx::op_add_t,
   __nv_bfloat16* __dstMem,
   const __nv_bfloat16* __srcMem,
   _CUDA_VSTD::uint32_t __size)
