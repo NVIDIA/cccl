@@ -197,6 +197,21 @@ def segmented_reduce(
     num_segments: int,
     stream=None,
 ):
+    """
+    Performs device-wide segmented reduction.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array to store the result of the reduction for each segment
+        start_offsets_in: Device array or iterator containing the sequence of beginning offsets
+        end_offsets_in: Device array or iterator containing the sequence of ending offsets
+        op: Binary reduction operator
+        h_init: Initial value for the reduction
+        num_segments: Number of segments to reduce
+        stream: CUDA stream for the operation (optional)
+    """
     reducer = make_segmented_reduce(
         d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
     )

@@ -427,8 +427,8 @@ The deprecation period will depend on the impact of the change, but will usually
 
 | CCCL version | CTK version |
 |--------------|-------------|
+| 3.1          | 13.1        |
 | 3.0          | 13.0        |
-| ...          | ...         |
 | 2.8          | 12.9        |
 | 2.7          | 12.8        |
 | 2.5          | 12.6        |
