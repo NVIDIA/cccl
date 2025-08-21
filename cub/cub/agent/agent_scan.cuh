@@ -243,42 +243,83 @@ struct AgentScan
   // Block scan utility methods
   //---------------------------------------------------------------------
 
-  template <bool Inclusive = IS_INCLUSIVE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanFirstTile(AccumT (&items)[ITEMS_PER_THREAD], InitValueT init_value, ScanOpT scan_op, AccumT& block_aggregate)
+  template <bool Inclusive = IS_INCLUSIVE, bool IS_LAST_TILE = false>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanFirstTile(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    InitValueT init_value,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    OffsetT num_remaining = TILE_ITEMS)
   {
     BlockScanT blockScan(temp_storage.scan_storage.scan);
     if constexpr (Inclusive)
     {
       if constexpr (HAS_INIT)
       {
-        blockScan.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        if constexpr (IS_LAST_TILE)
+        {
+          blockScan.InclusiveScanPartialTile(
+            items, items, init_value, scan_op, static_cast<int>(num_remaining), block_aggregate);
+        }
+        else
+        {
+          blockScan.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        }
         block_aggregate = scan_op(init_value, block_aggregate);
       }
       else
       {
-        blockScan.InclusiveScan(items, items, scan_op, block_aggregate);
+        if constexpr (IS_LAST_TILE)
+        {
+          blockScan.InclusiveScanPartialTile(items, items, scan_op, static_cast<int>(num_remaining), block_aggregate);
+        }
+        else
+        {
+          blockScan.InclusiveScan(items, items, scan_op, block_aggregate);
+        }
       }
     }
     else
     {
-      blockScan.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
+      if constexpr (IS_LAST_TILE)
+      {
+        blockScan.ExclusiveScanPartialTile(
+          items, items, init_value, scan_op, static_cast<int>(num_remaining), block_aggregate);
+      }
+      else
+      {
+        blockScan.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
+      }
       block_aggregate = scan_op(init_value, block_aggregate);
     }
   }
 
-  template <typename PrefixCallback, bool Inclusive = IS_INCLUSIVE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanSubsequentTile(AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op)
+  template <typename PrefixCallback, bool Inclusive = IS_INCLUSIVE, bool IS_LAST_TILE = false>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanSubsequentTile(
+    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, OffsetT num_remaining = TILE_ITEMS)
   {
     BlockScanT blockScan(temp_storage.scan_storage.scan);
     if constexpr (Inclusive)
     {
-      blockScan.InclusiveScan(items, items, scan_op, prefix_op);
+      if constexpr (IS_LAST_TILE)
+      {
+        blockScan.InclusiveScanPartialTile(items, items, scan_op, static_cast<int>(num_remaining), prefix_op);
+      }
+      else
+      {
+        blockScan.InclusiveScan(items, items, scan_op, prefix_op);
+      }
     }
     else
     {
-      blockScan.ExclusiveScan(items, items, scan_op, prefix_op);
+      if constexpr (IS_LAST_TILE)
+      {
+        blockScan.ExclusiveScanPartialTile(items, items, scan_op, static_cast<int>(num_remaining), prefix_op);
+      }
+      else
+      {
+        blockScan.ExclusiveScan(items, items, scan_op, prefix_op);
+      }
     }
   }
 
@@ -341,9 +382,7 @@ struct AgentScan
 
     if constexpr (IS_LAST_TILE)
     {
-      // Fill last element with the first element because collectives are
-      // not suffix guarded.
-      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining);
     }
     else
     {
@@ -357,7 +396,7 @@ struct AgentScan
     {
       // Scan first tile
       AccumT block_aggregate;
-      ScanFirstTile(items, init_value, scan_op, block_aggregate);
+      ScanFirstTile<IS_INCLUSIVE, IS_LAST_TILE>(items, init_value, scan_op, block_aggregate, num_remaining);
 
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
       {
@@ -368,7 +407,7 @@ struct AgentScan
     {
       // Scan non-first tile
       TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
-      ScanSubsequentTile(items, scan_op, prefix_op);
+      ScanSubsequentTile<TilePrefixCallbackOpT, IS_INCLUSIVE, IS_LAST_TILE>(items, scan_op, prefix_op, num_remaining);
     }
 
     __syncthreads();
