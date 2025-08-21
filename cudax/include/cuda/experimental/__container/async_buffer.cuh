@@ -624,12 +624,10 @@ public:
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
   //! @brief Forwards the passed properties
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HIDE_FROM_ABI friend void get_property(const async_buffer&, _Property) noexcept {}
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 template <class _Tp>
