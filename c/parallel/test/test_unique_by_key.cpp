@@ -81,11 +81,19 @@ struct unique_by_key_build
     // Check compute capability (existing logic)
     bool cc_allows_check = cc_major < 9;
 
-    // Check CTK version for nvrtc LDL/STL bug (resolves nvbug 5243118)
-#if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
+    // Check for nvrtc-specific LDL/STL bug (resolves nvbug 5243118)
+    // This bug only affects nvrtc, not nvcc
+#ifdef __CUDACC_RTC__
+    // We're compiling with nvrtc - check CTK version for the bug
+#  if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
     bool ctk_allows_check = (__CUDACC_VER_MAJOR__ > 13) || (__CUDACC_VER_MAJOR__ == 13 && __CUDACC_VER_MINOR__ >= 1);
-#else
+#  else
     bool ctk_allows_check = false; // Conservative: disable if version unknown
+#  endif
+#else
+    // We're compiling with nvcc - no CTK version restriction needed
+    // nvbug 5243118 does not affect nvcc compilation
+    bool ctk_allows_check = true;
 #endif
 
     return cc_allows_check && ctk_allows_check;
