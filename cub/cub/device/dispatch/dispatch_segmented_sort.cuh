@@ -463,14 +463,13 @@ struct DispatchSegmentedSort
         constexpr auto num_segments_per_invocation_limit =
           static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
         auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-          (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+          (::cuda::std::min)(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
 
         large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
         small_segments_indices.grow(max_num_segments_per_invocation);
         group_sizes.grow(num_selected_groups);
 
-        auto medium_indices_iterator =
-          THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get());
+        auto medium_indices_iterator = ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get());
 
         cub::DevicePartition::IfNoNVTX(
           nullptr,
@@ -743,7 +742,7 @@ private:
       [[maybe_unused]] auto current_end_offset    = d_end_offsets + current_seg_offset;
 
       auto medium_indices_iterator =
-        THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
+        ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
 
       error = CubDebug(cub::DevicePartition::IfNoNVTX(
         device_partition_temp_storage.get(),

@@ -1,3 +1,4 @@
+#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
