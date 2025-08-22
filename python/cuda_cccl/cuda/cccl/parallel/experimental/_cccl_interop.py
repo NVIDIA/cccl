@@ -258,8 +258,6 @@ def _create_iterator_advance_void_ptr_wrapper(advance_func, sig):
     """
     void_sig = types.void(types.voidptr, types.voidptr)
 
-    # Create the wrapper function source code
-    wrapper_src = textwrap.dedent(f"""
     @intrinsic
     def impl(typingctx, state_ptr, offset_ptr):
         def codegen(context, builder, impl_sig, args):
@@ -283,22 +281,8 @@ def _create_iterator_advance_void_ptr_wrapper(advance_func, sig):
     # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
     def wrapped_advance(state_ptr, offset_ptr):
         return impl(state_ptr, offset_ptr)
-    """)
 
-    # Create namespace and compile the wrapper
-    local_dict = {
-        "types": types,
-        "sig": sig,
-        "advance_func": advance_func,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict["wrapped_advance"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    return wrapped_advance, void_sig
 
 
 def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iterator):
@@ -311,7 +295,6 @@ def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iter
 
     if is_input_iterator:
         # Input iterator: deref(state_ptr, result_ptr) where result_ptr is pointer to result
-        wrapper_src = textwrap.dedent(f"""
         @intrinsic
         def impl(typingctx, state_ptr, result_ptr):
             def codegen(context, builder, impl_sig, args):
@@ -332,10 +315,8 @@ def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iter
         # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
         def wrapped_dereference(state_ptr, result_ptr):
             return impl(state_ptr, result_ptr)
-        """)
     else:
         # Output iterator: deref(state_ptr, value) where value is passed by value
-        wrapper_src = textwrap.dedent(f"""
         @intrinsic
         def impl(typingctx, state_ptr, value_ptr):
             def codegen(context, builder, impl_sig, args):
@@ -359,22 +340,8 @@ def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iter
         # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
         def wrapped_dereference(state_ptr, value_ptr):
             return impl(state_ptr, value_ptr)
-        """)
 
-    # Create namespace and compile the wrapper
-    local_dict = {
-        "types": types,
-        "sig": sig,
-        "deref_func": deref_func,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict["wrapped_dereference"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    return wrapped_dereference, void_sig
 
 
 def to_cccl_op(op: Callable, sig: Signature) -> Op:
