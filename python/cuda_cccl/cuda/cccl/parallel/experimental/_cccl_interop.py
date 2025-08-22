@@ -281,7 +281,7 @@ def _create_iterator_advance_void_ptr_wrapper(advance_func, sig):
         return void_sig, codegen
     
     # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-    def wrapped_{advance_func.__name__}(state_ptr, offset_ptr):
+    def wrapped_advance(state_ptr, offset_ptr):
         return impl(state_ptr, offset_ptr)
     """)
 
@@ -295,7 +295,7 @@ def _create_iterator_advance_void_ptr_wrapper(advance_func, sig):
     }
     exec(wrapper_src, globals(), local_dict)
 
-    wrapper_func = local_dict[f"wrapped_{advance_func.__name__}"]
+    wrapper_func = local_dict["wrapped_advance"]
     wrapper_func.__globals__.update(local_dict)
 
     return wrapper_func, void_sig
@@ -330,7 +330,7 @@ def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iter
             return void_sig, codegen
         
         # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-        def wrapped_{deref_func.__name__}(state_ptr, result_ptr):
+        def wrapped_dereference(state_ptr, result_ptr):
             return impl(state_ptr, result_ptr)
         """)
     else:
@@ -357,7 +357,7 @@ def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iter
             return void_sig, codegen
         
         # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-        def wrapped_{deref_func.__name__}(state_ptr, value_ptr):
+        def wrapped_dereference(state_ptr, value_ptr):
             return impl(state_ptr, value_ptr)
         """)
 
@@ -371,7 +371,7 @@ def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iter
     }
     exec(wrapper_src, globals(), local_dict)
 
-    wrapper_func = local_dict[f"wrapped_{deref_func.__name__}"]
+    wrapper_func = local_dict["wrapped_dereference"]
     wrapper_func.__globals__.update(local_dict)
 
     return wrapper_func, void_sig
