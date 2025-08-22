@@ -1302,7 +1302,10 @@ struct TilePrefixCallbackOp
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-      exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      if (threadIdx.x == 0)
+      {
+        exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      }
     }
 
     // Compute the inclusive tile prefix and update the status for this tile
