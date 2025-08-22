@@ -463,7 +463,7 @@ struct DispatchSegmentedSort
         constexpr auto num_segments_per_invocation_limit =
           static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
         auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-          (::cuda::std::min)(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+          (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
 
         large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
         small_segments_indices.grow(max_num_segments_per_invocation);
