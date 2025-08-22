@@ -79,7 +79,6 @@ struct __fmt_formatter_int
     return ::cuda::std::__fmt_format_int(static_cast<_Type>(__value), __ctx, __specs);
   }
 
-private:
   __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 

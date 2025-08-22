@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/iterator.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -76,6 +77,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(format_args)
   _CCCL_PREFERRED_NAME(wformat_args)
 #endif // _CCCL_HAS_WCHAR_T()
     basic_format_args;
+
+template <class _CharT, class... _Args>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_string;
+
+template <class... _Args>
+using format_string = basic_format_string<char, type_identity_t<_Args>...>;
+
+#if _CCCL_HAS_WCHAR_T()
+template <class... _Args>
+using wformat_string = basic_format_string<wchar_t, type_identity_t<_Args>...>;
+#endif // _CCCL_HAS_WCHAR_T()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
