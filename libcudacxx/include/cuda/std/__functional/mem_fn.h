@@ -50,7 +50,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const
   {
-    return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 

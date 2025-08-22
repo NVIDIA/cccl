@@ -45,7 +45,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
   }
   else
   {
-    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_of_v<_Tp>;
+    return ::cuda::std::__fp_get_storage(__x) & __fp_sign_mask_of_v<_Tp>;
   }
 }
 

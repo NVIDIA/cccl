@@ -22,7 +22,7 @@ namespace
 // Empty node descriptor for testing
 struct empty_node_descriptor
 {
-  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, _CUDA_VSTD::span<cudaGraphNode_t> deps) const
+  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, ::cuda::std::span<cudaGraphNode_t> deps) const
   {
     cudaGraphNode_t node;
     _CCCL_TRY_CUDA_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, deps.data(), deps.size());

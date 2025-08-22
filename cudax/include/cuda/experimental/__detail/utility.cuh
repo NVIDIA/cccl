@@ -33,7 +33,7 @@
 namespace cuda::experimental
 {
 // NOLINTBEGIN(misc-unused-using-decls)
-using _CUDA_VSTD::declval;
+using ::cuda::std::declval;
 // NOLINTEND(misc-unused-using-decls)
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT no_init_t

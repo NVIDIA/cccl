@@ -44,8 +44,8 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(
-      _CUDA_VSTD::__fp_neg<__fp_format_of_v<_Tp>>(_CUDA_VSTD::__fp_get_storage(__v)));
+    return ::cuda::std::__fp_from_storage<_Tp>(
+      ::cuda::std::__fp_neg<__fp_format_of_v<_Tp>>(::cuda::std::__fp_get_storage(__v)));
   }
 }
 

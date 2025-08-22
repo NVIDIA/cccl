@@ -56,11 +56,11 @@ private:
 
 public:
   _CCCL_API ostream_iterator(ostream_type& __s) noexcept
-      : __out_stream_(_CUDA_VSTD::addressof(__s))
+      : __out_stream_(::cuda::std::addressof(__s))
       , __delim_(nullptr)
   {}
   _CCCL_API ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
-      : __out_stream_(_CUDA_VSTD::addressof(__s))
+      : __out_stream_(::cuda::std::addressof(__s))
       , __delim_(__delimiter)
   {}
   _CCCL_API ostream_iterator& operator=(const _Tp& __value)

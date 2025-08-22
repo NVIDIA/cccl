@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()
 
 template <class _From, class _To>
-concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<_To>(_CUDA_VSTD::declval<_From>()); };
+concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<_To>(::cuda::std::declval<_From>()); };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
@@ -44,7 +44,7 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=i
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
 template <class _From, class _To>
-_CCCL_CONCEPT_FRAGMENT(__test_conversion_, requires()(static_cast<_To>(_CUDA_VSTD::declval<_From>())));
+_CCCL_CONCEPT_FRAGMENT(__test_conversion_, requires()(static_cast<_To>(::cuda::std::declval<_From>())));
 
 template <class _From, class _To>
 _CCCL_CONCEPT __test_conversion = _CCCL_FRAGMENT(__test_conversion_, _From, _To);

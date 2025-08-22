@@ -29,12 +29,12 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
@@ -51,7 +51,7 @@ template <class _Env, class _Query>
 _CCCL_CONCEPT __statically_queryable_with = //
   _CCCL_REQUIRES_EXPR((_Env, _Query)) //
   ( //
-    (_CUDA_VSTD::remove_cvref_t<_Env>::query(_Query{})) //
+    (::cuda::std::remove_cvref_t<_Env>::query(_Query{})) //
   );
 
 template <class _Env>
@@ -77,32 +77,32 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(env<>) const noexcept -> env<>
   {
     return {};
   }
 
   _CCCL_TEMPLATE(class _Env, class = _Env*) // not considered if _Env is a reference type
   _CCCL_REQUIRES((!::cuda::__is_specialization_of_v<_Env, __fwd_env_>) )
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env) const noexcept -> _Env
   {
     return static_cast<_Env&&>(__env);
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept -> __env_ref_<_Env>
   {
     return __env_ref_<_Env>{__env};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __env_ref_<_Env>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept -> __env_ref_<_Env>
   {
     return __env;
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
     -> __fwd_env_<_Env const&>
   {
     return __fwd_env_<_Env const&>{__env.__env_};
@@ -111,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_fn
 } // namespace __detail
 
 template <class _Env>
-using __env_ref_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__env_ref_fn, _Env>;
+using __env_ref_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__env_ref_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
 
@@ -136,23 +136,23 @@ namespace __detail
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(env<>) const noexcept -> env<>
   {
     return {};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__env_ref_<_Env> __env) const noexcept
     -> __fwd_env_<_Env const&>
   {
     return __fwd_env_<_Env const&>{__env.__env_};
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
     -> decltype(auto)
   {
-    if constexpr (::cuda::__is_specialization_of_v<_CUDA_VSTD::remove_cvref_t<_Env>, __fwd_env_>)
+    if constexpr (::cuda::__is_specialization_of_v<::cuda::std::remove_cvref_t<_Env>, __fwd_env_>)
     {
       // If the environment is already a forwarding environment, we can just return it.
       return static_cast<_Env>(static_cast<_Env&&>(__env)); // take care to not return an rvalue reference
@@ -166,7 +166,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 } // namespace __detail
 
 template <class _Env>
-using __fwd_env_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__fwd_env_fn, _Env>;
+using __fwd_env_t _CCCL_NODEBUG_ALIAS = __call_result_t<__detail::__fwd_env_fn, _Env>;
 
 _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 
@@ -212,7 +212,7 @@ public:
   _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
                             __stream_ref __stream                    = ::cuda::__detail::__invalid_stream,
                             execution::any_execution_policy __policy = {}) noexcept
-      : __mr_(_CUDA_VSTD::move(__mr))
+      : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
       , __policy_(__policy)
   {}
@@ -221,14 +221,14 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    _CUDA_STD_EXEC::__queryable_with<_Env, ::cuda::mr::get_memory_resource_t> //
-    && _CUDA_STD_EXEC::__queryable_with<_Env, ::cuda::get_stream_t>
-    && _CUDA_STD_EXEC::__queryable_with<_Env, execution::get_execution_policy_t>;
+    (::cuda::std::execution::__queryable_with<_Env, ::cuda::mr::get_memory_resource_t>) //
+    &&(::cuda::std::execution::__queryable_with<_Env, ::cuda::get_stream_t>)
+    && (::cuda::std::execution::__queryable_with<_Env, execution::get_execution_policy_t>);
 
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES((!_CUDA_VSTD::is_same_v<_Env, env_t>) _CCCL_AND __is_compatible_env<_Env>)
+  _CCCL_REQUIRES((!__same_as<_Env, env_t>) _CCCL_AND __is_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
       : __mr_(__env.query(::cuda::mr::get_memory_resource))
       , __stream_(__env.query(::cuda::get_stream))

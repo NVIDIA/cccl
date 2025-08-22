@@ -284,7 +284,7 @@ tasks. In this code, we first initialize a matrix on the host, we then
 apply a task which will update its content on the current device. We
 finally check that the content is correct, by the means of the
 write-back mechanism that automatically updates the reference data
-instance of a logical data when calling ``ctx.sync()``\ t.
+instance of a logical data when calling ``ctx.sync()``.
 
 .. code:: c++
 

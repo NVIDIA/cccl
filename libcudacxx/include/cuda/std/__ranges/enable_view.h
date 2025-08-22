@@ -56,7 +56,7 @@ _CCCL_API inline void __is_derived_from_view_interface(const _Op*, const view_in
 
 template <class _Tp>
 inline constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
-  _CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
+  ::cuda::std::ranges::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
 };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
@@ -66,7 +66,8 @@ inline constexpr bool enable_view = derived_from<_Tp, view_base>;
 
 template <class _Tp>
 inline constexpr bool
-  enable_view<_Tp, void_t<decltype(_CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
+  enable_view<_Tp,
+              void_t<decltype(::cuda::std::ranges::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
     true;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 

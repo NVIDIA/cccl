@@ -58,7 +58,7 @@ template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr bool lexicographical_compare(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
-  return _CUDA_VSTD::lexicographical_compare(__first1, __last1, __first2, __last2, __less{});
+  return ::cuda::std::lexicographical_compare(__first1, __last1, __first2, __last2, __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

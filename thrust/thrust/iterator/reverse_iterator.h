@@ -163,7 +163,7 @@ public:
   //!  \p Copy constructor allows construction from a related compatible
   //!  \p reverse_iterator.
   //!
-  //!  \param r A \p reverse_iterator to copy from.
+  //!  \param rhs A \p reverse_iterator to copy from.
   template <typename OtherBidirectionalIterator,
             detail::enable_if_convertible_t<OtherBidirectionalIterator, BidirectionalIterator, int> = 0>
   _CCCL_HOST_DEVICE reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const& rhs)

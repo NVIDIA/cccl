@@ -1,5 +1,8 @@
 _build
 _repo
+env
 api
 *png
 cubimg
+*/auto_api.rst
+*/api/

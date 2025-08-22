@@ -20,33 +20,28 @@ __device__ int foo(const int& x)
 template <cuda::arch::id Arch>
 __global__ void arch_specific_kernel_mock_do_not_launch()
 {
-  // I will try to pack something like this into an API
-  if constexpr (cuda::arch::traits<Arch>().compute_capability != cuda::arch::current_traits().compute_capability)
-  {
-    return;
-  }
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_60,
+    (
+      // I will try to pack something like this into an API
+      if constexpr (cuda::arch::traits<Arch>().compute_capability != cuda::arch::current_traits().compute_capability) {
+        return;
+      }
 
-  [[maybe_unused]] __shared__ int array[cuda::arch::traits<Arch>().max_shared_memory_per_block / sizeof(int)];
+      [[maybe_unused]] __shared__ int array[cuda::arch::traits<Arch>().max_shared_memory_per_block / sizeof(int)];
 
-  // constexpr is useless and I can't use intrinsics here :(
-  if constexpr (cuda::arch::current_traits().cluster_supported)
-  {
-    [[maybe_unused]] int dummy;
-    asm volatile("mov.u32 %0, %%cluster_ctarank;" : "=r"(dummy));
-  }
-  if constexpr (cuda::arch::current_traits().redux_intrinisic)
-  {
-    [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
-    asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
-  }
-  if constexpr (cuda::arch::current_traits().cp_async_supported)
-  {
-    asm volatile("cp.async.commit_group;");
-  }
+      // constexpr is useless and I can't use intrinsics here :(
+      if constexpr (cuda::arch::current_traits().cluster_supported) {
+        [[maybe_unused]] int dummy;
+        asm volatile("mov.u32 %0, %%cluster_ctarank;" : "=r"(dummy));
+      } if constexpr (cuda::arch::current_traits().redux_intrinisic) {
+        [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
+        asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
+      } if constexpr (cuda::arch::current_traits().cp_async_supported) { asm volatile("cp.async.commit_group;"); }
 
-  // Confirm trait value is defined device code and usable as a reference
-  foo(cuda::arch::traits<Arch>().compute_capability);
-  foo(cuda::arch::current_traits().compute_capability);
+      // Confirm trait value is defined device code and usable as a reference
+      foo(cuda::arch::traits<Arch>().compute_capability);
+      foo(cuda::arch::current_traits().compute_capability);))
 }
 
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch::id::sm_70>();

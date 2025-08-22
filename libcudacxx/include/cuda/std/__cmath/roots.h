@@ -92,7 +92,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half sqrt(__half __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(_CUDA_VSTD::sqrt(__half2float(__x)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::cuda::std::sqrt(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -100,14 +100,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 sqrt(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2bfloat16(_CUDA_VSTD::sqrt(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2bfloat16(::cuda::std::sqrt(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double sqrt(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::sqrt((double) __x);
+  return ::cuda::std::sqrt((double) __x);
 }
 
 // cbrt
@@ -175,21 +175,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half cbrt(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::cbrt(__half2float(__x)));
+  return __float2half(::cuda::std::cbrt(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 cbrt(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::cbrt(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::cbrt(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double cbrt(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::cbrt((double) __x);
+  return ::cuda::std::cbrt((double) __x);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

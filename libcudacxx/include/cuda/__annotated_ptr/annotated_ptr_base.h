@@ -36,10 +36,10 @@ class __annotated_ptr_base
 protected:
   _CCCL_API static constexpr uint64_t __default_property() noexcept
   {
-    return _CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>     ? __l2_interleave_normal
-         : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::normal>     ? __l2_interleave_normal_demote
-         : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::persisting> ? __l2_interleave_persisting
-         : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::streaming>
+    return ::cuda::std::is_same_v<_AccessProperty, access_property::global>     ? __l2_interleave_normal
+         : ::cuda::std::is_same_v<_AccessProperty, access_property::normal>     ? __l2_interleave_normal_demote
+         : ::cuda::std::is_same_v<_AccessProperty, access_property::persisting> ? __l2_interleave_persisting
+         : ::cuda::std::is_same_v<_AccessProperty, access_property::streaming>
            ? __l2_interleave_streaming
            : 0; // access_property::shared;
   }

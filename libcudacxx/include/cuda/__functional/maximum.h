@@ -44,7 +44,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_T1, _T2>
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __rhs : __lhs))
   {
     return (__lhs < __rhs) ? __rhs : __lhs;

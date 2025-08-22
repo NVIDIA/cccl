@@ -52,7 +52,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
-    __f_      = _CUDA_VSTD::addressof(__f);
+    __f_      = ::cuda::std::addressof(__f);
   }
 
   // access
@@ -70,7 +70,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
-    return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::__invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 

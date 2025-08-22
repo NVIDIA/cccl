@@ -90,10 +90,10 @@ namespace __cbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::begin(__c)))
-    -> decltype(_CUDA_VSTD::begin(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::begin(__c)))
+    -> decltype(::cuda::std::begin(__c))
   {
-    return _CUDA_VSTD::begin(__c);
+    return ::cuda::std::begin(__c);
   }
 };
 } // namespace __cbegin
@@ -108,10 +108,10 @@ namespace __cend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::end(__c)))
-    -> decltype(_CUDA_VSTD::end(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::end(__c)))
+    -> decltype(::cuda::std::end(__c))
   {
-    return _CUDA_VSTD::end(__c);
+    return ::cuda::std::end(__c);
   }
 };
 } // namespace __cend

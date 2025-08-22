@@ -41,7 +41,7 @@ _CCCL_API constexpr _ForwardIterator __shift_left(
     return __first;
   }
   __m += __n;
-  return _CUDA_VSTD::move(__m, __last, __first);
+  return ::cuda::std::move(__m, __last, __first);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -61,7 +61,7 @@ _CCCL_API constexpr _ForwardIterator __shift_left(
     }
     ++__m;
   }
-  return _CUDA_VSTD::move(__m, __last, __first);
+  return ::cuda::std::move(__m, __last, __first);
 }
 
 template <class _ForwardIterator>

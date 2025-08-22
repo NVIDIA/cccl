@@ -9,4 +9,4 @@ Prefix sums
 
    prefix_sums/segmented
    prefix_sums/transformed
-   ${repo_docs_api_path}/*function_group__prefixsums*
+   ../../api/group__prefixsums*

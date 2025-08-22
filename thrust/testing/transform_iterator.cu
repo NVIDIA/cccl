@@ -157,7 +157,7 @@ struct forward
   template <class _Tp>
   constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
-    return _CUDA_VSTD::forward<_Tp>(__t);
+    return ::cuda::std::forward<_Tp>(__t);
   }
 };
 

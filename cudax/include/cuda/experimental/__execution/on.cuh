@@ -21,8 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__utility/pod_tuple.h>
-
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -172,19 +171,19 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) &&
+    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) &&
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __sch_, static_cast<_Closure&&>(__closure_));
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) const&
+    [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) const&
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __sch_, __closure_);
     }
 
     template <class _Sndr>
-    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+    [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
       return on_t{}(static_cast<_Sndr&&>(__sndr), __self.__sch_, static_cast<_Closure&&>(__self.__closure_));
     }
@@ -195,7 +194,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Sndr)
   _CCCL_REQUIRES(__is_sender<_Sndr>)
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
     using __domain_t = __query_result_or_t<_Sch, get_domain_t, default_domain>;
     return execution::transform_sender(__domain_t{}, __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr});
@@ -203,13 +202,13 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Closure)
   _CCCL_REQUIRES((!__is_sender<_Closure>) )
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Closure __closure) const
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Closure __closure) const
   {
     return __closure_t<_Sch, _Closure>{__sch, static_cast<_Closure&&>(__closure)};
   }
 
   template <class _Sndr, class _Sch, class _Closure>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
   {
     using __sndr_t = on_t::__sndr_t<_Sch, _Sndr, _Closure>;
     auto __domain  = __detail::__get_domain_early<_Sndr>();
@@ -240,14 +239,14 @@ public:
       auto __new_sch = __data;
       auto __old_sch = __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{});
 
-      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
+      if constexpr (__same_as<decltype(__old_sch), __not_a_scheduler<_Env>>)
       {
         return __not_a_sender<_Env>{};
       }
       else
       {
         using __sndr_t = __lowered_sndr_t<decltype(__child), decltype(__new_sch), _Env>;
-        return __sndr_t{_CUDA_VSTD::forward_like<_Sndr>(__child), __new_sch, __env};
+        return __sndr_t{::cuda::std::forward_like<_Sndr>(__child), __new_sch, __env};
       }
     }
     else
@@ -257,7 +256,7 @@ public:
                                   get_completion_scheduler<set_value_t>,
                                   __query_or(__env, get_scheduler, __not_a_scheduler<_Env>{}));
 
-      if constexpr (_CUDA_VSTD::is_same_v<decltype(__old_sch), __not_a_scheduler<_Env>>)
+      if constexpr (__same_as<decltype(__old_sch), __not_a_scheduler<_Env>>)
       {
         return __not_a_sender<_Env>{};
       }
@@ -265,37 +264,21 @@ public:
       {
         using __sndr_t = __lowered_sndr_t<decltype(__child), decltype(__new_sch), _Env, decltype(__closure)>;
         return __sndr_t{
-          _CUDA_VSTD::forward_like<_Sndr>(__child), __new_sch, __env, _CUDA_VSTD::forward_like<_Sndr>(__closure)};
+          ::cuda::std::forward_like<_Sndr>(__child), __new_sch, __env, ::cuda::std::forward_like<_Sndr>(__closure)};
       }
     }
   }
 };
 
-template <class _Sndr, class _NewSch, class _Env>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__lowered_sndr_t<_Sndr, _NewSch, _Env>
-    : _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env>
+template <class _Sndr, class _NewSch, class _Env, class... _Closure>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__lowered_sndr_t
+    : __call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure...>
 {
-  using __base_t = _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env>;
+  using __base_t = __call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure...>;
 
-  _CCCL_API constexpr __lowered_sndr_t(_Sndr&& __sndr, _NewSch __new_sch, _Env const& __env)
-      : __base_t{on_t::__lower_sndr_fn{}(static_cast<_Sndr&&>(__sndr), static_cast<_NewSch&&>(__new_sch), __env)}
-  {}
-
-  auto base() const noexcept -> __base_t const&
-  {
-    return *this;
-  }
-};
-
-template <class _Sndr, class _NewSch, class _Env, class _Closure>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__lowered_sndr_t<_Sndr, _NewSch, _Env, _Closure>
-    : _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure>
-{
-  using __base_t = _CUDA_VSTD::__call_result_t<on_t::__lower_sndr_fn, _Sndr, _NewSch, _Env, _Closure>;
-
-  _CCCL_API constexpr __lowered_sndr_t(_Sndr&& __sndr, _NewSch __new_sch, _Env const& __env, _Closure __closure)
+  _CCCL_API constexpr __lowered_sndr_t(_Sndr&& __sndr, _NewSch __new_sch, _Env const& __env, _Closure... __closure)
       : __base_t{on_t::__lower_sndr_fn{}(
-          static_cast<_Sndr&&>(__sndr), static_cast<_NewSch&&>(__new_sch), __env, static_cast<_Closure&&>(__closure))}
+          static_cast<_Sndr&&>(__sndr), static_cast<_NewSch&&>(__new_sch), __env, static_cast<_Closure&&>(__closure)...)}
   {}
 };
 
@@ -305,7 +288,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr>
 {
   using sender_concept = sender_t;
 
-  _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr>
+  _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __attrs_t<_Sndr>
   {
     return {__sndr_};
   }
@@ -321,13 +304,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr, _Closure>
 {
   using sender_concept = sender_t;
 
-  _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }
 
   _CCCL_NO_UNIQUE_ADDRESS on_t __tag_;
-  _CUDA_VSTD::__pair<_Sch, _Closure> __sch_closure_;
+  __closure_t<_Sch, _Closure> __sch_closure_;
   _Sndr __sndr_;
 };
 

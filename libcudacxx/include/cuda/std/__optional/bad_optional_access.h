@@ -61,10 +61,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 [[noreturn]] _CCCL_API inline void __throw_bad_optional_access()
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::std::bad_optional_access();), (::cuda::std::terminate();))
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
 

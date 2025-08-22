@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__utility/rel_ops.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -50,7 +51,7 @@ enum class _CCCL_TYPE_VISIBILITY_DEFAULT completion_behavior : int
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 [[nodiscard]] _CCCL_API constexpr auto operator<=>(completion_behavior __a, completion_behavior __b) noexcept
-  -> _CUDA_VSTD::strong_ordering
+  -> ::cuda::std::strong_ordering
 {
   return static_cast<int>(__a) <=> static_cast<int>(__b);
 }
@@ -63,11 +64,11 @@ enum class _CCCL_TYPE_VISIBILITY_DEFAULT completion_behavior : int
 {
   return static_cast<int>(__a) == static_cast<int>(__b);
 }
-using namespace _CUDA_VSTD::rel_ops;
+using namespace ::cuda::std::rel_ops;
 #endif
 
 template <completion_behavior _CB>
-using __constant_t = _CUDA_VSTD::integral_constant<completion_behavior, _CB>;
+using __constant_t = ::cuda::std::integral_constant<completion_behavior, _CB>;
 
 using __unknown_t           = __constant_t<completion_behavior::unknown>;
 using __asynchronous_t      = __constant_t<completion_behavior::asynchronous>;
@@ -81,7 +82,7 @@ struct completion_behavior
 {
 private:
   template <__completion_behavior::completion_behavior _CB>
-  using __constant_t = _CUDA_VSTD::integral_constant<__completion_behavior::completion_behavior, _CB>;
+  using __constant_t = ::cuda::std::integral_constant<__completion_behavior::completion_behavior, _CB>;
 
   friend struct min_t;
 
@@ -106,19 +107,19 @@ public:
 // completion behavior
 struct get_completion_behavior_t
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t = {}) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, ::cuda::std::__ignore_t = {}) const noexcept
   {
     return completion_behavior::unknown;
   }
 
   _CCCL_TEMPLATE(class _Attrs)
   _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_behavior_t>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, _CUDA_VSTD::__ignore_t = {}) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, ::cuda::std::__ignore_t = {}) const noexcept
   {
     static_assert(__nothrow_queryable_with<_Attrs, get_completion_behavior_t>,
                   "The get_completion_behavior query must be noexcept.");
-    static_assert(_CUDA_VSTD::is_convertible_v<__query_result_t<_Attrs, get_completion_behavior_t>,
-                                               __completion_behavior::completion_behavior>,
+    static_assert(::cuda::std::is_convertible_v<__query_result_t<_Attrs, get_completion_behavior_t>,
+                                                __completion_behavior::completion_behavior>,
                   "The get_completion_behavior query must return one of the static member variables in "
                   "execution::completion_behavior.");
     return __attrs.query(*this);
@@ -130,14 +131,14 @@ struct get_completion_behavior_t
   {
     static_assert(__nothrow_queryable_with<_Attrs, get_completion_behavior_t, const _Env&>,
                   "The get_completion_behavior query must be noexcept.");
-    static_assert(_CUDA_VSTD::is_convertible_v<__query_result_t<_Attrs, get_completion_behavior_t, const _Env&>,
-                                               __completion_behavior::completion_behavior>,
+    static_assert(::cuda::std::is_convertible_v<__query_result_t<_Attrs, get_completion_behavior_t, const _Env&>,
+                                                __completion_behavior::completion_behavior>,
                   "The get_completion_behavior query must return one of the static member variables in "
                   "execution::completion_behavior.");
     return __attrs.query(*this, __env);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -148,7 +149,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
   template <__completion_behavior::completion_behavior... _CBs>
   [[nodiscard]] _CCCL_API constexpr auto operator()(completion_behavior::__constant_t<_CBs>...) const noexcept
   {
-    constexpr auto __behavior = _CUDA_VSTD::min({_CBs...});
+    constexpr auto __behavior = ::cuda::std::min({_CBs...});
     if constexpr (__behavior == completion_behavior::unknown)
     {
       return completion_behavior::unknown;
@@ -174,13 +175,13 @@ _CCCL_GLOBAL_CONSTANT min_t min{};
 template <class _Sndr, class... _Env>
 [[nodiscard]] _CCCL_API constexpr auto get_completion_behavior() noexcept
 {
-  using __behavior_t = _CUDA_VSTD::__call_result_t<get_completion_behavior_t, env_of_t<_Sndr>, const _Env&...>;
+  using __behavior_t = __call_result_t<get_completion_behavior_t, env_of_t<_Sndr>, const _Env&...>;
   return __behavior_t{};
 }
 
 template <class _Attrs, class... _Env>
 _CCCL_CONCEPT __completes_inline =
-  (_CUDA_VSTD::__call_result_t<get_completion_behavior_t, const _Attrs&, const _Env&...>{}
+  (__call_result_t<get_completion_behavior_t, const _Attrs&, const _Env&...>{}
    == completion_behavior::inline_completion);
 
 } // namespace cuda::experimental::execution

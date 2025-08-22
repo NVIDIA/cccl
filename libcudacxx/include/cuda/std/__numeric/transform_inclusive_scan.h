@@ -51,7 +51,7 @@ _CCCL_API constexpr _OutputIterator transform_inclusive_scan(
     *__result++                                                 = __init;
     if (++__first != __last)
     {
-      return _CUDA_VSTD::transform_inclusive_scan(__first, __last, __result, __b, __u, __init);
+      return ::cuda::std::transform_inclusive_scan(__first, __last, __result, __b, __u, __init);
     }
   }
 

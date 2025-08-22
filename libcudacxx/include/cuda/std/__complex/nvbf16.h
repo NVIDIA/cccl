@@ -23,7 +23,6 @@
 
 #if _LIBCUDACXX_HAS_NVBF16()
 
-#  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/complex.h>
 #  include <cuda/std/__complex/tuple.h>
 #  include <cuda/std/__complex/vector_support.h>
@@ -279,7 +278,7 @@ struct __get_complex_impl<__nv_bfloat16>
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+    return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
@@ -291,7 +290,7 @@ struct __get_complex_impl<__nv_bfloat16>
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr const __nv_bfloat16&& get(const complex<__nv_bfloat16>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+    return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 };
 

@@ -60,7 +60,7 @@ struct __is_destructor_wellformed
 {
   template <typename _Tp1>
   _CCCL_API inline static true_type
-    __test(typename __is_destructible_apply<decltype(_CUDA_VSTD::declval<_Tp1&>().~_Tp1())>::type);
+    __test(typename __is_destructible_apply<decltype(::cuda::std::declval<_Tp1&>().~_Tp1())>::type);
 
   template <typename _Tp1>
   _CCCL_API inline static false_type __test(...);

@@ -33,20 +33,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Up, typename _Tp>
 [[nodiscard]] _CCCL_API inline _Up* ptr_rebind(_Tp* __ptr) noexcept
 {
-  if constexpr (_CUDA_VSTD::is_same_v<_Up, _Tp>) // also handle _Tp == _Up == void
+  if constexpr (::cuda::std::is_same_v<_Up, _Tp>) // also handle _Tp == _Up == void
   {
     return __ptr;
   }
-  else if constexpr (_CUDA_VSTD::is_void_v<_Up>) // _Tp: non-void, _Up: void
+  else if constexpr (::cuda::std::is_void_v<_Up>) // _Tp: non-void, _Up: void
   {
-    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
-    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), alignof(_Tp));
+    _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
+    return ::cuda::std::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), alignof(_Tp));
   }
   else
   {
     constexpr auto __max_alignment = alignof(_Up) > alignof(_Tp) ? alignof(_Up) : alignof(_Tp);
-    _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
-    return _CUDA_VSTD::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), __max_alignment);
+    _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) % __max_alignment == 0, "ptr is not aligned");
+    return ::cuda::std::__runtime_assume_aligned(reinterpret_cast<_Up*>(__ptr), __max_alignment);
   }
 }
 

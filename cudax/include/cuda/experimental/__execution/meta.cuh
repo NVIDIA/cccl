@@ -139,7 +139,7 @@ inline constexpr bool __type_contains_error =
 #if _CCCL_COMPILER(MSVC)
   (__type_is_error<_Ts> || ...);
 #else
-  __ustdex_unhandled_error(static_cast<_CUDA_VSTD::__type_list<_Ts...>*>(nullptr));
+  __ustdex_unhandled_error(static_cast<::cuda::std::__type_list<_Ts...>*>(nullptr));
 #endif
 
 template <class... _Ts>
@@ -161,7 +161,7 @@ struct __type_self_or_error_with_<true>
 
 template <class _Ty, class... _With>
 using __type_self_or_error_with _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
+  ::cuda::std::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
 
 template <bool>
 struct __type_try__;
@@ -221,9 +221,9 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename _CUDA_VSTD::conditional_t<_CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value, //
-                                       __type_try_quote<_Fn>,
-                                       _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
+    typename ::cuda::std::conditional_t<::cuda::std::_IsValidExpansion<_Fn, _Ts...>::value, //
+                                        __type_try_quote<_Fn>,
+                                        ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 };
 
 template <class _Return>
@@ -256,7 +256,7 @@ struct __type_compose_quote
 struct __type_count
 {
   template <class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Ts)>;
+  using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::integral_constant<size_t, sizeof...(_Ts)>;
 };
 
 template <class _Continuation>
@@ -264,11 +264,11 @@ struct __type_concat_into
 {
   template <class... _Args>
   using __call _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::__type_call1<_CUDA_VSTD::__type_concat<_CUDA_VSTD::__as_type_list<_Args>...>, _Continuation>;
+    ::cuda::std::__type_call1<::cuda::std::__type_concat<::cuda::std::__as_type_list<_Args>...>, _Continuation>;
 };
 
 template <template <class...> class _Continuation>
-struct __type_concat_into_quote : __type_concat_into<_CUDA_VSTD::__type_quote<_Continuation>>
+struct __type_concat_into_quote : __type_concat_into<::cuda::std::__type_quote<_Continuation>>
 {};
 
 template <class _Ty>

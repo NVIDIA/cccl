@@ -35,7 +35,7 @@ template <class _InputIterator, class _Tp, class _BinaryOp>
 {
   for (; __first != __last; ++__first)
   {
-    __init = __b(_CUDA_VSTD::move(__init), *__first);
+    __init = __b(::cuda::std::move(__init), *__first);
   }
   return __init;
 }
@@ -43,14 +43,14 @@ template <class _InputIterator, class _Tp, class _BinaryOp>
 template <class _InputIterator, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp reduce(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
-  return _CUDA_VSTD::reduce(__first, __last, __init, _CUDA_VSTD::plus<>());
+  return ::cuda::std::reduce(__first, __last, __init, ::cuda::std::plus<>());
 }
 
 template <class _InputIterator>
 [[nodiscard]] _CCCL_API constexpr typename iterator_traits<_InputIterator>::value_type
 reduce(_InputIterator __first, _InputIterator __last)
 {
-  return _CUDA_VSTD::reduce(__first, __last, typename iterator_traits<_InputIterator>::value_type{});
+  return ::cuda::std::reduce(__first, __last, typename iterator_traits<_InputIterator>::value_type{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

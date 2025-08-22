@@ -32,7 +32,7 @@ template <class _ForwardIterator, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _ForwardIterator
 remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
-  __first = _CUDA_VSTD::find(__first, __last, __value_);
+  __first = ::cuda::std::find(__first, __last, __value_);
   if (__first != __last)
   {
     _ForwardIterator __i = __first;
@@ -40,7 +40,7 @@ remove(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
     {
       if (!(*__i == __value_))
       {
-        *__first = _CUDA_VSTD::move(*__i);
+        *__first = ::cuda::std::move(*__i);
         ++__first;
       }
     }
