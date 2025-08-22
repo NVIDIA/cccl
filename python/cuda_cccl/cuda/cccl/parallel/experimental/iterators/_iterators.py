@@ -126,19 +126,43 @@ class IteratorBase:
     @property
     def ltoirs(self) -> Dict[str, bytes]:
         if self._ltoirs is None:
+            # Import here to avoid circular import
+            from .._cccl_interop import (
+                _create_iterator_advance_void_ptr_wrapper,
+                _create_iterator_dereference_void_ptr_wrapper,
+            )
+
             abi_suffix = _get_abi_suffix(self.kind)
             advance_abi_name = f"advance_{abi_suffix}"
             deref_abi_name = f"dereference_{abi_suffix}"
+
+            # Create void* wrapper functions for advance and dereference
+            original_advance_sig = self._get_advance_signature()
+            wrapped_advance_func, advance_void_sig = (
+                _create_iterator_advance_void_ptr_wrapper(
+                    self.advance, original_advance_sig
+                )
+            )
+
+            original_deref_sig = self._get_dereference_signature()
+            is_input = self.iterator_io is IteratorIOKind.INPUT
+            wrapped_deref_func, deref_void_sig = (
+                _create_iterator_dereference_void_ptr_wrapper(
+                    self.dereference, original_deref_sig, is_input
+                )
+            )
+
+            # Compile the wrapper functions with void* signatures
             advance_ltoir, _ = cached_compile(
-                self.advance,
-                self._get_advance_signature(),
+                wrapped_advance_func,
+                advance_void_sig,
                 output="ltoir",
                 abi_name=advance_abi_name,
             )
 
             deref_ltoir, _ = cached_compile(
-                self.dereference,
-                self._get_dereference_signature(),
+                wrapped_deref_func,
+                deref_void_sig,
                 output="ltoir",
                 abi_name=deref_abi_name,
             )

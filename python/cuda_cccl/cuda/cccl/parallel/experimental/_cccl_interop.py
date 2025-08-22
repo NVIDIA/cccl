@@ -251,6 +251,132 @@ def _create_void_ptr_wrapper(op, sig):
     return wrapper_func, void_sig
 
 
+def _create_iterator_advance_void_ptr_wrapper(advance_func, sig):
+    """Creates a wrapper function for iterator advance that takes void* arguments.
+
+    The wrapper takes state_ptr (void*) and offset_ptr (void*) arguments.
+    """
+    void_sig = types.void(types.voidptr, types.voidptr)
+
+    # Create the wrapper function source code
+    wrapper_src = textwrap.dedent(f"""
+    @intrinsic
+    def impl(typingctx, state_ptr, offset_ptr):
+        def codegen(context, builder, impl_sig, args):
+            # Get LLVM types for the original signature
+            state_ptr_type = context.get_value_type(sig.args[0])
+            offset_type = context.get_value_type(sig.args[1])
+            
+            # Bitcast from void* to the appropriate pointer types
+            typed_state_ptr = builder.bitcast(args[0], state_ptr_type)
+            typed_offset_ptr = builder.bitcast(args[1], offset_type.as_pointer())
+            
+            # Load the offset value
+            offset_val = builder.load(typed_offset_ptr)
+            
+            # Call the original advance function
+            context.compile_internal(builder, advance_func, sig, [typed_state_ptr, offset_val])
+            
+            return context.get_dummy_value()
+        return void_sig, codegen
+    
+    # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
+    def wrapped_{advance_func.__name__}(state_ptr, offset_ptr):
+        return impl(state_ptr, offset_ptr)
+    """)
+
+    # Create namespace and compile the wrapper
+    local_dict = {
+        "types": types,
+        "sig": sig,
+        "advance_func": advance_func,
+        "intrinsic": intrinsic,
+        "void_sig": void_sig,
+    }
+    exec(wrapper_src, globals(), local_dict)
+
+    wrapper_func = local_dict[f"wrapped_{advance_func.__name__}"]
+    wrapper_func.__globals__.update(local_dict)
+
+    return wrapper_func, void_sig
+
+
+def _create_iterator_dereference_void_ptr_wrapper(deref_func, sig, is_input_iterator):
+    """Creates a wrapper function for iterator dereference that takes void* arguments.
+
+    For input iterators: takes state_ptr (void*) and result_ptr (void*)
+    For output iterators: takes state_ptr (void*) and value_ptr (void*)
+    """
+    void_sig = types.void(types.voidptr, types.voidptr)
+
+    if is_input_iterator:
+        # Input iterator: deref(state_ptr, result_ptr) where result_ptr is pointer to result
+        wrapper_src = textwrap.dedent(f"""
+        @intrinsic
+        def impl(typingctx, state_ptr, result_ptr):
+            def codegen(context, builder, impl_sig, args):
+                # Get LLVM types for the original signature
+                state_ptr_type = context.get_value_type(sig.args[0])
+                result_ptr_type = context.get_value_type(sig.args[1])
+                
+                # Bitcast from void* to the appropriate pointer types
+                typed_state_ptr = builder.bitcast(args[0], state_ptr_type)
+                typed_result_ptr = builder.bitcast(args[1], result_ptr_type)
+                
+                # Call the original dereference function
+                context.compile_internal(builder, deref_func, sig, [typed_state_ptr, typed_result_ptr])
+                
+                return context.get_dummy_value()
+            return void_sig, codegen
+        
+        # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
+        def wrapped_{deref_func.__name__}(state_ptr, result_ptr):
+            return impl(state_ptr, result_ptr)
+        """)
+    else:
+        # Output iterator: deref(state_ptr, value) where value is passed by value
+        wrapper_src = textwrap.dedent(f"""
+        @intrinsic
+        def impl(typingctx, state_ptr, value_ptr):
+            def codegen(context, builder, impl_sig, args):
+                # Get LLVM types for the original signature
+                state_ptr_type = context.get_value_type(sig.args[0])
+                value_type = context.get_value_type(sig.args[1])
+                
+                # Bitcast from void* to the appropriate pointer types
+                typed_state_ptr = builder.bitcast(args[0], state_ptr_type)
+                typed_value_ptr = builder.bitcast(args[1], value_type.as_pointer())
+                
+                # Load the value from the pointer
+                value = builder.load(typed_value_ptr)
+                
+                # Call the original dereference function
+                context.compile_internal(builder, deref_func, sig, [typed_state_ptr, value])
+                
+                return context.get_dummy_value()
+            return void_sig, codegen
+        
+        # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
+        def wrapped_{deref_func.__name__}(state_ptr, value_ptr):
+            return impl(state_ptr, value_ptr)
+        """)
+
+    # Create namespace and compile the wrapper
+    local_dict = {
+        "types": types,
+        "sig": sig,
+        "deref_func": deref_func,
+        "intrinsic": intrinsic,
+        "void_sig": void_sig,
+    }
+    exec(wrapper_src, globals(), local_dict)
+
+    wrapper_func = local_dict[f"wrapped_{deref_func.__name__}"]
+    wrapper_func.__globals__.update(local_dict)
+
+    return wrapper_func, void_sig
+
+
 def to_cccl_op(op: Callable, sig: Signature) -> Op:
     """Return an `Op` object corresponding to the given callable.
 
