@@ -530,14 +530,11 @@ private:
           kernel_descs[i].launch_in_graph(chain[i], g);
           if (i > 0)
           {
-            cuda_safe_call(cudaGraphAddDependencies(
-              g,
-              &chain[i - 1],
-              &chain[i],
 #if _CCCL_CTK_AT_LEAST(13, 0)
-              nullptr,
+            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], nullptr, 1));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
-              1));
           }
         }
       }
