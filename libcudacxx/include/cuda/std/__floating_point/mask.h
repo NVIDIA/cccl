@@ -44,6 +44,12 @@ template <class _Tp>
 inline constexpr auto __fp_exp_mask_of_v = __fp_exp_mask_v<__fp_format_of_v<_Tp>>;
 
 template <__fp_format _Fmt>
+inline constexpr auto __fp_inv_exp_mask_v = static_cast<__fp_storage_t<_Fmt>>(~__fp_exp_mask_v<_Fmt>);
+
+template <class _Tp>
+inline constexpr auto __fp_inv_exp_mask_of_v = __fp_inv_exp_mask_v<__fp_format_of_v<_Tp>>;
+
+template <__fp_format _Fmt>
 inline constexpr auto __fp_mant_mask_v =
   static_cast<__fp_storage_t<_Fmt>>((__fp_storage_t<_Fmt>(1) << __fp_mant_nbits_v<_Fmt>) -1);
 
