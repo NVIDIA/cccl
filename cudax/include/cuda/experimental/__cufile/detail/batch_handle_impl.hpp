@@ -107,7 +107,7 @@ inline bool batch_handle::is_valid() const noexcept
 
 template <typename T>
 void batch_handle::submit(const file_handle_base& file_handle_ref,
-                          cuda::std::span<const batch_io_params_span<T>> operations,
+                          ::cuda::std::span<const batch_io_params_span<T>> operations,
                           unsigned int flags)
 {
   ::std::vector<CUfileIOParams_t> cufile_ops;
