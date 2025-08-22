@@ -47,14 +47,14 @@ struct batch_io_params_span
   void* cookie; ///< User data for tracking
 
   // Constructor
-  batch_io_params_span(cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr)
+  batch_io_params_span(::cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr)
       : buffer(buf)
       , file_offset(f_off)
       , buffer_offset(b_off)
       , opcode(op)
       , cookie(ck)
   {
-    static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+    static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
   }
 };
 
@@ -110,7 +110,7 @@ public:
    */
   template <typename T>
   void submit(const file_handle_base& file_handle_ref,
-              cuda::std::span<const batch_io_params_span<T>> operations,
+              ::cuda::std::span<const batch_io_params_span<T>> operations,
               unsigned int flags = 0);
 
   /**
@@ -144,7 +144,7 @@ public:
  */
 template <typename T>
 batch_io_params_span<T>
-make_read_operation(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
+make_read_operation(::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
 
 /**
  * @brief Create a write operation for batch processing
@@ -156,6 +156,6 @@ make_read_operation(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_o
  */
 template <typename T>
 batch_io_params_span<const T> make_write_operation(
-  cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
+  ::cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
 
 } // namespace cuda::experimental::cufile

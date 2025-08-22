@@ -77,7 +77,7 @@ inline void file_handle_base::register_file()
 
   CUfileHandle_t handle;
   CUfileError_t error = cuFileHandleRegister(&handle, &desc);
-  detail::check_cufile_result(error, "cuFileHandleRegister");
+  ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileHandleRegister");
 
   cufile_handle_.emplace(handle, [](CUfileHandle_t h) {
     cuFileHandleDeregister(h);
@@ -162,36 +162,36 @@ inline file_handle_ref::file_handle_ref(int fd)
 
 // Template method implementations
 template <typename T>
-size_t file_handle_base::read(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset)
+size_t file_handle_base::read(::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset)
 {
-  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // Convert span to void* and size for cuFile API
   void* buffer_ptr  = static_cast<void*>(buffer.data());
   size_t size_bytes = buffer.size_bytes();
 
   ssize_t result = cuFileRead(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
-  return static_cast<size_t>(detail::check_cufile_result(result, "cuFileRead"));
+  return static_cast<size_t>(::cuda::experimental::cufile::detail::check_cufile_result(result, "cuFileRead"));
 }
 
 template <typename T>
-size_t file_handle_base::write(cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset)
+size_t file_handle_base::write(::cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset)
 {
-  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // Convert span to void* and size for cuFile API
   const void* buffer_ptr = static_cast<const void*>(buffer.data());
   size_t size_bytes      = buffer.size_bytes();
 
   ssize_t result = cuFileWrite(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
-  return static_cast<size_t>(detail::check_cufile_result(result, "cuFileWrite"));
+  return static_cast<size_t>(::cuda::experimental::cufile::detail::check_cufile_result(result, "cuFileWrite"));
 }
 
 template <typename T>
 void file_handle_base::read_async(
-  cuda::stream_ref stream, cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, ssize_t& bytes_read)
+  ::cuda::stream_ref stream, ::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, ssize_t& bytes_read)
 {
-  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // cuFile async API requires size parameters to be passed by pointer
   size_t size_bytes = buffer.size_bytes();
@@ -199,18 +199,18 @@ void file_handle_base::read_async(
 
   CUfileError_t error = cuFileReadAsync(
     cufile_handle_.get(), buffer_ptr, &size_bytes, &file_offset, &buffer_offset, &bytes_read, stream.get());
-  detail::check_cufile_result(error, "cuFileReadAsync");
+  ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileReadAsync");
 }
 
 template <typename T>
 void file_handle_base::write_async(
-  cuda::stream_ref stream,
-  cuda::std::span<const T> buffer,
+  ::cuda::stream_ref stream,
+  ::cuda::std::span<const T> buffer,
   off_t file_offset,
   off_t buffer_offset,
   ssize_t& bytes_written)
 {
-  static_assert(cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+  static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   // cuFile async API requires size parameters to be passed by pointer
   size_t size_bytes      = buffer.size_bytes();
@@ -224,7 +224,7 @@ void file_handle_base::write_async(
     &buffer_offset,
     &bytes_written,
     stream.get());
-  detail::check_cufile_result(error, "cuFileWriteAsync");
+  ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileWriteAsync");
 }
 
 // Simple getter implementations

@@ -35,7 +35,7 @@ namespace cuda::experimental::cufile
 class buffer_handle
 {
 private:
-  cuda::std::span<const cuda::std::byte> buffer_;
+  ::cuda::std::span<const ::cuda::std::byte> buffer_;
   detail::raii_resource<const void*, void (*)(const void*)> registered_buffer_;
 
 public:
@@ -46,7 +46,7 @@ public:
    * @param flags Registration flags (default: 0)
    */
   template <typename T>
-  explicit buffer_handle(cuda::std::span<T> buffer, int flags = 0);
+  explicit buffer_handle(::cuda::std::span<T> buffer, int flags = 0);
 
   /**
    * @brief Register GPU buffer using span - const version
@@ -55,7 +55,7 @@ public:
    * @param flags Registration flags (default: 0)
    */
   template <typename T>
-  explicit buffer_handle(cuda::std::span<const T> buffer, int flags = 0);
+  explicit buffer_handle(::cuda::std::span<const T> buffer, int flags = 0);
 
   buffer_handle(buffer_handle&& other) noexcept;
   buffer_handle& operator=(buffer_handle&& other) noexcept;
@@ -73,12 +73,12 @@ public:
   /**
    * @brief Get the buffer as a span of bytes
    */
-  cuda::std::span<const cuda::std::byte> as_bytes() const noexcept;
+  ::cuda::std::span<const ::cuda::std::byte> as_bytes() const noexcept;
 
   /**
    * @brief Get the buffer as a span of mutable bytes
    */
-  cuda::std::span<cuda::std::byte> as_writable_bytes() const noexcept;
+  ::cuda::std::span<::cuda::std::byte> as_writable_bytes() const noexcept;
 
   /**
    * @brief Get the buffer as a typed span
@@ -86,7 +86,7 @@ public:
    * @return Span of type T over the buffer
    */
   template <typename T>
-  cuda::std::span<T> as_span() const noexcept;
+  ::cuda::std::span<T> as_span() const noexcept;
 
   /**
    * @brief Get the buffer as a typed const span
@@ -94,7 +94,7 @@ public:
    * @return Const span of type T over the buffer
    */
   template <typename T>
-  cuda::std::span<const T> as_const_span() const noexcept;
+  ::cuda::std::span<const T> as_const_span() const noexcept;
 
   /**
    * @brief Check if the handle owns a valid resource
