@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_IPOW
-#define _LIBCUDACXX___CMATH_IPOW
+#ifndef _CUDA___CMATH_IPOW
+#define _CUDA___CMATH_IPOW
 
 #include <cuda/std/detail/__config>
 
@@ -104,4 +104,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_IPOW
+#endif // _CUDA___CMATH_IPOW

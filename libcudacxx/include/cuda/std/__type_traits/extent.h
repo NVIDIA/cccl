@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_EXTENT_H
-#define _LIBCUDACXX___TYPE_TRAITS_EXTENT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_EXTENT_H
+#define _CUDA_STD___TYPE_TRAITS_EXTENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -52,8 +52,8 @@ template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], 0> : public integral_constant<size_t, _Np>
 {};
 template <class _Tp, size_t _Np, unsigned _Ip>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-extent<_Tp[_Np], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], _Ip>
+    : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
 {};
 
 template <class _Tp, unsigned _Ip = 0>
@@ -65,4 +65,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_EXTENT_H
+#endif // _CUDA_STD___TYPE_TRAITS_EXTENT_H

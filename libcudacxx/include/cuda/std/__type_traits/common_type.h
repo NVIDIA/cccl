@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H
-#define _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_COMMON_TYPE_H
+#define _CUDA_STD___TYPE_TRAITS_COMMON_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -153,8 +153,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up> : __common_type2<_Tp,
 // bullet 4 - sizeof...(Tp) > 2
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-common_type<_Tp, _Up, _Vp, _Rest...> : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up, _Vp, _Rest...>
+    : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
 {};
 
 template <class... _Tp>
@@ -170,4 +170,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H
+#endif // _CUDA_STD___TYPE_TRAITS_COMMON_TYPE_H

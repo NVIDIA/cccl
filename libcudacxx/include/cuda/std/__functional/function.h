@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -1090,7 +1090,7 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile>
 };
 
 template <class _Rp, class _Gp, class... _Ap>
-struct __strip_signature<_Rp (_Gp::*)(_Ap...) &>
+struct __strip_signature<_Rp (_Gp::*)(_Ap...)&>
 {
   using type = _Rp(_Ap...);
 };
@@ -1276,4 +1276,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_FUNCTION_H

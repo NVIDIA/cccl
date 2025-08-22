@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___BARRIER_BARRIER_H
-#define __LIBCUDACXX___BARRIER_BARRIER_H
+#ifndef __CUDA_STD___BARRIER_BARRIER_H
+#define __CUDA_STD___BARRIER_BARRIER_H
 
 #include <cuda/std/detail/__config>
 
@@ -224,4 +224,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___BARRIER_BARRIER_H
+#endif // __CUDA_STD___BARRIER_BARRIER_H

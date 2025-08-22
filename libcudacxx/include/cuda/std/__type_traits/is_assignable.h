@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,8 +37,8 @@ struct __select_2nd
 #if defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_assignable : public integral_constant<bool, _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_assignable
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2)>
 {};
 
 template <class _T1, class _T2>
@@ -75,4 +75,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_ASSIGNABLE_H

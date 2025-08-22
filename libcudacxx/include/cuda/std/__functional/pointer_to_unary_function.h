@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg, class _Result>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
-pointer_to_unary_function : public __unary_function<_Arg, _Result>
+class _CCCL_TYPE_VISIBILITY_DEFAULT
+_LIBCUDACXX_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>
 {
   _Result (*__f_)(_Arg);
 
@@ -61,4 +61,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_POINTER_TO_UNARY_FUNCTION_H

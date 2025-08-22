@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,8 +36,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_convertible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
 template <class _T1, class _T2>
@@ -211,4 +211,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H

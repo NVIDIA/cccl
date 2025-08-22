@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CLASS_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CLASS_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CLASS_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CLASS_H
 
 #include <cuda/std/detail/__config>
 
@@ -52,8 +52,8 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_class_imp
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_class : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class
+    : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value>
 {};
 
 template <class _Tp>
@@ -65,4 +65,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CLASS_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CLASS_H

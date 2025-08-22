@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
-#define __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
+#ifndef __CUDA_STD___ATOMIC_PLATFORM_MSVC_H
+#define __CUDA_STD___ATOMIC_PLATFORM_MSVC_H
 
 #include <cuda/std/detail/__config>
 
@@ -651,4 +651,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // _CCCL_COMPILER(MSVC)
 
-#endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
+#endif // __CUDA_STD___ATOMIC_PLATFORM_MSVC_H

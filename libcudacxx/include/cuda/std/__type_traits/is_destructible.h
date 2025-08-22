@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_DESTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_DESTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,8 +33,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp>
@@ -112,4 +112,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_DESTRUCTIBLE_H

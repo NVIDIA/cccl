@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,13 +31,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   && defined(_CCCL_BUILTIN_IS_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_REFERENCE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_lvalue_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_rvalue_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
@@ -92,4 +92,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_H

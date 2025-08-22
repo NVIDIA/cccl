@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H
-#define _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H
+#ifndef _CUDA_STD___FUNCTIONAL_UNARY_NEGATE_H
+#define _CUDA_STD___FUNCTIONAL_UNARY_NEGATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Predicate>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
-unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
+class _CCCL_TYPE_VISIBILITY_DEFAULT
+_LIBCUDACXX_DEPRECATED unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
 {
   _Predicate __pred_;
 
@@ -62,4 +62,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H
+#endif // _CUDA_STD___FUNCTIONAL_UNARY_NEGATE_H

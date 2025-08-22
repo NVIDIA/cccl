@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_INTERFACES_H
+#define _CUDA___UTILITY_BASIC_ANY_INTERFACES_H
 
 #include <cuda/std/detail/__config>
 
@@ -138,8 +138,8 @@ _CCCL_CONCEPT __extension_of = __extension_of_v<_Derived, _Base>;
 template <template <class...> class _Interface, class... _Bases, size_t Size, size_t Align>
 struct __basic_interface<_Interface, __extends<_Bases...>, Size, Align>
 {
-  static constexpr size_t size  = (::cuda::std::max) ({Size, _Bases::size...});
-  static constexpr size_t align = (::cuda::std::max) ({Align, _Bases::align...});
+  static constexpr size_t size  = (::cuda::std::max)({Size, _Bases::size...});
+  static constexpr size_t align = (::cuda::std::max)({Align, _Bases::align...});
 
   template <class... _Super>
   using __rebind _CCCL_NODEBUG_ALIAS = _Interface<_Super...>;
@@ -356,4 +356,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
+#endif // _CUDA___UTILITY_BASIC_ANY_INTERFACES_H

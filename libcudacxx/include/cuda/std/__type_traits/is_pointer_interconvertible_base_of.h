@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_BASE_OF_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_BASE_OF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_BASE_OF_H
+#define _CUDA_STD___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_BASE_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -71,8 +71,8 @@ inline constexpr bool is_pointer_interconvertible_base_of_v<const volatile _Tp, 
 #  endif // _CCCL_COMPILER(CLANG)
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_pointer_interconvertible_base_of : bool_constant<is_pointer_interconvertible_base_of_v<_Tp, _Up>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer_interconvertible_base_of
+    : bool_constant<is_pointer_interconvertible_base_of_v<_Tp, _Up>>
 {};
 
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF
@@ -81,4 +81,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_BASE_OF_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_BASE_OF_H

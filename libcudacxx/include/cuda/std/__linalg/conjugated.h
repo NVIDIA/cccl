@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_CONJUGATED_HPP
-#define _LIBCUDACXX___LINALG_CONJUGATED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATED_HPP
+#define _CUDA_STD___LINALG_CONJUGATED_HPP
 
 #include <cuda/std/detail/__config>
 
@@ -136,4 +136,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP
+#endif // _CUDA_STD___LINALG_CONJUGATED_HPP

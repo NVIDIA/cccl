@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_BASE_OF_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_BASE_OF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_BASE_OF_H
+#define _CUDA_STD___TYPE_TRAITS_IS_BASE_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -67,8 +67,8 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_base_of : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
+    : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
 {};
 
 template <class _Bp, class _Dp>
@@ -80,4 +80,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_BASE_OF_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_BASE_OF_H

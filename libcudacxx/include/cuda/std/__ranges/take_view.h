@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_TAKE_VIEW_H
-#define _LIBCUDACXX___RANGES_TAKE_VIEW_H
+#ifndef _CUDA_STD___RANGES_TAKE_VIEW_H
+#define _CUDA_STD___RANGES_TAKE_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -272,7 +272,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
     const auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
+    return (::cuda::std::ranges::min)(__n, static_cast<decltype(__n)>(__count_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -280,7 +280,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
+    return (::cuda::std::ranges::min)(__n, static_cast<decltype(__n)>(__count_));
   }
 };
 
@@ -473,4 +473,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_TAKE_VIEW_H
+#endif // _CUDA_STD___RANGES_TAKE_VIEW_H

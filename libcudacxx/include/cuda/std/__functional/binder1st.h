@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
-#define _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
+#ifndef _CUDA_STD___FUNCTIONAL_BINDER1ST_H
+#define _CUDA_STD___FUNCTIONAL_BINDER1ST_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class __Operation>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
-binder1st : public __unary_function<typename __Operation::second_argument_type, typename __Operation::result_type>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED binder1st
+    : public __unary_function<typename __Operation::second_argument_type, typename __Operation::result_type>
 {
 protected:
   __Operation op;
@@ -71,4 +71,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
+#endif // _CUDA_STD___FUNCTIONAL_BINDER1ST_H

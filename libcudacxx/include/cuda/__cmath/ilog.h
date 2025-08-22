@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ILOG
-#define _LIBCUDACXX___CMATH_ILOG
+#ifndef _CUDA___CMATH_ILOG
+#define _CUDA___CMATH_ILOG
 
 #include <cuda/std/detail/__config>
 
@@ -192,4 +192,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_ILOG
+#endif // _CUDA___CMATH_ILOG

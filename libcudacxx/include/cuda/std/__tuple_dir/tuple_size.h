@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_TUPLE_SIZE_H
-#define _LIBCUDACXX___TUPLE_TUPLE_SIZE_H
+#ifndef _CUDA_STD___TUPLE_TUPLE_SIZE_H
+#define _CUDA_STD___TUPLE_TUPLE_SIZE_H
 
 #include <cuda/std/detail/__config>
 
@@ -65,8 +65,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : public integral
 {};
 
 template <class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-tuple_size<__tuple_types<_Tp...>> : public integral_constant<size_t, sizeof...(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<__tuple_types<_Tp...>>
+    : public integral_constant<size_t, sizeof...(_Tp)>
 {};
 
 template <class _Tp>
@@ -76,4 +76,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_TUPLE_SIZE_H
+#endif // _CUDA_STD___TUPLE_TUPLE_SIZE_H

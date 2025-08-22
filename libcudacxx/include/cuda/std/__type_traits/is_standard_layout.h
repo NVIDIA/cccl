@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
+#define _CUDA_STD___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,8 +31,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_STANDARD_LAYOUT) && !defined(_LIBCUDACXX_USE_IS_STANDARD_LAYOUT_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_standard_layout : public integral_constant<bool, _CCCL_BUILTIN_IS_STANDARD_LAYOUT(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_standard_layout
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_STANDARD_LAYOUT(_Tp)>
 {};
 
 template <class _Tp>
@@ -41,8 +41,8 @@ inline constexpr bool is_standard_layout_v = _CCCL_BUILTIN_IS_STANDARD_LAYOUT(_T
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_standard_layout : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_standard_layout
+    : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
 {};
 
 template <class _Tp>
@@ -54,4 +54,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_STANDARD_LAYOUT_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_STANDARD_LAYOUT_H

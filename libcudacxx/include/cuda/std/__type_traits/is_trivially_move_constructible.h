@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -41,8 +41,8 @@ inline constexpr bool is_trivially_move_constructible_v =
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_trivially_move_constructible : public is_trivially_constructible<_Tp, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_move_constructible
+    : public is_trivially_constructible<_Tp, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
@@ -55,4 +55,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_MOVE_CONSTRUCTIBLE_H

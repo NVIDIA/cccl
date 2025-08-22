@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_SWAPPABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_SWAPPABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -159,8 +159,8 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_swappable_with : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
+    : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
@@ -171,8 +171,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
 {};
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_swappable_with : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
+    : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp, _Up>::value>
 {};
 
 template <class _Tp>
@@ -198,4 +198,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_SWAPPABLE_H

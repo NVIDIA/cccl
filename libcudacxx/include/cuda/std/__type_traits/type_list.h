@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_TYPE_LIST_H
-#define _LIBCUDACXX___TYPE_TRAITS_TYPE_LIST_H
+#ifndef _CUDA_STD___TYPE_TRAITS_TYPE_LIST_H
+#define _CUDA_STD___TYPE_TRAITS_TYPE_LIST_H
 
 #include <cuda/std/detail/__config>
 
@@ -419,8 +419,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
 //! arguments, or if the meta-callable is not callable with the arguments, a
 //! class type without a nested \c ::type type alias.
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-__type_defer : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
+    : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
 
 //! \brief Defer the instantiation of a template with a list of arguments.
@@ -1064,4 +1064,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_LIST_H
+#endif // _CUDA_STD___TYPE_TRAITS_TYPE_LIST_H

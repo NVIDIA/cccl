@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_STORAGE_H
+#define _CUDA___UTILITY_BASIC_ANY_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,14 +36,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 {
   //! round up to the nearest multiple of `__word`, which is the size of a
   //! void*.
-  return ((__size ? (::cuda::std::max) (__size, sizeof(void*)) : __default_small_object_size) + __word - 1) / __word
+  return ((__size ? (::cuda::std::max)(__size, sizeof(void*)) : __default_small_object_size) + __word - 1) / __word
        * __word;
 }
 
 [[nodiscard]] _CCCL_API inline constexpr auto __buffer_align(size_t __align) -> size_t
 {
   //! need to be able to store a void* in the buffer.
-  return __align ? (::cuda::std::max) (__align, alignof(void*)) : __default_small_object_align;
+  return __align ? (::cuda::std::max)(__align, alignof(void*)) : __default_small_object_align;
 }
 
 template <class _Tp>
@@ -75,4 +75,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#endif // _CUDA___UTILITY_BASIC_ANY_STORAGE_H

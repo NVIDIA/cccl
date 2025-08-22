@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_SWAPPABLE_H
-#define _LIBCUDACXX___CONCEPTS_SWAPPABLE_H
+#ifndef _CUDA_STD___CONCEPTS_SWAPPABLE_H
+#define _CUDA_STD___CONCEPTS_SWAPPABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -203,4 +203,4 @@ _CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H
+#endif // _CUDA_STD___CONCEPTS_SWAPPABLE_H

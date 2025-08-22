@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_CONCEPTS_H
-#define _LIBCUDACXX___ITERATOR_CONCEPTS_H
+#ifndef _CUDA_STD___ITERATOR_CONCEPTS_H
+#define _CUDA_STD___ITERATOR_CONCEPTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -79,12 +79,12 @@ using iter_common_reference_t = common_reference_t<iter_reference_t<_Tp>, iter_v
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
-  *__o                       = static_cast<_Tp &&>(__t); // not required to be equality-preserving
-  *static_cast<_Out &&>(__o) = static_cast<_Tp &&>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out> &&>(*__o) = static_cast<_Tp &&>(__t); // not required to be
-                                                                                // equality-preserving
-  const_cast<const iter_reference_t<_Out> &&>(*static_cast<_Out &&>(__o)) =
-    static_cast<_Tp &&>(__t); // not required to be equality-preserving
+  *__o                                             = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  *static_cast<_Out&&>(__o)                        = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t); // not required to be
+                                                                              // equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) =
+    static_cast<_Tp&&>(__t); // not required to be equality-preserving
 };
 
 // [iterator.concept.winc]
@@ -142,7 +142,7 @@ concept input_iterator = input_or_output_iterator<_Ip> && indirectly_readable<_I
 template <class _Ip, class _Tp>
 concept output_iterator =
   input_or_output_iterator<_Ip> && indirectly_writable<_Ip, _Tp> && requires(_Ip __it, _Tp&& __t) {
-    *__it++ = static_cast<_Tp &&>(__t); // not required to be equality-preserving
+    *__it++ = static_cast<_Tp&&>(__t); // not required to be equality-preserving
   };
 
 // [iterator.concept.forward]
@@ -642,4 +642,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_CONCEPTS_H
+#endif // _CUDA_STD___ITERATOR_CONCEPTS_H

@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ALLOCATOR_H
-#define _LIBCUDACXX___MEMORY_ALLOCATOR_H
+#ifndef _CUDA_STD___MEMORY_ALLOCATOR_H
+#define _CUDA_STD___MEMORY_ALLOCATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -207,8 +207,8 @@ public:
 };
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-allocator<const _Tp> : private __non_trivial_if<!is_void_v<_Tp>, allocator<const _Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const _Tp>
+    : private __non_trivial_if<!is_void_v<_Tp>, allocator<const _Tp>>
 {
   static_assert(!is_volatile_v<_Tp>, "std::allocator does not support volatile types");
 
@@ -317,4 +317,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ALLOCATOR_H
+#endif // _CUDA_STD___MEMORY_ALLOCATOR_H

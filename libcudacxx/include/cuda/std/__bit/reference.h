@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_REFERENCE
-#define _LIBCUDACXX___BIT_REFERENCE
+#ifndef _CUDA_STD___BIT_REFERENCE
+#define _CUDA_STD___BIT_REFERENCE
 
 #include <cuda/std/detail/__config>
 
@@ -201,7 +201,7 @@ _CCCL_API constexpr void __fill_n_impl(__bit_iterator<_Cp, false> __first, typen
   if (__first.__ctz_ != 0)
   {
     __storage_type __clz_f = static_cast<__storage_type>(__bits_per_word - __first.__ctz_);
-    __storage_type __dn    = (::cuda::std::min) (__clz_f, static_cast<__storage_type>(__n));
+    __storage_type __dn    = (::cuda::std::min)(__clz_f, static_cast<__storage_type>(__n));
     __storage_type __m     = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
     if (_FillVal)
     {
@@ -1269,4 +1269,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_REFERENCE
+#endif // _CUDA_STD___BIT_REFERENCE

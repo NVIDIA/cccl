@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMATERS_STR_H
-#define _LIBCUDACXX___FORMAT_FORMATERS_STR_H
+#ifndef _CUDA_STD__FORMAT_FORMATERS_STR_H
+#define _CUDA_STD__FORMAT_FORMATERS_STR_H
 
 #include <cuda/std/detail/__config>
 
@@ -163,8 +163,8 @@ template <size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<char[_Size], wchar_t> : __fmt_disabled_formatter
 {};
 template <class _Traits, class _Allocator>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-formatter<basic_string<char, _Traits, _Allocator>, wchar_t> : __fmt_disabled_formatter
+struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<basic_string<char, _Traits, _Allocator>, wchar_t>
+    : __fmt_disabled_formatter
 {};
 template <class _Traits>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT formatter<basic_string_view<char, _Traits>, wchar_t> : __fmt_disabled_formatter
@@ -175,4 +175,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMATERS_STR_H
+#endif // _CUDA_STD__FORMAT_FORMATERS_STR_H

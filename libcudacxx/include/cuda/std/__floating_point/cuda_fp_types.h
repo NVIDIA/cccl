@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H
-#define _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H
+#ifndef _CUDA_STD___FLOATING_POINT_NVFP_TYPES_H
+#define _CUDA_STD___FLOATING_POINT_NVFP_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -110,4 +110,4 @@ __device__ __cudart_builtin__ int __nv_fp128_isunordered(__float128, __float128)
 #  endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
 #endif // _CCCL_HAS_FLOAT128() && _CCCL_DEVICE_COMPILATION() && _CCCL_CTK_AT_LEAST(12, 8)
 
-#endif // _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H
+#endif // _CUDA_STD___FLOATING_POINT_NVFP_TYPES_H

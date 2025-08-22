@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -150,8 +150,8 @@ struct __cccl_is_constructible<_Tp&&, _A0> : public decltype(__is_constructible_
 
 #if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>
@@ -171,4 +171,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H

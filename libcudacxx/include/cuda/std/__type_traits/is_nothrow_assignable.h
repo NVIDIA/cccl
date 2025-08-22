@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_assignable : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
 {};
 
 template <class _Tp, class _Arg>
@@ -54,8 +54,8 @@ struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_assignable : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
+    : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>
@@ -67,4 +67,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H

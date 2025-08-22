@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_MOVE_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_MOVE_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_MOVE_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_MOVE_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,8 +44,8 @@ inline constexpr bool is_nothrow_move_assignable_v =
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_move_assignable : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_assignable
+    : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
@@ -57,4 +57,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_MOVE_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_MOVE_ASSIGNABLE_H
