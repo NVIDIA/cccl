@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___MDSPAN_MDSPAN_HPP
-#define _CUDA_STD___MDSPAN_MDSPAN_HPP
+#ifndef _CUDA_STD___MDSPAN_MDSPAN_H
+#define _CUDA_STD___MDSPAN_MDSPAN_H
 
 #include <cuda/std/detail/__config>
 

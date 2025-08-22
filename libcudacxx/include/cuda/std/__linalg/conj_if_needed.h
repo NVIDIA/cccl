@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_HPP
-#define _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_H
+#define _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_H
 
 #include <cuda/std/detail/__config>
 

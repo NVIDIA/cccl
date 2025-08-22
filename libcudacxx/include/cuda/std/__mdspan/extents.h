@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___MDSPAN_EXTENTS_HPP
-#define _CUDA_STD___MDSPAN_EXTENTS_HPP
+#ifndef _CUDA_STD___MDSPAN_EXTENTS_H
+#define _CUDA_STD___MDSPAN_EXTENTS_H
 
 #include <cuda/std/detail/__config>
 

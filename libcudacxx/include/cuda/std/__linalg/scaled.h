@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _CUDA_STD___LINALG_SCALED_HPP
-#define _CUDA_STD___LINALG_SCALED_HPP
+#ifndef _CUDA_STD___LINALG_SCALED_H
+#define _CUDA_STD___LINALG_SCALED_H
 
 #include <cuda/std/detail/__config>
 

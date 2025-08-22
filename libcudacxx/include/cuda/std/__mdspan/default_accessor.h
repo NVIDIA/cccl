@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___MDSPAN_DEFAULT_ACCESSOR_HPP
-#define _CUDA_STD___MDSPAN_DEFAULT_ACCESSOR_HPP
+#ifndef _CUDA_STD___MDSPAN_DEFAULT_ACCESSOR_H
+#define _CUDA_STD___MDSPAN_DEFAULT_ACCESSOR_H
 
 #include <cuda/std/detail/__config>
 

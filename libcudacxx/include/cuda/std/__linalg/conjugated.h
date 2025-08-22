@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _CUDA_STD___LINALG_CONJUGATED_HPP
-#define _CUDA_STD___LINALG_CONJUGATED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATED_H
+#define _CUDA_STD___LINALG_CONJUGATED_H
 
 #include <cuda/std/detail/__config>
 
