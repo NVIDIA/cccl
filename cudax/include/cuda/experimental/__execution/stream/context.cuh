@@ -50,7 +50,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
     return __stream_;
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto get_scheduler() noexcept -> stream_scheduler
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API auto get_scheduler() noexcept -> stream_scheduler
   {
     return stream_scheduler{__stream_};
   }

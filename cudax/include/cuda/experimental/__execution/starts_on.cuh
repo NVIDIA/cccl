@@ -96,7 +96,7 @@ struct starts_on_t
   }
 
   template <class _Sch, class _Sndr>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
 
 template <class _Sch, class _Sndr>
@@ -145,7 +145,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
+[[nodiscard]] _CCCL_NODEBUG_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
   if constexpr (__queryable_with<_Sch, get_domain_t>)
   {

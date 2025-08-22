@@ -35,10 +35,10 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/reverse_iterator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/initializer_list>
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
 
 #include <vector>
@@ -79,8 +79,8 @@ public:
   using iterator       = typename storage_type::iterator;
   using const_iterator = typename storage_type::const_iterator;
 
-  using reverse_iterator       = thrust::reverse_iterator<iterator>;
-  using const_reverse_iterator = thrust::reverse_iterator<const_iterator>;
+  using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
+  using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
 
   /*! This constructor creates an empty vector_base.
    */

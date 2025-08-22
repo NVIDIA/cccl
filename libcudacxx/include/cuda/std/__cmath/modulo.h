@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_same.h>

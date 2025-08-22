@@ -158,7 +158,7 @@ struct stream_domain
 public:
   _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
   _CCCL_REQUIRES(__callable<__apply_t<_Tag>, _Sndr, _Args...>)
-  _CCCL_TRIVIAL_HOST_API static constexpr auto
+  _CCCL_NODEBUG_HOST_API static constexpr auto
   apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(__nothrow_callable<__apply_t<_Tag>, _Sndr, _Args...>)
     -> __call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
@@ -167,7 +167,7 @@ public:
 
   _CCCL_TEMPLATE(class _Sndr, class _Env)
   _CCCL_REQUIRES(__callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
+  _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
     __nothrow_callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
     -> __call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
   {

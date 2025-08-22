@@ -52,7 +52,7 @@ template <class _Tag>
 struct __decay_args
 {
   template <class... _Ts>
-  [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
@@ -225,12 +225,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+    _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
@@ -350,7 +350,7 @@ public:
   };
 
   template <class _Sch, class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);

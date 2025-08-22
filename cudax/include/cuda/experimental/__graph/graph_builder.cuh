@@ -154,7 +154,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
   //! \return The `cudaGraph_t` handle, leaving this object in a null state.
   //! \throws None
   //! \post `get() == nullptr`
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto release() noexcept -> cudaGraph_t
   {
     return ::cuda::std::exchange(__graph_, nullptr);
   }

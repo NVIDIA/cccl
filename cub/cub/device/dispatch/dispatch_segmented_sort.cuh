@@ -48,12 +48,12 @@
 #include <cub/util_namespace.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/cmath>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <nv/target>
@@ -469,8 +469,7 @@ struct DispatchSegmentedSort
         small_segments_indices.grow(max_num_segments_per_invocation);
         group_sizes.grow(num_selected_groups);
 
-        auto medium_indices_iterator =
-          THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get());
+        auto medium_indices_iterator = ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get());
 
         cub::DevicePartition::IfNoNVTX(
           nullptr,
@@ -743,7 +742,7 @@ private:
       [[maybe_unused]] auto current_end_offset    = d_end_offsets + current_seg_offset;
 
       auto medium_indices_iterator =
-        THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
+        ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
 
       error = CubDebug(cub::DevicePartition::IfNoNVTX(
         device_partition_temp_storage.get(),

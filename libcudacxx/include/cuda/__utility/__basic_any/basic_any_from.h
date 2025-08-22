@@ -36,19 +36,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! a pointer or a reference to the full `__basic_any` object.
 //!
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super>&& __self) noexcept -> __basic_any<_Super>&&
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>&& __self) noexcept -> __basic_any<_Super>&&
 {
   return static_cast<__basic_any<_Super>&&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super>& __self) noexcept -> __basic_any<_Super>&
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>& __self) noexcept -> __basic_any<_Super>&
 {
   return static_cast<__basic_any<_Super>&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super> const& __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super> const& __self) noexcept
   -> __basic_any<_Super> const&
 {
   return static_cast<__basic_any<_Super> const&>(__self);
@@ -64,13 +64,13 @@ template <template <class...> class _Interface>
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super>* __self) noexcept -> __basic_any<_Super>*
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>* __self) noexcept -> __basic_any<_Super>*
 {
   return static_cast<__basic_any<_Super>*>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super> const* __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super> const* __self) noexcept
   -> __basic_any<_Super> const*
 {
   return static_cast<__basic_any<_Super> const*>(__self);

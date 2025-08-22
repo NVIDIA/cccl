@@ -178,13 +178,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   }
 
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr void set_value(_Args&&... __args) noexcept
+  _CCCL_NODEBUG_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_NODEBUG_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
     if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
@@ -197,7 +197,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
   }
 
-  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+  _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
@@ -343,7 +343,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
   // This makes sure that when `connect` calls `transform_sender`, it will use the stream
   // domain to find a customization.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
   {
     return {};
   }

@@ -603,7 +603,7 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
 
 C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
 {
-  using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
 
   STATIC_REQUIRE(cuda::std::is_constructible_v<kernel_arg>);

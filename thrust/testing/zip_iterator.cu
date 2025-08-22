@@ -10,7 +10,7 @@
 
 using namespace unittest;
 
-// ensure that we properly support thrust::reverse_iterator from cuda::std
+// ensure that we properly support thrust::zip_iterator from cuda::std
 void TestZipIteratorTraits()
 {
   using base_it = thrust::host_vector<int>::iterator;

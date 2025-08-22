@@ -160,7 +160,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr1, class _Sndr2>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
 };
 
 template <class _Sndr1, class _Sndr2>
@@ -236,7 +236,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 };
 
 template <class _Sndr1, class _Sndr2>
-_CCCL_TRIVIAL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
+_CCCL_NODEBUG_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS  = __early_domain_of_t<_Sndr1>;
   using __sndr_t _CCCL_NODEBUG_ALIAS = sequence_t::__sndr_t<_Sndr1, _Sndr2>;

@@ -40,7 +40,7 @@ template <class _Tag>
 struct __default_transform_fn
 {
   template <class... _Ts>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(_Ts...)>
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(_Ts...)>
   {
     return {};
   }
@@ -49,7 +49,7 @@ struct __default_transform_fn
 struct __swallow_transform
 {
   template <class... _Ts>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<>
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<>
   {
     return {};
   }
@@ -59,7 +59,7 @@ template <class _Tag>
 struct __decay_transform
 {
   template <class... _Ts>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(decay_t<_Ts>...)>
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(decay_t<_Ts>...)>
   {
     return {};
   }
@@ -70,7 +70,7 @@ using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().templat
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ay, class... _As, class _Fn>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
   -> __meta_call_result_t<const _Fn&, _Ay, _As...>
 {
   return __fn.template operator()<_Ay, _As...>();
@@ -78,7 +78,7 @@ template <class _Ay, class... _As, class _Fn>
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn) -> __call_result_t<const _Fn&>
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn) -> __call_result_t<const _Fn&>
 {
   return __fn();
 }

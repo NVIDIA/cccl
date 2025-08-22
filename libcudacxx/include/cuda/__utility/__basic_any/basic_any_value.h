@@ -302,7 +302,7 @@ public:
   }
 
   //! \brief Exchanges the values of two `__basic_any` objects.
-  friend _CCCL_TRIVIAL_API void swap(__basic_any& __lhs, __basic_any& __rhs) noexcept
+  friend _CCCL_NODEBUG_API void swap(__basic_any& __lhs, __basic_any& __rhs) noexcept
   {
     __lhs.swap(__rhs);
   }

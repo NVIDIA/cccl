@@ -166,7 +166,7 @@ struct __basic_query : __basic_query<_Query>
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t, _Args&&...) const noexcept(__is_nothrow)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__ignore_t, _Args&&...) const noexcept(__is_nothrow)
     -> decltype(_DefaultFn{}())
   {
     static_assert(is_base_of_v<__basic_query, _Query>, "_Query must be derived from __basic_query<_Query>");
@@ -179,7 +179,7 @@ struct __basic_query<_Query, void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env, class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env, _Args&&... __args) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env&& __env, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
     static_assert(is_base_of_v<__basic_query, _Query>, "_Query must be derived from __basic_query<_Query>");
@@ -210,7 +210,7 @@ template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
 {
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
   {
     return __value;
   }
@@ -225,7 +225,7 @@ template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
 {
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
   {
     return __value;
   }
@@ -261,7 +261,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   //! @return The first environment in the tuple that satisfies the query type.
   //! @note If no environment satisfies the query, the behavior is undefined.
   template <class _Query, class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__queryable_with<_Envs, _Query, _Args...>..., false};
@@ -294,7 +294,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query, _Args...>, _Query, _Args...>)
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query __query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<__1st_env_t<_Query, _Args...>, _Query, _Args...>)
       -> __query_result_t<__1st_env_t<_Query, _Args...>, _Query, _Args...>
   {
@@ -323,7 +323,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   _Env1 __env1_;
 
   template <class _Query, class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
     if constexpr (__queryable_with<_Env0, _Query, _Args...>)
     {
@@ -342,7 +342,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query, _Args...>, _Query, _Args...>)
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query, _Args&&... __args) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query __query, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<__1st_env_t<_Query, _Args...>, _Query, _Args...>)
       -> __query_result_t<__1st_env_t<_Query, _Args...>, _Query, _Args...>
   {
@@ -374,13 +374,13 @@ struct get_env_t
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
   {
     static_assert(noexcept(__ty.get_env()));
     return __ty.get_env();
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t) const noexcept -> env<>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(__ignore_t) const noexcept -> env<>
   {
     return {};
   }

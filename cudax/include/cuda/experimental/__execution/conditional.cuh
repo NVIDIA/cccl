@@ -206,10 +206,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
@@ -260,7 +260,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   _Else on_false;
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_NODEBUG_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
     // If the incoming sender is non-dependent, we can check the completion signatures of
@@ -275,20 +275,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   }
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_NODEBUG_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
   {
     return __mk_sender(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_NODEBUG_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
   {
     return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
   }
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS    = __early_domain_of_t<_Sndr>;
   using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
@@ -297,7 +297,7 @@ _CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred _
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure_base_t<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};

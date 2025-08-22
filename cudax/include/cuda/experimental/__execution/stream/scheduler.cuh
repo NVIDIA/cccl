@@ -74,17 +74,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       return stream_scheduler{__stream_};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_t) noexcept -> stream_domain
+    [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(get_domain_t) noexcept -> stream_domain
     {
       return {};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
+    [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
     {
       return {};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(get_completion_behavior_t) noexcept
     {
       return completion_behavior::asynchronous;
     }

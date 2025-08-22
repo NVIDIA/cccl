@@ -119,7 +119,7 @@ _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
+_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -129,7 +129,7 @@ _CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args)
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
+_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -139,7 +139,7 @@ _CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... _
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
 _CCCL_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
-_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
+_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {

@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__execution/env.h> // IWYU pragma: export
+#include <cuda/std/__execution/policy.h> // IWYU pragma: export
+#include <cuda/std/__type_traits/is_execution_policy.h> // IWYU pragma: export
 #include <cuda/std/version>
 
 #endif //_CUDA_STD_EXECUTION
