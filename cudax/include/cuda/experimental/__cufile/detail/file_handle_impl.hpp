@@ -12,6 +12,8 @@
 // This file provides the implementation of file_handle methods
 // It's included after the class definition to avoid circular dependency issues
 
+#include <cuda/experimental/__cufile/file_handle.hpp>
+
 #include <ios>
 #include <iostream>
 #include <memory>
@@ -21,8 +23,6 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-
-#include <cuda/experimental/__cufile/file_handle.hpp>
 
 namespace cuda::experimental::cufile
 {

@@ -21,11 +21,12 @@
 
 #include <cuda/std/span>
 
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
+#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
+
 #include <functional>
 #include <vector>
 
-#include <cuda/experimental/__cufile/detail/error_handling.hpp>
-#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 #include <sys/types.h>
 
 namespace cuda::experimental::cufile
@@ -66,9 +67,18 @@ struct batch_io_result
   CUfileStatus_t status; ///< Operation status
   size_t result; ///< Bytes transferred or error code
 
-  bool is_complete() const noexcept { return status == CUFILE_COMPLETE; }
-  bool is_failed() const noexcept { return status == CUFILE_FAILED; }
-  bool has_error() const noexcept { return static_cast<ssize_t>(result) < 0; }
+  bool is_complete() const noexcept
+  {
+    return status == CUFILE_COMPLETE;
+  }
+  bool is_failed() const noexcept
+  {
+    return status == CUFILE_FAILED;
+  }
+  bool has_error() const noexcept
+  {
+    return static_cast<ssize_t>(result) < 0;
+  }
 };
 
 /**

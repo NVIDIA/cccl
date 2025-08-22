@@ -1,15 +1,20 @@
-#include <iostream>
 #include <cuda/experimental/cufile.h>
+
+#include <iostream>
+
 #include <cuda_runtime.h>
 
-int main() {
+int main()
+{
 #if CUDAX_HAS_CUFILE
-  try {
+  try
+  {
     cuda::experimental::cufile::driver_handle driver; // RAII driver open/close
 
     constexpr size_t size = 1 << 20;
-    void* dev_ptr = nullptr;
-    if (cudaMalloc(&dev_ptr, size) != cudaSuccess) {
+    void* dev_ptr         = nullptr;
+    if (cudaMalloc(&dev_ptr, size) != cudaSuccess)
+    {
       std::cerr << "cudaMalloc failed\n";
       return 1;
     }
@@ -31,7 +36,9 @@ int main() {
     cudaFree(dev_ptr);
     std::cout << "cuFILE basic example completed\n";
     return 0;
-  } catch (const std::exception& e) {
+  }
+  catch (const std::exception& e)
+  {
     std::cerr << "Error: " << e.what() << "\n";
     return 2;
   }
@@ -40,5 +47,3 @@ int main() {
   return 0;
 #endif
 }
-
-

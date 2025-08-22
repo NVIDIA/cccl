@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
-#include <cuda/experimental/__cufile/driver.hpp>
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
+#include <cuda/experimental/__cufile/driver.hpp>
 
 namespace cuda::experimental::cufile
 {

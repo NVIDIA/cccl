@@ -19,21 +19,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/utility>
 #include <cuda/stream_ref>
-
-#include <functional>
-#include <ios>
-#include <iostream>
-#include <string>
-
-#include <fcntl.h>
-#include <unistd.h>
 
 #include <cuda/experimental/__cufile/batch_handle.hpp>
 #include <cuda/experimental/__cufile/buffer_handle.hpp>
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
 #include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 #include <cuda/experimental/__cufile/stream_handle.hpp>
+
+#include <ios>
+#include <iostream>
+#include <string>
+
+#include <fcntl.h>
+#include <unistd.h>
 
 namespace cuda::experimental::cufile
 {
@@ -48,7 +48,7 @@ class file_handle_base
 {
 protected:
   int fd_;
-  detail::raii_resource<CUfileHandle_t, ::std::function<void(CUfileHandle_t)>> cufile_handle_;
+  detail::raii_resource<CUfileHandle_t, void (*)(CUfileHandle_t)> cufile_handle_;
 
   static int convert_ios_mode(::std::ios_base::openmode mode);
   void register_file();
