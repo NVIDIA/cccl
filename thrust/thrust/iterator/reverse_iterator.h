@@ -14,9 +14,9 @@
  *  limitations under the License.
  */
 
-//! \file thrust/iterator/reverse_iterator.h
-//! \brief An iterator adaptor which adapts another iterator to traverse backwards
-
+//! @file thrust/iterator/reverse_iterator.h
+//! @brief An iterator adaptor which adapts another iterator to traverse backwards
+//! @deprecated thrust::reverse iterator has been deprecated in favor of cuda::std::reverse_iterator
 /*
  * (C) Copyright David Abrahams 2002.
  * (C) Copyright Jeremy Siek    2002.

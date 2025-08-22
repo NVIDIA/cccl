@@ -28,7 +28,6 @@
 #include <thrust/detail/range/tail_flags.h>
 #include <thrust/detail/seq.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/reduce_by_key.h>
@@ -38,6 +37,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
 #include <thread>
 

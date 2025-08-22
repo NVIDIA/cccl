@@ -1,7 +1,7 @@
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>
