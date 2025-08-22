@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_EXECUTION
-#define _CUDA_STD_EXECUTION
+#ifndef _LIBCUDACXX___INTERNAL_PSTL_CONFIG_H
+#define _LIBCUDACXX___INTERNAL_PSTL_CONFIG_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,9 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__execution/env.h> // IWYU pragma: export
-#include <cuda/std/__execution/policy.h> // IWYU pragma: export
-#include <cuda/std/__type_traits/is_execution_policy.h> // IWYU pragma: export
-#include <cuda/std/version>
+#include <cuda/std/__cccl/prologue.h>
 
-#endif //_CUDA_STD_EXECUTION
+#define _CCCL_HAS_BACKEND_CUDA() 0
+#define _CCCL_HAS_BACKEND_OMP()  0
+#define _CCCL_HAS_BACKEND_TBB()  0
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _LIBCUDACXX___INTERNAL_PSTL_CONFIG_H

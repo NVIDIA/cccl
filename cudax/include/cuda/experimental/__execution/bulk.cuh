@@ -271,7 +271,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   [[nodiscard]] _CCCL_NODEBUG_API auto operator()(_Policy __policy, _Shape __shape, _Fn __fn) const
   {
     static_assert(::cuda::std::integral<_Shape>);
-    static_assert(is_execution_policy_v<_Policy>);
+    static_assert(::cuda::std::is_execution_policy_v<_Policy>);
     using __closure_t = typename _BulkTag::template __closure_t<_Policy, _Shape, _Fn>;
     return __closure_t{{__policy, __shape, static_cast<_Fn&&>(__fn)}};
   }

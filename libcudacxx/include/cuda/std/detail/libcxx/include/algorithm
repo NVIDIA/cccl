@@ -122,6 +122,7 @@
 #include <cuda/std/__iterator/wrap_iter.h>
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__memory/temporary_buffer.h>
+#include <cuda/std/__pstl/for_each.h>
 #include <cuda/std/__random/linear_congruential_engine.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__type_traits/common_type.h>
