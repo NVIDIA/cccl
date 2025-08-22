@@ -115,7 +115,7 @@ void batch_handle::submit(const file_handle_base& file_handle_ref,
 
   for (const auto& op : operations)
   {
-    auto& cufile_op      = cufile_ops.emplace_back();
+    auto& cufile_op                 = cufile_ops.emplace_back();
     cufile_op.mode                  = CUFILE_BATCH;
     cufile_op.u.batch.devPtr_base   = op.buffer.data();
     cufile_op.u.batch.file_offset   = op.file_offset;

@@ -109,35 +109,26 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     utility/ensure_current_device.cu
   )
 
-  # cuFILE tests (conditionally build only when cuFILE headers are available)
+  # cuFILE tests (conditionally build only when cuFILE headers and CUDA::cufile are available)
   include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
   check_cxx_source_compiles("#if defined(__has_include) && __has_include(<cufile.h>)\nint main(){return 0;}\n#else\n#error no\n#endif" CUDAX_BUILD_CUFILE)
-  if (CUDAX_BUILD_CUFILE)
-    # Try to locate the cuFile library for linking runtime tests
-    find_library(CUFILE_LIBRARY NAMES cufile)
-    if (NOT CUFILE_LIBRARY)
-      message(WARNING "cuFile headers found but lib 'cufile' not found for linking tests. Tests may fail to link at build time.")
-    endif()
-
+  find_package(CUDAToolkit QUIET)
+  if (CUDAX_BUILD_CUFILE AND TARGET CUDA::cufile)
     cudax_add_catch2_test(test_target cufile_driver ${cn_target}
       ../test/cufile/driver_functions.cu
     )
-    if (CUFILE_LIBRARY)
-      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
-    endif()
+    target_link_libraries(${test_target} PRIVATE CUDA::cufile)
     cudax_add_catch2_test(test_target cufile_utils ${cn_target}
       ../test/cufile/utils_functions.cu
     )
-    if (CUFILE_LIBRARY)
-      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
-    endif()
+    target_link_libraries(${test_target} PRIVATE CUDA::cufile)
     cudax_add_catch2_test(test_target cufile_file ${cn_target}
       ../test/cufile/file_handle_functions.cu
     )
-    if (CUFILE_LIBRARY)
-      target_link_libraries(${test_target} PRIVATE ${CUFILE_LIBRARY})
-    endif()
+    target_link_libraries(${test_target} PRIVATE CUDA::cufile)
+  elseif(CUDAX_BUILD_CUFILE)
+    message(STATUS "cuFile headers found but CUDA::cufile target not available; skipping cuFile tests")
   endif()
 
   cudax_add_catch2_test(test_target containers ${cn_target}
@@ -178,7 +169,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   option(CUDAX_ENABLE_CUFILE_TESTS "Enable cuFile tests (may fail due to cuFile library issues)" ON)
-  if(CUDAX_ENABLE_CUFILE_TESTS)
+  if(CUDAX_ENABLE_CUFILE_TESTS AND TARGET CUDA::cufile)
     # Driver functions tests
     cudax_add_catch2_test(cufile_driver_target cufile_driver ${cn_target}
       cufile/driver_functions.cu
@@ -195,25 +186,13 @@ foreach(cn_target IN LISTS cudax_TARGETS)
       cufile/utils_functions.cu
       cufile/test_utils.cu
     )
-
-    # Link cuFile library for all cufile tests
+    # Link cuFile library for all cufile tests via CUDAToolkit target
     set(cufile_test_targets ${cufile_driver_target} ${cufile_file_handle_target} ${cufile_utils_target})
     foreach(cufile_test_target IN LISTS cufile_test_targets)
-      find_library(CUFILE_LIBRARY cufile
-        HINTS ${CUDAToolkit_LIBRARY_DIR}
-        PATH_SUFFIXES lib64 lib
-      )
-      if(CUFILE_LIBRARY)
-        message(STATUS "Found cuFile library: ${CUFILE_LIBRARY}")
-        target_link_libraries(${cufile_test_target} PRIVATE ${CUFILE_LIBRARY})
-      else()
-        message(STATUS "cuFile library not found via find_library, trying direct linking")
-        # Try direct linking to cufile
-        target_link_libraries(${cufile_test_target} PRIVATE cufile)
-      endif()
+      target_link_libraries(${cufile_test_target} PRIVATE CUDA::cufile)
     endforeach()
   else()
-    message(STATUS "cuFile tests disabled - set CUDAX_ENABLE_CUFILE_TESTS=ON to enable")
+    message(STATUS "cuFile tests disabled or CUDA::cufile not available - set CUDAX_ENABLE_CUFILE_TESTS=ON and ensure CUDAToolkit provides CUDA::cufile to enable")
   endif()
 
 endforeach()

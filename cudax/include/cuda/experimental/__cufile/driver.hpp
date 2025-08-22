@@ -19,13 +19,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__cufile/detail/error_handling.hpp>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <cufile.h>
-
-#include <cuda/experimental/__cufile/detail/error_handling.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -182,12 +182,7 @@ public:
   }
   ~driver_handle() noexcept
   {
-    try
-    {
-      driver_close();
-    }
-    catch (...)
-    {}
+    driver_close();
   }
 
   driver_handle(const driver_handle&)            = delete;

@@ -56,6 +56,3 @@ Notes
 - For best performance and compatibility, align buffers and offsets to 4 KiB.
 - Use :ref:`file_handle <life-handle-ref-string>` for owning descriptors or :ref:`file_handle_ref <file-handle-ref-string>` to wrap an existing :ref:`fd <file-descriptor-ref-string>`.
 - Async APIs accept ``cuda::stream_ref`` and integrate with CUDA streams.
-
-
-

@@ -21,10 +21,10 @@
 
 #include <cuda/std/span>
 
-#include <functional>
-
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
 #include <cuda/experimental/__cufile/detail/raii_resource.hpp>
+
+#include <functional>
 
 namespace cuda::experimental::cufile
 {
@@ -36,7 +36,7 @@ class buffer_handle
 {
 private:
   cuda::std::span<const cuda::std::byte> buffer_;
-  detail::raii_resource<const void*, ::std::function<void(const void*)>> registered_buffer_;
+  detail::raii_resource<const void*, void (*)(const void*)> registered_buffer_;
 
 public:
   /**

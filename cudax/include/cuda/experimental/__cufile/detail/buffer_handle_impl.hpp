@@ -14,6 +14,8 @@
 
 #include <cuda/experimental/__cufile/buffer_handle.hpp>
 
+#include <utility>
+
 namespace cuda::experimental::cufile
 {
 

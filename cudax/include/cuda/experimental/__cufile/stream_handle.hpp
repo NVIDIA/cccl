@@ -19,10 +19,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <functional>
-
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
 #include <cuda/experimental/__cufile/detail/raii_resource.hpp>
+
+#include <functional>
 
 namespace cuda::experimental::cufile
 {
