@@ -28,8 +28,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_constructible
-    : public is_nothrow_constructible<_Tp, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_move_constructible : public is_nothrow_constructible<_Tp, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>

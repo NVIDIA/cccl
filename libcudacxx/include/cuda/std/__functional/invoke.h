@@ -120,7 +120,7 @@ struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatil
 };
 
 template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...)&, true, false>
+struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) &, true, false>
 {
   using _ClassType  = _Class&;
   using _ReturnType = _Rp;
@@ -128,7 +128,7 @@ struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...)&, true, false>
 };
 
 template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...)&, true, false>
+struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) &, true, false>
 {
   using _ClassType  = _Class&;
   using _ReturnType = _Rp;
@@ -184,7 +184,7 @@ struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) const volatil
 };
 
 template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...)&&, true, false>
+struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...) &&, true, false>
 {
   using _ClassType  = _Class&&;
   using _ReturnType = _Rp;
@@ -192,7 +192,7 @@ struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param...)&&, true, false>
 };
 
 template <class _Rp, class _Class, class... _Param>
-struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...)&&, true, false>
+struct __member_pointer_traits_imp<_Rp (_Class::*)(_Param..., ...) &&, true, false>
 {
   using _ClassType  = _Class&&;
   using _ReturnType = _Rp;
@@ -512,13 +512,13 @@ inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::va
 // is_nothrow_invocable
 
 template <class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
-    : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_invocable : integral_constant<bool, __nothrow_invocable<_Fn, _Args...>::value>
 {};
 
 template <class _Ret, class _Fn, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
-    : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_invocable_r : integral_constant<bool, __nothrow_invocable_r<_Ret, _Fn, _Args...>::value>
 {};
 
 template <class _Fn, class... _Args>

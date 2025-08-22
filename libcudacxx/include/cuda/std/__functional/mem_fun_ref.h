@@ -132,8 +132,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 
@@ -175,8 +175,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 

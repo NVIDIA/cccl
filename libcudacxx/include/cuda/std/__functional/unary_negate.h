@@ -32,8 +32,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Predicate>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
 {
   _Predicate __pred_;
 

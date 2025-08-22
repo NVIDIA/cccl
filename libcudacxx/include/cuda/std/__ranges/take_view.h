@@ -272,7 +272,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
     const auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min)(__n, static_cast<decltype(__n)>(__count_));
+    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -280,7 +280,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
     auto __n = ::cuda::std::ranges::size(__base_);
-    return (::cuda::std::ranges::min)(__n, static_cast<decltype(__n)>(__count_));
+    return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 };
 

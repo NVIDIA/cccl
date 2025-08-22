@@ -31,8 +31,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_OBJECT_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_object_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
 {};
 
 template <class _Tp>
@@ -41,8 +41,8 @@ inline constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJEC
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
-    : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_obj>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_object_pointer : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_obj>
 {};
 
 template <class _Tp>

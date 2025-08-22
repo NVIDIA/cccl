@@ -138,8 +138,8 @@ _CCCL_CONCEPT __extension_of = __extension_of_v<_Derived, _Base>;
 template <template <class...> class _Interface, class... _Bases, size_t Size, size_t Align>
 struct __basic_interface<_Interface, __extends<_Bases...>, Size, Align>
 {
-  static constexpr size_t size  = (::cuda::std::max)({Size, _Bases::size...});
-  static constexpr size_t align = (::cuda::std::max)({Align, _Bases::align...});
+  static constexpr size_t size  = (::cuda::std::max) ({Size, _Bases::size...});
+  static constexpr size_t align = (::cuda::std::max) ({Align, _Bases::align...});
 
   template <class... _Super>
   using __rebind _CCCL_NODEBUG_ALIAS = _Interface<_Super...>;
