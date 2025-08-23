@@ -21,6 +21,6 @@ __global__ void test_st_bulk(void** fn_ptr)
                (
                    // st.bulk.weak.shared::cta [addr], size, initval;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<void (*)(void*, uint64_t, cuda::ptx::n32_t<0>)>(cuda::ptx::st_bulk));));
+                     static_cast<void (*)(void*, cuda::std::uint64_t, cuda::ptx::n32_t<0>)>(cuda::ptx::st_bulk));));
 #endif // __cccl_ptx_isa >= 860
 }

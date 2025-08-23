@@ -30,7 +30,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the device address of the passed \c __device_object
 //! @param __device_object the object residing in device memory
@@ -40,7 +40,7 @@ template <class _Tp>
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (return _CUDA_VSTD::addressof(__device_object);),
+    (return ::cuda::std::addressof(__device_object);),
     (void* __device_ptr = nullptr; _CCCL_TRY_CUDA_API(
        ::cudaGetSymbolAddress,
        "failed to call cudaGetSymbolAddress in cuda::get_device_address",
@@ -49,7 +49,7 @@ template <class _Tp>
      return static_cast<_Tp*>(__device_ptr);))
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -10,7 +10,7 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::async_resource_ref properties
+// cuda::mr::resource_ref properties
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
@@ -22,7 +22,7 @@ void test_allocate()
 {
   { // allocate_sync(size)
     test_resource<cuda::mr::host_accessible> input{42};
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate_sync(0, 0) == ref.allocate_sync(0));
@@ -34,7 +34,7 @@ void test_allocate()
 
   { // allocate_sync(size, alignment)
     test_resource<cuda::mr::host_accessible> input{42};
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate_sync(0, 0) == ref.allocate_sync(0, 0));
@@ -49,7 +49,7 @@ void test_allocate_async()
 {
   { // allocate_sync(size)
     test_resource<cuda::mr::host_accessible> input{42};
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate(::cudaStream_t{}, 0, 0) == ref.allocate(::cudaStream_t{}, 0, 0));
@@ -61,7 +61,7 @@ void test_allocate_async()
 
   { // allocate_sync(size, alignment)
     test_resource<cuda::mr::host_accessible> input{42};
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible> ref{input};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate(::cudaStream_t{}, 0, 0) == ref.allocate(::cudaStream_t{}, 0, 0));

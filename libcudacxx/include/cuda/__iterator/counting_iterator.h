@@ -54,7 +54,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Int>
 struct __get_wider_signed
@@ -63,19 +63,19 @@ struct __get_wider_signed
   {
     if constexpr (sizeof(_Int) < sizeof(short))
     {
-      return _CUDA_VSTD::type_identity<short>{};
+      return ::cuda::std::type_identity<short>{};
     }
     else if constexpr (sizeof(_Int) < sizeof(int))
     {
-      return _CUDA_VSTD::type_identity<int>{};
+      return ::cuda::std::type_identity<int>{};
     }
     else if constexpr (sizeof(_Int) < sizeof(long))
     {
-      return _CUDA_VSTD::type_identity<long>{};
+      return ::cuda::std::type_identity<long>{};
     }
     else
     {
-      return _CUDA_VSTD::type_identity<long long>{};
+      return ::cuda::std::type_identity<long long>{};
     }
 
     static_assert(sizeof(_Int) <= sizeof(long long),
@@ -87,34 +87,34 @@ struct __get_wider_signed
 };
 
 template <class _Start>
-using _IotaDiffT = typename _CUDA_VSTD::conditional_t<
-  (!_CUDA_VSTD::integral<_Start> || sizeof(_CUDA_VSTD::iter_difference_t<_Start>) > sizeof(_Start)),
-  _CUDA_VSTD::type_identity<_CUDA_VSTD::iter_difference_t<_Start>>,
+using _IotaDiffT = typename ::cuda::std::conditional_t<
+  (!::cuda::std::integral<_Start> || sizeof(::cuda::std::iter_difference_t<_Start>) > sizeof(_Start)),
+  ::cuda::std::type_identity<::cuda::std::iter_difference_t<_Start>>,
   __get_wider_signed<_Start>>::type;
 
 template <class _Iter>
 _CCCL_CONCEPT __decrementable = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
-  requires(_CUDA_VSTD::incrementable<_Iter>), _Same_as(_Iter&)(--__i), _Same_as(_Iter)(__i--));
+  requires(::cuda::std::incrementable<_Iter>), _Same_as(_Iter&)(--__i), _Same_as(_Iter)(__i--));
 
 template <class _Iter>
 _CCCL_CONCEPT __advanceable = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i, const _Iter __j, const _IotaDiffT<_Iter> __n)(
   requires(__decrementable<_Iter>),
-  requires(_CUDA_VSTD::totally_ordered<_Iter>),
+  requires(::cuda::std::totally_ordered<_Iter>),
   _Same_as(_Iter&) __i += __n,
   _Same_as(_Iter&) __i -= __n,
-  requires(_CUDA_VSTD::is_constructible_v<_Iter, decltype(__j + __n)>),
-  requires(_CUDA_VSTD::is_constructible_v<_Iter, decltype(__n + __j)>),
-  requires(_CUDA_VSTD::is_constructible_v<_Iter, decltype(__j - __n)>),
-  requires(_CUDA_VSTD::convertible_to<decltype(__j - __j), _IotaDiffT<_Iter>>));
+  requires(::cuda::std::is_constructible_v<_Iter, decltype(__j + __n)>),
+  requires(::cuda::std::is_constructible_v<_Iter, decltype(__n + __j)>),
+  requires(::cuda::std::is_constructible_v<_Iter, decltype(__j - __n)>),
+  requires(::cuda::std::convertible_to<decltype(__j - __j), _IotaDiffT<_Iter>>));
 
 template <class, class = void>
 struct __counting_iterator_category
 {};
 
 template <class _Tp>
-struct __counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
+struct __counting_iterator_category<_Tp, ::cuda::std::enable_if_t<::cuda::std::incrementable<_Tp>>>
 {
-  using iterator_category = _CUDA_VSTD::input_iterator_tag;
+  using iterator_category = ::cuda::std::input_iterator_tag;
 };
 
 //! @brief \p counting_iterator is an iterator which represents a pointer into a range of sequentially changing values.
@@ -176,23 +176,23 @@ struct __counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::inc
 //! }
 //! @endcode
 #if _CCCL_HAS_CONCEPTS()
-template <_CUDA_VSTD::weakly_incrementable _Start>
-  requires _CUDA_VSTD::copyable<_Start>
+template <::cuda::std::weakly_incrementable _Start>
+  requires ::cuda::std::copyable<_Start>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
-          _CUDA_VSTD::enable_if_t<_CUDA_VSTD::weakly_incrementable<_Start>, int> = 0,
-          _CUDA_VSTD::enable_if_t<_CUDA_VSTD::copyable<_Start>, int>             = 0>
+          ::cuda::std::enable_if_t<::cuda::std::weakly_incrementable<_Start>, int> = 0,
+          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>             = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 struct counting_iterator : public __counting_iterator_category<_Start>
 {
-  using iterator_concept = _CUDA_VSTD::conditional_t<
+  using iterator_concept = ::cuda::std::conditional_t<
     __advanceable<_Start>,
-    _CUDA_VSTD::random_access_iterator_tag,
-    _CUDA_VSTD::conditional_t<__decrementable<_Start>,
-                              _CUDA_VSTD::bidirectional_iterator_tag,
-                              _CUDA_VSTD::conditional_t<_CUDA_VSTD::incrementable<_Start>,
-                                                        _CUDA_VSTD::forward_iterator_tag,
-                                                        /*Else*/ _CUDA_VSTD::input_iterator_tag>>>;
+    ::cuda::std::random_access_iterator_tag,
+    ::cuda::std::conditional_t<__decrementable<_Start>,
+                               ::cuda::std::bidirectional_iterator_tag,
+                               ::cuda::std::conditional_t<::cuda::std::incrementable<_Start>,
+                                                          ::cuda::std::forward_iterator_tag,
+                                                          /*Else*/ ::cuda::std::input_iterator_tag>>>;
 
   using value_type      = _Start;
   using difference_type = _IotaDiffT<_Start>;
@@ -201,21 +201,21 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counting_iterator()
-    requires _CUDA_VSTD::default_initializable<_Start>
+    requires ::cuda::std::default_initializable<_Start>
   = default;
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Start2>)
-  _CCCL_API constexpr counting_iterator() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Start2>) {}
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Start2>)
+  _CCCL_API constexpr counting_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Start2>) {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_API constexpr explicit counting_iterator(_Start __value) noexcept(
-    _CUDA_VSTD::is_nothrow_move_constructible_v<_Start>)
-      : __value_(_CUDA_VSTD::move(__value))
+    ::cuda::std::is_nothrow_move_constructible_v<_Start>)
+      : __value_(::cuda::std::move(__value))
   {}
 
   [[nodiscard]] _CCCL_API constexpr _Start operator*() const
-    noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Start>)
+    noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Start>)
   {
     return __value_;
   }
@@ -223,10 +223,10 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
   [[nodiscard]] _CCCL_API constexpr _Start2 operator[](difference_type __n) const
-    noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Start2>
-             && noexcept(_CUDA_VSTD::declval<const _Start2&>() + __n))
+    noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Start2>
+             && noexcept(::cuda::std::declval<const _Start2&>() + __n))
   {
-    if constexpr (_CUDA_VSTD::__integer_like<_Start>)
+    if constexpr (::cuda::std::__integer_like<_Start>)
     {
       return _Start(__value_ + static_cast<_Start>(__n));
     }
@@ -236,16 +236,16 @@ struct counting_iterator : public __counting_iterator_category<_Start>
     }
   }
 
-  _CCCL_API constexpr counting_iterator& operator++() noexcept(noexcept(++_CUDA_VSTD::declval<_Start&>()))
+  _CCCL_API constexpr counting_iterator& operator++() noexcept(noexcept(++::cuda::std::declval<_Start&>()))
   {
     ++__value_;
     return *this;
   }
 
   _CCCL_API constexpr auto operator++(int) noexcept(
-    noexcept(++_CUDA_VSTD::declval<_Start&>()) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Start>)
+    noexcept(++::cuda::std::declval<_Start&>()) && ::cuda::std::is_nothrow_copy_constructible_v<_Start>)
   {
-    if constexpr (_CUDA_VSTD::incrementable<_Start>)
+    if constexpr (::cuda::std::incrementable<_Start>)
     {
       auto __tmp = *this;
       ++__value_;
@@ -259,7 +259,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__decrementable<_Start2>)
-  _CCCL_API constexpr counting_iterator& operator--() noexcept(noexcept(--_CUDA_VSTD::declval<_Start2&>()))
+  _CCCL_API constexpr counting_iterator& operator--() noexcept(noexcept(--::cuda::std::declval<_Start2&>()))
   {
     --__value_;
     return *this;
@@ -268,7 +268,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__decrementable<_Start2>)
   _CCCL_API constexpr counting_iterator operator--(int) noexcept(
-    noexcept(--_CUDA_VSTD::declval<_Start2&>()) && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Start>)
+    noexcept(--::cuda::std::declval<_Start2&>()) && ::cuda::std::is_nothrow_copy_constructible_v<_Start>)
   {
     auto __tmp = *this;
     --*this;
@@ -277,9 +277,9 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  _CCCL_API constexpr counting_iterator& operator+=(difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  _CCCL_API constexpr counting_iterator& operator+=(difference_type __n) noexcept(::cuda::std::__integer_like<_Start2>)
   {
-    if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)
+    if constexpr (::cuda::std::__integer_like<_Start> && !::cuda::std::__signed_integer_like<_Start>)
     {
       if (__n >= difference_type(0))
       {
@@ -290,7 +290,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
         __value_ -= static_cast<_Start>(-__n);
       }
     }
-    else if constexpr (_CUDA_VSTD::__signed_integer_like<_Start>)
+    else if constexpr (::cuda::std::__signed_integer_like<_Start>)
     {
       __value_ += static_cast<_Start>(__n);
     }
@@ -303,9 +303,9 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  _CCCL_API constexpr counting_iterator& operator-=(difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  _CCCL_API constexpr counting_iterator& operator-=(difference_type __n) noexcept(::cuda::std::__integer_like<_Start2>)
   {
-    if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)
+    if constexpr (::cuda::std::__integer_like<_Start> && !::cuda::std::__signed_integer_like<_Start>)
     {
       if (__n >= difference_type(0))
       {
@@ -316,7 +316,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
         __value_ += static_cast<_Start>(-__n);
       }
     }
-    else if constexpr (_CUDA_VSTD::__signed_integer_like<_Start>)
+    else if constexpr (::cuda::std::__signed_integer_like<_Start>)
     {
       __value_ -= static_cast<_Start>(__n);
     }
@@ -328,57 +328,57 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   }
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Start2>)
+  _CCCL_REQUIRES(::cuda::std::equality_comparable<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() == _CUDA_VSTD::declval<const _Start2&>()))
+    noexcept(::cuda::std::declval<const _Start2&>() == ::cuda::std::declval<const _Start2&>()))
   {
     return __x.__value_ == __y.__value_;
   }
 
 #if _CCCL_STD_VER <= 2017
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Start2>)
+  _CCCL_REQUIRES(::cuda::std::equality_comparable<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() != _CUDA_VSTD::declval<const _Start2&>()))
+    noexcept(::cuda::std::declval<const _Start2&>() != ::cuda::std::declval<const _Start2&>()))
   {
     return __x.__value_ != __y.__value_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
+    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
   {
     return __x.__value_ < __y.__value_;
   }
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
+    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
   {
     return __y < __x;
   }
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
+    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
   {
     return !(__y < __x);
   }
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered<_Start2>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
+    noexcept(::cuda::std::declval<const _Start2&>() < ::cuda::std::declval<const _Start2&>()))
   {
     return !(__x < __y);
   }
@@ -386,8 +386,8 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const counting_iterator& __x, const counting_iterator& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Start2&>() <=> _CUDA_VSTD::declval<const _Start2&>()))
-    requires _CUDA_VSTD::totally_ordered<_Start> && _CUDA_VSTD::three_way_comparable<_Start>
+    noexcept(::cuda::std::declval<const _Start2&>() <=> ::cuda::std::declval<const _Start2&>()))
+    requires ::cuda::std::totally_ordered<_Start> && ::cuda::std::three_way_comparable<_Start>
   {
     return __x.__value_ <=> __y.__value_;
   }
@@ -396,7 +396,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr counting_iterator
-  operator+(counting_iterator __i, difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  operator+(counting_iterator __i, difference_type __n) noexcept(::cuda::std::__integer_like<_Start2>)
   {
     __i += __n;
     return __i;
@@ -405,7 +405,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr counting_iterator
-  operator+(difference_type __n, counting_iterator __i) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  operator+(difference_type __n, counting_iterator __i) noexcept(::cuda::std::__integer_like<_Start2>)
   {
     return __i + __n;
   }
@@ -413,7 +413,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr counting_iterator
-  operator-(counting_iterator __i, difference_type __n) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  operator-(counting_iterator __i, difference_type __n) noexcept(::cuda::std::__integer_like<_Start2>)
   {
     __i -= __n;
     return __i;
@@ -422,9 +422,9 @@ struct counting_iterator : public __counting_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
   [[nodiscard]] _CCCL_API friend constexpr difference_type
-  operator-(const counting_iterator& __x, const counting_iterator& __y) noexcept(_CUDA_VSTD::__integer_like<_Start2>)
+  operator-(const counting_iterator& __x, const counting_iterator& __y) noexcept(::cuda::std::__integer_like<_Start2>)
   {
-    if constexpr (_CUDA_VSTD::__integer_like<_Start> && !_CUDA_VSTD::__signed_integer_like<_Start>)
+    if constexpr (::cuda::std::__integer_like<_Start> && !::cuda::std::__signed_integer_like<_Start>)
     {
       if (__y.__value_ > __x.__value_)
       {
@@ -432,7 +432,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
       }
       return static_cast<difference_type>(__x.__value_ - __y.__value_);
     }
-    else if constexpr (_CUDA_VSTD::__signed_integer_like<_Start>)
+    else if constexpr (::cuda::std::__signed_integer_like<_Start>)
     {
       return static_cast<difference_type>(
         static_cast<difference_type>(__x.__value_) - static_cast<difference_type>(__y.__value_));
@@ -453,7 +453,7 @@ template <class _Start>
   return counting_iterator<_Start>{__start};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -111,7 +111,7 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
 
 def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     context = cuda.descriptor.cuda_target.target_context
-    numba_type = it.numba_type
+    state_ptr_type = it.state_ptr_type
     state_type = it.state_type
     size = context.get_value_type(state_type).get_abi_size(context.target_data)
     iterator_state = memoryview(it.state)
@@ -120,7 +120,7 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
             f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
             f"does not match size of numba type, {size} bytes"
         )
-    alignment = context.get_value_type(numba_type).get_abi_alignment(
+    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
         context.target_data
     )
     (advance_abi_name, advance_ltoir), (deref_abi_name, deref_ltoir) = it.ltoirs.items()
@@ -375,7 +375,7 @@ def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
         it = array_or_iterator
         fn_impl = it.host_advance
         if fn_impl is not None:
-            cccl_it.host_advance_fn = _make_host_cfunc(it.numba_type, fn_impl)
+            cccl_it.host_advance_fn = _make_host_cfunc(it.state_ptr_type, fn_impl)
         else:
             raise ValueError(
                 f"Iterator of type {type(it)} does not provide definition of host_advance function"

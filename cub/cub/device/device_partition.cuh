@@ -483,7 +483,7 @@ public:
   //! Since each value falls precisely in one category, it's safe to add
   //! "large" values into the head of the shared output vector and the "middle"
   //! values into its tail. To add items into the tail of the output array, we
-  //! can use ``thrust::reverse_iterator``.
+  //! can use ``cuda::std::reverse_iterator``.
   //!
   //! .. code-block:: c++
   //!
@@ -527,7 +527,7 @@ public:
   //!    int      *d_large_and_unselected_out; // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int      *d_small_out;                // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
   //!    int      *d_num_selected_out;         // e.g., [ , ]
-  //!    thrust::reverse_iterator<T> unselected_out(d_large_and_unselected_out + num_items);
+  //!    cud::std::reverse_iterator<T> unselected_out(d_large_and_unselected_out + num_items);
   //!    LessThan small_items_selector(7);
   //!    GreaterThan large_items_selector(50);
   //!    ...

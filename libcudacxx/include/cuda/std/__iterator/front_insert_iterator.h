@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
@@ -51,7 +51,7 @@ public:
   using container_type = _Container;
 
   _CCCL_API constexpr explicit front_insert_iterator(_Container& __x) noexcept
-      : container(_CUDA_VSTD::addressof(__x))
+      : container(::cuda::std::addressof(__x))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -64,7 +64,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr front_insert_iterator& operator=(typename _Container::value_type&& __value)
   {
-    container->push_front(_CUDA_VSTD::move(__value));
+    container->push_front(::cuda::std::move(__value));
     return *this;
   }
 
@@ -92,7 +92,7 @@ template <class _Container>
   return front_insert_iterator<_Container>(__x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

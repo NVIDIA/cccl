@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
 using __insert_iterator_iter_t = typename _Container::iterator;
@@ -56,7 +56,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
-      : container(_CUDA_VSTD::addressof(__x))
+      : container(::cuda::std::addressof(__x))
       , iter(__i)
   {}
 
@@ -71,7 +71,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr insert_iterator& operator=(typename _Container::value_type&& __value)
   {
-    iter = container->insert(iter, _CUDA_VSTD::move(__value));
+    iter = container->insert(iter, ::cuda::std::move(__value));
     ++iter;
     return *this;
   }
@@ -100,7 +100,7 @@ inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
   return insert_iterator<_Container>(__x, __i);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -145,6 +145,19 @@ def reduce_into(
     h_init: np.ndarray | GpuStruct,
     stream=None,
 ):
+    """
+    Performs device-wide reduction.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array to store the result of the reduction
+        op: Binary reduction operator
+        num_items: Number of items to reduce
+        h_init: Initial value for the reduction
+        stream: CUDA stream for the operation (optional)
+    """
     reducer = make_reduce_into(d_in, d_out, op, h_init)
     tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)

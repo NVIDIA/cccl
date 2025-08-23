@@ -81,6 +81,8 @@
 #include <cuda/std/__algorithm/pop_heap.h>
 #include <cuda/std/__algorithm/prev_permutation.h>
 #include <cuda/std/__algorithm/push_heap.h>
+#include <cuda/std/__algorithm/ranges_for_each.h>
+#include <cuda/std/__algorithm/ranges_for_each_n.h>
 #include <cuda/std/__algorithm/ranges_iterator_concept.h>
 #include <cuda/std/__algorithm/ranges_min.h>
 #include <cuda/std/__algorithm/ranges_min_element.h>
@@ -139,7 +141,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
 
@@ -188,13 +190,13 @@ _CCCL_API inline _SampleIterator __sample(
   _Distance __sz = __k;
   for (; __first != __last; ++__first, (void) ++__k)
   {
-    _Distance __r = _CUDA_VSTD::uniform_int_distribution<_Distance>(0, __k)(__g);
+    _Distance __r = ::cuda::std::uniform_int_distribution<_Distance>(0, __k)(__g);
     if (__r < __sz)
     {
       __output_iter[__r] = *__first;
     }
   }
-  return __output_iter + _CUDA_VSTD::min(__n, __k);
+  return __output_iter + ::cuda::std::min(__n, __k);
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
@@ -206,10 +208,10 @@ _CCCL_API inline _SampleIterator __sample(
   _UniformRandomNumberGenerator& __g,
   forward_iterator_tag)
 {
-  _Distance __unsampled_sz = _CUDA_VSTD::distance(__first, __last);
-  for (__n = _CUDA_VSTD::min(__n, __unsampled_sz); __n != 0; ++__first)
+  _Distance __unsampled_sz = ::cuda::std::distance(__first, __last);
+  for (__n = ::cuda::std::min(__n, __unsampled_sz); __n != 0; ++__first)
   {
-    _Distance __r = _CUDA_VSTD::uniform_int_distribution<_Distance>(0, --__unsampled_sz)(__g);
+    _Distance __r = ::cuda::std::uniform_int_distribution<_Distance>(0, --__unsampled_sz)(__g);
     if (__r < __n)
     {
       *__output_iter++ = *__first;
@@ -234,7 +236,7 @@ _CCCL_API inline _SampleIterator __sample(
                 "SampleIterator must meet the requirements of RandomAccessIterator");
   typedef typename common_type<_Distance, _Difference>::type _CommonType;
   _CCCL_ASSERT(__n >= 0, "N must be a positive number.");
-  return _CUDA_VSTD::__sample(__first, __last, __output_iter, _CommonType(__n), __g, _PopCategory());
+  return ::cuda::std::__sample(__first, __last, __output_iter, _CommonType(__n), __g, _PopCategory());
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
@@ -245,7 +247,7 @@ sample(_PopulationIterator __first,
        _Distance __n,
        _UniformRandomNumberGenerator&& __g)
 {
-  return _CUDA_VSTD::__sample(__first, __last, __output_iter, __n, __g);
+  return ::cuda::std::__sample(__first, __last, __output_iter, __n, __g);
 }
 
 template <class _RandomAccessIterator, class _UniformRandomNumberGenerator>
@@ -305,7 +307,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
     // Move the falses into the temporary buffer, and the trues to the front of the line
     // Update __first to always point to the end of the trues
     value_type* __t = __p.first;
-    ::new (__t) value_type(_CUDA_VSTD::move(*__first));
+    ::new (__t) value_type(::cuda::std::move(*__first));
     __d.__incr((value_type*) 0);
     ++__t;
     _ForwardIterator __i = __first;
@@ -313,12 +315,12 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
     {
       if (__pred(*__i))
       {
-        *__first = _CUDA_VSTD::move(*__i);
+        *__first = ::cuda::std::move(*__i);
         ++__first;
       }
       else
       {
-        ::new (__t) value_type(_CUDA_VSTD::move(*__i));
+        ::new (__t) value_type(::cuda::std::move(*__i));
         __d.__incr((value_type*) 0);
         ++__t;
       }
@@ -328,7 +330,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
     __i = __first;
     for (value_type* __t2 = __p.first; __t2 < __t; ++__t2, (void) ++__i)
     {
-      *__i = _CUDA_VSTD::move(*__t2);
+      *__i = ::cuda::std::move(*__t2);
     }
     // __h destructs moved-from values out of the temp buffer, but doesn't deallocate buffer
     return __first;
@@ -337,7 +339,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
   // __len >= 3
   _ForwardIterator __m = __first;
   _Distance __len2     = __len / 2; // __len2 >= 2
-  _CUDA_VSTD::advance(__m, __len2);
+  ::cuda::std::advance(__m, __len2);
   // recurse on [__first, __m), *__first know to be false
   // F?????????????????
   // f       m         l
@@ -363,7 +365,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
 __second_half_done:
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf   l
-  return _CUDA_VSTD::rotate(__first_false, __m, __second_false);
+  return ::cuda::std::rotate(__first_false, __m, __second_false);
   // TTTTTTTTFFFFFFFFFF
   //         |
 }
@@ -390,12 +392,12 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
   // *__first is known to be false
   typedef typename iterator_traits<_ForwardIterator>::difference_type difference_type;
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
-  difference_type __len = _CUDA_VSTD::distance(__first, __last);
+  difference_type __len = ::cuda::std::distance(__first, __last);
   pair<value_type*, ptrdiff_t> __p(0, 0);
   unique_ptr<value_type, __return_temporary_buffer> __h;
   if (__len >= __alloc_limit)
   {
-    __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
+    __p = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__p.first);
   }
   return __stable_partition<add_lvalue_reference_t<_Predicate>>(
@@ -440,7 +442,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
     // Move the falses into the temporary buffer, and the trues to the front of the line
     // Update __first to always point to the end of the trues
     value_type* __t = __p.first;
-    ::new (__t) value_type(_CUDA_VSTD::move(*__first));
+    ::new (__t) value_type(::cuda::std::move(*__first));
     __d.__incr((value_type*) 0);
     ++__t;
     _BidirectionalIterator __i = __first;
@@ -448,24 +450,24 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
     {
       if (__pred(*__i))
       {
-        *__first = _CUDA_VSTD::move(*__i);
+        *__first = ::cuda::std::move(*__i);
         ++__first;
       }
       else
       {
-        ::new (__t) value_type(_CUDA_VSTD::move(*__i));
+        ::new (__t) value_type(::cuda::std::move(*__i));
         __d.__incr((value_type*) 0);
         ++__t;
       }
     }
     // move *__last, known to be true
-    *__first = _CUDA_VSTD::move(*__i);
+    *__first = ::cuda::std::move(*__i);
     __i      = ++__first;
     // All trues now at start of range, all falses in buffer
     // Move falses back into range, but don't mess up __first which points to first false
     for (value_type* __t2 = __p.first; __t2 < __t; ++__t2, (void) ++__i)
     {
-      *__i = _CUDA_VSTD::move(*__t2);
+      *__i = ::cuda::std::move(*__t2);
     }
     // __h destructs moved-from values out of the temp buffer, but doesn't deallocate buffer
     return __first;
@@ -474,7 +476,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
   // __len >= 4
   _BidirectionalIterator __m = __first;
   _Distance __len2           = __len / 2; // __len2 >= 2
-  _CUDA_VSTD::advance(__m, __len2);
+  ::cuda::std::advance(__m, __len2);
   // recurse on [__first, __m-1], except reduce __m-1 until *(__m-1) is true, *__first know to be false
   // F????????????????T
   // f       m        l
@@ -515,7 +517,7 @@ __first_half_done:
 __second_half_done:
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf  l
-  return _CUDA_VSTD::rotate(__first_false, __m, __second_false);
+  return ::cuda::std::rotate(__first_false, __m, __second_false);
   // TTTTTTTTFFFFFFFFFF
   //         |
 }
@@ -553,12 +555,12 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
   // *__first is known to be false
   // *__last is known to be true
   // __len >= 2
-  difference_type __len = _CUDA_VSTD::distance(__first, __last) + 1;
+  difference_type __len = ::cuda::std::distance(__first, __last) + 1;
   pair<value_type*, ptrdiff_t> __p(0, 0);
   unique_ptr<value_type, __return_temporary_buffer> __h;
   if (__len >= __alloc_limit)
   {
-    __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
+    __p = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__p.first);
   }
   return __stable_partition<add_lvalue_reference_t<_Predicate>>(
@@ -680,7 +682,7 @@ _CCCL_HOST_DEVICE void __selection_sort(_BirdirectionalIterator __first, _Birdir
   for (--__lm1; __first != __lm1; ++__first)
   {
     _BirdirectionalIterator __i =
-      _CUDA_VSTD::min_element<_BirdirectionalIterator, add_lvalue_reference_t<_Compare>>(__first, __last, __comp);
+      ::cuda::std::min_element<_BirdirectionalIterator, add_lvalue_reference_t<_Compare>>(__first, __last, __comp);
     if (__i != __first)
     {
       swap(*__first, *__i);
@@ -698,12 +700,12 @@ _CCCL_HOST_DEVICE void __insertion_sort(_BirdirectionalIterator __first, _Birdir
     for (++__i; __i != __last; ++__i)
     {
       _BirdirectionalIterator __j = __i;
-      value_type __t(_CUDA_VSTD::move(*__j));
+      value_type __t(::cuda::std::move(*__j));
       for (_BirdirectionalIterator __k = __i; __k != __first && __comp(__t, *--__k); --__j)
       {
-        *__j = _CUDA_VSTD::move(*__k);
+        *__j = ::cuda::std::move(*__k);
       }
-      *__j = _CUDA_VSTD::move(__t);
+      *__j = ::cuda::std::move(__t);
     }
   }
 }
@@ -718,15 +720,15 @@ _CCCL_HOST_DEVICE void __insertion_sort_3(_RandomAccessIterator __first, _Random
   {
     if (__comp(*__i, *__j))
     {
-      value_type __t(_CUDA_VSTD::move(*__i));
+      value_type __t(::cuda::std::move(*__i));
       _RandomAccessIterator __k = __j;
       __j                       = __i;
       do
       {
-        *__j = _CUDA_VSTD::move(*__k);
+        *__j = ::cuda::std::move(*__k);
         __j  = __k;
       } while (__j != __first && __comp(__t, *--__k));
-      *__j = _CUDA_VSTD::move(__t);
+      *__j = ::cuda::std::move(__t);
     }
     __j = __i;
   }
@@ -748,13 +750,13 @@ __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator
       }
       return true;
     case 3:
-      _CUDA_VSTD::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
+      ::cuda::std::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
       return true;
     case 4:
-      _CUDA_VSTD::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
+      ::cuda::std::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
       return true;
     case 5:
-      _CUDA_VSTD::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
+      ::cuda::std::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
       return true;
   }
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
@@ -766,15 +768,15 @@ __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator
   {
     if (__comp(*__i, *__j))
     {
-      value_type __t(_CUDA_VSTD::move(*__i));
+      value_type __t(::cuda::std::move(*__i));
       _RandomAccessIterator __k = __j;
       __j                       = __i;
       do
       {
-        *__j = _CUDA_VSTD::move(*__k);
+        *__j = ::cuda::std::move(*__k);
         __j  = __k;
       } while (__j != __first && __comp(__t, *--__k));
-      *__j = _CUDA_VSTD::move(__t);
+      *__j = ::cuda::std::move(__t);
       if (++__count == __limit)
       {
         return ++__i == __last;
@@ -798,7 +800,7 @@ _CCCL_HOST_DEVICE void __insertion_sort_move(
     __destruct_n __d(0);
     unique_ptr<value_type, __destruct_n&> __h(__first2, __d);
     value_type* __last2 = __first2;
-    ::new (__last2) value_type(_CUDA_VSTD::move(*__first1));
+    ::new (__last2) value_type(::cuda::std::move(*__first1));
     __d.__incr((value_type*) 0);
     for (++__last2; ++__first1 != __last1; ++__last2)
     {
@@ -806,17 +808,17 @@ _CCCL_HOST_DEVICE void __insertion_sort_move(
       value_type* __i2 = __j2;
       if (__comp(*__first1, *--__i2))
       {
-        ::new (__j2) value_type(_CUDA_VSTD::move(*__i2));
+        ::new (__j2) value_type(::cuda::std::move(*__i2));
         __d.__incr((value_type*) 0);
         for (--__j2; __i2 != __first2 && __comp(*__first1, *--__i2); --__j2)
         {
-          *__j2 = _CUDA_VSTD::move(*__i2);
+          *__j2 = ::cuda::std::move(*__i2);
         }
-        *__j2 = _CUDA_VSTD::move(*__first1);
+        *__j2 = ::cuda::std::move(*__first1);
       }
       else
       {
-        ::new (__j2) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__j2) value_type(::cuda::std::move(*__first1));
         __d.__incr((value_type*) 0);
       }
     }
@@ -848,18 +850,18 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
         }
         return;
       case 3:
-        _CUDA_VSTD::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
+        ::cuda::std::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
         return;
       case 4:
-        _CUDA_VSTD::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
+        ::cuda::std::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
         return;
       case 5:
-        _CUDA_VSTD::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
+        ::cuda::std::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
         return;
     }
     if (__len <= __limit)
     {
-      _CUDA_VSTD::__insertion_sort_3<_Compare>(__first, __last, __comp);
+      ::cuda::std::__insertion_sort_3<_Compare>(__first, __last, __comp);
       return;
     }
     // __len > 5
@@ -874,13 +876,13 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
         __delta = __len / 2;
         __m += __delta;
         __delta /= 2;
-        __n_swaps = _CUDA_VSTD::__sort5<_Compare>(__first, __first + __delta, __m, __m + __delta, __lm1, __comp);
+        __n_swaps = ::cuda::std::__sort5<_Compare>(__first, __first + __delta, __m, __m + __delta, __lm1, __comp);
       }
       else
       {
         __delta = __len / 2;
         __m += __delta;
-        __n_swaps = _CUDA_VSTD::__sort3<_Compare>(__first, __m, __lm1, __comp);
+        __n_swaps = ::cuda::std::__sort3<_Compare>(__first, __m, __lm1, __comp);
       }
     }
     // *__m is median
@@ -944,7 +946,7 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
           }
           // [__first, __i) == *__first and *__first < [__i, __last)
           // The first part is sorted, sort the second part
-          // _CUDA_VSTD::__sort<_Compare>(__i, __last, __comp);
+          // ::cuda::std::__sort<_Compare>(__i, __last, __comp);
           __first = __i;
           goto __restart;
         }
@@ -999,8 +1001,8 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
     // If we were given a perfect partition, see if insertion sort is quick...
     if (__n_swaps == 0)
     {
-      bool __fs = _CUDA_VSTD::__insertion_sort_incomplete<_Compare>(__first, __i, __comp);
-      if (_CUDA_VSTD::__insertion_sort_incomplete<_Compare>(__i + 1, __last, __comp))
+      bool __fs = ::cuda::std::__insertion_sort_incomplete<_Compare>(__first, __i, __comp);
+      if (::cuda::std::__insertion_sort_incomplete<_Compare>(__i + 1, __last, __comp))
       {
         if (__fs)
         {
@@ -1021,14 +1023,14 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
     // sort smaller range with recursive call and larger with tail recursion elimination
     if (__i - __first < __last - __i)
     {
-      _CUDA_VSTD::__sort<_Compare>(__first, __i, __comp);
-      // _CUDA_VSTD::__sort<_Compare>(__i+1, __last, __comp);
+      ::cuda::std::__sort<_Compare>(__first, __i, __comp);
+      // ::cuda::std::__sort<_Compare>(__i+1, __last, __comp);
       __first = ++__i;
     }
     else
     {
-      _CUDA_VSTD::__sort<_Compare>(__i + 1, __last, __comp);
-      // _CUDA_VSTD::__sort<_Compare>(__first, __i, __comp);
+      ::cuda::std::__sort<_Compare>(__i + 1, __last, __comp);
+      // ::cuda::std::__sort<_Compare>(__first, __i, __comp);
       __last = __i;
     }
   }
@@ -1039,32 +1041,32 @@ template <class _RandomAccessIterator, class _Compare>
 _CCCL_API inline void sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   using _Comp_ref = __comp_ref_type<_Compare>;
-  _CUDA_VSTD::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
+  ::cuda::std::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
 }
 
 template <class _RandomAccessIterator>
 _CCCL_API inline void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::sort(__first, __last, __less{});
+  ::cuda::std::sort(__first, __last, __less{});
 }
 
 template <class _Tp>
 _CCCL_API inline void sort(_Tp** __first, _Tp** __last)
 {
-  _CUDA_VSTD::sort((size_t*) __first, (size_t*) __last, __less{});
+  ::cuda::std::sort((size_t*) __first, (size_t*) __last, __less{});
 }
 
 template <class _Tp>
 _CCCL_API inline void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last)
 {
-  _CUDA_VSTD::sort(__first.base(), __last.base());
+  ::cuda::std::sort(__first.base(), __last.base());
 }
 
 template <class _Tp, class _Compare>
 _CCCL_API inline void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
 {
   typedef add_lvalue_reference_t<_Compare> _Comp_ref;
-  _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
+  ::cuda::std::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 
 // inplace_merge
@@ -1082,18 +1084,18 @@ _CCCL_HOST_DEVICE void __half_inplace_merge(
   {
     if (__first2 == __last2)
     {
-      _CUDA_VSTD::move(__first1, __last1, __result);
+      ::cuda::std::move(__first1, __last1, __result);
       return;
     }
 
     if (__comp(*__first2, *__first1))
     {
-      *__result = _CUDA_VSTD::move(*__first2);
+      *__result = ::cuda::std::move(*__first2);
       ++__first2;
     }
     else
     {
-      *__result = _CUDA_VSTD::move(*__first1);
+      *__result = ::cuda::std::move(*__first1);
       ++__first1;
     }
   }
@@ -1118,7 +1120,7 @@ _CCCL_HOST_DEVICE void __buffered_inplace_merge(
     value_type* __p = __buff;
     for (_BidirectionalIterator __i = __first; __i != __middle; __d.__incr((value_type*) 0), (void) ++__i, (void) ++__p)
     {
-      ::new (__p) value_type(_CUDA_VSTD::move(*__i));
+      ::new (__p) value_type(::cuda::std::move(*__i));
     }
     __half_inplace_merge(__buff, __p, __middle, __last, __first, __comp);
   }
@@ -1127,7 +1129,7 @@ _CCCL_HOST_DEVICE void __buffered_inplace_merge(
     value_type* __p = __buff;
     for (_BidirectionalIterator __i = __middle; __i != __last; __d.__incr((value_type*) 0), (void) ++__i, (void) ++__p)
     {
-      ::new (__p) value_type(_CUDA_VSTD::move(*__i));
+      ::new (__p) value_type(::cuda::std::move(*__i));
     }
     typedef reverse_iterator<_BidirectionalIterator> _RBi;
     typedef reverse_iterator<value_type*> _Rv;
@@ -1187,9 +1189,9 @@ _CCCL_HOST_DEVICE void __inplace_merge(
     { // __len >= 1, __len2 >= 2
       __len21 = __len2 / 2;
       __m2    = __middle;
-      _CUDA_VSTD::advance(__m2, __len21);
+      ::cuda::std::advance(__m2, __len21);
       __m1    = __upper_bound<_Compare>(__first, __middle, *__m2, __comp);
-      __len11 = _CUDA_VSTD::distance(__first, __m1);
+      __len11 = ::cuda::std::distance(__first, __m1);
     }
     else
     {
@@ -1202,15 +1204,15 @@ _CCCL_HOST_DEVICE void __inplace_merge(
       // __len1 >= 2, __len2 >= 1
       __len11 = __len1 / 2;
       __m1    = __first;
-      _CUDA_VSTD::advance(__m1, __len11);
+      ::cuda::std::advance(__m1, __len11);
       __m2    = __lower_bound<_Compare>(__middle, __last, *__m1, __comp);
-      __len21 = _CUDA_VSTD::distance(__middle, __m2);
+      __len21 = ::cuda::std::distance(__middle, __m2);
     }
     difference_type __len12 = __len1 - __len11; // distance(__m1, __middle)
     difference_type __len22 = __len2 - __len21; // distance(__m2, __last)
     // [__first, __m1) [__m1, __middle) [__middle, __m2) [__m2, __last)
     // swap middle two partitions
-    __middle = _CUDA_VSTD::rotate(__m1, __middle, __m2);
+    __middle = ::cuda::std::rotate(__m1, __middle, __m2);
     // __len12 and __len21 now have swapped meanings
     // merge smaller range with recursive call and larger with tail recursion elimination
     if (__len11 + __len21 < __len12 + __len22)
@@ -1240,13 +1242,13 @@ _CCCL_API inline void inplace_merge(
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
   typedef typename iterator_traits<_BidirectionalIterator>::difference_type difference_type;
-  difference_type __len1             = _CUDA_VSTD::distance(__first, __middle);
-  difference_type __len2             = _CUDA_VSTD::distance(__middle, __last);
-  difference_type __buf_size         = _CUDA_VSTD::min(__len1, __len2);
-  pair<value_type*, ptrdiff_t> __buf = _CUDA_VSTD::get_temporary_buffer<value_type>(__buf_size);
+  difference_type __len1             = ::cuda::std::distance(__first, __middle);
+  difference_type __len2             = ::cuda::std::distance(__middle, __last);
+  difference_type __buf_size         = ::cuda::std::min(__len1, __len2);
+  pair<value_type*, ptrdiff_t> __buf = ::cuda::std::get_temporary_buffer<value_type>(__buf_size);
   unique_ptr<value_type, __return_temporary_buffer> __h(__buf.first);
   using _Comp_ref = __comp_ref_type<_Compare>;
-  return _CUDA_VSTD::__inplace_merge<_Comp_ref>(
+  return ::cuda::std::__inplace_merge<_Comp_ref>(
     __first, __middle, __last, __comp, __len1, __len2, __buf.first, __buf.second);
 }
 
@@ -1254,7 +1256,7 @@ template <class _BidirectionalIterator>
 _CCCL_API inline void
 inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last)
 {
-  _CUDA_VSTD::inplace_merge(__first, __middle, __last, __less{});
+  ::cuda::std::inplace_merge(__first, __middle, __last, __less{});
 }
 
 // stable_sort
@@ -1277,7 +1279,7 @@ _CCCL_HOST_DEVICE void __merge_move_construct(
     {
       for (; __first2 != __last2; ++__first2, ++__result, (void) __d.__incr((value_type*) 0))
       {
-        ::new (__result) value_type(_CUDA_VSTD::move(*__first2));
+        ::new (__result) value_type(::cuda::std::move(*__first2));
       }
       __h.release();
       return;
@@ -1286,20 +1288,20 @@ _CCCL_HOST_DEVICE void __merge_move_construct(
     {
       for (; __first1 != __last1; ++__first1, ++__result, (void) __d.__incr((value_type*) 0))
       {
-        ::new (__result) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__result) value_type(::cuda::std::move(*__first1));
       }
       __h.release();
       return;
     }
     if (__comp(*__first2, *__first1))
     {
-      ::new (__result) value_type(_CUDA_VSTD::move(*__first2));
+      ::new (__result) value_type(::cuda::std::move(*__first2));
       __d.__incr((value_type*) 0);
       ++__first2;
     }
     else
     {
-      ::new (__result) value_type(_CUDA_VSTD::move(*__first1));
+      ::new (__result) value_type(::cuda::std::move(*__first1));
       __d.__incr((value_type*) 0);
       ++__first1;
     }
@@ -1321,24 +1323,24 @@ _CCCL_HOST_DEVICE void __merge_move_assign(
     {
       for (; __first1 != __last1; ++__first1, (void) ++__result)
       {
-        *__result = _CUDA_VSTD::move(*__first1);
+        *__result = ::cuda::std::move(*__first1);
       }
       return;
     }
     if (__comp(*__first2, *__first1))
     {
-      *__result = _CUDA_VSTD::move(*__first2);
+      *__result = ::cuda::std::move(*__first2);
       ++__first2;
     }
     else
     {
-      *__result = _CUDA_VSTD::move(*__first1);
+      *__result = ::cuda::std::move(*__first1);
       ++__first1;
     }
   }
   for (; __first2 != __last2; ++__first2, (void) ++__result)
   {
-    *__result = _CUDA_VSTD::move(*__first2);
+    *__result = ::cuda::std::move(*__first2);
   }
 }
 
@@ -1365,24 +1367,24 @@ _CCCL_HOST_DEVICE void __stable_sort_move(
     case 0:
       return;
     case 1:
-      ::new (__first2) value_type(_CUDA_VSTD::move(*__first1));
+      ::new (__first2) value_type(::cuda::std::move(*__first1));
       return;
     case 2:
       __destruct_n __d(0);
       unique_ptr<value_type, __destruct_n&> __h2(__first2, __d);
       if (__comp(*--__last1, *__first1))
       {
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__last1));
+        ::new (__first2) value_type(::cuda::std::move(*__last1));
         __d.__incr((value_type*) 0);
         ++__first2;
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__first2) value_type(::cuda::std::move(*__first1));
       }
       else
       {
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__first2) value_type(::cuda::std::move(*__first1));
         __d.__incr((value_type*) 0);
         ++__first2;
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__last1));
+        ::new (__first2) value_type(::cuda::std::move(*__last1));
       }
       __h2.release();
       return;
@@ -1466,7 +1468,7 @@ _CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIt
   unique_ptr<value_type, __return_temporary_buffer> __h;
   if (__len > static_cast<difference_type>(__stable_sort_switch<value_type>::value))
   {
-    __buf = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
+    __buf = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__buf.first);
   }
   using _Comp_ref = __comp_ref_type<_Compare>;
@@ -1476,7 +1478,7 @@ _CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIt
 template <class _RandomAccessIterator>
 _CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::stable_sort(__first, __last, __less{});
+  ::cuda::std::stable_sort(__first, __last, __less{});
 }
 
 // nth_element
@@ -1509,7 +1511,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
         return;
       case 3: {
         _RandomAccessIterator __m = __first;
-        _CUDA_VSTD::__sort3<_Compare>(__first, ++__m, --__last, __comp);
+        ::cuda::std::__sort3<_Compare>(__first, ++__m, --__last, __comp);
         return;
       }
     }
@@ -1521,7 +1523,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
     // __len > __limit >= 3
     _RandomAccessIterator __m   = __first + __len / 2;
     _RandomAccessIterator __lm1 = __last;
-    unsigned __n_swaps          = _CUDA_VSTD::__sort3<_Compare>(__first, __m, --__lm1, __comp);
+    unsigned __n_swaps          = ::cuda::std::__sort3<_Compare>(__first, __m, --__lm1, __comp);
     // *__m is median
     // partition [__first, __m) < *__m and *__m <= [__m, __last)
     // (this inhibits tossing elements equivalent to __m around unnecessarily)
@@ -1705,11 +1707,11 @@ template <class _RandomAccessIterator>
 _CCCL_API inline void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::nth_element(__first, __nth, __last, __less{});
+  ::cuda::std::nth_element(__first, __nth, __last, __less{});
 }
 
 #endif
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #  include <__pstl_algorithm>

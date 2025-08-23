@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool __cccl_is_reference_wrapper_v = false;
@@ -43,7 +43,7 @@ inline constexpr bool __cccl_is_reference_wrapper_v<volatile reference_wrapper<_
 template <class _Tp>
 inline constexpr bool __cccl_is_reference_wrapper_v<const volatile reference_wrapper<_Tp>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

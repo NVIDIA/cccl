@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_API inline void discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] size_t __nbytes) noexcept
 {
@@ -37,7 +37,7 @@ _CCCL_API inline void discard_memory([[maybe_unused]] volatile void* __ptr, [[ma
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer passed to discard_memory");
-    if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global)) {
+    if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global)) {
       return;
     }
     constexpr size_t __line_size = 128;
@@ -54,7 +54,7 @@ _CCCL_API inline void discard_memory([[maybe_unused]] volatile void* __ptr, [[ma
 #endif // __cccl_ptx_isa >= 740ULL
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

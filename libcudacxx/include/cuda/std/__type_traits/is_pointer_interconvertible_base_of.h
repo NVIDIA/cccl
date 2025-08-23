@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF)
 
@@ -77,7 +77,7 @@ is_pointer_interconvertible_base_of : bool_constant<is_pointer_interconvertible_
 
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

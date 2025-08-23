@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 _CCCL_API constexpr auto __fp_native_type_impl()
@@ -74,7 +74,7 @@ inline constexpr bool __fp_has_native_type_v = !is_void_v<__fp_native_type_t<_Fm
 template <class _Tp>
 inline constexpr bool __fp_is_native_type_v = __is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

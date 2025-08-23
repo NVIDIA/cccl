@@ -40,9 +40,9 @@ inline void get_property(const cuda::experimental::pinned_memory_resource&, othe
 template <class... Properties>
 struct memory_resource_wrapper
 {
-  // Not a resource_ref, because it can't be used to create any_async_resource (yet)
+  // Not a resource_ref, because it can't be used to create any_resource (yet)
   // https://github.com/NVIDIA/cccl/issues/4166
-  cudax::any_async_resource<Properties...> resource_;
+  cudax::any_resource<Properties...> resource_;
 
   void* allocate_sync(std::size_t size, std::size_t alignment)
   {

@@ -31,14 +31,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! Trait telling whether a function object type F does not rely on the memory addresses of its arguments. The nested
 //! value is true when the addresses of the arguments do not matter and arguments can be provided from arbitrary copies
 //! of the respective sources. This trait can be specialized for custom function objects types.
 //! @see proclaim_copyable_arguments
 template <typename F, typename SFINAE = void>
-struct proclaims_copyable_arguments : _CUDA_VSTD::false_type
+struct proclaims_copyable_arguments : ::cuda::std::false_type
 {};
 
 template <typename F, typename... Args>
@@ -52,7 +52,7 @@ struct __callable_permitting_copied_arguments : F
 };
 
 template <typename F>
-struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> : _CUDA_VSTD::true_type
+struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> : ::cuda::std::true_type
 {};
 
 //! Creates a new function object from an existing one, which is marked as permitting its arguments to be copies of
@@ -70,13 +70,13 @@ template <typename F>
 // Specializations for libcu++ function objects are provided here to not pull this include into `<cuda/std/...>` headers
 
 template <typename _Fn>
-struct proclaims_copyable_arguments<_CUDA_VSTD::__not_fn_t<_Fn>> : proclaims_copyable_arguments<_Fn>
+struct proclaims_copyable_arguments<::cuda::std::__not_fn_t<_Fn>> : proclaims_copyable_arguments<_Fn>
 {};
 
 template <typename _Tp>
 struct __has_builtin_operators
-    : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_class_v<_Tp> && !_CUDA_VSTD::is_enum_v<_Tp>
-                                && !_CUDA_VSTD::is_void_v<_Tp>>
+    : ::cuda::std::bool_constant<!::cuda::std::is_class_v<_Tp> && !::cuda::std::is_enum_v<_Tp>
+                                 && !::cuda::std::is_void_v<_Tp>>
 {};
 
 #define _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(functor)                                         \
@@ -86,45 +86,45 @@ struct __has_builtin_operators
   {};                                                                                        \
   /*we do not know what plus<void> etc. does, which depends on the types it is invoked on */ \
   template <>                                                                                \
-  struct proclaims_copyable_arguments<functor<void>> : _CUDA_VSTD::false_type                \
+  struct proclaims_copyable_arguments<functor<void>> : ::cuda::std::false_type               \
   {};
 
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::plus)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::minus)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::multiplies)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::divides)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::modulus)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::negate)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_and)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_not)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_or)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_xor)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::equal_to)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::not_equal_to)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::less)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::less_equal)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::greater_equal)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::greater)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_and)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_not)
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_or)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::plus)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::minus)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::multiplies)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::divides)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::modulus)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::negate)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::bit_and)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::bit_not)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::bit_or)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::bit_xor)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::equal_to)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::not_equal_to)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::less)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::less_equal)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::greater_equal)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::greater)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::logical_and)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::logical_not)
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(::cuda::std::logical_or)
 
 #define _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(functor)                                              \
   /*we do not know what equal_to etc. does, which depends on the types and their operator== it is invoked on */ \
   template <>                                                                                                   \
-  struct proclaims_copyable_arguments<functor> : _CUDA_VSTD::false_type                                         \
+  struct proclaims_copyable_arguments<functor> : ::cuda::std::false_type                                        \
   {};
 
-_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::equal_to)
-_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::not_equal_to)
-_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::less)
-_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::less_equal)
-_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::greater)
-_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::greater_equal)
+_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::equal_to)
+_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::not_equal_to)
+_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::less)
+_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::less_equal)
+_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater)
+_LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater_equal)
 
 #undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

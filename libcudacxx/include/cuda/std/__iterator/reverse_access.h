@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __rbegin
 {
@@ -104,10 +104,10 @@ namespace __crbegin
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::rbegin(__c)))
-    -> decltype(_CUDA_VSTD::rbegin(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::rbegin(__c)))
+    -> decltype(::cuda::std::rbegin(__c))
   {
-    return _CUDA_VSTD::rbegin(__c);
+    return ::cuda::std::rbegin(__c);
   }
 };
 } // namespace __crbegin
@@ -122,10 +122,10 @@ namespace __crend
 struct __fn
 {
   template <class _Cp>
-  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::rend(__c)))
-    -> decltype(_CUDA_VSTD::rend(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::rend(__c)))
+    -> decltype(::cuda::std::rend(__c))
   {
-    return _CUDA_VSTD::rend(__c);
+    return ::cuda::std::rend(__c);
   }
 };
 } // namespace __crend
@@ -135,7 +135,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct nullopt_t
 {
@@ -36,7 +36,7 @@ struct nullopt_t
 
 _CCCL_GLOBAL_CONSTANT nullopt_t nullopt{nullopt_t::__secret_tag{}, nullopt_t::__secret_tag{}};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

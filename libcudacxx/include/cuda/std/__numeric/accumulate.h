@@ -26,14 +26,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
   for (; __first != __last; ++__first)
   {
-    __init = _CUDA_VSTD::move(__init) + *__first;
+    __init = ::cuda::std::move(__init) + *__first;
   }
   return __init;
 }
@@ -44,12 +44,12 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOpe
 {
   for (; __first != __last; ++__first)
   {
-    __init = __binary_op(_CUDA_VSTD::move(__init), *__first);
+    __init = __binary_op(::cuda::std::move(__init), *__first);
   }
   return __init;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

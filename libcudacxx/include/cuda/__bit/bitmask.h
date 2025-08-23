@@ -31,57 +31,57 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __shl(const _Tp __value, int __shift) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
       NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                         (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
-                          return _CUDA_VPTX::shl(static_cast<_Up>(__value), __shift);))
+                         (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                          return ::cuda::ptx::shl(static_cast<_Up>(__value), __shift);))
     }
   }
-  return (__shift >= _CUDA_VSTD::numeric_limits<_Tp>::digits) ? _Tp{0} : __value << __shift;
+  return (__shift >= ::cuda::std::numeric_limits<_Tp>::digits) ? _Tp{0} : __value << __shift;
 }
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __shr(const _Tp __value, int __shift) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
       NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                         (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
-                          return _CUDA_VPTX::shr(static_cast<_Up>(__value), __shift);))
+                         (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                          return ::cuda::ptx::shr(static_cast<_Up>(__value), __shift);))
     }
   }
-  return (__shift >= _CUDA_VSTD::numeric_limits<_Tp>::digits) ? _Tp{0} : __value >> __shift;
+  return (__shift >= ::cuda::std::numeric_limits<_Tp>::digits) ? _Tp{0} : __value >> __shift;
 }
 
 template <typename _Tp = uint32_t>
 [[nodiscard]] _CCCL_API constexpr _Tp bitmask(int __start, int __width) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bitmask() requires unsigned integer types");
-  [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
+  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>, "bitmask() requires unsigned integer types");
+  [[maybe_unused]] constexpr auto __digits = ::cuda::std::numeric_limits<_Tp>::digits;
   _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (return _CUDA_VPTX::bmsk_clamp(__start, __width);))
+      NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::ptx::bmsk_clamp(__start, __width);))
     }
   }
   return ::cuda::__shl(static_cast<_Tp>(::cuda::__shl(_Tp{1}, __width) - 1), __start);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

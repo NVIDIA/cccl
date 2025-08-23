@@ -26,7 +26,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
 
@@ -55,7 +55,7 @@ template <class _Tp>
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

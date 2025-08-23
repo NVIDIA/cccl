@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator
@@ -40,8 +40,8 @@ adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterat
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
       typename iterator_traits<_InputIterator>::value_type __val(*__first);
-      *__result = __val - _CUDA_VSTD::move(__acc);
-      __acc     = _CUDA_VSTD::move(__val);
+      *__result = __val - ::cuda::std::move(__acc);
+      __acc     = ::cuda::std::move(__val);
     }
   }
   return __result;
@@ -58,14 +58,14 @@ _CCCL_API constexpr _OutputIterator adjacent_difference(
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
       typename iterator_traits<_InputIterator>::value_type __val(*__first);
-      *__result = __binary_op(__val, _CUDA_VSTD::move(__acc));
-      __acc     = _CUDA_VSTD::move(__val);
+      *__result = __binary_op(__val, ::cuda::std::move(__acc));
+      __acc     = ::cuda::std::move(__val);
     }
   }
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
