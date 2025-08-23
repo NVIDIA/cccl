@@ -134,6 +134,38 @@ def make_reduce_into(
     Returns:
         A callable object that can be used to perform the reduction
     """
+    # Validate dtype compatibility between input, output and accumulator (h_init).
+    # Accumulator dtype is taken from h_init.
+    if isinstance(h_init, np.ndarray):
+        accum_dtype = h_init.dtype
+    else:
+        # Prefer .dtype if available (e.g., GpuStruct), else try to derive from numba typeof
+        accum_dtype = getattr(h_init, "dtype", None)
+        if accum_dtype is None:
+            try:
+                accum_dtype = np.dtype(numba.typeof(h_init))
+            except Exception as e:
+                raise TypeError(
+                    "Could not determine accumulator dtype from h_init; expected numpy array or object with .dtype"
+                ) from e
+
+    # Validate d_in if it is a device array (iterators may not expose dtype reliably here):
+    if not isinstance(d_in, IteratorBase):
+        in_dtype = protocols.get_dtype(d_in)
+        if in_dtype != accum_dtype:
+            raise TypeError(
+                f"reduce_into dtype mismatch: input dtype {in_dtype} != accumulator dtype {accum_dtype}. "
+                "Ensure d_in elements and h_init have identical dtype to avoid truncation or misinterpretation."
+            )
+
+    # Validate d_out dtype as well (should hold a single accumulator value):
+    out_dtype = protocols.get_dtype(d_out)
+    if out_dtype != accum_dtype:
+        raise TypeError(
+            f"reduce_into dtype mismatch: output dtype {out_dtype} != accumulator dtype {accum_dtype}. "
+            "Ensure d_out and h_init have identical dtype."
+        )
+
     return _Reduce(d_in, d_out, op, h_init)
 
 
