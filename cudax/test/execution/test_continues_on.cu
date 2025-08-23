@@ -13,23 +13,25 @@
 //
 #include "common/checked_receiver.cuh"
 #include "common/error_scheduler.cuh"
-#include "common/impulse_scheduler.cuh"
+#include "common/impulse_scheduler.cuh" // IWYU pragma: keep
 #include "common/inline_scheduler.cuh"
 #include "common/stopped_scheduler.cuh"
 #include "common/utility.cuh"
-#include "testing.cuh"
+#include "testing.cuh" // IWYU pragma: keep
 
 namespace
 {
 C2H_TEST("continues_on simple example", "[adaptors][continues_on]")
 {
-  auto snd = cudax_async::continues_on(cudax_async::just(13), inline_scheduler{});
+  auto snd = cudax_async::continues_on(cudax_async::just(13), inline_scheduler<>{});
   auto op  = cudax_async::connect(std::move(snd), checked_value_receiver{13});
+  static_assert(
+    cudax_async::get_completion_behavior<decltype(snd)>() == cudax_async::completion_behavior::inline_completion);
   cudax_async::start(op);
   // The receiver checks if we receive the right value
 }
 
-#if !defined(__CUDA_ARCH__)
+#if _CCCL_HOST_COMPILATION()
 
 C2H_TEST("continues_on can be piped", "[adaptors][continues_on]")
 {
@@ -42,6 +44,8 @@ C2H_TEST("continues_on can be piped", "[adaptors][continues_on]")
                called = true;
                return val;
              });
+  static_assert(
+    cudax_async::get_completion_behavior<decltype(snd)>() == cudax_async::completion_behavior::asynchronous);
   // Start the operation
   auto op = cudax_async::connect(std::move(snd), checked_value_receiver{13});
   cudax_async::start(op);
@@ -117,11 +121,11 @@ C2H_TEST("continues_on works when changing threads", "[adaptors][continues_on]")
   CUDAX_REQUIRE(called);
 }
 
-#endif
+#endif // _CCCL_HOST_COMPILATION()
 
 C2H_TEST("continues_on can be called with rvalue ref scheduler", "[adaptors][continues_on]")
 {
-  auto snd = cudax_async::continues_on(cudax_async::just(13), inline_scheduler{});
+  auto snd = cudax_async::continues_on(cudax_async::just(13), inline_scheduler<>{});
   auto op  = cudax_async::connect(std::move(snd), checked_value_receiver{13});
   cudax_async::start(op);
   // The receiver checks if we receive the right value
@@ -129,7 +133,7 @@ C2H_TEST("continues_on can be called with rvalue ref scheduler", "[adaptors][con
 
 C2H_TEST("continues_on can be called with const ref scheduler", "[adaptors][continues_on]")
 {
-  const inline_scheduler sched;
+  const inline_scheduler<> sched;
   auto snd = cudax_async::continues_on(cudax_async::just(13), sched);
   auto op  = cudax_async::connect(std::move(snd), checked_value_receiver{13});
   cudax_async::start(op);
@@ -138,7 +142,7 @@ C2H_TEST("continues_on can be called with const ref scheduler", "[adaptors][cont
 
 C2H_TEST("continues_on can be called with ref scheduler", "[adaptors][continues_on]")
 {
-  inline_scheduler sched;
+  inline_scheduler<> sched;
   auto snd = cudax_async::continues_on(cudax_async::just(13), sched);
   auto op  = cudax_async::connect(std::move(snd), checked_value_receiver{13});
   cudax_async::start(op);
@@ -175,7 +179,7 @@ C2H_TEST("continues_on forwards set_stopped calls", "[adaptors][continues_on]")
 
 C2H_TEST("continues_on has the values_type corresponding to the given values", "[adaptors][continues_on]")
 {
-  inline_scheduler sched{};
+  inline_scheduler<> sched{};
 
   check_value_types<types<int>>(cudax_async::continues_on(cudax_async::just(1), sched));
   check_value_types<types<int, double>>(cudax_async::continues_on(cudax_async::just(3, 0.14), sched));
@@ -185,7 +189,7 @@ C2H_TEST("continues_on has the values_type corresponding to the given values", "
 
 C2H_TEST("continues_on keeps error_types from scheduler's sender", "[adaptors][continues_on]")
 {
-  inline_scheduler sched1{};
+  inline_scheduler<> sched1{};
   error_scheduler<std::error_code> sched2{std::make_error_code(std::errc::invalid_argument)};
   error_scheduler<int> sched3{43};
 
@@ -197,9 +201,9 @@ C2H_TEST("continues_on keeps error_types from scheduler's sender", "[adaptors][c
 C2H_TEST("continues_on sends an exception_ptr if value types are potentially throwing when copied",
          "[adaptors][continues_on]")
 {
-  inline_scheduler sched{};
+  inline_scheduler<> sched{};
 
-#if !defined(__CUDA_ARCH__)
+#if _CCCL_HOST_COMPILATION()
   check_error_types<std::exception_ptr>(cudax_async::continues_on(cudax_async::just(potentially_throwing{}), sched));
 #else
   // No exceptions in device code:
@@ -209,7 +213,7 @@ C2H_TEST("continues_on sends an exception_ptr if value types are potentially thr
 
 C2H_TEST("continues_on keeps sends_stopped from scheduler's sender", "[adaptors][continues_on]")
 {
-  inline_scheduler sched1{};
+  inline_scheduler<> sched1{};
   error_scheduler<error_code> sched2{error_code{std::errc::invalid_argument}};
   stopped_scheduler sched3{};
 

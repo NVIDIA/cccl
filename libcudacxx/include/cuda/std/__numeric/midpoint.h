@@ -35,12 +35,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr enable_if_t<
-  _CCCL_TRAIT(is_integral, _Tp) && !_CCCL_TRAIT(is_same, bool, _Tp) && !_CCCL_TRAIT(is_null_pointer, _Tp),
-  _Tp>
+[[nodiscard]]
+_CCCL_API constexpr enable_if_t<is_integral_v<_Tp> && !is_same_v<bool, _Tp> && !is_null_pointer_v<_Tp>, _Tp>
 midpoint(_Tp __a, _Tp __b) noexcept
 {
   using _Up = make_unsigned_t<_Tp>;
@@ -57,11 +56,10 @@ midpoint(_Tp __a, _Tp __b) noexcept
   }
 }
 
-template <class _Tp,
-          enable_if_t<_CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_void, _Tp) && (sizeof(_Tp) > 0), int> = 0>
+template <class _Tp, enable_if_t<is_object_v<_Tp> && !is_void_v<_Tp> && (sizeof(_Tp) > 0), int> = 0>
 [[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {
-  return __a + _CUDA_VSTD::midpoint(ptrdiff_t(0), __b - __a);
+  return __a + ::cuda::std::midpoint(ptrdiff_t(0), __b - __a);
 }
 
 template <typename _Tp>
@@ -77,23 +75,22 @@ template <typename _Fp>
 }
 
 template <class _Fp>
-[[nodiscard]] _CCCL_API constexpr enable_if_t<_CCCL_TRAIT(is_floating_point, _Fp), _Fp>
-midpoint(_Fp __a, _Fp __b) noexcept
+[[nodiscard]] _CCCL_API constexpr enable_if_t<is_floating_point_v<_Fp>, _Fp> midpoint(_Fp __a, _Fp __b) noexcept
 {
   constexpr _Fp __lo = numeric_limits<_Fp>::min() * 2;
   constexpr _Fp __hi = numeric_limits<_Fp>::max() / 2;
-  return _CUDA_VSTD::__fp_abs(__a) <= __hi && _CUDA_VSTD::__fp_abs(__b) <= __hi
+  return ::cuda::std::__fp_abs(__a) <= __hi && ::cuda::std::__fp_abs(__b) <= __hi
          ? // typical case: overflow is impossible
            (__a + __b) / 2
          : // always correctly rounded
-           _CUDA_VSTD::__fp_abs(__a) < __lo ? __a + __b / 2 : // not safe to halve a
-             _CUDA_VSTD::__fp_abs(__b) < __lo
+           ::cuda::std::__fp_abs(__a) < __lo ? __a + __b / 2 : // not safe to halve a
+             ::cuda::std::__fp_abs(__b) < __lo
              ? __a / 2 + __b
              : // not safe to halve b
              __a / 2 + __b / 2; // otherwise correctly rounded
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

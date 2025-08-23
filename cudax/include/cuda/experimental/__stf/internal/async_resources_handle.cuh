@@ -432,7 +432,7 @@ public:
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
   }
 
-  _CUDA_VSTD::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
   cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     assert(pimpl);
@@ -490,7 +490,25 @@ public:
   }
 };
 
-/* Record a user-provided CUDA stream (optimization) */
+//! @brief Registers a user-provided CUDA stream with asynchronous resources
+//!
+//! @details This optimization records a CUDA stream in the provided asynchronous resources handle,
+//! creating a decorated_stream object that encapsulates:
+//! - The original stream handle
+//! - A unique identifier for stream tracking
+//! - The associated device ID
+//!
+//! @param[in,out] async_resources Handle to asynchronous resources manager
+//! @param[in] user_stream Raw CUDA stream to register. Must be a valid stream.
+//!
+//! @return decorated_stream Object containing:
+//!         - Original stream handle
+//!         - Unique ID from async_resources
+//!         - Device ID associated with the stream
+//!
+//! @pre `user_stream` must be a valid CUDA stream created with `cudaStreamCreate` or equivalent
+//! @note This registration is an optimization to avoid repeated stream metadata lookups
+//!       in performance-critical code paths
 inline decorated_stream register_stream(async_resources_handle& async_resources, cudaStream_t user_stream)
 {
   // Get a unique ID
@@ -500,6 +518,19 @@ inline decorated_stream register_stream(async_resources_handle& async_resources,
   return decorated_stream(user_stream, id, dev_id);
 }
 
+//! @brief Unregisters a decorated CUDA stream from asynchronous resources
+//!
+//! @details Performs cleanup operations to release resources associated with a previously
+//! registered stream. This includes:
+//! - Releasing the unique ID back to the resource manager
+//! - Invalidating the decorated stream's internal ID
+//!
+//! @param[in,out] async_resources Handle to asynchronous resources manager
+//! @param[in,out] dstream Decorated stream to unregister. Its `id` will be set to -1.
+//!
+//! @pre `dstream.id` must be valid (≥ 0) before calling this function
+//! @post `dstream.id == -1` and associated resources are released
+//! @note Should be paired with register_stream() for proper resource management
 inline void unregister_stream(async_resources_handle& async_resources, decorated_stream& dstream)
 {
   async_resources.release_unique_id(dstream.id);

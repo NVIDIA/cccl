@@ -40,25 +40,25 @@ inline void get_property(const cuda::experimental::pinned_memory_resource&, othe
 template <class... Properties>
 struct memory_resource_wrapper
 {
-  // Not a resource_ref, because it can't be used to create any_async_resource (yet)
+  // Not a resource_ref, because it can't be used to create any_resource (yet)
   // https://github.com/NVIDIA/cccl/issues/4166
-  cudax::any_async_resource<Properties...> resource_;
+  cudax::any_resource<Properties...> resource_;
 
-  void* allocate(std::size_t size, std::size_t alignment)
+  void* allocate_sync(std::size_t size, std::size_t alignment)
   {
-    return resource_.allocate(size, alignment);
+    return resource_.allocate_sync(size, alignment);
   }
-  void deallocate(void* ptr, std::size_t size, std::size_t alignment)
+  void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
   {
-    resource_.deallocate(ptr, size, alignment);
+    resource_.deallocate_sync(ptr, size, alignment);
   }
-  void* allocate_async(std::size_t size, std::size_t alignment, cuda::stream_ref stream)
+  void* allocate(cuda::stream_ref stream, std::size_t size, std::size_t alignment)
   {
-    return resource_.allocate_async(size, alignment, stream);
+    return resource_.allocate(stream, size, alignment);
   }
-  void deallocate_async(void* ptr, std::size_t size, std::size_t alignment, cuda::stream_ref stream)
+  void deallocate(cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment)
   {
-    resource_.deallocate_async(ptr, size, alignment, stream);
+    resource_.deallocate(stream, ptr, size, alignment);
   }
 
   bool operator==(const memory_resource_wrapper&) const

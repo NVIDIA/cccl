@@ -22,10 +22,12 @@
 #endif // no system header
 
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__functional/compose.h>
 #include <cuda/std/__tuple_dir/ignore.h>
-#include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -35,25 +37,6 @@
 
 namespace cuda::experimental::execution
 {
-// NOLINTBEGIN(misc-unused-using-decls)
-using _CUDA_STD_EXEC::__forwarding_query;
-using _CUDA_STD_EXEC::__unwrap_reference_t;
-using _CUDA_STD_EXEC::env;
-using _CUDA_STD_EXEC::env_of_t;
-using _CUDA_STD_EXEC::forwarding_query;
-using _CUDA_STD_EXEC::forwarding_query_t;
-using _CUDA_STD_EXEC::get_env;
-using _CUDA_STD_EXEC::get_env_t;
-using _CUDA_STD_EXEC::prop;
-
-using _CUDA_STD_EXEC::__nothrow_queryable_with;
-using _CUDA_STD_EXEC::__query_result_t;
-using _CUDA_STD_EXEC::__queryable_with;
-
-using _CUDA_STD_EXEC::__query_or;
-using _CUDA_STD_EXEC::__query_result_or_t;
-// NOLINTEND(misc-unused-using-decls)
-
 template <class _DomainOrTag, class... _Args>
 using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
 
@@ -81,7 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of applying the sender operation.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
-  _CCCL_TRIVIAL_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(noexcept(
+  _CCCL_NODEBUG_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(noexcept(
     _Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
   {
     return _Tag{}.apply_sender(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
@@ -96,7 +79,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @return The result of transforming the sender with the given environment.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
     noexcept(tag_of_t<_Sndr>{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env)))
     -> __transform_sender_result_t<tag_of_t<_Sndr>, _Sndr, _Env>
   {
@@ -106,7 +89,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
   transform_sender(_Sndr&& __sndr) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     // FUTURE TODO: add a transform for the split sender once we have a split sender
@@ -116,8 +99,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto
-  transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
+  transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
@@ -137,18 +120,13 @@ struct get_domain_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept -> __query_result_t<_Env, get_domain_t>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
+    -> decay_t<__query_result_t<_Env, get_domain_t>>
   {
     return {};
   }
 
-  // NOT TO SPEC: return default_domain if the environment does not provide a domain.
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t) const noexcept
-  {
-    return default_domain{};
-  }
-
-  _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept
+  _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept
   {
     return true;
   }
@@ -157,51 +135,53 @@ struct get_domain_t
 _CCCL_GLOBAL_CONSTANT get_domain_t get_domain{};
 
 // Used by the schedule_from and continues_on senders
-struct get_domain_late_t
+struct get_domain_override_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env&) const noexcept
-    -> __query_result_t<_Env, get_domain_late_t>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
+    -> decay_t<__query_result_t<_Env, get_domain_override_t>>
   {
     return {};
   }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return false;
+  }
 };
 
-_CCCL_GLOBAL_CONSTANT get_domain_late_t get_domain_late{};
+_CCCL_GLOBAL_CONSTANT get_domain_override_t get_domain_override{};
 
 namespace __detail
 {
-template <class _Env, class _GetScheduler, class _Default>
-_CCCL_API auto __domain_of_fn(const _Env& __env, _GetScheduler, _Default) noexcept -> decltype(__query_or(
-  __env, get_domain, __query_or(__query_or(__env, _GetScheduler{}, __nil{}), get_domain, _Default{})));
-
+// Returns the type of the first expression that is well-formed:
+// - get_domain(env)
+// - get_domain(_GetScheduler{}(env))
+// - _Default{}
 template <class _Env, class _GetScheduler, class _Default = default_domain>
-using __domain_of_t =
-  decltype(__detail::__domain_of_fn(declval<_Env>(), declval<_GetScheduler>(), declval<_Default>()));
+using __domain_of_t = decay_t<__call_result_t<
+  __first_callable<get_domain_t, ::cuda::std::__compose_t<get_domain_t, _GetScheduler>, __always<_Default>>,
+  _Env>>;
 
 template <class _Sndr, class _Default = default_domain>
-_CCCL_TRIVIAL_API constexpr auto __get_domain_early() noexcept
+_CCCL_NODEBUG_API constexpr auto __get_domain_early() noexcept
 {
   return __domain_of_t<env_of_t<_Sndr>, get_completion_scheduler_t<set_value_t>, _Default>{};
 }
 
 template <class _Sndr, class _Env, class _Default = default_domain>
-_CCCL_TRIVIAL_API constexpr auto __get_domain_late() noexcept
+_CCCL_NODEBUG_API constexpr auto __get_domain_late() noexcept
 {
-  using __env_domain_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Env, get_scheduler_t, _Default>;
-
-  // If the sender is a continues_on or schedule_from sender, we check with the sender for
-  // its domain. If it does not provide one, we fall back to using the domain from the
-  // receiver's environment.
-  if constexpr (__queryable_with<env_of_t<_Sndr>, get_domain_late_t>)
+  // Check if the sender's attributes has a get_domain_override query. If so, use that.
+  // Otherwise, we fall back to using the domain from the receiver's environment.
+  if constexpr (__queryable_with<env_of_t<_Sndr>, get_domain_override_t>)
   {
-    using __late_domain_t _CCCL_NODEBUG_ALIAS = __query_result_t<env_of_t<_Sndr>, get_domain_late_t>;
-    return _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<__late_domain_t, __nil>, __env_domain_t, __late_domain_t>{};
+    return decay_t<__query_result_t<env_of_t<_Sndr>, get_domain_override_t>>{};
   }
   else
   {
-    return __env_domain_t{};
+    return __domain_of_t<_Env, get_scheduler_t, _Default>{};
   }
 }
 } // namespace __detail
@@ -214,11 +194,11 @@ using __late_domain_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__get_domain_l
 
 template <class _Sndr, class... _Env>
 using __domain_of_t _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call<_CUDA_VSTD::_If<sizeof...(_Env) == 0,
-                                          _CUDA_VSTD::__type_quote<__early_domain_of_t>,
-                                          _CUDA_VSTD::__type_quote<__late_domain_of_t>>,
-                          _Sndr,
-                          _Env...>;
+  ::cuda::std::__type_call<::cuda::std::_If<sizeof...(_Env) == 0,
+                                            ::cuda::std::__type_quote<__early_domain_of_t>,
+                                            ::cuda::std::__type_quote<__late_domain_of_t>>,
+                           _Sndr,
+                           _Env...>;
 
 } // namespace cuda::experimental::execution
 

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/execution.cuh>
 
 #include "testing.cuh" // IWYU pragma: keep
@@ -18,28 +20,40 @@ namespace
 {
 //! Scheduler that returns a sender that always completes inline
 //! (successfully).
+template <class Domain = cudax_async::default_domain>
 struct inline_scheduler
 {
 private:
-  struct _env_t
+  struct _attrs_t
   {
-    _CCCL_HOST_DEVICE auto query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) const noexcept
+    _CCCL_HOST_DEVICE static constexpr auto
+    query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) noexcept
     {
       return inline_scheduler{};
+    }
+
+    _CCCL_HOST_DEVICE static constexpr auto query(cudax_async::get_domain_t) noexcept -> Domain
+    {
+      return {};
+    }
+
+    _CCCL_HOST_DEVICE static constexpr auto query(cudax_async::get_completion_behavior_t) noexcept
+    {
+      return cudax_async::completion_behavior::inline_completion;
     }
   };
 
   template <class Rcvr>
-  struct _opstate_t : cudax::__immovable
+  struct _opstate_t : cuda::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 
-    Rcvr _rcvr;
-
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CCCL_HOST_DEVICE constexpr void start() noexcept
     {
       cudax_async::set_value(static_cast<Rcvr&&>(_rcvr));
     }
+
+    Rcvr _rcvr;
   };
 
 public:
@@ -56,12 +70,12 @@ public:
     }
 
     template <class Rcvr>
-    _CCCL_HOST_DEVICE _opstate_t<Rcvr> connect(Rcvr rcvr) const
+    _CCCL_HOST_DEVICE constexpr _opstate_t<Rcvr> connect(Rcvr rcvr) const
     {
       return {{}, static_cast<Rcvr&&>(rcvr)};
     }
 
-    _CCCL_HOST_DEVICE _env_t get_env() const noexcept
+    _CCCL_HOST_DEVICE static constexpr _attrs_t get_env() noexcept
     {
       return {};
     }
@@ -69,7 +83,12 @@ public:
 
   inline_scheduler() = default;
 
-  _CCCL_HOST_DEVICE _sndr_t schedule() const noexcept
+  _CCCL_HOST_DEVICE static constexpr _sndr_t schedule() noexcept
+  {
+    return {};
+  }
+
+  _CCCL_HOST_DEVICE static auto query(cudax_async::get_domain_t) noexcept -> Domain
   {
     return {};
   }

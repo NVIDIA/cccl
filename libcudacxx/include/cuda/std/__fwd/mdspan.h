@@ -32,7 +32,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// [mdspan.accessor.default]
+template <class _ElementType>
+struct default_accessor;
 
 // Layout policy with a mapping which corresponds to Fortran-style array layouts
 struct layout_left
@@ -66,7 +70,20 @@ inline constexpr bool
   __is_valid_layout_mapping<_Layout, _Extents, void_t<typename _Layout::template mapping<_Extents>>> = true;
 } // namespace __mdspan_detail
 
-_LIBCUDACXX_END_NAMESPACE_STD
+// [mdspan.mdspan]
+template <class _ElementType,
+          class _Extents,
+          class _LayoutPolicy   = layout_right,
+          class _AccessorPolicy = default_accessor<_ElementType>>
+class mdspan;
+
+template <class _Tp>
+inline constexpr bool __is_std_mdspan_v = false;
+
+template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
+inline constexpr bool __is_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

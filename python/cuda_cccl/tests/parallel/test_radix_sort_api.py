@@ -8,7 +8,7 @@ def test_radix_sort():
     import cupy as cp
     import numpy as np
 
-    import cuda.cccl.parallel.experimental.algorithms as algorithms
+    import cuda.cccl.parallel.experimental as parallel
 
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
@@ -21,22 +21,14 @@ def test_radix_sort():
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    # Instantiate radix_sort for the given keys, items, and operator
-    radix_sort = algorithms.radix_sort(
-        d_in_keys, d_out_keys, d_in_values, d_out_values, algorithms.SortOrder.ASCENDING
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = radix_sort(
-        None, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run radix_sort
-    radix_sort(
-        d_temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
+    # Call single-phase API directly with num_items parameter
+    parallel.radix_sort(
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        parallel.SortOrder.ASCENDING,
+        d_in_keys.size,
     )
 
     # Check the result is correct
@@ -57,7 +49,7 @@ def test_radix_sort_double_buffer():
     import cupy as cp
     import numpy as np
 
-    import cuda.cccl.parallel.experimental.algorithms as algorithms
+    import cuda.cccl.parallel.experimental as parallel
 
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
@@ -70,33 +62,16 @@ def test_radix_sort_double_buffer():
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
-    values_double_buffer = algorithms.DoubleBuffer(d_in_values, d_out_values)
+    keys_double_buffer = parallel.DoubleBuffer(d_in_keys, d_out_keys)
+    values_double_buffer = parallel.DoubleBuffer(d_in_values, d_out_values)
 
-    # Instantiate radix_sort for the given keys, items, and operator
-    radix_sort = algorithms.radix_sort(
+    # Call single-phase API directly with num_items parameter
+    parallel.radix_sort(
         keys_double_buffer,
         None,
         values_double_buffer,
         None,
-        algorithms.SortOrder.ASCENDING,
-    )
-
-    # Determine temporary device storage requirements
-    temp_storage_size = radix_sort(
-        None, keys_double_buffer, None, values_double_buffer, None, d_in_keys.size
-    )
-
-    # Allocate temporary storage
-    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-
-    # Run radix_sort
-    radix_sort(
-        d_temp_storage,
-        keys_double_buffer,
-        None,
-        values_double_buffer,
-        None,
+        parallel.SortOrder.ASCENDING,
         d_in_keys.size,
     )
 

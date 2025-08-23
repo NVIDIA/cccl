@@ -12,8 +12,12 @@ from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from .._utils.protocols import (
+    get_data_pointer,
+    validate_and_get_stream,
+)
+from .._utils.temp_storage_buffer import TempStorageBuffer
+from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
 
@@ -78,9 +82,6 @@ class _UniqueByKey:
         d_out_num_selected: DeviceArrayLike,
         op: Callable,
     ):
-        d_in_keys, d_in_items, d_out_keys, d_out_items = scrub_duplicate_ltoirs(
-            d_in_keys, d_in_items, d_out_keys, d_out_items
-        )
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
@@ -143,7 +144,7 @@ class _UniqueByKey:
 
 
 @cache_with_key(make_cache_key)
-def unique_by_key(
+def make_unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,
     d_out_keys: DeviceArrayLike | IteratorBase,
@@ -176,4 +177,55 @@ def unique_by_key(
 
     return _UniqueByKey(
         d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+    )
+
+
+def unique_by_key(
+    d_in_keys: DeviceArrayLike | IteratorBase,
+    d_in_items: DeviceArrayLike | IteratorBase,
+    d_out_keys: DeviceArrayLike | IteratorBase,
+    d_out_items: DeviceArrayLike | IteratorBase,
+    d_out_num_selected: DeviceArrayLike,
+    op: Callable,
+    num_items: int,
+    stream=None,
+):
+    """
+    Performs device-wide unique by key operation using the single-phase API.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in_keys: Device array or iterator containing the input sequence of keys
+        d_in_items: Device array or iterator that contains each key's corresponding item
+        d_out_keys: Device array or iterator to store the outputted keys
+        d_out_items: Device array or iterator to store each outputted key's item
+        d_out_num_selected: Device array to store how many items were selected
+        op: Callable representing the equality operator
+        num_items: Number of items to process
+        stream: CUDA stream for the operation (optional)
+    """
+    uniquer = make_unique_by_key(
+        d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, op
+    )
+    tmp_storage_bytes = uniquer(
+        None,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        num_items,
+        stream,
+    )
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    uniquer(
+        tmp_storage,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        d_out_num_selected,
+        num_items,
+        stream,
     )

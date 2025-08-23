@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __unique_copy_tags
 {
@@ -69,7 +69,7 @@ constexpr _CCCL_API inline pair<_InputIterator, _OutputIterator> __unique_copy(
       }
     }
   }
-  return pair<_InputIterator, _OutputIterator>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__result));
+  return pair<_InputIterator, _OutputIterator>(::cuda::std::move(__first), ::cuda::std::move(__result));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -96,7 +96,7 @@ constexpr _CCCL_API inline pair<_ForwardIterator, _OutputIterator> __unique_copy
       }
     }
   }
-  return pair<_ForwardIterator, _OutputIterator>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__result));
+  return pair<_ForwardIterator, _OutputIterator>(::cuda::std::move(__first), ::cuda::std::move(__result));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -120,7 +120,7 @@ constexpr _CCCL_API inline pair<_InputIterator, _InputAndOutputIterator> __uniqu
     }
     ++__result;
   }
-  return pair<_InputIterator, _InputAndOutputIterator>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__result));
+  return pair<_InputIterator, _InputAndOutputIterator>(::cuda::std::move(__first), ::cuda::std::move(__result));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -128,15 +128,15 @@ template <class _InputIterator, class _OutputIterator, class _BinaryPredicate>
 _CCCL_API constexpr _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryPredicate __pred)
 {
-  using __algo_tag = conditional_t<
-    _CCCL_TRAIT(is_base_of, forward_iterator_tag, __iterator_category_type<_InputIterator>),
-    __unique_copy_tags::__reread_from_input_tag,
-    conditional_t<_CCCL_TRAIT(is_base_of, forward_iterator_tag, __iterator_category_type<_OutputIterator>)
-                    && _CCCL_TRAIT(is_same, __iter_value_type<_InputIterator>, __iter_value_type<_OutputIterator>),
-                  __unique_copy_tags::__reread_from_output_tag,
-                  __unique_copy_tags::__read_from_tmp_value_tag>>;
-  return _CUDA_VSTD::__unique_copy<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _CUDA_VSTD::move(__result), __pred, __algo_tag())
+  using __algo_tag =
+    conditional_t<is_base_of_v<forward_iterator_tag, __iterator_category_type<_InputIterator>>,
+                  __unique_copy_tags::__reread_from_input_tag,
+                  conditional_t<is_base_of_v<forward_iterator_tag, __iterator_category_type<_OutputIterator>>
+                                  && is_same_v<__iter_value_type<_InputIterator>, __iter_value_type<_OutputIterator>>,
+                                __unique_copy_tags::__reread_from_output_tag,
+                                __unique_copy_tags::__read_from_tmp_value_tag>>;
+  return ::cuda::std::__unique_copy<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), __pred, __algo_tag())
     .second;
 }
 
@@ -144,11 +144,11 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::unique_copy(
-    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _CUDA_VSTD::move(__result), __equal_to{});
+  return ::cuda::std::unique_copy(
+    ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), __equal_to{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

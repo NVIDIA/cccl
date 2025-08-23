@@ -33,12 +33,13 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
+
+#include <cuda/std/iterator>
 
 #include <algorithm>
 
@@ -135,9 +136,9 @@ template <typename UnsignedIntegralKeyT>
 struct index_to_key_value_op
 {
   static constexpr std::size_t max_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
   static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
                 "Calculation of num_distinct_key_values would overflow");
   static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
@@ -163,9 +164,9 @@ class index_to_expected_key_op
 {
 private:
   static constexpr std::size_t max_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::max());
   static constexpr std::size_t lowest_key_value =
-    static_cast<std::size_t>(::cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
+    static_cast<std::size_t>(cuda::std::numeric_limits<UnsignedIntegralKeyT>::lowest());
   static_assert(sizeof(UnsignedIntegralKeyT) < sizeof(std::size_t),
                 "Calculation of num_distinct_key_values would overflow");
   static constexpr std::size_t num_distinct_key_values = (max_key_value - lowest_key_value + std::size_t{1ULL});
@@ -431,9 +432,8 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
   using offset_t            = typename testing_types_tuple::offset_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()) - 1,
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  auto num_items_ull = std::min(static_cast<std::size_t>(cuda::std::numeric_limits<offset_t>::max()) - 1,
+                                cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
 
   SECTION("Random")
@@ -497,7 +497,7 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
 
       auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
       auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<key_t>{});
-      auto rev_sorted_it = thrust::make_reverse_iterator(key_value_it + num_items);
+      auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
       thrust::copy(rev_sorted_it, rev_sorted_it + num_items, keys_in_out.begin());
 
       // Perform sort

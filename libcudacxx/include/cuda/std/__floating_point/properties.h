@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __fp_is_signed_v
 
@@ -222,7 +222,7 @@ inline constexpr bool __fp_has_nans_v<__fp_format::__fp6_nv_e3m2> = false;
 template <>
 inline constexpr bool __fp_has_nans_v<__fp_format::__fp4_nv_e2m1> = false;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

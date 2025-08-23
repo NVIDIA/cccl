@@ -9,11 +9,9 @@ import numba
 import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
-from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
-patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
@@ -32,7 +30,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
     ],
 )
 def test_block_store(T, threads_per_block, items_per_thread, algorithm):
-    block_store = cudax.block.store(T, threads_per_block, items_per_thread, algorithm)
+    block_store = coop.block.store(T, threads_per_block, items_per_thread, algorithm)
     temp_storage_bytes = block_store.temp_storage_bytes
 
     num_threads_per_block = (

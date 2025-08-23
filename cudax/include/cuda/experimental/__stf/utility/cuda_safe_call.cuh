@@ -111,7 +111,7 @@ public:
    * @param loc location of the call, defaulted
    */
   template <typename T>
-  cuda_exception(const T status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+  cuda_exception(const T status, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
   {
     // All "success" statuses are zero
     static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
@@ -278,7 +278,7 @@ UNITTEST("first_param")
  * @snippet this cuda_safe_call
  */
 template <typename T>
-void cuda_safe_call(const T status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+void cuda_safe_call(const T status, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   // Common early exit test for all cases
   if (status == 0)
@@ -319,14 +319,14 @@ UNITTEST("cuda_safe_call")
  * @snippet this cuda_try1
  */
 template <typename Status>
-void cuda_try(Status status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+void cuda_try(Status status, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   if (status)
   {
 #if _CCCL_HAS_EXCEPTIONS()
     throw cuda_exception(status, loc);
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    _CUDA_VSTD_NOVERSION::terminate();
+    ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
   }
 }
@@ -399,40 +399,40 @@ UNITTEST("cuda_try2")
 #endif // UNITTESTED_FILE
 
 // Unused, keep for later
-/// @cond DO_NOT_DOCUMENT
-#define OVERLOADS_UNUSED(f)           \
-  ba7b8453f262e429575e23dcb2192b33(   \
-    a2bce6d11e8033f5c8d9c9442849656c, \
-    f(::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  define OVERLOADS_UNUSED(f)           \
+    ba7b8453f262e429575e23dcb2192b33(   \
+      a2bce6d11e8033f5c8d9c9442849656c, \
+      f(::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
 // Unused, keep for later
-#define ba7b8453f262e429575e23dcb2192b33(a, fun_of_a)                   \
-  [&](auto&&... a) noexcept(noexcept(fun_of_a)) -> decltype(fun_of_a) { \
-    return fun_of_a;                                                    \
-  }
+#  define ba7b8453f262e429575e23dcb2192b33(a, fun_of_a)                   \
+    [&](auto&&... a) noexcept(noexcept(fun_of_a)) -> decltype(fun_of_a) { \
+      return fun_of_a;                                                    \
+    }
 
 // Unused, keep for later
-#define CUDATRY_UNUSED(fun)         \
-  a838e9c10e0ded64dff84e7b679d2342( \
-    (fun), a2bce6d11e8033f5c8d9c9442849656c, cca0b395150985cb1c6ab3f8032edafa, fef8664203d67fe27b0434c87ce346fb)
+#  define CUDATRY_UNUSED(fun)         \
+    a838e9c10e0ded64dff84e7b679d2342( \
+      (fun), a2bce6d11e8033f5c8d9c9442849656c, cca0b395150985cb1c6ab3f8032edafa, fef8664203d67fe27b0434c87ce346fb)
 // Unused, keep for later
-#define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                   \
-  [&](auto&&... a) {                                                             \
-    if constexpr (::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) \
-    {                                                                            \
-      ::cuda::experimental::stf::cuda_try(f(::std::forward<decltype(a)>(a)...)); \
-    }                                                                            \
-    else                                                                         \
-    {                                                                            \
-      ::std::remove_pointer_t<reserved::first_param<f>> result;                  \
-      if (auto status = f(&result, ::std::forward<decltype(a)>(a)...))           \
-      {                                                                          \
-        throw ::cuda::experimental::stf::cuda_exception(status);                 \
-      }                                                                          \
-      return result;                                                             \
-    }                                                                            \
-  } CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES
+#  define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                   \
+    [&](auto&&... a) {                                                             \
+      if constexpr (::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) \
+      {                                                                            \
+        ::cuda::experimental::stf::cuda_try(f(::std::forward<decltype(a)>(a)...)); \
+      }                                                                            \
+      else                                                                         \
+      {                                                                            \
+        ::std::remove_pointer_t<reserved::first_param<f>> result;                  \
+        if (auto status = f(&result, ::std::forward<decltype(a)>(a)...))           \
+        {                                                                          \
+          throw ::cuda::experimental::stf::cuda_exception(status);                 \
+        }                                                                          \
+        return result;                                                             \
+      }                                                                            \
+    } CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES
 // Unused, keep for later
-#define CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES_UNUSED(...) (__VA_ARGS__)
-/// @endcond
+#  define CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES_UNUSED(...) (__VA_ARGS__)
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 } // namespace cuda::experimental::stf

@@ -75,6 +75,12 @@ struct unique_by_key_build
       libcudacxx_path,
       ctk_path);
   }
+
+  static bool should_check_sass(int cc_major)
+  {
+    // TODO: add a check for NVRTC version; ref nvbug 5243118
+    return cc_major < 9;
+  }
 };
 
 struct unique_by_key_run
@@ -158,6 +164,64 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   pointer_t<int> output_num_selected_it(1);
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
+
+  std::vector<std::pair<key_t, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
+    return a.first == b.first;
+  });
+
+  int num_selected = output_num_selected_it[0];
+
+  REQUIRE((boundary - input_pairs.begin()) == num_selected);
+
+  input_pairs.resize(num_selected);
+
+  std::vector<key_t> host_output_keys(output_keys_it);
+  std::vector<item_t> host_output_values(output_values_it);
+  std::vector<std::pair<key_t, item_t>> output_pairs;
+  for (int i = 0; i < num_selected; ++i)
+  {
+    output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
+  }
+
+  REQUIRE(input_pairs == output_pairs);
+}
+
+struct UniqueByKey_AllPointerInputs_WellKnown_Fixture_Tag;
+C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_by_key][well_known]", key_types)
+{
+  using key_t = c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  cccl_op_t op                     = make_well_known_unique_binary_predicate();
+  std::vector<key_t> input_keys    = generate<key_t>(num_items);
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+
+  pointer_t<key_t> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<key_t> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_WellKnown_Fixture_Tag>();
   // key: (input_type, output_type, num_selected_type)
   const auto& test_key = make_key<key_t, item_t, int>();
 
@@ -310,6 +374,80 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
   pointer_t<int> output_num_selected_it(1);
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_pair, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
+
+  std::vector<std::pair<key_pair, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
+
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
+    return a.first == b.first;
+  });
+
+  int num_selected = output_num_selected_it[0];
+
+  REQUIRE((boundary - input_pairs.begin()) == num_selected);
+
+  input_pairs.resize(num_selected);
+
+  std::vector<key_pair> host_output_keys(output_keys_it);
+  std::vector<item_t> host_output_values(output_values_it);
+  std::vector<std::pair<key_pair, item_t>> output_pairs;
+  for (int i = 0; i < num_selected; ++i)
+  {
+    output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
+  }
+
+  REQUIRE(input_pairs == output_pairs);
+}
+
+struct UniqueByKey_AllPointerInputs_WellKnown_Fixture_Tag;
+C2H_TEST("DeviceSelect::UniqueByKey works with custom types with well-known operations",
+         "[device][select_unique_by_key][well_known]")
+{
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op_state = make_operation(
+    "op",
+    "struct key_pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {\n"
+    "  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);\n"
+    "  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);\n"
+    "  bool* out = static_cast<bool*>(out_ptr);\n"
+    "  *out = (lhs->a == rhs->a && lhs->b == rhs->b);\n"
+    "}");
+  cccl_op_t op                = op_state;
+  op.type                     = cccl_op_kind_t::CCCL_EQUAL_TO;
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<key_pair> input_keys(num_items);
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    input_keys[i] = key_pair{a[i], b[i]};
+  }
+
+  pointer_t<key_pair> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<key_pair> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_WellKnown_Fixture_Tag>();
   // key: (input_type, output_type, num_selected_type)
   const auto& test_key = make_key<key_pair, item_t, int>();
 

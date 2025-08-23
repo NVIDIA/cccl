@@ -62,8 +62,7 @@ public:
   //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
-  explicit device_memory_pool(const ::cuda::experimental::device_ref __device_id,
-                              memory_pool_properties __properties = {})
+  explicit device_memory_pool(const ::cuda::device_ref __device_id, memory_pool_properties __properties = {})
       : __memory_pool_base(__memory_location_type::__device, __properties, __device_id.get())
   {}
 
@@ -91,7 +90,7 @@ public:
   static device_memory_pool from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static device_memory_pool from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static device_memory_pool from_native_handle(::cuda::std::nullptr_t) = delete;
 };
 
 } // namespace cuda::experimental

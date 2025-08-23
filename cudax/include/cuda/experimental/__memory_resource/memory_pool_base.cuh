@@ -67,10 +67,10 @@ inline void __verify_device_supports_stream_ordered_allocations(const int __devi
 
 //! @brief Enable access to this memory pool from the supplied devices
 //!
-//! Device on which this pool resides can be included in the vector.
+//! Device on which this pool resides can be included in the span.
 //!
 //! @param __pool The memory pool to set access for
-//! @param __devices A vector of `device_ref`s listing devices to enable access for
+//! @param __devices A span of `device_ref`s listing devices to enable access for
 //! @param __flags The access flags to set
 //! @throws cuda_error if ``cudaMemPoolSetAccess`` fails.
 inline void
@@ -185,14 +185,14 @@ private:
         __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
         __pool_properties.location.id   = __id;
 #else // _CCCL_CTK_BELOW(12, 6)
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+        ::cuda::std::__throw_invalid_argument(
           "Host pinned memory pools are unavailable in this CUDA "
           "version");
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
         break;
       }
       default:
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid memory pool location type");
+        ::cuda::std::__throw_invalid_argument("Invalid memory pool location type");
     }
 
     ::cudaMemPool_t __cuda_pool_handle{};
@@ -272,12 +272,13 @@ public:
   //! @brief Gets the value of an attribute of the pool.
   //! @param __attribute the attribute to be set.
   //! @return The value of the attribute. For boolean attributes any value not equal to 0 equates to true.
-  size_t get_attribute(::cudaMemPoolAttr __attr) const
+  // TODO rename to configuration
+  size_t attribute(::cudaMemPoolAttr __attr) const
   {
     size_t __value = 0;
     _CCCL_TRY_CUDA_API(
       ::cudaMemPoolGetAttribute,
-      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::get_attribute ",
+      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::attribute ",
       __pool_handle_,
       __attr,
       static_cast<void*>(&__value));
@@ -288,19 +289,20 @@ public:
   //! @param __attribute the attribute to be set.
   //! @param __value the new value of that attribute.
   //! @note For boolean attributes any non-zero value equates to true.
+  // TODO: rename to set_configuration
   void set_attribute(::cudaMemPoolAttr __attr, size_t __value)
   {
     switch (__attr)
     {
       case ::cudaMemPoolAttrReservedMemCurrent:
       case ::cudaMemPoolAttrUsedMemCurrent:
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
+        ::cuda::std::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
         break;
       case ::cudaMemPoolAttrReservedMemHigh:
       case ::cudaMemPoolAttrUsedMemHigh:
         if (__value != 0)
         {
-          _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+          ::cuda::std::__throw_invalid_argument(
             "set_attribute: It is illegal to set this "
             "attribute to a non-zero value.");
         }
@@ -319,10 +321,10 @@ public:
 
   //! @brief Enable access to this memory pool from the supplied devices
   //!
-  //! Device on which this pool resides can be included in the vector.
+  //! Device on which this pool resides can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to enable access for
+  void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -338,10 +340,10 @@ public:
 
   //! @brief Disable access to this memory pool from the supplied devices
   //!
-  //! Device on which this pool resides can be included in the vector.
+  //! Device on which this pool resides can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to disable access for
+  void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);

@@ -63,9 +63,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '12.8', libs: 'rmm kvikio cudf cudf_kafka' }
-          - { cuda: '12.8', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
-          - { cuda: '12.8', libs: 'rmm ucxx raft cugraph'                }
+          - { cuda: '12.9', libs: 'rmm kvikio cudf cudf_kafka' }
+          - { cuda: '12.9', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
+          - { cuda: '12.9', libs: 'rmm ucxx raft cugraph'                }
     permissions:
       id-token: write
       contents: read
@@ -89,18 +89,18 @@ jobs:
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
-          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
-          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.44"}'
+          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.45"}'
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
@@ -174,6 +174,7 @@ jobs:
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
+            --env "CI=$CI" \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \
@@ -182,6 +183,7 @@ jobs:
             --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
             --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" \
             --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \

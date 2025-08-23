@@ -37,8 +37,6 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-_CCCL_NV_DIAG_SUPPRESS(1444)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
@@ -53,7 +51,7 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   using out_t    = cub::KeyValuePair<offset_t, in_t>;
 
   constexpr int n     = 10;
-  constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
+  constexpr float inf = cuda::std::numeric_limits<float>::infinity();
 
   c2h::device_vector<out_t> out(1);
   out_t* d_out          = thrust::raw_pointer_cast(out.data());

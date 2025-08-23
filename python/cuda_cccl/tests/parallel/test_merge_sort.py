@@ -10,9 +10,7 @@ import numba.types
 import numpy as np
 import pytest
 
-import cuda.cccl.parallel.experimental.algorithms as algorithms
-import cuda.cccl.parallel.experimental.iterators as iterators
-from cuda.cccl.parallel.experimental.struct import gpu_struct
+import cuda.cccl.parallel.experimental as parallel
 
 DTYPE_LIST = [
     np.uint8,
@@ -50,24 +48,9 @@ def type_to_problem_sizes(dtype) -> List[int]:
 def merge_sort_device(
     d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream=None
 ):
-    merge_sort = algorithms.merge_sort(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, op
-    )
-
-    temp_storage_size = merge_sort(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream=stream
-    )
-    d_temp_storage = numba.cuda.device_array(
-        temp_storage_size, dtype=np.uint8, stream=stream.ptr if stream else 0
-    )
-    merge_sort(
-        d_temp_storage,
-        d_in_keys,
-        d_in_items,
-        d_out_keys,
-        d_out_items,
-        num_items,
-        stream=stream,
+    # Use the new single-phase API with automatic temp storage allocation
+    parallel.merge_sort(
+        d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream=stream
     )
 
 
@@ -161,12 +144,12 @@ def test_merge_sort_pairs_copy(dtype, num_items):
 
 
 def test_merge_sort_pairs_struct_type():
-    @gpu_struct
+    @parallel.gpu_struct
     class key_pair:
         a: np.int16
         b: np.uint64
 
-    @gpu_struct
+    @parallel.gpu_struct
     class item_pair:
         a: np.int32
         b: np.float32
@@ -239,7 +222,7 @@ def test_merge_sort_keys_copy_iterator_input(dtype, num_items):
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(h_out_keys)
 
-    i_input = iterators.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_input = parallel.CacheModifiedInputIterator(d_in_keys, modifier="stream")
 
     merge_sort_device(i_input, None, d_out_keys, None, compare_op, num_items)
 
@@ -261,8 +244,8 @@ def test_merge_sort_pairs_copy_iterator_input(dtype, num_items):
     d_out_keys = numba.cuda.to_device(h_out_keys)
     d_out_items = numba.cuda.to_device(h_out_items)
 
-    i_input_keys = iterators.CacheModifiedInputIterator(d_in_keys, modifier="stream")
-    i_input_items = iterators.CacheModifiedInputIterator(d_in_items, modifier="stream")
+    i_input_keys = parallel.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_input_items = parallel.CacheModifiedInputIterator(d_in_items, modifier="stream")
 
     merge_sort_device(
         i_input_keys, i_input_items, d_out_keys, d_out_items, compare_op, num_items

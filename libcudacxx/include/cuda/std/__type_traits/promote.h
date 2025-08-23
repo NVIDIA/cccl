@@ -28,18 +28,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __numeric_type
 {
   _CCCL_API inline static void __test(...);
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
   _CCCL_API inline static float __test(__half);
-#endif // _LIBCUDACXX_HAS_NVBF16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
   _CCCL_API inline static float __test(__nv_bfloat16);
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
   _CCCL_API inline static float __test(float);
   _CCCL_API inline static double __test(char);
   _CCCL_API inline static double __test(int);
@@ -67,7 +67,7 @@ struct __is_mixed_extended_floating_point
   static constexpr bool value = false;
 };
 
-#if _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16()
 template <class _A1>
 struct __is_mixed_extended_floating_point<_A1, __half, __nv_bfloat16>
 {
@@ -103,7 +103,7 @@ struct __is_mixed_extended_floating_point<__nv_bfloat16, __half, _A1>
 {
   static constexpr bool value = true;
 };
-#endif // _LIBCUDACXX_HAS_NVFP16() && _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVFP16() && _CCCL_HAS_NVBF16()
 
 template <class _A1,
           class _A2 = void,
@@ -156,7 +156,7 @@ class __promote : public __promote_imp<_A1, _A2, _A3>
 template <class _A1, class _A2 = void, class _A3 = void>
 using __promote_t _CCCL_NODEBUG_ALIAS = typename __promote<_A1, _A2, _A3>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

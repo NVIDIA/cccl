@@ -82,33 +82,32 @@
 
 // define these entities here for the purpose of Doxygenating them
 // they are actually defined elsewhere
-#if 0
+#if _CCCL_DOXYGEN_INVOKED
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
 namespace omp
 {
 
-
 /*! \addtogroup execution_policies
  *  \{
  */
 
-
 /*! \p thrust::omp::execution_policy is the base class for all Thrust parallel execution
  *  policies which are derived from Thrust's OpenMP backend system.
  */
-template<typename DerivedPolicy>
+template <typename DerivedPolicy>
 struct execution_policy : thrust::execution_policy<DerivedPolicy>
 {};
-
 
 /*! \p omp::tag is a type representing Thrust's standard C++ backend system in C++'s type system.
  *  Iterators "tagged" with a type which is convertible to \p omp::tag assert that they may be
  *  "dispatched" to algorithm implementations in the \p omp system.
  */
-struct tag : thrust::system::omp::execution_policy<tag> { unspecified };
-
+struct tag : thrust::system::omp::execution_policy<tag>
+{
+  unspecified
+};
 
 /*! \p thrust::omp::par is the parallel execution policy associated with Thrust's OpenMP
  *  backend system.
@@ -149,12 +148,10 @@ struct tag : thrust::system::omp::execution_policy<tag> { unspecified };
  */
 static const unspecified par;
 
-
 /*! \}
  */
 
-
-} // end cpp
-} // end system
+} // namespace omp
+} // namespace system
 THRUST_NAMESPACE_END
 #endif

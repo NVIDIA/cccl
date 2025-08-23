@@ -17,11 +17,6 @@ if ("${CMAKE_CUDA_COMPILER_VERSION}" MATCHES "11\.*\.*" OR
   list(FILTER public_headers EXCLUDE REGEX "annotated_ptr")
 endif()
 
-# mdspan is currently not supported on msvc outside of C++20
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "20")
-  list(FILTER public_headers EXCLUDE REGEX "mdspan")
-endif()
-
 # We need to handle atomic headers differently as they do not compile on architectures below sm70
 set(architectures_at_least_sm70)
 foreach(item IN LISTS CMAKE_CUDA_ARCHITECTURES)
@@ -46,9 +41,11 @@ function(libcudacxx_add_public_header_test header)
                          PRIVATE
                          ${headertest_warning_levels_device}
                          -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-  target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
-  target_compile_definitions(headertest_${header_name} PRIVATE CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
-  target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_OPTIONAL_REF)
+  target_compile_definitions(headertest_${header_name} PRIVATE
+    _CCCL_HEADER_TEST
+    CCCL_ENABLE_ASSERTIONS
+    CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+    CCCL_ENABLE_OPTIONAL_REF)
 
   # Ensure that if this is an atomic header, we only include the right architectures
   string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")

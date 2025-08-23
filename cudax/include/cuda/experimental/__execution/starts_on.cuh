@@ -22,137 +22,141 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__utility/pod_tuple.h>
+#include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__utility/forward_like.h>
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/completion_signatures.cuh>
-#include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
-#include <cuda/experimental/__execution/queries.cuh>
-#include <cuda/experimental/__execution/rcvr_ref.cuh>
-#include <cuda/experimental/__execution/rcvr_with_env.cuh>
-#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
-#include <cuda/experimental/__execution/utility.cuh>
-#include <cuda/experimental/__execution/variant.cuh>
-#include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__execution/just.cuh>
+#include <cuda/experimental/__execution/sequence.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-template <class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
-{
-  [[nodiscard]] _CCCL_API constexpr auto query(get_scheduler_t) const noexcept -> _Sch
-  {
-    return __sch_;
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
-  {
-    return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
-  }
-
-  _Sch __sch_;
-};
-
+//! \brief Execution algorithm that starts a given sender on a specified scheduler.
+//!
+//! The `starts_on` algorithm takes a scheduler and a sender, and returns a new sender
+//! that, when connected and started, will first schedule work on the provided scheduler,
+//! and then start the original sender on that scheduler's execution context.
+//!
+//! This algorithm is particularly useful for ensuring that a chain of work begins
+//! execution on a specific execution context, such as a particular GPU stream or thread
+//! pool.
+//!
+//! \details The operation proceeds in two phases:
+//! 1. **Scheduling Phase**: The algorithm first calls `schedule()` on the provided
+//!    scheduler to obtain a sender that represents scheduling work on that scheduler's
+//!    execution context.
+//! 2. **Execution Phase**: Once the scheduling operation completes successfully, the
+//!    original sender is started on the scheduler's execution context.
+//!
+//! The resulting sender's completion signatures are derived from both the scheduler's
+//! `schedule()` sender and the original sender. Error and stopped signals from either
+//! operation are propagated to the final receiver.
+//!
+//! \tparam _Sch A scheduler type that satisfies the `scheduler` concept
+//! \tparam _Sndr A sender type that satisfies the `sender` concept
+//!
+//! \param __sch The scheduler on which the sender should start execution
+//! \param __sndr The sender to be started on the scheduler's execution context
+//!
+//! \return A sender that, when started, will first schedule on `__sch` and then execute
+//!         `__sndr`
+//!
+//! \note The returned sender's environment includes the provided scheduler as the current
+//!       scheduler, allowing nested senders to query and use the same execution context.
+//!
+//! \note This implementation follows the C++26 standard specification for
+//!       `std::execution::starts_on` as defined in [exec.starts.on].
+//!
+//! Example usage:
+//! \code
+//! auto work = cuda::experimental::execution::just(42)
+//!           | cuda::experimental::execution::then([](int x) { return x * 2; });
+//!
+//! auto scheduled_work = cuda::experimental::execution::starts_on(some_scheduler, work);
+//! \endcode
+//!
+//! \see schedule
+//! \see scheduler
+//! \see sender
+//! \see receiver
 struct starts_on_t
 {
-  _CUDAX_SEMI_PRIVATE :
-  template <class _Rcvr, class _Sch, class _CvSndr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>
-  {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
-    using __rcvr_with_sch_t _CCCL_NODEBUG_ALIAS       = __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>;
-
-    _CCCL_API constexpr explicit __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
-        : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
-        , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref_t<__opstate_t, __env_t>{*this})}
-        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref_t<__rcvr_with_sch_t>{*this})}
-    {}
-
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
-
-    _CCCL_API constexpr void start() noexcept
-    {
-      execution::start(__opstate1_);
-    }
-
-    _CCCL_API constexpr void set_value() noexcept
-    {
-      execution::start(__opstate2_);
-    }
-
-    [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t
-    {
-      return __fwd_env(execution::get_env(this->__base()));
-    }
-
-    connect_result_t<schedule_result_t<_Sch&>, __rcvr_ref_t<__opstate_t, __env_t>> __opstate1_;
-    connect_result_t<_CvSndr, __rcvr_ref_t<__rcvr_with_sch_t>> __opstate2_;
-  };
-
-public:
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
+  template <class _Sndr>
+  [[nodiscard]] static _CCCL_API constexpr auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t)
+  {
+    auto&& [__ign, __sch, __child] = __sndr;
+    return sequence(continues_on(just(), __sch), ::cuda::std::forward_like<_Sndr>(__child));
+  }
+
   template <class _Sch, class _Sndr>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
 
 template <class _Sch, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS starts_on_t __tag_;
-  _Sch __sch_;
-  _Sndr __sndr_;
+  using sender_concept = sender_t;
+  using __domain_t     = __query_result_or_t<_Sch, get_domain_t, __nil>;
 
-  template <class _Env>
-  using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, __fwd_env_t<_Env>>;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
+  {
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, _Env&&...) noexcept
+    {
+      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
+                               execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>());
+    }
+
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
+    {
+      return execution::get_env(__sndr_).query(_Query{});
+    }
+
+    _Sndr const& __sndr_;
+  };
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    using __sch_sndr _CCCL_NODEBUG_ALIAS   = schedule_result_t<_Sch>;
-    using __child_sndr _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
-    _CUDAX_LET_COMPLETIONS(
-      auto(__sndr_completions) = execution::get_completion_signatures<__child_sndr, __env_t<_Env>...>())
-    {
-      _CUDAX_LET_COMPLETIONS(
-        auto(__sch_completions) = execution::get_completion_signatures<__sch_sndr, __fwd_env_t<_Env>...>())
-      {
-        return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform{});
-      }
-    }
-
-    _CCCL_UNREACHABLE();
+    using __env_t   = ::cuda::std::__type_index_c<0, _Env..., env<>>;
+    using __sndr2_t = __transform_sender_result_t<starts_on_t, _Self, __env_t>;
+    return execution::get_completion_signatures<__sndr2_t, _Env...>();
   }
 
-  template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
   {
-    return __opstate_t<_Rcvr, _Sch, _Sndr>{__sch_, static_cast<_Rcvr&&>(__rcvr), static_cast<_Sndr&&>(__sndr_)};
+    return __attrs_t{__sndr_};
   }
 
-  template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, _Sch, const _Sndr&>
-  {
-    return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
-  }
-
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
-  {
-    return __fwd_env(execution::get_env(__sndr_));
-  }
+  _CCCL_NO_UNIQUE_ADDRESS starts_on_t __tag_;
+  _Sch __sch_;
+  _Sndr __sndr_;
 };
 
 template <class _Sch, class _Sndr>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
+[[nodiscard]] _CCCL_NODEBUG_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
-  using __sndr_t _CCCL_NODEBUG_ALIAS = starts_on_t::__sndr_t<_Sch, _Sndr>;
-  return transform_sender(get_domain(__sch), __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
+  if constexpr (__queryable_with<_Sch, get_domain_t>)
+  {
+    using __domain_t = __query_result_t<_Sch, get_domain_t>;
+    return execution::transform_sender(
+      __domain_t{}, __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
+  }
+  else
+  {
+    return __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)};
+  }
 }
 
 template <class _Sch, class _Sndr>

@@ -60,7 +60,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can run with empty input", "[d
   constexpr int num_items = 0;
   c2h::device_vector<type> in(num_items);
 
-  adjacent_difference_subtract_right(in.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_right(in.begin(), num_items, cuda::std::minus<>{});
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input", "[device][adjacent_difference]", types)
@@ -71,7 +71,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input",
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
 
-  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input", "[device][adjacent_difference]", types)
@@ -83,11 +83,12 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<type> reference = in;
-  adjacent_difference_subtract_right_copy(in.begin(), thrust::discard_iterator<>(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_right_copy(in.begin(), thrust::discard_iterator<>(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class T>
 struct ref_diff
 {
@@ -101,7 +102,6 @@ struct ref_diff
   {
     return ulonglong2{rhs.x - lhs.x, rhs.y - lhs.y};
   }
-
   __host__ __device__ constexpr ulonglong4 operator()(const ulonglong4& lhs, const ulonglong4& rhs) const noexcept
   {
     return ulonglong4{rhs.x - lhs.x, rhs.y - lhs.y, rhs.z - lhs.z, rhs.w - lhs.w};
@@ -112,6 +112,7 @@ struct ref_diff
     return long2{rhs.x - lhs.x, rhs.y - lhs.y};
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[device][adjacent_difference]", types)
 {
@@ -128,7 +129,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[devic
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
-  adjacent_difference_subtract_right(in.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_right(in.begin(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -148,7 +149,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[d
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
-  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == out);
 }
@@ -167,7 +168,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with pointers", "[device
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
-  adjacent_difference_subtract_right(thrust::raw_pointer_cast(in.data()), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_right(thrust::raw_pointer_cast(in.data()), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -188,11 +189,12 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
   reference.back() = h_in.back();
 
   adjacent_difference_subtract_right_copy(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, ::cuda::std::minus<>{});
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == out);
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct cust_diff
 {
   template <class T>
@@ -216,6 +218,7 @@ struct cust_diff
     return long2{lhs.x - rhs.x, lhs.y - rhs.y};
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
          "[device][adjacent_difference]",

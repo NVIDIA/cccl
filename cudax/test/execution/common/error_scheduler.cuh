@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/execution.cuh>
 
 #include "testing.cuh" // IWYU pragma: keep
@@ -21,7 +23,7 @@ template <class Error>
 struct error_scheduler
 {
 private:
-  struct env_t
+  struct attrs_t
   {
     _CCCL_HOST_DEVICE auto query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) const noexcept
     {
@@ -35,7 +37,7 @@ private:
   };
 
   template <class Rcvr>
-  struct opstate_t : cudax::__immovable
+  struct opstate_t : cuda::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 
@@ -59,7 +61,6 @@ private:
         cudax_async::set_value_t(), //
         cudax_async::set_error_t(Error),
         cudax_async::set_stopped_t()>();
-      ;
     }
 
     template <class Rcvr>
@@ -68,7 +69,7 @@ private:
       return {{}, static_cast<Rcvr&&>(rcvr), _err};
     }
 
-    _CCCL_HOST_DEVICE env_t get_env() const noexcept
+    _CCCL_HOST_DEVICE attrs_t get_env() const noexcept
     {
       return {};
     }
@@ -93,10 +94,12 @@ public:
 
   _CCCL_HIDE_FROM_ABI error_scheduler() = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE explicit error_scheduler(Error err)
       : _err(static_cast<Error&&>(err))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE sndr_t schedule() const noexcept
   {
     return {_err};

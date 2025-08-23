@@ -35,9 +35,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // log
+
+#if _CCCL_CHECK_BUILTIN(builtin_log) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOGF(...) __builtin_logf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG(...)  __builtin_log(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGL(...) __builtin_logl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOGF
+#  undef _CCCL_BUILTIN_LOG
+#  undef _CCCL_BUILTIN_LOGL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float log(float __x) noexcept
 {
@@ -91,10 +104,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hlog(__x);), ({
                       float __vf            = __half2float(__x);
-                      __vf                  = _CUDA_VSTD::logf(__vf);
+                      __vf                  = ::cuda::std::logf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      _CUDA_VSTD::uint16_t __repr = _CUDA_VSTD::__fp_get_storage(__x);
+                      ::cuda::std::uint16_t __repr = ::cuda::std::__fp_get_storage(__x);
                       switch (__repr)
                       {
                         case 7544:
@@ -113,11 +126,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hlog(__x);), (return __float2bfloat16(_CUDA_VSTD::logf(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hlog(__x);), (return __float2bfloat16(::cuda::std::logf(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG)
@@ -128,6 +141,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // log10
+
+#if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10(...)  __builtin_log10(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10L(...) __builtin_log10l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOG10F
+#  undef _CCCL_BUILTIN_LOG10
+#  undef _CCCL_BUILTIN_LOG10L
+#endif //  _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float log10(float __x) noexcept
 {
@@ -180,7 +206,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __half log10(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(_CUDA_VSTD::log10f(__half2float(__x)));))
+    NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(::cuda::std::log10f(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -188,11 +214,11 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(_CUDA_VSTD::log10f(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(::cuda::std::log10f(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log10(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG10)
@@ -203,6 +229,20 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // ilogb
+
+#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ILOGBF
+#  undef _CCCL_BUILTIN_ILOGB
+#  undef _CCCL_BUILTIN_ILOGBL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline int ilogb(float __x) noexcept
 {
@@ -254,18 +294,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline int ilogb(__half __x) noexcept
 {
-  return _CUDA_VSTD::ilogbf(__half2float(__x));
+  return ::cuda::std::ilogbf(__half2float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline int ilogb(__nv_bfloat16 __x) noexcept
 {
-  return _CUDA_VSTD::ilogbf(__bfloat162float(__x));
+  return ::cuda::std::ilogbf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline int ilogb(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ILOGB)
@@ -276,6 +316,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // log1p
+
+#if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1P(...)  __builtin_log1p(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1PL(...) __builtin_log1pl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1p)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOG1PF
+#  undef _CCCL_BUILTIN_LOG1P
+#  undef _CCCL_BUILTIN_LOG1PL
+#endif //  _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float log1p(float __x) noexcept
 {
@@ -327,18 +380,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half log1p(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::log1pf(__half2float(__x)));
+  return __float2half(::cuda::std::log1pf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log1p(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::log1pf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::log1pf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log1p(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG1P)
@@ -349,6 +402,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // log2
+
+#if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOG2F
+#  undef _CCCL_BUILTIN_LOG2
+#  undef _CCCL_BUILTIN_LOG2L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float log2(float __x) noexcept
 {
@@ -401,7 +467,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __half log2(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_53, (return ::hlog2(__x);), (return __float2half(_CUDA_VSTD::log2f(__half2float(__x)));))
+    NV_PROVIDES_SM_53, (return ::hlog2(__x);), (return __float2half(::cuda::std::log2f(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -409,11 +475,11 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log2(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hlog2(__x);), (return __float2bfloat16(_CUDA_VSTD::log2f(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hlog2(__x);), (return __float2bfloat16(::cuda::std::log2f(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log2(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG2)
@@ -424,6 +490,19 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 }
 
 // logb
+
+#if _CCCL_CHECK_BUILTIN(builtin_logb) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_LOGBF
+#  undef _CCCL_BUILTIN_LOGB
+#  undef _CCCL_BUILTIN_LOGBL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float logb(float __x) noexcept
 {
@@ -475,18 +554,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half logb(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::logbf(__half2float(__x)));
+  return __float2half(::cuda::std::logbf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 logb(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::logbf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::logbf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double logb(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOGB)
@@ -496,7 +575,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_LOGB
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -109,7 +109,7 @@ struct max_partial_tile_op_t
   template <int ItemsPerThread, class BlockReduceT, class T>
   __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
   {
-    return reduce.Reduce(thread_data[0], ::cuda::maximum<>{}, valid_items);
+    return reduce.Reduce(thread_data[0], cuda::maximum<>{}, valid_items);
   }
 };
 
@@ -118,12 +118,19 @@ struct max_full_tile_op_t
   template <int ItemsPerThread, class BlockReduceT, class T>
   __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int /* valid_items */) const
   {
-    return reduce.Reduce(thread_data, ::cuda::maximum<>{});
+    return reduce.Reduce(thread_data, cuda::maximum<>{});
   }
 };
 
 using types     = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t, float, double>;
-using vec_types = c2h::type_list<ulonglong4, uchar3, short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  uchar3,
+  short2>;
 
 // %PARAM% TEST_DIM_X dimx 1:7:32:65:128
 // %PARAM% TEST_DIM_YZ dimyz 1:2
@@ -160,7 +167,7 @@ C2H_TEST(
 
   c2h::device_vector<type> d_out(1);
   c2h::device_vector<type> d_in(params::tile_size);
-  c2h::gen(C2H_SEED(10), d_in, ::cuda::std::numeric_limits<type>::min());
+  c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_reference(
@@ -191,7 +198,7 @@ C2H_TEST("Block reduce works with sum in partial tiles",
 
   c2h::device_vector<type> d_out(1);
   c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
-  c2h::gen(C2H_SEED(10), d_in, ::cuda::std::numeric_limits<type>::min());
+  c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
   std::vector<type> h_reference(
@@ -222,7 +229,7 @@ C2H_TEST("Block reduce works with custom op",
 
   c2h::device_vector<type> d_out(1);
   c2h::device_vector<type> d_in(params::tile_size);
-  c2h::gen(C2H_SEED(10), d_in, ::cuda::std::numeric_limits<type>::min());
+  c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_reference(
@@ -253,7 +260,7 @@ C2H_TEST("Block reduce works with custom op in partial tiles",
 
   c2h::device_vector<type> d_out(1);
   c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
-  c2h::gen(C2H_SEED(10), d_in, ::cuda::std::numeric_limits<type>::min());
+  c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_reference(
@@ -285,7 +292,7 @@ C2H_TEST("Block reduce works with custom types", "[reduce][block]", block_dim_xs
 
   c2h::device_vector<type> d_out(1);
   c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
-  c2h::gen(C2H_SEED(10), d_in, ::cuda::std::numeric_limits<type>::min());
+  c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
   c2h::host_vector<type> h_reference(

@@ -16,6 +16,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -107,7 +108,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def reduce_into(
+def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
     op: Callable,
@@ -134,3 +135,30 @@ def reduce_into(
         A callable object that can be used to perform the reduction
     """
     return _Reduce(d_in, d_out, op, h_init)
+
+
+def reduce_into(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    num_items: int,
+    h_init: np.ndarray | GpuStruct,
+    stream=None,
+):
+    """
+    Performs device-wide reduction.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array to store the result of the reduction
+        op: Binary reduction operator
+        num_items: Number of items to reduce
+        h_init: Initial value for the reduction
+        stream: CUDA stream for the operation (optional)
+    """
+    reducer = make_reduce_into(d_in, d_out, op, h_init)
+    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)

@@ -44,7 +44,7 @@ std::string make_kernel_input_iterator(
   std::string_view advance)
 {
   const std::string iter_def = std::format(R"XXX(
-extern "C" __device__ VALUE_T DEREF(const void *self_ptr);
+extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T* result);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
 struct __align__(OP_ALIGNMENT) {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
@@ -52,7 +52,11 @@ struct __align__(OP_ALIGNMENT) {0} {{
   using difference_type = DIFF_T;
   using pointer = VALUE_T*;
   using reference = VALUE_T&;
-  __device__ inline value_type operator*() const {{ return DEREF(data); }}
+  __device__ inline value_type operator*() const {{
+    value_type result;
+    DEREF(data, &result);
+    return result;
+  }}
   __device__ inline {0}& operator+=(difference_type diff) {{
       ADVANCE(data, diff);
       return *this;

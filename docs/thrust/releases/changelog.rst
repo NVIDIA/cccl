@@ -49,7 +49,7 @@ Other Enhancements
 Thrust 2.0.1
 ------------
 
-.. _other-enhancements-1:
+.. _thrust-other-enhancements-1:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -164,7 +164,7 @@ Breaking Changes
    ``THRUST_DEVICE_SYSTEM`` and ``THRUST_HOST_SYSTEM`` macros should be
    used instead.
 
-.. _bug-fixes-1:
+.. _thrust-bug-fixes-1:
 
 Bug Fixes
 ~~~~~~~~~
@@ -182,7 +182,7 @@ Bug Fixes
 -  NVIDIA/thrust#1756: Fix ``copy_if`` for output iterators that don’t
    support copy assignment. Thanks for @mfbalin for this contribution.
 
-.. _other-enhancements-2:
+.. _thrust-other-enhancements-2:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -197,7 +197,7 @@ Other Enhancements
 Thrust 1.17.2
 -------------
 
-.. _summary-1:
+.. _thrust-summary-1:
 
 Summary
 ~~~~~~~
@@ -208,7 +208,7 @@ of CUB.
 Thrust 1.17.1
 -------------
 
-.. _summary-2:
+.. _thrust-summary-2:
 
 Summary
 ~~~~~~~
@@ -219,7 +219,7 @@ of CUB.
 Thrust 1.17.0
 -------------
 
-.. _summary-3:
+.. _thrust-summary-3:
 
 Summary
 ~~~~~~~
@@ -232,7 +232,7 @@ on the new Thrust documentation site at https://nvidia.github.io/cccl/thrust/.
 We’ll be migrating existing documentation sources to this new location
 over the next few months.
 
-.. _new-features-1:
+.. _thrust-new-features-1:
 
 New Features
 ~~~~~~~~~~~~
@@ -245,7 +245,7 @@ New Features
    vectors/references to ``scripts/gdb-pretty-printers.py``. Thanks to
    @upsj for this contribution.
 
-.. _bug-fixes-2:
+.. _thrust-bug-fixes-2:
 
 Bug Fixes
 ~~~~~~~~~
@@ -253,7 +253,7 @@ Bug Fixes
 -  NVIDIA/thrust#1671: Fixed ``reduce_by_key`` when called with 2^31
    elements.
 
-.. _other-enhancements-3:
+.. _thrust-other-enhancements-3:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -276,7 +276,7 @@ Other Enhancements
 Thrust 1.16.0
 -------------
 
-.. _summary-4:
+.. _thrust-summary-4:
 
 Summary
 ~~~~~~~
@@ -341,7 +341,7 @@ device-side code that currently launches a kernel; such calls will
 instead execute sequentially on the calling GPU thread instead of
 launching a device-wide kernel.
 
-.. _breaking-changes-1:
+.. _thrust-breaking-changes-1:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -354,7 +354,7 @@ Breaking Changes
    Downstream projects may need to update their includes if they were
    relying on this behavior.
 
-.. _new-features-2:
+.. _thrust-new-features-2:
 
 New Features
 ~~~~~~~~~~~~
@@ -373,7 +373,7 @@ Enhancements
    values in Thrust’s CMake install rules. Thanks to @robertmaynard for
    this contribution.
 
-.. _bug-fixes-3:
+.. _thrust-bug-fixes-3:
 
 Bug Fixes
 ~~~~~~~~~
@@ -396,7 +396,7 @@ Bug Fixes
 Thrust 1.15.0
 -------------
 
-.. _summary-5:
+.. _thrust-summary-5:
 
 Summary
 ~~~~~~~
@@ -406,7 +406,7 @@ Thrust 1.15.0 provides numerous bugfixes, including non-numeric
 fewer conversion warnings, ``counting_iterator`` initialization, and
 documentation updates.
 
-.. _deprecation-notices-1:
+.. _thrust-deprecation-notices-1:
 
 Deprecation Notices
 ~~~~~~~~~~~~~~~~~~~
@@ -419,7 +419,7 @@ device-side code that currently launches a kernel; such calls will
 instead execute sequentially on the calling GPU thread instead of
 launching a device-wide kernel.
 
-.. _bug-fixes-4:
+.. _thrust-bug-fixes-4:
 
 Bug Fixes
 ~~~~~~~~~
@@ -459,7 +459,7 @@ Several bugfixes are also included: The ``tuple_size`` and
 integrated with ``std::iterator_traits``. See below for more details and
 references.
 
-.. _breaking-changes-2:
+.. _thrust-breaking-changes-2:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -469,7 +469,7 @@ Breaking Changes
    projects that declare ``using namespace thrust;`` from the global
    namespace. We recommend against this practice.
 
-.. _new-features-3:
+.. _thrust-new-features-3:
 
 New Features
 ~~~~~~~~~~~~
@@ -478,7 +478,7 @@ New Features
    be wrapped in an external namespace, and support cases when CUB is
    wrapped in an external namespace.
 
-.. _bug-fixes-5:
+.. _thrust-bug-fixes-5:
 
 Bug Fixes
 ~~~~~~~~~
@@ -512,14 +512,14 @@ mechanism that is extended to and integrated with Thrust. Simply define
 Using different wrapped namespaces for each shared library will prevent
 issues like those reported in NVIDIA/thrust#1401.
 
-.. _new-features-4:
+.. _thrust-new-features-4:
 
 New Features
 ~~~~~~~~~~~~
 
 -  NVIDIA/thrust#1464: Add ``THRUST_CUB_WRAPPED_NAMESPACE`` hooks.
 
-.. _bug-fixes-6:
+.. _thrust-bug-fixes-6:
 
 Bug Fixes
 ~~~~~~~~~
@@ -538,7 +538,7 @@ include instructions for building CUB as a component of Thrust, and API
 documentation now refers to `cppreference <https://cppreference.com>`__
 instead of SGI’s old STL reference.
 
-.. _breaking-changes-3:
+.. _thrust-breaking-changes-3:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -548,7 +548,7 @@ Breaking Changes
    equivalent ``thrust::host_system_tag`` and
    ``thrust::device_system_tag`` instead.
 
-.. _new-features-5:
+.. _thrust-new-features-5:
 
 New Features
 ~~~~~~~~~~~~
@@ -562,7 +562,7 @@ New Features
 -  NVIDIA/thrust#1459: Introduce a new ``THRUST_IGNORE_DEPRECATED_API``
    macro that disables deprecation warnings on Thrust and CUB APIs.
 
-.. _bug-fixes-7:
+.. _thrust-bug-fixes-7:
 
 Bug Fixes
 ~~~~~~~~~
@@ -578,7 +578,7 @@ Bug Fixes
 
    (1) for this contribution.
 
-.. _other-enhancements-4:
+.. _thrust-other-enhancements-4:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -614,7 +614,7 @@ that returned invalid temporary storage requirements when ``num_items``
 was close to (but not exceeding) ``INT32_MAX``. This release deprecates
 support for Clang < 7.0 and MSVC < 2019 (aka 19.20/16.0/14.20).
 
-.. _breaking-changes-4:
+.. _thrust-breaking-changes-4:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -624,7 +624,7 @@ Breaking Changes
    accumulator types. This may change the results from ``scan_by_key``
    when input, output, and initial value types are not the same type.
 
-.. _new-features-6:
+.. _thrust-new-features-6:
 
 New Features
 ~~~~~~~~~~~~
@@ -634,7 +634,7 @@ New Features
 -  NVIDIA/thrust#1334: Add ``thrust::universal_vector``,
    ``universal_ptr``, and ``universal_allocator``.
 
-.. _bug-fixes-8:
+.. _thrust-bug-fixes-8:
 
 Bug Fixes
 ~~~~~~~~~
@@ -661,7 +661,7 @@ Bug Fixes
 -  NVIDIA/thrust#1389: Support building Thrust tests without CUDA
    enabled.
 
-.. _other-enhancements-5:
+.. _thrust-other-enhancements-5:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -689,7 +689,7 @@ installation rules, status messages, and other features that make Thrust
 easier to use from CMake projects. The release includes several other
 bugfixes and modernizations, and received updates from 12 contributors.
 
-.. _new-features-7:
+.. _thrust-new-features-7:
 
 New Features
 ~~~~~~~~~~~~
@@ -705,7 +705,7 @@ New Features
    CMake’s ``add_subdirectory``. Thanks to Kai Germaschewski for this
    contribution.
 
-.. _bug-fixes-9:
+.. _thrust-bug-fixes-9:
 
 Bug Fixes
 ~~~~~~~~~
@@ -748,7 +748,7 @@ Bug Fixes
    this contribution.
 -  NVIDIA/thrust#1319: Suppress GPU deprecation warnings.
 
-.. _other-enhancements-6:
+.. _thrust-other-enhancements-6:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -771,7 +771,7 @@ GCC < 5, Clang < 6, and MSVC < 2017. It also overhauls CMake support.
 Finally, we now have a Code of Conduct for contributors:
 https://github.com/NVIDIA/thrust/blob/main/CODE_OF_CONDUCT.md
 
-.. _breaking-changes-5:
+.. _thrust-breaking-changes-5:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -788,7 +788,7 @@ Breaking Changes
 -  The default branch on GitHub is now called ``main``.
 -  Allocator and vector classes have been replaced with alias templates.
 
-.. _new-features-8:
+.. _thrust-new-features-8:
 
 New Features
 ~~~~~~~~~~~~
@@ -829,7 +829,7 @@ New Features
    to the wrapped iterator. Thanks to Trevor Smith for this
    contribution.
 
-.. _other-enhancements-7:
+.. _thrust-other-enhancements-7:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -876,7 +876,7 @@ Other Enhancements
 -  NVIDIA/thrust#1201: Tests for correct handling of legacy and
    per-thread default streams. Thanks to Rong Ou for this contribution.
 
-.. _bug-fixes-10:
+.. _thrust-bug-fixes-10:
 
 Bug Fixes
 ~~~~~~~~~
@@ -946,7 +946,7 @@ Thrust 1.9.10-1 (NVIDIA HPC SDK 20.7, CUDA Toolkit 11.1)
 Thrust 1.9.10-1 is the minor release accompanying the NVIDIA HPC SDK
 20.7 release and the CUDA Toolkit 11.1 release.
 
-.. _bug-fixes-11:
+.. _thrust-bug-fixes-11:
 
 Bug Fixes
 ~~~~~~~~~
@@ -971,7 +971,7 @@ script. C++03, C++11, GCC < 5, Clang < 6, and MSVC < 2017 are now
 deprecated. Starting with the upcoming 1.10.0 release, C++03 support
 will be dropped entirely.
 
-.. _breaking-changes-6:
+.. _thrust-breaking-changes-6:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -994,7 +994,7 @@ Breaking Changes
    Suppression is only a short term solution. We will be dropping
    support for these compilers in the near future.
 
-.. _new-features-9:
+.. _thrust-new-features-9:
 
 New Features
 ~~~~~~~~~~~~
@@ -1013,7 +1013,7 @@ New Features
    a convenient way to get an MR caching allocator for device memory,
    which is used by NVC++.
 
-.. _other-enhancements-8:
+.. _thrust-other-enhancements-8:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -1021,7 +1021,7 @@ Other Enhancements
 -  #1129: Refactored RDC handling in CMake to be a global option and not
    create two targets for each example and test.
 
-.. _bug-fixes-12:
+.. _thrust-bug-fixes-12:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1055,7 +1055,7 @@ and MSVC < 2017 are now deprecated. Starting with the upcoming 1.10.0
 release, C++03 support will be dropped entirely. All other deprecated
 platforms will be dropped in the near future.
 
-.. _breaking-changes-7:
+.. _thrust-breaking-changes-7:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -1079,7 +1079,7 @@ Breaking Changes
    Suppression is only a short term solution. We will be dropping
    support for these compilers in the near future.
 
-.. _new-features-10:
+.. _thrust-new-features-10:
 
 New Features
 ~~~~~~~~~~~~
@@ -1109,7 +1109,7 @@ New Features
    memory strongly typed pointer compatible with the ISO C++ Standard
    Library.
 
-.. _other-enhancements-9:
+.. _thrust-other-enhancements-9:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -1123,7 +1123,7 @@ Other Enhancements
 -  #1070: Unit test for ``thrust::inclusive_scan`` with a user defined
    types. Thanks to Conor Hoekstra for this contribution.
 
-.. _bug-fixes-13:
+.. _thrust-bug-fixes-13:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1170,7 +1170,7 @@ from working with more than ``2^31-1`` elements. Now,
 ``thrust::reduce``, ``thrust::*_scan``, and related algorithms (aka most
 of Thrust) work with large element counts.
 
-.. _breaking-changes-8:
+.. _thrust-breaking-changes-8:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -1181,7 +1181,7 @@ Breaking Changes
    simply delete your own version of CUB and use the version of CUB that
    comes with Thrust.
 
-.. _other-enhancements-10:
+.. _thrust-other-enhancements-10:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -1201,7 +1201,7 @@ Other Enhancements
    register pressure, and we don’t actually know at compile time how
    many blocks we will use (aside from single tile kernels).
 
-.. _bug-fixes-14:
+.. _thrust-bug-fixes-14:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1249,7 +1249,7 @@ Thrust 1.9.7-1 (CUDA Toolkit 10.2 for Tegra)
 Thrust 1.9.7-1 is a minor release accompanying the CUDA Toolkit 10.2
 release for Tegra. It is nearly identical to 1.9.7.
 
-.. _bug-fixes-15:
+.. _thrust-bug-fixes-15:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1268,7 +1268,7 @@ release for AArch64 SBSA. The tag ``cuda-10.2aarch64sbsa`` contains the
 exact version of Thrust present in the CUDA Toolkit 10.2 preview release
 for AArch64 SBSA.
 
-.. _bug-fixes-16:
+.. _thrust-bug-fixes-16:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1298,7 +1298,7 @@ Thrust 1.9.6 (CUDA Toolkit 10.1 Update 2)
 Thrust 1.9.6 is a minor release accompanying the CUDA Toolkit 10.1
 Update 2 release.
 
-.. _bug-fixes-17:
+.. _thrust-bug-fixes-17:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1320,7 +1320,7 @@ Thrust 1.9.5 (CUDA Toolkit 10.1 Update 1)
 Thrust 1.9.5 is a minor release accompanying the CUDA Toolkit 10.1
 Update 1 release.
 
-.. _bug-fixes-18:
+.. _thrust-bug-fixes-18:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1340,7 +1340,7 @@ C++11/C++14/C++17/C++20 support. The new asynchronous algorithms in the
 ``thrust::future`` objects, which can be waited upon to synchronize with
 the completion of the parallel operation.
 
-.. _breaking-changes-9:
+.. _thrust-breaking-changes-9:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -1349,7 +1349,7 @@ Synchronous Thrust algorithms now block until all of their operations
 have completed. Use the new asynchronous Thrust algorithms for
 non-blocking behavior.
 
-.. _new-features-11:
+.. _thrust-new-features-11:
 
 New Features
 ~~~~~~~~~~~~
@@ -1569,7 +1569,7 @@ New Examples
 -  ``mr_basic`` demonstrates how to use the new memory resource
    allocator system.
 
-.. _other-enhancements-11:
+.. _thrust-other-enhancements-11:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -1622,7 +1622,7 @@ Other Enhancements
       ``cudaError_t`` enumerator in addition to the diagnostic message.
    -  Stopped using conditionally signed types like ``char``.
 
-.. _bug-fixes-19:
+.. _thrust-bug-fixes-19:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1657,7 +1657,7 @@ Thrust 1.9.3 (CUDA Toolkit 10.0)
 
 Thrust 1.9.3 unifies and integrates CUDA Thrust and GitHub Thrust.
 
-.. _bug-fixes-20:
+.. _thrust-bug-fixes-20:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1696,7 +1696,7 @@ compiles with compiler warnings enabled and treated as errors.
 Additionally, the unit test suite and framework was enhanced to increase
 coverage.
 
-.. _breaking-changes-10:
+.. _thrust-breaking-changes-10:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -1704,7 +1704,7 @@ Breaking Changes
 -  The ``fallback_allocator`` example was removed, as it was buggy and
    difficult to support.
 
-.. _new-features-12:
+.. _thrust-new-features-12:
 
 New Features
 ~~~~~~~~~~~~
@@ -1721,7 +1721,7 @@ New Features
    -  ``thrust::max_align_t``, a C++03 implementation of C++11’s
       ``std::max_align_t``.
 
-.. _bug-fixes-21:
+.. _thrust-bug-fixes-21:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1741,7 +1741,7 @@ Thrust 1.9.1-2 (CUDA Toolkit 9.1)
 Thrust 1.9.1-2 integrates version 1.7.4 of CUB and introduces a new CUDA
 backend for ``thrust::reduce`` based on CUB.
 
-.. _bug-fixes-22:
+.. _thrust-bug-fixes-22:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1760,7 +1760,7 @@ written using CUB, a high performance CUDA collectives library. This
 brings a substantial performance improvement to the CUDA backend across
 the board.
 
-.. _breaking-changes-11:
+.. _thrust-breaking-changes-11:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -1768,7 +1768,7 @@ Breaking Changes
 -  Any code depending on CUDA backend implementation details will likely
    be broken.
 
-.. _new-features-13:
+.. _thrust-new-features-13:
 
 New Features
 ~~~~~~~~~~~~
@@ -1778,7 +1778,7 @@ New Features
 -  ``thrust::transform_output_iterator``, a fancy iterator that applies
    a function to the output before storing the result.
 
-.. _new-examples-1:
+.. _thrust-new-examples-1:
 
 New Examples
 ~~~~~~~~~~~~
@@ -1786,7 +1786,7 @@ New Examples
 -  ``transform_output_iterator`` demonstrates use of the new fancy
    iterator ``thrust::transform_output_iterator``.
 
-.. _other-enhancements-12:
+.. _thrust-other-enhancements-12:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -1798,7 +1798,7 @@ Other Enhancements
    ``thrust::detail::vector_base``-based classes,
    e.g. ``thrust::host_vector``, ``thrust::device_vector``, and friends.
 
-.. _bug-fixes-23:
+.. _thrust-bug-fixes-23:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1806,7 +1806,7 @@ Bug Fixes
 -  ``sin(thrust::complex<double>)`` no longer has precision loss to
    float.
 
-.. _acknowledgments-1:
+.. _thrust-acknowledgments-1:
 
 Acknowledgments
 ~~~~~~~~~~~~~~~
@@ -1825,7 +1825,7 @@ Thrust 1.8.3 (CUDA Toolkit 8.0)
 
 Thrust 1.8.3 is a small bug fix release.
 
-.. _new-examples-2:
+.. _thrust-new-examples-2:
 
 New Examples
 ~~~~~~~~~~~~
@@ -1833,7 +1833,7 @@ New Examples
 -  ``range_view`` demonstrates the use of a view (a non-owning wrapper
    for an iterator range with a container-like interface).
 
-.. _bug-fixes-24:
+.. _thrust-bug-fixes-24:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1848,7 +1848,7 @@ Thrust 1.8.2 (CUDA Toolkit 7.5)
 
 Thrust 1.8.2 is a small bug fix release.
 
-.. _bug-fixes-25:
+.. _thrust-bug-fixes-25:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1859,11 +1859,11 @@ Bug Fixes
    CUDA backend.
 -  #651: ``thrust::copy`` between host and device now accepts execution
    policies with streams attached,
-   i.e. ``thrust::::cuda::par.on(stream)``.
+   i.e. ``thrust::cuda::par.on(stream)``.
 -  #664: ``thrust::for_each`` and algorithms based on it no longer
    ignore streams attached to execution policies.
 
-.. _known-issues-1:
+.. _thrust-known-issues-1:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -1876,7 +1876,7 @@ Thrust 1.8.1 (CUDA Toolkit 7.0)
 
 Thrust 1.8.1 is a small bug fix release.
 
-.. _bug-fixes-26:
+.. _thrust-bug-fixes-26:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1884,7 +1884,7 @@ Bug Fixes
 -  #615, #620: Fixed ``thrust::for_each`` and ``thrust::reduce`` to no
    longer fail on large inputs.
 
-.. _known-issues-2:
+.. _thrust-known-issues-2:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -1908,7 +1908,7 @@ request a CUDA stream for kernels launched during algorithm execution.
 Finally, new CUDA algorithm implementations provide substantial
 performance improvements.
 
-.. _new-features-14:
+.. _thrust-new-features-14:
 
 New Features
 ~~~~~~~~~~~~
@@ -1945,7 +1945,7 @@ New Features
 
 -  ``thrust::complex``, a complex number data type.
 
-.. _new-examples-3:
+.. _thrust-new-examples-3:
 
 New Examples
 ~~~~~~~~~~~~
@@ -1955,7 +1955,7 @@ New Examples
 -  async_reduce demonstrates ways to achieve algorithm invocations which
    are asynchronous with the calling thread.
 
-.. _other-enhancements-13:
+.. _thrust-other-enhancements-13:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -1972,7 +1972,7 @@ Other Enhancements
    sizes.
 -  fallback_allocator example is simpler.
 
-.. _bug-fixes-27:
+.. _thrust-bug-fixes-27:
 
 Bug Fixes
 ~~~~~~~~~
@@ -1993,7 +1993,7 @@ Bug Fixes
 -  #578: NVCC produces warnings when sequential algorithms are used with
    CPU systems.
 
-.. _known-issues-3:
+.. _thrust-known-issues-3:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2006,7 +2006,7 @@ Known Issues
    the last element in a segment of equivalent keys instead of the
    first.
 
-.. _acknowledgments-2:
+.. _thrust-acknowledgments-2:
 
 Acknowledgments
 ~~~~~~~~~~~~~~~
@@ -2023,7 +2023,7 @@ Thrust 1.7.2 (CUDA Toolkit 6.5)
 
 Thrust 1.7.2 is a minor bug fix release.
 
-.. _bug-fixes-28:
+.. _thrust-bug-fixes-28:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2035,7 +2035,7 @@ Thrust 1.7.1 (CUDA Toolkit 6.0)
 
 Thrust 1.7.1 is a minor bug fix release.
 
-.. _bug-fixes-29:
+.. _thrust-bug-fixes-29:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2062,7 +2062,7 @@ CUDA merge and set operations provide 2-15x faster performance while a
 new CUDA comparison sort provides 1.3-4x faster performance. Finally, a
 new TBB reduce_by_key implementation provides 80% faster performance.
 
-.. _breaking-changes-12:
+.. _thrust-breaking-changes-12:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2103,7 +2103,7 @@ Breaking Changes
       thrust::random::experimental::normal_distribution).
    -  Placeholder expressions may no longer include the comma operator.
 
-.. _new-features-15:
+.. _thrust-new-features-15:
 
 New Features
 ~~~~~~~~~~~~
@@ -2145,7 +2145,7 @@ New Features
    -  ``thrust::get_temporary_buffer``
    -  ``thrust::return_temporary_buffer``
 
-.. _new-examples-4:
+.. _thrust-new-examples-4:
 
 New Examples
 ~~~~~~~~~~~~
@@ -2154,7 +2154,7 @@ New Examples
    avoid the automatic initialization of elements in
    thrust::device_vector.
 
-.. _other-enhancements-14:
+.. _thrust-other-enhancements-14:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2184,7 +2184,7 @@ Other Enhancements
 -  Simplified the cuda/custom_temporary_allocation example.
 -  Simplified the cuda/fallback_allocator example.
 
-.. _bug-fixes-30:
+.. _thrust-bug-fixes-30:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2201,7 +2201,7 @@ Bug Fixes
 -  #16: Fix compilation error when sorting bool with CUDA.
 -  #10: Fix ambiguous overloads of ``thrust::reinterpret_tag``.
 
-.. _known-issues-4:
+.. _thrust-known-issues-4:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2210,7 +2210,7 @@ Known Issues
    correctly causing infinite recursion in examples such as
    cuda/custom_temporary_allocation.
 
-.. _acknowledgments-3:
+.. _thrust-acknowledgments-3:
 
 Acknowledgments
 ~~~~~~~~~~~~~~~
@@ -2235,7 +2235,7 @@ single program. Support for TBB allows Thrust programs to integrate more
 naturally into applications which may already employ the TBB task
 scheduler.
 
-.. _breaking-changes-13:
+.. _thrust-breaking-changes-13:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2254,7 +2254,7 @@ Breaking Changes
 -  thrust::any_space_tag has been renamed thrust::any_system_tag
 -  thrust::iterator_space has been renamed thrust::iterator_system
 
-.. _new-features-16:
+.. _thrust-new-features-16:
 
 New Features
 ~~~~~~~~~~~~
@@ -2273,7 +2273,7 @@ New Features
    -  ``thrust::pointer``
    -  ``thrust::reference``
 
-.. _new-examples-5:
+.. _thrust-new-examples-5:
 
 New Examples
 ~~~~~~~~~~~~
@@ -2286,7 +2286,7 @@ New Examples
 -  ``raw_reference_cast``
 -  ``set_operations``
 
-.. _other-enhancements-15:
+.. _thrust-other-enhancements-15:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2300,7 +2300,7 @@ Other Enhancements
 -  The safe use of different backend systems is now possible within a
    single binary
 
-.. _bug-fixes-31:
+.. _thrust-bug-fixes-31:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2308,7 +2308,7 @@ Bug Fixes
 -  #469 ``min_element`` and ``max_element`` algorithms no longer require
    a const comparison operator
 
-.. _known-issues-5:
+.. _thrust-known-issues-5:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2320,7 +2320,7 @@ Thrust 1.5.3 (CUDA Toolkit 5.0)
 
 Thrust 1.5.3 is a minor bug fix release.
 
-.. _bug-fixes-32:
+.. _thrust-bug-fixes-32:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2333,7 +2333,7 @@ Thrust 1.5.2 (CUDA Toolkit 4.2)
 
 Thrust 1.5.2 is a minor bug fix release.
 
-.. _bug-fixes-33:
+.. _thrust-bug-fixes-33:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2345,7 +2345,7 @@ Thrust 1.5.1 (CUDA Toolkit 4.1)
 
 Thrust 1.5.1 is a minor bug fix release.
 
-.. _bug-fixes-34:
+.. _thrust-bug-fixes-34:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2366,7 +2366,7 @@ backend the combined performance improvement is 5.9x for 32-bit integers
 and ranges from 3.0x (64-bit types) to 14.2x (8-bit types). A new CUDA
 ``reduce_by_key`` implementation provides 2-3x faster performance.
 
-.. _breaking-changes-14:
+.. _thrust-breaking-changes-14:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2376,7 +2376,7 @@ Breaking Changes
    device_pointer_cast(static_cast<int*>(void_ptr.get())) to convert,
    for example, device_ptr to device_ptr.
 
-.. _new-features-17:
+.. _thrust-new-features-17:
 
 New Features
 ~~~~~~~~~~~~
@@ -2387,14 +2387,14 @@ New Features
 
 -  Lambda placeholders
 
-.. _new-examples-6:
+.. _thrust-new-examples-6:
 
 New Examples
 ~~~~~~~~~~~~
 
 -  lambda
 
-.. _other-enhancements-16:
+.. _thrust-other-enhancements-16:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2411,7 +2411,7 @@ Other Enhancements
 -  ``reduce_by_key`` and scan algorithms are compatible with
    ``discard_iterator``
 
-.. _bug-fixes-35:
+.. _thrust-bug-fixes-35:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2425,14 +2425,14 @@ Bug Fixes
 -  #314: Avoid unintended ADL invocation when dispatching copy.
 -  #365: Fix merge and set operation failures.
 
-.. _known-issues-6:
+.. _thrust-known-issues-6:
 
 Known Issues
 ~~~~~~~~~~~~
 
 -  None
 
-.. _acknowledgments-4:
+.. _thrust-acknowledgments-4:
 
 Acknowledgments
 ~~~~~~~~~~~~~~~
@@ -2451,7 +2451,7 @@ have been added. Additionally, a new fancy iterator allows discarding
 redundant or otherwise unnecessary output from algorithms, conserving
 memory storage and bandwidth.
 
-.. _breaking-changes-15:
+.. _thrust-breaking-changes-15:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2476,7 +2476,7 @@ Breaking Changes
       when the device backend is CUDA. Instead, use the idiom from the
       cpp_interop example.
 
-.. _new-features-18:
+.. _thrust-new-features-18:
 
 New Features
 ~~~~~~~~~~~~
@@ -2497,14 +2497,14 @@ New Features
 
    -  Compute Capability 2.1 GPUs.
 
-.. _new-examples-7:
+.. _thrust-new-examples-7:
 
 New Examples
 ~~~~~~~~~~~~
 
 -  run_length_decoding
 
-.. _other-enhancements-17:
+.. _thrust-other-enhancements-17:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2520,7 +2520,7 @@ Other Enhancements
 -  A code example is now provided in each algorithm’s documentation.
 -  thrust::reverse now operates in-place
 
-.. _bug-fixes-36:
+.. _thrust-bug-fixes-36:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2534,7 +2534,7 @@ Bug Fixes
    tie-breaker
 -  #248: ``NDEBUG`` is interpreted incorrectly
 
-.. _known-issues-7:
+.. _thrust-known-issues-7:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2550,7 +2550,7 @@ Known Issues
    ``thrust::exclusive_scan_by_key`` are currently incompatible with
    ``thrust::discard_iterator``.
 
-.. _acknowledgments-5:
+.. _thrust-acknowledgments-5:
 
 Acknowledgments
 ~~~~~~~~~~~~~~~
@@ -2573,7 +2573,7 @@ debug mode, also new in 1.3, runtime errors can be located with greater
 precision. Lastly, a few header files have been consolidated or renamed
 for clarity. See the deprecations section below for additional details.
 
-.. _breaking-changes-16:
+.. _thrust-breaking-changes-16:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2613,7 +2613,7 @@ Breaking Changes
 
 -  NVCC 2.3 is no longer supported
 
-.. _new-features-19:
+.. _thrust-new-features-19:
 
 New Features
 ~~~~~~~~~~~~
@@ -2643,7 +2643,7 @@ New Features
 
    -  GF104-based GPUs.
 
-.. _new-examples-8:
+.. _thrust-new-examples-8:
 
 New Examples
 ~~~~~~~~~~~~
@@ -2654,7 +2654,7 @@ New Examples
 -  sparse_vector.cu
 -  strided_range.cu
 
-.. _other-enhancements-18:
+.. _thrust-other-enhancements-18:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2676,7 +2676,7 @@ Other Enhancements
 -  Performance of thrust::sort_by_key on the host is substantially
    improved
 
-.. _bug-fixes-37:
+.. _thrust-bug-fixes-37:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2685,7 +2685,7 @@ Bug Fixes
 -  thrust::uninitialized_copy and thrust::uninitialized_fill now
    dispatch constructors on the device rather than the host
 
-.. _known-issues-8:
+.. _thrust-known-issues-8:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2707,7 +2707,7 @@ Thrust 1.2.1
 Thrust 1.2.1 is a small bug fix release that is compatible with the CUDA
 Toolkit 3.1 release.
 
-.. _known-issues-9:
+.. _thrust-known-issues-9:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2736,7 +2736,7 @@ reduction have also been added. Lastly, improvements to the robustness
 of the CUDA backend ensure correctness across a broad set of (uncommon)
 use cases.
 
-.. _breaking-changes-17:
+.. _thrust-breaking-changes-17:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2757,7 +2757,7 @@ Breaking Changes
 -  Removed support for ``thrust::scatter`` between host & device
    sequences.
 
-.. _new-features-20:
+.. _thrust-new-features-20:
 
 New Features
 ~~~~~~~~~~~~
@@ -2819,7 +2819,7 @@ New Features
 
 -  Support for NVCC 3.0.
 
-.. _new-examples-9:
+.. _thrust-new-examples-9:
 
 New Examples
 ~~~~~~~~~~~~
@@ -2839,7 +2839,7 @@ New Examples
 -  ``transform_iterator``
 -  ``word_count``
 
-.. _other-enhancements-19:
+.. _thrust-other-enhancements-19:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2849,7 +2849,7 @@ Other Enhancements
 -  Performance of ``thrust::inclusive_scan`` and
    ``thrust::exclusive_scan`` is improved by 20-25% for primitive types.
 
-.. _bug-fixes-38:
+.. _thrust-bug-fixes-38:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2868,7 +2868,7 @@ Bug Fixes
 -  #102 eliminated a race condition in device_vector::erase
 -  various compilation warnings eliminated
 
-.. _known-issues-10:
+.. _thrust-known-issues-10:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -2882,7 +2882,7 @@ Known Issues
    backend with large numbers (>= 6) of CPU threads
 -  default_random_engine::discard is not accelerated with nvcc 2.3
 
-.. _acknowledgments-6:
+.. _thrust-acknowledgments-6:
 
 Acknowledgments
 ~~~~~~~~~~~~~~~
@@ -2909,7 +2909,7 @@ Thrust 1.1.0 introduces fancy iterators, binary search functions, and
 several specialized reduction functions. Experimental support for
 segmented scans has also been added.
 
-.. _breaking-changes-18:
+.. _thrust-breaking-changes-18:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -2917,7 +2917,7 @@ Breaking Changes
 -  ``thrust::counting_iterator`` has been moved into the ``thrust``
    namespace (previously ``thrust::experimental``).
 
-.. _new-features-21:
+.. _thrust-new-features-21:
 
 New Features
 ~~~~~~~~~~~~
@@ -2953,7 +2953,7 @@ New Features
    -  ``thrust::transform_iterator``
    -  ``thrust::zip_iterator``
 
-.. _new-examples-10:
+.. _thrust-new-examples-10:
 
 New Examples
 ~~~~~~~~~~~~
@@ -2965,7 +2965,7 @@ New Examples
 -  Using ``thrust::zip_iterator`` to mimic an array of structs.
 -  Using ``thrust::constant_iterator`` to increment array values.
 
-.. _other-enhancements-20:
+.. _thrust-other-enhancements-20:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -2977,7 +2977,7 @@ Other Enhancements
 -  Exceptions are reported when temporary device arrays cannot be
    allocated.
 
-.. _bug-fixes-39:
+.. _thrust-bug-fixes-39:
 
 Bug Fixes
 ~~~~~~~~~
@@ -2989,7 +2989,7 @@ Bug Fixes
 -  #16: make algorithms work for larger data types
 -  #27: Dispatch radix_sort even when comp=less is explicitly provided
 
-.. _known-issues-11:
+.. _thrust-known-issues-11:
 
 Known Issues
 ~~~~~~~~~~~~
@@ -3007,7 +3007,7 @@ Thrust 1.0.0
 
 First production release of Thrust.
 
-.. _breaking-changes-19:
+.. _thrust-breaking-changes-19:
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -3021,7 +3021,7 @@ Breaking Changes
 -  Rename ``thrust::copy_if`` to ``thrust::copy_when`` due to semantic
    differences with C++0x ``std::copy_if``.
 
-.. _new-features-22:
+.. _thrust-new-features-22:
 
 New Features
 ~~~~~~~~~~~~
@@ -3035,7 +3035,7 @@ New Features
 -  Allow types with constructors in comparison ``thrust::sort`` and
    ``thrust::reduce``.
 
-.. _other-enhancements-21:
+.. _thrust-other-enhancements-21:
 
 Other Enhancements
 ~~~~~~~~~~~~~~~~~~
@@ -3043,7 +3043,7 @@ Other Enhancements
 -  ``thrust::merge_sort`` and ``thrust::stable_merge_sort`` are now 2x
    to 5x faster when executed on the parallel device.
 
-.. _bug-fixes-40:
+.. _thrust-bug-fixes-40:
 
 Bug Fixes
 ~~~~~~~~~

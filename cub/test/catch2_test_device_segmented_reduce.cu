@@ -62,7 +62,15 @@ using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::in
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_pair<uchar3>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
@@ -118,13 +126,13 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 
   SECTION("reduce")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
 
@@ -144,8 +152,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
@@ -163,12 +171,12 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 
   SECTION("min")
   {
-    using op_t = ::cuda::minimum<>;
+    using op_t = cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_items, segment_offsets, op_t{}, ::cuda::std::numeric_limits<input_t>::max(), expected_result.begin());
+      in_items, segment_offsets, op_t{}, cuda::std::numeric_limits<input_t>::max(), expected_result.begin());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
@@ -181,12 +189,12 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 
   SECTION("max")
   {
-    using op_t = ::cuda::maximum<>;
+    using op_t = cuda::maximum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_items, segment_offsets, op_t{}, ::cuda::std::numeric_limits<input_t>::lowest(), expected_result.begin());
+      in_items, segment_offsets, op_t{}, cuda::std::numeric_limits<input_t>::lowest(), expected_result.begin());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
@@ -263,13 +271,13 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   SECTION("reduce")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     accum_t default_constant{};
     init_default_constant(default_constant);
@@ -293,8 +301,8 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, output_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> h_expected_result(num_segments);
@@ -314,7 +322,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   SECTION("min")
   {
-    using op_t = ::cuda::minimum<>;
+    using op_t = cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> h_expected_result(num_segments);
@@ -323,7 +331,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
       num_segments,
       segment_size,
       op_t{},
-      ::cuda::std::numeric_limits<input_t>::max(),
+      cuda::std::numeric_limits<input_t>::max(),
       h_expected_result.begin());
 
     // Run test
@@ -338,7 +346,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   SECTION("argmin")
   {
-    using result_t = ::cuda::std::pair<int, output_t>;
+    using result_t = cuda::std::pair<int, output_t>;
 
     // Prepare verification data
     c2h::host_vector<result_t> h_expected_result(num_segments);
@@ -355,7 +363,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   SECTION("max")
   {
-    using op_t = ::cuda::maximum<>;
+    using op_t = cuda::maximum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> h_expected_result(num_segments);
@@ -364,7 +372,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
       num_segments,
       segment_size,
       op_t{},
-      ::cuda::std::numeric_limits<input_t>::lowest(),
+      cuda::std::numeric_limits<input_t>::lowest(),
       h_expected_result.begin());
 
     // Run test
@@ -379,7 +387,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   SECTION("argmax")
   {
-    using result_t = ::cuda::std::pair<int, output_t>;
+    using result_t = cuda::std::pair<int, output_t>;
 
     // Prepare verification data
     c2h::host_vector<result_t> h_expected_result(num_segments);

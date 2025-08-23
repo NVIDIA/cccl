@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __is_identity : false_type
@@ -38,7 +38,7 @@ struct identity
   template <class _Tp>
   [[nodiscard]] _CCCL_API constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
-    return _CUDA_VSTD::forward<_Tp>(__t);
+    return ::cuda::std::forward<_Tp>(__t);
   }
 
   using is_transparent = void;
@@ -54,7 +54,7 @@ template <>
 struct __is_identity<reference_wrapper<const identity>> : true_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

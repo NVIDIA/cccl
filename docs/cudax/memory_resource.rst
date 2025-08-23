@@ -7,17 +7,17 @@ Memory Resources
    :glob:
    :maxdepth: 3
 
-   ${repo_docs_api_path}/*any__resource*
-   ${repo_docs_api_path}/struct*memory__pool__properties*
-   ${repo_docs_api_path}/class*device__memory__pool*
-   ${repo_docs_api_path}/class*device__memory__resource*
-   ${repo_docs_api_path}/class*pinned__memory__pool*
-   ${repo_docs_api_path}/class*pinned__memory__resource*
-   ${repo_docs_api_path}/*shared__resource*
+   api/*any__resource*
+   api/struct*memory__pool__properties*
+   api/class*device__memory__pool*
+   api/class*device__memory__resource*
+   api/class*pinned__memory__pool*
+   api/class*pinned__memory__resource*
+   api/*shared__resource*
 
 The ``<cuda/experimental/memory_resource.cuh>`` header provides:
-   -  :ref:`any_resource <cudax-memory-resource-any-resource>` and
-      :ref:`any_async_resource <cudax-memory-resource-any-async-resource>` type erased memory resources similar to
+   -  :ref:`any_synchronous_resource <cudax-memory-resource-any-resource>` and
+      :ref:`any_resource <cudax-memory-resource-any-async-resource>` type erased memory resources similar to
       ``std::any``. In contrast to :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` they
       own the contained resource.
    -  :ref:`device_memory_resource <cudax-memory-resource-async>` A standard C++ interface for *heterogeneous*,

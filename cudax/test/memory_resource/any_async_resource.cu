@@ -16,18 +16,18 @@
 
 #ifndef __CUDA_ARCH__
 
-TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resource]", big_resource, small_resource)
+TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;
-  static_assert(cuda::mr::resource_with<TestResource, cudax::host_accessible>);
-  constexpr bool is_big = sizeof(TestResource) > cudax::__default_buffer_size;
+  static_assert(cuda::mr::synchronous_resource_with<TestResource, cudax::host_accessible>);
+  constexpr bool is_big = sizeof(TestResource) > cuda::__default_small_object_size;
 
   SECTION("construct and destruct")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_async_resource<cudax::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cudax::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -46,7 +46,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_async_resource<cudax::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cudax::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -76,23 +76,23 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate and deallocate")
+  SECTION("allocate and deallocate_sync")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_async_resource<cudax::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cudax::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, bytes(50), align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -104,24 +104,24 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate_async and deallocate_async")
+  SECTION("allocate and deallocate")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::stream stream{cudax::device_ref{0}};
-      cudax::any_async_resource<cudax::host_accessible> mr{TestResource{42, this}};
+      cudax::stream stream{cuda::device_ref{0}};
+      cudax::any_resource<cudax::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate_async(bytes(50), align(8), ::cuda::stream_ref{stream});
+      void* ptr = mr.allocate(::cuda::stream_ref{stream}, bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_async_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate_async(ptr, bytes(50), align(8), ::cuda::stream_ref{stream});
+      mr.deallocate(::cuda::stream_ref{stream}, ptr, bytes(50), align(8));
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);
     }
@@ -133,24 +133,24 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion to resource_ref")
+  SECTION("conversion to synchronous_resource_ref")
   {
     Counts expected{};
     {
-      cudax::any_async_resource<cudax::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cudax::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      cudax::resource_ref<cudax::host_accessible> ref = mr;
+      cudax::synchronous_resource_ref<cudax::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -162,13 +162,13 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_async_resource", "[container][resou
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("make_any_async_resource")
+  SECTION("make_any_resource")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_async_resource<cudax::host_accessible> mr =
-        cudax::make_any_async_resource<TestResource, cudax::host_accessible>(42, this);
+      cudax::any_resource<cudax::host_accessible> mr =
+        cudax::make_any_resource<TestResource, cudax::host_accessible>(42, this);
       expected.new_count += is_big;
       ++expected.object_count;
       CHECK(this->counts == expected);

@@ -35,12 +35,43 @@
 namespace cuda::experimental::execution
 {
 
+#if __cpp_lib_constexpr_exceptions >= 202502L // constexpr exception types, https://wg21.link/p3378
+
+using __exception = ::std::exception;
+
+#elif __cpp_constexpr >= 202411L // constexpr virtual functions
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __exception
+{
+  _CCCL_HIDE_FROM_ABI constexpr __exception() noexcept = default;
+  _CCCL_HIDE_FROM_ABI virtual constexpr ~__exception() = default;
+
+  [[nodiscard]] _CCCL_API virtual constexpr auto what() const noexcept -> const char*
+  {
+    return "<exception>";
+  }
+};
+
+#else // no constexpr virtual functions:
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __exception
+{
+  _CCCL_HIDE_FROM_ABI constexpr __exception() noexcept = default;
+
+  [[nodiscard]] _CCCL_API constexpr auto what() const noexcept -> const char*
+  {
+    return "<exception>";
+  }
+};
+
+#endif // __cpp_lib_constexpr_exceptions >= 202502L
+
 template <class _Derived>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error // : ::std::exception
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error : __exception
 {
   _CCCL_HIDE_FROM_ABI __compile_time_error() = default;
 
-  [[nodiscard]] auto what() const noexcept -> const char* // override
+  [[nodiscard]] _CCCL_API constexpr auto what() const noexcept -> const char*
   {
     return static_cast<_Derived const*>(this)->__what();
   }
@@ -50,34 +81,47 @@ template <class _Data, class... _What>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sender_type_check_failure //
     : __compile_time_error<__sender_type_check_failure<_Data, _What...>>
 {
-  _CCCL_HIDE_FROM_ABI __sender_type_check_failure() = default;
+  static_assert(__nothrow_movable<_Data>,
+                "The data member of __sender_type_check_failure must be nothrow move constructible.");
 
-  _CCCL_API explicit constexpr __sender_type_check_failure(_Data data)
-      : data_(data)
+  _CCCL_HIDE_FROM_ABI constexpr __sender_type_check_failure() noexcept = default;
+
+  _CCCL_API constexpr explicit __sender_type_check_failure(_Data __data)
+      : __data_(static_cast<_Data&&>(__data))
   {}
 
-  _CCCL_TRIVIAL_API auto __what() const noexcept -> const char*
+private:
+  friend struct __compile_time_error<__sender_type_check_failure>;
+
+  _CCCL_NODEBUG_API constexpr auto __what() const noexcept -> const char*
   {
     return "This sender is not well-formed. It does not meet the requirements of a sender type.";
   }
 
-  _Data data_{};
+  _Data __data_{};
 };
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT dependent_sender_error // : ::std::exception
+struct _CCCL_TYPE_VISIBILITY_DEFAULT dependent_sender_error : __compile_time_error<dependent_sender_error>
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API auto what() const noexcept -> char const* // override
+  _CCCL_API constexpr explicit dependent_sender_error(char const* __what) noexcept
+      : __what_(__what)
+  {}
+
+private:
+  friend struct __compile_time_error<dependent_sender_error>;
+
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto __what() const noexcept -> char const*
   {
-    return what_;
+    return __what_;
   }
 
-  char const* what_;
+  char const* __what_;
 };
 
 template <class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender_error
 {
-  _CCCL_TRIVIAL_API constexpr __dependent_sender_error() noexcept
+  _CCCL_NODEBUG_API constexpr __dependent_sender_error() noexcept
       : dependent_sender_error{"This sender needs to know its execution " //
                                "environment before it can know how it will complete."}
   {}
@@ -117,7 +161,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
 //   }
 //   else
 
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
 
 #  define _CUDAX_LET_COMPLETIONS(...)                  \
     if constexpr ([[maybe_unused]] __VA_ARGS__; false) \
@@ -147,7 +191,7 @@ template <class... _Sndr>
     else
 
 template <class... _Sndr>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __dependent_sender() -> __dependent_sender_error<_Sndr...>
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __dependent_sender() -> __dependent_sender_error<_Sndr...>
 {
   return __dependent_sender_error<_Sndr...>{};
 }
@@ -162,7 +206,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4913)
 
 #define _CUDAX_GET_COMPLSIGS(...) \
-  _CUDA_VSTD::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
+  ::cuda::std::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
 
 #define _CUDAX_CHECKED_COMPLSIGS(...) \
   (static_cast<void>(__VA_ARGS__), void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
@@ -171,7 +215,7 @@ struct _A_GET_COMPLETION_SIGNATURES_CUSTOMIZATION_RETURNED_A_TYPE_THAT_IS_NOT_A_
 {};
 
 template <class _Completions>
-_CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __checked_complsigs()
+_CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __checked_complsigs()
 {
   _CUDAX_LET_COMPLETIONS(auto(__cs) = _Completions())
   {
@@ -212,7 +256,7 @@ struct _COULD_NOT_DETERMINE_COMPLETION_SIGNATURES_FOR_THIS_SENDER
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr, class... _Env>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __get_completion_signatures_helper()
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __get_completion_signatures_helper()
 {
   if constexpr (__has_get_completion_signatures<_Sndr, _Env...>)
   {
@@ -240,7 +284,7 @@ template <class _Sndr, class... _Env>
 }
 
 template <class _Sndr, class... _Env>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures()
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_completion_signatures()
 {
   static_assert(sizeof...(_Env) <= 1, "At most one environment is allowed.");
   if constexpr (0 == sizeof...(_Env))
@@ -255,22 +299,22 @@ template <class _Sndr, class... _Env>
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
     using _NewSndr _CCCL_NODEBUG_ALIAS =
-      _CUDA_VSTD::__call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
+      __call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
     return execution::__get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }
 
 template <class _Parent, class _Child, class... _Env>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_child_completion_signatures()
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_child_completion_signatures()
 {
-  return get_completion_signatures<_CUDA_VSTD::__copy_cvref_t<_Parent, _Child>, __fwd_env_t<_Env>...>();
+  return get_completion_signatures<::cuda::std::__copy_cvref_t<_Parent, _Child>, __fwd_env_t<_Env>...>();
 }
 
 #undef _CUDAX_GET_COMPLSIGS
 #undef _CUDAX_CHECKED_COMPLSIGS
 _CCCL_DIAG_POP
 
-#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
 // When asked for its completions without an envitonment, a dependent sender
 // will throw an exception of a type derived from `dependent_sender_error`.
 template <class _Sndr>
@@ -293,7 +337,7 @@ template <class _Sndr>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __is_dependent_sender() noexcept -> bool
 {
   using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
-  return _CUDA_VSTD::is_base_of_v<dependent_sender_error, _Completions>;
+  return ::cuda::std::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif // ^^^ no constexpr exceptions ^^^
 

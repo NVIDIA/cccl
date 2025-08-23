@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 inline constexpr auto __fp_sign_mask_v =
@@ -57,7 +57,15 @@ inline constexpr auto __fp_exp_mant_mask_v =
 template <class _Tp>
 inline constexpr auto __fp_exp_mant_mask_of_v = __fp_exp_mant_mask_v<__fp_format_of_v<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <__fp_format _Fmt>
+inline constexpr auto __fp_explicit_bit_mask_v = static_cast<__fp_storage_t<_Fmt>>(
+  (static_cast<__fp_storage_t<_Fmt>>(!__fp_has_implicit_bit_v<_Fmt>)
+   << (__fp_mant_nbits_v<_Fmt> - !__fp_has_implicit_bit_v<_Fmt>) ));
+
+template <class _Tp>
+inline constexpr auto __fp_explicit_bit_mask_of_v = __fp_explicit_bit_mask_v<__fp_format_of_v<_Tp>>;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

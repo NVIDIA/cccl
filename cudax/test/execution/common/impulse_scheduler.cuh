@@ -10,12 +10,16 @@
 
 #pragma once
 
+#include <cuda/__utility/immovable.h>
+
 #include <cuda/experimental/execution.cuh>
 
+// IWYU pragma: begin_keep
 #include <condition_variable>
 #include <functional>
 #include <memory>
 #include <mutex>
+// IWYU pragma: end_keep
 
 #include "testing.cuh" // IWYU pragma: keep
 
@@ -53,7 +57,7 @@ private:
   std::shared_ptr<data_t> data_{};
 
   template <class Rcvr>
-  struct opstate_t : cudax::__immovable
+  struct opstate_t : cuda::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 
@@ -84,7 +88,7 @@ private:
     }
   };
 
-  struct env_t
+  struct _attrs_t
   {
     data_t* data_;
 
@@ -96,6 +100,11 @@ private:
     impulse_scheduler query(cudax_async::get_completion_scheduler_t<cudax_async::set_stopped_t>) const noexcept
     {
       return impulse_scheduler{data_};
+    }
+
+    static constexpr auto query(cudax_async::get_completion_behavior_t) noexcept
+    {
+      return cudax_async::completion_behavior::asynchronous;
     }
   };
 
@@ -119,7 +128,7 @@ private:
 
     auto get_env() const noexcept
     {
-      return env_t{data_};
+      return _attrs_t{data_};
     }
   };
 

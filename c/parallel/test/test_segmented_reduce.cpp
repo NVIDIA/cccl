@@ -125,9 +125,9 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
 
   static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ {2} {0}({1}* state)
+extern "C" __device__ void {0}({1}* state, {2}* result)
 {{
-  return (state->linear_id) * (state->row_size);
+  *result = (state->linear_id) * (state->row_size);
 }}
 )XXX";
 
@@ -187,7 +187,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   start_offset_it.state.linear_id = 0;
   start_offset_it.state.row_size  = row_size;
 
-  // a copy of offset iterator, so no need to define advance/dereference bodies, just reused those defined above
+  // a copy of offset iterator, so no need to define advance/dereference bodies,
+  // just reused those defined above
   iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
     {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
 
@@ -198,6 +199,84 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   value_t<TestType> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_Fixture_Tag>();
+  const auto& test_key = make_key<TestType>();
+
+  segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
+
+  auto host_input_it  = host_input.begin();
+  auto host_output_it = host_output.begin();
+
+  for (std::size_t i = 0; i < n_rows; ++i)
+  {
+    std::size_t row_offset = i * row_size;
+    host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
+  }
+  REQUIRE(host_output == std::vector<TestType>(output_ptr));
+}
+
+struct SegmentedReduce_SumOverRows_WellKnown_Fixture_Tag;
+C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
+              "with well-known operations",
+              "[segmented_reduce][well_known]",
+              std::int32_t,
+              std::int64_t,
+              std::uint32_t,
+              std::uint64_t)
+{
+  // generate 4 choices for n_rows: 0, 13 and 2 random samples from [1024, 4096)
+  const std::size_t n_rows = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
+  // generate 4 choices for number of columns
+  const std::size_t n_cols = GENERATE(0, 12, take(2, random(1 << 10, 1 << 12)));
+
+  const std::size_t n_elems  = n_rows * n_cols;
+  const std::size_t row_size = n_cols;
+
+  const std::vector<TestType> host_input = generate<TestType>(n_elems);
+  std::vector<TestType> host_output(n_rows, 0);
+
+  REQUIRE(host_input.size() == n_cols * n_rows);
+  REQUIRE(host_output.size() == n_rows);
+
+  pointer_t<TestType> input_ptr(host_input); // copy from host to device
+  pointer_t<TestType> output_ptr(host_output); // copy from host to device
+
+  using SizeT                                     = unsigned long long;
+  static constexpr std::string_view index_ty_name = "unsigned long long";
+
+  struct row_offset_iterator_state_t
+  {
+    SizeT linear_id;
+    SizeT row_size;
+  };
+
+  static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
+  static constexpr std::string_view advance_offset_method_name = "advance_offset_it";
+  static constexpr std::string_view deref_offset_method_name   = "dereference_offset_it";
+
+  const auto& [offset_iterator_state_src, offset_iterator_advance_src, offset_iterator_deref_src] =
+    make_step_counting_iterator_sources(
+      index_ty_name, offset_iterator_state_name, advance_offset_method_name, deref_offset_method_name);
+
+  iterator_t<SizeT, row_offset_iterator_state_t> start_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    {offset_iterator_state_name, offset_iterator_state_src},
+    {advance_offset_method_name, offset_iterator_advance_src},
+    {deref_offset_method_name, offset_iterator_deref_src});
+
+  start_offset_it.state.linear_id = 0;
+  start_offset_it.state.row_size  = row_size;
+
+  // a copy of offset iterator, so no need to define advance/dereference bodies,
+  // just reused those defined above
+  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
+
+  end_offset_it.state.linear_id = 1;
+  end_offset_it.state.row_size  = row_size;
+
+  cccl_op_t op = make_well_known_binary_operation();
+  value_t<TestType> init{0};
+
+  auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_WellKnown_Fixture_Tag>();
   const auto& test_key = make_key<TestType>();
 
   segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
@@ -293,6 +372,77 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
   REQUIRE(host_output == host_actual);
 }
 
+struct SegmentedReduce_CustomTypes_WellKnown_Fixture_Tag;
+C2H_TEST("SegmentedReduce works with custom types with well-known operations", "[segmented_reduce][well_known]")
+{
+  using SizeT                  = ::cuda::std::size_t;
+  const std::size_t n_segments = 50;
+  auto increments              = generate<std::size_t>(n_segments);
+  std::vector<SizeT> segments(n_segments + 1, 0);
+  auto binary_op = std::plus<>{};
+  auto shift_op  = [](auto i) {
+    return i + 32;
+  };
+  std::transform_inclusive_scan(increments.begin(), increments.end(), segments.begin() + 1, binary_op, shift_op);
+
+  const std::vector<short> a  = generate<short>(segments.back());
+  const std::vector<size_t> b = generate<size_t>(segments.back());
+  std::vector<pair> host_input(segments.back());
+  for (size_t i = 0; i < segments.back(); ++i)
+  {
+    host_input[i] = pair{.a = a[i], .b = b[i]};
+  }
+
+  std::vector<pair> host_output(n_segments, pair{0, 0});
+
+  pointer_t<pair> input_ptr(host_input); // copy from host to device
+  pointer_t<pair> output_ptr(host_output); // copy from host to device
+  pointer_t<SizeT> offset_ptr(segments); // copy from host to device
+
+  auto start_offset_it = static_cast<cccl_iterator_t>(offset_ptr);
+  auto end_offset_it   = start_offset_it;
+  end_offset_it.state  = offset_ptr.ptr + 1;
+
+  static constexpr std::string_view device_op_name        = "plus_pair";
+  static constexpr std::string_view plus_pair_op_template = R"XXX(
+struct pair {{
+  short a;
+  size_t b;
+}};
+extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{{ lhs->a + rhs->a, lhs->b + rhs->b }};
+}}
+)XXX";
+
+  std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
+
+  operation_t op_state = make_operation(device_op_name, plus_pair_op_src);
+  cccl_op_t op         = op_state;
+  op.type              = cccl_op_kind_t::CCCL_PLUS;
+  pair v0              = pair{4, 2};
+  value_t<pair> init{v0};
+
+  auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_WellKnown_Fixture_Tag>();
+  const auto& test_key = make_key<pair>();
+
+  segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init, build_cache, test_key);
+
+  for (std::size_t i = 0; i < n_segments; ++i)
+  {
+    auto segment_begin_it = host_input.begin() + segments[i];
+    auto segment_end_it   = host_input.begin() + segments[i + 1];
+    host_output[i]        = std::reduce(segment_begin_it, segment_end_it, v0, [](pair lhs, pair rhs) {
+      return pair{static_cast<short>(lhs.a + rhs.a), lhs.b + rhs.b};
+    });
+  }
+
+  auto host_actual = std::vector<pair>(output_ptr);
+  REQUIRE(host_output == host_actual);
+}
+
 using SizeT = unsigned long long;
 
 struct strided_offset_iterator_state_t
@@ -325,8 +475,11 @@ struct {0} {{
 }};
 )XXX";
 
-  const std::string it_state_def_src =
-    std::format(it_state_src_tmpl, /* 0 */ state_name, /* 1 */ value_type_name, /* 2 */ index_type_name);
+  const std::string it_state_def_src = std::format(
+    it_state_src_tmpl,
+    /* 0 */ state_name,
+    /* 1 */ value_type_name,
+    /* 2 */ index_type_name);
 
   static constexpr std::string_view it_advance_fn_def_src_tmpl = R"XXX(
 extern "C" __device__ void {0}({1}* state, {2} offset)
@@ -339,15 +492,18 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_advance_fn_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_type_name);
 
   static constexpr std::string_view it_dereference_fn_src_tmpl = R"XXX(
-extern "C" __device__ {1} {0}({2} *state) {{
+extern "C" __device__ void {0}({2} *state, {1}* result) {{
   unsigned long long col_id = (state->linear_id) / (state->n_rows);
   unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);
-  return *(state->ptr + row_id * (state->n_cols) + col_id);
+  *result = *(state->ptr + row_id * (state->n_cols) + col_id);
 }}
 )XXX";
 
-  const std::string it_dereference_fn_def_src =
-    std::format(it_dereference_fn_src_tmpl, /* 0 */ dereference_fn_name, /*1*/ value_type_name, /*2*/ state_name);
+  const std::string it_dereference_fn_def_src = std::format(
+    it_dereference_fn_src_tmpl,
+    /* 0 */ dereference_fn_name,
+    /*1*/ value_type_name,
+    /*2*/ state_name);
 
   return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_dereference_fn_def_src);
 }
@@ -396,7 +552,8 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
   start_offset_it.state.linear_id = 0;
   start_offset_it.state.step      = col_size;
 
-  // a copy of offset iterator, so no need to define advance/dereference bodies, just reused those defined above
+  // a copy of offset iterator, so no need to define advance/dereference bodies,
+  // just reused those defined above
   iterator_t<SizeT, strided_offset_iterator_state_t> end_offset_it =
     make_iterator<SizeT, strided_offset_iterator_state_t>(
       {offset_it_state_name, ""}, {offset_advance_fn_name, ""}, {offset_deref_fn_name, ""});
@@ -567,8 +724,8 @@ C2H_TEST("SegmentedReduce works with large num_segments", "[segmented_reduce]")
   // Build counting iterator:   iterators.CountingIterator(np.int64(-1))
 
   // N.B.: Even though make_counting_iterator helper function exists, we need
-  // source code for advance and dereference functions associated with counting iterator
-  // to build transformed_iterator needed by this example
+  // source code for advance and dereference functions associated with counting
+  // iterator to build transformed_iterator needed by this example
 
   static constexpr std::string_view counting_it_state_name      = "counting_iterator_state_t";
   static constexpr std::string_view counting_it_advance_fn_name = "advance_counting_it";
@@ -629,6 +786,7 @@ extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
   auto start_offsets_it =
     make_stateful_transform_input_iterator<IndexT, counting_iterator_state_t<IndexT>, host_offset_functor_state<IndexT>>(
       index_ty_name,
+      index_ty_name,
       {counting_it_state_name, counting_it_state_src},
       {counting_it_advance_fn_name, counting_it_advance_fn_src},
       {counting_it_deref_fn_name, counting_it_deref_fn_src},
@@ -642,7 +800,8 @@ extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
 
   using HostTransformStateT = decltype(start_offsets_it.state);
 
-  // end_offsets_it reuses advance/dereference definitions provided by start_offsets_it
+  // end_offsets_it reuses advance/dereference definitions provided by
+  // start_offsets_it
   constexpr std::string_view reuse_prior_definitions = "";
 
   auto end_offsets_it = make_iterator<IndexT, HostTransformStateT>(
@@ -699,7 +858,8 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
   using CmpT                             = int;
   constexpr std::string_view cmp_ty_name = "int";
 
-  // check functor transforms computed values to comparison value against the expected result
+  // check functor transforms computed values to comparison value against the
+  // expected result
   static constexpr std::string_view check_functor_name           = "check_functor";
   static constexpr std::string_view check_functor_state_name     = "check_functor_state";
   static constexpr std::string_view check_functor_state_src_tmpl = R"XXX(
@@ -737,6 +897,7 @@ extern "C" __device__ {4} {0}({1} *functor_state, {2} n) {{
                                                          counting_iterator_state_t<IndexT>,
                                                          host_check_functor_state<IndexT, DataT>>(
     cmp_ty_name,
+    index_ty_name,
     {counting_it_state_name, counting_it_state_src},
     {counting_it_advance_fn_name, counting_it_advance_fn_src},
     {counting_it_deref_fn_name, counting_it_deref_fn_src},

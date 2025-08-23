@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 class __cccl_fp
@@ -115,10 +115,10 @@ _CCCL_TEMPLATE(__fp_format _Fmt)
 _CCCL_REQUIRES(__fp_is_signed_v<_Fmt>)
 [[nodiscard]] _CCCL_API constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
 {
-  return _CUDA_VSTD::__fp_neg(__v);
+  return ::cuda::std::__fp_neg(__v);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

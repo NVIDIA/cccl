@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size;
@@ -65,14 +65,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : public integral
 {};
 
 template <class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<__tuple_types<_Tp...>>
-    : public integral_constant<size_t, sizeof...(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+tuple_size<__tuple_types<_Tp...>> : public integral_constant<size_t, sizeof...(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

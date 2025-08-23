@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _InputIterator, class _OutputIterator>
@@ -50,14 +50,14 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
-          enable_if_t<_CCCL_TRAIT(is_same, remove_const_t<_Tp>, _Up), int> = 0,
-          enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>        = 0>
+          enable_if_t<is_same_v<remove_const_t<_Tp>, _Up>, int> = 0,
+          enable_if_t<is_trivially_copyable_v<_Up>, int>        = 0>
 _CCCL_API constexpr pair<_Tp*, _Up*> __move(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;
   if (__n > 0)
   {
-    if (_CUDA_VSTD::__dispatch_memmove(__result, __first, __n))
+    if (::cuda::std::__dispatch_memmove(__result, __first, __n))
     {
       return {__first + __n, __result + __n};
     }
@@ -72,15 +72,14 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __move(_Tp* __first, _Tp* __last, _Up* __re
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  static_assert(_CCCL_TRAIT(is_copy_constructible, _InputIterator), "Iterators has to be copy constructible.");
-  static_assert(_CCCL_TRAIT(is_copy_constructible, _OutputIterator),
-                "The output iterator has to be copy constructible.");
-  return _CUDA_VSTD::__move<_ClassicAlgPolicy>(
-           _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result))
+  static_assert(is_copy_constructible_v<_InputIterator>, "Iterators has to be copy constructible.");
+  static_assert(is_copy_constructible_v<_OutputIterator>, "The output iterator has to be copy constructible.");
+  return ::cuda::std::__move<_ClassicAlgPolicy>(
+           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
     .second;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

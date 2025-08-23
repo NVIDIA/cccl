@@ -60,7 +60,7 @@ using value = std::size_t;
 struct key_decomposer_t
 {
   template <template <typename> class... Ps>
-  __host__ __device__ ::cuda::std::tuple<std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
+  __host__ __device__ cuda::std::tuple<std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
   {
     return {key.key};
   }
@@ -69,7 +69,7 @@ struct key_decomposer_t
 struct pair_decomposer_t
 {
   template <template <typename> class... Ps>
-  __host__ __device__ ::cuda::std::tuple<std::size_t&, std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
+  __host__ __device__ cuda::std::tuple<std::size_t&, std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
   {
     return {key.key, key.val};
   }
@@ -516,7 +516,7 @@ struct custom_t
 
 struct decomposer_t
 {
-  __host__ __device__ ::cuda::std::tuple<float&, long long int&> operator()(custom_t& key) const
+  __host__ __device__ cuda::std::tuple<float&, long long int&> operator()(custom_t& key) const
   {
     return {key.f, key.lli};
   }
@@ -969,7 +969,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
@@ -1021,7 +1021,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
@@ -1078,7 +1078,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
@@ -1159,7 +1159,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
@@ -1242,7 +1242,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
@@ -1303,7 +1303,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
@@ -1365,7 +1365,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
@@ -1438,7 +1438,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
     //                    <-----------  higher bits  /  lower bits  ----------->
     //
-    // The bit subrange `[60, 68)` specifies differentiating key bits:
+    // The bit subrange [60, 68) specifies differentiating key bits:
     //
     //                    <------------- fp32 -----------> <------ int64 ------>
     // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx

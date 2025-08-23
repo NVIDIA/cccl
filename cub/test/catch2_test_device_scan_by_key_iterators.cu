@@ -54,7 +54,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 // type_quad's parameters and defaults:
-// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=::cuda::std::equal_to<>>
+// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=cuda::std::equal_to<>>
 #if TEST_TYPES == 0
 using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, float>,
                                       type_quad<std::int8_t, std::int8_t, std::int32_t, Mod2Equality>>;
@@ -62,7 +62,18 @@ using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, floa
 using full_type_list = c2h::type_list<type_quad<std::int32_t>, type_quad<std::uint64_t>>;
 #elif TEST_TYPES == 2
 using full_type_list =
-  c2h::type_list<type_quad<uchar3, uchar3, custom_t>, type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
+  c2h::type_list<type_quad<uchar3, uchar3, custom_t>,
+                 type_quad<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a,
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4,
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   ,
+                   std::uint8_t,
+                   Mod2Equality>>;
 #elif TEST_TYPES == 3
 using full_type_list = c2h::type_list<type_quad<custom_t, custom_t, custom_t>>;
 #endif
@@ -121,7 +132,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("inclusive sum")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -138,7 +149,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("exclusive sum")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -155,7 +166,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("inclusive scan")
   {
-    using op_t = ::cuda::minimum<>;
+    using op_t = cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -172,7 +183,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("exclusive scan")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Scan operator
     auto scan_op = op_t{};

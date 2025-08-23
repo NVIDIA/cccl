@@ -152,7 +152,7 @@ template <typename LUnit, bool Reversed = false>
 struct __make_hierarchy
 {
   template <class Levels, size_t... _Ids>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto
   __apply_reverse(const Levels& ls, ::cuda::std::index_sequence<_Ids...>) noexcept
   {
     return __make_hierarchy<LUnit, true>()(::cuda::std::get<_Ids>(ls)...);

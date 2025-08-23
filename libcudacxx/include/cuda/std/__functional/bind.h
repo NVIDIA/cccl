@@ -48,7 +48,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct is_bind_expression
@@ -73,29 +73,16 @@ template <int _Np>
 struct __ph
 {};
 
-#  if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_CCCL_API inline extern const __ph<1> _1;
-_CCCL_API inline extern const __ph<2> _2;
-_CCCL_API inline extern const __ph<3> _3;
-_CCCL_API inline extern const __ph<4> _4;
-_CCCL_API inline extern const __ph<5> _5;
-_CCCL_API inline extern const __ph<6> _6;
-_CCCL_API inline extern const __ph<7> _7;
-_CCCL_API inline extern const __ph<8> _8;
-_CCCL_API inline extern const __ph<9> _9;
-_CCCL_API inline extern const __ph<10> _10;
-#  else
-/* inline */ constexpr __ph<1> _1{};
-/* inline */ constexpr __ph<2> _2{};
-/* inline */ constexpr __ph<3> _3{};
-/* inline */ constexpr __ph<4> _4{};
-/* inline */ constexpr __ph<5> _5{};
-/* inline */ constexpr __ph<6> _6{};
-/* inline */ constexpr __ph<7> _7{};
-/* inline */ constexpr __ph<8> _8{};
-/* inline */ constexpr __ph<9> _9{};
-/* inline */ constexpr __ph<10> _10{};
-#  endif // defined(_LIBCUDACXX_BUILDING_LIBRARY)
+inline constexpr __ph<1> _1{};
+inline constexpr __ph<2> _2{};
+inline constexpr __ph<3> _3{};
+inline constexpr __ph<4> _4{};
+inline constexpr __ph<5> _5{};
+inline constexpr __ph<6> _6{};
+inline constexpr __ph<7> _7{};
+inline constexpr __ph<8> _8{};
+inline constexpr __ph<9> _9{};
+inline constexpr __ph<10> _10{};
 
 } // namespace placeholders
 
@@ -113,7 +100,7 @@ template <class _Ti, class... _Uj, size_t... _Indx>
 _CCCL_API inline typename __invoke_of<_Ti&, _Uj...>::type
 __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 {
-  return __ti(_CUDA_VSTD::forward<_Uj>(_CUDA_VSTD::get<_Indx>(__uj))...);
+  return __ti(::cuda::std::forward<_Uj>(::cuda::std::get<_Indx>(__uj))...);
 }
 
 template <class _Ti, class... _Uj>
@@ -121,7 +108,7 @@ _CCCL_API inline enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
   using __indices = __make_tuple_indices_t<sizeof...(_Uj)>;
-  return _CUDA_VSTD::__mu_expand(__ti, __uj, __indices());
+  return ::cuda::std::__mu_expand(__ti, __uj, __indices());
 }
 
 template <bool IsPh, class _Ti, class _Uj>
@@ -140,7 +127,7 @@ _CCCL_API inline enable_if_t<0 < is_placeholder<_Ti>::value,
 __mu(_Ti&, _Uj& __uj)
 {
   const size_t _Indx = is_placeholder<_Ti>::value - 1;
-  return _CUDA_VSTD::forward<tuple_element_t<_Indx, _Uj>>(_CUDA_VSTD::get<_Indx>(__uj));
+  return ::cuda::std::forward<tuple_element_t<_Indx, _Uj>>(::cuda::std::get<_Indx>(__uj));
 }
 
 template <class _Ti, class _Uj>
@@ -155,21 +142,21 @@ __mu(_Ti& __ti, _Uj&)
 template <class _Ti, bool IsReferenceWrapper, bool IsBindEx, bool IsPh, class _TupleUj>
 struct __mu_return_impl;
 
-template <bool _Invokable, class _Ti, class... _Uj>
-struct __mu_return_invokable // false
+template <bool _Invocable, class _Ti, class... _Uj>
+struct __mu_return_invocable // false
 {
   using type = __nat;
 };
 
 template <class _Ti, class... _Uj>
-struct __mu_return_invokable<true, _Ti, _Uj...>
+struct __mu_return_invocable<true, _Ti, _Uj...>
 {
   using type = typename __invoke_of<_Ti&, _Uj...>::type;
 };
 
 template <class _Ti, class... _Uj>
 struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...>>
-    : public __mu_return_invokable<__invokable<_Ti&, _Uj...>::value, _Ti, _Uj...>
+    : public __mu_return_invocable<__invocable<_Ti&, _Uj...>::value, _Ti, _Uj...>
 {};
 
 template <class _Ti, class _TupleUj>
@@ -209,13 +196,13 @@ struct __is_valid_bind_return
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invokable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = __invocable<_Fp, typename __mu_return<_BoundArgs, _TupleUj>::type...>::value;
 };
 
 template <class _Fp, class... _BoundArgs, class _TupleUj>
 struct __is_valid_bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj>
 {
-  static const bool value = __invokable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
+  static const bool value = __invocable<_Fp, typename __mu_return<const _BoundArgs, _TupleUj>::type...>::value;
 };
 
 template <class _Fp, class _BoundArgs, class _TupleUj, bool = __is_valid_bind_return<_Fp, _BoundArgs, _TupleUj>::value>
@@ -240,7 +227,7 @@ template <class _Fp, class _BoundArgs, size_t... _Indx, class _Args>
 _CCCL_API inline __bind_return_t<_Fp, _BoundArgs, _Args>
 __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>, _Args&& __args)
 {
-  return _CUDA_VSTD::__invoke(__f, _CUDA_VSTD::__mu(_CUDA_VSTD::get<_Indx>(__bound_args), __args)...);
+  return ::cuda::std::__invoke(__f, ::cuda::std::__mu(::cuda::std::get<_Indx>(__bound_args), __args)...);
 }
 
 template <class _Fp, class... _BoundArgs>
@@ -261,23 +248,23 @@ public:
             class... _BA,
             class = enable_if_t<is_constructible<_Fd, _Gp>::value && !is_same<remove_reference_t<_Gp>, __bind>::value>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __bind(_Gp&& __f, _BA&&... __bound_args)
-      : __f_(_CUDA_VSTD::forward<_Gp>(__f))
-      , __bound_args_(_CUDA_VSTD::forward<_BA>(__bound_args)...)
+      : __f_(::cuda::std::forward<_Gp>(__f))
+      , __bound_args_(::cuda::std::forward<_BA>(__bound_args)...)
   {}
 
   template <class... _Args>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __bind_return_t<_Fd, _Td, tuple<_Args&&...>> operator()(_Args&&... __args)
   {
-    return _CUDA_VSTD::__apply_functor(
-      __f_, __bound_args_, __indices(), tuple<_Args&&...>(_CUDA_VSTD::forward<_Args>(__args)...));
+    return ::cuda::std::__apply_functor(
+      __f_, __bound_args_, __indices(), tuple<_Args&&...>(::cuda::std::forward<_Args>(__args)...));
   }
 
   template <class... _Args>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
   operator()(_Args&&... __args) const
   {
-    return _CUDA_VSTD::__apply_functor(
-      __f_, __bound_args_, __indices(), tuple<_Args&&...>(_CUDA_VSTD::forward<_Args>(__args)...));
+    return ::cuda::std::__apply_functor(
+      __f_, __bound_args_, __indices(), tuple<_Args&&...>(::cuda::std::forward<_Args>(__args)...));
   }
 };
 
@@ -299,7 +286,7 @@ public:
             class... _BA,
             class = enable_if_t<is_constructible<_Fd, _Gp>::value && !is_same<remove_reference_t<_Gp>, __bind_r>::value>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __bind_r(_Gp&& __f, _BA&&... __bound_args)
-      : base(_CUDA_VSTD::forward<_Gp>(__f), _CUDA_VSTD::forward<_BA>(__bound_args)...)
+      : base(::cuda::std::forward<_Gp>(__f), ::cuda::std::forward<_BA>(__bound_args)...)
   {}
 
   template <class... _Args>
@@ -309,7 +296,7 @@ public:
   operator()(_Args&&... __args)
   {
     using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(static_cast<base&>(*this), _CUDA_VSTD::forward<_Args>(__args)...);
+    return _Invoker::__call(static_cast<base&>(*this), ::cuda::std::forward<_Args>(__args)...);
   }
 
   template <class... _Args>
@@ -319,7 +306,7 @@ public:
   operator()(_Args&&... __args) const
   {
     using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(static_cast<base const&>(*this), _CUDA_VSTD::forward<_Args>(__args)...);
+    return _Invoker::__call(static_cast<base const&>(*this), ::cuda::std::forward<_Args>(__args)...);
   }
 };
 
@@ -331,17 +318,17 @@ template <class _Fp, class... _BoundArgs>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __bind<_Fp, _BoundArgs...> bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
   using type = __bind<_Fp, _BoundArgs...>;
-  return type(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_BoundArgs>(__bound_args)...);
+  return type(::cuda::std::forward<_Fp>(__f), ::cuda::std::forward<_BoundArgs>(__bound_args)...);
 }
 
 template <class _Rp, class _Fp, class... _BoundArgs>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __bind_r<_Rp, _Fp, _BoundArgs...> bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
   using type = __bind_r<_Rp, _Fp, _BoundArgs...>;
-  return type(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_BoundArgs>(__bound_args)...);
+  return type(::cuda::std::forward<_Fp>(__f), ::cuda::std::forward<_BoundArgs>(__bound_args)...);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 

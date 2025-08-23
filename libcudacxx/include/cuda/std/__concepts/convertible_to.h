@@ -26,45 +26,44 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [concept.convertible]
 
 #if _CCCL_HAS_CONCEPTS()
 
 template <class _From, class _To>
-concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<_To>(_CUDA_VSTD::declval<_From>()); };
+concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<_To>(::cuda::std::declval<_From>()); };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 #  if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
 #  endif // _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
 template <class _From, class _To>
-_CCCL_CONCEPT_FRAGMENT(__test_conversion_, requires()(static_cast<_To>(_CUDA_VSTD::declval<_From>())));
+_CCCL_CONCEPT_FRAGMENT(__test_conversion_, requires()(static_cast<_To>(::cuda::std::declval<_From>())));
 
 template <class _From, class _To>
 _CCCL_CONCEPT __test_conversion = _CCCL_FRAGMENT(__test_conversion_, _From, _To);
 
 template <class _From, class _To>
-_CCCL_CONCEPT_FRAGMENT(
-  __convertible_to_,
-  requires()(requires(_CCCL_TRAIT(is_convertible, _From, _To)), requires(__test_conversion<_From, _To>)));
+_CCCL_CONCEPT_FRAGMENT(__convertible_to_,
+                       requires()(requires(is_convertible_v<_From, _To>), requires(__test_conversion<_From, _To>)));
 
 template <class _From, class _To>
 _CCCL_CONCEPT convertible_to = _CCCL_FRAGMENT(__convertible_to_, _From, _To);
 
 #  if _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
+_CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored
 #  endif // _CCCL_COMPILER(MSVC)
-_CCCL_NV_DIAG_DEFAULT(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
+_CCCL_END_NV_DIAG_SUPPRESS() // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

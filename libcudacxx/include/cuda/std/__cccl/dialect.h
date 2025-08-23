@@ -89,9 +89,11 @@
 
 // Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
 // available.
-#if !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
-#  define _CCCL_NO_PACK_INDEXING
-#endif // !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
+#if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
+#  define _CCCL_HAS_PACK_INDEXING() 1
+#else // ^^^ has pack indexing ^^^ / vvv no pack indexing vvv
+#  define _CCCL_HAS_PACK_INDEXING() 0
+#endif // no pack indexing
 
 #if _CCCL_STD_VER <= 2017 || __cpp_consteval < 201811L
 #  define _CCCL_NO_CONSTEVAL
@@ -103,9 +105,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
-
-// Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
-#define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 
 // We need to treat host and device separately
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)

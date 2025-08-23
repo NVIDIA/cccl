@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -41,16 +41,15 @@ concept derived_from = is_base_of_v<_Bp, _Dp> && is_convertible_v<const volatile
 template <class _Dp, class _Bp>
 _CCCL_CONCEPT_FRAGMENT(
   __derived_from_,
-  requires()(
-    requires(_CCCL_TRAIT(is_base_of, _Bp, _Dp)),
-    requires(_CCCL_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))));
+  requires()(requires(is_base_of_v<_Bp, _Dp>),
+             requires(is_convertible_v<add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>>)));
 
 template <class _Dp, class _Bp>
 _CCCL_CONCEPT derived_from = _CCCL_FRAGMENT(__derived_from_, _Dp, _Bp);
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

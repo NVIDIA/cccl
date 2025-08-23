@@ -36,9 +36,21 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // acos
+
+#if _CCCL_CHECK_BUILTIN(builtin_acos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ACOSF(...) __builtin_acosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOS(...)  __builtin_acos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ACOSL(...) __builtin_acosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_acos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ACOSF
+#  undef _CCCL_BUILTIN_ACOS
+#  undef _CCCL_BUILTIN_ACOSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float acos(float __x) noexcept
 {
@@ -90,24 +102,36 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half acos(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::acosf(__half2float(__x)));
+  return __float2half(::cuda::std::acosf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 acos(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::acosf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::acosf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double acos(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::acos((double) __x);
+  return ::cuda::std::acos((double) __x);
 }
 
 // asin
+
+#if _CCCL_CHECK_BUILTIN(builtin_asin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ASINF(...) __builtin_asinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASIN(...)  __builtin_asin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ASINL(...) __builtin_asinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_asin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ASINF
+#  undef _CCCL_BUILTIN_ASIN
+#  undef _CCCL_BUILTIN_ASINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float asin(float __x) noexcept
 {
@@ -159,24 +183,36 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half asin(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::asinf(__half2float(__x)));
+  return __float2half(::cuda::std::asinf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 asin(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::asinf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::asinf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double asin(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::asin((double) __x);
+  return ::cuda::std::asin((double) __x);
 }
 
 // atan
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATANF(...) __builtin_atanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN(...)  __builtin_atan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATANL(...) __builtin_atanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATANF
+#  undef _CCCL_BUILTIN_ATAN
+#  undef _CCCL_BUILTIN_ATANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float atan(float __x) noexcept
 {
@@ -228,24 +264,36 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half atan(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::atanf(__half2float(__x)));
+  return __float2half(::cuda::std::atanf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 atan(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::atanf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::atanf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double atan(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::atan((double) __x);
+  return ::cuda::std::atan((double) __x);
 }
 
 // atan2
+
+#if _CCCL_CHECK_BUILTIN(builtin_atan2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ATAN2F(...) __builtin_atan2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2(...)  __builtin_atan2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ATAN2L(...) __builtin_atan2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_atan2)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_ATAN2F
+#  undef _CCCL_BUILTIN_ATAN2
+#  undef _CCCL_BUILTIN_ATAN2L
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float atan2(float __x, float __y) noexcept
 {
@@ -297,26 +345,26 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half atan2(__half __x, __half __y) noexcept
 {
-  return __float2half(_CUDA_VSTD::atan2f(__half2float(__x), __half2float(__y)));
+  return __float2half(::cuda::std::atan2f(__half2float(__x), __half2float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::atan2f(__bfloat162float(__x), __bfloat162float(__y)));
+  return __float2bfloat16(::cuda::std::atan2f(__bfloat162float(__x), __bfloat162float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _A1, class _A2, enable_if_t<_CCCL_TRAIT(is_arithmetic, _A1) && _CCCL_TRAIT(is_arithmetic, _A2), int> = 0>
+template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> atan2(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(_CCCL_TRAIT(is_same, _A1, __result_type) && _CCCL_TRAIT(is_same, _A2, __result_type)), "");
-  return _CUDA_VSTD::atan2((__result_type) __x, (__result_type) __y);
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  return ::cuda::std::atan2((__result_type) __x, (__result_type) __y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

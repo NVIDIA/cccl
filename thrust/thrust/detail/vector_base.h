@@ -35,10 +35,10 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/reverse_iterator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/initializer_list>
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
 
 #include <vector>
@@ -79,8 +79,8 @@ public:
   using iterator       = typename storage_type::iterator;
   using const_iterator = typename storage_type::const_iterator;
 
-  using reverse_iterator       = thrust::reverse_iterator<iterator>;
-  using const_reverse_iterator = thrust::reverse_iterator<const_iterator>;
+  using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
+  using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
 
   /*! This constructor creates an empty vector_base.
    */
@@ -525,13 +525,6 @@ protected:
   size_type m_size;
 
 private:
-  // these methods resolve the ambiguity of the constructor template of form (Iterator, Iterator)
-  template <typename IteratorOrIntegralType>
-  void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type);
-
-  template <typename IteratorOrIntegralType>
-  void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type);
-
   template <typename InputIterator>
   void range_init(InputIterator first, InputIterator last);
 
@@ -558,14 +551,6 @@ private:
   // this method performs insertion from a range
   template <typename InputIterator>
   void copy_insert(iterator position, InputIterator first, InputIterator last);
-
-  // these methods resolve the ambiguity of the assign() template of form (InputIterator, InputIterator)
-  template <typename InputIterator>
-  void assign_dispatch(InputIterator first, InputIterator last, false_type);
-
-  // these methods resolve the ambiguity of the assign() template of form (InputIterator, InputIterator)
-  template <typename Integral>
-  void assign_dispatch(Integral n, Integral x, true_type);
 
   // this method performs assignment from a range
   template <typename InputIterator>

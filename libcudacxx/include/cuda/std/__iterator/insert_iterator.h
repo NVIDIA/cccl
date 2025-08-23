@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
 using __insert_iterator_iter_t = typename _Container::iterator;
@@ -37,12 +37,7 @@ using __insert_iterator_iter_t = typename _Container::iterator;
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT insert_iterator
-#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
-    : public iterator<output_iterator_tag, void, void, void, void>
-#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 protected:
   _Container* container;
   __insert_iterator_iter_t<_Container> iter;
@@ -59,44 +54,53 @@ public:
   using reference      = void;
   using container_type = _Container;
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
-      : container(_CUDA_VSTD::addressof(__x))
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
+      : container(::cuda::std::addressof(__x))
       , iter(__i)
   {}
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(const typename _Container::value_type& __value)
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr insert_iterator& operator=(const typename _Container::value_type& __value)
   {
     iter = container->insert(iter, __value);
     ++iter;
     return *this;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(typename _Container::value_type&& __value)
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr insert_iterator& operator=(typename _Container::value_type&& __value)
   {
-    iter = container->insert(iter, _CUDA_VSTD::move(__value));
+    iter = container->insert(iter, ::cuda::std::move(__value));
     ++iter;
     return *this;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator*()
+
+  [[nodiscard]] _CCCL_API constexpr insert_iterator& operator*() noexcept
   {
     return *this;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++()
+
+  _CCCL_API constexpr insert_iterator& operator++() noexcept
   {
     return *this;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++(int)
+
+  _CCCL_API constexpr insert_iterator& operator++(int) noexcept
   {
     return *this;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Container>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
+[[nodiscard]] _CCCL_API constexpr insert_iterator<_Container>
 inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
 {
   return insert_iterator<_Container>(__x, __i);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

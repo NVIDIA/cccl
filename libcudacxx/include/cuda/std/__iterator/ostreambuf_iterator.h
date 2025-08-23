@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,17 +28,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT ostreambuf_iterator
-#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
-    : public iterator<output_iterator_tag, void, void, void, void>
-#endif // _LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
 public:
   using iterator_category = output_iterator_tag;
   using value_type        = void;
@@ -58,13 +53,15 @@ private:
   streambuf_type* __sbuf_;
 
 public:
-  _CCCL_API inline ostreambuf_iterator(ostream_type& __s) noexcept
+  _CCCL_API ostreambuf_iterator(ostream_type& __s) noexcept
       : __sbuf_(__s.rdbuf())
   {}
-  _CCCL_API inline ostreambuf_iterator(streambuf_type* __s) noexcept
+
+  _CCCL_API ostreambuf_iterator(streambuf_type* __s) noexcept
       : __sbuf_(__s)
   {}
-  _CCCL_API inline ostreambuf_iterator& operator=(_CharT __c)
+
+  _CCCL_API ostreambuf_iterator& operator=(_CharT __c)
   {
     if (__sbuf_ && traits_type::eq_int_type(__sbuf_->sputc(__c), traits_type::eof()))
     {
@@ -72,29 +69,31 @@ public:
     }
     return *this;
   }
-  _CCCL_API inline ostreambuf_iterator& operator*()
+
+  [[nodiscard]] _CCCL_API ostreambuf_iterator& operator*() noexcept
   {
     return *this;
   }
-  _CCCL_API inline ostreambuf_iterator& operator++()
+  _CCCL_API ostreambuf_iterator& operator++() noexcept
   {
     return *this;
   }
-  _CCCL_API inline ostreambuf_iterator& operator++(int)
+  _CCCL_API ostreambuf_iterator& operator++(int) noexcept
   {
     return *this;
   }
-  _CCCL_API inline bool failed() const noexcept
+  [[nodiscard]] _CCCL_API bool failed() const noexcept
   {
     return __sbuf_ == nullptr;
   }
 
   template <class _Ch, class _Tr>
-  friend _CCCL_API inline ostreambuf_iterator<_Ch, _Tr> __pad_and_output(
+  _CCCL_API friend ostreambuf_iterator<_Ch, _Tr> __pad_and_output(
     ostreambuf_iterator<_Ch, _Tr> __s, const _Ch* __ob, const _Ch* __op, const _Ch* __oe, ios_base& __iob, _Ch __fl);
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

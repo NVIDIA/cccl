@@ -12,8 +12,7 @@
 #define __COMMON_TESTING_H__
 
 #include <cuda/__cccl_config>
-
-#include <cuda/experimental/__utility/driver_api.cuh>
+#include <cuda/__driver/driver_api.h>
 
 #include <nv/target>
 
@@ -33,7 +32,11 @@ namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-al
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
 __device__ inline void cudax_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+  bool condition,
+  [[maybe_unused]] const char* condition_text,
+  [[maybe_unused]] const char* filename,
+  [[maybe_unused]] unsigned int linenum,
+  [[maybe_unused]] const char* funcname)
 {
   if (!condition)
   {
@@ -98,11 +101,11 @@ namespace test
 {
 inline int count_driver_stack()
 {
-  if (cudax::__detail::driver::ctxGetCurrent() != nullptr)
+  if (cuda::__driver::__ctxGetCurrent() != nullptr)
   {
-    auto ctx    = cudax::__detail::driver::ctxPop();
+    auto ctx    = cuda::__driver::__ctxPop();
     auto result = 1 + count_driver_stack();
-    cudax::__detail::driver::ctxPush(ctx);
+    cuda::__driver::__ctxPush(ctx);
     return result;
   }
   else
@@ -113,15 +116,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (cudax::__detail::driver::ctxGetCurrent() != nullptr)
+  while (cuda::__driver::__ctxGetCurrent() != nullptr)
   {
-    cudax::__detail::driver::ctxPop();
+    cuda::__driver::__ctxPop();
   }
 }
 
 inline int cuda_driver_version()
 {
-  return cudax::__detail::driver::getVersion();
+  return cuda::__driver::__getVersion();
 }
 
 // Needs to be a template because we use template catch2 macro

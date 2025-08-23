@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class = void>
 struct __has_element_type : false_type
@@ -86,20 +86,20 @@ struct __pointer_traits_difference_type<_Ptr, true>
   using type _CCCL_NODEBUG_ALIAS = typename _Ptr::difference_type;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up>
 struct __has_rebind
 {
 private:
   template <class _Xp>
   _CCCL_API inline static false_type __test(...);
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <class _Xp>
   _CCCL_API inline static true_type __test(typename _Xp::template rebind<_Up>* = 0);
-  _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
   static const bool value = decltype(__test<_Tp>(0))::value;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
@@ -167,7 +167,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
   {
-    return _CUDA_VSTD::addressof(__r);
+    return ::cuda::std::addressof(__r);
   }
 };
 
@@ -223,16 +223,18 @@ __to_address(const _Pointer& __p) noexcept
 template <class _Pointer, class>
 struct __to_address_helper
 {
-  _CCCL_API constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr static decltype(::cuda::std::__to_address(declval<const _Pointer&>().operator->()))
   __call(const _Pointer& __p) noexcept
   {
-    return _CUDA_VSTD::__to_address(__p.operator->());
+    return ::cuda::std::__to_address(__p.operator->());
   }
 };
 
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
   __call(const _Pointer& __p) noexcept
   {
@@ -243,16 +245,16 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
 template <class _Tp>
 _CCCL_API constexpr auto to_address(_Tp* __p) noexcept
 {
-  return _CUDA_VSTD::__to_address(__p);
+  return ::cuda::std::__to_address(__p);
 }
 
 template <class _Pointer>
-_CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
+_CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(::cuda::std::__to_address(__p))
 {
-  return _CUDA_VSTD::__to_address(__p);
+  return ::cuda::std::__to_address(__p);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

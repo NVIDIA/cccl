@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
@@ -44,8 +44,8 @@ inline constexpr bool is_nothrow_move_assignable_v =
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_assignable
-    : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_move_assignable : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
@@ -53,7 +53,7 @@ inline constexpr bool is_nothrow_move_assignable_v = is_nothrow_move_assignable<
 
 #endif
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -1,0 +1,175 @@
+# Doxyfile for CUDAX
+
+PROJECT_NAME           = CUDAX
+OUTPUT_DIRECTORY       = ../_build/doxygen/cudax
+CREATE_SUBDIRS         = NO
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = YES
+
+# Input directory - specific paths for cudax
+INPUT                  = ../../cudax/include/cuda/experimental/__container \
+                         ../../cudax/include/cuda/experimental/__device \
+                         ../../cudax/include/cuda/experimental/__event \
+                         ../../cudax/include/cuda/experimental/graph.cuh \
+                         ../../cudax/include/cuda/experimental/__graph \
+                         ../../cudax/include/cuda/experimental/__hierarchy \
+                         ../../cudax/include/cuda/experimental/__launch \
+                         ../../cudax/include/cuda/experimental/__memory_resource \
+                         ../../cudax/include/cuda/experimental/__stream \
+                         ../../cudax/include/cuda/experimental/stf.cuh \
+                         ../../cudax/include/cuda/experimental/__stf \
+                         ../../cudax/include/cuda/experimental/__stf/internal \
+                         ../../cudax/include/cuda/experimental/__stf/utility \
+                         ../../cudax/include/cuda/experimental/__stf/localization \
+                         ../../cudax/include/cuda/experimental/__stf/allocators \
+                         ../../cudax/include/cuda/experimental/__stf/graph \
+                         ../../cudax/include/cuda/experimental/__stf/graph/internal \
+                         ../../cudax/include/cuda/experimental/__stf/graph/interfaces \
+                         ../../cudax/include/cuda/experimental/__stf/places \
+                         ../../cudax/include/cuda/experimental/__stf/places/exec \
+                         ../../cudax/include/cuda/experimental/__stf/places/exec/host \
+                         ../../cudax/include/cuda/experimental/__stf/stream \
+                         ../../cudax/include/cuda/experimental/__stf/stream/internal \
+                         ../../cudax/include/cuda/experimental/__stf/stream/interfaces
+
+RECURSIVE              = YES
+# Exclude patterns from repo.toml
+EXCLUDE                = ../../cudax/include/cuda/experimental/__graph/fwd.cuh
+EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/*
+# Exclude symbols from repo.toml
+EXCLUDE_SYMBOLS        = *detail* *RESERVED* *reserved* *__* _A* _B* _C* _D* _E* _F* _G* _H* _I* _J* _K* _L* _M* _N* _O* _P* _Q* _R* _S* _T* _U* _V* _W* _X* _Y* _Z* UNITTEST
+
+FILE_PATTERNS          = *.h *.hpp *.cuh
+EXTENSION_MAPPING      = cuh=C++ cu=C++
+
+# Documentation extraction settings
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+SHOW_INCLUDE_FILES     = YES
+INLINE_INHERITED_MEMB  = YES
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = ../../cudax
+SHORT_NAMES            = NO
+
+# Parsing settings
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = NO
+MULTILINE_CPP_IS_BRIEF = NO
+INHERIT_DOCS           = YES
+SEPARATE_MEMBER_PAGES  = NO
+TAB_SIZE               = 4
+BUILTIN_STL_SUPPORT    = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+SKIP_FUNCTION_MACROS   = YES
+
+# Predefined macros for CUDAX
+PREDEFINED = \
+    "__device__=" \
+    "__host__=" \
+    "__global__=" \
+    "__forceinline__=" \
+    "__declspec(x)=" \
+    "__align__(x)=" \
+    "__cccl_lib_mdspan" \
+    "_CCCL_AND=&&" \
+    "_CCCL_CONCEPT=constexpr bool" \
+    "_CCCL_DOXYGEN_INVOKED" \
+    "_CCCL_HOST_DEVICE=" \
+    "_CCCL_DEVICE=" \
+    "_CCCL_HOST=" \
+    "_CCCL_FORCEINLINE=" \
+    "_CCCL_CONSTEXPR_CXX20=constexpr" \
+    "_CCCL_CONSTEXPR_CXX23=constexpr" \
+    "_CCCL_API=inline" \
+    "_CCCL_HOST_API=inline" \
+    "_CCCL_DEVICE_API=inline" \
+    "_CCCL_NODEBUG_API=inline" \
+    "_CCCL_NODEBUG_DEVICE_API=inline" \
+    "_CCCL_NODEBUG_HOST_API=inline" \
+    "_CCCL_TRIVIAL_API=inline" \
+    "_CCCL_TRIVIAL_HOST_API=inline" \
+    "_CCCL_TRIVIAL_DEVICE_API=inline" \
+    "_CCCL_PUBLIC_API=inline" \
+    "_CCCL_PUBLIC_DEVICE_API=inline" \
+    "_CCCL_PUBLIC_HOST_API=inline" \
+    "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
+    "_CCCL_END_NAMESPACE_CUDA_STD=}" \
+    "_CCCL_CATCH=catch" \
+    "_CCCL_CATCH_ALL=catch (...)" \
+    "_CCCL_CONSTEXPR_FRIEND=friend " \
+    "_CCCL_CTK_AT_LEAST(x, y)=1" \
+    "_CCCL_CTK_BELOW(x, y)=0" \
+    "_CCCL_CUDACC_AT_LEAST(x, y)=1" \
+    "_CCCL_CUDACC_BELOW(x, y)=0" \
+    "_CCCL_DIAG_POP=" \
+    "_CCCL_DIAG_PUSH=" \
+    "_CCCL_DIAG_SUPPRESS_CLANG(x)=" \
+    "_CCCL_DIAG_SUPPRESS_GCC(x)=" \
+    "_CCCL_DIAG_SUPPRESS_MSVC(x)=" \
+    "_CCCL_DIAG_SUPPRESS_NVHPC(x)=" \
+    "_CCCL_EXEC_CHECK_DISABLE=" \
+    "_CCCL_GLOBAL_CONSTANT=inline constexpr" \
+    "_CCCL_HAS_CTK()=1" \
+    "_CCCL_HIDE_FROM_ABI=" \
+    "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>" \
+    "_CCCL_STD_VER=2020" \
+    "_CCCL_SUPPRESS_DEPRECATED_POP=" \
+    "_CCCL_SUPPRESS_DEPRECATED_PUSH=" \
+    "_CCCL_TEMPLATE(x)=template<x, " \
+    "_CCCL_TRAILING_REQUIRES(x)=-> x requires " \
+    "_CCCL_TRY=try" \
+    "_CCCL_TYPE_VISIBILITY_DEFAULT=" \
+    "_CCCL_TYPE_VISIBILITY_HIDDEN=" \
+    "_CCCL_VISIBILITY_DEFAULT=" \
+    "_CCCL_VISIBILITY_HIDDEN=" \
+    "_CUDAX_CONSTEXPR_FRIEND=friend" \
+    "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1" \
+    "CCCL_DEPRECATED=" \
+    "CCCL_DEPRECATED_BECAUSE(x)=" \
+    "CCCL_IGNORE_DEPRECATED_CPP_DIALECT" \
+    "CUB_DISABLE_NAMESPACE_MAGIC" \
+    "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
+    "CUB_NAMESPACE_BEGIN=namespace cub {" \
+    "CUB_NAMESPACE_END=}" \
+    "CUB_RUNTIME_FUNCTION=" \
+    "CUB_STATIC_ASSERT(cond,msg)=" \
+    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
+    "THRUST_FWD(x)=x" \
+    "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
+    "THRUST_NAMESPACE_END=}" \
+    "THRUST_PREVENT_MACRO_SUBSTITUTION"
+
+# Additional settings from repo.toml
+DISTRIBUTE_GROUP_DOC   = YES
+DOXYFILE_ENCODING      = UTF-8
+INPUT_ENCODING         = UTF-8
+EXAMPLE_RECURSIVE      = NO
+EXAMPLE_PATTERNS       = *.cu
+AUTOLINK_SUPPORT       = YES
+
+# IMPORTANT: Aliases for custom commands
+# The rst alias enables embedding reStructuredText in doxygen comments
+# Using the same format as repo_docs for compatibility
+ALIASES = "rst=\verbatim embed:rst:leading-asterisk"
+ALIASES += "endrst=\endverbatim"
+ALIASES += "rststar=\verbatim embed:rst:leading-asterisk"
+ALIASES += "inlinerst=\verbatim embed:rst:inline"
+
+# Quiet mode
+QUIET                  = YES
+WARNINGS               = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = NO
+WARN_NO_PARAMDOC       = NO

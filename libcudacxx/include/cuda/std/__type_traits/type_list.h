@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/undefined.h>
 
 //! \file type_list.h
 //! This file defines a type-list type and some fundamental algorithms on type
@@ -50,15 +51,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <class... _Ts>
 struct __type_list;
-
-template <class...>
-struct __undefined; // leave this undefined
 
 template <class _Ty>
 using __type = typename _Ty::type;
@@ -421,8 +419,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
 //! arguments, or if the meta-callable is not callable with the arguments, a
 //! class type without a nested \c ::type type alias.
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
-    : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+__type_defer : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
 
 //! \brief Defer the instantiation of a template with a list of arguments.
@@ -450,7 +448,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if !defined(_CCCL_NO_PACK_INDEXING)
+#  if _CCCL_HAS_PACK_INDEXING()
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
@@ -837,7 +835,7 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
 {
   template <class _Uy>
-  using __call _CCCL_NODEBUG_ALIAS = bool_constant<_CCCL_TRAIT(is_same, _Ty, _Uy)>;
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<is_same_v<_Ty, _Uy>>;
 };
 } // namespace __detail
 
@@ -969,7 +967,7 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 {
   template <class _Uy>
-  using __call _CCCL_NODEBUG_ALIAS = _If<_CCCL_TRAIT(is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
+  using __call _CCCL_NODEBUG_ALIAS = _If<is_same_v<_Ty, _Uy>, __type_list<>, __type_list<_Uy>>;
 };
 } // namespace __detail
 
@@ -1062,7 +1060,7 @@ using __type_iota =
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

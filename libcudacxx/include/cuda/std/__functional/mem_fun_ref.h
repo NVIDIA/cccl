@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
@@ -132,8 +132,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+const_mem_fun1_t : public __binary_function<const _Tp*, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 
@@ -175,8 +175,8 @@ public:
 };
 
 template <class _Sp, class _Tp, class _Ap>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+const_mem_fun1_ref_t : public __binary_function<_Tp, _Ap, _Sp>
 {
   _Sp (_Tp::*__p_)(_Ap) const;
 
@@ -206,7 +206,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

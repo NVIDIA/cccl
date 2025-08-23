@@ -219,7 +219,7 @@ protected:
     _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(MSVC)
 
-    virtual size_t epoch() const
+    virtual size_t stage() const
     {
       return size_t(-1);
     }
@@ -491,7 +491,7 @@ protected:
     };
 
     // Insert a fence with all pending asynchronous operations on the current context
-    [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
+    [[nodiscard]] inline event_list insert_fence(reserved::per_ctx_dot& dot)
     {
       auto prereqs = event_list();
       // Create a node in the DOT output (if any)
@@ -515,7 +515,7 @@ protected:
           // Add an edge between that leaf task and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(t_id, fence_unique_id, 1);
+            dot.add_edge(t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -540,7 +540,7 @@ protected:
           // Add an edge between that freeze and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(fake_t_id, fence_unique_id, 1);
+            dot.add_edge(fake_t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -766,9 +766,9 @@ public:
     return pimpl->stream_to_event_list(stream, mv(event_symbol));
   }
 
-  size_t epoch() const
+  size_t stage() const
   {
-    return pimpl->epoch();
+    return pimpl->stage();
   }
 
   ::std::string to_string() const
@@ -963,11 +963,13 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
-    return frozen_logical_data<T>(*this, mv(d), m, mv(where));
+    return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
 
   /**
@@ -1053,8 +1055,15 @@ public:
             typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename partitioner_t,
@@ -1062,17 +1071,24 @@ public:
             typename S,
             typename... Deps,
             typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
-  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
+  auto parallel_for([[maybe_unused]] partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
-      self(), mv(e_place), mv(shape), mv(deps)...);
+    if constexpr (::std::is_integral_v<S>)
+    {
+      return parallel_for(mv(p), mv(e_place), box(shape), mv(deps)...);
+    }
+    else
+    {
+      return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
+        self(), mv(e_place), mv(shape), mv(deps)...);
+    }
   }
 
   template <typename S, typename... Deps>
   auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
-  template <typename S, typename... Deps, typename... Ops, bool... flags>
-  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
+  template <typename S, typename... Deps>
+  auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }

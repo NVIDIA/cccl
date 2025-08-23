@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
@@ -47,7 +47,7 @@ class scaled_accessor
 {
 public:
   using element_type = add_const_t<
-    decltype(_CUDA_VSTD::declval<_ScalingFactor>() * _CUDA_VSTD::declval<typename _NestedAccessor::element_type>())>;
+    decltype(::cuda::std::declval<_ScalingFactor>() * ::cuda::std::declval<typename _NestedAccessor::element_type>())>;
   using reference        = remove_const_t<element_type>;
   using data_handle_type = typename _NestedAccessor::data_handle_type;
   using offset_policy    = scaled_accessor<_ScalingFactor, typename _NestedAccessor::offset_policy>;
@@ -55,18 +55,18 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr scaled_accessor() = default;
 
   _CCCL_TEMPLATE(class _OtherScalingFactor, class _OtherNestedAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor)
-                     _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor)))
+  _CCCL_REQUIRES(is_constructible_v<_NestedAccessor, const _OtherNestedAccessor&> _CCCL_AND
+                   is_constructible_v<_ScalingFactor, _OtherScalingFactor> _CCCL_AND(
+                     !is_convertible_v<_OtherNestedAccessor, _NestedAccessor>))
   _CCCL_API explicit constexpr scaled_accessor(const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
       : __scaling_factor_(__other.scaling_factor())
       , __nested_accessor_(__other.nested_accessor())
   {}
 
   _CCCL_TEMPLATE(class _OtherScalingFactor, class _OtherNestedAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor)
-                     _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
+  _CCCL_REQUIRES(is_constructible_v<_NestedAccessor, const _OtherNestedAccessor&> _CCCL_AND
+                   is_constructible_v<_ScalingFactor, _OtherScalingFactor> _CCCL_AND
+                     is_convertible_v<_OtherNestedAccessor, _NestedAccessor>)
   _CCCL_API constexpr scaled_accessor(const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
       : __scaling_factor_(__other.scaling_factor())
       , __nested_accessor_(__other.nested_accessor())
@@ -125,7 +125,7 @@ scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, 
 
 } // end namespace linalg
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

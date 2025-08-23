@@ -26,20 +26,8 @@ runs:
     - name: Move docs to right folder
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        mkdir _site
-        cp -rf ./docs/_build/docs/cccl/latest/* _site
-        mkdir _site/cub
-        cp -rf ./docs/_build/docs/cub/latest/* _site/cub
-        mkdir _site/libcudacxx
-        cp -rf ./docs/_build/docs/libcudacxx/latest/* _site/libcudacxx
-        mkdir _site/thrust
-        cp -rf ./docs/_build/docs/thrust/latest/* _site/thrust
-        mkdir _site/cudax
-        cp -rf ./docs/_build/docs/cudax/latest/* _site/cudax
-        mkdir _site/cuda_cooperative
-        cp -rf ./docs/_build/docs/cuda_cooperative/latest/* _site/cuda_cooperative
-        mkdir _site/cuda_parallel
-        cp -rf ./docs/_build/docs/cuda_parallel/latest/* _site/cuda_parallel
+        mkdir -p _site
+        cp -rf ./docs/_build/html/* _site/
         ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:

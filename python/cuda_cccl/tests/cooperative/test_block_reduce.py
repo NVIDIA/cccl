@@ -16,14 +16,10 @@ from helpers import (
     row_major_tid,
 )
 from numba import cuda, types
-from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-
-patch.patch_numba_linker(lto=True)
 
 
 @pytest.mark.parametrize(
@@ -46,7 +42,7 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.reduce(
+    block_reduce = coop.block.reduce(
         dtype=complex_type,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -107,7 +103,7 @@ def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.reduce(
+    block_reduce = coop.block.reduce(
         dtype=complex_type,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -170,7 +166,7 @@ def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.reduce(
+    block_reduce = coop.block.reduce(
         dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -219,7 +215,7 @@ def test_block_reduction_valid(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.reduce(
+    block_reduce = coop.block.reduce(
         dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -272,7 +268,7 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread, alg
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.reduce(
+    block_reduce = coop.block.reduce(
         dtype=T,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -336,7 +332,7 @@ def test_block_reduction_array_global(
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.reduce(
+    block_reduce = coop.block.reduce(
         dtype=T,
         binary_op=op,
         threads_per_block=threads_per_block,
@@ -391,7 +387,7 @@ def test_block_sum(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.sum(
+    block_reduce = coop.block.sum(
         dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -437,7 +433,7 @@ def test_block_sum_valid(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.sum(
+    block_reduce = coop.block.sum(
         dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
     )
     temp_storage_bytes = block_reduce.temp_storage_bytes
@@ -487,7 +483,7 @@ def test_block_sum_array_local(T, threads_per_block, items_per_thread, algorithm
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.sum(
+    block_reduce = coop.block.sum(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -545,7 +541,7 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread, algorith
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = cudax.block.sum(
+    block_reduce = coop.block.sum(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -594,7 +590,7 @@ def test_block_reduce_invalid_items_per_thread(threads_per_block, items_per_thre
         return a if a < b else b
 
     with pytest.raises(ValueError):
-        cudax.block.reduce(
+        coop.block.reduce(
             dtype=numba.int32,
             binary_op=op,
             threads_per_block=threads_per_block,
@@ -608,7 +604,7 @@ def test_block_reduce_invalid_items_per_thread(threads_per_block, items_per_thre
 @pytest.mark.parametrize("items_per_thread", [0, -1, -127])
 def test_block_sum_invalid_items_per_thread(threads_per_block, items_per_thread):
     with pytest.raises(ValueError):
-        cudax.block.sum(
+        coop.block.sum(
             dtype=numba.int32,
             threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
@@ -620,7 +616,7 @@ def test_block_reduce_invalid_algorithm():
         return a if a < b else b
 
     with pytest.raises(ValueError):
-        cudax.block.reduce(
+        coop.block.reduce(
             dtype=numba.int32,
             binary_op=op,
             threads_per_block=128,
@@ -630,7 +626,7 @@ def test_block_reduce_invalid_algorithm():
 
 def test_block_sum_invalid_algorithm():
     with pytest.raises(ValueError):
-        cudax.block.sum(
+        coop.block.sum(
             dtype=numba.int32,
             threads_per_block=128,
             algorithm="invalid_algorithm",
@@ -638,17 +634,17 @@ def test_block_sum_invalid_algorithm():
 
 
 def test_sum_alignment():
-    sum1 = cudax.block.sum(
+    sum1 = coop.block.sum(
         dtype=types.int32,
         threads_per_block=256,
     )
 
-    sum2 = cudax.block.sum(
+    sum2 = coop.block.sum(
         dtype=types.float64,
         threads_per_block=256,
     )
 
-    sum3 = cudax.block.sum(
+    sum3 = coop.block.sum(
         dtype=types.int8,
         threads_per_block=256,
     )

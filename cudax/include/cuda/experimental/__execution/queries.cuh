@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
-
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__utility/unreachable.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
+#include <cuda/experimental/__execution/completion_behavior.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
@@ -42,42 +44,21 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace cuda::experimental::execution
 {
-// NOLINTBEGIN(misc-unused-using-decls)
-using _CUDA_STD_EXEC::__forwarding_query;
-using _CUDA_STD_EXEC::__unwrap_reference_t;
-using _CUDA_STD_EXEC::env;
-using _CUDA_STD_EXEC::env_of_t;
-using _CUDA_STD_EXEC::forwarding_query;
-using _CUDA_STD_EXEC::forwarding_query_t;
-using _CUDA_STD_EXEC::get_env;
-using _CUDA_STD_EXEC::get_env_t;
-using _CUDA_STD_EXEC::prop;
-
-using _CUDA_STD_EXEC::__nothrow_queryable_with;
-using _CUDA_STD_EXEC::__query_result_t;
-using _CUDA_STD_EXEC::__queryable_with;
-// NOLINTEND(misc-unused-using-decls)
-
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_allocator
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_or_t<_Env, get_allocator_t, ::cuda::std::allocator<void>>
   {
-    if constexpr (__queryable_with<_Env, get_allocator_t>)
-    {
-      static_assert(noexcept(__env.query(*this)));
-      return __env.query(*this);
-    }
-    else
-    {
-      return _CUDA_VSTD::allocator<void>{};
-    }
+    static_assert(__nothrow_queryable_with_or<_Env, get_allocator_t, true>,
+                  "The get_allocator query must be noexcept.");
+    // NOT TO SPEC: return a default allocator if the query is not supported.
+    return __query_or(__env, *this, ::cuda::std::allocator<void>{});
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -87,53 +68,118 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 // get_stop_token
 _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_or_t<_Env, get_stop_token_t, never_stop_token>
   {
-    if constexpr (__queryable_with<_Env, get_stop_token_t>)
-    {
-      static_assert(noexcept(__env.query(*this)));
-      return __env.query(*this);
-    }
-    else
-    {
-      return never_stop_token{};
-    }
+    static_assert(__nothrow_queryable_with_or<_Env, get_stop_token_t, true>,
+                  "The get_stop_token query must be noexcept.");
+    return __query_or(__env, *this, never_stop_token{});
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
 } get_stop_token{};
 
 template <class _Ty>
-using stop_token_of_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<get_stop_token_t, _Ty>>;
+using stop_token_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_stop_token_t, _Ty>>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
-// get_completion_scheduler
-template <class _Tag>
-struct get_completion_scheduler_t
+// get_scheduler
+_CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__queryable_with<_Env, get_completion_scheduler_t>)
-  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
+  _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_t<_Env, get_scheduler_t>
   {
     static_assert(noexcept(__env.query(*this)));
     static_assert(__is_scheduler<decltype(__env.query(*this))>);
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
+} get_scheduler{};
+
+template <class _Env>
+using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_delegation_scheduler
+_CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_t<_Env, get_delegation_scheduler_t>
+  {
+    static_assert(noexcept(__env.query(*this)));
+    static_assert(__is_scheduler<decltype(__env.query(*this))>);
+    return __env.query(*this);
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
+} get_delegation_scheduler{};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//! @brief A query type for asking a sender's attributes for the scheduler on which that
+//! sender will complete.
+//!
+//! @tparam _Tag one of set_value_t, set_error_t, or set_stopped_t
+template <class _Tag>
+struct get_completion_scheduler_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Attrs)
+  _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_scheduler_t>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, ::cuda::std::__ignore_t = {}) const noexcept
+    -> __query_result_t<_Attrs, get_completion_scheduler_t>
+  {
+    static_assert(noexcept(__attrs.query(*this)));
+    static_assert(__is_scheduler<decltype(__attrs.query(*this))>);
+    return __attrs.query(*this);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Attrs, class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_scheduler_t, const _Env&>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
+    -> __query_result_t<_Attrs, get_completion_scheduler_t, const _Env&>
+  {
+    static_assert(noexcept(__attrs.query(*this, __env)));
+    static_assert(__is_scheduler<decltype(__attrs.query(*this, __env))>);
+    return __attrs.query(*this, __env);
+  }
+
+  _CCCL_TEMPLATE(class _Attrs, class _Env, class _SetTag = _Tag)
+  _CCCL_REQUIRES((!__queryable_with<_Attrs, get_completion_scheduler_t>) _CCCL_AND //
+                 (!__queryable_with<_Attrs, get_completion_scheduler_t, const _Env&>) _CCCL_AND //
+                   __completes_inline<_Attrs, _Env> _CCCL_AND //
+                     __callable<get_scheduler_t, const _Env&>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs&, const _Env& __env) const noexcept
+    -> __call_result_t<get_scheduler_t, const _Env&>
+  {
+    return get_scheduler(__env);
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
 };
 
 template <class _Tag>
-extern _CUDA_VSTD::__undefined<_Tag> get_completion_scheduler;
+extern ::cuda::std::__undefined<_Tag> get_completion_scheduler;
 
 // Explicitly instantiate these because of variable template weirdness in device code
 template <>
@@ -143,92 +189,52 @@ _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_error_t> get_completion_sch
 template <>
 _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_stopped_t> get_completion_scheduler<set_stopped_t>{};
 
-template <class _Env, class _Tag = set_value_t>
-using __completion_scheduler_of_t _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<get_completion_scheduler_t<_Tag>, _Env>>;
-
-//////////////////////////////////////////////////////////////////////////////////////////
-// get_scheduler
-_CCCL_GLOBAL_CONSTANT struct get_scheduler_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
-  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
-  {
-    static_assert(noexcept(__env.query(*this)));
-    static_assert(__is_scheduler<decltype(__env.query(*this))>);
-    return __env.query(*this);
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
-  {
-    return true;
-  }
-} get_scheduler{};
-
-template <class _Env>
-using __scheduler_of_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<get_scheduler_t, _Env>>;
-
-//////////////////////////////////////////////////////////////////////////////////////////
-// get_delegation_scheduler
-_CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
-  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
-  {
-    static_assert(noexcept(__env.query(*this)));
-    static_assert(__is_scheduler<decltype(__env.query(*this))>);
-    return __env.query(*this);
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
-  {
-    return true;
-  }
-} get_delegation_scheduler{};
-
 // This query is not a forwarding query.
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  [[nodiscard]] _CCCL_API auto operator()(const _Sch& __sch) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Sch& __sch) const noexcept -> forward_progress_guarantee
   {
-    if constexpr (__queryable_with<_Sch, get_forward_progress_guarantee_t>)
-    {
-      static_assert(noexcept(__sch.query(*this)));
-      return __sch.query(*this);
-    }
-    else
-    {
-      return forward_progress_guarantee::weakly_parallel;
-    }
+    static_assert(__nothrow_queryable_with_or<_Sch, get_forward_progress_guarantee_t, true>,
+                  "The get_forward_progress_guarantee query must be noexcept.");
+    return __query_or(__sch, *this, forward_progress_guarantee::weakly_parallel);
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
   }
 } get_forward_progress_guarantee{};
+
+// By default, CUDA kernels are launched with a single thread and a single block.
+using __single_threaded_config_base_t = decltype(experimental::make_config(grid_dims<1>(), block_dims<1>()));
+
+// We hide the complicated type of the default launch configuration so diagnositics are
+// easier to read.
+struct __single_threaded_config_t : __single_threaded_config_base_t
+{
+  _CCCL_HOST_API constexpr __single_threaded_config_t() noexcept
+      : __single_threaded_config_base_t{experimental::make_config(grid_dims<1>(), block_dims<1>())}
+  {}
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_launch_config: A sender can define this attribute to control the launch configuration
 // of the kernel it will launch when executed on a CUDA stream scheduler.
 _CCCL_GLOBAL_CONSTANT struct get_launch_config_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
-  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr auto operator()(const _Env& __env) const noexcept
+    -> __query_result_or_t<_Env, get_launch_config_t, __single_threaded_config_t>
   {
-    if constexpr (__queryable_with<_Env, get_launch_config_t>)
-    {
-      static_assert(noexcept(__env.query(*this)), "The get_launch_config query must be noexcept.");
-      static_assert(__is_specialization_of_v<decltype(__env.query(*this)), kernel_config>,
-                    "The get_launch_config query must return a kernel_config type.");
-      return __env.query(*this);
-    }
-    else
-    {
-      return experimental::make_config(grid_dims<1>, block_dims<1>);
-    }
+    static_assert(__nothrow_queryable_with_or<_Env, get_launch_config_t, true>,
+                  "The get_launch_config query must be noexcept.");
+    return __query_or(__env, *this, __single_threaded_config_t{});
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return true;
   }
 } get_launch_config{};
 

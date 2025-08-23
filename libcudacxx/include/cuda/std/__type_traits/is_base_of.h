@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
@@ -61,14 +61,14 @@ struct __one
   using type = char;
 };
 template <class _Bp, class _Dp>
-_CCCL_HOST_DEVICE typename __one<sizeof(_Dst<_Bp>(_CUDA_VSTD::declval<_Src<_Dp>>()))>::type __test(int);
+_CCCL_HOST_DEVICE typename __one<sizeof(_Dst<_Bp>(::cuda::std::declval<_Src<_Dp>>()))>::type __test(int);
 template <class _Bp, class _Dp>
 _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
-    : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_base_of : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
 {};
 
 template <class _Bp, class _Dp>
@@ -76,7 +76,7 @@ inline constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

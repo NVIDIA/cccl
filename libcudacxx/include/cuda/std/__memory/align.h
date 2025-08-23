@@ -24,6 +24,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__memory/assume_aligned.h>
+#include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -32,7 +33,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
@@ -54,31 +55,10 @@ _CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, si
   //! We need to avoid using __aligned_ptr here, as nvcc looses track of the execution space otherwise
   __ptr = reinterpret_cast<void*>(__char_ptr + __diff);
   __space -= __diff;
-#if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
-  switch (__alignment)
-  {
-    case 1:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 1);
-    case 2:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 2);
-    case 4:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 4);
-    case 8:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 8);
-    case 16:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 16);
-    case 32:
-      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 32);
-    default:
-      return __ptr;
-  }
-#else // ^^^ _CCCL_BUILTIN_ASSUME_ALIGNED ^^^ / vvv !_CCCL_BUILTIN_ASSUME_ALIGNED vvv
-  _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
-  return __ptr;
-#endif // !_CCCL_BUILTIN_ASSUME_ALIGNED
+  return ::cuda::std::__runtime_assume_aligned(__ptr, __alignment);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

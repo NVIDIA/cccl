@@ -25,15 +25,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg1, class _Arg2, class _Result>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED pointer_to_binary_function : public __binary_function<_Arg1, _Arg2, _Result>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+pointer_to_binary_function : public __binary_function<_Arg1, _Arg2, _Result>
 {
   _Result (*__f_)(_Arg1, _Arg2);
 
@@ -58,7 +58,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

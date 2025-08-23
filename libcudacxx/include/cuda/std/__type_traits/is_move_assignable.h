@@ -26,17 +26,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_assignable
-    : public is_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_move_assignable : public is_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
 inline constexpr bool is_move_assignable_v = is_move_assignable<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

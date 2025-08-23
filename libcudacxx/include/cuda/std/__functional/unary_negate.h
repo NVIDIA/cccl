@@ -25,15 +25,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Predicate>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
 {
   _Predicate __pred_;
 
@@ -48,19 +48,17 @@ public:
   }
 };
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
 _LIBCUDACXX_DEPRECATED _CCCL_API constexpr unary_negate<_Predicate> not1(const _Predicate& __pred)
 {
   return unary_negate<_Predicate>(__pred);
 }
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

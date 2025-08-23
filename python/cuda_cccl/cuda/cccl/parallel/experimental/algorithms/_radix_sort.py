@@ -10,7 +10,12 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
-from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    get_dtype,
+    validate_and_get_stream,
+)
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..typing import DeviceArrayLike
 
 
@@ -205,7 +210,7 @@ class _RadixSort:
 
 
 @cache_with_key(make_cache_key)
-def radix_sort(
+def make_radix_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
@@ -242,3 +247,60 @@ def radix_sort(
         A callable object that can be used to perform the merge sort
     """
     return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+
+
+def radix_sort(
+    d_in_keys: DeviceArrayLike | DoubleBuffer,
+    d_out_keys: DeviceArrayLike | None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None,
+    d_out_values: DeviceArrayLike | None,
+    order: SortOrder,
+    num_items: int,
+    begin_bit: int | None = None,
+    end_bit: int | None = None,
+    stream=None,
+):
+    """
+    Performs device-wide radix sort.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in_keys: Device array or DoubleBuffer containing the input sequence of keys
+        d_out_keys: Device array to store the sorted keys (optional)
+        d_in_values: Device array or DoubleBuffer containing the input sequence of values (optional)
+        d_out_values: Device array to store the sorted values (optional)
+        order: Sort order (ascending or descending)
+        num_items: Number of items to sort
+        begin_bit: Beginning bit position for comparison (optional)
+        end_bit: Ending bit position for comparison (optional)
+        stream: CUDA stream for the operation (optional)
+    """
+    sorter = make_radix_sort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+    tmp_storage_bytes = sorter(
+        None,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        begin_bit,
+        end_bit,
+        stream,
+    )
+    # Use the appropriate array for namespace - prefer d_out_keys, fallback to d_in_keys
+    ref_array = d_out_keys if d_out_keys is not None else d_in_keys
+    if isinstance(ref_array, DoubleBuffer):
+        ref_array = ref_array.current()
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    sorter(
+        tmp_storage,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        begin_bit,
+        end_bit,
+        stream,
+    )

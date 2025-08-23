@@ -97,22 +97,22 @@ _CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
 {}
 
 // So that we can refer to the ::cuda::std namespace below
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-// We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
+// We put an alias for ::cuda::std here because of a bug in nvcc <12.2
 // where a requirement such as:
 //
 //  { expression } -> ::concept<type>
 //
 // where ::concept is a fully qualified name, would not compile. The
-// _CUDA_VSTD macro is fully qualified.
-namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
+// ::cuda::std macro is fully qualified.
+namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias-decls)
 
 #if _CCCL_CUDACC_BELOW(12, 2)
 #  define _CCCL_CONCEPT_VSTD __cccl_unqualified_cuda_std // must not be fully qualified
 #else
-#  define _CCCL_CONCEPT_VSTD _CUDA_VSTD
+#  define _CCCL_CONCEPT_VSTD ::cuda::std
 #endif
 
 #define _CCCL_CONCEPT_FRAGMENT_REQS_M0(_REQ) _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
@@ -160,10 +160,9 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
       __VA_ARGS__                                            \
     } noexcept
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
-    {                                               \
-      _CCCL_PP_CAT4(_CCCL_PP_EAT_SAME_AS_, _REQ)    \
-    } -> _CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_EVAL( \
-      _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
+    {_CCCL_PP_CAT4(_CCCL_PP_EAT_SAME_AS_, _REQ)}    \
+      ->_CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_EVAL(  \
+        _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
 #  define _CCCL_PP_EAT_SAME_AS__Same_as(...)
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX(_TYPE, ...) _CCCL_PP_EXPAND _TYPE
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...)   (__VA_ARGS__),
@@ -179,7 +178,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
     template <class... _As>                                                                                 \
     _CCCL_API inline char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
       ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                       \
-    _CCCL_API inline char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
+    _CCCL_API inline char (&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
 #  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_CONCEPT_FRAGMENT_TRUE(...) \
       ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()
@@ -202,7 +201,8 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) ::__cccl_requires<noexcept(__VA_ARGS__)>
 #  endif
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
-    ::__cccl_requires<_CUDA_VSTD::same_as<_CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _CCCL_PP_RPAREN>>
+    ::__cccl_requires<                              \
+      _CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _CCCL_PP_RPAREN>>
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...) __VA_ARGS__, decltype _CCCL_PP_LPAREN
 
 #  define _CCCL_FRAGMENT(_NAME, ...) \

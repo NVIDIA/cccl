@@ -69,6 +69,9 @@ CUB_NAMESPACE_BEGIN
 //! incorporated into the *i*\ :sup:`th` output reduction. When the input and
 //! output sequences are the same, the scan is performed in-place.
 //!
+//! In order to provide an efficient parallel implementation, the binary reduction operator must be associative. That
+//! is, ``op(op(a, b), c)`` must be equivalent to ``op(a, op(b, c))`` for any input values ``a``, ``b``, and ``c``.
+//!
 //! As of CUB 1.0.1 (2013), CUB's device-wide scan APIs have implemented our
 //! *"decoupled look-back"* algorithm for performing global prefix scan with
 //! only a single pass through the input data, as described in our 2016 technical
@@ -284,7 +287,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
-  //! binary ``scan_op`` functor. The ``init_value`` value is applied as
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_out``.
   //!
   //! - Supports non-commutative scan operators.
@@ -352,11 +355,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -375,7 +377,7 @@ struct DeviceScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -416,7 +418,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
-  //! binary ``scan_op`` functor. The ``init_value`` value is applied as
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_data``.
   //!
   //! - Supports non-commutative scan operators.
@@ -478,11 +480,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -498,7 +499,7 @@ struct DeviceScan
   //!   Random-access iterator to the sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -525,7 +526,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
-  //! binary ``scan_op`` functor. The ``init_value`` value is provided as a future value.
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is provided as a future value.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -597,11 +598,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -620,7 +620,7 @@ struct DeviceScan
   //!   Pointer to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -665,7 +665,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide exclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The ``init_value`` value is provided as a future value.
   //!
   //! - Supports non-commutative scan operators.
@@ -731,11 +731,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!  **[inferred]** Type of the `init_value` used Binary scan functor type
-  //!   having member `T operator()(const T &a, const T &b)`
+  //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -751,7 +750,7 @@ struct DeviceScan
   //!   Pointer to the sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the exclusive scan (and is assigned to `*d_out`)
@@ -956,7 +955,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1023,7 +1022,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -1043,7 +1042,7 @@ struct DeviceScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
@@ -1072,7 +1071,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
   //! is assigned to ``*d_out``.
   //!
@@ -1106,7 +1105,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
   //!  **[inferred]** Type of the `init_value`
@@ -1129,7 +1128,7 @@ struct DeviceScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] init_value
   //!   Initial value to seed the inclusive scan (`scan_op(init_value, d_in[0])`
@@ -1175,7 +1174,7 @@ struct DeviceScan
   }
 
   //! @rst
-  //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
+  //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1235,7 +1234,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -1252,7 +1251,7 @@ struct DeviceScan
   //!   Random-access iterator to the sequence of data items
   //!
   //! @param[in] scan_op
-  //!   Binary scan functor
+  //!   Binary associative scan functor
   //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
@@ -1415,7 +1414,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan-by-key using the
-  //! specified binary ``scan_op`` functor. The key equality is defined by
+  //! specified binary associative ``scan_op`` functor. The key equality is defined by
   //! ``equality_op``.  The ``init_value`` value is applied as the initial
   //! value, and is assigned to the beginning of each segment in ``d_values_out``.
   //!
@@ -1504,11 +1503,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!   **[inferred]** Type of the `init_value` value used in Binary scan
-  //!   functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Type of the `init_value`
   //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
@@ -1534,7 +1532,7 @@ struct DeviceScan
   //!    Random-access output iterator to the output sequence of value items
   //!
   //!  @param[in] scan_op
-  //!    Binary scan functor
+  //!    Binary associative scan functor
   //!
   //!  @param[in] init_value
   //!    Initial value to seed the exclusive scan (and is assigned to the
@@ -1731,7 +1729,7 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
-  //! specified binary ``scan_op`` functor. The key equality is defined by ``equality_op``.
+  //! specified binary associative ``scan_op`` functor. The key equality is defined by ``equality_op``.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1815,7 +1813,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Functor type having member
@@ -1841,7 +1839,7 @@ struct DeviceScan
   //!    Random-access output iterator to the output sequence of value items
   //!
   //!  @param[in] scan_op
-  //!    Binary scan functor
+  //!    Binary associative scan functor
   //!
   //!  @param[in] num_items
   //!    Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)

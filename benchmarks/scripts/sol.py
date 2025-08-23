@@ -43,7 +43,7 @@ def filter_by_type(df):
 def alg_dfs(files):
     result = {}
     for file in files:
-        storage = cccl.bench.StorageBase(file)
+        storage = cccl.bench.SQLiteStorage(file)
         for algname in storage.algnames():
             for subbench in storage.subbenches(algname):
                 df = storage.alg_to_df(algname, subbench)
@@ -117,7 +117,7 @@ def plot_sol(medians, box):
         ax.bar_label(ax.containers[0], fmt="%.1f")
         for container in ax.containers[1:]:
             labels = [
-                f"{c:.1f}\n({(c/f)*100:.0f}%)"
+                f"{c:.1f}\n({(c / f) * 100:.0f}%)"
                 for f, c in zip(ax.containers[0].datavalues, container.datavalues)
             ]
             ax.bar_label(container, labels=labels)

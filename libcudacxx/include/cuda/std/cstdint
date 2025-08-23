@@ -113,22 +113,22 @@ using uintmax_t = uint64_t;
 
 #  define SIZE_MAX UINT64_MAX
 
-#  define INT8_C(X)   ((::int_least8_t)(X))
-#  define INT16_C(X)  ((::int_least16_t)(X))
-#  define INT32_C(X)  ((::int_least32_t)(X))
-#  define INT64_C(X)  ((::int_least64_t)(X))
-#  define UINT8_C(X)  ((::uint_least8_t)(X))
-#  define UINT16_C(X) ((::uint_least16_t)(X))
-#  define UINT32_C(X) ((::uint_least32_t)(X))
-#  define UINT64_C(X) ((::uint_least64_t)(X))
+#  define INT8_C(X)   ((::int_least8_t) (X))
+#  define INT16_C(X)  ((::int_least16_t) (X))
+#  define INT32_C(X)  ((::int_least32_t) (X))
+#  define INT64_C(X)  ((::int_least64_t) (X))
+#  define UINT8_C(X)  ((::uint_least8_t) (X))
+#  define UINT16_C(X) ((::uint_least16_t) (X))
+#  define UINT32_C(X) ((::uint_least32_t) (X))
+#  define UINT64_C(X) ((::uint_least64_t) (X))
 
-#  define INTMAX_C(X)  ((::intmax_t)(X))
-#  define UINTMAX_C(X) ((::uintmax_t)(X))
+#  define INTMAX_C(X)  ((::intmax_t) (X))
+#  define UINTMAX_C(X) ((::uintmax_t) (X))
 #endif // ^^^ _CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::int16_t;
 using ::int32_t;
@@ -171,7 +171,7 @@ using __cccl_intmax_t  = long long;
 using __cccl_uintmax_t = unsigned long long;
 #endif // !_CCCL_HAS_INT128()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

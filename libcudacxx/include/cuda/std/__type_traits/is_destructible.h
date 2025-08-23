@@ -28,13 +28,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp>
@@ -60,7 +60,7 @@ struct __is_destructor_wellformed
 {
   template <typename _Tp1>
   _CCCL_API inline static true_type
-    __test(typename __is_destructible_apply<decltype(_CUDA_VSTD::declval<_Tp1&>().~_Tp1())>::type);
+    __test(typename __is_destructible_apply<decltype(::cuda::std::declval<_Tp1&>().~_Tp1())>::type);
 
   template <typename _Tp1>
   _CCCL_API inline static false_type __test(...);
@@ -108,7 +108,7 @@ inline constexpr bool is_destructible_v = is_destructible<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_DESTRUCTIBLE
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

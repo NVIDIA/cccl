@@ -21,54 +21,67 @@ __global__ void test_prmt(void** fn_ptr)
     NV_PROVIDES_SM_50,
     (
         // prmt.b32 dest, a_reg, b_reg, c_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(cuda::ptx::prmt));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_50,
-               (
-                   // prmt.b32.f4e dest, a_reg, b_reg, c_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt_f4e));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // prmt.b32.f4e dest, a_reg, b_reg, c_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(
+            cuda::ptx::prmt_f4e));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_50,
-               (
-                   // prmt.b32.b4e dest, a_reg, b_reg, c_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt_b4e));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // prmt.b32.b4e dest, a_reg, b_reg, c_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(
+            cuda::ptx::prmt_b4e));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_50,
-               (
-                   // prmt.b32.rc8 dest, a_reg, b_reg, c_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt_rc8));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // prmt.b32.rc8 dest, a_reg, b_reg, c_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(
+            cuda::ptx::prmt_rc8));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_50,
-               (
-                   // prmt.b32.ecl dest, a_reg, b_reg, c_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt_ecl));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // prmt.b32.ecl dest, a_reg, b_reg, c_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(
+            cuda::ptx::prmt_ecl));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_50,
-               (
-                   // prmt.b32.ecr dest, a_reg, b_reg, c_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt_ecr));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // prmt.b32.ecr dest, a_reg, b_reg, c_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(
+            cuda::ptx::prmt_ecr));));
 #endif // __cccl_ptx_isa >= 200
 
 #if __cccl_ptx_isa >= 200
-  NV_IF_TARGET(NV_PROVIDES_SM_50,
-               (
-                   // prmt.b32.rc16 dest, a_reg, b_reg, c_reg;
-                   * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<uint32_t (*)(int32_t, int32_t, uint32_t)>(cuda::ptx::prmt_rc16));));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_50,
+    (
+        // prmt.b32.rc16 dest, a_reg, b_reg, c_reg;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<uint32_t (*)(cuda::std::int32_t, cuda::std::int32_t, cuda::std::uint32_t)>(
+            cuda::ptx::prmt_rc16));));
 #endif // __cccl_ptx_isa >= 200
 }

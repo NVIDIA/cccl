@@ -105,26 +105,26 @@ public:
   using const_pointer          = const _Tp*;
   using iterator               = heterogeneous_iterator<_Tp, _Properties...>;
   using const_iterator         = heterogeneous_iterator<const _Tp, _Properties...>;
-  using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
-  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
-  using size_type              = _CUDA_VSTD::size_t;
-  using difference_type        = _CUDA_VSTD::ptrdiff_t;
+  using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
+  using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
+  using size_type              = ::cuda::std::size_t;
+  using difference_type        = ::cuda::std::ptrdiff_t;
 
   using __env_t          = ::cuda::experimental::env_t<_Properties...>;
   using __policy_t       = ::cuda::experimental::execution::any_execution_policy;
   using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
-  using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
+  using __resource_t     = ::cuda::experimental::any_resource<_Properties...>;
+  using __resource_ref_t = ::cuda::mr::resource_ref<_Properties...>;
 
   template <class, class...>
   friend class async_buffer;
 
   // For now we require trivially copyable type to simplify the implementation
-  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_trivially_copyable, _Tp),
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>,
                 "cuda::experimental::async_buffer requires T to be trivially copyable.");
 
   // At least one of the properties must signal an execution space
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::async_buffer must contain at least one execution space "
                 "property!");
 
@@ -136,12 +136,12 @@ private:
 
   //! @brief Helper to check container is compatible with this async_buffer
   template <class _Range>
-  static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _Tp>;
+  static constexpr bool __compatible_range = (::cuda::std::ranges::__container_compatible_range<_Range, _Tp>);
 
   //! @brief Helper to check whether a different async_buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+    ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Helper to determine what cudaMemcpyKind we need to copy data from another async_buffer with different
   //!        properties. Needed for compilers that have issues handling packs in constraints
@@ -151,10 +151,10 @@ private:
       ? (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice)
       : (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice);
 
-  //! @brief Helper to return an async_resource_ref to the currently used resource. Used to grow the async_buffer
+  //! @brief Helper to return an resource_ref to the currently used resource. Used to grow the async_buffer
   __resource_ref_t __borrow_resource() const noexcept
   {
-    return const_cast<__resource_t&>(__buf_.get_memory_resource());
+    return const_cast<__resource_t&>(__buf_.memory_resource());
   }
 
   //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in
@@ -173,16 +173,10 @@ private:
       return;
     }
 
-    static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
+    static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
-    _CCCL_TRY_CUDA_API(
-      ::cudaMemcpyAsync,
-      "cudax::async_buffer::__copy_cross: failed to copy data",
-      __dest,
-      _CUDA_VSTD::to_address(__first),
-      sizeof(_Tp) * __count,
-      ::cudaMemcpyDefault,
-      __buf_.get_stream().get());
+    ::cuda::__driver::__memcpyAsync(
+      __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
 
   //! @brief Value-initializes elements in the range `[__first, __first + __count)`.
@@ -198,12 +192,12 @@ private:
     if constexpr (__is_host_only)
     {
       ::cuda::experimental::host_launch(
-        __buf_.get_stream(), _CUDA_VSTD::uninitialized_value_construct_n<pointer, size_type>, __first, __count);
+        __buf_.stream(), ::cuda::std::uninitialized_value_construct_n<pointer, size_type>, __first, __count);
     }
     else
     {
-      ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, _Tp());
+      ::cuda::experimental::__ensure_current_device __guard(__buf_.stream());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.stream().get()), __first, __count, _Tp());
     }
   }
 
@@ -220,12 +214,12 @@ private:
     if constexpr (__is_host_only)
     {
       ::cuda::experimental::host_launch(
-        __buf_.get_stream(), _CUDA_VSTD::uninitialized_fill_n<pointer, size_type, _Tp>, __first, __count, __value);
+        __buf_.stream(), ::cuda::std::uninitialized_fill_n<pointer, size_type, _Tp>, __first, __count, __value);
     }
     else
     {
-      ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
+      ::cuda::experimental::__ensure_current_device __guard(__buf_.stream());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.stream().get()), __first, __count, __value);
     }
   }
 
@@ -236,7 +230,7 @@ public:
   //! @brief Copy-constructs from a async_buffer
   //! @param __other The other async_buffer.
   _CCCL_HIDE_FROM_ABI async_buffer(const async_buffer& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -246,7 +240,7 @@ public:
   //! @param __other The other async_buffer. After move construction, the other buffer can only be assigned to or
   //! destroyed.
   _CCCL_HIDE_FROM_ABI async_buffer(async_buffer&& __other) noexcept
-      : __buf_(_CUDA_VSTD::move(__other.__buf_))
+      : __buf_(::cuda::std::move(__other.__buf_))
   {}
 
   //! @brief Copy-constructs from a async_buffer with matching properties
@@ -254,7 +248,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const async_buffer<_Tp, _OtherProperties...>& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -266,7 +260,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_buffer(async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
-      : __buf_(_CUDA_VSTD::move(__other.__buf_))
+      : __buf_(::cuda::std::move(__other.__buf_))
   {}
 
   //! @brief Constructs an empty async_buffer using an environment
@@ -317,9 +311,10 @@ public:
   //! @param __last The end of the input sequence.
   //! @note If `__first == __last` then no memory is allocated
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_REQUIRES(::cuda::std::__is_cpp17_forward_iterator<_Iter>::value)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
-      : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::no_init)
+      : async_buffer(
+          __env, static_cast<size_type>(::cuda::std::distance(__first, __last)), ::cuda::experimental::no_init)
   {
     this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
@@ -328,7 +323,7 @@ public:
   //! @param __env The environment used to query the memory resource.
   //! @param __ilist The initializer_list being copied into the async_buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+  _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, ::cuda::std::initializer_list<_Tp> __ilist)
       : async_buffer(__env, __ilist.size(), ::cuda::experimental::no_init)
   {
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
@@ -339,29 +334,35 @@ public:
   //! @param __range The input range to be moved into the async_buffer.
   //! @note If `__range.size() == 0` then no memory is allocated.
   _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND
-                   _CUDA_VRANGES::sized_range<_Range>)
+  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>
+                   _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Range&& __range)
-      : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::no_init)
+      : async_buffer(__env, static_cast<size_type>(::cuda::std::ranges::size(__range)), ::cuda::experimental::no_init)
   {
-    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+    using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __buf_.size());
+      ::cuda::std::ranges::begin(__range),
+      ::cuda::std::ranges::__unwrap_end(__range),
+      __unwrapped_begin(),
+      __buf_.size());
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
   _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(
-    !_CUDA_VRANGES::sized_range<_Range>))
+  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(
+    !::cuda::std::ranges::sized_range<_Range>))
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Range&& __range)
-      : async_buffer(
-          __env,
-          static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))),
-          ::cuda::experimental::no_init)
+      : async_buffer(__env,
+                     static_cast<size_type>(::cuda::std::ranges::distance(
+                       ::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
+                     ::cuda::experimental::no_init)
   {
-    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+    using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __buf_.size());
+      ::cuda::std::ranges::begin(__range),
+      ::cuda::std::ranges::__unwrap_end(__range),
+      __unwrapped_begin(),
+      __buf_.size());
   }
 #endif // _CCCL_DOXYGEN_INVOKED
   //! @}
@@ -543,32 +544,32 @@ public:
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the async_buffer
   //! @endrst
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
   {
-    return __buf_.get_memory_resource();
+    return __buf_.memory_resource();
   }
 
   //! @brief Returns the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref stream() const noexcept
   {
-    return __buf_.get_stream();
+    return __buf_.stream();
   }
 
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(stream_ref __new_stream)
   {
-    __buf_.change_stream(__new_stream);
+    __buf_.set_stream(__new_stream);
   }
 
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(stream_ref __new_stream) noexcept
   {
-    __buf_.change_stream_unsynchronized(__new_stream);
+    __buf_.set_stream_unsynchronized(__new_stream);
   }
 
   //! @brief Move assignment operator
@@ -576,14 +577,14 @@ public:
   //! destroyed.
   _CCCL_HIDE_FROM_ABI void operator=(async_buffer&& __other)
   {
-    __buf_ = _CUDA_VSTD::move(__other.__buf_);
+    __buf_ = ::cuda::std::move(__other.__buf_);
   }
 
   //! @brief Swaps the contents of a async_buffer with those of \p __other
   //! @param __other The other async_buffer.
   _CCCL_HIDE_FROM_ABI void swap(async_buffer& __other) noexcept
   {
-    _CUDA_VSTD::swap(__buf_, __other.__buf_);
+    ::cuda::std::swap(__buf_, __other.__buf_);
   }
 
   //! @brief Swaps the contents of two async_buffers
@@ -603,11 +604,10 @@ public:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  template <class _Tp2 = _Tp>
+  template <class _DeviceAccessible = device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  __cudax_launch_transform(::cuda::stream_ref, async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  transform_device_argument(::cuda::stream_ref, async_buffer& __self) noexcept
+    _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(::cuda::std::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
@@ -615,52 +615,45 @@ public:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  template <class _Tp2 = _Tp>
+  template <class _DeviceAccessible = device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  __cudax_launch_transform(::cuda::stream_ref, const async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  transform_device_argument(::cuda::stream_ref, const async_buffer& __self) noexcept _CCCL_TRAILING_REQUIRES(
+    ::cuda::std::span<const _Tp>)(::cuda::std::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
   //! @brief Forwards the passed properties
   _CCCL_TEMPLATE(class _Property)
-  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HIDE_FROM_ABI friend void get_property(const async_buffer&, _Property) noexcept {}
-#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 template <class _Tp>
-using async_device_buffer = async_buffer<_Tp, _CUDA_VMR::device_accessible>;
+using async_device_buffer = async_buffer<_Tp, ::cuda::mr::device_accessible>;
 
 template <class _Tp>
-using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
+using async_host_buffer = async_buffer<_Tp, ::cuda::mr::host_accessible>;
 
 template <class _Tp, class _PropsList>
-using __buffer_type_for_props = typename _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
+using __buffer_type_for_props =
+  typename ::cuda::std::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
-  __stream.wait(__from.get_stream());
-  _CCCL_TRY_CUDA_API(
-    ::cudaMemcpyAsync,
-    "make_async_buffer: failed to copy data",
+  __stream.wait(__from.stream());
+  ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),
     sizeof(typename _BufferTo::value_type) * __from.size(),
-    cudaMemcpyKind::cudaMemcpyDefault,
     __stream.get());
 }
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
-  stream_ref __stream,
-  any_async_resource<_TargetProperties...> __mr,
-  const async_buffer<_Tp, _SourceProperties...>& __source)
+  stream_ref __stream, any_resource<_TargetProperties...> __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), no_init};
@@ -671,10 +664,10 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   auto __res = __buffer_type{__env, __source.size(), uninit};
 
@@ -685,17 +678,17 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer
 
 // Empty buffer make function
 template <class _Tp, class... _Properties>
-async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr)
+async_buffer<_Tp, _Properties...> make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   return __buffer_type{__env};
 }
@@ -703,17 +696,17 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
 // Size-only make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, size_t __size)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __size};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   return __buffer_type{__env, __size};
 }
@@ -721,17 +714,17 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size)
 // Size and value make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, const _Tp& __value)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, size_t __size, const _Tp& __value)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __size, __value};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   return __buffer_type{__env, __size, __value};
 }
@@ -739,77 +732,77 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, con
 // Size with no initialization make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...> make_async_buffer(
-  stream_ref __stream, any_async_resource<_Properties...> __mr, size_t __size, ::cuda::experimental::no_init_t)
+  stream_ref __stream, any_resource<_Properties...> __mr, size_t __size, ::cuda::experimental::no_init_t)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __size, ::cuda::experimental::no_init};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   return __buffer_type{__env, __size, ::cuda::experimental::no_init};
 }
 
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter)
-_CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+_CCCL_REQUIRES(::cuda::std::__is_cpp17_forward_iterator<_Iter>::value)
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Iter __first, _Iter __last)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Iter __first, _Iter __last)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __first, __last};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
-                 _CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND
+                 __has_default_queries<_Resource> _CCCL_AND ::cuda::std::__is_cpp17_forward_iterator<_Iter>::value)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   return __buffer_type{__env, __first, __last};
 }
 
 // Initializer list make function
 template <class _Tp, class... _Properties>
-async_buffer<_Tp, _Properties...> make_async_buffer(
-  stream_ref __stream, any_async_resource<_Properties...> __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+async_buffer<_Tp, _Properties...>
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, ::cuda::std::initializer_list<_Tp> __ilist)
 {
   env_t<_Properties...> __env{__mr, __stream};
   return async_buffer<_Tp, _Properties...>{__env, __ilist};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
-auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+auto make_async_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   return __buffer_type{__env, __ilist};
 }
 
 // Range make function for ranges
 _CCCL_TEMPLATE(class _Tp, class... _Properties, class _Range)
-_CCCL_REQUIRES(_CUDA_VRANGES::forward_range<_Range>)
+_CCCL_REQUIRES(::cuda::std::ranges::forward_range<_Range>)
 async_buffer<_Tp, _Properties...>
-make_async_buffer(stream_ref __stream, any_async_resource<_Properties...> __mr, _Range&& __range)
+make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, _Range&& __range)
 {
   env_t<_Properties...> __env{__mr, __stream};
-  return async_buffer<_Tp, _Properties...>{__env, _CUDA_VSTD::forward<_Range>(__range)};
+  return async_buffer<_Tp, _Properties...>{__env, ::cuda::std::forward<_Range>(__range)};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Range)
-_CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND
-                 _CUDA_VRANGES::forward_range<_Range>)
+_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND
+                 __has_default_queries<_Resource> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range)
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
-  return __buffer_type{__env, _CUDA_VSTD::forward<_Range>(__range)};
+  return __buffer_type{__env, ::cuda::std::forward<_Range>(__range)};
 }
 
 } // namespace cuda::experimental

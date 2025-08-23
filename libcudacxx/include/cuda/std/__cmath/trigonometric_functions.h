@@ -35,9 +35,21 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // cos
+
+#if _CCCL_CHECK_BUILTIN(builtin_cos) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_COSF(...) __builtin_cosf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COS(...)  __builtin_cos(__VA_ARGS__)
+#  define _CCCL_BUILTIN_COSL(...) __builtin_cosl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_cos)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_COSF
+#  undef _CCCL_BUILTIN_COS
+#  undef _CCCL_BUILTIN_COSL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float cos(float __x) noexcept
 {
@@ -91,7 +103,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hcos(__x);), ({
                       float __xf            = __half2float(__x);
-                      __xf                  = _CUDA_VSTD::cosf(__xf);
+                      __xf                  = ::cuda::std::cosf(__xf);
                       __half_raw __ret_repr = ::__float2half_rn(__xf);
 
                       uint16_t __repr = __half_raw(__x).x;
@@ -114,17 +126,29 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 cos(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hcos(__x);), (return __float2bfloat16(_CUDA_VSTD::cosf(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hcos(__x);), (return __float2bfloat16(::cuda::std::cosf(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double cos(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::cos((double) __x);
+  return ::cuda::std::cos((double) __x);
 }
 
 // sin
+
+#if _CCCL_CHECK_BUILTIN(builtin_sin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SINF(...) __builtin_sinf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SIN(...)  __builtin_sin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_SINL(...) __builtin_sinl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_sin)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_SINF
+#  undef _CCCL_BUILTIN_SIN
+#  undef _CCCL_BUILTIN_SINL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float sin(float __x) noexcept
 {
@@ -178,7 +202,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__x);), ({
                       float __xf            = __half2float(__x);
-                      __xf                  = _CUDA_VSTD::sinf(__xf);
+                      __xf                  = ::cuda::std::sinf(__xf);
                       __half_raw __ret_repr = ::__float2half_rn(__xf);
 
                       uint16_t __repr = __half_raw(__x).x;
@@ -206,17 +230,29 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 sin(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hsin(__x);), (return __float2bfloat16(_CUDA_VSTD::sinf(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hsin(__x);), (return __float2bfloat16(::cuda::std::sinf(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double sin(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::sin((double) __x);
+  return ::cuda::std::sin((double) __x);
 }
 
 // tan
+
+#if _CCCL_CHECK_BUILTIN(builtin_tan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_TANF(...) __builtin_tanf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TAN(...)  __builtin_tan(__VA_ARGS__)
+#  define _CCCL_BUILTIN_TANL(...) __builtin_tanl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_tan)
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  undef _CCCL_BUILTIN_TANF
+#  undef _CCCL_BUILTIN_TAN
+#  undef _CCCL_BUILTIN_TANL
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float tan(float __x) noexcept
 {
@@ -268,24 +304,24 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half tan(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::tanf(__half2float(__x)));
+  return __float2half(::cuda::std::tanf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 tan(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::tanf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::tanf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double tan(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::tan((double) __x);
+  return ::cuda::std::tan((double) __x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

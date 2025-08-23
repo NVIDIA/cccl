@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 {
@@ -70,7 +70,7 @@ struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type
 template <class _Tp>
 using __is_inplace_index = __is_inplace_index_imp<remove_cvref_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

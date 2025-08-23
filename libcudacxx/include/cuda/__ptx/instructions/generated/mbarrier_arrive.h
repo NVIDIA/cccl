@@ -12,10 +12,10 @@ __device__ static inline uint64_t mbarrier_arrive(
 #if __cccl_ptx_isa >= 700
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_80__();
 template <typename = void>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(_CUDA_VSTD::uint64_t* __addr)
+_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(::cuda::std::uint64_t* __addr)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   asm("mbarrier.arrive.shared.b64                                  %0,  [%1];           // 1. "
       : "=l"(__state)
       : "r"(__as_ptr_smem(__addr))
@@ -39,11 +39,11 @@ __device__ static inline uint64_t mbarrier_arrive(
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t
-mbarrier_arrive(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __count)
+_CCCL_DEVICE static inline ::cuda::std::uint64_t
+mbarrier_arrive(::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __count)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   asm("mbarrier.arrive.shared::cta.b64                             %0,  [%1], %2;    // 2. "
       : "=l"(__state)
       : "r"(__as_ptr_smem(__addr)), "r"(__count)
@@ -71,15 +71,18 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t
-mbarrier_arrive(sem_release_t, scope_t<_Scope> __scope, space_shared_t, _CUDA_VSTD::uint64_t* __addr)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+  ::cuda::ptx::sem_release_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   if constexpr (__scope == scope_cta)
   {
     asm("mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1];           // 3a. "
@@ -118,19 +121,19 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
-  sem_release_t,
-  scope_t<_Scope> __scope,
-  space_shared_t,
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint32_t& __count)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+  ::cuda::ptx::sem_release_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint32_t& __count)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   if constexpr (__scope == scope_cta)
   {
     asm("mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
@@ -169,8 +172,8 @@ __device__ static inline void mbarrier_arrive(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void
-mbarrier_arrive(sem_release_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uint64_t* __addr)
+_CCCL_DEVICE static inline void mbarrier_arrive(
+  ::cuda::ptx::sem_release_t, ::cuda::ptx::scope_cluster_t, ::cuda::ptx::space_cluster_t, ::cuda::std::uint64_t* __addr)
 {
 // __sem == sem_release (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)
@@ -204,7 +207,11 @@ __device__ static inline void mbarrier_arrive(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void mbarrier_arrive(
-  sem_release_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __count)
+  ::cuda::ptx::sem_release_t,
+  ::cuda::ptx::scope_cluster_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint32_t& __count)
 {
 // __sem == sem_release (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)
@@ -236,19 +243,19 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
-  sem_relaxed_t,
-  scope_t<_Scope> __scope,
-  space_shared_t,
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint32_t& __count)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+  ::cuda::ptx::sem_relaxed_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint32_t& __count)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   if constexpr (__scope == scope_cta)
   {
     asm("mbarrier.arrive.relaxed.cta.shared::cta.b64 %0, [%1], %2;"
@@ -286,15 +293,18 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t
-mbarrier_arrive(sem_relaxed_t, scope_t<_Scope> __scope, space_shared_t, _CUDA_VSTD::uint64_t* __addr)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+  ::cuda::ptx::sem_relaxed_t,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::space_shared_t,
+  ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
 // __space == space_shared (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   if constexpr (__scope == scope_cta)
   {
     asm("mbarrier.arrive.relaxed.cta.shared::cta.b64 %0, [%1];"
@@ -335,7 +345,11 @@ __device__ static inline void mbarrier_arrive(
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void mbarrier_arrive(
-  sem_relaxed_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __count)
+  ::cuda::ptx::sem_relaxed_t,
+  ::cuda::ptx::scope_cluster_t,
+  ::cuda::ptx::space_cluster_t,
+  ::cuda::std::uint64_t* __addr,
+  const ::cuda::std::uint32_t& __count)
 {
 // __sem == sem_relaxed (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)
@@ -367,8 +381,8 @@ __device__ static inline void mbarrier_arrive(
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void
-mbarrier_arrive(sem_relaxed_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uint64_t* __addr)
+_CCCL_DEVICE static inline void mbarrier_arrive(
+  ::cuda::ptx::sem_relaxed_t, ::cuda::ptx::scope_cluster_t, ::cuda::ptx::space_cluster_t, ::cuda::std::uint64_t* __addr)
 {
 // __sem == sem_relaxed (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)

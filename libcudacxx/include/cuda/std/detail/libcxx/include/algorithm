@@ -11,630 +11,6 @@
 #ifndef _LIBCUDACXX_ALGORITHM
 #define _LIBCUDACXX_ALGORITHM
 
-/*
-    algorithm synopsis
-
-#include <initializer_list>
-
-namespace std
-{
-
-template <class InputIterator, class Predicate>
-    constexpr bool     // constexpr in C++20
-    all_of(InputIterator first, InputIterator last, Predicate pred);
-
-template <class InputIterator, class Predicate>
-    constexpr bool     // constexpr in C++20
-    any_of(InputIterator first, InputIterator last, Predicate pred);
-
-template <class InputIterator, class Predicate>
-    constexpr bool     // constexpr in C++20
-    none_of(InputIterator first, InputIterator last, Predicate pred);
-
-template <class InputIterator, class Function>
-    constexpr Function          // constexpr in C++20
-    for_each(InputIterator first, InputIterator last, Function f);
-
-template<class InputIterator, class Size, class Function>
-    constexpr InputIterator     // constexpr in C++20
-    for_each_n(InputIterator first, Size n, Function f); // C++17
-
-template <class InputIterator, class T>
-    constexpr InputIterator     // constexpr in C++20
-    find(InputIterator first, InputIterator last, const T& value);
-
-template <class InputIterator, class Predicate>
-    constexpr InputIterator     // constexpr in C++20
-    find_if(InputIterator first, InputIterator last, Predicate pred);
-
-template<class InputIterator, class Predicate>
-    InputIterator               // constexpr in C++20
-    find_if_not(InputIterator first, InputIterator last, Predicate pred);
-
-template <class ForwardIterator1, class ForwardIterator2>
-    ForwardIterator1            // constexpr in C++20
-    find_end(ForwardIterator1 first1, ForwardIterator1 last1,
-             ForwardIterator2 first2, ForwardIterator2 last2);
-
-template <class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
-    ForwardIterator1            // constexpr in C++20
-    find_end(ForwardIterator1 first1, ForwardIterator1 last1,
-             ForwardIterator2 first2, ForwardIterator2 last2, BinaryPredicate pred);
-
-template <class ForwardIterator1, class ForwardIterator2>
-    constexpr ForwardIterator1  // constexpr in C++20
-    find_first_of(ForwardIterator1 first1, ForwardIterator1 last1,
-                  ForwardIterator2 first2, ForwardIterator2 last2);
-
-template <class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
-    constexpr ForwardIterator1  // constexpr in C++20
-    find_first_of(ForwardIterator1 first1, ForwardIterator1 last1,
-                  ForwardIterator2 first2, ForwardIterator2 last2, BinaryPredicate pred);
-
-template <class ForwardIterator>
-    constexpr ForwardIterator   // constexpr in C++20
-    adjacent_find(ForwardIterator first, ForwardIterator last);
-
-template <class ForwardIterator, class BinaryPredicate>
-    constexpr ForwardIterator   // constexpr in C++20
-    adjacent_find(ForwardIterator first, ForwardIterator last, BinaryPredicate pred);
-
-template <class InputIterator, class T>
-    constexpr typename iterator_traits<InputIterator>::difference_type  // constexpr in C++20
-    count(InputIterator first, InputIterator last, const T& value);
-
-template <class InputIterator, class Predicate>
-    constexpr typename iterator_traits<InputIterator>::difference_type // constexpr in C++20
-    count_if(InputIterator first, InputIterator last, Predicate pred);
-
-template <class InputIterator1, class InputIterator2>
-    constexpr pair<InputIterator1, InputIterator2>   // constexpr in C++20
-    mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
-
-template <class InputIterator1, class InputIterator2>
-    constexpr pair<InputIterator1, InputIterator2>   // constexpr in C++20
-    mismatch(InputIterator1 first1, InputIterator1 last1,
-             InputIterator2 first2, InputIterator2 last2); // **C++14**
-
-template <class InputIterator1, class InputIterator2, class BinaryPredicate>
-    constexpr pair<InputIterator1, InputIterator2>   // constexpr in C++20
-    mismatch(InputIterator1 first1, InputIterator1 last1,
-             InputIterator2 first2, BinaryPredicate pred);
-
-template <class InputIterator1, class InputIterator2, class BinaryPredicate>
-    constexpr pair<InputIterator1, InputIterator2>   // constexpr in C++20
-    mismatch(InputIterator1 first1, InputIterator1 last1,
-             InputIterator2 first2, InputIterator2 last2,
-             BinaryPredicate pred); // **C++14**
-
-template <class InputIterator1, class InputIterator2>
-    constexpr bool      // constexpr in C++20
-    equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
-
-template <class InputIterator1, class InputIterator2>
-    constexpr bool      // constexpr in C++20
-    equal(InputIterator1 first1, InputIterator1 last1,
-          InputIterator2 first2, InputIterator2 last2); // **C++14**
-
-template <class InputIterator1, class InputIterator2, class BinaryPredicate>
-    constexpr bool      // constexpr in C++20
-    equal(InputIterator1 first1, InputIterator1 last1,
-          InputIterator2 first2, BinaryPredicate pred);
-
-template <class InputIterator1, class InputIterator2, class BinaryPredicate>
-    constexpr bool      // constexpr in C++20
-    equal(InputIterator1 first1, InputIterator1 last1,
-          InputIterator2 first2, InputIterator2 last2,
-          BinaryPredicate pred); // **C++14**
-
-template<class ForwardIterator1, class ForwardIterator2>
-    constexpr bool      // constexpr in C++20
-    is_permutation(ForwardIterator1 first1, ForwardIterator1 last1,
-                   ForwardIterator2 first2);
-
-template<class ForwardIterator1, class ForwardIterator2>
-    constexpr bool      // constexpr in C++20
-    is_permutation(ForwardIterator1 first1, ForwardIterator1 last1,
-                   ForwardIterator2 first2, ForwardIterator2 last2); // **C++14**
-
-template<class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
-    constexpr bool      // constexpr in C++20
-    is_permutation(ForwardIterator1 first1, ForwardIterator1 last1,
-                   ForwardIterator2 first2, BinaryPredicate pred);
-
-template<class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
-    constexpr bool      // constexpr in C++20
-    is_permutation(ForwardIterator1 first1, ForwardIterator1 last1,
-                   ForwardIterator2 first2, ForwardIterator2 last2,
-                   BinaryPredicate pred);  // **C++14**
-
-template <class ForwardIterator1, class ForwardIterator2>
-    constexpr ForwardIterator1      // constexpr in C++20
-    search(ForwardIterator1 first1, ForwardIterator1 last1,
-           ForwardIterator2 first2, ForwardIterator2 last2);
-
-template <class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
-    constexpr ForwardIterator1      // constexpr in C++20
-    search(ForwardIterator1 first1, ForwardIterator1 last1,
-           ForwardIterator2 first2, ForwardIterator2 last2, BinaryPredicate pred);
-
-template <class ForwardIterator, class Size, class T>
-    constexpr ForwardIterator       // constexpr in C++20
-    search_n(ForwardIterator first, ForwardIterator last, Size count, const T& value);
-
-template <class ForwardIterator, class Size, class T, class BinaryPredicate>
-    constexpr ForwardIterator       // constexpr in C++20
-    search_n(ForwardIterator first, ForwardIterator last,
-             Size count, const T& value, BinaryPredicate pred);
-
-template <class InputIterator, class OutputIterator>
-    OutputIterator
-    copy(InputIterator first, InputIterator last, OutputIterator result);
-
-template<class InputIterator, class OutputIterator, class Predicate>
-    OutputIterator
-    copy_if(InputIterator first, InputIterator last,
-            OutputIterator result, Predicate pred);
-
-template<class InputIterator, class Size, class OutputIterator>
-    OutputIterator
-    copy_n(InputIterator first, Size n, OutputIterator result);
-
-template <class BidirectionalIterator1, class BidirectionalIterator2>
-    BidirectionalIterator2
-    copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
-                  BidirectionalIterator2 result);
-
-template <class ForwardIterator1, class ForwardIterator2>
-    ForwardIterator2
-    swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2);
-
-template <class ForwardIterator1, class ForwardIterator2>
-    void
-    iter_swap(ForwardIterator1 a, ForwardIterator2 b);
-
-template <class InputIterator, class OutputIterator, class UnaryOperation>
-    constexpr OutputIterator      // constexpr in C++20
-    transform(InputIterator first, InputIterator last, OutputIterator result, UnaryOperation op);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator, class BinaryOperation>
-    constexpr OutputIterator      // constexpr in C++20
-    transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2,
-              OutputIterator result, BinaryOperation binary_op);
-
-template <class ForwardIterator, class T>
-    constexpr void      // constexpr in C++20
-    replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value);
-
-template <class ForwardIterator, class Predicate, class T>
-    constexpr void      // constexpr in C++20
-    replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value);
-
-template <class InputIterator, class OutputIterator, class T>
-    constexpr OutputIterator      // constexpr in C++20
-    replace_copy(InputIterator first, InputIterator last, OutputIterator result,
-                 const T& old_value, const T& new_value);
-
-template <class InputIterator, class OutputIterator, class Predicate, class T>
-    constexpr OutputIterator      // constexpr in C++20
-    replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred, const T& new_value);
-
-template <class ForwardIterator, class T>
-    constexpr void      // constexpr in C++20
-    fill(ForwardIterator first, ForwardIterator last, const T& value);
-
-template <class OutputIterator, class Size, class T>
-    constexpr OutputIterator      // constexpr in C++20
-    fill_n(OutputIterator first, Size n, const T& value);
-
-template <class ForwardIterator, class Generator>
-    constexpr void      // constexpr in C++20
-    generate(ForwardIterator first, ForwardIterator last, Generator gen);
-
-template <class OutputIterator, class Size, class Generator>
-    constexpr OutputIterator      // constexpr in C++20
-    generate_n(OutputIterator first, Size n, Generator gen);
-
-template <class ForwardIterator, class T>
-    constexpr ForwardIterator     // constexpr in C++20
-    remove(ForwardIterator first, ForwardIterator last, const T& value);
-
-template <class ForwardIterator, class Predicate>
-    constexpr ForwardIterator     // constexpr in C++20
-    remove_if(ForwardIterator first, ForwardIterator last, Predicate pred);
-
-template <class InputIterator, class OutputIterator, class T>
-    constexpr OutputIterator     // constexpr in C++20
-    remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value);
-
-template <class InputIterator, class OutputIterator, class Predicate>
-    constexpr OutputIterator     // constexpr in C++20
-    remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
-
-template <class ForwardIterator>
-    ForwardIterator
-    unique(ForwardIterator first, ForwardIterator last);
-
-template <class ForwardIterator, class BinaryPredicate>
-    ForwardIterator
-    unique(ForwardIterator first, ForwardIterator last, BinaryPredicate pred);
-
-template <class InputIterator, class OutputIterator>
-    OutputIterator
-    unique_copy(InputIterator first, InputIterator last, OutputIterator result);
-
-template <class InputIterator, class OutputIterator, class BinaryPredicate>
-    OutputIterator
-    unique_copy(InputIterator first, InputIterator last, OutputIterator result, BinaryPredicate pred);
-
-template <class BidirectionalIterator>
-    void
-    reverse(BidirectionalIterator first, BidirectionalIterator last);
-
-template <class BidirectionalIterator, class OutputIterator>
-    constexpr OutputIterator       // constexpr in C++20
-    reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result);
-
-template <class ForwardIterator>
-    ForwardIterator
-    rotate(ForwardIterator first, ForwardIterator middle, ForwardIterator last);
-
-template <class ForwardIterator, class OutputIterator>
-    OutputIterator
-    rotate_copy(ForwardIterator first, ForwardIterator middle, ForwardIterator last, OutputIterator result);
-
-template <class RandomAccessIterator>
-    void
-    random_shuffle(RandomAccessIterator first, RandomAccessIterator last); // deprecated in C++14, removed in C++17
-
-template <class RandomAccessIterator, class RandomNumberGenerator>
-    void
-    random_shuffle(RandomAccessIterator first, RandomAccessIterator last,
-                   RandomNumberGenerator& rand);  // deprecated in C++14, removed in C++17
-
-template<class PopulationIterator, class SampleIterator,
-         class Distance, class UniformRandomBitGenerator>
-    SampleIterator sample(PopulationIterator first, PopulationIterator last,
-                          SampleIterator out, Distance n,
-                          UniformRandomBitGenerator&& g); // C++17
-
-template<class RandomAccessIterator, class UniformRandomNumberGenerator>
-    void shuffle(RandomAccessIterator first, RandomAccessIterator last,
-                 UniformRandomNumberGenerator&& g);
-
-template <class InputIterator, class Predicate>
-    constexpr bool  // constexpr in C++20
-    is_partitioned(InputIterator first, InputIterator last, Predicate pred);
-
-template <class ForwardIterator, class Predicate>
-    ForwardIterator
-    partition(ForwardIterator first, ForwardIterator last, Predicate pred);
-
-template <class InputIterator, class OutputIterator1,
-          class OutputIterator2, class Predicate>
-    constexpr pair<OutputIterator1, OutputIterator2>   // constexpr in C++20
-    partition_copy(InputIterator first, InputIterator last,
-                   OutputIterator1 out_true, OutputIterator2 out_false,
-                   Predicate pred);
-
-template <class ForwardIterator, class Predicate>
-    ForwardIterator
-    stable_partition(ForwardIterator first, ForwardIterator last, Predicate pred);
-
-template<class ForwardIterator, class Predicate>
-    constexpr ForwardIterator  // constexpr in C++20
-    partition_point(ForwardIterator first, ForwardIterator last, Predicate pred);
-
-template <class ForwardIterator>
-    constexpr bool  // constexpr in C++20
-    is_sorted(ForwardIterator first, ForwardIterator last);
-
-template <class ForwardIterator, class Compare>
-    bool
-    is_sorted(ForwardIterator first, ForwardIterator last, Compare comp);
-
-template<class ForwardIterator>
-    constexpr ForwardIterator    // constexpr in C++20
-    is_sorted_until(ForwardIterator first, ForwardIterator last);
-
-template <class ForwardIterator, class Compare>
-    constexpr ForwardIterator    // constexpr in C++20
-    is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    sort(RandomAccessIterator first, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    sort(RandomAccessIterator first, RandomAccessIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    stable_sort(RandomAccessIterator first, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    stable_sort(RandomAccessIterator first, RandomAccessIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    partial_sort(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    partial_sort(RandomAccessIterator first, RandomAccessIterator middle, RandomAccessIterator last, Compare comp);
-
-template <class InputIterator, class RandomAccessIterator>
-    RandomAccessIterator
-    partial_sort_copy(InputIterator first, InputIterator last,
-                      RandomAccessIterator result_first, RandomAccessIterator result_last);
-
-template <class InputIterator, class RandomAccessIterator, class Compare>
-    RandomAccessIterator
-    partial_sort_copy(InputIterator first, InputIterator last,
-                      RandomAccessIterator result_first, RandomAccessIterator result_last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, Compare comp);
-
-template <class ForwardIterator, class T>
-    constexpr ForwardIterator                         // constexpr in C++20
-    lower_bound(ForwardIterator first, ForwardIterator last, const T& value);
-
-template <class ForwardIterator, class T, class Compare>
-    constexpr ForwardIterator                         // constexpr in C++20
-    lower_bound(ForwardIterator first, ForwardIterator last, const T& value, Compare comp);
-
-template <class ForwardIterator, class T>
-    constexpr ForwardIterator                         // constexpr in C++20
-    upper_bound(ForwardIterator first, ForwardIterator last, const T& value);
-
-template <class ForwardIterator, class T, class Compare>
-    constexpr ForwardIterator                         // constexpr in C++20
-    upper_bound(ForwardIterator first, ForwardIterator last, const T& value, Compare comp);
-
-template <class ForwardIterator, class T>
-    constexpr pair<ForwardIterator, ForwardIterator>  // constexpr in C++20
-    equal_range(ForwardIterator first, ForwardIterator last, const T& value);
-
-template <class ForwardIterator, class T, class Compare>
-    constexpr pair<ForwardIterator, ForwardIterator>  // constexpr in C++20
-    equal_range(ForwardIterator first, ForwardIterator last, const T& value, Compare comp);
-
-template <class ForwardIterator, class T>
-    constexpr bool                                    // constexpr in C++20
-    binary_search(ForwardIterator first, ForwardIterator last, const T& value);
-
-template <class ForwardIterator, class T, class Compare>
-    constexpr bool                                    // constexpr in C++20
-    binary_search(ForwardIterator first, ForwardIterator last, const T& value, Compare comp);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator>
-    OutputIterator
-    merge(InputIterator1 first1, InputIterator1 last1,
-          InputIterator2 first2, InputIterator2 last2, OutputIterator result);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
-    OutputIterator
-    merge(InputIterator1 first1, InputIterator1 last1,
-          InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp);
-
-template <class BidirectionalIterator>
-    void
-    inplace_merge(BidirectionalIterator first, BidirectionalIterator middle, BidirectionalIterator last);
-
-template <class BidirectionalIterator, class Compare>
-    void
-    inplace_merge(BidirectionalIterator first, BidirectionalIterator middle, BidirectionalIterator last, Compare comp);
-
-template <class InputIterator1, class InputIterator2>
-    constexpr bool                                    // constexpr in C++20
-    includes(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2);
-
-template <class InputIterator1, class InputIterator2, class Compare>
-    constexpr bool                                    // constexpr in C++20
-    includes(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, Compare comp);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator>
-    OutputIterator
-    set_union(InputIterator1 first1, InputIterator1 last1,
-              InputIterator2 first2, InputIterator2 last2, OutputIterator result);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
-    OutputIterator
-    set_union(InputIterator1 first1, InputIterator1 last1,
-              InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator>
-    constexpr OutputIterator                         // constexpr in C++20
-    set_intersection(InputIterator1 first1, InputIterator1 last1,
-                     InputIterator2 first2, InputIterator2 last2, OutputIterator result);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
-    constexpr OutputIterator                         // constexpr in C++20
-    set_intersection(InputIterator1 first1, InputIterator1 last1,
-                     InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator>
-    OutputIterator
-    set_difference(InputIterator1 first1, InputIterator1 last1,
-                   InputIterator2 first2, InputIterator2 last2, OutputIterator result);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
-    OutputIterator
-    set_difference(InputIterator1 first1, InputIterator1 last1,
-                   InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator>
-    OutputIterator
-    set_symmetric_difference(InputIterator1 first1, InputIterator1 last1,
-                             InputIterator2 first2, InputIterator2 last2, OutputIterator result);
-
-template <class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
-    OutputIterator
-    set_symmetric_difference(InputIterator1 first1, InputIterator1 last1,
-                             InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    push_heap(RandomAccessIterator first, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    push_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    pop_heap(RandomAccessIterator first, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    pop_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    make_heap(RandomAccessIterator first, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    make_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    void
-    sort_heap(RandomAccessIterator first, RandomAccessIterator last);
-
-template <class RandomAccessIterator, class Compare>
-    void
-    sort_heap(RandomAccessIterator first, RandomAccessIterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    constexpr bool   // constexpr in C++20
-    is_heap(RandomAccessIterator first, RandomAccessiterator last);
-
-template <class RandomAccessIterator, class Compare>
-    constexpr bool   // constexpr in C++20
-    is_heap(RandomAccessIterator first, RandomAccessiterator last, Compare comp);
-
-template <class RandomAccessIterator>
-    constexpr RandomAccessIterator   // constexpr in C++20
-    is_heap_until(RandomAccessIterator first, RandomAccessiterator last);
-
-template <class RandomAccessIterator, class Compare>
-    constexpr RandomAccessIterator   // constexpr in C++20
-    is_heap_until(RandomAccessIterator first, RandomAccessiterator last, Compare comp);
-
-template <class ForwardIterator>
-    ForwardIterator
-    min_element(ForwardIterator first, ForwardIterator last);  // constexpr in C++14
-
-template <class ForwardIterator, class Compare>
-    ForwardIterator
-    min_element(ForwardIterator first, ForwardIterator last, Compare comp);  // constexpr in C++14
-
-template <class T>
-    const T&
-    min(const T& a, const T& b);  // constexpr in C++14
-
-template <class T, class Compare>
-    const T&
-    min(const T& a, const T& b, Compare comp);  // constexpr in C++14
-
-template<class T>
-    T
-    min(::std::initializer_list<T> t);  // constexpr in C++14
-
-template<class T, class Compare>
-    T
-    min(::std::initializer_list<T> t, Compare comp);  // constexpr in C++14
-
-template<class T>
-    constexpr const T& clamp( const T& v, const T& lo, const T& hi );               // C++17
-
-template<class T, class Compare>
-    constexpr const T& clamp( const T& v, const T& lo, const T& hi, Compare comp ); // C++17
-
-template <class ForwardIterator>
-    ForwardIterator
-    max_element(ForwardIterator first, ForwardIterator last);  // constexpr in C++14
-
-template <class ForwardIterator, class Compare>
-    ForwardIterator
-    max_element(ForwardIterator first, ForwardIterator last, Compare comp);  // constexpr in C++14
-
-template <class T>
-    const T&
-    max(const T& a, const T& b); // constexpr in C++14
-
-template <class T, class Compare>
-    const T&
-    max(const T& a, const T& b, Compare comp);  // constexpr in C++14
-
-template<class T>
-    T
-    max(::std::initializer_list<T> t);  // constexpr in C++14
-
-template<class T, class Compare>
-    T
-    max(::std::initializer_list<T> t, Compare comp);  // constexpr in C++14
-
-template<class ForwardIterator>
-    pair<ForwardIterator, ForwardIterator>
-    minmax_element(ForwardIterator first, ForwardIterator last);   // constexpr in C++14
-
-template<class ForwardIterator, class Compare>
-    pair<ForwardIterator, ForwardIterator>
-    minmax_element(ForwardIterator first, ForwardIterator last, Compare comp);   // constexpr in C++14
-
-template<class T>
-    pair<const T&, const T&>
-    minmax(const T& a, const T& b);  // constexpr in C++14
-
-template<class T, class Compare>
-    pair<const T&, const T&>
-    minmax(const T& a, const T& b, Compare comp);  // constexpr in C++14
-
-template<class T>
-    pair<T, T>
-    minmax(::std::initializer_list<T> t);  // constexpr in C++14
-
-template<class T, class Compare>
-    pair<T, T>
-    minmax(::std::initializer_list<T> t, Compare comp);  // constexpr in C++14
-
-template <class InputIterator1, class InputIterator2>
-    constexpr bool     // constexpr in C++20
-    lexicographical_compare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2);
-
-template <class InputIterator1, class InputIterator2, class Compare>
-    constexpr bool     // constexpr in C++20
-    lexicographical_compare(InputIterator1 first1, InputIterator1 last1,
-                            InputIterator2 first2, InputIterator2 last2, Compare comp);
-
-template <class BidirectionalIterator>
-    bool
-    next_permutation(BidirectionalIterator first, BidirectionalIterator last);
-
-template <class BidirectionalIterator, class Compare>
-    bool
-    next_permutation(BidirectionalIterator first, BidirectionalIterator last, Compare comp);
-
-template <class BidirectionalIterator>
-    bool
-    prev_permutation(BidirectionalIterator first, BidirectionalIterator last);
-
-template <class BidirectionalIterator, class Compare>
-    bool
-    prev_permutation(BidirectionalIterator first, BidirectionalIterator last, Compare comp);
-
-}  // std
-
-*/
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -705,6 +81,8 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__algorithm/pop_heap.h>
 #include <cuda/std/__algorithm/prev_permutation.h>
 #include <cuda/std/__algorithm/push_heap.h>
+#include <cuda/std/__algorithm/ranges_for_each.h>
+#include <cuda/std/__algorithm/ranges_for_each_n.h>
 #include <cuda/std/__algorithm/ranges_iterator_concept.h>
 #include <cuda/std/__algorithm/ranges_min.h>
 #include <cuda/std/__algorithm/ranges_min_element.h>
@@ -744,6 +122,8 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__iterator/wrap_iter.h>
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__memory/temporary_buffer.h>
+#include <cuda/std/__random/linear_congruential_engine.h>
+#include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -761,7 +141,7 @@ template <class BidirectionalIterator, class Compare>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
 
@@ -793,300 +173,6 @@ public:
 
 // random_shuffle
 
-// __independent_bits_engine
-
-template <unsigned long long _Xp, size_t _Rp>
-struct __log2_imp
-{
-  static const size_t value = _Xp & ((unsigned long long) (1) << _Rp) ? _Rp : __log2_imp<_Xp, _Rp - 1>::value;
-};
-
-template <unsigned long long _Xp>
-struct __log2_imp<_Xp, 0>
-{
-  static const size_t value = 0;
-};
-
-template <size_t _Rp>
-struct __log2_imp<0, _Rp>
-{
-  static const size_t value = _Rp + 1;
-};
-
-template <class _UIntType, _UIntType _Xp>
-struct __log2
-{
-  static const size_t value = __log2_imp<_Xp, sizeof(_UIntType) * CHAR_BIT - 1>::value;
-};
-
-template <class _Engine, class _UIntType>
-class __independent_bits_engine
-{
-public:
-  // types
-  typedef _UIntType result_type;
-
-private:
-  typedef typename _Engine::result_type _Engine_result_type;
-  typedef conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>
-    _Working_result_type;
-
-  _Engine& __e_;
-  size_t __w_;
-  size_t __w0_;
-  size_t __n_;
-  size_t __n0_;
-  _Working_result_type __y0_;
-  _Working_result_type __y1_;
-  _Engine_result_type __mask0_;
-  _Engine_result_type __mask1_;
-
-  static constexpr _Working_result_type _Rp = _Engine::max() - _Engine::min() + _Working_result_type(1);
-  static constexpr size_t __m               = __log2<_Working_result_type, _Rp>::value;
-  static constexpr size_t _WDt              = numeric_limits<_Working_result_type>::digits;
-  static constexpr size_t _EDt              = numeric_limits<_Engine_result_type>::digits;
-
-public:
-  // constructors and seeding functions
-  __independent_bits_engine(_Engine& __e, size_t __w);
-
-  // generating functions
-  result_type operator()()
-  {
-    return __eval(integral_constant<bool, _Rp != 0>());
-  }
-
-private:
-  result_type __eval(false_type);
-  result_type __eval(true_type);
-};
-
-template <class _Engine, class _UIntType>
-__independent_bits_engine<_Engine, _UIntType>::__independent_bits_engine(_Engine& __e, size_t __w)
-    : __e_(__e)
-    , __w_(__w)
-{
-  __n_  = __w_ / __m + (__w_ % __m != 0);
-  __w0_ = __w_ / __n_;
-  if (_Rp == 0)
-  {
-    __y0_ = _Rp;
-  }
-  else if (__w0_ < _WDt)
-  {
-    __y0_ = (_Rp >> __w0_) << __w0_;
-  }
-  else
-  {
-    __y0_ = 0;
-  }
-  if (_Rp - __y0_ > __y0_ / __n_)
-  {
-    ++__n_;
-    __w0_ = __w_ / __n_;
-    if (__w0_ < _WDt)
-    {
-      __y0_ = (_Rp >> __w0_) << __w0_;
-    }
-    else
-    {
-      __y0_ = 0;
-    }
-  }
-  __n0_ = __n_ - __w_ % __n_;
-  if (__w0_ < _WDt - 1)
-  {
-    __y1_ = (_Rp >> (__w0_ + 1)) << (__w0_ + 1);
-  }
-  else
-  {
-    __y1_ = 0;
-  }
-  __mask0_ = __w0_ > 0 ? _Engine_result_type(~0) >> (_EDt - __w0_) : _Engine_result_type(0);
-  __mask1_ = __w0_ < _EDt - 1 ? _Engine_result_type(~0) >> (_EDt - (__w0_ + 1)) : _Engine_result_type(~0);
-}
-
-template <class _Engine, class _UIntType>
-inline _UIntType __independent_bits_engine<_Engine, _UIntType>::__eval(false_type)
-{
-  return static_cast<result_type>(__e_() & __mask0_);
-}
-
-template <class _Engine, class _UIntType>
-_UIntType __independent_bits_engine<_Engine, _UIntType>::__eval(true_type)
-{
-  const size_t _WRt = numeric_limits<result_type>::digits;
-  result_type _Sp   = 0;
-  for (size_t __k = 0; __k < __n0_; ++__k)
-  {
-    _Engine_result_type __u;
-    do
-    {
-      __u = __e_() - _Engine::min();
-    } while (__u >= __y0_);
-    if (__w0_ < _WRt)
-    {
-      _Sp <<= __w0_;
-    }
-    else
-    {
-      _Sp = 0;
-    }
-    _Sp += __u & __mask0_;
-  }
-  for (size_t __k = __n0_; __k < __n_; ++__k)
-  {
-    _Engine_result_type __u;
-    do
-    {
-      __u = __e_() - _Engine::min();
-    } while (__u >= __y1_);
-    if (__w0_ < _WRt - 1)
-    {
-      _Sp <<= __w0_ + 1;
-    }
-    else
-    {
-      _Sp = 0;
-    }
-    _Sp += __u & __mask1_;
-  }
-  return _Sp;
-}
-
-// uniform_int_distribution
-
-template <class _IntType = int>
-class uniform_int_distribution
-{
-public:
-  // types
-  typedef _IntType result_type;
-
-  class param_type
-  {
-    result_type __a_;
-    result_type __b_;
-
-  public:
-    typedef uniform_int_distribution distribution_type;
-
-    explicit param_type(result_type __a = 0, result_type __b = numeric_limits<result_type>::max())
-        : __a_(__a)
-        , __b_(__b)
-    {}
-
-    result_type a() const
-    {
-      return __a_;
-    }
-    result_type b() const
-    {
-      return __b_;
-    }
-
-    friend bool operator==(const param_type& __x, const param_type& __y)
-    {
-      return __x.__a_ == __y.__a_ && __x.__b_ == __y.__b_;
-    }
-    friend bool operator!=(const param_type& __x, const param_type& __y)
-    {
-      return !(__x == __y);
-    }
-  };
-
-private:
-  param_type __p_;
-
-public:
-  // constructors and reset functions
-  explicit uniform_int_distribution(result_type __a = 0, result_type __b = numeric_limits<result_type>::max())
-      : __p_(param_type(__a, __b))
-  {}
-  explicit uniform_int_distribution(const param_type& __p)
-      : __p_(__p)
-  {}
-  void reset() {}
-
-  // generating functions
-  template <class _URNG>
-  result_type operator()(_URNG& __g)
-  {
-    return (*this)(__g, __p_);
-  }
-  template <class _URNG>
-  result_type operator()(_URNG& __g, const param_type& __p);
-
-  // property functions
-  result_type a() const
-  {
-    return __p_.a();
-  }
-  result_type b() const
-  {
-    return __p_.b();
-  }
-
-  param_type param() const
-  {
-    return __p_;
-  }
-  void param(const param_type& __p)
-  {
-    __p_ = __p;
-  }
-
-  result_type min() const
-  {
-    return a();
-  }
-  result_type max() const
-  {
-    return b();
-  }
-
-  friend bool operator==(const uniform_int_distribution& __x, const uniform_int_distribution& __y)
-  {
-    return __x.__p_ == __y.__p_;
-  }
-  friend bool operator!=(const uniform_int_distribution& __x, const uniform_int_distribution& __y)
-  {
-    return !(__x == __y);
-  }
-};
-
-template <class _IntType>
-template <class _URNG>
-typename uniform_int_distribution<_IntType>::result_type
-uniform_int_distribution<_IntType>::operator()(_URNG& __g, const param_type& __p)
-  _CCCL_NO_SANITIZE("unsigned-integer-overflow")
-{
-  typedef conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, uint64_t> _UIntType;
-  const _UIntType _Rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
-  if (_Rp == 1)
-  {
-    return __p.a();
-  }
-  const size_t _Dt = numeric_limits<_UIntType>::digits;
-  typedef __independent_bits_engine<_URNG, _UIntType> _Eng;
-  if (_Rp == 0)
-  {
-    return static_cast<result_type>(_Eng(__g, _Dt)());
-  }
-  size_t __w = _Dt - _CUDA_VSTD::countl_zero(_Rp) - 1;
-  if ((_Rp & (std::numeric_limits<_UIntType>::max() >> (_Dt - __w))) != 0)
-  {
-    ++__w;
-  }
-  _Eng __e(__g, __w);
-  _UIntType __u;
-  do
-  {
-    __u = __e();
-  } while (__u >= _Rp);
-  return static_cast<result_type>(__u + __p.a());
-}
-
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
 _CCCL_API inline _SampleIterator __sample(
   _PopulationIterator __first,
@@ -1104,13 +190,13 @@ _CCCL_API inline _SampleIterator __sample(
   _Distance __sz = __k;
   for (; __first != __last; ++__first, (void) ++__k)
   {
-    _Distance __r = _CUDA_VSTD::uniform_int_distribution<_Distance>(0, __k)(__g);
+    _Distance __r = ::cuda::std::uniform_int_distribution<_Distance>(0, __k)(__g);
     if (__r < __sz)
     {
       __output_iter[__r] = *__first;
     }
   }
-  return __output_iter + _CUDA_VSTD::min(__n, __k);
+  return __output_iter + ::cuda::std::min(__n, __k);
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
@@ -1122,10 +208,10 @@ _CCCL_API inline _SampleIterator __sample(
   _UniformRandomNumberGenerator& __g,
   forward_iterator_tag)
 {
-  _Distance __unsampled_sz = _CUDA_VSTD::distance(__first, __last);
-  for (__n = _CUDA_VSTD::min(__n, __unsampled_sz); __n != 0; ++__first)
+  _Distance __unsampled_sz = ::cuda::std::distance(__first, __last);
+  for (__n = ::cuda::std::min(__n, __unsampled_sz); __n != 0; ++__first)
   {
-    _Distance __r = _CUDA_VSTD::uniform_int_distribution<_Distance>(0, --__unsampled_sz)(__g);
+    _Distance __r = ::cuda::std::uniform_int_distribution<_Distance>(0, --__unsampled_sz)(__g);
     if (__r < __n)
     {
       *__output_iter++ = *__first;
@@ -1150,7 +236,7 @@ _CCCL_API inline _SampleIterator __sample(
                 "SampleIterator must meet the requirements of RandomAccessIterator");
   typedef typename common_type<_Distance, _Difference>::type _CommonType;
   _CCCL_ASSERT(__n >= 0, "N must be a positive number.");
-  return _CUDA_VSTD::__sample(__first, __last, __output_iter, _CommonType(__n), __g, _PopCategory());
+  return ::cuda::std::__sample(__first, __last, __output_iter, _CommonType(__n), __g, _PopCategory());
 }
 
 template <class _PopulationIterator, class _SampleIterator, class _Distance, class _UniformRandomNumberGenerator>
@@ -1161,7 +247,7 @@ sample(_PopulationIterator __first,
        _Distance __n,
        _UniformRandomNumberGenerator&& __g)
 {
-  return _CUDA_VSTD::__sample(__first, __last, __output_iter, __n, __g);
+  return ::cuda::std::__sample(__first, __last, __output_iter, __n, __g);
 }
 
 template <class _RandomAccessIterator, class _UniformRandomNumberGenerator>
@@ -1221,7 +307,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
     // Move the falses into the temporary buffer, and the trues to the front of the line
     // Update __first to always point to the end of the trues
     value_type* __t = __p.first;
-    ::new (__t) value_type(_CUDA_VSTD::move(*__first));
+    ::new (__t) value_type(::cuda::std::move(*__first));
     __d.__incr((value_type*) 0);
     ++__t;
     _ForwardIterator __i = __first;
@@ -1229,12 +315,12 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
     {
       if (__pred(*__i))
       {
-        *__first = _CUDA_VSTD::move(*__i);
+        *__first = ::cuda::std::move(*__i);
         ++__first;
       }
       else
       {
-        ::new (__t) value_type(_CUDA_VSTD::move(*__i));
+        ::new (__t) value_type(::cuda::std::move(*__i));
         __d.__incr((value_type*) 0);
         ++__t;
       }
@@ -1244,7 +330,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
     __i = __first;
     for (value_type* __t2 = __p.first; __t2 < __t; ++__t2, (void) ++__i)
     {
-      *__i = _CUDA_VSTD::move(*__t2);
+      *__i = ::cuda::std::move(*__t2);
     }
     // __h destructs moved-from values out of the temp buffer, but doesn't deallocate buffer
     return __first;
@@ -1253,7 +339,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
   // __len >= 3
   _ForwardIterator __m = __first;
   _Distance __len2     = __len / 2; // __len2 >= 2
-  _CUDA_VSTD::advance(__m, __len2);
+  ::cuda::std::advance(__m, __len2);
   // recurse on [__first, __m), *__first know to be false
   // F?????????????????
   // f       m         l
@@ -1279,7 +365,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
 __second_half_done:
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf   l
-  return _CUDA_VSTD::rotate(__first_false, __m, __second_false);
+  return ::cuda::std::rotate(__first_false, __m, __second_false);
   // TTTTTTTTFFFFFFFFFF
   //         |
 }
@@ -1306,12 +392,12 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
   // *__first is known to be false
   typedef typename iterator_traits<_ForwardIterator>::difference_type difference_type;
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
-  difference_type __len = _CUDA_VSTD::distance(__first, __last);
+  difference_type __len = ::cuda::std::distance(__first, __last);
   pair<value_type*, ptrdiff_t> __p(0, 0);
   unique_ptr<value_type, __return_temporary_buffer> __h;
   if (__len >= __alloc_limit)
   {
-    __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
+    __p = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__p.first);
   }
   return __stable_partition<add_lvalue_reference_t<_Predicate>>(
@@ -1356,7 +442,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
     // Move the falses into the temporary buffer, and the trues to the front of the line
     // Update __first to always point to the end of the trues
     value_type* __t = __p.first;
-    ::new (__t) value_type(_CUDA_VSTD::move(*__first));
+    ::new (__t) value_type(::cuda::std::move(*__first));
     __d.__incr((value_type*) 0);
     ++__t;
     _BidirectionalIterator __i = __first;
@@ -1364,24 +450,24 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
     {
       if (__pred(*__i))
       {
-        *__first = _CUDA_VSTD::move(*__i);
+        *__first = ::cuda::std::move(*__i);
         ++__first;
       }
       else
       {
-        ::new (__t) value_type(_CUDA_VSTD::move(*__i));
+        ::new (__t) value_type(::cuda::std::move(*__i));
         __d.__incr((value_type*) 0);
         ++__t;
       }
     }
     // move *__last, known to be true
-    *__first = _CUDA_VSTD::move(*__i);
+    *__first = ::cuda::std::move(*__i);
     __i      = ++__first;
     // All trues now at start of range, all falses in buffer
     // Move falses back into range, but don't mess up __first which points to first false
     for (value_type* __t2 = __p.first; __t2 < __t; ++__t2, (void) ++__i)
     {
-      *__i = _CUDA_VSTD::move(*__t2);
+      *__i = ::cuda::std::move(*__t2);
     }
     // __h destructs moved-from values out of the temp buffer, but doesn't deallocate buffer
     return __first;
@@ -1390,7 +476,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
   // __len >= 4
   _BidirectionalIterator __m = __first;
   _Distance __len2           = __len / 2; // __len2 >= 2
-  _CUDA_VSTD::advance(__m, __len2);
+  ::cuda::std::advance(__m, __len2);
   // recurse on [__first, __m-1], except reduce __m-1 until *(__m-1) is true, *__first know to be false
   // F????????????????T
   // f       m        l
@@ -1431,7 +517,7 @@ __first_half_done:
 __second_half_done:
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf  l
-  return _CUDA_VSTD::rotate(__first_false, __m, __second_false);
+  return ::cuda::std::rotate(__first_false, __m, __second_false);
   // TTTTTTTTFFFFFFFFFF
   //         |
 }
@@ -1469,12 +555,12 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
   // *__first is known to be false
   // *__last is known to be true
   // __len >= 2
-  difference_type __len = _CUDA_VSTD::distance(__first, __last) + 1;
+  difference_type __len = ::cuda::std::distance(__first, __last) + 1;
   pair<value_type*, ptrdiff_t> __p(0, 0);
   unique_ptr<value_type, __return_temporary_buffer> __h;
   if (__len >= __alloc_limit)
   {
-    __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
+    __p = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__p.first);
   }
   return __stable_partition<add_lvalue_reference_t<_Predicate>>(
@@ -1596,7 +682,7 @@ _CCCL_HOST_DEVICE void __selection_sort(_BirdirectionalIterator __first, _Birdir
   for (--__lm1; __first != __lm1; ++__first)
   {
     _BirdirectionalIterator __i =
-      _CUDA_VSTD::min_element<_BirdirectionalIterator, add_lvalue_reference_t<_Compare>>(__first, __last, __comp);
+      ::cuda::std::min_element<_BirdirectionalIterator, add_lvalue_reference_t<_Compare>>(__first, __last, __comp);
     if (__i != __first)
     {
       swap(*__first, *__i);
@@ -1614,12 +700,12 @@ _CCCL_HOST_DEVICE void __insertion_sort(_BirdirectionalIterator __first, _Birdir
     for (++__i; __i != __last; ++__i)
     {
       _BirdirectionalIterator __j = __i;
-      value_type __t(_CUDA_VSTD::move(*__j));
+      value_type __t(::cuda::std::move(*__j));
       for (_BirdirectionalIterator __k = __i; __k != __first && __comp(__t, *--__k); --__j)
       {
-        *__j = _CUDA_VSTD::move(*__k);
+        *__j = ::cuda::std::move(*__k);
       }
-      *__j = _CUDA_VSTD::move(__t);
+      *__j = ::cuda::std::move(__t);
     }
   }
 }
@@ -1634,15 +720,15 @@ _CCCL_HOST_DEVICE void __insertion_sort_3(_RandomAccessIterator __first, _Random
   {
     if (__comp(*__i, *__j))
     {
-      value_type __t(_CUDA_VSTD::move(*__i));
+      value_type __t(::cuda::std::move(*__i));
       _RandomAccessIterator __k = __j;
       __j                       = __i;
       do
       {
-        *__j = _CUDA_VSTD::move(*__k);
+        *__j = ::cuda::std::move(*__k);
         __j  = __k;
       } while (__j != __first && __comp(__t, *--__k));
-      *__j = _CUDA_VSTD::move(__t);
+      *__j = ::cuda::std::move(__t);
     }
     __j = __i;
   }
@@ -1664,13 +750,13 @@ __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator
       }
       return true;
     case 3:
-      _CUDA_VSTD::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
+      ::cuda::std::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
       return true;
     case 4:
-      _CUDA_VSTD::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
+      ::cuda::std::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
       return true;
     case 5:
-      _CUDA_VSTD::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
+      ::cuda::std::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
       return true;
   }
   typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
@@ -1682,15 +768,15 @@ __insertion_sort_incomplete(_RandomAccessIterator __first, _RandomAccessIterator
   {
     if (__comp(*__i, *__j))
     {
-      value_type __t(_CUDA_VSTD::move(*__i));
+      value_type __t(::cuda::std::move(*__i));
       _RandomAccessIterator __k = __j;
       __j                       = __i;
       do
       {
-        *__j = _CUDA_VSTD::move(*__k);
+        *__j = ::cuda::std::move(*__k);
         __j  = __k;
       } while (__j != __first && __comp(__t, *--__k));
-      *__j = _CUDA_VSTD::move(__t);
+      *__j = ::cuda::std::move(__t);
       if (++__count == __limit)
       {
         return ++__i == __last;
@@ -1714,7 +800,7 @@ _CCCL_HOST_DEVICE void __insertion_sort_move(
     __destruct_n __d(0);
     unique_ptr<value_type, __destruct_n&> __h(__first2, __d);
     value_type* __last2 = __first2;
-    ::new (__last2) value_type(_CUDA_VSTD::move(*__first1));
+    ::new (__last2) value_type(::cuda::std::move(*__first1));
     __d.__incr((value_type*) 0);
     for (++__last2; ++__first1 != __last1; ++__last2)
     {
@@ -1722,17 +808,17 @@ _CCCL_HOST_DEVICE void __insertion_sort_move(
       value_type* __i2 = __j2;
       if (__comp(*__first1, *--__i2))
       {
-        ::new (__j2) value_type(_CUDA_VSTD::move(*__i2));
+        ::new (__j2) value_type(::cuda::std::move(*__i2));
         __d.__incr((value_type*) 0);
         for (--__j2; __i2 != __first2 && __comp(*__first1, *--__i2); --__j2)
         {
-          *__j2 = _CUDA_VSTD::move(*__i2);
+          *__j2 = ::cuda::std::move(*__i2);
         }
-        *__j2 = _CUDA_VSTD::move(*__first1);
+        *__j2 = ::cuda::std::move(*__first1);
       }
       else
       {
-        ::new (__j2) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__j2) value_type(::cuda::std::move(*__first1));
         __d.__incr((value_type*) 0);
       }
     }
@@ -1764,18 +850,18 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
         }
         return;
       case 3:
-        _CUDA_VSTD::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
+        ::cuda::std::__sort3<_Compare>(__first, __first + 1, --__last, __comp);
         return;
       case 4:
-        _CUDA_VSTD::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
+        ::cuda::std::__sort4<_Compare>(__first, __first + 1, __first + 2, --__last, __comp);
         return;
       case 5:
-        _CUDA_VSTD::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
+        ::cuda::std::__sort5<_Compare>(__first, __first + 1, __first + 2, __first + 3, --__last, __comp);
         return;
     }
     if (__len <= __limit)
     {
-      _CUDA_VSTD::__insertion_sort_3<_Compare>(__first, __last, __comp);
+      ::cuda::std::__insertion_sort_3<_Compare>(__first, __last, __comp);
       return;
     }
     // __len > 5
@@ -1790,13 +876,13 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
         __delta = __len / 2;
         __m += __delta;
         __delta /= 2;
-        __n_swaps = _CUDA_VSTD::__sort5<_Compare>(__first, __first + __delta, __m, __m + __delta, __lm1, __comp);
+        __n_swaps = ::cuda::std::__sort5<_Compare>(__first, __first + __delta, __m, __m + __delta, __lm1, __comp);
       }
       else
       {
         __delta = __len / 2;
         __m += __delta;
-        __n_swaps = _CUDA_VSTD::__sort3<_Compare>(__first, __m, __lm1, __comp);
+        __n_swaps = ::cuda::std::__sort3<_Compare>(__first, __m, __lm1, __comp);
       }
     }
     // *__m is median
@@ -1860,7 +946,7 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
           }
           // [__first, __i) == *__first and *__first < [__i, __last)
           // The first part is sorted, sort the second part
-          // _CUDA_VSTD::__sort<_Compare>(__i, __last, __comp);
+          // ::cuda::std::__sort<_Compare>(__i, __last, __comp);
           __first = __i;
           goto __restart;
         }
@@ -1915,8 +1001,8 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
     // If we were given a perfect partition, see if insertion sort is quick...
     if (__n_swaps == 0)
     {
-      bool __fs = _CUDA_VSTD::__insertion_sort_incomplete<_Compare>(__first, __i, __comp);
-      if (_CUDA_VSTD::__insertion_sort_incomplete<_Compare>(__i + 1, __last, __comp))
+      bool __fs = ::cuda::std::__insertion_sort_incomplete<_Compare>(__first, __i, __comp);
+      if (::cuda::std::__insertion_sort_incomplete<_Compare>(__i + 1, __last, __comp))
       {
         if (__fs)
         {
@@ -1937,14 +1023,14 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
     // sort smaller range with recursive call and larger with tail recursion elimination
     if (__i - __first < __last - __i)
     {
-      _CUDA_VSTD::__sort<_Compare>(__first, __i, __comp);
-      // _CUDA_VSTD::__sort<_Compare>(__i+1, __last, __comp);
+      ::cuda::std::__sort<_Compare>(__first, __i, __comp);
+      // ::cuda::std::__sort<_Compare>(__i+1, __last, __comp);
       __first = ++__i;
     }
     else
     {
-      _CUDA_VSTD::__sort<_Compare>(__i + 1, __last, __comp);
-      // _CUDA_VSTD::__sort<_Compare>(__first, __i, __comp);
+      ::cuda::std::__sort<_Compare>(__i + 1, __last, __comp);
+      // ::cuda::std::__sort<_Compare>(__first, __i, __comp);
       __last = __i;
     }
   }
@@ -1955,82 +1041,33 @@ template <class _RandomAccessIterator, class _Compare>
 _CCCL_API inline void sort(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   using _Comp_ref = __comp_ref_type<_Compare>;
-  _CUDA_VSTD::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
+  ::cuda::std::__sort<_Comp_ref>(__first, __last, _Comp_ref(__comp));
 }
 
 template <class _RandomAccessIterator>
 _CCCL_API inline void sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::sort(__first, __last, __less{});
+  ::cuda::std::sort(__first, __last, __less{});
 }
 
 template <class _Tp>
 _CCCL_API inline void sort(_Tp** __first, _Tp** __last)
 {
-  _CUDA_VSTD::sort((size_t*) __first, (size_t*) __last, __less{});
+  ::cuda::std::sort((size_t*) __first, (size_t*) __last, __less{});
 }
 
 template <class _Tp>
 _CCCL_API inline void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last)
 {
-  _CUDA_VSTD::sort(__first.base(), __last.base());
+  ::cuda::std::sort(__first.base(), __last.base());
 }
 
 template <class _Tp, class _Compare>
 _CCCL_API inline void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
 {
   typedef add_lvalue_reference_t<_Compare> _Comp_ref;
-  _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
+  ::cuda::std::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
-
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, char*>(char*, char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, signed*>(signed*, signed*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline void __sort<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, short*>(short*, short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline void __sort<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, int*>(int*, int*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, unsigned*>(unsigned*, unsigned*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, long*>(long*, long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline void __sort<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, long long*>(long long*, long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline void __sort<__less&, unsigned long long*>(unsigned long long*, unsigned long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, float*>(float*, float*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, double*>(double*, double*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline void __sort<__less&, long double*>(long double*, long double*, __less&))
-
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, char*>(char*, char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, signed char*>(signed char*, signed char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, short*>(short*, short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned short*>(
-  unsigned short*, unsigned short*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, int*>(int*, int*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned*>(unsigned*, unsigned*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, long*>(long*, long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, long long*>(long long*, long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, unsigned long long*>(
-  unsigned long long*, unsigned long long*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline bool __insertion_sort_incomplete<__less&, float*>(float*, float*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, double*>(double*, double*, __less&))
-_LIBCUDACXX_EXTERN_TEMPLATE(
-  _CCCL_API inline bool __insertion_sort_incomplete<__less&, long double*>(long double*, long double*, __less&))
-
-_LIBCUDACXX_EXTERN_TEMPLATE(_CCCL_API inline unsigned __sort5<__less&, long double*>(
-  long double*, long double*, long double*, long double*, long double*, __less&))
 
 // inplace_merge
 
@@ -2047,18 +1084,18 @@ _CCCL_HOST_DEVICE void __half_inplace_merge(
   {
     if (__first2 == __last2)
     {
-      _CUDA_VSTD::move(__first1, __last1, __result);
+      ::cuda::std::move(__first1, __last1, __result);
       return;
     }
 
     if (__comp(*__first2, *__first1))
     {
-      *__result = _CUDA_VSTD::move(*__first2);
+      *__result = ::cuda::std::move(*__first2);
       ++__first2;
     }
     else
     {
-      *__result = _CUDA_VSTD::move(*__first1);
+      *__result = ::cuda::std::move(*__first1);
       ++__first1;
     }
   }
@@ -2083,7 +1120,7 @@ _CCCL_HOST_DEVICE void __buffered_inplace_merge(
     value_type* __p = __buff;
     for (_BidirectionalIterator __i = __first; __i != __middle; __d.__incr((value_type*) 0), (void) ++__i, (void) ++__p)
     {
-      ::new (__p) value_type(_CUDA_VSTD::move(*__i));
+      ::new (__p) value_type(::cuda::std::move(*__i));
     }
     __half_inplace_merge(__buff, __p, __middle, __last, __first, __comp);
   }
@@ -2092,7 +1129,7 @@ _CCCL_HOST_DEVICE void __buffered_inplace_merge(
     value_type* __p = __buff;
     for (_BidirectionalIterator __i = __middle; __i != __last; __d.__incr((value_type*) 0), (void) ++__i, (void) ++__p)
     {
-      ::new (__p) value_type(_CUDA_VSTD::move(*__i));
+      ::new (__p) value_type(::cuda::std::move(*__i));
     }
     typedef reverse_iterator<_BidirectionalIterator> _RBi;
     typedef reverse_iterator<value_type*> _Rv;
@@ -2152,9 +1189,9 @@ _CCCL_HOST_DEVICE void __inplace_merge(
     { // __len >= 1, __len2 >= 2
       __len21 = __len2 / 2;
       __m2    = __middle;
-      _CUDA_VSTD::advance(__m2, __len21);
+      ::cuda::std::advance(__m2, __len21);
       __m1    = __upper_bound<_Compare>(__first, __middle, *__m2, __comp);
-      __len11 = _CUDA_VSTD::distance(__first, __m1);
+      __len11 = ::cuda::std::distance(__first, __m1);
     }
     else
     {
@@ -2167,15 +1204,15 @@ _CCCL_HOST_DEVICE void __inplace_merge(
       // __len1 >= 2, __len2 >= 1
       __len11 = __len1 / 2;
       __m1    = __first;
-      _CUDA_VSTD::advance(__m1, __len11);
+      ::cuda::std::advance(__m1, __len11);
       __m2    = __lower_bound<_Compare>(__middle, __last, *__m1, __comp);
-      __len21 = _CUDA_VSTD::distance(__middle, __m2);
+      __len21 = ::cuda::std::distance(__middle, __m2);
     }
     difference_type __len12 = __len1 - __len11; // distance(__m1, __middle)
     difference_type __len22 = __len2 - __len21; // distance(__m2, __last)
     // [__first, __m1) [__m1, __middle) [__middle, __m2) [__m2, __last)
     // swap middle two partitions
-    __middle = _CUDA_VSTD::rotate(__m1, __middle, __m2);
+    __middle = ::cuda::std::rotate(__m1, __middle, __m2);
     // __len12 and __len21 now have swapped meanings
     // merge smaller range with recursive call and larger with tail recursion elimination
     if (__len11 + __len21 < __len12 + __len22)
@@ -2205,13 +1242,13 @@ _CCCL_API inline void inplace_merge(
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
   typedef typename iterator_traits<_BidirectionalIterator>::difference_type difference_type;
-  difference_type __len1             = _CUDA_VSTD::distance(__first, __middle);
-  difference_type __len2             = _CUDA_VSTD::distance(__middle, __last);
-  difference_type __buf_size         = _CUDA_VSTD::min(__len1, __len2);
-  pair<value_type*, ptrdiff_t> __buf = _CUDA_VSTD::get_temporary_buffer<value_type>(__buf_size);
+  difference_type __len1             = ::cuda::std::distance(__first, __middle);
+  difference_type __len2             = ::cuda::std::distance(__middle, __last);
+  difference_type __buf_size         = ::cuda::std::min(__len1, __len2);
+  pair<value_type*, ptrdiff_t> __buf = ::cuda::std::get_temporary_buffer<value_type>(__buf_size);
   unique_ptr<value_type, __return_temporary_buffer> __h(__buf.first);
   using _Comp_ref = __comp_ref_type<_Compare>;
-  return _CUDA_VSTD::__inplace_merge<_Comp_ref>(
+  return ::cuda::std::__inplace_merge<_Comp_ref>(
     __first, __middle, __last, __comp, __len1, __len2, __buf.first, __buf.second);
 }
 
@@ -2219,7 +1256,7 @@ template <class _BidirectionalIterator>
 _CCCL_API inline void
 inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last)
 {
-  _CUDA_VSTD::inplace_merge(__first, __middle, __last, __less{});
+  ::cuda::std::inplace_merge(__first, __middle, __last, __less{});
 }
 
 // stable_sort
@@ -2242,7 +1279,7 @@ _CCCL_HOST_DEVICE void __merge_move_construct(
     {
       for (; __first2 != __last2; ++__first2, ++__result, (void) __d.__incr((value_type*) 0))
       {
-        ::new (__result) value_type(_CUDA_VSTD::move(*__first2));
+        ::new (__result) value_type(::cuda::std::move(*__first2));
       }
       __h.release();
       return;
@@ -2251,20 +1288,20 @@ _CCCL_HOST_DEVICE void __merge_move_construct(
     {
       for (; __first1 != __last1; ++__first1, ++__result, (void) __d.__incr((value_type*) 0))
       {
-        ::new (__result) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__result) value_type(::cuda::std::move(*__first1));
       }
       __h.release();
       return;
     }
     if (__comp(*__first2, *__first1))
     {
-      ::new (__result) value_type(_CUDA_VSTD::move(*__first2));
+      ::new (__result) value_type(::cuda::std::move(*__first2));
       __d.__incr((value_type*) 0);
       ++__first2;
     }
     else
     {
-      ::new (__result) value_type(_CUDA_VSTD::move(*__first1));
+      ::new (__result) value_type(::cuda::std::move(*__first1));
       __d.__incr((value_type*) 0);
       ++__first1;
     }
@@ -2286,24 +1323,24 @@ _CCCL_HOST_DEVICE void __merge_move_assign(
     {
       for (; __first1 != __last1; ++__first1, (void) ++__result)
       {
-        *__result = _CUDA_VSTD::move(*__first1);
+        *__result = ::cuda::std::move(*__first1);
       }
       return;
     }
     if (__comp(*__first2, *__first1))
     {
-      *__result = _CUDA_VSTD::move(*__first2);
+      *__result = ::cuda::std::move(*__first2);
       ++__first2;
     }
     else
     {
-      *__result = _CUDA_VSTD::move(*__first1);
+      *__result = ::cuda::std::move(*__first1);
       ++__first1;
     }
   }
   for (; __first2 != __last2; ++__first2, (void) ++__result)
   {
-    *__result = _CUDA_VSTD::move(*__first2);
+    *__result = ::cuda::std::move(*__first2);
   }
 }
 
@@ -2330,24 +1367,24 @@ _CCCL_HOST_DEVICE void __stable_sort_move(
     case 0:
       return;
     case 1:
-      ::new (__first2) value_type(_CUDA_VSTD::move(*__first1));
+      ::new (__first2) value_type(::cuda::std::move(*__first1));
       return;
     case 2:
       __destruct_n __d(0);
       unique_ptr<value_type, __destruct_n&> __h2(__first2, __d);
       if (__comp(*--__last1, *__first1))
       {
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__last1));
+        ::new (__first2) value_type(::cuda::std::move(*__last1));
         __d.__incr((value_type*) 0);
         ++__first2;
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__first2) value_type(::cuda::std::move(*__first1));
       }
       else
       {
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__first1));
+        ::new (__first2) value_type(::cuda::std::move(*__first1));
         __d.__incr((value_type*) 0);
         ++__first2;
-        ::new (__first2) value_type(_CUDA_VSTD::move(*__last1));
+        ::new (__first2) value_type(::cuda::std::move(*__last1));
       }
       __h2.release();
       return;
@@ -2431,7 +1468,7 @@ _CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIt
   unique_ptr<value_type, __return_temporary_buffer> __h;
   if (__len > static_cast<difference_type>(__stable_sort_switch<value_type>::value))
   {
-    __buf = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
+    __buf = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__buf.first);
   }
   using _Comp_ref = __comp_ref_type<_Compare>;
@@ -2441,7 +1478,7 @@ _CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIt
 template <class _RandomAccessIterator>
 _CCCL_API inline void stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::stable_sort(__first, __last, __less{});
+  ::cuda::std::stable_sort(__first, __last, __less{});
 }
 
 // nth_element
@@ -2474,7 +1511,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
         return;
       case 3: {
         _RandomAccessIterator __m = __first;
-        _CUDA_VSTD::__sort3<_Compare>(__first, ++__m, --__last, __comp);
+        ::cuda::std::__sort3<_Compare>(__first, ++__m, --__last, __comp);
         return;
       }
     }
@@ -2486,7 +1523,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
     // __len > __limit >= 3
     _RandomAccessIterator __m   = __first + __len / 2;
     _RandomAccessIterator __lm1 = __last;
-    unsigned __n_swaps          = _CUDA_VSTD::__sort3<_Compare>(__first, __m, --__lm1, __comp);
+    unsigned __n_swaps          = ::cuda::std::__sort3<_Compare>(__first, __m, --__lm1, __comp);
     // *__m is median
     // partition [__first, __m) < *__m and *__m <= [__m, __last)
     // (this inhibits tossing elements equivalent to __m around unnecessarily)
@@ -2670,11 +1707,11 @@ template <class _RandomAccessIterator>
 _CCCL_API inline void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::nth_element(__first, __nth, __last, __less{});
+  ::cuda::std::nth_element(__first, __nth, __last, __less{});
 }
 
 #endif
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #  include <__pstl_algorithm>

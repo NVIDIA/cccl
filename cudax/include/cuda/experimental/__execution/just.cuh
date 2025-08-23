@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -33,32 +34,22 @@
 
 namespace cuda::experimental::execution
 {
-// Map from a disposition to the corresponding tag types:
-namespace __detail
-{
-template <__disposition, class _Void = void>
-extern _CUDA_VSTD::__undefined<_Void> __just_tag;
-template <class _Void>
-extern __fn_t<just_t>* __just_tag<__disposition::__value, _Void>;
-template <class _Void>
-extern __fn_t<just_error_t>* __just_tag<__disposition::__error, _Void>;
-template <class _Void>
-extern __fn_t<just_stopped_t>* __just_tag<__disposition::__stopped, _Void>;
-} // namespace __detail
-
-template <__disposition _Disposition>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(just_t) _CCCL_PREFERRED_NAME(just_error_t)
-  _CCCL_PREFERRED_NAME(just_stopped_t) __just_t
+template <class _JustTag, class _SetTag>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t
 {
 private:
-  using _JustTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__just_tag<_Disposition>());
-  using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
+  friend struct just_t;
+  friend struct just_error_t;
+  friend struct just_stopped_t;
+
+  using __just_tag_t = _JustTag;
+  using __set_tag_t  = _SetTag;
 
   template <class _Rcvr, class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
-    using __tuple_t _CCCL_NODEBUG_ALIAS               = _CUDA_VSTD::__tuple<_Ts...>;
+    using operation_state_concept = operation_state_t;
+    using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
     _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
         : __rcvr_{__rcvr}
@@ -71,37 +62,64 @@ private:
     // operation state doesn't strictly need to be immovable, since its address never
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 #endif // !_CCCL_COMPILER(GCC)
 
     _CCCL_API constexpr void start() noexcept
     {
-      _CUDA_VSTD::__apply(
-        _SetTag{}, static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
+      ::cuda::std::__apply(
+        _SetTag{}, static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
     }
 
     _Rcvr __rcvr_;
     __tuple_t __values_;
   };
 
-public:
-  template <class... _Ts>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+  struct __attrs_t
+  {
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    {
+      return completion_behavior::inline_completion;
+    }
+  };
 
   template <class... _Ts>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
+
+public:
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _Ts>
+  _CCCL_NODEBUG_API constexpr auto operator()(_Ts... __ts) const;
 };
 
-template <__disposition _Disposition>
-template <class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
+struct just_t : __just_t<just_t, set_value_t>
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  template <class... _Ts>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
 
-  template <class _Self, class... _Env>
+struct just_error_t : __just_t<just_error_t, set_error_t>
+{
+  template <class... _Ts>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+struct just_stopped_t : __just_t<just_stopped_t, set_stopped_t>
+{
+  template <class... _Ts>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+template <class _JustTag, class _SetTag>
+template <class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
+{
+  using sender_concept = sender_t;
+
+  template <class>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    return completion_signatures<_SetTag(_Ts...)>{};
+    return completion_signatures<__set_tag_t(_Ts...)>{};
   }
 
   template <class _Rcvr>
@@ -109,7 +127,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
     -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{
-      static_cast<_Rcvr&&>(__rcvr), static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_)};
+      static_cast<_Rcvr&&>(__rcvr), static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_)};
   }
 
   template <class _Rcvr>
@@ -119,15 +137,39 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
-  _CUDA_VSTD::__tuple<_Ts...> __values_;
+  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  {
+    return __attrs_t{};
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
+  ::cuda::std::__tuple<_Ts...> __values_;
 };
 
-template <__disposition _Disposition>
 template <class... _Ts>
-_CCCL_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_t::__sndr_t : __just_t<just_t, set_value_t>::__sndr_base_t<_Ts...>
+{};
+
+template <class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_error_t::__sndr_t : __just_t<just_error_t, set_error_t>::__sndr_base_t<_Ts...>
 {
-  return __sndr_t<_Ts...>{{}, {static_cast<_Ts&&>(__ts)...}};
+  static_assert(sizeof...(_Ts) == 1, "just_error_t must be called with exactly one error type.");
+};
+
+template <class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
+    : __just_t<just_stopped_t, set_stopped_t>::__sndr_base_t<_Ts...>
+{
+  static_assert(sizeof...(_Ts) == 0, "just_stopped_t must not be called with any types.");
+};
+
+_CCCL_EXEC_CHECK_DISABLE
+template <class _JustTag, class _SetTag>
+template <class... _Ts>
+_CCCL_NODEBUG_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
+{
+  using __sndr_t = typename _JustTag::template __sndr_t<_Ts...>;
+  return __sndr_t{{{}, {static_cast<_Ts&&>(__ts)...}}};
 }
 
 template <class... _Ts>

@@ -23,7 +23,7 @@ struct cccl_iterator_t_mapping
   int size                                    = 1;
   int alignment                               = 1;
   void (*advance)(void*, cuda::std::uint64_t) = nullptr;
-  ValueTp (*dereference)(const void*)         = nullptr;
+  void (*dereference)(const void*, ValueTp*)  = nullptr;
   void (*assign)(const void*, ValueTp);
 
   using ValueT = ValueTp;
@@ -40,6 +40,16 @@ struct parameter_mapping<cccl_iterator_t>
   template <typename Traits>
   static std::string map(template_id<Traits>, cccl_iterator_t arg)
   {
+    if (arg.advance.type != cccl_op_kind_t::CCCL_STATEFUL && arg.advance.type != cccl_op_kind_t::CCCL_STATELESS)
+    {
+      throw std::runtime_error("c.parallel: well-known operations are not allowed as an iterator's advance operation");
+    }
+    if (arg.dereference.type != cccl_op_kind_t::CCCL_STATEFUL && arg.dereference.type != cccl_op_kind_t::CCCL_STATELESS)
+    {
+      throw std::runtime_error("c.parallel: well-known operations are not allowed as an iterator's dereference "
+                               "operation");
+    }
+
     return std::format(
       "cccl_iterator_t_mapping<{}>{{.is_pointer = {}, .size = {}, .alignment = {}, .advance = {}, .{} = {}}}",
       cccl_type_enum_to_name(arg.value_type.type),
@@ -70,7 +80,7 @@ extern "C" __device__ void {2}(const void *, {3});
     return std::format(
       R"input(
 extern "C" __device__ void {0}(void *, {1});
-extern "C" __device__ {3} {2}(const void *);
+extern "C" __device__ void {2}(const void *, {3}*);
 )input",
       arg.advance.name,
       cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),

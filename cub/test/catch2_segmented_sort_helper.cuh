@@ -81,7 +81,7 @@ struct segment_index_to_offset_op
   OffsetT segment_size;
   OffsetT num_items;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
+  __host__ __device__ _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
   {
     if (i < num_empty_segments)
     {
@@ -104,7 +104,7 @@ struct mod_n
   std::size_t mod;
 
   template <typename IndexT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(IndexT x)
+  __host__ __device__ _CCCL_FORCEINLINE T operator()(IndexT x)
   {
     return static_cast<T>(x % mod);
   }
@@ -290,19 +290,19 @@ using unwrap_value_t = typename unwrap_value_t_impl<T>::type;
 // Derived element gen/validation
 
 template <typename T>
-_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int segment_size, T)
+__host__ __device__ __forceinline__ double compute_conversion_factor(int segment_size, T)
 {
   const double max_value = static_cast<double>(::cuda::std::numeric_limits<T>::max());
   return (max_value + 1) / segment_size;
 }
 
-_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int segment_size, double)
+__host__ __device__ __forceinline__ double compute_conversion_factor(int segment_size, double)
 {
   const double max_value = ::cuda::std::numeric_limits<double>::max();
   return max_value / segment_size;
 }
 
-_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int, cub::NullType)
+__host__ __device__ __forceinline__ double compute_conversion_factor(int, cub::NullType)
 {
   return 1.0;
 }
@@ -320,7 +320,7 @@ struct segment_filler
       , descending(descending)
   {}
 
-  _CCCL_DEVICE void operator()(int segment_id) const
+  __device__ void operator()(int segment_id) const
   {
     const int segment_begin = d_offsets[segment_id];
     const int segment_end   = d_offsets[segment_id + 1];
@@ -366,7 +366,7 @@ struct segment_checker
       , sort_descending(sort_descending)
   {}
 
-  _CCCL_DEVICE bool operator()(int segment_id)
+  __device__ bool operator()(int segment_id)
   {
     const int segment_begin = d_offsets[segment_id];
     const int segment_end   = d_offsets[segment_id + 1];
@@ -386,7 +386,7 @@ struct segment_checker
 
 private:
   // Keys only:
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool check_results(
+  __device__ _CCCL_FORCEINLINE bool check_results(
     int segment_begin, //
     int segment_size,
     cub::NullType)
@@ -407,7 +407,7 @@ private:
 
   // Pairs:
   template <typename DispatchValueT> // Same as ValueT if not cub::NullType
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  __device__ _CCCL_FORCEINLINE bool
   check_results(int segment_begin, //
                 int segment_size,
                 DispatchValueT)
@@ -503,7 +503,7 @@ private:
     return true;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyT compute_key(int seg_idx, int segment_size, double conversion)
+  __device__ _CCCL_FORCEINLINE KeyT compute_key(int seg_idx, int segment_size, double conversion)
   {
     int conv_idx = sort_descending ? (segment_size - 1 - seg_idx) : seg_idx;
     return static_cast<KeyT>(conv_idx * conversion);
@@ -674,7 +674,7 @@ struct unstable_segmented_value_checker
       , offsets_end(offsets_end)
   {}
 
-  _CCCL_DEVICE bool operator()(int segment_id) const
+  __device__ bool operator()(int segment_id) const
   {
     const int segment_begin = offsets_begin[segment_id];
     const int segment_end   = offsets_end[segment_id];
@@ -1522,10 +1522,10 @@ struct offset_scan_op_t
 {
   int max_items;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(int a, int b) const
+  __device__ _CCCL_FORCEINLINE int operator()(int a, int b) const
   {
     const int sum = a + b;
-    return _CUDA_VSTD::min(sum, max_items);
+    return ::cuda::std::min(sum, max_items);
   }
 };
 

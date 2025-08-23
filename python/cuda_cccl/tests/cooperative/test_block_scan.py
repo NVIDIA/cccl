@@ -34,17 +34,13 @@ from numba.core.extending import (
     type_callable,
     typeof_impl,
 )
-from pynvjitlink import patch
 
-import cuda.cccl.cooperative.experimental as cudax
+import cuda.cccl.cooperative.experimental as coop
 from cuda.cccl.cooperative.experimental.block._block_scan import (
     ScanOp,
 )
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-# Patching the Numba linker to enable LTO as needed.
-patch.patch_numba_linker(lto=True)
 
 
 class BlockPrefixCallbackOp:
@@ -124,9 +120,9 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
     if mode == "inclusive":
-        scan_func = cudax.block.inclusive_sum
+        scan_func = coop.block.inclusive_sum
     else:
-        scan_func = cudax.block.exclusive_sum
+        scan_func = coop.block.exclusive_sum
 
     block_sum = scan_func(
         dtype=T,
@@ -201,14 +197,14 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
     num_segments = 128
     num_elements = segment_size * num_segments
 
-    prefix_op = cudax.StatefulFunction(
+    prefix_op = coop.StatefulFunction(
         BlockPrefixCallbackOp, block_prefix_callback_op_type
     )
 
     if mode == "inclusive":
-        sum_func = cudax.block.inclusive_sum
+        sum_func = coop.block.inclusive_sum
     else:
-        sum_func = cudax.block.exclusive_sum
+        sum_func = coop.block.exclusive_sum
 
     block_sum = sum_func(
         dtype=numba.int32,
@@ -296,9 +292,9 @@ def test_block_scan_sum_invalid_items_per_thread(
     inclusive_sum and exclusive_sum.
     """
     if mode == "inclusive":
-        sum_func = cudax.block.inclusive_sum
+        sum_func = coop.block.inclusive_sum
     else:
-        sum_func = cudax.block.exclusive_sum
+        sum_func = coop.block.exclusive_sum
 
     with pytest.raises(ValueError):
         sum_func(numba.int32, threads_per_block, items_per_thread)
@@ -311,9 +307,9 @@ def test_block_scan_sum_invalid_algorithm(mode):
     raises a ValueError.
     """
     if mode == "inclusive":
-        sum_func = cudax.block.inclusive_sum
+        sum_func = coop.block.inclusive_sum
     else:
-        sum_func = cudax.block.exclusive_sum
+        sum_func = coop.block.exclusive_sum
 
     with pytest.raises(ValueError):
         sum_func(numba.int32, 128, items_per_thread=1, algorithm="invalid_algorithm")
@@ -352,7 +348,7 @@ def test_block_scan_user_defined_type(
         result_ptr[0] = Complex(real_val, imag_val)
 
     if mode == "inclusive":
-        scan_func = cudax.block.inclusive_scan
+        scan_func = coop.block.inclusive_scan
         if items_per_thread == 1:
             # Initial values aren't supported for inclusive scans with
             # items_per_thread=1.
@@ -364,7 +360,7 @@ def test_block_scan_user_defined_type(
     else:
         if initial_value is not None:
             pytest.skip("initial_value not supported for exclusive scans")
-        scan_func = cudax.block.exclusive_scan
+        scan_func = coop.block.exclusive_scan
 
     block_op = scan_func(
         dtype=complex_type,
@@ -501,9 +497,9 @@ def test_block_scan_with_callable(
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
     if mode == "inclusive":
-        scan_func = cudax.block.inclusive_scan
+        scan_func = coop.block.inclusive_scan
     else:
-        scan_func = cudax.block.exclusive_scan
+        scan_func = coop.block.exclusive_scan
 
     # Example custom operator that just adds two operands.
     def op(a: T, b: T) -> T:
@@ -589,9 +585,9 @@ def test_block_scan_invariants(mode):
          initial value is required.
     """
     if mode == "inclusive":
-        scan_func = cudax.block.inclusive_scan
+        scan_func = coop.block.inclusive_scan
     else:
-        scan_func = cudax.block.exclusive_scan
+        scan_func = coop.block.exclusive_scan
 
     # 1) For inclusive scans with items_per_thread=1, initial_value is invalid.
     if mode == "inclusive":
@@ -613,7 +609,7 @@ def test_block_scan_invariants(mode):
     # 2) For exclusive scans with items_per_thread=1 and a prefix callback,
     #    initial_value is invalid.
     if mode == "exclusive":
-        prefix_op = cudax.StatefulFunction(
+        prefix_op = coop.StatefulFunction(
             BlockPrefixCallbackOp, block_prefix_callback_op_type
         )
         with pytest.raises(
@@ -675,14 +671,14 @@ def test_block_scan_with_prefix_op_multi_items(
     def add_op(a, b):
         return a + b
 
-    prefix_op = cudax.StatefulFunction(
+    prefix_op = coop.StatefulFunction(
         BlockPrefixCallbackOp, block_prefix_callback_op_type
     )
 
     if mode == "inclusive":
-        scan_func = cudax.block.inclusive_scan
+        scan_func = coop.block.inclusive_scan
     else:
-        scan_func = cudax.block.exclusive_scan
+        scan_func = coop.block.exclusive_scan
 
     block_op = scan_func(
         dtype=T,
@@ -777,9 +773,9 @@ def test_block_scan_known_ops(
         pytest.skip(f"Skipping algorithm {algorithm} for known ops test.")
 
     if mode == "inclusive":
-        scan_func = cudax.block.inclusive_scan
+        scan_func = coop.block.inclusive_scan
     else:
-        scan_func = cudax.block.exclusive_scan
+        scan_func = coop.block.exclusive_scan
 
     op = ScanOp(scan_op)
     assert op.is_known
@@ -889,13 +885,13 @@ def test_block_scan_known_ops(
 
 
 def test_inclusive_sum_alignment():
-    block_scan1 = cudax.block.inclusive_sum(
+    block_scan1 = coop.block.inclusive_sum(
         dtype=types.int32,
         threads_per_block=256,
         items_per_thread=1,
     )
 
-    block_scan2 = cudax.block.inclusive_sum(
+    block_scan2 = coop.block.inclusive_sum(
         dtype=types.float64,
         threads_per_block=256,
         items_per_thread=1,

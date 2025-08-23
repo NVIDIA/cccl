@@ -39,9 +39,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // common_reference
 
@@ -73,7 +73,7 @@ template <class _Xp, class _Yp>
 using __cond_res = typename __cond_res_workaround<_Xp, _Yp>::type;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Xp, class _Yp>
-using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_VSTD::declval<_Yp (&)()>()());
+using __cond_res = decltype(false ? ::cuda::std::declval<_Xp (&)()>()() : ::cuda::std::declval<_Yp (&)()>()());
 #endif // !_CCCL_COMPILER(MSVC)
 
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`
@@ -97,7 +97,7 @@ using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>
 //    If A and B are both lvalue reference types, COMMON-REF(A, B) is
 //    COND-RES(COPYCV(X, Y)&, COPYCV(Y, X)&) if that type exists and is a reference type.
 template <class _Ap, class _Bp>
-struct __common_ref<_Ap&, _Bp&, enable_if_t<_CCCL_TRAIT(is_reference, __cv_cond_res<_Ap, _Bp>)>>
+struct __common_ref<_Ap&, _Bp&, enable_if_t<is_reference_v<__cv_cond_res<_Ap, _Bp>>>>
 {
   using __type = __cv_cond_res<_Ap, _Bp>;
 };
@@ -113,10 +113,10 @@ struct __common_ref_rr
 {};
 
 template <class _Ap, class _Bp>
-struct __common_ref_rr<_Ap&&,
-                       _Bp&&,
-                       enable_if_t<_CCCL_TRAIT(is_convertible, _Ap&&, __common_ref_C<_Ap, _Bp>)
-                                   && _CCCL_TRAIT(is_convertible, _Bp&&, __common_ref_C<_Ap, _Bp>)>>
+struct __common_ref_rr<
+  _Ap&&,
+  _Bp&&,
+  enable_if_t<is_convertible_v<_Ap&&, __common_ref_C<_Ap, _Bp>> && is_convertible_v<_Bp&&, __common_ref_C<_Ap, _Bp>>>>
 {
   using __type = __common_ref_C<_Ap, _Bp>;
 };
@@ -136,7 +136,7 @@ struct __common_ref_lr
 {};
 
 template <class _Ap, class _Bp>
-struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<_CCCL_TRAIT(is_convertible, _Ap&&, __common_ref_D<_Ap, _Bp>)>>
+struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<is_convertible_v<_Ap&&, __common_ref_D<_Ap, _Bp>>>>
 {
   using __type = __common_ref_D<_Ap, _Bp>;
 };
@@ -202,7 +202,7 @@ template <class _Tp, class _Up>
 struct __common_reference_sub_bullet1<
   _Tp,
   _Up,
-  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<_CCCL_TRAIT(is_reference, _Tp) && _CCCL_TRAIT(is_reference, _Up)>>>
+  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>>>>
 {
   using type = __common_ref_t<_Tp, _Up>;
 };
@@ -253,9 +253,9 @@ template <class...>
 struct common_reference
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_NV_DIAG_DEFAULT(1384)
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/std/__cccl/epilogue.h>
 

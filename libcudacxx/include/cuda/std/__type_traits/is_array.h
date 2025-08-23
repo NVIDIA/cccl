@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].
 //       Re-enable the branch once https://llvm.org/PR54705 is fixed.
@@ -55,7 +55,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<is_array_v<
 
 #endif // defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

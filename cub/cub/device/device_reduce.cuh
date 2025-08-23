@@ -44,10 +44,11 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
@@ -59,11 +60,17 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+
+template <typename DeterminismT>
+inline constexpr bool is_non_deterministic_v =
+  ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
+
 namespace reduce
 {
 
@@ -73,7 +80,7 @@ struct get_tuning_query_t
 template <class Derived>
 struct tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
   {
     return static_cast<const Derived&>(*this);
   }
@@ -121,22 +128,21 @@ struct device_memory_resource
     _CCCL_ASSERT_CUDA_API(::cudaFree, "deallocate failed", ptr);
   }
 
-  void* allocate_async(size_t bytes, size_t /* alignment */, ::cuda::stream_ref stream)
+  void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
-    return allocate_async(bytes, stream);
+    return allocate(stream, bytes);
   }
 
-  void* allocate_async(size_t bytes, ::cuda::stream_ref stream)
+  void* allocate(::cuda::stream_ref stream, size_t bytes)
   {
     void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocAsync, "allocate_async failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
+    _CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
     return ptr;
   }
 
-  void deallocate_async(void* ptr, size_t /* bytes */, const ::cuda::stream_ref stream)
+  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t /* bytes */)
   {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate_async failed", ptr, stream.get());
+    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
   }
 };
 
@@ -171,7 +177,6 @@ struct device_memory_resource
 struct DeviceReduce
 {
 private:
-  // TODO(gevtushenko): dispatch to atomic reduce once merged
   template <typename TuningEnvT,
             typename InputIteratorT,
             typename OutputIteratorT,
@@ -223,29 +228,55 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
-    // RFA is only supported for float and double accumulators
-    constexpr bool is_float_or_double = detail::is_one_of_v<accum_t, float, double>;
-    constexpr bool is_sum             = detail::reduce::is_plus<ReductionOpT>::value;
-    constexpr bool is_supported       = is_float_or_double && is_sum;
+    using transform_t     = ::cuda::std::identity;
+    using reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
+    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t =
+      detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, transform_t, accum_t, policy_t>;
 
-    static_assert(is_supported, "gpu-to-gpu deterministic reduction supports only float and double sum.");
+    return dispatch_t::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
+  }
 
-    if constexpr (is_supported)
-    {
-      using transform_t     = ::cuda::std::identity;
-      using reduce_tuning_t = ::cuda::std::execution::
-        __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
-      using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-      using dispatch_t =
-        detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, offset_t, T, transform_t, accum_t, policy_t>;
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    ::cuda::execution::determinism::not_guaranteed_t,
+    cudaStream_t stream)
+  {
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
-      return dispatch_t::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream);
-    }
-    else
-    {
-      return cudaErrorNotSupported;
-    }
+    using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
+
+    using transform_t     = ::cuda::std::identity;
+    using reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
+    using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t = detail::
+      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+      static_cast<offset_t>(num_items),
+      reduction_op,
+      init,
+      stream);
   }
 
 public:
@@ -447,34 +478,225 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+
+    constexpr auto gpu_gpu_determinism =
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+
+    // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
+    // operator, so fallback to run-to-run determinism
+    constexpr auto integral_fallback =
+      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
+
+    // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
+    constexpr auto float_double_plus =
+      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
+
+    constexpr auto supported = integral_fallback || float_double_plus || !gpu_gpu_determinism;
+
+    // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
+    // float and double types with ::cuda::std::plus operator
+    static_assert(supported, "gpu_to_gpu determinism is unsupported");
+
+    if constexpr (!supported)
+    {
+      return cudaErrorNotSupported;
+    }
+    else
+    {
+      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
+
+      // Certain conditions must be met to be able to use the non-deterministic
+      // kernel. The output iterator must be a contiguous iterator and the
+      // reduction operator must be plus (for now). Additionally, since atomics for types of
+      // size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+      // determinism.
+      constexpr auto is_contiguous_fallback =
+        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
+
+      // If the conditions for gpu-to-gpu determinism or non-deterministic
+      // reduction are not met, we fall back to run-to-run determinism.
+      using determinism_t = ::cuda::std::conditional_t<
+        (gpu_gpu_determinism && integral_fallback)
+          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
+        ::cuda::execution::determinism::run_to_run_t,
+        default_determinism_t>;
+
+      // Query relevant properties from the environment
+      auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+      auto mr =
+        ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+
+      void* d_temp_storage      = nullptr;
+      size_t temp_storage_bytes = 0;
+
+      using tuning_t = ::cuda::std::execution::
+        __query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
+
+      // Query the required temporary storage size
+      cudaError_t error = reduce_impl<tuning_t>(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
+      // TODO(gevtushenko): use uninitialized buffer whenit's available
+      error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
+      // Run the algorithm
+      error = reduce_impl<tuning_t>(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+
+      // Try to deallocate regardless of the error to avoid memory leaks
+      cudaError_t deallocate_error =
+        CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+      if (error != cudaSuccess)
+      {
+        // Reduction error takes precedence over deallocation error since it happens first
+        return error;
+      }
+
+      return deallocate_error;
+    }
+  }
+
+  //! @rst
+  //! Computes a device-wide sum using the addition (``+``) operator.
+  //!
+  //! - Uses ``0`` as the initial value of the reduction.
+  //! - Does not support ``+`` operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   To request "gpu-to-gpu" determinism, pass `cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)`
+  //!   as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined min-reduction of a
+  //! device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sum-env-determinism
+  //!     :end-before: example-end sum-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
+
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
+
+    // The output iterator must be a contiguous iterator or we fall back to
+    // run-to-run determinism.
+    constexpr auto is_contiguous_fallback =
+      !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    // Since atomics for types of size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+    // determinism.
+    constexpr auto is_4b_or_greater = !no_determinism || sizeof(OutputT) >= 4;
+
     using determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater),
+                                 ::cuda::execution::determinism::run_to_run_t,
+                                 default_determinism_t>;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr =
+      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
 
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+    using tuning_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
+
+    using InitT = OutputT;
 
     // Query the required temporary storage size
     cudaError_t error = reduce_impl<tuning_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      ::cuda::std::plus<>{},
+      InitT{}, // zero-initialize
+      determinism_t{},
+      stream.get());
     if (error != cudaSuccess)
     {
       return error;
     }
 
-    // TODO(gevtushenko): use uninitialized buffer whenit's available
-    error = CubDebug(detail::temporary_storage::allocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
     if (error != cudaSuccess)
     {
       return error;
@@ -482,11 +704,19 @@ public:
 
     // Run the algorithm
     error = reduce_impl<tuning_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, determinism_t{}, stream.get());
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      ::cuda::std::plus<>{},
+      InitT{}, // zero-initialize
+      determinism_t{},
+      stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
     cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate_async(d_temp_storage, temp_storage_bytes, mr, stream));
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
     {
@@ -501,7 +731,7 @@ public:
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
   //! - Uses ``0`` as the initial value of the reduction.
-  //! - Does not support ``+`` operators that are non-commutative..
+  //! - Does not support ``+`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
@@ -689,13 +919,17 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // The input value type
-    using InputT = cub::detail::it_value_t<InputIteratorT>;
-
-    using InitT = InputT;
+    using OffsetT  = detail::choose_offset_t<NumItemsT>; // Signed integer type for global offsets
+    using InputT   = detail::it_value_t<InputIteratorT>;
+    using InitT    = InputT;
+    using limits_t = ::cuda::std::numeric_limits<InitT>;
+#ifndef CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
+    static_assert(limits_t::is_specialized,
+                  "cub::DeviceReduce::Min uses cuda::std::numeric_limits<InputIteratorT::value_type>::max() as initial "
+                  "value, but cuda::std::numeric_limits is not specialized for the iterator's value type. This is "
+                  "probably a bug and you should specialize cuda::std::numeric_limits. Define "
+                  "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
+#endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::minimum<>, InitT>::Dispatch(
       d_temp_storage,
@@ -704,7 +938,7 @@ public:
       d_out,
       static_cast<OffsetT>(num_items),
       ::cuda::minimum<>{},
-      ::cuda::std::numeric_limits<InitT>::max(),
+      limits_t::max(),
       stream);
   }
 
@@ -1051,12 +1285,17 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
     // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // The input value type
-    using InputT = cub::detail::it_value_t<InputIteratorT>;
-
-    using InitT = InputT;
+    using OffsetT  = detail::choose_offset_t<NumItemsT>;
+    using InputT   = detail::it_value_t<InputIteratorT>;
+    using InitT    = InputT;
+    using limits_t = ::cuda::std::numeric_limits<InitT>;
+#ifndef CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
+    static_assert(limits_t::is_specialized,
+                  "cub::DeviceReduce::Max uses cuda::std::numeric_limits<InputIteratorT::value_type>::lowest() as "
+                  "initial value, but cuda::std::numeric_limits is not specialized for the iterator's value type. This "
+                  "is probably a bug and you should specialize cuda::std::numeric_limits. Define "
+                  "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
+#endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
     return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::maximum<>, InitT>::Dispatch(
       d_temp_storage,
@@ -1065,7 +1304,7 @@ public:
       d_out,
       static_cast<OffsetT>(num_items),
       ::cuda::maximum<>{},
-      ::cuda::std::numeric_limits<InitT>::lowest(),
+      limits_t::lowest(),
       stream);
   }
 

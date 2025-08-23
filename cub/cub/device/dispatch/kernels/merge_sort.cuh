@@ -14,10 +14,9 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_vsmem.cuh>
-
-#include <thrust/system/cuda/detail/core/make_load_iterator.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -96,9 +95,9 @@ private:
   // available per block and both (1) the fallback block sort and (2) the fallback merge agent would not exceed the
   // available shared memory
   static constexpr auto max_default_size =
-    (::cuda::std::max)(block_sort_helper_t::default_size, merge_helper_t::default_size);
+    (::cuda::std::max) (block_sort_helper_t::default_size, merge_helper_t::default_size);
   static constexpr auto max_fallback_size =
-    (::cuda::std::max)(block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
+    (::cuda::std::max) (block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
   static constexpr bool uses_fallback_policy =
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
@@ -206,8 +205,8 @@ __launch_bounds__(
   AgentBlockSortT agent(
     ping,
     temp_storage,
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_in),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_in),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_in),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_in),
     keys_count,
     keys_out,
     items_out,
@@ -221,8 +220,6 @@ __launch_bounds__(
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
-// TODO(bgruber): if we put a call to cudaTriggerProgrammaticLaunchCompletion inside this kernel, the tests fail with
-// cudaErrorIllegalAddress.
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   bool ping,
@@ -239,7 +236,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 
   if (partition_idx < num_partitions)
   {
-    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT> agent(
+    AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{
       ping,
       keys_ping,
       keys_pong,
@@ -249,9 +246,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
       compare_op,
       target_merged_tiles_number,
       items_per_tile,
-      num_partitions);
-
-    agent.Process();
+      num_partitions}
+      .Process();
   }
 }
 
@@ -314,10 +310,10 @@ __launch_bounds__(
   AgentMergeT agent(
     ping,
     temp_storage,
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_ping),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_ping),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), keys_pong),
-    THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(ActivePolicyT(), items_pong),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_ping),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_ping),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_pong),
+    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_pong),
     keys_count,
     keys_pong,
     items_pong,

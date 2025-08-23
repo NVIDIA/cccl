@@ -16,6 +16,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -118,7 +119,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def exclusive_scan(
+def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
@@ -147,10 +148,37 @@ def exclusive_scan(
     return _Scan(d_in, d_out, op, h_init, False)
 
 
+def exclusive_scan(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray | GpuStruct,
+    num_items: int,
+    stream=None,
+):
+    """
+    Performs device-wide exclusive scan.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array or iterator to store the result of the scan
+        op: Binary scan operator
+        h_init: Initial value for the scan
+        num_items: Number of items to scan
+        stream: CUDA stream for the operation (optional)
+    """
+    scanner = make_exclusive_scan(d_in, d_out, op, h_init)
+    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
+
+
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def inclusive_scan(
+def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
@@ -177,3 +205,30 @@ def inclusive_scan(
         A callable object that can be used to perform the scan
     """
     return _Scan(d_in, d_out, op, h_init, True)
+
+
+def inclusive_scan(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray | GpuStruct,
+    num_items: int,
+    stream=None,
+):
+    """
+    Performs device-wide inclusive scan.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array or iterator to store the result of the scan
+        op: Binary scan operator
+        h_init: Initial value for the scan
+        num_items: Number of items to scan
+        stream: CUDA stream for the operation (optional)
+    """
+    scanner = make_inclusive_scan(d_in, d_out, op, h_init)
+    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
+    scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
