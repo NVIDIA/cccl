@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
@@ -47,7 +47,7 @@ template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr pair<_InputIterator1, _InputIterator2>
 mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2)
 {
-  return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __equal_to{});
+  return ::cuda::std::mismatch(__first1, __last1, __first2, __equal_to{});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -73,10 +73,10 @@ template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr pair<_InputIterator1, _InputIterator2>
 mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
-  return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
+  return ::cuda::std::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

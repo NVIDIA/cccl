@@ -84,6 +84,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/unique_by_key.cuh>
     #include <cub/device/dispatch/kernels/transform.cuh>
     #include <cub/device/dispatch/kernels/histogram.cuh>
+    #include <cub/device/dispatch/kernels/segmented_sort.cuh>
     #include <cub/iterator/arg_index_input_iterator.cuh>
     #include <cub/iterator/cache_modified_input_iterator.cuh>
     #include <cub/iterator/cache_modified_output_iterator.cuh>
@@ -117,7 +118,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <thrust/iterator/counting_iterator.h>
     #include <thrust/iterator/discard_iterator.h>
     #include <thrust/iterator/permutation_iterator.h>
-    #include <thrust/iterator/reverse_iterator.h>
+    #include <cuda/std/iterator>
     #include <thrust/iterator/tabulate_output_iterator.h>
     #include <thrust/iterator/transform_input_output_iterator.h>
     #include <thrust/iterator/transform_iterator.h>

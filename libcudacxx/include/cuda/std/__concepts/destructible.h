@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(MSVC)
 
@@ -44,13 +44,13 @@ inline constexpr bool __destructible_impl = false;
 
 template <class _Tp>
 inline constexpr bool __destructible_impl<_Tp,
-                                          enable_if_t<_CCCL_TRAIT(is_object, _Tp)>,
+                                          enable_if_t<is_object_v<_Tp>>,
 #  if _CCCL_COMPILER(GCC)
-                                          enable_if_t<_CCCL_TRAIT(is_destructible, _Tp)>>
+                                          enable_if_t<is_destructible_v<_Tp>>>
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
-                                          void_t<decltype(_CUDA_VSTD::declval<_Tp>().~_Tp())>>
+                                          void_t<decltype(::cuda::std::declval<_Tp>().~_Tp())>>
 #  endif // !_CCCL_COMPILER(GCC)
-  = noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp());
+  = noexcept(::cuda::std::declval<_Tp>().~_Tp());
 
 template <class _Tp>
 inline constexpr bool __destructible = __destructible_impl<_Tp>;
@@ -69,7 +69,7 @@ _CCCL_CONCEPT destructible = __destructible<_Tp>;
 
 #endif // !_CCCL_COMPILER(MSVC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

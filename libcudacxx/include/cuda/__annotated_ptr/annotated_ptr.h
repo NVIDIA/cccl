@@ -24,13 +24,14 @@
 #include <cuda/__annotated_ptr/access_property.h>
 #include <cuda/__annotated_ptr/annotated_ptr_base.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp, typename _Property>
 class annotated_ptr : private ::cuda::__annotated_ptr_base<_Property>
@@ -46,7 +47,7 @@ public:
 private:
   static_assert(__is_access_property_v<_Property>);
 
-  static constexpr bool __is_smem = _CUDA_VSTD::is_same_v<_Property, access_property::shared>;
+  static constexpr bool __is_smem = ::cuda::std::is_same_v<_Property, access_property::shared>;
 
   // Converting from a 64-bit to 32-bit shared pointer and maybe back just for storage might or might not be profitable.
   pointer __repr = nullptr;
@@ -73,17 +74,21 @@ public:
     NV_IF_TARGET(NV_IS_HOST, (_CCCL_ASSERT(!__is_smem, "shared memory pointer is not supported on the host");))
     if constexpr (__is_smem)
     {
-      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(::__isShared((void*) __p), "__p must be shared");))
+        NV_IF_TARGET(NV_IS_DEVICE,
+                     (_CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::shared),
+                                   "__p must be shared");))
       }
     }
     else
     {
       _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
-        NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(::__isGlobal((void*) __p), "__p must be global");))
+        NV_IF_TARGET(NV_IS_DEVICE,
+                     (_CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::global),
+                                   "__p must be global");))
       }
     }
   }
@@ -93,12 +98,14 @@ public:
       : ::cuda::__annotated_ptr_base<_Property>{access_property{__prop}}
       , __repr{__p}
   {
-    static_assert(_CUDA_VSTD::is_same_v<_Property, access_property>,
+    static_assert(::cuda::std::is_same_v<_Property, access_property>,
                   "This method requires annotated_ptr<T, cuda::access_property>");
     static_assert(__is_global_access_property_v<_RuntimeProperty>,
                   "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
     _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(::__isGlobal((void*) __p), "__p must be global");))
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (_CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::global),
+                               "__p must be global");))
   }
 
   // cannot be constexpr because of get()
@@ -107,7 +114,7 @@ public:
       : ::cuda::__annotated_ptr_base<_Property>{__other.__property()}
       , __repr{__other.get()}
   {
-    using namespace _CUDA_VSTD;
+    using namespace ::cuda::std;
     static_assert(is_assignable_v<pointer&, _OtherType*>, "pointer must be assignable from other pointer");
     static_assert(is_same_v<_Property, _OtherProperty>
                     || (is_same_v<_Property, access_property> && !is_same_v<_OtherProperty, access_property::shared>),
@@ -203,7 +210,7 @@ _CCCL_API inline void memcpy_async(
   ::cuda::memcpy_async(__group, __dst.operator->(), __src.operator->(), __shape, __sync);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -114,7 +114,7 @@ public:
   /// @brief Wraps one sender in another that modifies the execution
   /// environment by merging in the environment specified.
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Env __env) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Env __env) const
   {
     // The write_env algorithm is not customizable by design; hence, we don't dispatch to
     // transform_sender like we do for other algorithms.
@@ -124,7 +124,7 @@ public:
   /// @brief Returns a closure that can be used with the pipe operator
   /// to modify the execution environment.
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env __env) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Env __env) const
   {
     return __closure_t<_Env>{static_cast<_Env&&>(__env)};
   }
@@ -133,12 +133,12 @@ public:
 template <class _Sndr, class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  using sender_concept = sender_t;
 
   template <class _Self, class... _RcvrEnv>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    using _Child _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
+    using _Child _CCCL_NODEBUG_ALIAS = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
     return execution::get_completion_signatures<_Child, __env_t<_Env, _RcvrEnv...>>();
   }
 
@@ -169,13 +169,13 @@ template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__closure_t
 {
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sndr, _Env>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sndr, _Env>
   {
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env_), static_cast<_Sndr&&>(__sndr)};
   }
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+  [[nodiscard]] _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     -> __sndr_t<_Sndr, _Env>
   {
     return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__self.__env_), static_cast<_Sndr&&>(__sndr)};

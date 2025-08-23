@@ -28,7 +28,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
@@ -56,7 +56,7 @@ struct is_signed : public bool_constant<is_signed_v<_Tp>>
 
 #endif // defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

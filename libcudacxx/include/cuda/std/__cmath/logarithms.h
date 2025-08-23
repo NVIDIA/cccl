@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // log
 
@@ -104,10 +104,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hlog(__x);), ({
                       float __vf            = __half2float(__x);
-                      __vf                  = _CUDA_VSTD::logf(__vf);
+                      __vf                  = ::cuda::std::logf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      _CUDA_VSTD::uint16_t __repr = _CUDA_VSTD::__fp_get_storage(__x);
+                      ::cuda::std::uint16_t __repr = ::cuda::std::__fp_get_storage(__x);
                       switch (__repr)
                       {
                         case 7544:
@@ -126,11 +126,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hlog(__x);), (return __float2bfloat16(_CUDA_VSTD::logf(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hlog(__x);), (return __float2bfloat16(::cuda::std::logf(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG)
@@ -206,7 +206,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __half log10(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(_CUDA_VSTD::log10f(__half2float(__x)));))
+    NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(::cuda::std::log10f(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -214,11 +214,11 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(_CUDA_VSTD::log10f(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(::cuda::std::log10f(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log10(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG10)
@@ -294,18 +294,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline int ilogb(__half __x) noexcept
 {
-  return _CUDA_VSTD::ilogbf(__half2float(__x));
+  return ::cuda::std::ilogbf(__half2float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline int ilogb(__nv_bfloat16 __x) noexcept
 {
-  return _CUDA_VSTD::ilogbf(__bfloat162float(__x));
+  return ::cuda::std::ilogbf(__bfloat162float(__x));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline int ilogb(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ILOGB)
@@ -380,18 +380,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half log1p(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::log1pf(__half2float(__x)));
+  return __float2half(::cuda::std::log1pf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log1p(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::log1pf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::log1pf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log1p(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG1P)
@@ -467,7 +467,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __half log2(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_53, (return ::hlog2(__x);), (return __float2half(_CUDA_VSTD::log2f(__half2float(__x)));))
+    NV_PROVIDES_SM_53, (return ::hlog2(__x);), (return __float2half(::cuda::std::log2f(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -475,11 +475,11 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 log2(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hlog2(__x);), (return __float2bfloat16(_CUDA_VSTD::log2f(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hlog2(__x);), (return __float2bfloat16(::cuda::std::log2f(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double log2(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOG2)
@@ -554,18 +554,18 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half logb(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::logbf(__half2float(__x)));
+  return __float2half(::cuda::std::logbf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 logb(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::logbf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::logbf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
+template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double logb(_Integer __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_LOGB)
@@ -575,7 +575,7 @@ template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> =
 #endif // !_CCCL_BUILTIN_LOGB
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

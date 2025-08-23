@@ -154,9 +154,9 @@ class BlockExchange
   static constexpr int TILE_ITEMS  = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TIME_SLICES = WARP_TIME_SLICING ? WARPS : 1;
   static constexpr int TIME_SLICED_THREADS =
-    WARP_TIME_SLICING ? _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
+    WARP_TIME_SLICING ? ::cuda::std::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
   static constexpr int TIME_SLICED_ITEMS        = TIME_SLICED_THREADS * ITEMS_PER_THREAD;
-  static constexpr int WARP_TIME_SLICED_THREADS = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int WARP_TIME_SLICED_THREADS = ::cuda::std::min(BLOCK_THREADS, WARP_THREADS);
   static constexpr int WARP_TIME_SLICED_ITEMS   = WARP_TIME_SLICED_THREADS * ITEMS_PER_THREAD;
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise
@@ -1297,7 +1297,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStripedFlagged(
     T (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD], ValidFlag (&is_valid)[ITEMS_PER_THREAD])
   {
-    ScatterToStriped(items, items, ranks, is_valid);
+    ScatterToStripedFlagged(items, items, ranks, is_valid);
   }
 
 #endif // _CCCL_DOXYGEN_INVOKED

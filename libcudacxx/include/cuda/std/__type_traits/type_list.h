@@ -51,7 +51,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
@@ -835,7 +835,7 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
 {
   template <class _Uy>
-  using __call _CCCL_NODEBUG_ALIAS = bool_constant<_CCCL_TRAIT(is_same, _Ty, _Uy)>;
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<is_same_v<_Ty, _Uy>>;
 };
 } // namespace __detail
 
@@ -967,7 +967,7 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 {
   template <class _Uy>
-  using __call _CCCL_NODEBUG_ALIAS = _If<_CCCL_TRAIT(is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
+  using __call _CCCL_NODEBUG_ALIAS = _If<is_same_v<_Ty, _Uy>, __type_list<>, __type_list<_Uy>>;
 };
 } // namespace __detail
 
@@ -1060,7 +1060,7 @@ using __type_iota =
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

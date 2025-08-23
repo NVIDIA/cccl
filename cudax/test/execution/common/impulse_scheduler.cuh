@@ -88,7 +88,7 @@ private:
     }
   };
 
-  struct env_t
+  struct _attrs_t
   {
     data_t* data_;
 
@@ -100,6 +100,11 @@ private:
     impulse_scheduler query(cudax_async::get_completion_scheduler_t<cudax_async::set_stopped_t>) const noexcept
     {
       return impulse_scheduler{data_};
+    }
+
+    static constexpr auto query(cudax_async::get_completion_behavior_t) noexcept
+    {
+      return cudax_async::completion_behavior::asynchronous;
     }
   };
 
@@ -123,7 +128,7 @@ private:
 
     auto get_env() const noexcept
     {
-      return env_t{data_};
+      return _attrs_t{data_};
     }
   };
 

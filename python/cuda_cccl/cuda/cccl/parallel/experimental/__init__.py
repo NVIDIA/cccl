@@ -7,9 +7,11 @@ from .algorithms import (
     SortOrder,
     binary_transform,
     exclusive_scan,
+    histogram_even,
     inclusive_scan,
     make_binary_transform,
     make_exclusive_scan,
+    make_histogram_even,
     make_inclusive_scan,
     make_merge_sort,
     make_radix_sort,
@@ -31,6 +33,7 @@ from .iterators import (
     ReverseInputIterator,
     ReverseOutputIterator,
     TransformIterator,
+    ZipIterator,
 )
 from .struct import gpu_struct
 
@@ -42,9 +45,11 @@ __all__ = [
     "DoubleBuffer",
     "exclusive_scan",
     "gpu_struct",
+    "histogram_even",
     "inclusive_scan",
     "make_binary_transform",
     "make_exclusive_scan",
+    "make_histogram_even",
     "make_inclusive_scan",
     "make_merge_sort",
     "make_radix_sort",
@@ -62,4 +67,5 @@ __all__ = [
     "TransformIterator",
     "unary_transform",
     "unique_by_key",
+    "ZipIterator",
 ]

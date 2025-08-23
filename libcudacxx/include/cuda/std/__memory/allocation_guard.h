@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Helper class to allocate memory using an Allocator in an exception safe
 // manner.
@@ -60,7 +60,7 @@ struct __allocation_guard
 
   template <class _AllocT> // we perform the allocator conversion inside the constructor
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(_AllocT __alloc, _Size __n)
-      : __alloc_(_CUDA_VSTD::move(__alloc))
+      : __alloc_(::cuda::std::move(__alloc))
       , __n_(__n)
       , __ptr_(allocator_traits<_Alloc>::allocate(__alloc_, __n_)) // initialization order is important
   {}
@@ -93,7 +93,7 @@ private:
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -247,6 +247,12 @@
 #  define _CCCL_POP_MACRO_interface
 #endif // defined(interface)
 
+#if defined(__valid)
+#  pragma push_macro("__valid")
+#  undef __valid
+#  define _CCCL_POP_MACRO___valid
+#endif // defined(__valid)
+
 _CCCL_DIAG_PUSH
 
 // disable some msvc warnings

@@ -22,7 +22,7 @@ namespace
 // Empty node descriptor for testing
 struct empty_node_descriptor
 {
-  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, _CUDA_VSTD::span<cudaGraphNode_t> deps) const
+  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, ::cuda::std::span<cudaGraphNode_t> deps) const
   {
     cudaGraphNode_t node;
     _CCCL_TRY_CUDA_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, deps.data(), deps.size());
@@ -160,7 +160,7 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
 {
   cudax::stream s{cuda::device_ref{0}};
   cudax::managed_memory_resource mr;
-  int* ptr = static_cast<int*>(mr.allocate(sizeof(int)));
+  int* ptr = static_cast<int*>(mr.allocate_sync(sizeof(int)));
   *ptr     = 0;
 
   SECTION("simple graph with kernel node")
@@ -276,9 +276,9 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     SECTION("Multi-device graph")
     {
       cudax::device_memory_resource dev0_mr(cuda::devices[0]);
-      int* dev0_ptr = static_cast<int*>(dev0_mr.allocate(sizeof(int)));
+      int* dev0_ptr = static_cast<int*>(dev0_mr.allocate_sync(sizeof(int)));
       cudax::device_memory_resource dev1_mr(cuda::devices[1]);
-      int* dev1_ptr = static_cast<int*>(dev1_mr.allocate(sizeof(int)));
+      int* dev1_ptr = static_cast<int*>(dev1_mr.allocate_sync(sizeof(int)));
 
       cudax::graph_builder g(cuda::devices[0]);
       cudax::path_builder dev0_pb = cudax::start_path(g);
@@ -302,10 +302,10 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
       s.sync();
       CUDAX_REQUIRE(*ptr == 43);
 
-      dev0_mr.deallocate(dev0_ptr, sizeof(int));
-      dev1_mr.deallocate(dev1_ptr, sizeof(int));
+      dev0_mr.deallocate_sync(dev0_ptr, sizeof(int));
+      dev1_mr.deallocate_sync(dev1_ptr, sizeof(int));
     }
   }
 
-  mr.deallocate(ptr, sizeof(int));
+  mr.deallocate_sync(ptr, sizeof(int));
 }

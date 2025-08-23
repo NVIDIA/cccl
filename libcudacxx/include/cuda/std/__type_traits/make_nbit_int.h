@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _NBits, bool _IsSigned>
 _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
@@ -58,7 +58,7 @@ _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 #endif // _CCCL_HAS_INT128()
     else
     {
-      static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported signed integer size");
+      static_assert(__always_false_v<decltype(_NBits)>, "Unsupported signed integer size");
       _CCCL_UNREACHABLE();
     }
   }
@@ -88,7 +88,7 @@ _CCCL_API constexpr auto __make_nbit_int_impl() noexcept
 #endif // _CCCL_HAS_INT128()
     else
     {
-      static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported unsigned integer size");
+      static_assert(__always_false_v<decltype(_NBits)>, "Unsupported unsigned integer size");
       _CCCL_UNREACHABLE();
     }
   }
@@ -100,7 +100,7 @@ using __make_nbit_int_t = decltype(__make_nbit_int_impl<_NBits, _IsSigned>());
 template <size_t _NBits>
 using __make_nbit_uint_t = __make_nbit_int_t<_NBits, false>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

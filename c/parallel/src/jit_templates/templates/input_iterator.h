@@ -40,7 +40,9 @@ struct input_iterator_t
 
   __device__ value_type operator*() const
   {
-    return Iterator.dereference(&state);
+    value_type result;
+    Iterator.dereference(&state, &result);
+    return result;
   }
 
   __device__ input_iterator_t& operator+=(difference_type diff)

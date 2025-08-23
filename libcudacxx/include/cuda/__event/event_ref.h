@@ -31,7 +31,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 class event;
 class timed_event;
@@ -65,7 +65,7 @@ public:
   event_ref(int) = delete;
 
   /// Disallow construction from `nullptr`.
-  event_ref(_CUDA_VSTD::nullptr_t) = delete;
+  event_ref(::cuda::std::nullptr_t) = delete;
 
   //! @brief Records an event on the specified stream
   //!
@@ -122,7 +122,6 @@ public:
     return __event_ != nullptr;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `event_ref`s for equality
   //!
   //! @note Allows comparison with `cudaEvent_t` due to implicit conversion to
@@ -148,10 +147,9 @@ public:
   {
     return __lhs.__event_ != __rhs.__event_;
   }
-#  endif // _CCCL_DOXYGEN_INVOKED
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

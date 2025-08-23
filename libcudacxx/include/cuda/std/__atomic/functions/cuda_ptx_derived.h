@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CUDA_COMPILATION()
 
@@ -394,7 +394,7 @@ _CCCL_DEVICE static inline void __atomic_signal_fence_cuda(int)
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

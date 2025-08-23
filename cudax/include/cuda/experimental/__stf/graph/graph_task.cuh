@@ -137,20 +137,34 @@ public:
 #ifndef NDEBUG
           // Ensure the node does not have dependencies yet
           size_t num_deps;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, nullptr, &num_deps));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps == 0);
 
           // Ensure there are no output dependencies either (or we could not
           // add input dependencies later)
           size_t num_deps_out;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, nullptr, &num_deps_out));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps_out == 0);
 #endif
 
           // Repeat node as many times as there are input dependencies
           ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphAddDependencies(
+            ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphAddDependencies(
             ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
           auto gnp = reserved::graph_event(node, stage, ctx_graph);
           gnp->set_symbol(ctx, "done " + get_symbol());
           /* This node is now the output dependency of the task */
@@ -161,8 +175,13 @@ public:
       {
         // First node depends on ready_dependencies
         ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        cuda_safe_call(cudaGraphAddDependencies(
+          ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
         cuda_safe_call(
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
         // Overall the task depends on the completion of the last node
         auto gnp = reserved::graph_event(chained_task_nodes.back(), stage, ctx_graph);
@@ -564,7 +583,7 @@ public:
 
     constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
     constexpr bool fun_invocable_stream_non_void_deps =
-      reserved::is_invocable_with_filtered<Fun, cudaStream_t, Deps...>::value;
+      reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Deps...>>;
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (fun_invocable_stream_deps || fun_invocable_stream_non_void_deps)
@@ -595,7 +614,7 @@ public:
       {
         // Remove void arguments
         ::std::apply(::std::forward<Fun>(f),
-                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
+                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
@@ -610,7 +629,7 @@ public:
     {
       constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
       constexpr bool fun_invocable_graph_non_void_deps =
-        reserved::is_invocable_with_filtered<Fun, cudaGraph_t, Deps...>::value;
+        reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaGraph_t, Deps...>>;
 
       static_assert(fun_invocable_graph_deps || fun_invocable_graph_non_void_deps,
                     "Incorrect lambda function signature.");

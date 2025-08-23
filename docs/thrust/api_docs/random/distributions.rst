@@ -11,4 +11,4 @@ Random Number Distributions
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__random__number__distributions*
+   ../../api/group__random__number__distributions*

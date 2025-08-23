@@ -23,15 +23,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_VIEWS
 
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace views = ranges::views; // NOLINT: misc-unused-alias-decls
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

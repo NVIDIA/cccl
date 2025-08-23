@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__fwd/fp.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cfloat>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_format
 {
@@ -51,16 +51,16 @@ enum class __fp_format
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __fp_format __fp_format_of_v_impl() noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  if constexpr (is_same_v<_Tp, float>)
   {
     return __fp_format::__binary32;
   }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
+  else if constexpr (is_same_v<_Tp, double>)
   {
     return __fp_format::__binary64;
   }
 #if _CCCL_HAS_LONG_DOUBLE()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, long double))
+  else if constexpr (is_same_v<_Tp, long double>)
   {
     if (LDBL_MIN_EXP == -1021 && LDBL_MAX_EXP == 1024 && LDBL_MANT_DIG == 53)
     {
@@ -81,55 +81,55 @@ template <class _Tp>
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+  else if constexpr (is_same_v<_Tp, __half>)
   {
     return __fp_format::__binary16;
   }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
+  else if constexpr (is_same_v<_Tp, __nv_bfloat16>)
   {
     return __fp_format::__bfloat16;
   }
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e4m3>)
   {
     return __fp_format::__fp8_nv_e4m3;
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e5m2>)
   {
     return __fp_format::__fp8_nv_e5m2;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
+  else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
   {
     return __fp_format::__fp8_nv_e8m0;
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
+  else if constexpr (is_same_v<_Tp, __nv_fp6_e2m3>)
   {
     return __fp_format::__fp6_nv_e2m3;
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
+  else if constexpr (is_same_v<_Tp, __nv_fp6_e3m2>)
   {
     return __fp_format::__fp6_nv_e3m2;
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
+  else if constexpr (is_same_v<_Tp, __nv_fp4_e2m1>)
   {
     return __fp_format::__fp4_nv_e2m1;
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 #if _CCCL_HAS_FLOAT128()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __float128))
+  else if constexpr (is_same_v<_Tp, __float128>)
   {
     return __fp_format::__binary128;
   }
@@ -141,7 +141,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-inline constexpr __fp_format __fp_format_of_v = _CUDA_VSTD::__fp_format_of_v_impl<_Tp>();
+inline constexpr __fp_format __fp_format_of_v = ::cuda::std::__fp_format_of_v_impl<_Tp>();
 
 template <class _Tp>
 inline constexpr __fp_format __fp_format_of_v<const _Tp> = __fp_format_of_v<_Tp>;
@@ -155,7 +155,7 @@ inline constexpr __fp_format __fp_format_of_v<const volatile _Tp> = __fp_format_
 template <__fp_format _Fmt>
 inline constexpr __fp_format __fp_format_of_v<__cccl_fp<_Fmt>> = _Fmt;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

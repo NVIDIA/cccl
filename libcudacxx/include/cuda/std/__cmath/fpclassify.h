@@ -56,7 +56,7 @@
 #  include <math.h>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FPCLASSIFY(...) __builtin_fpclassify(__VA_ARGS__)
@@ -74,19 +74,19 @@ template <class _Tp>
 
   if constexpr (numeric_limits<_Tp>::has_quiet_NaN || numeric_limits<_Tp>::has_signaling_NaN)
   {
-    if (_CUDA_VSTD::isnan(__x))
+    if (::cuda::std::isnan(__x))
     {
       return FP_NAN;
     }
   }
   if constexpr (numeric_limits<_Tp>::has_infinity)
   {
-    if (_CUDA_VSTD::isinf(__x))
+    if (::cuda::std::isinf(__x))
     {
       return FP_INFINITE;
     }
   }
-  if constexpr (_CCCL_TRAIT(is_floating_point, _Tp))
+  if constexpr (is_floating_point_v<_Tp>)
   {
     if (__x > -numeric_limits<_Tp>::min() && __x < numeric_limits<_Tp>::min())
     {
@@ -96,7 +96,7 @@ template <class _Tp>
   }
   else
   {
-    const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+    const auto __storage = ::cuda::std::__fp_get_storage(__x);
     if ((__storage & __fp_exp_mask_of_v<_Tp>) == 0)
     {
       return (__storage & __fp_mant_mask_of_v<_Tp>) ? FP_SUBNORMAL : FP_ZERO;
@@ -110,11 +110,11 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 
@@ -123,11 +123,11 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 
@@ -137,11 +137,11 @@ template <class _Tp>
 #  if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 #  endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
@@ -149,28 +149,28 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP16()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__half __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_bfloat16 __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e4m3 __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e5m2 __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
@@ -184,32 +184,32 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP6_E2M3()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp6_e2m3 __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp6_e3m2 __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp4_e2m1 __x) noexcept
 {
-  return _CUDA_VSTD::__fpclassify_impl(__x);
+  return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
+_CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int fpclassify(_Tp __x) noexcept
 {
   return (__x == 0) ? FP_ZERO : FP_NORMAL;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

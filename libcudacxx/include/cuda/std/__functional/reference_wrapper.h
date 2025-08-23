@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper : public __weak_result_type<_Tp>
@@ -52,7 +52,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
-    __f_      = _CUDA_VSTD::addressof(__f);
+    __f_      = ::cuda::std::addressof(__f);
   }
 
   // access
@@ -68,9 +68,9 @@ public:
   // invoke
   template <class... _ArgTypes>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
-  operator()(_ArgTypes&&... __args) const noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
+  operator()(_ArgTypes&&... __args) const noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
-    return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::__invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
@@ -106,7 +106,7 @@ void ref(const _Tp&&) = delete;
 template <class _Tp>
 void cref(const _Tp&&) = delete;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
