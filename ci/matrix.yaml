@@ -1,3 +1,10 @@
+# TODO:
+# [ ] GCC-14
+# [ ] Drop nightlies on Fri/Sat
+# [ ] Weeklies on Fri
+# [ ] 'all arch' builds on nightly/weeklies
+# [ ] a100 arm64 jobs
+
 workflows:
   # If any jobs appear here, they will be executed instead of `pull_request' for PRs.
   # This is useful for limiting resource usage when a full matrix is not needed.
@@ -8,6 +15,19 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    # - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14' }
+
+    - {jobs: ['build'], project: ['thrust', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14', sm: 'all' }
+    - {jobs: ['build'], project: ['cub'], std: 'max', cxx: 'gcc14', sm: 'all', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
+
+    # - {jobs: ['build'], project: ['thrust', 'cub', 'libcudacxx', 'cudax'], std: 'all', cxx: 'gcc14', cpu: 'arm64' }
+
+    # Still some failures on libcudacxx and cudax:
+    - {jobs: ['test'],  project: ['thrust', 'cub', 'libcudacxx', 'cudax'], gpu: 'a100', cpu: ['amd64', 'arm64'], std: 'max', sm: 'gpu'}
+    # - {jobs: ['test'],  project: ['libcudacxx', 'cudax'], gpu: 'a100', cpu: ['arm64'], std: 'max', sm: 'gpu'}
+
+    # - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc14' }
+    # - {jobs: ['test_py_par'],                                         ctk: ['12.8', '12.9'],                 py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4', cxx: 'gcc14' }
 
   pull_request:
     # Old CTK/compiler
@@ -146,7 +166,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '25.08'
+devcontainer_version: '25.10'
 
 # All supported C++ standards:
 all_stds: [17, 20]
@@ -180,6 +200,7 @@ host_compilers:
       11: { stds: [17, 20] }
       12: { stds: [17, 20] }
       13: { stds: [17, 20] }
+      14: { stds: [17, 20] }
   clang:
     name: 'Clang'
     container_tag: 'llvm'
@@ -328,13 +349,14 @@ projects:
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:
-  v100:     { sm: 70 } # 32 GB,  40 runners
-  t4:       { sm: 75 } # 16 GB,  10 runners
-  rtx2080:  { sm: 75 } #  8 GB,  12 runners
-  rtxa6000: { sm: 86 } # 48 GB,  12 runners
-  l4:       { sm: 89 } # 24 GB,  48 runners
-  rtx4090:  { sm: 89 } # 24 GB,  10 runners
-  h100:     { sm: 90 } # 80 GB,  16 runners
+  v100:     { sm: 70 } # 32 GB,  11 amd64 runners
+  t4:       { sm: 75 } # 16 GB,  10 amd64 runners
+  rtx2080:  { sm: 75 } #  8 GB,  10 amd64 runners
+  a100:     { sm: 80 } # 40 GB,  11 amd64 + 16 arm64 runners
+  rtxa6000: { sm: 86 } # 48 GB,  12 amd64 runners
+  l4:       { sm: 89 } # 24 GB,  48 amd64 runners
+  rtx4090:  { sm: 89 } # 24 GB,  10 amd64 runners
+  h100:     { sm: 90 } # 80 GB,  16 amd64 runners
 
 # Tags are used to define a `matrix job` in the workflow section.
 #

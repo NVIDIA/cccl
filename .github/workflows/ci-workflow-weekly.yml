@@ -22,7 +22,7 @@ defaults:
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 8 * * 0" # Every Sunday at 00:00 PST, 03:00 EST, 08:00 UTC
+    - cron: "0 8 * * 6" # Every Saturday at 00:00 PST, 03:00 EST, 08:00 UTC
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
