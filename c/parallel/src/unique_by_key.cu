@@ -8,23 +8,25 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_select.cuh>
 
 #include <format>
+#include <vector>
 
-#include "cub/block/block_scan.cuh"
-#include "kernels/iterators.h"
-#include "kernels/operators.h"
-#include "util/context.h"
-#include "util/indirect_arg.h"
-#include "util/scan_tile_state.h"
-#include "util/tuning.h"
-#include "util/types.h"
 #include <cccl/c/unique_by_key.h>
+#include <kernels/iterators.h>
+#include <kernels/operators.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
+#include <util/context.h>
+#include <util/indirect_arg.h>
+#include <util/scan_tile_state.h>
+#include <util/tuning.h>
+#include <util/types.h>
 
 struct op_wrapper;
 struct device_unique_by_key_policy;
@@ -218,7 +220,7 @@ struct dynamic_vsmem_helper_t
 
 } // namespace unique_by_key
 
-CUresult cccl_device_unique_by_key_build(
+CUresult cccl_device_unique_by_key_build_ex(
   cccl_device_unique_by_key_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_values_it,
@@ -231,7 +233,8 @@ CUresult cccl_device_unique_by_key_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -363,18 +366,19 @@ struct device_unique_by_key_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     appender.add_iterator_definition(input_keys_it);
     appender.add_iterator_definition(input_values_it);
     appender.add_iterator_definition(output_keys_it);
@@ -386,11 +390,11 @@ struct device_unique_by_key_vsmem_helper {{
         ->add_program(nvrtc_translation_unit{src.c_str(), name})
         ->add_expression({compact_init_kernel_name})
         ->add_expression({sweep_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({compact_init_kernel_name, compact_init_kernel_lowered_name})
         ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -399,7 +403,7 @@ struct device_unique_by_key_vsmem_helper {{
     check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
     auto [description_bytes_per_tile,
-          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args, num_args, arch);
+          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args.data(), args.size(), arch);
 
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
@@ -484,6 +488,38 @@ CUresult cccl_device_unique_by_key(
   }
 
   return error;
+}
+
+CUresult cccl_device_unique_by_key_build(
+  cccl_device_unique_by_key_build_result_t* build,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t d_keys_out,
+  cccl_iterator_t d_values_out,
+  cccl_iterator_t d_num_selected_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_unique_by_key_build_ex(
+    build,
+    d_keys_in,
+    d_values_in,
+    d_keys_out,
+    d_values_out,
+    d_num_selected_out,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr)

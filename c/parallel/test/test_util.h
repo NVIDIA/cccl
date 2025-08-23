@@ -667,24 +667,27 @@ struct operation_t
 {
   std::string name;
   std::string code;
+  cccl_op_code_type code_type = CCCL_OP_LTOIR; // Default to LTO-IR for backward compatibility
 
   operation_t() = default;
 
-  operation_t(std::string_view op_name, std::string_view op_code)
+  operation_t(std::string_view op_name, std::string_view op_code, cccl_op_code_type op_code_type = CCCL_OP_LTOIR)
       : name(op_name)
       , code(op_code)
+      , code_type(op_code_type)
   {}
 
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::CCCL_STATELESS;
-    op.name       = name.c_str();
-    op.ltoir      = code.c_str();
-    op.ltoir_size = code.size();
-    op.size       = 1;
-    op.alignment  = 1;
-    op.state      = nullptr;
+    op.type      = cccl_op_kind_t::CCCL_STATELESS;
+    op.name      = name.c_str();
+    op.code      = code.c_str();
+    op.code_size = code.size();
+    op.code_type = code_type;
+    op.size      = 1;
+    op.alignment = 1;
+    op.state     = nullptr;
     return op;
   }
 };
@@ -705,20 +708,26 @@ struct stateful_operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::CCCL_STATEFUL;
-    op.size       = sizeof(OpT);
-    op.alignment  = alignof(OpT);
-    op.state      = &op_state;
-    op.name       = name.c_str();
-    op.ltoir      = code.c_str();
-    op.ltoir_size = code.size();
+    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
+    op.size      = sizeof(OpT);
+    op.alignment = alignof(OpT);
+    op.state     = &op_state;
+    op.name      = name.c_str();
+    op.code      = code.c_str();
+    op.code_size = code.size();
+    op.code_type = CCCL_OP_LTOIR; // Stateful operations always use LTO-IR
     return op;
   }
 };
 
 inline operation_t make_operation(std::string_view name, const std::string& code)
 {
-  return operation_t{name, compile(code)};
+  return operation_t{name, compile(code), CCCL_OP_LTOIR};
+}
+
+inline operation_t make_cpp_operation(std::string_view name, const std::string& cpp_code)
+{
+  return operation_t{name, cpp_code, CCCL_OP_CPP_SOURCE};
 }
 
 template <class OpT>
@@ -729,22 +738,22 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
 
 static cccl_op_t make_well_known_unary_operation()
 {
-  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 static cccl_op_t make_well_known_binary_operation()
 {
-  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 static cccl_op_t make_well_known_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 static cccl_op_t make_well_known_unique_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 template <class ValueT, class StateT>

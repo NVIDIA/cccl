@@ -137,20 +137,34 @@ public:
 #ifndef NDEBUG
           // Ensure the node does not have dependencies yet
           size_t num_deps;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, nullptr, &num_deps));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps == 0);
 
           // Ensure there are no output dependencies either (or we could not
           // add input dependencies later)
           size_t num_deps_out;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, nullptr, &num_deps_out));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps_out == 0);
 #endif
 
           // Repeat node as many times as there are input dependencies
           ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphAddDependencies(
+            ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphAddDependencies(
             ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
           auto gnp = reserved::graph_event(node, stage, ctx_graph);
           gnp->set_symbol(ctx, "done " + get_symbol());
           /* This node is now the output dependency of the task */
@@ -161,8 +175,13 @@ public:
       {
         // First node depends on ready_dependencies
         ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        cuda_safe_call(cudaGraphAddDependencies(
+          ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
         cuda_safe_call(
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
         // Overall the task depends on the completion of the last node
         auto gnp = reserved::graph_event(chained_task_nodes.back(), stage, ctx_graph);
