@@ -487,6 +487,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
 
     py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
 
+    ctk_version = matrix_job["ctk"] if "ctk" in matrix_job else ""
+
     command = f'"{script_name}"'
     if job_args:
         command += f" {job_args}"
@@ -500,6 +502,11 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
+        # python test jobs need to know the cuda version
+        # i hate the way I'm doing this
+        if ctk_version:
+            major_version = ctk_version.split(".")[0]
+            command += f' -cuda-version "{major_version}"'
 
     return command
 
