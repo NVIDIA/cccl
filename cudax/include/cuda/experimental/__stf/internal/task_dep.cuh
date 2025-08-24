@@ -334,10 +334,11 @@ public:
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
       if constexpr (::std::is_same_v<type_at<i>, void_interface&>)
       {
-          return ::std::ignore;
+        return ::std::ignore;
       }
-      else {
-          return at<i>().instance(t);
+      else
+      {
+        return at<i>().instance(t);
       }
     });
   }
