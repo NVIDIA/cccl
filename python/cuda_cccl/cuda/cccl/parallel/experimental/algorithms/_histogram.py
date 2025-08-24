@@ -133,6 +133,57 @@ class _Histogram:
 
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_samples: DeviceArrayLike | IteratorBase,
+        d_histogram: DeviceArrayLike,
+        h_num_output_levels: np.ndarray,
+        h_lower_level: np.ndarray,
+        h_upper_level: np.ndarray,
+        num_samples: int,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_samples: Device array or iterator containing the input samples
+            d_histogram: Device array to store the histogram
+            h_num_output_levels: Number of output histogram levels
+            h_lower_level: Lower bound of the histogram range
+            h_upper_level: Upper bound of the histogram range
+            num_samples: Number of samples to process
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self(None, d_samples, d_histogram, h_num_output_levels, h_lower_level, h_upper_level, num_samples, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_samples: DeviceArrayLike | IteratorBase,
+        d_histogram: DeviceArrayLike,
+        h_num_output_levels: np.ndarray,
+        h_lower_level: np.ndarray,
+        h_upper_level: np.ndarray,
+        num_samples: int,
+        stream=None,
+    ):
+        """Perform the histogram computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_samples: Device array or iterator containing the input samples
+            d_histogram: Device array to store the histogram
+            h_num_output_levels: Number of output histogram levels
+            h_lower_level: Lower bound of the histogram range
+            h_upper_level: Upper bound of the histogram range
+            num_samples: Number of samples to process
+            stream: CUDA stream for the operation (optional)
+        """
+        self(temp_storage, d_samples, d_histogram, h_num_output_levels, h_lower_level, h_upper_level, num_samples, stream)
+
 
 @cache_with_key(make_cache_key)
 def make_histogram_even(

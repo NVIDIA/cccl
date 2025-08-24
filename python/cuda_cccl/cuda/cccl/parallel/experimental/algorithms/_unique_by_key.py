@@ -142,6 +142,57 @@ class _UniqueByKey:
         )
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | IteratorBase,
+        d_in_items: DeviceArrayLike | IteratorBase,
+        d_out_keys: DeviceArrayLike | IteratorBase,
+        d_out_items: DeviceArrayLike | IteratorBase,
+        d_out_num_selected: DeviceArrayLike,
+        num_items: int,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in_keys: Device array or iterator containing the input keys
+            d_in_items: Device array or iterator containing the input items
+            d_out_keys: Device array or iterator to store the unique keys
+            d_out_items: Device array or iterator to store the unique items
+            d_out_num_selected: Device array to store the number of unique items
+            num_items: Number of items to process
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self(None, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | IteratorBase,
+        d_in_items: DeviceArrayLike | IteratorBase,
+        d_out_keys: DeviceArrayLike | IteratorBase,
+        d_out_items: DeviceArrayLike | IteratorBase,
+        d_out_num_selected: DeviceArrayLike,
+        num_items: int,
+        stream=None,
+    ):
+        """Perform the unique by key computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in_keys: Device array or iterator containing the input keys
+            d_in_items: Device array or iterator containing the input items
+            d_out_keys: Device array or iterator to store the unique keys
+            d_out_items: Device array or iterator to store the unique items
+            d_out_num_selected: Device array to store the number of unique items
+            num_items: Number of items to process
+            stream: CUDA stream for the operation (optional)
+        """
+        self(temp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
+
 
 @cache_with_key(make_cache_key)
 def make_unique_by_key(

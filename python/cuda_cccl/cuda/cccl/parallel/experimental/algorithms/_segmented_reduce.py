@@ -117,6 +117,57 @@ class _SegmentedReduce:
         )
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array to store the result of the reduction for each segment
+            num_segments: Number of segments to reduce
+            start_offsets_in: Device array or iterator containing the sequence of beginning offsets
+            end_offsets_in: Device array or iterator containing the sequence of ending offsets
+            h_init: Initial value for the reduction
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self(None, d_in, d_out, num_segments, start_offsets_in, end_offsets_in, h_init, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init,
+        stream=None,
+    ):
+        """Perform the segmented reduction computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array to store the result of the reduction for each segment
+            num_segments: Number of segments to reduce
+            start_offsets_in: Device array or iterator containing the sequence of beginning offsets
+            end_offsets_in: Device array or iterator containing the sequence of ending offsets
+            h_init: Initial value for the reduction
+            stream: CUDA stream for the operation (optional)
+        """
+        self(temp_storage, d_in, d_out, num_segments, start_offsets_in, end_offsets_in, h_init, stream)
+
 
 def _to_key(d_in: DeviceArrayLike | IteratorBase):
     "Return key for an input array-like argument or an iterator"

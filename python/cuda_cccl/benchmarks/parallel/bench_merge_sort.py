@@ -13,9 +13,9 @@ def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):
 
     alg = parallel.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
     if not build_only:
-        temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
+        temp_storage_bytes = alg.get_temp_storage_bytes(keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, keys, vals, output_keys, output_vals, size)
+        alg.compute(temp_storage, keys, vals, output_keys, output_vals, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -26,9 +26,9 @@ def merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only):
 
     alg = parallel.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
     if not build_only:
-        temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
+        temp_storage_bytes = alg.get_temp_storage_bytes(keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, keys, vals, output_keys, output_vals, size)
+        alg.compute(temp_storage, keys, vals, output_keys, output_vals, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -47,9 +47,9 @@ def merge_sort_struct(size, keys, vals, output_keys, output_vals, build_only):
 
     alg = parallel.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
     if not build_only:
-        temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
+        temp_storage_bytes = alg.get_temp_storage_bytes(keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, keys, vals, output_keys, output_vals, size)
+        alg.compute(temp_storage, keys, vals, output_keys, output_vals, size)
 
     cp.cuda.runtime.deviceSynchronize()
 

@@ -98,6 +98,49 @@ class _Scan:
         )
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array or iterator to store the result of the scan
+            num_items: Number of items to scan
+            h_init: Initial value for the scan
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self(None, d_in, d_out, num_items, h_init, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        """Perform the scan computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array or iterator to store the result of the scan
+            num_items: Number of items to scan
+            h_init: Initial value for the scan
+            stream: CUDA stream for the operation (optional)
+        """
+        self(temp_storage, d_in, d_out, num_items, h_init, stream)
+
 
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
