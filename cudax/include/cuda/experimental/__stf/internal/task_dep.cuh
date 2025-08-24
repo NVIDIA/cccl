@@ -332,7 +332,7 @@ public:
   {
     // Note that make_tuple_indexwise will remove ::std::ignore entries
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
-      if constexpr (::std::is_same_v<type_at<i>, void_interface&>)
+      if constexpr (::std::is_same_v<type_at<i>, void_interface>)
       {
         return ::std::ignore;
       }
