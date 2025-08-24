@@ -19,9 +19,7 @@
 
 using namespace cuda::experimental::stf;
 
-__global__ void dummy_kernel()
-{
-}
+__global__ void dummy_kernel() {}
 
 int main()
 {
@@ -47,8 +45,8 @@ int main()
 
   };
 
-  ctx.cuda_kernel(token3.rw())->*[](){
-      return cuda_kernel_desc{dummy_kernel, 16, 128, 0};
+  ctx.cuda_kernel(token3.rw())->*[]() {
+    return cuda_kernel_desc{dummy_kernel, 16, 128, 0};
   };
 
   ctx.finalize();
