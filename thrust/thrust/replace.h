@@ -33,8 +33,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup transformations
- *  \addtogroup replacing
+/*! \addtogroup replacing
  *  \ingroup transformations
  *  \{
  */
@@ -818,8 +817,8 @@ OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value);
 
-/*! \} // end replacing
- *  \} // transformations
+/*!
+ * \} end group replacing
  */
 
 THRUST_NAMESPACE_END

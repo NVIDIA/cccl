@@ -238,6 +238,13 @@ struct iterator_traversal<::cuda::permutation_iterator<Iter, Offset>>
   using type = random_access_traversal_tag;
 };
 
+template <class Iter>
+struct iterator_system<::cuda::std::reverse_iterator<Iter>> : iterator_system<Iter>
+{};
+template <class Iter>
+struct iterator_traversal<::cuda::std::reverse_iterator<Iter>> : iterator_traversal<Iter>
+{};
+
 template <class Iter, class Stride>
 struct iterator_system<::cuda::strided_iterator<Iter, Stride>> : iterator_system<Iter>
 {};

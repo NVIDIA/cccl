@@ -432,7 +432,7 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = ::cuda::std::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -511,7 +511,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = ::cuda::std::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 

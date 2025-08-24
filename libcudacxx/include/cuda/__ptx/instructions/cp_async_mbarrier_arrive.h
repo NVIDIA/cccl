@@ -30,12 +30,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/generated/cp_async_mbarrier_arrive_noinc.h>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -31,28 +31,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
-
-template <class _Resource>
-_CCCL_CONCEPT __internal_async_resource = _CCCL_REQUIRES_EXPR(
-  (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
-  _Same_as(void*) __res.allocate_sync(__bytes, __alignment),
-  _Same_as(void*) __res.allocate(__stream, __bytes, __alignment),
-  _Same_as(void) __res.deallocate(__stream, __ptr, __bytes, __alignment),
-  _Same_as(void) __res.deallocate_sync(__ptr, __bytes, __alignment),
-  requires(_CUDA_VSTD::equality_comparable<_Resource>));
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 struct __get_memory_resource_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
-  requires(__internal_async_resource<_CUDA_VSTD::remove_cvref_t<decltype(__t.get_memory_resource())>>));
+  requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_resource<_Env>),
-  requires(__internal_async_resource<
-           _CUDA_VSTD::remove_cvref_t<_CUDA_STD_EXEC::__query_result_t<const _Env&, __get_memory_resource_t>>>));
+  requires(
+    resource<
+      ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, __get_memory_resource_t>>>));
 
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
@@ -79,15 +71,11 @@ struct __get_memory_resource_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_memory_resource = __get_memory_resource_t{};
 
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-
 using get_memory_resource_t = __get_memory_resource_t;
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
-_LIBCUDACXX_END_NAMESPACE_CUDA_MR
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

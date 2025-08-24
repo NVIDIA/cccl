@@ -38,7 +38,7 @@ struct source_location_hash
    * function name into account because the same callsite could be used in
    * different instantiation of the same templated class, the name will reflect
    * the template parameters. */
-  ::std::size_t operator()(const _CUDA_VSTD::source_location& loc) const noexcept
+  ::std::size_t operator()(const ::cuda::std::source_location& loc) const noexcept
   {
     return ::std::hash<const char*>{}(loc.file_name()) ^ (::std::hash<uint_least32_t>{}(loc.line()) << 1)
          ^ (::std::hash<uint_least32_t>{}(loc.column()) << 2) ^ (::std::hash<const char*>{}(loc.function_name()) << 3);
@@ -47,7 +47,7 @@ struct source_location_hash
 
 struct source_location_equal
 {
-  bool operator()(const _CUDA_VSTD::source_location& lhs, const _CUDA_VSTD::source_location& rhs) const noexcept
+  bool operator()(const ::cuda::std::source_location& lhs, const ::cuda::std::source_location& rhs) const noexcept
   {
     // Comparing const char * is legit here because these are string literal constants
     return lhs.file_name() == rhs.file_name() && lhs.line() == rhs.line() && lhs.column() == rhs.column()

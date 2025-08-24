@@ -1135,6 +1135,29 @@ UNITTEST("basic parallel_for test")
   unit_test_pfor();
 };
 
+inline void unit_test_pfor_integral_shape()
+{
+  stream_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
+  ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
+  ctx.host_launch(lA.read())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      EXPECT(A(i) == 2 * i);
+    }
+  };
+  ctx.finalize();
+}
+
+UNITTEST("parallel_for with integral shape")
+{
+  unit_test_pfor_integral_shape();
+};
+
 inline void unit_test_host_pfor()
 {
   stream_ctx ctx;

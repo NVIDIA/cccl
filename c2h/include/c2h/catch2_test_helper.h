@@ -5,7 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__nvtx/nvtx3.h>
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -293,7 +293,7 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
   }
 
 #include <cuda/std/tuple>
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
@@ -305,18 +305,18 @@ enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>
   {
     os << ", ";
   }
-  os << _CUDA_VSTD::get<N>(tup);
-  _CUDA_VSTD::print_elem<N + 1>(os, tup);
+  os << ::cuda::std::get<N>(tup);
+  ::cuda::std::print_elem<N + 1>(os, tup);
 }
 
 template <typename... T>
 ::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
 {
   os << "[";
-  _CUDA_VSTD::print_elem<0>(os, tup);
+  ::cuda::std::print_elem<0>(os, tup);
   return os << "]";
 }
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 template <>
 struct Catch::StringMaker<cudaError>
@@ -338,14 +338,11 @@ struct nvtx_c2h_domain
 };
 
 template <typename T>
-struct nvtx_fixture
+class nvtx_fixture
 {
-  nvtx_fixture()
-      : nvtx_range(Catch::getResultCapture().getCurrentTestName())
-  {}
-
-private:
-  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range;
+#if _CCCL_HAS_NVTX3()
+  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
+#endif // _CCCL_HAS_NVTX3()
 };
 } // namespace detail
 

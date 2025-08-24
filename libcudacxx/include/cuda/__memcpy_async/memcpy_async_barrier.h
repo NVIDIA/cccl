@@ -39,16 +39,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __single_thread_group
 {
   _CCCL_API inline void sync() const {}
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::size_t size() const
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size() const
   {
     return 1;
   };
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::size_t thread_rank() const
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t thread_rank() const
   {
     return 0;
   };
@@ -58,20 +58,20 @@ template <typename _Group, class _Tp, typename _Size, thread_scope _Sco, typenam
 _CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
   _Group const& __group, _Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
-  static_assert(_CUDA_VSTD::is_trivially_copyable_v<_Tp>, "memcpy_async requires a trivially copyable type");
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "memcpy_async requires a trivially copyable type");
 
   // 1. Determine which completion mechanisms can be used with the current
   // barrier. A local shared memory barrier, i.e., block-scope barrier in local
   // shared memory, supports the mbarrier_complete_tx mechanism in addition to
   // the async group mechanism.
-  _CUDA_VSTD::uint32_t __allowed_completions =
+  ::cuda::std::uint32_t __allowed_completions =
     ::cuda::__is_local_smem_barrier(__barrier)
-      ? (_CUDA_VSTD::uint32_t(__completion_mechanism::__async_group)
-         | _CUDA_VSTD::uint32_t(__completion_mechanism::__mbarrier_complete_tx))
-      : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
+      ? (::cuda::std::uint32_t(__completion_mechanism::__async_group)
+         | ::cuda::std::uint32_t(__completion_mechanism::__mbarrier_complete_tx))
+      : ::cuda::std::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
+  constexpr auto __align = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
   // functions.
@@ -79,7 +79,7 @@ _CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
   char const* __src_char = reinterpret_cast<char const*>(__source);
 
   // 2. Issue actual copy instructions.
-  _CUDA_VSTD::uint64_t* __bh = nullptr;
+  ::cuda::std::uint64_t* __bh = nullptr;
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
@@ -92,7 +92,7 @@ _CCCL_API inline async_contract_fulfillment __memcpy_async_barrier(
   return __memcpy_completion_impl::__defer(__cm, __group, __size, __barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

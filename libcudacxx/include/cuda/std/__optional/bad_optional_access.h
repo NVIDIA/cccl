@@ -36,7 +36,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_HAS_EXCEPTIONS()
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
 #  ifdef __cpp_lib_optional
 
@@ -53,22 +53,21 @@ public:
 };
 #  endif // !__cpp_lib_optional
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 #endif // _CCCL_HAS_EXCEPTIONS()
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[noreturn]] _CCCL_API inline void __throw_bad_optional_access()
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::std::bad_optional_access();), (::cuda::std::terminate();))
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

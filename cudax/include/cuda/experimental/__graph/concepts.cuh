@@ -35,13 +35,13 @@ namespace cuda::experimental
 // TODO we might do something more abstract here rather than just checking specific types
 template <typename T>
 _CCCL_CONCEPT graph_dependency =
-  _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<T>, path_builder>
-  || _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<T>, graph_node_ref>;
+  ::cuda::std::is_same_v<::cuda::std::decay_t<T>, path_builder>
+  || ::cuda::std::is_same_v<::cuda::std::decay_t<T>, graph_node_ref>;
 
 // Concept to check if T can insert nodes into a graph
 // TODO we might do something more abstract here rather than just checking specific types
 template <typename T>
-_CCCL_CONCEPT graph_inserter = _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<T>, path_builder>;
+_CCCL_CONCEPT graph_inserter = ::cuda::std::is_same_v<::cuda::std::decay_t<T>, path_builder>;
 
 } // namespace cuda::experimental
 

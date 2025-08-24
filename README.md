@@ -268,15 +268,21 @@ But we will not invest significant time in triaging or fixing issues for older c
 
 In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
+### GPU Architectures
+
+While some features may be specific to certain architectures, CCCL generally supports all GPU architectures that are [supported by the *current* major CUDA Toolkit (CTK)](https://developer.nvidia.com/cuda-gpus).
+
+To be clear, while CCCL supports compilation with [two CTK major versions](#CUDA-toolkit-(CTK)-compatibility), this does *not* mean we continue to support all architectures from the older CTK.
+
+For example, CCCL 3.0 supports compiling with CTK 12.x and 13.x where
+- CUDA Toolkit 13.x supports `>=sm_75`
+- CUDA Toolkit 12.x supports `>=sm_50`
+
+So even when compiling CCCL 3.0 with CTK 12.x, only the architectures supported by the current CTK (13.x) are available (`sm_75`+).
+
 ### C++ Dialects
 - C++17
 - C++20
-
-### GPU Architectures
-
-Unless otherwise specified, CCCL supports all the same GPU architectures/Compute Capabilities as the CUDA Toolkit, which are documented here: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability
-
-Note that some features may only support certain architectures/Compute Capabilities.
 
 ### Testing Strategy
 
@@ -427,8 +433,8 @@ The deprecation period will depend on the impact of the change, but will usually
 
 | CCCL version | CTK version |
 |--------------|-------------|
+| 3.1          | 13.1        |
 | 3.0          | 13.0        |
-| ...          | ...         |
 | 2.8          | 12.9        |
 | 2.7          | 12.8        |
 | 2.5          | 12.6        |

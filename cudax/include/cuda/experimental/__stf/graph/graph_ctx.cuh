@@ -441,7 +441,11 @@ public:
     size_t nnodes;
 
     cuda_safe_call(cudaGraphGetNodes(*g, nullptr, &nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, nullptr, &nedges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphGetEdges(*g, nullptr, nullptr, &nedges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     auto& state = this->state();
 
@@ -504,7 +508,11 @@ public:
     cuda_safe_call(cudaGraphGetNodes(g, nullptr, &numNodes));
 
     size_t numEdges;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &numEdges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &numEdges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cuuint64_t mem_attr;
     cuda_safe_call(cudaDeviceGetGraphMemAttribute(0, cudaGraphMemAttrUsedMemHigh, &mem_attr));
@@ -622,7 +630,11 @@ private:
     size_t nnodes;
 
     cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, nullptr, &nedges));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
     cudaGraphExec_t local_exec_graph = nullptr;
 

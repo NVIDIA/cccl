@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -50,6 +51,29 @@ namespace __detail
 using namespace cuda::experimental::__detail; // NOLINT(misc-unused-using-decls)
 } // namespace __detail
 
+// NOLINTBEGIN(misc-unused-using-decls)
+using ::cuda::std::execution::__forwarding_query;
+using ::cuda::std::execution::__unwrap_reference_t;
+using ::cuda::std::execution::env;
+using ::cuda::std::execution::env_of_t;
+using ::cuda::std::execution::forwarding_query;
+using ::cuda::std::execution::forwarding_query_t;
+using ::cuda::std::execution::get_env;
+using ::cuda::std::execution::get_env_t;
+using ::cuda::std::execution::prop;
+
+using ::cuda::std::execution::__nothrow_queryable_with;
+using ::cuda::std::execution::__query_result_t;
+using ::cuda::std::execution::__queryable_with;
+
+using ::cuda::std::execution::__query_or;
+using ::cuda::std::execution::__query_result_or_t;
+// NOLINTEND(misc-unused-using-decls)
+
+template <class _Env, class _Query, bool _Default>
+_CCCL_CONCEPT __nothrow_queryable_with_or =
+  bool(__queryable_with<_Env, _Query> ? __nothrow_queryable_with<_Env, _Query> : _Default);
+
 struct _CCCL_TYPE_VISIBILITY_DEFAULT receiver_t
 {};
 
@@ -63,29 +87,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler_t
 {};
 
 template <class _Ty>
-using __sender_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::sender_concept;
+using __sender_concept_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_Ty>::sender_concept;
 
 template <class _Ty>
-using __receiver_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::receiver_concept;
+using __receiver_concept_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_Ty>::receiver_concept;
 
 template <class _Ty>
-using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
+using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
 using __operation_state_concept_t _CCCL_NODEBUG_ALIAS =
-  typename _CUDA_VSTD::remove_reference_t<_Ty>::operation_state_concept;
+  typename ::cuda::std::remove_reference_t<_Ty>::operation_state_concept;
 
 template <class _Ty>
-inline constexpr bool __is_sender = __is_instantiable_with_v<__sender_concept_t, _Ty>;
+inline constexpr bool __is_sender = __is_instantiable_with<__sender_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_receiver = __is_instantiable_with_v<__receiver_concept_t, _Ty>;
+inline constexpr bool __is_receiver = __is_instantiable_with<__receiver_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_scheduler = __is_instantiable_with_v<__scheduler_concept_t, _Ty>;
+inline constexpr bool __is_scheduler = __is_instantiable_with<__scheduler_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_operation_state = __is_instantiable_with_v<__operation_state_concept_t, _Ty>;
+inline constexpr bool __is_operation_state = __is_instantiable_with<__operation_state_concept_t, _Ty>;
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT dependent_sender_error;
 
@@ -95,7 +119,7 @@ template <class... _Sigs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures;
 
 template <class _Sndr, class... _Env>
-_CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures();
+_CCCL_NODEBUG_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
@@ -123,8 +147,13 @@ using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(dec
 template <class _Sndr, class _Rcvr>
 using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
 
+#if _CCCL_HOST_COMPILATION()
 template <class _Sndr, class _Rcvr>
 inline constexpr bool __nothrow_connectable = noexcept(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
+template <class _Sndr, class _Rcvr>
+inline constexpr bool __nothrow_connectable = __is_instantiable_with<connect_result_t, _Sndr, _Rcvr>;
+#endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 // sender factory algorithms:
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t;
@@ -185,7 +214,7 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_TRIVIAL_API constexpr auto operator()(int, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const -> _Tag
+  _CCCL_NODEBUG_API constexpr auto operator()(int, _Tag, ::cuda::std::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }

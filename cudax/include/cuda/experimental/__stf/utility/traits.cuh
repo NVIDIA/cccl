@@ -374,7 +374,7 @@ auto all_convertible(P&&... p)
     }
   };
 
-  auto __guard = _CUDA_VSTD::__make_exception_guard(rollback);
+  auto __guard = ::cuda::std::__make_exception_guard(rollback);
   each_in_pack(
     [&](auto&& e) {
       if constexpr (::std::is_convertible_v<decltype(e), T>)
@@ -561,20 +561,13 @@ namespace reserved
 {
 
 /**
- * @brief Trait class to check if a function can be invoked with std::apply using a tuple type
+ * @brief Trait class to check if a function can be invoked with `std::apply` using a tuple type
  */
 template <typename F, typename Tuple>
-struct is_tuple_invocable : ::std::false_type
-{};
+inline constexpr bool is_applicable_v = false;
 
-// Partial specialization that unpacks the tuple
 template <typename F, typename... Args>
-struct is_tuple_invocable<F, ::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
-{};
-
-// Convenient alias template
-template <typename F, typename Tuple>
-inline constexpr bool is_tuple_invocable_v = is_tuple_invocable<F, Tuple>::value;
+inline constexpr bool is_applicable_v<F, ::std::tuple<Args...>> = ::std::is_invocable_v<F, Args...>;
 
 /**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.

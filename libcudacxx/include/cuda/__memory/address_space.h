@@ -30,7 +30,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 //! @brief Address space enumeration for CUDA device code.
 //!
@@ -48,8 +48,8 @@ enum class address_space
 
 [[nodiscard]] _CCCL_DEVICE_API constexpr bool __cccl_is_valid_address_space(address_space __space) noexcept
 {
-  const auto __v = _CUDA_VSTD::to_underlying(__space);
-  return __v >= 0 && __v < _CUDA_VSTD::to_underlying(address_space::__max);
+  const auto __v = ::cuda::std::to_underlying(__space);
+  return __v >= 0 && __v < ::cuda::std::to_underlying(address_space::__max);
 }
 
 //! @brief Checks if the given pointer is from the specified address state space.
@@ -59,7 +59,7 @@ enum class address_space
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
-  _CCCL_ASSERT(_CUDA_DEVICE::__cccl_is_valid_address_space(__space), "invalid address space");
+  _CCCL_ASSERT(::cuda::device::__cccl_is_valid_address_space(__space), "invalid address space");
 
   // NVCC and NVRTC < 12.3 have problems tracking the address space of pointers, fallback to inline PTX for them
   switch (__space)
@@ -189,7 +189,7 @@ enum class address_space
 //! @return `true` if the pointer is from the specified address space, `false` otherwise.
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const volatile void* __ptr, address_space __space) noexcept
 {
-  return _CUDA_DEVICE::is_address_from(const_cast<const void*>(__ptr), __space);
+  return ::cuda::device::is_address_from(const_cast<const void*>(__ptr), __space);
 }
 
 //! @brief Checks if the given object is from the specified address state space.
@@ -199,10 +199,10 @@ enum class address_space
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_object_from(_Tp& __obj, address_space __space) noexcept
 {
-  return _CUDA_DEVICE::is_address_from(_CUDA_VSTD::addressof(__obj), __space);
+  return ::cuda::device::is_address_from(::cuda::std::addressof(__obj), __space);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

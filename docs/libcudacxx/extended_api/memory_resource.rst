@@ -19,9 +19,6 @@ project and evolves the design based on lessons learned.
 interface to a more centralized home in CCCL. RMM will remain as a collection of implementations of the ``cuda::mr``
 interfaces.
 
-We are still experimenting with the design, so for now the contents of ``<cuda/memory_resource>`` are only available if
-``LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE`` is defined.
-
 At a high level, the header provides:
 
 .. list-table::
@@ -30,14 +27,15 @@ At a high level, the header provides:
 
    * - :ref:`cuda::get_property <libcudacxx-extended-api-memory-resources-properties>`
      - Infrastructure to tag a user defined type with a given property
-     - CCCL 2.2.0 / CUDA 12.3
-   * - :ref:`cuda::mr::{async}_resource <libcudacxx-extended-api-memory-resources-resource>` and
-       :ref:`cuda::mr::{async}_resource_with <libcudacxx-extended-api-memory-resources-resource>`
+     - stable CCCL 3.1.0 / CUDA 13.1, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::{synchronous_}resource <libcudacxx-extended-api-memory-resources-resource>` and
+       :ref:`cuda::mr::{synchronous_}resource_with <libcudacxx-extended-api-memory-resources-resource>`
      - Concepts that provide proper constraints for arbitrary memory resources.
-     - CCCL 2.2.0 / CUDA 12.3
-   * - :ref:`cuda::mr::{async}_resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
+     - stable CCCL 3.1.0 / CUDA 13.1, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::{synchronous_}resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
      - A non-owning type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.
-     - CCCL 2.2.0 / CUDA 12.3
+       ``resource_ref`` is still an experimental design, only available if ``LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE`` is defined
+     - experimental CCCL 2.2.0 / CUDA 12.3
 
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__
 that was introduced in C++17. While ``std::pmr::memory_resource`` provides a polymorphic memory resource that can be

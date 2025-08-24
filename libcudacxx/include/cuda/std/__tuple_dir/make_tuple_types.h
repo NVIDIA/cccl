@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __make_tuple_types<_Tuple<_Types...>, _Ep, _Sp>::type is a
 // __tuple_types<_Types...> using only those _Types in the range [_Sp, _Ep).
@@ -91,7 +91,7 @@ struct __make_tuple_types<__tuple_types<_Types...>, _Ep, 0, true>
 template <class _Tp, size_t _Ep = tuple_size<remove_reference_t<_Tp>>::value, size_t _Sp = 0>
 using __make_tuple_types_t = typename __make_tuple_types<_Tp, _Ep, _Sp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

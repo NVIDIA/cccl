@@ -58,11 +58,16 @@ cdef extern from "cccl/c/types.h":
         size_t alignment
         cccl_type_enum type
 
+    cdef enum cccl_op_code_type:
+        CCCL_OP_LTOIR = 0
+        CCCL_OP_CPP_SOURCE = 1
+
     cdef struct cccl_op_t:
         cccl_op_kind_t type
         const char* name
-        const char* ltoir
-        size_t ltoir_size
+        const char* code
+        size_t code_size
+        cccl_op_code_type code_type
         size_t size
         size_t alignment
         void *state
@@ -521,7 +526,7 @@ cdef class Op:
     """
     # need Python owner of memory used for operator name
     cdef bytes op_encoded_name
-    cdef bytes ltoir_bytes
+    cdef bytes code_bytes
     cdef bytes state_bytes
     cdef cccl_op_t op_data
 
@@ -530,13 +535,14 @@ cdef class Op:
         memset(&self.op_data, 0, sizeof(cccl_op_t))
         # Reference Python objects in the class to ensure lifetime
         self.op_encoded_name = name.encode("utf-8")
-        self.ltoir_bytes = lto_ir
+        self.code_bytes = lto_ir
         self.state_bytes = state
         # set fields of op_data struct
         self.op_data.type = op_type
         self.op_data.name = <const char *>self.op_encoded_name
-        self.op_data.ltoir = <const char *>lto_ir
-        self.op_data.ltoir_size = len(lto_ir)
+        self.op_data.code = <const char *>lto_ir
+        self.op_data.code_size = len(lto_ir)
+        self.op_data.code_type = cccl_op_code_type.CCCL_OP_LTOIR
         self.op_data.size = len(state)
         self.op_data.alignment = state_alignment
         self.op_data.state = <void *><const char *>state
@@ -585,7 +591,12 @@ cdef class Op:
 
     @property
     def ltoir(self):
-        return self.ltoir_bytes
+        # Backward compatibility property
+        return self.code_bytes
+
+    @property
+    def code(self):
+        return self.code_bytes
 
     @property
     def state_alignment(self):

@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool is_null_pointer_v = is_same_v<remove_cv_t<_Tp>, nullptr_t>;
@@ -36,7 +36,7 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public bool_constant<is_null_pointer_v<_Tp>>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

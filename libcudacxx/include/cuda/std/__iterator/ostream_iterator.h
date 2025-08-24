@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -30,14 +30,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT ostream_iterator
-#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
-    : public iterator<output_iterator_tag, void, void, void, void>
-#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
 public:
   using iterator_category = output_iterator_tag;
@@ -58,15 +55,15 @@ private:
   const char_type* __delim_;
 
 public:
-  _CCCL_API inline ostream_iterator(ostream_type& __s) noexcept
-      : __out_stream_(_CUDA_VSTD::addressof(__s))
+  _CCCL_API ostream_iterator(ostream_type& __s) noexcept
+      : __out_stream_(::cuda::std::addressof(__s))
       , __delim_(nullptr)
   {}
-  _CCCL_API inline ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
-      : __out_stream_(_CUDA_VSTD::addressof(__s))
+  _CCCL_API ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
+      : __out_stream_(::cuda::std::addressof(__s))
       , __delim_(__delimiter)
   {}
-  _CCCL_API inline ostream_iterator& operator=(const _Tp& __value)
+  _CCCL_API ostream_iterator& operator=(const _Tp& __value)
   {
     *__out_stream_ << __value;
     if (__delim_)
@@ -76,22 +73,22 @@ public:
     return *this;
   }
 
-  _CCCL_API inline ostream_iterator& operator*()
+  [[nodiscard]] _CCCL_API ostream_iterator& operator*() noexcept
   {
     return *this;
   }
-  _CCCL_API inline ostream_iterator& operator++()
+  _CCCL_API ostream_iterator& operator++() noexcept
   {
     return *this;
   }
-  _CCCL_API inline ostream_iterator& operator++(int)
+  _CCCL_API ostream_iterator& operator++(int) noexcept
   {
     return *this;
   }
 };
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

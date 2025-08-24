@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _IterMaybeQualified>
 _CCCL_API constexpr auto __get_iterator_concept()
@@ -58,7 +58,7 @@ _CCCL_API constexpr auto __get_iterator_concept()
 template <class _Iter>
 using __iterator_concept = decltype(__get_iterator_concept<_Iter>());
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

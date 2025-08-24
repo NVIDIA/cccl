@@ -11,7 +11,7 @@
 
 #include <unittest/unittest.h>
 
-// ensure that we properly support thrust::reverse_iterator from cuda::std
+// ensure that we properly support thrust::transform_iterator from cuda::std
 void TestTransformIteratorTraits()
 {
   using func    = ::cuda::std::negate<int>;
@@ -157,7 +157,7 @@ struct forward
   template <class _Tp>
   constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
-    return _CUDA_VSTD::forward<_Tp>(__t);
+    return ::cuda::std::forward<_Tp>(__t);
   }
 };
 
