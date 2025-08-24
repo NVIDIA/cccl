@@ -81,19 +81,19 @@ int main()
   auto lY = ctx.token();
   auto lZ = ctx.token();
 
-  ctx.cuda_kernel(lX.write())->*[](auto) {
+  ctx.cuda_kernel(lX.write())->*[]() {
     return cuda_kernel_desc{dummy, 1, 1, 0};
   };
 
-  ctx.cuda_kernel(lX.read(), lY.write())->*[](auto, auto) {
+  ctx.cuda_kernel(lX.read(), lY.write())->*[]() {
     return cuda_kernel_desc{dummy, 1, 1, 0};
   };
 
-  ctx.cuda_kernel(lX.read(), lZ.write())->*[](auto, auto) {
+  ctx.cuda_kernel(lX.read(), lZ.write())->*[]() {
     return cuda_kernel_desc{dummy, 1, 1, 0};
   };
 
-  ctx.cuda_kernel(lY.rw(), lZ.rw())->*[](auto, auto) {
+  ctx.cuda_kernel(lY.rw(), lZ.rw())->*[]() {
     return cuda_kernel_desc{dummy, 1, 1, 0};
   };
 
