@@ -19,6 +19,10 @@
 
 using namespace cuda::experimental::stf;
 
+__global__ void dummy_kernel()
+{
+}
+
 int main()
 {
   context ctx;
@@ -41,6 +45,10 @@ int main()
   // or actual underlying data.
   ctx.task(token3.rw(), token.read())->*[](cudaStream_t) {
 
+  };
+
+  ctx.cuda_kernel(token3.rw())->*[](){
+      return cuda_kernel_desc{dummy_kernel, 16, 128, 0};
   };
 
   ctx.finalize();
