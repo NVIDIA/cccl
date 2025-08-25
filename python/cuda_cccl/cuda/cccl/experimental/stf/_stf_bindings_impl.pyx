@@ -116,6 +116,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
     void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     void stf_logical_data_destroy(stf_logical_data_handle ld)
+    void stf_logical_data_like_empty(stf_ctx_handle ctx, const stf_logical_data_handle* src, stf_logical_data_handle* dst)
 
     ctypedef struct stf_task_handle_t
     ctypedef stf_task_handle_t* stf_task_handle
@@ -207,6 +208,30 @@ cdef class logical_data:
 
     def rw(self, dplace=None):
         return dep(self, AccessMode.RW.value, dplace)
+
+    def like_empty(self):
+        """
+        Create a new logical_data with the same shape (and dtype metadata)
+        as this object.
+        """
+        if self._ld == NULL:
+            raise RuntimeError("source logical_data handle is NULL")
+
+        cdef logical_data out = logical_data.__new__(logical_data)
+
+        out._ctx   = self._ctx
+        out._dtype = self._dtype
+        out._shape = self._shape
+        out._ndim  = self._ndim
+
+        cdef stf_logical_data_handle new_ld = NULL
+        stf_logical_data_like_empty(self._ctx._ctx, &self._ld, &new_ld)
+
+        if new_ld == NULL:
+            raise RuntimeError("stf_logical_data_like_empty returned NULL")
+
+        out._ld = new_ld
+        return out
 
 class dep:
     __slots__ = ("ld", "mode", "dplace")
