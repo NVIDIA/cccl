@@ -395,297 +395,43 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
 
 cdef class Enumeration_OpKind(IntEnumerationBase):
     "Enumeration of operator kinds"
-    cdef IntEnumerationMember _stateless
-    cdef IntEnumerationMember _stateful
+
+    STATELESS = Enumeration_OpKind.make_member("STATELESS", cccl_op_kind_t.CCCL_STATELESS)
+    STATEFUL = Enumeration_OpKind.make_member("STATEFUL", cccl_op_kind_t.CCCL_STATEFUL)
+
     # Well-known operations
-    cdef IntEnumerationMember _plus
-    cdef IntEnumerationMember _minus
-    cdef IntEnumerationMember _multiplies
-    cdef IntEnumerationMember _divides
-    cdef IntEnumerationMember _modulus
-    cdef IntEnumerationMember _equal_to
-    cdef IntEnumerationMember _not_equal_to
-    cdef IntEnumerationMember _greater
-    cdef IntEnumerationMember _less
-    cdef IntEnumerationMember _greater_equal
-    cdef IntEnumerationMember _less_equal
-    cdef IntEnumerationMember _logical_and
-    cdef IntEnumerationMember _logical_or
-    cdef IntEnumerationMember _logical_not
-    cdef IntEnumerationMember _bit_and
-    cdef IntEnumerationMember _bit_or
-    cdef IntEnumerationMember _bit_xor
-    cdef IntEnumerationMember _bit_not
-    cdef IntEnumerationMember _identity
-    cdef IntEnumerationMember _negate
-    cdef IntEnumerationMember _minimum
-    cdef IntEnumerationMember _maximum
-
-    STATELESS = Enumeration_OpKind.make_STATELESS()
-    STATEFUL = Enumeration_OpKind.make_STATEFUL()
-    # Well-known operations
-    PLUS = Enumeration_OpKind.make_PLUS()
-    MINUS = Enumeration_OpKind.make_MINUS()
-    MULTIPLIES = Enumeration_OpKind.make_MULTIPLIES()
-    DIVIDES = Enumeration_OpKind.make_DIVIDES()
-    MODULUS = Enumeration_OpKind.make_MODULUS()
-    EQUAL_TO = Enumeration_OpKind.make_EQUAL_TO()
-    NOT_EQUAL_TO = Enumeration_OpKind.make_NOT_EQUAL_TO()
-    GREATER = Enumeration_OpKind.make_GREATER()
-    LESS = Enumeration_OpKind.make_LESS()
-    GREATER_EQUAL = Enumeration_OpKind.make_GREATER_EQUAL()
-    LESS_EQUAL = Enumeration_OpKind.make_LESS_EQUAL()
-    LOGICAL_AND = Enumeration_OpKind.make_LOGICAL_AND()
-    LOGICAL_OR = Enumeration_OpKind.make_LOGICAL_OR()
-    LOGICAL_NOT = Enumeration_OpKind.make_LOGICAL_NOT()
-    BIT_AND = Enumeration_OpKind.make_BIT_AND()
-    BIT_OR = Enumeration_OpKind.make_BIT_OR()
-    BIT_XOR = Enumeration_OpKind.make_BIT_XOR()
-    BIT_NOT = Enumeration_OpKind.make_BIT_NOT()
-    IDENTITY = Enumeration_OpKind.make_IDENTITY()
-    NEGATE = Enumeration_OpKind.make_NEGATE()
-    MINIMUM = Enumeration_OpKind.make_MINIMUM()
-    MAXIMUM = Enumeration_OpKind.make_MAXIMUM()
+    PLUS = Enumeration_OpKind.make_member("PLUS", cccl_op_kind_t.CCCL_PLUS)
+    MINUS = Enumeration_OpKind.make_member("MINUS", cccl_op_kind_t.CCCL_MINUS)
+    MULTIPLIES = Enumeration_OpKind.make_member("MULTIPLIES", cccl_op_kind_t.CCCL_MULTIPLIES)
+    DIVIDES = Enumeration_OpKind.make_member("DIVIDES", cccl_op_kind_t.CCCL_DIVIDES)
+    MODULUS = Enumeration_OpKind.make_member("MODULUS", cccl_op_kind_t.CCCL_MODULUS)
+    EQUAL_TO = Enumeration_OpKind.make_member("EQUAL_TO", cccl_op_kind_t.CCCL_EQUAL_TO)
+    NOT_EQUAL_TO = Enumeration_OpKind.make_member("NOT_EQUAL_TO", cccl_op_kind_t.CCCL_NOT_EQUAL_TO)
+    GREATER = Enumeration_OpKind.make_member("GREATER", cccl_op_kind_t.CCCL_GREATER)
+    LESS = Enumeration_OpKind.make_member("LESS", cccl_op_kind_t.CCCL_LESS)
+    GREATER_EQUAL = Enumeration_OpKind.make_member("GREATER_EQUAL", cccl_op_kind_t.CCCL_GREATER_EQUAL)
+    LESS_EQUAL = Enumeration_OpKind.make_member("LESS_EQUAL", cccl_op_kind_t.CCCL_LESS_EQUAL)
+    LOGICAL_AND = Enumeration_OpKind.make_member("LOGICAL_AND", cccl_op_kind_t.CCCL_LOGICAL_AND)
+    LOGICAL_OR = Enumeration_OpKind.make_member("LOGICAL_OR", cccl_op_kind_t.CCCL_LOGICAL_OR)
+    LOGICAL_NOT = Enumeration_OpKind.make_member("LOGICAL_NOT", cccl_op_kind_t.CCCL_LOGICAL_NOT)
+    BIT_AND = Enumeration_OpKind.make_member("BIT_AND", cccl_op_kind_t.CCCL_BIT_AND)
+    BIT_OR = Enumeration_OpKind.make_member("BIT_OR", cccl_op_kind_t.CCCL_BIT_OR)
+    BIT_XOR = Enumeration_OpKind.make_member("BIT_XOR", cccl_op_kind_t.CCCL_BIT_XOR)
+    BIT_NOT = Enumeration_OpKind.make_member("BIT_NOT", cccl_op_kind_t.CCCL_BIT_NOT)
+    IDENTITY = Enumeration_OpKind.make_member("IDENTITY", cccl_op_kind_t.CCCL_IDENTITY)
+    NEGATE = Enumeration_OpKind.make_member("NEGATE", cccl_op_kind_t.CCCL_NEGATE)
+    MINIMUM = Enumeration_OpKind.make_member("MINIMUM", cccl_op_kind_t.CCCL_MINIMUM)
+    MAXIMUM = Enumeration_OpKind.make_member("MAXIMUM", cccl_op_kind_t.CCCL_MAXIMUM)
 
     @staticmethod
-    cdef IntEnumerationMember make_STATELESS():
-        cdef str prop_name = "STATELESS"
+    cdef IntEnumerationMember make_member(str member_name, cccl_op_kind_t op_kind):
         return IntEnumerationMember(
             Enumeration_OpKind,
             "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_STATELESS
+            member_name,
+            op_kind
         )
 
-    @staticmethod
-    cdef IntEnumerationMember make_STATEFUL():
-        cdef str prop_name = "STATEFUL"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_STATEFUL
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_PLUS():
-        cdef str prop_name = "PLUS"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_PLUS
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_MINUS():
-        cdef str prop_name = "MINUS"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_MINUS
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_MULTIPLIES():
-        cdef str prop_name = "MULTIPLIES"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_MULTIPLIES
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_DIVIDES():
-        cdef str prop_name = "DIVIDES"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_DIVIDES
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_MODULUS():
-        cdef str prop_name = "MODULUS"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_MODULUS
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_EQUAL_TO():
-        cdef str prop_name = "EQUAL_TO"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_EQUAL_TO
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_NOT_EQUAL_TO():
-        cdef str prop_name = "NOT_EQUAL_TO"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_NOT_EQUAL_TO
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_GREATER():
-        cdef str prop_name = "GREATER"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_GREATER
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_LESS():
-        cdef str prop_name = "LESS"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_LESS
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_GREATER_EQUAL():
-        cdef str prop_name = "GREATER_EQUAL"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_GREATER_EQUAL
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_LESS_EQUAL():
-        cdef str prop_name = "LESS_EQUAL"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_LESS_EQUAL
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_LOGICAL_AND():
-        cdef str prop_name = "LOGICAL_AND"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_LOGICAL_AND
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_LOGICAL_OR():
-        cdef str prop_name = "LOGICAL_OR"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_LOGICAL_OR
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_LOGICAL_NOT():
-        cdef str prop_name = "LOGICAL_NOT"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_LOGICAL_NOT
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_BIT_AND():
-        cdef str prop_name = "BIT_AND"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_BIT_AND
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_BIT_OR():
-        cdef str prop_name = "BIT_OR"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_BIT_OR
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_BIT_XOR():
-        cdef str prop_name = "BIT_XOR"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_BIT_XOR
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_BIT_NOT():
-        cdef str prop_name = "BIT_NOT"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_BIT_NOT
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_IDENTITY():
-        cdef str prop_name = "IDENTITY"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_IDENTITY
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_NEGATE():
-        cdef str prop_name = "NEGATE"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_NEGATE
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_MINIMUM():
-        cdef str prop_name = "MINIMUM"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_MINIMUM
-        )
-
-    @staticmethod
-    cdef IntEnumerationMember make_MAXIMUM():
-        cdef str prop_name = "MAXIMUM"
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            prop_name,
-            cccl_op_kind_t.CCCL_MAXIMUM
-        )
 
 class OpKind(Enum):
     """Enumeration of well-known operations for CCCL parallel algorithms.
@@ -909,6 +655,8 @@ cdef class Op:
         arg_type_check(arg_name="ltoir", expected_type=bytes, arg=ltoir)
         arg_type_check(arg_name="state", expected_type=bytes, arg=state)
         arg_type_check(arg_name="state_alignment", expected_type=int, arg=state_alignment)
+        print(operator_type)
+        print(type(operator_type))
         if not isinstance(operator_type, OpKind):
             raise TypeError(
                 f"The operator_type argument should be an enumerator of operator kinds"
@@ -1932,6 +1680,7 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def _get_cubin(self):
         return self.build_data.cubin[:self.build_data.cubin_size]
+
 # -----------------
 #   DeviceMergeSort
 # -----------------
