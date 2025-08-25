@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___EXCEPTION_TERMINATE_H
-#define _LIBCUDACXX___EXCEPTION_TERMINATE_H
+#ifndef _CUDA_STD___EXCEPTION_TERMINATE_H
+#define _CUDA_STD___EXCEPTION_TERMINATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -70,4 +70,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXCEPTION_TERMINATE_H
+#endif // _CUDA_STD___EXCEPTION_TERMINATE_H

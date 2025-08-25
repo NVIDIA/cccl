@@ -452,7 +452,7 @@ public:
     // should be executed one after the other.
     if constexpr (chained)
     {
-      kernel_descs = ::std::apply(f, deps.instance(t));
+      kernel_descs = ::std::apply(f, deps.non_void_instance(t));
       assert(!kernel_descs.empty());
     }
     else
@@ -462,7 +462,7 @@ public:
       // descriptor, not a vector
       static_assert(!chained);
 
-      cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
+      cuda_kernel_desc res = ::std::apply(f, deps.non_void_instance(t));
       kernel_descs.push_back(res);
     }
   }
