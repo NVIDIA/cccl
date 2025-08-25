@@ -44,13 +44,21 @@ class _UnaryTransform:
             self.op_wrapper,
         )
 
-    def __call__(
+    def compute(
         self,
         d_in,
         d_out,
         num_items: int,
         stream=None,
     ):
+        """Perform the unary transformation computation.
+        
+        Args:
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array or iterator to store the result of the transformation
+            num_items: Number of items to transform
+            stream: CUDA stream for the operation (optional)
+        """
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         stream_handle = protocols.validate_and_get_stream(stream)
@@ -100,7 +108,7 @@ class _BinaryTransform:
             self.op_wrapper,
         )
 
-    def __call__(
+    def compute(
         self,
         d_in1,
         d_in2,
@@ -108,6 +116,15 @@ class _BinaryTransform:
         num_items: int,
         stream=None,
     ):
+        """Perform the binary transformation computation.
+        
+        Args:
+            d_in1: Device array or iterator containing the first input sequence of data items
+            d_in2: Device array or iterator containing the second input sequence of data items
+            d_out: Device array or iterator to store the result of the transformation
+            num_items: Number of items to transform
+            stream: CUDA stream for the operation (optional)
+        """
         set_cccl_iterator_state(self.d_in1_cccl, d_in1)
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -245,7 +262,7 @@ def unary_transform(
         stream: CUDA stream to use for the operation.
     """
     transformer = make_unary_transform(d_in, d_out, op)
-    transformer(d_in, d_out, num_items, stream)
+    transformer.compute(d_in, d_out, num_items, stream)
 
 
 def binary_transform(
@@ -278,4 +295,4 @@ def binary_transform(
         stream: CUDA stream to use for the operation.
     """
     transformer = make_binary_transform(d_in1, d_in2, d_out, op)
-    transformer(d_in1, d_in2, d_out, num_items, stream)
+    transformer.compute(d_in1, d_in2, d_out, num_items, stream)

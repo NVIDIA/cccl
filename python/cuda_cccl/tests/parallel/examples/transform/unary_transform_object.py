@@ -23,7 +23,7 @@ def unary_transform_object_example():
 
     transformer = parallel.make_unary_transform(d_input, d_output, add_one_op)
 
-    transformer(d_input, d_output, len(h_input))
+    transformer.compute(d_input, d_output, len(h_input))
 
     expected_result = np.array([2, 3, 4, 5], dtype=dtype)
     actual_result = d_output.get()

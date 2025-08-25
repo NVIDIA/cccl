@@ -88,7 +88,7 @@ def transform_zip_array_iterator(zip_iter1, zip_iter2, size, build_only):
     alg = parallel.make_binary_transform(zip_iter1, zip_iter2, res, my_transform)
 
     if not build_only:
-        alg(zip_iter1, zip_iter2, res, size)
+        alg.compute(zip_iter1, zip_iter2, res, size)
 
     cp.cuda.runtime.deviceSynchronize()
 

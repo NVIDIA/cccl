@@ -25,7 +25,7 @@ def binary_transform_object_example():
 
     transformer = parallel.make_binary_transform(d_input1, d_input2, d_output, add_op)
 
-    transformer(d_input1, d_input2, d_output, len(h_input1))
+    transformer.compute(d_input1, d_input2, d_output, len(h_input1))
 
     expected_result = np.array([11, 22, 33, 44], dtype=dtype)
     actual_result = d_output.get()

@@ -13,7 +13,7 @@ def unary_transform_pointer(inp, out, build_only):
 
     transform = parallel.make_unary_transform(inp, out, op)
     if not build_only:
-        transform(inp, out, size)
+        transform.compute(inp, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -26,7 +26,7 @@ def unary_transform_iterator(size, out, build_only):
 
     transform = parallel.make_unary_transform(d_in, out, op)
     if not build_only:
-        transform(d_in, out, size)
+        transform.compute(d_in, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -46,7 +46,7 @@ def unary_transform_struct(inp, out, build_only):
     transform = parallel.make_unary_transform(inp, out, op)
 
     if not build_only:
-        transform(inp, out, size)
+        transform.compute(inp, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -59,7 +59,7 @@ def binary_transform_pointer(inp1, inp2, out, build_only):
 
     transform = parallel.make_binary_transform(inp1, inp2, out, op)
     if not build_only:
-        transform(inp1, inp2, out, size)
+        transform.compute(inp1, inp2, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -73,7 +73,7 @@ def binary_transform_iterator(size, out, build_only):
 
     transform = parallel.make_binary_transform(d_in1, d_in2, out, op)
     if not build_only:
-        transform(d_in1, d_in2, out, size)
+        transform.compute(d_in1, d_in2, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -86,7 +86,7 @@ def binary_transform_struct(inp1, inp2, out, build_only):
 
     transform = parallel.make_binary_transform(inp1, inp2, out, op)
     if not build_only:
-        transform(inp1, inp2, out, size)
+        transform.compute(inp1, inp2, out, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
