@@ -21,6 +21,33 @@ runs:
         sudo apt-get update
         sudo apt-get install -y cmake ninja-build python3-venv git flex bison
 
+    # Cache Doxygen binary to avoid rebuilding
+    - name: Cache Doxygen binary
+      uses: actions/cache@v4
+      with:
+        path: docs/doxygen_build/bin/doxygen
+        key: doxygen-1.9.6-${{ runner.os }}
+        restore-keys: |
+          doxygen-1.9.6-${{ runner.os }}
+
+    # Cache Python virtual environment
+    - name: Cache Python virtual environment
+      uses: actions/cache@v4
+      with:
+        path: docs/env
+        key: python-env-${{ runner.os }}-${{ hashFiles('docs/requirements.txt') }}
+        restore-keys: |
+          python-env-${{ runner.os }}-
+
+    # Cache Doxygen XML output (expensive to regenerate)
+    - name: Cache Doxygen XML output
+      uses: actions/cache@v4
+      with:
+        path: docs/_build/doxygen
+        key: doxygen-xml-${{ runner.os }}-${{ hashFiles('cub/**/*.h', 'cub/**/*.cuh', 'thrust/**/*.h', 'thrust/**/*.cuh', 'cudax/**/*.cuh', 'libcudacxx/**/*.h') }}
+        restore-keys: |
+          doxygen-xml-${{ runner.os }}-
+
     # Build all docs
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}

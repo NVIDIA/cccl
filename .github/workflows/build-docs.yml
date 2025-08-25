@@ -8,6 +8,20 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  # Reusable workflow for PR previews
+  workflow_call:
+    inputs:
+      destination_dir:
+        description: "Destination directory for deployment"
+        required: false
+        default: "docs"
+        type: string
+      pr_number:
+        description: "PR number for preview URL generation"
+        required: false
+        default: ""
+        type: string
+
 # Sets permissions of the GITHUB_TOKEN to allow pushing to gh-pages branch
 permissions:
   contents: write
@@ -34,10 +48,25 @@ jobs:
           upload_workflow_artifact: "true"
           upload_pages_artifact: "false"
 
-      - name: Deploy to gh-pages branch
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
           publish_branch: gh-pages
-          destination_dir: docs
+          destination_dir: ${{ inputs.destination_dir || 'docs' }}
+          keep_files: ${{ inputs.pr_number != '' }}
+
+      - name: Leave PR preview comment
+        if: ${{ inputs.pr_number != '' }}
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+        with:
+          header: pr-preview
+          number: ${{ inputs.pr_number }}
+          skip_unchanged: true
+          message: |
+            ## 📖 Doc Preview CI
+
+            🚀 **Preview URL:** [https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ inputs.destination_dir }}/](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ inputs.destination_dir }}/)
+
+            > **Note:** Preview will be ready when the GitHub Pages deployment is complete.
