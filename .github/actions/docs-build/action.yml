@@ -32,6 +32,8 @@ runs:
       run: |
         mkdir -p _site
         cp -rf ./docs/_build/html/* _site/
+        # Create .nojekyll to prevent GitHub Pages from ignoring _static directories
+        touch _site/.nojekyll
         ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:
