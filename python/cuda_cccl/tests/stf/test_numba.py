@@ -34,12 +34,13 @@ def scale(a, x):
         x[i] = a * x[i]
 
 
+@pytest.mark.parametrize("use_graph_val", [False, True])
 def test_numba():
     X = np.ones(16, dtype=np.float32)
     Y = np.ones(16, dtype=np.float32)
     Z = np.ones(16, dtype=np.float32)
 
-    ctx = context()
+    ctx = context(use_graph=use_graph_val)
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)
