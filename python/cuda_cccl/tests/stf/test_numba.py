@@ -4,6 +4,8 @@
 
 import numba
 import numpy as np
+import unittest
+import pytest
 from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
@@ -192,6 +194,10 @@ def test_numba_exec_place():
 
 
 def test_numba_places():
+    if len(list(cuda.gpus)) < 2:
+        pytest.skip("Need at least 2 GPUs")
+        return
+
     X = np.ones(16, dtype=np.float32)
     Y = np.ones(16, dtype=np.float32)
     Z = np.ones(16, dtype=np.float32)
