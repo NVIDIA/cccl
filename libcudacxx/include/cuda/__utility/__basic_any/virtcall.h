@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_VIRTCALL_H
+#define _CUDA___UTILITY_BASIC_ANY_VIRTCALL_H
 
 #include <cuda/std/detail/__config>
 
@@ -159,4 +159,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
+#endif // _CUDA___UTILITY_BASIC_ANY_VIRTCALL_H
