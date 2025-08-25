@@ -1,5 +1,5 @@
 name: "CCCL Docs Build/Upload"
-description: "Builds the docs and uploads them as workflow and pages artifacts."
+description: "Builds the docs and uploads them as workflow artifacts."
 
 inputs:
   upload_workflow_artifact:
@@ -7,16 +7,13 @@ inputs:
     required: false
     default: "true"
   upload_pages_artifact:
-    description: "Uploads the built docs as a workflow artifact (actions/upload-pages-artifact). Required for docs-deploy action."
+    description: "Uploads the built docs as a workflow artifact (actions/upload-pages-artifact). Legacy option, not used for branch deployment."
     required: false
     default: "true"
 
 runs:
   using: "composite"
   steps:
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
-
     # Build all docs
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}
