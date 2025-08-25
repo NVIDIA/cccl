@@ -4,7 +4,7 @@
 # Preload `nvrtc` and `nvJitLink` before importing the Cython extension.
 # These shared libraries are indirect dependencies, pulled in via the direct
 # dependency `cccl.c.parallel`. To ensure reliable symbol resolution at
-# runtime, we explicitly load them first using `cuda.path_finder`.
+# runtime, we explicitly load them first using `cuda.pathfinder`.
 #
 # Without this step, importing the Cython extension directly may fail or behave
 # inconsistently depending on environment setup and dynamic linker behavior.
