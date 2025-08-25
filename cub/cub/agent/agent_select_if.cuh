@@ -132,7 +132,7 @@ struct guarded_inequality_op
   int num_remaining;
 
   template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx)
   {
     if (idx < num_remaining)
     {
