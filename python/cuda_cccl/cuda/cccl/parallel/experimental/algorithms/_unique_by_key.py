@@ -101,7 +101,7 @@ class _UniqueByKey:
             self.op_wrapper,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in_keys: DeviceArrayLike | IteratorBase,
@@ -166,7 +166,7 @@ class _UniqueByKey:
         Returns:
             Required temporary storage size in bytes
         """
-        return self(None, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
+        return self._invoke_build_result(None, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
 
     def compute(
         self,
@@ -191,7 +191,7 @@ class _UniqueByKey:
             num_items: Number of items to process
             stream: CUDA stream for the operation (optional)
         """
-        self(temp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
+        self._invoke_build_result(temp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
 
 
 @cache_with_key(make_cache_key)

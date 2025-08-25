@@ -90,7 +90,7 @@ class _Histogram:
             is_evenly_segmented,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_samples: DeviceArrayLike | IteratorBase,
@@ -157,7 +157,7 @@ class _Histogram:
         Returns:
             Required temporary storage size in bytes
         """
-        return self(None, d_samples, d_histogram, h_num_output_levels, h_lower_level, h_upper_level, num_samples, stream)
+        return self._invoke_build_result(None, d_samples, d_histogram, h_num_output_levels, h_lower_level, h_upper_level, num_samples, stream)
 
     def compute(
         self,
@@ -182,7 +182,7 @@ class _Histogram:
             num_samples: Number of samples to process
             stream: CUDA stream for the operation (optional)
         """
-        self(temp_storage, d_samples, d_histogram, h_num_output_levels, h_lower_level, h_upper_level, num_samples, stream)
+        self._invoke_build_result(temp_storage, d_samples, d_histogram, h_num_output_levels, h_lower_level, h_upper_level, num_samples, stream)
 
 
 @cache_with_key(make_cache_key)

@@ -139,7 +139,7 @@ class _RadixSort:
             decomposer_return_type,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in_keys: DeviceArrayLike | DoubleBuffer,
@@ -234,7 +234,7 @@ class _RadixSort:
         Returns:
             Required temporary storage size in bytes
         """
-        return self(None, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items, begin_bit, end_bit, stream)
+        return self._invoke_build_result(None, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items, begin_bit, end_bit, stream)
 
     def compute(
         self,
@@ -264,7 +264,7 @@ class _RadixSort:
         Returns:
             Required temporary storage size in bytes
         """
-        return self(temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items, begin_bit, end_bit, stream)
+        return self._invoke_build_result(temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items, begin_bit, end_bit, stream)
 
 
 @cache_with_key(make_cache_key)

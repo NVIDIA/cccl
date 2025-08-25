@@ -54,7 +54,7 @@ class _Reduce:
             self.h_init_cccl,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in,
@@ -109,7 +109,7 @@ class _Reduce:
         Returns:
             Required temporary storage size in bytes
         """
-        return self(None, d_in, d_out, num_items, h_init, stream)
+        return self._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
 
     def compute(
         self,
@@ -130,7 +130,7 @@ class _Reduce:
             h_init: Initial value for the reduction
             stream: CUDA stream for the operation (optional)
         """
-        self(temp_storage, d_in, d_out, num_items, h_init, stream)
+        self._invoke_build_result(temp_storage, d_in, d_out, num_items, h_init, stream)
 
 
 def make_cache_key(
@@ -202,6 +202,6 @@ def reduce_into(
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_reduce_into(d_in, d_out, op, h_init)
-    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage_bytes = reducer._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    reducer._invoke_build_result(tmp_storage, d_in, d_out, num_items, h_init, stream)

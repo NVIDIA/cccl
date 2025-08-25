@@ -77,7 +77,7 @@ class _SegmentedReduce:
             self.h_init_cccl,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in,
@@ -141,7 +141,7 @@ class _SegmentedReduce:
         Returns:
             Required temporary storage size in bytes
         """
-        return self(None, d_in, d_out, num_segments, start_offsets_in, end_offsets_in, h_init, stream)
+        return self._invoke_build_result(None, d_in, d_out, num_segments, start_offsets_in, end_offsets_in, h_init, stream)
 
     def compute(
         self,
@@ -166,7 +166,7 @@ class _SegmentedReduce:
             h_init: Initial value for the reduction
             stream: CUDA stream for the operation (optional)
         """
-        self(temp_storage, d_in, d_out, num_segments, start_offsets_in, end_offsets_in, h_init, stream)
+        self._invoke_build_result(temp_storage, d_in, d_out, num_segments, start_offsets_in, end_offsets_in, h_init, stream)
 
 
 def _to_key(d_in: DeviceArrayLike | IteratorBase):
