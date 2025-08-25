@@ -68,7 +68,8 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      ::cuda::std::__throw_invalid_argument("Invalid alignment passed to legacy_managed_memory_resource::allocate_sync.");
+      ::cuda::std::__throw_invalid_argument("Invalid alignment passed to "
+                                            "legacy_managed_memory_resource::allocate_sync.");
     }
 
     void* __ptr{nullptr};
