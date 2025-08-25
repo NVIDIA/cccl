@@ -7,8 +7,8 @@ import cuda.cccl.parallel.experimental as parallel
 
 def reduce_pointer(input_array, build_only):
     size = len(input_array)
-    res = cp.empty(tuple(), dtype=input_array.dtype)
-    h_init = np.zeros(tuple(), dtype=input_array.dtype)
+    res = cp.empty(1, dtype=input_array.dtype)
+    h_init = np.zeros(1, dtype=input_array.dtype)
 
     def my_add(a, b):
         return a + b
@@ -24,8 +24,8 @@ def reduce_pointer(input_array, build_only):
 
 def reduce_pointer_well_known(input_array, build_only):
     size = len(input_array)
-    res = cp.empty(tuple(), dtype=input_array.dtype)
-    h_init = np.zeros(tuple(), dtype=input_array.dtype)
+    res = cp.empty(1, dtype=input_array.dtype)
+    h_init = np.zeros(1, dtype=input_array.dtype)
 
     # Use the well-known PLUS operation from OpKind
     alg = parallel.make_reduce_into(input_array, res, parallel.OpKind.PLUS, h_init)
@@ -39,7 +39,7 @@ def reduce_pointer_well_known(input_array, build_only):
 
 def reduce_struct(input_array, build_only):
     size = len(input_array)
-    res = cp.empty(tuple(), dtype=input_array.dtype)
+    res = cp.empty(1, dtype=input_array.dtype)
     h_init = MyStruct(0, 0)
 
     def my_add(a, b):
@@ -56,8 +56,8 @@ def reduce_struct(input_array, build_only):
 
 def reduce_iterator(inp, size, build_only):
     dt = cp.int32
-    res = cp.empty(tuple(), dtype=dt)
-    h_init = np.zeros(tuple(), dtype=dt)
+    res = cp.empty(1, dtype=dt)
+    h_init = np.zeros(1, dtype=dt)
 
     def my_add(a, b):
         return a + b
@@ -185,8 +185,8 @@ def bench_reduce_struct_single_phase(benchmark, size):
 def reduce_pointer_single_phase(input_array, build_only):
     """Single-phase API that automatically manages temporary storage."""
     size = len(input_array)
-    res = cp.empty(tuple(), dtype=input_array.dtype)
-    h_init = np.zeros(tuple(), dtype=input_array.dtype)
+    res = cp.empty(1, dtype=input_array.dtype)
+    h_init = np.zeros(1, dtype=input_array.dtype)
 
     def my_add(a, b):
         return a + b
@@ -199,7 +199,7 @@ def reduce_pointer_single_phase(input_array, build_only):
 def reduce_struct_single_phase(input_array, build_only):
     """Single-phase API that automatically manages temporary storage for structs."""
     size = len(input_array)
-    res = cp.empty(tuple(), dtype=input_array.dtype)
+    res = cp.empty(1, dtype=input_array.dtype)
     h_init = MyStruct(0, 0)
 
     def my_add(a, b):
@@ -213,8 +213,8 @@ def reduce_struct_single_phase(input_array, build_only):
 def reduce_iterator_single_phase(inp, size, build_only):
     """Single-phase API that automatically manages temporary storage for iterators."""
     dt = cp.int32
-    res = cp.empty(tuple(), dtype=dt)
-    h_init = np.zeros(tuple(), dtype=dt)
+    res = cp.empty(1, dtype=dt)
+    h_init = np.zeros(1, dtype=dt)
 
     def my_add(a, b):
         return a + b
