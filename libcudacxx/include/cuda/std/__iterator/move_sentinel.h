@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H
-#define _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H
+#ifndef _CUDA_STD___ITERATOR_MOVE_SENTINEL_H
+#define _CUDA_STD___ITERATOR_MOVE_SENTINEL_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr move_sentinel() = default;
 
   _CCCL_API constexpr explicit move_sentinel(_Sent __s)
-      : __last_(_CUDA_VSTD::move(__s))
+      : __last_(::cuda::std::move(__s))
   {}
 
   _CCCL_TEMPLATE(class _S2)
@@ -70,4 +70,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H
+#endif // _CUDA_STD___ITERATOR_MOVE_SENTINEL_H

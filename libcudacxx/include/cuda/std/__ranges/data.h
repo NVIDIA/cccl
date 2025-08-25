@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_DATA_H
-#define _LIBCUDACXX___RANGES_DATA_H
+#ifndef _CUDA_STD___RANGES_DATA_H
+#define _CUDA_STD___RANGES_DATA_H
 
 #include <cuda/std/detail/__config>
 
@@ -51,7 +51,7 @@ concept __member_data = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires
 
 template <class _Tp>
 concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && requires(_Tp&& __t) {
-  { _CUDA_VRANGES::begin(__t) } -> contiguous_iterator;
+  { ::cuda::std::ranges::begin(__t) } -> contiguous_iterator;
 };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -67,7 +67,7 @@ template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__ranges_begin_invocable_,
                        requires(_Tp&& __t)(requires(!__member_data<_Tp>),
                                            requires(__can_borrow<_Tp>),
-                                           requires(contiguous_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
+                                           requires(contiguous_iterator<decltype(::cuda::std::ranges::begin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __ranges_begin_invocable = _CCCL_FRAGMENT(__ranges_begin_invocable_, _Tp);
@@ -87,9 +87,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__ranges_begin_invocable<_Tp>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t))))
+    noexcept(noexcept(::cuda::std::to_address(::cuda::std::ranges::begin(__t))))
   {
-    return _CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t));
+    return ::cuda::std::to_address(::cuda::std::ranges::begin(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -107,19 +107,19 @@ struct __fn
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
+      -> decltype(::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
-    return _CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t));
+    return ::cuda::std::ranges::data(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t))))
-      -> decltype(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t))))
+      -> decltype(::cuda::std::ranges::data(static_cast<const _Tp&&>(__t)))
   {
-    return _CUDA_VRANGES::data(static_cast<const _Tp&&>(__t));
+    return ::cuda::std::ranges::data(static_cast<const _Tp&&>(__t));
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -133,4 +133,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_DATA_H
+#endif // _CUDA_STD___RANGES_DATA_H

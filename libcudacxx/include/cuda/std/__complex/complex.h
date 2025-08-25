@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_COMPLEX_H
-#define _LIBCUDACXX___COMPLEX_COMPLEX_H
+#ifndef _CUDA_STD___COMPLEX_COMPLEX_H
+#define _CUDA_STD___COMPLEX_COMPLEX_H
 
 #include <cuda/std/detail/__config>
 
@@ -284,18 +284,18 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (_CUDA_VSTD::is_constant_evaluated())
+  if (::cuda::std::is_constant_evaluated())
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
-    bool __z_inf  = _CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b);
-    bool __w_inf  = _CUDA_VSTD::isinf(__c) || _CUDA_VSTD::isinf(__d);
+    bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
+    bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
     bool __z_nan  = !__z_inf
-                && ((_CUDA_VSTD::isnan(__a) && _CUDA_VSTD::isnan(__b)) || (_CUDA_VSTD::isnan(__a) && __b == _Tp(0))
-                    || (__a == _Tp(0) && _CUDA_VSTD::isnan(__b)));
+                && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
+                    || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
     bool __w_nan = !__w_inf
-                && ((_CUDA_VSTD::isnan(__c) && _CUDA_VSTD::isnan(__d)) || (_CUDA_VSTD::isnan(__c) && __d == _Tp(0))
-                    || (__c == _Tp(0) && _CUDA_VSTD::isnan(__d)));
+                && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
+                    || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if (__z_nan || __w_nan)
     {
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
@@ -308,8 +308,8 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
       }
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
     }
-    bool __z_nonzero_nan = !__z_inf && !__z_nan && (_CUDA_VSTD::isnan(__a) || _CUDA_VSTD::isnan(__b));
-    bool __w_nonzero_nan = !__w_inf && !__w_nan && (_CUDA_VSTD::isnan(__c) || _CUDA_VSTD::isnan(__d));
+    bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
+    bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
     if (__z_nonzero_nan || __w_nonzero_nan)
     {
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
@@ -322,56 +322,56 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __x = __partials.__ac - __partials.__bd;
   _Tp __y = __partials.__ad + __partials.__bc;
 #ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION
-  if (_CUDA_VSTD::isnan(__x) && _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) && ::cuda::std::isnan(__y))
   {
     bool __recalc = false;
-    if (_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b))
+    if (::cuda::std::isinf(__a) || ::cuda::std::isinf(__b))
     {
-      __a = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
-      __b = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
-      if (_CUDA_VSTD::isnan(__c))
+      __a = ::cuda::std::copysign(::cuda::std::isinf(__a) ? _Tp(1) : _Tp(0), __a);
+      __b = ::cuda::std::copysign(::cuda::std::isinf(__b) ? _Tp(1) : _Tp(0), __b);
+      if (::cuda::std::isnan(__c))
       {
-        __c = _CUDA_VSTD::copysign(_Tp(0), __c);
+        __c = ::cuda::std::copysign(_Tp(0), __c);
       }
-      if (_CUDA_VSTD::isnan(__d))
+      if (::cuda::std::isnan(__d))
       {
-        __d = _CUDA_VSTD::copysign(_Tp(0), __d);
+        __d = ::cuda::std::copysign(_Tp(0), __d);
       }
       __recalc = true;
     }
-    if (_CUDA_VSTD::isinf(__c) || _CUDA_VSTD::isinf(__d))
+    if (::cuda::std::isinf(__c) || ::cuda::std::isinf(__d))
     {
-      __c = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
-      __d = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
-      if (_CUDA_VSTD::isnan(__a))
+      __c = ::cuda::std::copysign(::cuda::std::isinf(__c) ? _Tp(1) : _Tp(0), __c);
+      __d = ::cuda::std::copysign(::cuda::std::isinf(__d) ? _Tp(1) : _Tp(0), __d);
+      if (::cuda::std::isnan(__a))
       {
-        __a = _CUDA_VSTD::copysign(_Tp(0), __a);
+        __a = ::cuda::std::copysign(_Tp(0), __a);
       }
-      if (_CUDA_VSTD::isnan(__b))
+      if (::cuda::std::isnan(__b))
       {
-        __b = _CUDA_VSTD::copysign(_Tp(0), __b);
+        __b = ::cuda::std::copysign(_Tp(0), __b);
       }
       __recalc = true;
     }
     if (!__recalc
-        && (_CUDA_VSTD::isinf(__partials.__ac) || _CUDA_VSTD::isinf(__partials.__bd)
-            || _CUDA_VSTD::isinf(__partials.__ad) || _CUDA_VSTD::isinf(__partials.__bc)))
+        && (::cuda::std::isinf(__partials.__ac) || ::cuda::std::isinf(__partials.__bd)
+            || ::cuda::std::isinf(__partials.__ad) || ::cuda::std::isinf(__partials.__bc)))
     {
-      if (_CUDA_VSTD::isnan(__a))
+      if (::cuda::std::isnan(__a))
       {
-        __a = _CUDA_VSTD::copysign(_Tp(0), __a);
+        __a = ::cuda::std::copysign(_Tp(0), __a);
       }
-      if (_CUDA_VSTD::isnan(__b))
+      if (::cuda::std::isnan(__b))
       {
-        __b = _CUDA_VSTD::copysign(_Tp(0), __b);
+        __b = ::cuda::std::copysign(_Tp(0), __b);
       }
-      if (_CUDA_VSTD::isnan(__c))
+      if (::cuda::std::isnan(__c))
       {
-        __c = _CUDA_VSTD::copysign(_Tp(0), __c);
+        __c = ::cuda::std::copysign(_Tp(0), __c);
       }
-      if (_CUDA_VSTD::isnan(__d))
+      if (::cuda::std::isnan(__d))
       {
-        __d = _CUDA_VSTD::copysign(_Tp(0), __d);
+        __d = ::cuda::std::copysign(_Tp(0), __d);
       }
       __recalc = true;
     }
@@ -412,35 +412,34 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw =
-    _CUDA_VSTD::__constexpr_logb(_CUDA_VSTD::__constexpr_fmax(_CUDA_VSTD::fabs(__c), _CUDA_VSTD::fabs(__d)));
-  if (_CUDA_VSTD::isfinite(__logbw))
+  _Tp __logbw  = ::cuda::std::__constexpr_logb(::cuda::std::fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
+  if (::cuda::std::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
-    __c      = _CUDA_VSTD::__constexpr_scalbn(__c, -__ilogbw);
-    __d      = _CUDA_VSTD::__constexpr_scalbn(__d, -__ilogbw);
+    __c      = ::cuda::std::__constexpr_scalbn(__c, -__ilogbw);
+    __d      = ::cuda::std::__constexpr_scalbn(__d, -__ilogbw);
   }
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (_CUDA_VSTD::is_constant_evaluated())
+  if (::cuda::std::is_constant_evaluated())
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
-    bool __z_inf  = _CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b);
-    bool __w_inf  = _CUDA_VSTD::isinf(__c) || _CUDA_VSTD::isinf(__d);
+    bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
+    bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
     bool __z_nan  = !__z_inf
-                && ((_CUDA_VSTD::isnan(__a) && _CUDA_VSTD::isnan(__b)) || (_CUDA_VSTD::isnan(__a) && __b == _Tp(0))
-                    || (__a == _Tp(0) && _CUDA_VSTD::isnan(__b)));
+                && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
+                    || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
     bool __w_nan = !__w_inf
-                && ((_CUDA_VSTD::isnan(__c) && _CUDA_VSTD::isnan(__d)) || (_CUDA_VSTD::isnan(__c) && __d == _Tp(0))
-                    || (__c == _Tp(0) && _CUDA_VSTD::isnan(__d)));
+                && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
+                    || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if ((__z_nan || __w_nan) || (__z_inf && __w_inf))
     {
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
     }
-    bool __z_nonzero_nan = !__z_inf && !__z_nan && (_CUDA_VSTD::isnan(__a) || _CUDA_VSTD::isnan(__b));
-    bool __w_nonzero_nan = !__w_inf && !__w_nan && (_CUDA_VSTD::isnan(__c) || _CUDA_VSTD::isnan(__d));
+    bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
+    bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
     if (__z_nonzero_nan || __w_nonzero_nan)
     {
       if (__w_zero)
@@ -472,28 +471,29 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);
 
   _Tp __denom = __denom_vec.__a + __denom_vec.__b;
-  _Tp __x     = _CUDA_VSTD::__constexpr_scalbn((__partials.__ac + __partials.__bd) / __denom, -__ilogbw);
-  _Tp __y     = _CUDA_VSTD::__constexpr_scalbn((__partials.__bc - __partials.__ad) / __denom, -__ilogbw);
+  _Tp __x     = ::cuda::std::__constexpr_scalbn((__partials.__ac + __partials.__bd) / __denom, -__ilogbw);
+  _Tp __y     = ::cuda::std::__constexpr_scalbn((__partials.__bc - __partials.__ad) / __denom, -__ilogbw);
 #ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION
-  if (_CUDA_VSTD::isnan(__x) && _CUDA_VSTD::isnan(__y))
+  if (::cuda::std::isnan(__x) && ::cuda::std::isnan(__y))
   {
-    if ((__denom == _Tp(0)) && (!_CUDA_VSTD::isnan(__a) || !_CUDA_VSTD::isnan(__b)))
+    if ((__denom == _Tp(0)) && (!::cuda::std::isnan(__a) || !::cuda::std::isnan(__b)))
     {
-      __x = _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __c) * __a;
-      __y = _CUDA_VSTD::copysign(numeric_limits<_Tp>::infinity(), __c) * __b;
+      __x = ::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __c) * __a;
+      __y = ::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __c) * __b;
     }
-    else if ((_CUDA_VSTD::isinf(__a) || _CUDA_VSTD::isinf(__b)) && _CUDA_VSTD::isfinite(__c)
-             && _CUDA_VSTD::isfinite(__d))
+    else if ((::cuda::std::isinf(__a) || ::cuda::std::isinf(__b)) && ::cuda::std::isfinite(__c)
+             && ::cuda::std::isfinite(__d))
     {
-      __a = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__a) ? _Tp(1) : _Tp(0), __a);
-      __b = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__b) ? _Tp(1) : _Tp(0), __b);
+      __a = ::cuda::std::copysign(::cuda::std::isinf(__a) ? _Tp(1) : _Tp(0), __a);
+      __b = ::cuda::std::copysign(::cuda::std::isinf(__b) ? _Tp(1) : _Tp(0), __b);
       __x = numeric_limits<_Tp>::infinity() * (__a * __c + __b * __d);
       __y = numeric_limits<_Tp>::infinity() * (__b * __c - __a * __d);
     }
-    else if (_CUDA_VSTD::isinf(__logbw) && __logbw > _Tp(0) && _CUDA_VSTD::isfinite(__a) && _CUDA_VSTD::isfinite(__b))
+    else if (::cuda::std::isinf(__logbw) && __logbw > _Tp(0) && ::cuda::std::isfinite(__a)
+             && ::cuda::std::isfinite(__b))
     {
-      __c = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__c) ? _Tp(1) : _Tp(0), __c);
-      __d = _CUDA_VSTD::copysign(_CUDA_VSTD::isinf(__d) ? _Tp(1) : _Tp(0), __d);
+      __c = ::cuda::std::copysign(::cuda::std::isinf(__c) ? _Tp(1) : _Tp(0), __c);
+      __d = ::cuda::std::copysign(::cuda::std::isinf(__d) ? _Tp(1) : _Tp(0), __d);
       __x = _Tp(0) * (__a * __c + __b * __d);
       __y = _Tp(0) * (__b * __c - __a * __d);
     }
@@ -673,4 +673,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_COMPLEX_H
+#endif // _CUDA_STD___COMPLEX_COMPLEX_H

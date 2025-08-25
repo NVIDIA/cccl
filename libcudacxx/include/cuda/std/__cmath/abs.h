@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ABS_H
-#define _LIBCUDACXX___CMATH_ABS_H
+#ifndef _CUDA_STD___CMATH_ABS_H
+#define _CUDA_STD___CMATH_ABS_H
 
 #include <cuda/std/detail/__config>
 
@@ -79,7 +79,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _LIBCUDACXX_HAS_NVFP16()
     if constexpr (is_same_v<_Tp, __half>)
     {
-      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
         return ::__habs(__x);
       }
@@ -88,26 +88,26 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _LIBCUDACXX_HAS_NVBF16()
     if constexpr (is_same_v<_Tp, __nv_bfloat16>)
     {
-      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
         return ::__habs(__x);
       }
     }
 #endif // _LIBCUDACXX_HAS_NVBF16()
-    const auto __val = _CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>;
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
+    const auto __val = ::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>;
+    return ::cuda::std::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
   }
 }
 
 [[nodiscard]] _CCCL_API constexpr float fabsf(float __x) noexcept
 {
-  return _CUDA_VSTD::fabs(__x);
+  return ::cuda::std::fabs(__x);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr long double fabsl(long double __x) noexcept
 {
-  return _CUDA_VSTD::fabs(__x);
+  return ::cuda::std::fabs(__x);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
@@ -117,11 +117,11 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr auto abs(_Tp __x) noexcept
 {
-  return _CUDA_VSTD::fabs(__x);
+  return ::cuda::std::fabs(__x);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_ABS_H
+#endif // _CUDA_STD___CMATH_ABS_H

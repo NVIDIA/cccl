@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_EMPTY_H
-#define _LIBCUDACXX___RANGES_EMPTY_H
+#ifndef _CUDA_STD___RANGES_EMPTY_H
+#define _CUDA_STD___RANGES_EMPTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,12 +38,12 @@ template <class _Tp>
 concept __member_empty = __workaround_52970<_Tp> && requires(_Tp&& __t) { bool(__t.empty()); };
 
 template <class _Tp>
-concept __can_invoke_size = !__member_empty<_Tp> && requires(_Tp&& __t) { _CUDA_VRANGES::size(__t); };
+concept __can_invoke_size = !__member_empty<_Tp> && requires(_Tp&& __t) { ::cuda::std::ranges::size(__t); };
 
 template <class _Tp>
 concept __can_compare_begin_end = !__member_empty<_Tp> && !__can_invoke_size<_Tp> && requires(_Tp&& __t) {
-  bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t));
-  { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
+  bool(::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t));
+  { ::cuda::std::ranges::begin(__t) } -> forward_iterator;
 };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -54,7 +54,7 @@ _CCCL_CONCEPT __member_empty = _CCCL_FRAGMENT(__member_empty_, _Tp);
 
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_invoke_size_,
-                       requires(_Tp&& __t)(requires(!__member_empty<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
+                       requires(_Tp&& __t)(requires(!__member_empty<_Tp>), ((void) ::cuda::std::ranges::size(__t))));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_invoke_size = _CCCL_FRAGMENT(__can_invoke_size_, _Tp);
@@ -64,8 +64,8 @@ _CCCL_CONCEPT_FRAGMENT(
   __can_compare_begin_end_,
   requires(_Tp&& __t)(requires(!__member_empty<_Tp>),
                       requires(!__can_invoke_size<_Tp>),
-                      (bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t))),
-                      requires(forward_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
+                      (bool(::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t))),
+                      requires(forward_iterator<decltype(::cuda::std::ranges::begin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_compare_begin_end = _CCCL_FRAGMENT(__can_compare_begin_end_, _Tp);
@@ -82,17 +82,17 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_invoke_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const noexcept(noexcept(_CUDA_VRANGES::size(__t)))
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::size(__t)))
   {
-    return _CUDA_VRANGES::size(__t) == 0;
+    return ::cuda::std::ranges::size(__t) == 0;
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_compare_begin_end<_Tp>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t) const
-    noexcept(noexcept(bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t))))
+    noexcept(noexcept(bool(::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t))))
   {
-    return _CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t);
+    return ::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t);
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -106,4 +106,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_EMPTY_H
+#endif // _CUDA_STD___RANGES_EMPTY_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_RANGES_FOR_EACH_N_H
-#define _LIBCUDACXX___ALGORITHM_RANGES_FOR_EACH_N_H
+#ifndef _CUDA_STD___ALGORITHM_RANGES_FOR_EACH_N_H
+#define _CUDA_STD___ALGORITHM_RANGES_FOR_EACH_N_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,10 +48,10 @@ struct __fn
   {
     while (__count-- > 0)
     {
-      _CUDA_VSTD::invoke(__func, _CUDA_VSTD::invoke(__proj, *__first));
+      ::cuda::std::invoke(__func, ::cuda::std::invoke(__proj, *__first));
       ++__first;
     }
-    return {_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__func)};
+    return {::cuda::std::move(__first), ::cuda::std::move(__func)};
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -65,4 +65,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_RANGES_FOR_EACH_N_H
+#endif // _CUDA_STD___ALGORITHM_RANGES_FOR_EACH_N_H

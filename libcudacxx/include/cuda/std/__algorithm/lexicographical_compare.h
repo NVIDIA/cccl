@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_LEXICOGRAPHICAL_COMPARE_H
-#define _LIBCUDACXX___ALGORITHM_LEXICOGRAPHICAL_COMPARE_H
+#ifndef _CUDA_STD___ALGORITHM_LEXICOGRAPHICAL_COMPARE_H
+#define _CUDA_STD___ALGORITHM_LEXICOGRAPHICAL_COMPARE_H
 
 #include <cuda/std/detail/__config>
 
@@ -58,11 +58,11 @@ template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr bool lexicographical_compare(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
-  return _CUDA_VSTD::lexicographical_compare(__first1, __last1, __first2, __last2, __less{});
+  return ::cuda::std::lexicographical_compare(__first1, __last1, __first2, __last2, __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_LEXICOGRAPHICAL_COMPARE_H
+#endif // _CUDA_STD___ALGORITHM_LEXICOGRAPHICAL_COMPARE_H

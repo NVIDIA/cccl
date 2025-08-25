@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_REVERSE_ITERATOR_H
+#define _CUDA_STD___ITERATOR_REVERSE_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -64,8 +64,8 @@ template <class _Iter, class = void>
 inline constexpr bool __noexcept_rev_iter_iter_move = false;
 
 template <class _Iter>
-inline constexpr bool __noexcept_rev_iter_iter_move<_Iter, void_t<decltype(--_CUDA_VSTD::declval<_Iter&>())>> =
-  is_nothrow_copy_constructible_v<_Iter> && noexcept(_CUDA_VRANGES::iter_move(--_CUDA_VSTD::declval<_Iter&>()));
+inline constexpr bool __noexcept_rev_iter_iter_move<_Iter, void_t<decltype(--::cuda::std::declval<_Iter&>())>> =
+  is_nothrow_copy_constructible_v<_Iter> && noexcept(::cuda::std::ranges::iter_move(--::cuda::std::declval<_Iter&>()));
 
 template <class _Iter, class _Iter2, class = void>
 inline constexpr bool __noexcept_rev_iter_iter_swap = false;
@@ -73,7 +73,7 @@ inline constexpr bool __noexcept_rev_iter_iter_swap = false;
 template <class _Iter, class _Iter2>
 inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
-  && noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
+  && noexcept(::cuda::std::ranges::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
@@ -154,11 +154,11 @@ public:
   {
     if constexpr (is_pointer_v<_Iter>)
     {
-      return _CUDA_VSTD::prev(current);
+      return ::cuda::std::prev(current);
     }
     else
     {
-      return _CUDA_VSTD::prev(current).operator->();
+      return ::cuda::std::prev(current).operator->();
     }
   }
 
@@ -221,7 +221,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator-(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(_CUDA_VSTD::declval<const _Iter2&>() - _CUDA_VSTD::declval<const _Iter&>())
+    -> decltype(::cuda::std::declval<const _Iter2&>() - ::cuda::std::declval<const _Iter&>())
   {
     return __y.base() - __x.base();
   }
@@ -245,7 +245,7 @@ public:
   iter_move(const reverse_iterator& __i) noexcept(__noexcept_rev_iter_iter_move<_Iter2>)
   {
     auto __tmp = __i.base();
-    return _CUDA_VRANGES::iter_move(--__tmp);
+    return ::cuda::std::ranges::iter_move(--__tmp);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -255,15 +255,15 @@ public:
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
-    return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
+    return ::cuda::std::ranges::iter_swap(--__xtmp, --__ytmp);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator==(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
-    noexcept(bool(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _Iter2&>())))
-    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _Iter2&>()))
+    noexcept(bool(::cuda::std::declval<const _Iter&>() == ::cuda::std::declval<const _Iter2&>())))
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() == ::cuda::std::declval<const _Iter2&>()))
   {
     return __x.base() == __y.base();
   }
@@ -272,8 +272,8 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator!=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y) noexcept(
-    noexcept(bool(_CUDA_VSTD::declval<const _Iter&>() != _CUDA_VSTD::declval<const _Iter2&>())))
-    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() != _CUDA_VSTD::declval<const _Iter2&>()))
+    noexcept(bool(::cuda::std::declval<const _Iter&>() != ::cuda::std::declval<const _Iter2&>())))
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() != ::cuda::std::declval<const _Iter2&>()))
   {
     return __x.base() != __y.base();
   }
@@ -293,7 +293,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() > _CUDA_VSTD::declval<const _Iter2&>()))
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() > ::cuda::std::declval<const _Iter2&>()))
   {
     return __x.base() > __y.base();
   }
@@ -302,7 +302,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _Iter2&>()))
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() < ::cuda::std::declval<const _Iter2&>()))
   {
     return __x.base() < __y.base();
   }
@@ -311,7 +311,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator>=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() <= _CUDA_VSTD::declval<const _Iter2&>()))
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() <= ::cuda::std::declval<const _Iter2&>()))
   {
     return __x.base() <= __y.base();
   }
@@ -320,7 +320,7 @@ public:
   template <class _Iter2>
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
-    -> decltype(static_cast<bool>(_CUDA_VSTD::declval<const _Iter&>() >= _CUDA_VSTD::declval<const _Iter2&>()))
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() >= ::cuda::std::declval<const _Iter2&>()))
   {
     return __x.base() >= __y.base();
   }
@@ -344,7 +344,7 @@ make_reverse_iterator(_Iter __i) noexcept(is_nothrow_copy_constructible_v<_Iter>
 template <template <class> class _RevIter1, template <class> class _RevIter2, class _Iter>
 struct __unwrap_reverse_iter_impl
 {
-  using _UnwrappedIter  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(_CUDA_VSTD::declval<_Iter>()));
+  using _UnwrappedIter  = decltype(__unwrap_iter_impl<_Iter>::__unwrap(::cuda::std::declval<_Iter>()));
   using _ReverseWrapper = _RevIter1<_RevIter2<_Iter>>;
 
   _CCCL_API static constexpr _ReverseWrapper __rewrap(_ReverseWrapper __orig_iter, _UnwrappedIter __unwrapped_iter)
@@ -368,4 +368,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_REVERSE_ITERATOR_H

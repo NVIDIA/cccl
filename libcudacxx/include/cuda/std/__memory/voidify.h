@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_VOIDIFY_H
-#define _LIBCUDACXX___MEMORY_VOIDIFY_H
+#ifndef _CUDA_STD___MEMORY_VOIDIFY_H
+#define _CUDA_STD___MEMORY_VOIDIFY_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,11 +31,11 @@ template <typename _Tp>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from)
 {
   // Cast away cv-qualifiers to allow modifying elements of a range through const iterators.
-  return const_cast<void*>(static_cast<const volatile void*>(_CUDA_VSTD::addressof(__from)));
+  return const_cast<void*>(static_cast<const volatile void*>(::cuda::std::addressof(__from)));
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_VOIDIFY_H
+#endif // _CUDA_STD___MEMORY_VOIDIFY_H

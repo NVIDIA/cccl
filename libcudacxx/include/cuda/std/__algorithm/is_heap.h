@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_IS_HEAP_H
-#define _LIBCUDACXX___ALGORITHM_IS_HEAP_H
+#ifndef _CUDA_STD___ALGORITHM_IS_HEAP_H
+#define _CUDA_STD___ALGORITHM_IS_HEAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,17 +34,17 @@ template <class _RandomAccessIterator, class _Compare>
 [[nodiscard]] _CCCL_API constexpr bool
 is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  return _CUDA_VSTD::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare>>(__comp)) == __last;
+  return ::cuda::std::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare>>(__comp)) == __last;
 }
 
 template <class _RandomAccessIterator>
 [[nodiscard]] _CCCL_API constexpr bool is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  return _CUDA_VSTD::is_heap(__first, __last, __less{});
+  return ::cuda::std::is_heap(__first, __last, __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_IS_HEAP_H
+#endif // _CUDA_STD___ALGORITHM_IS_HEAP_H

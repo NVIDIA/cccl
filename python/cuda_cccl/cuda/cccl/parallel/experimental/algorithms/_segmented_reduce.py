@@ -13,7 +13,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -37,9 +37,6 @@ class _SegmentedReduce:
         op: Callable,
         h_init: np.ndarray | GpuStruct,
     ):
-        start_offsets_in, end_offsets_in = scrub_duplicate_ltoirs(
-            start_offsets_in, end_offsets_in
-        )
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
@@ -197,6 +194,21 @@ def segmented_reduce(
     num_segments: int,
     stream=None,
 ):
+    """
+    Performs device-wide segmented reduction.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array to store the result of the reduction for each segment
+        start_offsets_in: Device array or iterator containing the sequence of beginning offsets
+        end_offsets_in: Device array or iterator containing the sequence of ending offsets
+        op: Binary reduction operator
+        h_init: Initial value for the reduction
+        num_segments: Number of segments to reduce
+        stream: CUDA stream for the operation (optional)
+    """
     reducer = make_segmented_reduce(
         d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
     )

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FIND_H
-#define _LIBCUDACXX___ALGORITHM_FIND_H
+#ifndef _CUDA_STD___ALGORITHM_FIND_H
+#define _CUDA_STD___ALGORITHM_FIND_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@ template <class _Iter, class _Sent, class _Tp, class _Proj>
 {
   for (; __first != __last; ++__first)
   {
-    if (_CUDA_VSTD::__invoke(__proj, *__first) == __value)
+    if (::cuda::std::__invoke(__proj, *__first) == __value)
     {
       break;
     }
@@ -59,4 +59,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_FIND_H
+#endif // _CUDA_STD___ALGORITHM_FIND_H

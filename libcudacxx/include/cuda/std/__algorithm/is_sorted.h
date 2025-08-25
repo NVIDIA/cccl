@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_IS_SORTED_H
-#define _LIBCUDACXX___ALGORITHM_IS_SORTED_H
+#ifndef _CUDA_STD___ALGORITHM_IS_SORTED_H
+#define _CUDA_STD___ALGORITHM_IS_SORTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,17 +33,17 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Compare>
 [[nodiscard]] _CCCL_API constexpr bool is_sorted(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
-  return _CUDA_VSTD::__is_sorted_until<__comp_ref_type<_Compare>>(__first, __last, __comp) == __last;
+  return ::cuda::std::__is_sorted_until<__comp_ref_type<_Compare>>(__first, __last, __comp) == __last;
 }
 
 template <class _ForwardIterator>
 [[nodiscard]] _CCCL_API constexpr bool is_sorted(_ForwardIterator __first, _ForwardIterator __last)
 {
-  return _CUDA_VSTD::is_sorted(__first, __last, __less{});
+  return ::cuda::std::is_sorted(__first, __last, __less{});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_IS_SORTED_H
+#endif // _CUDA_STD___ALGORITHM_IS_SORTED_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANDOM_IS_VALID_H
-#define _LIBCUDACXX___RANDOM_IS_VALID_H
+#ifndef _CUDA_STD___RANDOM_IS_VALID_H
+#define _CUDA_STD___RANDOM_IS_VALID_H
 
 #include <cuda/std/detail/__config>
 
@@ -92,15 +92,15 @@ inline constexpr bool __libcpp_random_is_valid_inttype<__uint128_t> = true;
 // handle such generator types.)
 
 template <class, class = void>
-inline constexpr bool __libcpp_random_is_valid_urng = false;
+inline constexpr bool __cccl_random_is_valid_urng = false;
 template <class _Gp>
-inline constexpr bool __libcpp_random_is_valid_urng<
+inline constexpr bool __cccl_random_is_valid_urng<
   _Gp,
   enable_if_t<is_unsigned_v<typename _Gp::result_type>
-              && is_same_v<decltype(_CUDA_VSTD::declval<_Gp&>()()), typename _Gp::result_type>>> = true;
+              && is_same_v<decltype(::cuda::std::declval<_Gp&>()()), typename _Gp::result_type>>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANDOM_IS_VALID_H
+#endif // _CUDA_STD___RANDOM_IS_VALID_H

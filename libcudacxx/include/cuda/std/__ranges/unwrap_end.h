@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_UNWRAP_SENTINEL_H
-#define _LIBCUDACXX___RANGES_UNWRAP_SENTINEL_H
+#ifndef _CUDA_STD___RANGES_UNWRAP_SENTINEL_H
+#define _CUDA_STD___RANGES_UNWRAP_SENTINEL_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,12 +35,12 @@ _CCCL_REQUIRES(forward_range<_Range>)
 {
   if constexpr (common_range<_Range>)
   {
-    return _CUDA_VRANGES::end(__range);
+    return ::cuda::std::ranges::end(__range);
   }
   else
   {
-    auto __ret = _CUDA_VRANGES::begin(__range);
-    _CUDA_VRANGES::advance(__ret, _CUDA_VRANGES::end(__range));
+    auto __ret = ::cuda::std::ranges::begin(__range);
+    ::cuda::std::ranges::advance(__ret, ::cuda::std::ranges::end(__range));
     return __ret;
   }
   _CCCL_UNREACHABLE();
@@ -50,4 +50,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_UNWRAP_SENTINEL_H
+#endif // _CUDA_STD___RANGES_UNWRAP_SENTINEL_H

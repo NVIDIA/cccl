@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___EXCEPTION_TERMINATE_H
-#define _LIBCUDACXX___EXCEPTION_TERMINATE_H
+#ifndef _CUDA_STD___EXCEPTION_TERMINATE_H
+#define _CUDA_STD___EXCEPTION_TERMINATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,7 +44,7 @@ using terminate_handler = void (*)();
 #  ifdef __CUDA_ARCH__
 __device__
 #  endif // __CUDA_ARCH__
-  static _CCCL_CONSTINIT _CUDA_VSTD::atomic<terminate_handler>
+  static _CCCL_CONSTINIT ::cuda::std::atomic<terminate_handler>
     __cccl_terminate_handler{&__cccl_terminate};
 
 _CCCL_API inline  terminate_handler set_terminate(terminate_handler __func) noexcept
@@ -70,4 +70,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXCEPTION_TERMINATE_H
+#endif // _CUDA_STD___EXCEPTION_TERMINATE_H

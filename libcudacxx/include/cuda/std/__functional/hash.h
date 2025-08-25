@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_HASH_H
-#define _LIBCUDACXX___FUNCTIONAL_HASH_H
+#ifndef _CUDA_STD___FUNCTIONAL_HASH_H
+#define _CUDA_STD___FUNCTIONAL_HASH_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,7 +48,7 @@ template <class _Size>
 _CCCL_API inline _Size __loadword(const void* __p)
 {
   _Size __r;
-  _CUDA_VSTD::memcpy(&__r, __p, sizeof(__r));
+  ::cuda::std::memcpy(&__r, __p, sizeof(__r));
   return __r;
 }
 
@@ -268,7 +268,7 @@ _Size __murmur2_or_cityhash<_Size, 64>::operator()(const void* __key, _Size __le
     __z = __rotate(__z + __w.first, 33) * __k1;
     __v = __weak_hash_len_32_with_seeds(__s, __v.second * __k1, __x + __w.first);
     __w = __weak_hash_len_32_with_seeds(__s + 32, __z + __w.second, __y + __loadword<_Size>(__s + 16));
-    _CUDA_VSTD::swap(__z, __x);
+    ::cuda::std::swap(__z, __x);
     __s += 64;
     __len -= 64;
   } while (__len != 0);
@@ -647,4 +647,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_HASH_H
+#endif // _CUDA_STD___FUNCTIONAL_HASH_H

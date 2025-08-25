@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SPECIALIZATION_OF_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SPECIALIZATION_OF_H
+#ifndef _CUDA___TYPE_TRAITS_IS_SPECIALIZATION_OF_H
+#define _CUDA___TYPE_TRAITS_IS_SPECIALIZATION_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,4 +34,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SPECIALIZATION_OF_H
+#endif // _CUDA___TYPE_TRAITS_IS_SPECIALIZATION_OF_H

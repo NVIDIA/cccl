@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ALLOCATION_GUARD_H
-#define _LIBCUDACXX___MEMORY_ALLOCATION_GUARD_H
+#ifndef _CUDA_STD___MEMORY_ALLOCATION_GUARD_H
+#define _CUDA_STD___MEMORY_ALLOCATION_GUARD_H
 
 #include <cuda/std/detail/__config>
 
@@ -60,7 +60,7 @@ struct __allocation_guard
 
   template <class _AllocT> // we perform the allocator conversion inside the constructor
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit __allocation_guard(_AllocT __alloc, _Size __n)
-      : __alloc_(_CUDA_VSTD::move(__alloc))
+      : __alloc_(::cuda::std::move(__alloc))
       , __n_(__n)
       , __ptr_(allocator_traits<_Alloc>::allocate(__alloc_, __n_)) // initialization order is important
   {}
@@ -97,4 +97,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ALLOCATION_GUARD_H
+#endif // _CUDA_STD___MEMORY_ALLOCATION_GUARD_H

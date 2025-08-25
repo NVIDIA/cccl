@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
-#define _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_LITERAL_TYPE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_LITERAL_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -56,4 +56,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
+#endif // _CUDA_STD___TYPE_TRAITS_IS_LITERAL_TYPE_H

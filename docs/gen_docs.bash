@@ -198,6 +198,6 @@ fi
 # Build Sphinx HTML documentation
 echo "Building documentation with Sphinx..."
 # Use the virtual environment's Python
-python -m sphinx.cmd.build -b html . ${BUILDDIR}/html ${SPHINXOPTS}
+python -m sphinx.cmd.build -b html -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
 
 echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"

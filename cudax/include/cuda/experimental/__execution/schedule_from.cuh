@@ -23,10 +23,10 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -52,7 +52,7 @@ template <class _Tag>
 struct __decay_args
 {
   template <class... _Ts>
-  [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
@@ -62,11 +62,11 @@ struct __decay_args
     }
     else if constexpr (!__nothrow_decay_copyable<_Ts...>)
     {
-      return completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<_Tag(decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
     }
     else
     {
-      return completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...)>{};
+      return completion_signatures<_Tag(decay_t<_Ts>...)>{};
     }
   }
 };
@@ -84,7 +84,7 @@ struct __transfer_sndr_t
   using __sched_domain_t _CCCL_NODEBUG_ALIAS = __query_result_or_t<_Sch, get_domain_t, default_domain>;
   using __sndr_domain_t _CCCL_NODEBUG_ALIAS  = __early_domain_of_t<_Sndr, __nil>;
   using __late_domain_t _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<_Tag, schedule_from_t>, __sched_domain_t, __sndr_domain_t>;
+    ::cuda::std::_If<__same_as<_Tag, schedule_from_t>, __sched_domain_t, __sndr_domain_t>;
 
   // see SCHED-ATTRS here: https://eel.is/c++draft/exec#snd.expos-6
   struct __attrs_t
@@ -106,7 +106,7 @@ struct __transfer_sndr_t
     // schedule_from and continues_on have special rules for the domain used to transform
     // the sender.
     _CCCL_TEMPLATE(class _LateDomain = __late_domain_t)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_LateDomain, __nil>) )
+    _CCCL_REQUIRES((!__same_as<_LateDomain, __nil>) )
     [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_override_t) noexcept -> _LateDomain
     {
       return {};
@@ -123,7 +123,7 @@ struct __transfer_sndr_t
     // because get_domain_override_t is not a forwarding query.
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Query, class... _Args)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_Query, get_completion_behavior_t>)
+    _CCCL_REQUIRES((!__same_as<_Query, get_completion_behavior_t>)
                      _CCCL_AND __forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
     [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
       noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
@@ -170,12 +170,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 {
   _CUDAX_SEMI_PRIVATE :
   template <class... _As>
-  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_value_t, _CUDA_VSTD::decay_t<_As>...>;
+  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<set_value_t, decay_t<_As>...>;
 
   template <class _Error>
-  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_error_t, _CUDA_VSTD::decay_t<_Error>>;
+  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<set_error_t, decay_t<_Error>>;
 
-  using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_stopped_t>;
+  using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<set_stopped_t>;
 
   struct __send_result_fn
   {
@@ -193,7 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     template <class _Tuple>
     _CCCL_API constexpr void operator()(_Tuple& __tuple) const noexcept
     {
-      _CUDA_VSTD::__apply(__send_result_fn{}, static_cast<_Tuple&>(__tuple), __rcvr_);
+      ::cuda::std::__apply(__send_result_fn{}, static_cast<_Tuple&>(__tuple), __rcvr_);
     }
 
     _Rcvr& __rcvr_;
@@ -211,7 +211,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   template <class _Rcvr, class _Results>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
+    using receiver_concept = receiver_t;
 
     template <class _Tag, class... _As>
     _CCCL_API constexpr void operator()(_Tag, _As&... __as) noexcept
@@ -225,12 +225,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+    _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
@@ -259,7 +259,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     template <class _Tag, class... _As>
     _CCCL_API void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using __tupl_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<_Tag, _CUDA_VSTD::decay_t<_As>...>;
+      using __tupl_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<_Tag, decay_t<_As>...>;
       if constexpr (__nothrow_decay_copyable<_As...>)
       {
         __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
@@ -311,7 +311,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     using operation_state_concept             = operation_state_t;
     using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
     using __results_t _CCCL_NODEBUG_ALIAS =
-      typename __completions_t::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
+      typename __completions_t::template __transform_q<::cuda::std::__decayed_tuple, __variant>;
     using __rcvr_t       = schedule_from_t::__rcvr_t<_Rcvr, __results_t>;
     using __stash_rcvr_t = schedule_from_t::__stash_rcvr_t<_Sch, _Rcvr, __results_t>;
 
@@ -350,7 +350,7 @@ public:
   };
 
   template <class _Sch, class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);

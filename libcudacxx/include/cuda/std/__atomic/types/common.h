@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_COMMON_H
-#define _LIBCUDACXX___ATOMIC_TYPES_COMMON_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_COMMON_H
+#define _CUDA_STD___ATOMIC_TYPES_COMMON_H
 
 #include <cuda/std/detail/__config>
 
@@ -93,7 +93,7 @@ _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rh
        }
      } return 0;),
     NV_IS_HOST,
-    (return _CUDA_VSTD::memcmp(__lhs, __rhs, __count);))
+    (return ::cuda::std::memcmp(__lhs, __rhs, __count);))
   _CCCL_UNREACHABLE();
 }
 
@@ -101,4 +101,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_COMMON_H
+#endif // _CUDA_STD___ATOMIC_TYPES_COMMON_H

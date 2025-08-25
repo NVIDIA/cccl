@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_GET_H
-#define _LIBCUDACXX___FWD_GET_H
+#ifndef _CUDA_STD___FWD_GET_H
+#define _CUDA_STD___FWD_GET_H
 
 #include <cuda/std/detail/__config>
 
@@ -114,10 +114,10 @@ _CCCL_END_NAMESPACE_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-using _CUDA_VRANGES::get;
+using ::cuda::std::ranges::get;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_GET_H
+#endif // _CUDA_STD___FWD_GET_H

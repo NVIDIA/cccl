@@ -52,7 +52,7 @@ _CCCL_CONCEPT synchronous_resource =
   _CCCL_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
     _Same_as(void*) __res.allocate_sync(__bytes, __alignment), //
     _Same_as(void) __res.deallocate_sync(__ptr, __bytes, __alignment),
-    requires(_CUDA_VSTD::equality_comparable<_Resource>));
+    requires(::cuda::std::equality_comparable<_Resource>));
 
 //! @brief The \c resource concept verifies that a type Resource satisfies the basic requirements of a
 //! memory resource and additionally supports stream ordered allocations
@@ -84,7 +84,7 @@ _CCCL_CONCEPT resource = _CCCL_REQUIRES_EXPR(
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
   requires(synchronous_resource<_Resource>),
-  requires(_CUDA_VSTD::__all<has_property<_Resource, _Properties>...>::value));
+  requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource`
 //! concept and also satisfies all the provided Properties
@@ -93,7 +93,7 @@ _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variad
 // We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
-  requires(resource<_Resource>), requires(_CUDA_VSTD::__all<has_property<_Resource, _Properties>...>::value));
+  requires(resource<_Resource>), requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
 
 template <bool _Convertible>
 struct __different_resource__
@@ -116,7 +116,7 @@ struct __different_resource__<true>
 
 template <class _Resource, class _OtherResource>
 _CCCL_CONCEPT __different_resource =
-  __different_resource__<_CUDA_VSTD::convertible_to<_OtherResource const&, _Resource const&>>::__value(
+  __different_resource__<::cuda::std::convertible_to<_OtherResource const&, _Resource const&>>::__value(
     static_cast<_OtherResource*>(nullptr));
 
 _CCCL_END_NAMESPACE_CUDA_MR

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_FORMAT_H
-#define _LIBCUDACXX___FLOATING_POINT_FORMAT_H
+#ifndef _CUDA_STD___FLOATING_POINT_FORMAT_H
+#define _CUDA_STD___FLOATING_POINT_FORMAT_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__fwd/fp.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cfloat>
@@ -141,7 +141,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-inline constexpr __fp_format __fp_format_of_v = _CUDA_VSTD::__fp_format_of_v_impl<_Tp>();
+inline constexpr __fp_format __fp_format_of_v = ::cuda::std::__fp_format_of_v_impl<_Tp>();
 
 template <class _Tp>
 inline constexpr __fp_format __fp_format_of_v<const _Tp> = __fp_format_of_v<_Tp>;
@@ -159,4 +159,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_FORMAT_H
+#endif // _CUDA_STD___FLOATING_POINT_FORMAT_H

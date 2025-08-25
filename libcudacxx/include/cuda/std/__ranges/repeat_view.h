@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_REPEAT_VIEW_H
-#define _LIBCUDACXX___RANGES_REPEAT_VIEW_H
+#ifndef _CUDA_STD___RANGES_REPEAT_VIEW_H
+#define _CUDA_STD___RANGES_REPEAT_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -78,7 +78,7 @@ template <
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class repeat_view : public view_interface<repeat_view<_Tp, _Bound>>
 {
-  friend _CUDA_VIEWS::__take::__fn;
+  friend ::cuda::std::ranges::views::__take::__fn;
 
 public:
   class __iterator
@@ -247,7 +247,7 @@ public:
   }
 
   _CCCL_API constexpr explicit repeat_view(_Tp&& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, _CUDA_VSTD::move(__value))
+      : __value_(in_place, ::cuda::std::move(__value))
       , __bound_(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
@@ -260,8 +260,8 @@ public:
   _CCCL_REQUIRES(constructible_from<_Tp, _TpArgs...> _CCCL_AND constructible_from<_Bound, _BoundArgs...>)
   _CCCL_API constexpr explicit repeat_view(
     piecewise_construct_t, tuple<_TpArgs...> __value_args, tuple<_BoundArgs...> __bound_args = tuple<>{})
-      : __value_(in_place, _CUDA_VSTD::make_from_tuple<_Tp>(_CUDA_VSTD::move(__value_args)))
-      , __bound_(_CUDA_VSTD::make_from_tuple<_Bound>(_CUDA_VSTD::move(__bound_args)))
+      : __value_(in_place, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
+      , __bound_(::cuda::std::make_from_tuple<_Bound>(::cuda::std::move(__bound_args)))
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
@@ -272,7 +272,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr __iterator begin() const
   {
-    return __iterator(_CUDA_VSTD::addressof(*__value_));
+    return __iterator(::cuda::std::addressof(*__value_));
   }
 
   _CCCL_API constexpr auto end() const noexcept(is_nothrow_copy_constructible_v<_Bound>)
@@ -283,7 +283,7 @@ public:
     }
     else
     {
-      return __iterator(_CUDA_VSTD::addressof(*__value_), __bound_);
+      return __iterator(::cuda::std::addressof(*__value_), __bound_);
     }
   }
 
@@ -291,7 +291,7 @@ public:
   _CCCL_REQUIRES((!same_as<_Bound2, unreachable_sentinel_t>) )
   _CCCL_API constexpr auto size() const
   {
-    return _CUDA_VSTD::__to_unsigned_like(__bound_);
+    return ::cuda::std::__to_unsigned_like(__bound_);
   }
 
 private:
@@ -310,16 +310,16 @@ _CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn {
   template <class _Tp>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value) const
-    noexcept(noexcept(ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value))))
+    noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value))))
     -> repeat_view<remove_cvref_t<_Tp>>
-    { return          ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value)); }
+    { return          ranges::repeat_view(::cuda::std::forward<_Tp>(__value)); }
 
 
   template <class _Tp, class _Bound>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __value, _Bound&& __bound_sentinel) const
-    noexcept(noexcept(ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value), _CUDA_VSTD::forward<_Bound>(__bound_sentinel))))
+    noexcept(noexcept(ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel))))
     -> repeat_view<remove_cvref_t<_Tp>, remove_cvref_t<_Bound>>
-    { return          ranges::repeat_view(_CUDA_VSTD::forward<_Tp>(__value), _CUDA_VSTD::forward<_Bound>(__bound_sentinel)); }
+    { return          ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel)); }
 };
 _CCCL_END_NAMESPACE_CPO
 // clang-format on
@@ -342,4 +342,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_REPEAT_VIEW_H
+#endif // _CUDA_STD___RANGES_REPEAT_VIEW_H

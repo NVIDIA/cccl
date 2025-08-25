@@ -1,7 +1,7 @@
 .. _libcudacxx-ptx:
 
-PTX
-=====
+PTX API
+=======
 
 
 The ``cuda::ptx`` namespace contains functions that map one-to-one to

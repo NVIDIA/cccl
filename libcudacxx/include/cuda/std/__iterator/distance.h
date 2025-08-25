@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_DISTANCE_H
-#define _LIBCUDACXX___ITERATOR_DISTANCE_H
+#ifndef _CUDA_STD___ITERATOR_DISTANCE_H
+#define _CUDA_STD___ITERATOR_DISTANCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -103,11 +103,11 @@ struct __fn
   {
     if constexpr (sized_range<_Rp>)
     {
-      return static_cast<range_difference_t<_Rp>>(_CUDA_VRANGES::size(__r));
+      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::size(__r));
     }
     else
     {
-      return operator()(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r));
+      return operator()(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
     }
     _CCCL_UNREACHABLE();
   }
@@ -123,4 +123,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_DISTANCE_H
+#endif // _CUDA_STD___ITERATOR_DISTANCE_H

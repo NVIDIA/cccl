@@ -17,7 +17,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
 
@@ -75,10 +75,6 @@ class _MergeSort:
         present_in_values = d_in_items is not None
         present_out_values = d_out_items is not None
         assert present_in_values == present_out_values
-
-        d_in_keys, d_in_items, d_out_keys, d_out_items = scrub_duplicate_ltoirs(
-            d_in_keys, d_in_items, d_out_keys, d_out_items
-        )
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
@@ -185,6 +181,20 @@ def merge_sort(
     num_items: int,
     stream=None,
 ):
+    """
+    Performs device-wide merge sort.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in_keys: Device array or iterator containing the input sequence of keys
+        d_in_items: Device array or iterator containing the input sequence of items (optional)
+        d_out_keys: Device array to store the sorted keys
+        d_out_items: Device array to store the sorted items (optional)
+        op: Comparison operator for sorting
+        num_items: Number of items to sort
+        stream: CUDA stream for the operation (optional)
+    """
     sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
         None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream

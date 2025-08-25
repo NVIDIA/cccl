@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ISTREAM_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_ISTREAM_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_ISTREAM_ITERATOR_H
+#define _CUDA_STD___ITERATOR_ISTREAM_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -62,7 +62,7 @@ public:
   {}
 
   _CCCL_API istream_iterator(istream_type& __s)
-      : __in_stream_(_CUDA_VSTD::addressof(__s))
+      : __in_stream_(::cuda::std::addressof(__s))
   {
     if (!(*__in_stream_ >> __value_))
     {
@@ -77,7 +77,7 @@ public:
 
   [[nodiscard]] _CCCL_API const _Tp* operator->() const noexcept
   {
-    return _CUDA_VSTD::addressof((operator*()));
+    return ::cuda::std::addressof((operator*()));
   }
 
   _CCCL_API istream_iterator& operator++()
@@ -143,4 +143,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ISTREAM_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_ISTREAM_ITERATOR_H

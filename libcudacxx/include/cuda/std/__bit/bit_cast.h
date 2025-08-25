@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_BIT_CAST_H
-#define _LIBCUDACXX___BIT_BIT_CAST_H
+#ifndef _CUDA_STD___BIT_BIT_CAST_H
+#define _CUDA_STD___BIT_BIT_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -58,7 +58,7 @@ template <class _To,
                 "The compiler does not support __builtin_bit_cast, so bit_cast additionally requires the destination "
                 "type to be trivially constructible");
   _To __temp;
-  _CUDA_VSTD::memcpy(&__temp, &__from, sizeof(_To));
+  ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
   return __temp;
 #endif // !_CCCL_BUILTIN_BIT_CAST
 }
@@ -73,4 +73,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_BIT_CAST_H
+#endif // _CUDA_STD___BIT_BIT_CAST_H

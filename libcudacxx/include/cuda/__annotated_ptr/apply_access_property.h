@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
-#define _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+#ifndef _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY_H
+#define _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@ _CCCL_API inline void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global))
+     if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global))
      {
        return;
      }
@@ -62,7 +62,7 @@ _CCCL_API inline void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     if (!_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global))
+     if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global))
      {
        return;
      }
@@ -80,4 +80,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+#endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY_H

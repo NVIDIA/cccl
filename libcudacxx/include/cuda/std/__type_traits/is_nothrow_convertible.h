@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@ template <typename _Tp>
 _CCCL_HOST_DEVICE static void __test_noexcept(_Tp) noexcept;
 
 template <typename _Fm, typename _To>
-_CCCL_HOST_DEVICE static bool_constant<noexcept(_CUDA_VSTD::__test_noexcept<_To>(_CUDA_VSTD::declval<_Fm>()))>
+_CCCL_HOST_DEVICE static bool_constant<noexcept(::cuda::std::__test_noexcept<_To>(::cuda::std::declval<_Fm>()))>
 __is_nothrow_convertible_test();
 
 template <typename _Fm, typename _To>
@@ -56,4 +56,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_H

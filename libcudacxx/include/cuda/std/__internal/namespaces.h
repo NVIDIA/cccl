@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_NAMESPACES_H
-#define _LIBCUDACXX___INTERNAL_NAMESPACES_H
+#ifndef _CUDA_STD___INTERNAL_NAMESPACES_H
+#define _CUDA_STD___INTERNAL_NAMESPACES_H
 
 #include <cuda/__cccl_config>
 
@@ -71,7 +71,7 @@
 #  define _CCCL_END_NAMESPACE_FILESYSTEM } } } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
 // Shorthands for different qualifiers
-  // Namespaces related to execution
+// Namespaces related to execution
 #  define _CCCL_BEGIN_NAMESPACE_EXECUTION _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() namespace cuda::std::execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _CCCL_END_NAMESPACE_EXECUTION } } _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK()
 
@@ -87,7 +87,7 @@
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
 #endif // !_CCCL_COMPILER(CLANG, ==, 16)
 
-  // Shorthands for different qualifiers
+// Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
 #  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_DEVICE         ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE
@@ -102,4 +102,4 @@
 
 // clang-format on
 
-#endif // _LIBCUDACXX___INTERNAL_NAMESPACES_H
+#endif // _CUDA_STD___INTERNAL_NAMESPACES_H

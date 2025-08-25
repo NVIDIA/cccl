@@ -41,27 +41,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
   using receiver_concept = receiver_t;
 
   _CCCL_API explicit constexpr __rcvr_ref(_Rcvr& __rcvr) noexcept
-      : __rcvr_{_CUDA_VSTD::addressof(__rcvr)}
+      : __rcvr_{::cuda::std::addressof(__rcvr)}
   {}
 
   template <class... _As>
-  _CCCL_TRIVIAL_API constexpr void set_value(_As&&... __as) noexcept
+  _CCCL_NODEBUG_API constexpr void set_value(_As&&... __as) noexcept
   {
     execution::set_value(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_As&&>(__as)...);
   }
 
   template <class _Error>
-  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_NODEBUG_API constexpr void set_error(_Error&& __err) noexcept
   {
     execution::set_error(static_cast<_Rcvr&&>(*__rcvr_), static_cast<_Error&&>(__err));
   }
 
-  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+  _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
   {
     execution::set_stopped(static_cast<_Rcvr&&>(*__rcvr_));
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto get_env() const noexcept -> env_of_t<_Rcvr>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto get_env() const noexcept -> env_of_t<_Rcvr>
   {
     return execution::get_env(*__rcvr_);
   }
@@ -77,7 +77,7 @@ private:
 // 2. If the receiver is nothrow copy constructible, return it.
 // 3. Otherwise, return a __rcvr_ref wrapping the receiver.
 template <class _Rcvr>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __ref_rcvr(_Rcvr& __rcvr) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API constexpr auto __ref_rcvr(_Rcvr& __rcvr) noexcept
 {
   if constexpr (__is_specialization_of_v<_Rcvr, __rcvr_ref>)
   {
@@ -95,7 +95,7 @@ template <class _Rcvr>
 }
 
 template <class _Rcvr>
-using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(execution::__ref_rcvr(_CUDA_VSTD::declval<_Rcvr&>()));
+using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(execution::__ref_rcvr(::cuda::std::declval<_Rcvr&>()));
 
 } // namespace cuda::experimental::execution
 

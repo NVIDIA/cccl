@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H
-#define _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H
+#ifndef _CUDA_STD___FLOATING_POINT_ARITHMETIC_H
+#define _CUDA_STD___FLOATING_POINT_ARITHMETIC_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,8 +44,8 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(
-      _CUDA_VSTD::__fp_neg<__fp_format_of_v<_Tp>>(_CUDA_VSTD::__fp_get_storage(__v)));
+    return ::cuda::std::__fp_from_storage<_Tp>(
+      ::cuda::std::__fp_neg<__fp_format_of_v<_Tp>>(::cuda::std::__fp_get_storage(__v)));
   }
 }
 
@@ -53,4 +53,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H
+#endif // _CUDA_STD___FLOATING_POINT_ARITHMETIC_H

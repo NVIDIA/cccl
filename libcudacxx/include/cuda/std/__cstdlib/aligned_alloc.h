@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDLIB_ALIGNED_ALLOC_H
-#define _LIBCUDACXX___CSTDLIB_ALIGNED_ALLOC_H
+#ifndef _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H
+#define _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H
 
 #include <cuda/std/detail/__config>
 
@@ -55,7 +55,7 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
 [[nodiscard]] _CCCL_API inline void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
+                    (return ::cuda::std::__aligned_alloc_host(__nbytes, __align);),
                     (return ::__cuda_syscall_aligned_malloc(__nbytes, __align);))
 }
 
@@ -63,4 +63,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CSTDLIB_ALIGNED_ALLOC_H
+#endif // _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H

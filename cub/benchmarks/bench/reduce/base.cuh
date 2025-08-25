@@ -80,8 +80,10 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
      accum_t
 #if !TUNE_BASE
     ,
+    ::cuda::std::identity, // pass the default TransformOpT which due to policy_hub_t instantiation is not deduced
+                           // automatically
     policy_hub_t<accum_t, offset_t>
-#endif // TUNE_BASE
+#endif // !TUNE_BASE
     >;
 
   // Retrieve axis parameters

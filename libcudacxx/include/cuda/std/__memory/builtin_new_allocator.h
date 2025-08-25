@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_BUILTIN_NEW_ALLOCATOR_H
-#define _LIBCUDACXX___MEMORY_BUILTIN_NEW_ALLOCATOR_H
+#ifndef _CUDA_STD___MEMORY_BUILTIN_NEW_ALLOCATOR_H
+#define _CUDA_STD___MEMORY_BUILTIN_NEW_ALLOCATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -47,7 +47,7 @@ struct __builtin_new_allocator
 
     _CCCL_API inline void operator()(void* __p) const noexcept
     {
-      _CUDA_VSTD::__cccl_deallocate(__p, __size_, __align_);
+      ::cuda::std::__cccl_deallocate(__p, __size_, __align_);
     }
 
   private:
@@ -59,12 +59,12 @@ struct __builtin_new_allocator
 
   _CCCL_API inline static __holder_t __allocate_bytes(size_t __s, size_t __align)
   {
-    return __holder_t(_CUDA_VSTD::__cccl_allocate(__s, __align), __builtin_new_deleter(__s, __align));
+    return __holder_t(::cuda::std::__cccl_allocate(__s, __align), __builtin_new_deleter(__s, __align));
   }
 
   _CCCL_API inline static void __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept
   {
-    _CUDA_VSTD::__cccl_deallocate(__p, __s, __align);
+    ::cuda::std::__cccl_deallocate(__p, __s, __align);
   }
 
   template <class _Tp>
@@ -84,4 +84,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_BUILTIN_NEW_ALLOCATOR_H
+#endif // _CUDA_STD___MEMORY_BUILTIN_NEW_ALLOCATOR_H

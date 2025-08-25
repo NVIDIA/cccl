@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_SCALED_HPP
-#define _LIBCUDACXX___LINALG_SCALED_HPP
+#ifndef _CUDA_STD___LINALG_SCALED_H
+#define _CUDA_STD___LINALG_SCALED_H
 
 #include <cuda/std/detail/__config>
 
@@ -47,7 +47,7 @@ class scaled_accessor
 {
 public:
   using element_type = add_const_t<
-    decltype(_CUDA_VSTD::declval<_ScalingFactor>() * _CUDA_VSTD::declval<typename _NestedAccessor::element_type>())>;
+    decltype(::cuda::std::declval<_ScalingFactor>() * ::cuda::std::declval<typename _NestedAccessor::element_type>())>;
   using reference        = remove_const_t<element_type>;
   using data_handle_type = typename _NestedAccessor::data_handle_type;
   using offset_policy    = scaled_accessor<_ScalingFactor, typename _NestedAccessor::offset_policy>;
@@ -129,4 +129,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LINALG_SCALED_HPP
+#endif // _CUDA_STD___LINALG_SCALED_HPP

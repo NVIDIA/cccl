@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_ROOTS_H
-#define _LIBCUDACXX___COMPLEX_ROOTS_H
+#ifndef _CUDA_STD___COMPLEX_ROOTS_H
+#define _CUDA_STD___COMPLEX_ROOTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -46,7 +46,7 @@ template <class _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrtf(__x);))
   }
-  return _Tp(1) / _CUDA_VSTD::sqrt(__x);
+  return _Tp(1) / ::cuda::std::sqrt(__x);
 }
 
 // sqrt
@@ -63,7 +63,7 @@ template <class _Tp>
   const _Tp __re = __x.real();
   const _Tp __im = __x.imag();
 
-  if (_CUDA_VSTD::isinf(__im))
+  if (::cuda::std::isinf(__im))
   {
     return complex<_Tp>{numeric_limits<_Tp>::infinity(), __im};
   }
@@ -74,7 +74,7 @@ template <class _Tp>
   }
 
   // pre-check to see if we over/underflow:
-  _Tp __x_abs_sq = _CUDA_VSTD::fma(__re, __re, __im * __im);
+  _Tp __x_abs_sq = ::cuda::std::fma(__re, __re, __im * __im);
 
   // Get some bounds where __re +- |__x| won't overflow.
   // Doesn't need to be too exact, enough to cover extremal cases.
@@ -87,8 +87,8 @@ template <class _Tp>
     (static_cast<__uint_t>((static_cast<__uint_t>(-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __mant_nbits)
     | __fp_explicit_bit_mask_of_v<_Tp>;
 
-  _Tp __overflow_bound  = _CUDA_VSTD::__fp_from_storage<_Tp>(__overflow_bound_exp);
-  _Tp __underflow_bound = _CUDA_VSTD::__fp_from_storage<_Tp>(__underflow_bound_exp);
+  _Tp __overflow_bound  = ::cuda::std::__fp_from_storage<_Tp>(__overflow_bound_exp);
+  _Tp __underflow_bound = ::cuda::std::__fp_from_storage<_Tp>(__underflow_bound_exp);
 
   // Prepare some range-reduction that simplifies the calculation and avoids needing the full hypot function.
   // Alas there is not a single splitting point that works for all values, so we split into 3 intervals.
@@ -122,8 +122,8 @@ template <class _Tp>
       | __fp_explicit_bit_mask_of_v<_Tp>;
 
     // Set our scaling values:
-    __ldexp_factor_1 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_1_uint);
-    __ldexp_factor_2 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_2_uint);
+    __ldexp_factor_1 = ::cuda::std::__fp_from_storage<_Tp>(__lxexp_1_uint);
+    __ldexp_factor_2 = ::cuda::std::__fp_from_storage<_Tp>(__lxexp_2_uint);
     __ldexp_combined = __ldexp_factor_1 * __ldexp_factor_2;
   }
 
@@ -142,8 +142,8 @@ template <class _Tp>
       ((__exp_bias + (__uint_t(__reduced_exponent) >> 1)) << __uint_t(__mant_nbits)) | __fp_explicit_bit_mask_of_v<_Tp>;
 
     // Set our scaling values:
-    __ldexp_factor_1 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_1_uint);
-    __ldexp_factor_2 = _CUDA_VSTD::__fp_from_storage<_Tp>(__lxexp_2_uint);
+    __ldexp_factor_1 = ::cuda::std::__fp_from_storage<_Tp>(__lxexp_1_uint);
+    __ldexp_factor_2 = ::cuda::std::__fp_from_storage<_Tp>(__lxexp_2_uint);
     __ldexp_combined = __ldexp_factor_1 * __ldexp_factor_2;
   }
 
@@ -153,10 +153,10 @@ template <class _Tp>
   // An inlined hypot.
   // Surprisingly, the final accuracy gets worse if you try and make this hypot calculation more accurate
   // for the case (__im >> __re) by swapping the fma inputs, as the final result is not symmetrical in __im/__re.
-  _Tp __x_abs_scaled = _CUDA_VSTD::sqrt(_CUDA_VSTD::fma(__re_scaled, __re_scaled, __im_scaled * __im_scaled));
+  _Tp __x_abs_scaled = ::cuda::std::sqrt(::cuda::std::fma(__re_scaled, __re_scaled, __im_scaled * __im_scaled));
 
   // Add in the hypot inf-nan override here to avoid a complicated inf/nan check at the start.
-  if (_CUDA_VSTD::isinf(__im) || _CUDA_VSTD::isinf(__re))
+  if (::cuda::std::isinf(__im) || ::cuda::std::isinf(__re))
   {
     __x_abs_scaled = numeric_limits<_Tp>::infinity();
   }
@@ -176,26 +176,26 @@ template <class _Tp>
   const bool __im_part_is_hard = (__re_scaled > _Tp(0.0));
   _Tp __easy_part              = __im_part_is_hard ? __ans_re_sq : __ans_im_sq;
 
-  _Tp __sqrt_easy_part = _CUDA_VSTD::__internal_rsqrt<_Tp>(__easy_part);
+  _Tp __sqrt_easy_part = ::cuda::std::__internal_rsqrt<_Tp>(__easy_part);
 
   // (__im_scaled) can have under/overflowed when scaled so we go back to using (__im) briefly.
   // Multiply by (__im) last to avoid over/underflow:
   const _Tp __hard_part = (__im) * (__ldexp_combined * __sqrt_easy_part);
 
-  __easy_part = __ldexp_factor_2 * _CUDA_VSTD::sqrt(__easy_part);
+  __easy_part = __ldexp_factor_2 * ::cuda::std::sqrt(__easy_part);
 
   // Don't need fabs on the second line, but better for code generation:
-  const _Tp __ans_re = __im_part_is_hard ? __easy_part : _CUDA_VSTD::fabs(__hard_part);
-  const _Tp __ans_im = __im_part_is_hard ? _CUDA_VSTD::fabs(__hard_part) : __easy_part;
+  const _Tp __ans_re = __im_part_is_hard ? __easy_part : ::cuda::std::fabs(__hard_part);
+  const _Tp __ans_im = __im_part_is_hard ? ::cuda::std::fabs(__hard_part) : __easy_part;
 
-  return complex<_Tp>{__ans_re, _CUDA_VSTD::copysign(__ans_im, __im)};
+  return complex<_Tp>{__ans_re, ::cuda::std::copysign(__ans_im, __im)};
 }
 
 #if _LIBCUDACXX_HAS_NVBF16()
 template <>
 _CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) noexcept
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::sqrt(complex<float>{__x})};
+  return complex<__nv_bfloat16>{::cuda::std::sqrt(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -203,7 +203,7 @@ _CCCL_API inline complex<__nv_bfloat16> sqrt(const complex<__nv_bfloat16>& __x) 
 template <>
 _CCCL_API inline complex<__half> sqrt(const complex<__half>& __x) noexcept
 {
-  return complex<__half>{_CUDA_VSTD::sqrt(complex<float>{__x})};
+  return complex<__half>{::cuda::std::sqrt(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -211,4 +211,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_ROOTS_H
+#endif // _CUDA_STD___COMPLEX_ROOTS_H

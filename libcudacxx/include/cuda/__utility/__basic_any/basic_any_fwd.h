@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_FWD_H
+#define _CUDA___UTILITY_BASIC_ANY_FWD_H
 
 #include <cuda/std/detail/__config>
 
@@ -46,7 +46,7 @@ template <class _Interface>
 struct __basic_any<_Interface&>;
 
 template <auto _Value>
-using __constant = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
+using __constant = ::cuda::std::integral_constant<decltype(_Value), _Value>;
 
 template <class _InterfaceOrModel, class... _VirtualFnsOrOverrides>
 struct __overrides_list;
@@ -91,7 +91,7 @@ template <class...>
 struct __iequality_comparable;
 
 template <class... _Tp>
-using __tag _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list_ptr<_Tp...>;
+using __tag _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_list_ptr<_Tp...>;
 
 template <auto...>
 struct __ctag_;
@@ -101,9 +101,9 @@ using __ctag _CCCL_NODEBUG_ALIAS = __ctag_<_Is...>*;
 
 constexpr size_t __word                       = sizeof(void*);
 constexpr size_t __default_small_object_size  = 3 * __word;
-constexpr size_t __default_small_object_align = alignof(_CUDA_VSTD::max_align_t);
+constexpr size_t __default_small_object_align = alignof(::cuda::std::max_align_t);
 
-using __make_type_list _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>;
+using __make_type_list _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_quote<::cuda::std::__type_list>;
 
 [[noreturn]] _CCCL_API void __throw_bad_any_cast();
 
@@ -125,4 +125,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_FWD_H
+#endif // _CUDA___UTILITY_BASIC_ANY_FWD_H

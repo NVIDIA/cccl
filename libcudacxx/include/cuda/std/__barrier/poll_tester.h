@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___BARRIER_POLL_TESTER_H
-#define __LIBCUDACXX___BARRIER_POLL_TESTER_H
+#ifndef __CUDA_STD___BARRIER_POLL_TESTER_H
+#define __CUDA_STD___BARRIER_POLL_TESTER_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@ class __barrier_poll_tester_phase
 public:
   _CCCL_API inline __barrier_poll_tester_phase(_Barrier const* __this_, typename _Barrier::arrival_token&& __phase_)
       : __this(__this_)
-      , __phase(_CUDA_VSTD::move(__phase_))
+      , __phase(::cuda::std::move(__phase_))
   {}
 
   [[nodiscard]] _CCCL_API inline bool operator()() const
@@ -66,7 +66,7 @@ public:
 template <class _Barrier>
 [[nodiscard]] _CCCL_API inline bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
 {
-  return __b.__try_wait(_CUDA_VSTD::move(__phase));
+  return __b.__try_wait(::cuda::std::move(__phase));
 }
 
 template <class _Barrier>
@@ -79,4 +79,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___BARRIER_POLL_TESTER_H
+#endif // __CUDA_STD___BARRIER_POLL_TESTER_H

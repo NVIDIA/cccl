@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_CONSTANTS_H
-#define _LIBCUDACXX___FLOATING_POINT_CONSTANTS_H
+#ifndef _CUDA_STD___FLOATING_POINT_CONSTANTS_H
+#define _CUDA_STD___FLOATING_POINT_CONSTANTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -56,7 +56,7 @@ template <class _Tp>
   else
 #endif // _CCCL_BUILTIN_HUGE_VALF
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_inf<__fp_format_of_v<_Tp>>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_inf<__fp_format_of_v<_Tp>>());
   }
 }
 
@@ -97,7 +97,7 @@ template <class _Tp>
   else
 #endif // _CCCL_BUILTIN_NANF
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nan<__fp_format_of_v<_Tp>>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_nan<__fp_format_of_v<_Tp>>());
   }
 }
 
@@ -145,7 +145,7 @@ template <class _Tp>
   else
 #endif // _CCCL_BUILTIN_NANS
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nans<__fmt>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_nans<__fmt>());
   }
 }
 
@@ -196,7 +196,7 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_max<__fp_format_of_v<_Tp>>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_max<__fp_format_of_v<_Tp>>());
   }
 }
 
@@ -246,7 +246,7 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_min<__fp_format_of_v<_Tp>>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_min<__fp_format_of_v<_Tp>>());
   }
 }
 
@@ -290,7 +290,7 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_denorm_min<__fmt>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_denorm_min<__fmt>());
   }
 }
 
@@ -301,11 +301,11 @@ template <__fp_format _Fmt>
 {
   if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
-    return _CUDA_VSTD::__fp_min<_Fmt>();
+    return ::cuda::std::__fp_min<_Fmt>();
   }
   else
   {
-    return _CUDA_VSTD::__fp_neg<_Fmt>(_CUDA_VSTD::__fp_max<_Fmt>());
+    return ::cuda::std::__fp_neg<_Fmt>(::cuda::std::__fp_max<_Fmt>());
   }
 }
 
@@ -314,11 +314,11 @@ template <class _Tp>
 {
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
-    return _CUDA_VSTD::__fp_neg(_CUDA_VSTD::__fp_max<_Tp>());
+    return ::cuda::std::__fp_neg(::cuda::std::__fp_max<_Tp>());
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_lowest<__fp_format_of_v<_Tp>>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_lowest<__fp_format_of_v<_Tp>>());
   }
 }
 
@@ -342,7 +342,7 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(__fp_storage_of_t<_Tp>{0});
+    return ::cuda::std::__fp_from_storage<_Tp>(__fp_storage_of_t<_Tp>{0});
   }
 }
 
@@ -363,7 +363,7 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_one<__fp_format_of_v<_Tp>>());
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_one<__fp_format_of_v<_Tp>>());
   }
 }
 
@@ -371,4 +371,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_CONSTANTS_H
+#endif // _CUDA_STD___FLOATING_POINT_CONSTANTS_H

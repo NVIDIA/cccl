@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_RANGES_FOR_EACH_H
-#define _LIBCUDACXX___ALGORITHM_RANGES_FOR_EACH_H
+#ifndef _CUDA_STD___ALGORITHM_RANGES_FOR_EACH_H
+#define _CUDA_STD___ALGORITHM_RANGES_FOR_EACH_H
 
 #include <cuda/std/detail/__config>
 
@@ -47,9 +47,9 @@ private:
   {
     for (; __first != __last; ++__first)
     {
-      _CUDA_VSTD::invoke(__func, _CUDA_VSTD::invoke(__proj, *__first));
+      ::cuda::std::invoke(__func, ::cuda::std::invoke(__proj, *__first));
     }
-    return {_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__func)};
+    return {::cuda::std::move(__first), ::cuda::std::move(__func)};
   }
 
 public:
@@ -59,7 +59,7 @@ public:
   _CCCL_API constexpr for_each_result<_Iter, _Func>
   operator()(_Iter __first, _Sent __last, _Func __func, _Proj __proj = {}) const
   {
-    return __for_each_impl(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __func, __proj);
+    return __for_each_impl(::cuda::std::move(__first), ::cuda::std::move(__last), __func, __proj);
   }
 
   _CCCL_TEMPLATE(class _Range, class _Func, class _Proj = identity)
@@ -67,7 +67,7 @@ public:
   _CCCL_API constexpr for_each_result<borrowed_iterator_t<_Range>, _Func>
   operator()(_Range&& __range, _Func __func, _Proj __proj = {}) const
   {
-    return __for_each_impl(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __func, __proj);
+    return __for_each_impl(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __func, __proj);
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -81,4 +81,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_RANGES_FOR_EACH_H
+#endif // _CUDA_STD___ALGORITHM_RANGES_FOR_EACH_H

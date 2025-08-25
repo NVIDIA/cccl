@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CHARCONV_TO_CHARS_H
-#define _LIBCUDACXX___CHARCONV_TO_CHARS_H
+#ifndef _CUDA_STD___CHARCONV_TO_CHARS_H
+#define _CUDA_STD___CHARCONV_TO_CHARS_H
 
 #include <cuda/std/detail/__config>
 
@@ -87,7 +87,7 @@ _CCCL_API constexpr void __to_chars_int_generic(char* __last, _Tp __value, int _
   do
   {
     const int __c = __value % __base;
-    *--__last     = _CUDA_VSTD::__to_chars_value_to_char(__c, __base);
+    *--__last     = ::cuda::std::__to_chars_value_to_char(__c, __base);
     __value /= static_cast<_Tp>(__base);
   } while (__value != 0);
 }
@@ -106,12 +106,12 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
     {
       *__first++ = '-';
     }
-    return _CUDA_VSTD::to_chars(__first, __last, ::cuda::uabs(__value), __base);
+    return ::cuda::std::to_chars(__first, __last, ::cuda::uabs(__value), __base);
   }
   else
   {
     const ptrdiff_t __cap = __last - __first;
-    const int __n         = _CUDA_VSTD::__to_chars_int_width(__value, __base);
+    const int __n         = ::cuda::std::__to_chars_int_width(__value, __base);
 
     if (__n > __cap)
     {
@@ -120,7 +120,7 @@ to_chars(char* __first, char* __last, _Tp __value, int __base = 10) noexcept
 
     char* __new_last = __first + __n;
 
-    _CUDA_VSTD::__to_chars_int_generic(__new_last, __value, __base);
+    ::cuda::std::__to_chars_int_generic(__new_last, __value, __base);
 
     return {__new_last, errc{}};
   }
@@ -131,11 +131,11 @@ to_chars(char* __first, char* __last, char __value, int __base = 10) noexcept
 {
   if constexpr (is_signed_v<char>)
   {
-    return _CUDA_VSTD::to_chars(__first, __last, static_cast<signed char>(__value), __base);
+    return ::cuda::std::to_chars(__first, __last, static_cast<signed char>(__value), __base);
   }
   else
   {
-    return _CUDA_VSTD::to_chars(__first, __last, static_cast<unsigned char>(__value), __base);
+    return ::cuda::std::to_chars(__first, __last, static_cast<unsigned char>(__value), __base);
   }
 }
 
@@ -145,4 +145,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CHARCONV_TO_CHARS_H
+#endif // _CUDA_STD___CHARCONV_TO_CHARS_H

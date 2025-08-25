@@ -298,7 +298,7 @@ void bulk_can_be_used_with_a_function()
 {
   constexpr int n = 9;
   int counter1[n]{};
-  _CUDA_VSTD::fill_n(counter1, n, 0);
+  ::cuda::std::fill_n(counter1, n, 0);
 
   auto sndr = ex::just(&counter1) //
             | ex::bulk(ex::par, n, function<int, n>);
@@ -315,7 +315,7 @@ void bulk_chunked_can_be_used_with_a_function()
 {
   constexpr int n = 9;
   int counter2[n]{};
-  _CUDA_VSTD::fill_n(counter2, n, 0);
+  ::cuda::std::fill_n(counter2, n, 0);
 
   auto sndr = ex::just(&counter2) //
             | ex::bulk_chunked(ex::par, n, function_range<int, n>);
@@ -332,7 +332,7 @@ void bulk_unchunked_can_be_used_with_a_function()
 {
   constexpr int n = 9;
   int counter3[n]{};
-  _CUDA_VSTD::fill_n(counter3, n, 0);
+  ::cuda::std::fill_n(counter3, n, 0);
 
   auto sndr = ex::just(&counter3) //
             | ex::bulk_unchunked(ex::par, n, function<int, n>);
@@ -570,12 +570,12 @@ constexpr std::size_t n = 9;
 
 void bulk_forwards_values_that_can_be_taken_by_reference()
 {
-  _CUDA_VSTD::array<int, n> vals{};
-  _CUDA_VSTD::array<int, n> vals_expected{};
-  _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
+  ::cuda::std::array<int, n> vals{};
+  ::cuda::std::array<int, n> vals_expected{};
+  ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk(ex::par, n, [&](std::size_t i, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
@@ -584,12 +584,12 @@ void bulk_forwards_values_that_can_be_taken_by_reference()
 
 void bulk_chunked_forwards_values_that_can_be_taken_by_reference()
 {
-  _CUDA_VSTD::array<int, n> vals{};
-  _CUDA_VSTD::array<int, n> vals_expected{};
-  _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
+  ::cuda::std::array<int, n> vals{};
+  ::cuda::std::array<int, n> vals_expected{};
+  ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_chunked(ex::par, n, [&](std::size_t b, std::size_t e, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk_chunked(ex::par, n, [&](std::size_t b, std::size_t e, ::cuda::std::array<int, n>& vals) {
                 for (; b != e; ++b)
                 {
                   vals[b] = static_cast<int>(b);
@@ -601,12 +601,12 @@ void bulk_chunked_forwards_values_that_can_be_taken_by_reference()
 
 void bulk_unchunked_forwards_values_that_can_be_taken_by_reference()
 {
-  _CUDA_VSTD::array<int, n> vals{};
-  _CUDA_VSTD::array<int, n> vals_expected{};
-  _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
+  ::cuda::std::array<int, n> vals{};
+  ::cuda::std::array<int, n> vals_expected{};
+  ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});

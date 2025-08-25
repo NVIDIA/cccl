@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_PREDICATE_H
-#define _LIBCUDACXX___CONCEPTS_PREDICATE_H
+#ifndef _CUDA_STD___CONCEPTS_PREDICATE_H
+#define _CUDA_STD___CONCEPTS_PREDICATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -51,4 +51,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_PREDICATE_H
+#endif // _CUDA_STD___CONCEPTS_PREDICATE_H

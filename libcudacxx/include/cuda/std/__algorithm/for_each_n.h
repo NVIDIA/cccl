@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FOR_EACH_N_H
-#define _LIBCUDACXX___ALGORITHM_FOR_EACH_N_H
+#ifndef _CUDA_STD___ALGORITHM_FOR_EACH_N_H
+#define _CUDA_STD___ALGORITHM_FOR_EACH_N_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Size, class _Function>
 _CCCL_API constexpr _InputIterator for_each_n(_InputIterator __first, _Size __orig_n, _Function __f)
 {
-  using _IntegralSize = decltype(_CUDA_VSTD::__convert_to_integral(__orig_n));
+  using _IntegralSize = decltype(::cuda::std::__convert_to_integral(__orig_n));
   _IntegralSize __n   = __orig_n;
   while (__n > 0)
   {
@@ -45,4 +45,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_FOR_EACH_N_H
+#endif // _CUDA_STD___ALGORITHM_FOR_EACH_N_H

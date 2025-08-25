@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H
-#define _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H
+#ifndef _CUDA_STD___MEMORY_COMPRESSED_PAIR_H
+#define _CUDA_STD___MEMORY_COMPRESSED_PAIR_H
 
 #include <cuda/std/detail/__config>
 
@@ -66,7 +66,7 @@ struct __compressed_pair_elem
 
   template <class _Up, enable_if_t<!is_same_v<__compressed_pair_elem, decay_t<_Up>>, int> = 0>
   _CCCL_API constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>)
-      : __value_(_CUDA_VSTD::forward<_Up>(__u))
+      : __value_(::cuda::std::forward<_Up>(__u))
   {}
 
   template <class... _Args, size_t... _Indices>
@@ -74,7 +74,7 @@ struct __compressed_pair_elem
     piecewise_construct_t,
     tuple<_Args...> __args,
     __tuple_indices<_Indices...>) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indices>(__args))...)
+      : __value_(::cuda::std::forward<_Args>(::cuda::std::get<_Indices>(__args))...)
   {}
 
   _CCCL_API constexpr reference __get() noexcept
@@ -109,7 +109,7 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
 
   template <class _Up, enable_if_t<!is_same_v<__compressed_pair_elem, decay_t<_Up>>, int> = 0>
   _CCCL_API constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>)
-      : __value_type(_CUDA_VSTD::forward<_Up>(__u))
+      : __value_type(::cuda::std::forward<_Up>(__u))
   {}
 
   template <class... _Args, size_t... _Indices>
@@ -117,7 +117,7 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
     piecewise_construct_t,
     tuple<_Args...> __args,
     __tuple_indices<_Indices...>) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
-      : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indices>(__args))...)
+      : __value_type(::cuda::std::forward<_Args>(::cuda::std::get<_Indices>(__args))...)
   {}
 
   _CCCL_API constexpr reference __get() noexcept
@@ -160,8 +160,8 @@ public:
   template <class _U1, class _U2>
   _CCCL_API constexpr explicit __compressed_pair(_U1&& __t1, _U2&& __t2) noexcept(
     is_constructible_v<_T1, _U1> && is_constructible_v<_T2, _U2>)
-      : _Base1(_CUDA_VSTD::forward<_U1>(__t1))
-      , _Base2(_CUDA_VSTD::forward<_U2>(__t2))
+      : _Base1(::cuda::std::forward<_U1>(__t1))
+      , _Base2(::cuda::std::forward<_U2>(__t2))
   {}
 
   template <class... _Args1, class... _Args2>
@@ -169,8 +169,8 @@ public:
     piecewise_construct_t __pc,
     tuple<_Args1...> __first_args,
     tuple<_Args2...> __second_args) noexcept(is_constructible_v<_T1, _Args1...> && is_constructible_v<_T2, _Args2...>)
-      : _Base1(__pc, _CUDA_VSTD::move(__first_args), typename __make_tuple_indices<sizeof...(_Args1)>::type())
-      , _Base2(__pc, _CUDA_VSTD::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
+      : _Base1(__pc, ::cuda::std::move(__first_args), typename __make_tuple_indices<sizeof...(_Args1)>::type())
+      , _Base2(__pc, ::cuda::std::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
   {}
 
   _CCCL_API constexpr typename _Base1::reference first() noexcept
@@ -205,7 +205,7 @@ public:
   _CCCL_API constexpr void
   swap(__compressed_pair& __x) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
   {
-    using _CUDA_VSTD::swap;
+    using ::cuda::std::swap;
     swap(first(), __x.first());
     swap(second(), __x.second());
   }
@@ -222,4 +222,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_COMPRESSED_PAIR_H
+#endif // _CUDA_STD___MEMORY_COMPRESSED_PAIR_H

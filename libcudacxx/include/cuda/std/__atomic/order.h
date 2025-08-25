@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_ORDER_H
-#define __LIBCUDACXX___ATOMIC_ORDER_H
+#ifndef __CUDA_STD___ATOMIC_ORDER_H
+#define __CUDA_STD___ATOMIC_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -143,17 +143,17 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-using memory_order = _CUDA_VSTD::memory_order;
+using memory_order = ::cuda::std::memory_order;
 
-inline constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
-inline constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
-inline constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
-inline constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
-inline constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
-inline constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
+inline constexpr memory_order memory_order_relaxed = ::cuda::std::memory_order_relaxed;
+inline constexpr memory_order memory_order_consume = ::cuda::std::memory_order_consume;
+inline constexpr memory_order memory_order_acquire = ::cuda::std::memory_order_acquire;
+inline constexpr memory_order memory_order_release = ::cuda::std::memory_order_release;
+inline constexpr memory_order memory_order_acq_rel = ::cuda::std::memory_order_acq_rel;
+inline constexpr memory_order memory_order_seq_cst = ::cuda::std::memory_order_seq_cst;
 
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___ATOMIC_ORDER_H
+#endif // __CUDA_STD___ATOMIC_ORDER_H

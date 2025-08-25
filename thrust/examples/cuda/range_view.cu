@@ -69,21 +69,21 @@ public:
     return last;
   }
 
-  __host__ __device__ thrust::reverse_iterator<iterator> rbegin()
+  __host__ __device__ cuda::std::reverse_iterator<iterator> rbegin()
   {
-    return thrust::reverse_iterator<iterator>(end());
+    return cuda::std::reverse_iterator<iterator>(end());
   }
-  __host__ __device__ const thrust::reverse_iterator<const iterator> crbegin() const
+  __host__ __device__ const cuda::std::reverse_iterator<const iterator> crbegin() const
   {
-    return thrust::reverse_iterator<const iterator>(cend());
+    return cuda::std::reverse_iterator<const iterator>(cend());
   }
-  __host__ __device__ thrust::reverse_iterator<iterator> rend()
+  __host__ __device__ cuda::std::reverse_iterator<iterator> rend()
   {
-    return thrust::reverse_iterator<iterator>(begin());
+    return cuda::std::reverse_iterator<iterator>(begin());
   }
-  __host__ __device__ const thrust::reverse_iterator<const iterator> crend() const
+  __host__ __device__ const cuda::std::reverse_iterator<const iterator> crend() const
   {
-    return thrust::reverse_iterator<const iterator>(cbegin());
+    return cuda::std::reverse_iterator<const iterator>(cbegin());
   }
   __host__ __device__ reference front()
   {

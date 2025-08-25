@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -96,7 +96,7 @@ template <class _From, class _To>
 struct __is_convertible_test<
   _From,
   _To,
-  decltype(_CUDA_VSTD::__is_convertible_imp::__test_convert<_To>(_CUDA_VSTD::declval<_From>()))> : public true_type
+  decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> : public true_type
 {};
 
 template <class _Tp,
@@ -211,4 +211,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H

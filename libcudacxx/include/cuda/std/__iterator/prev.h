@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_PREV_H
-#define _LIBCUDACXX___ITERATOR_PREV_H
+#ifndef _CUDA_STD___ITERATOR_PREV_H
+#define _CUDA_STD___ITERATOR_PREV_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@ prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
 {
   _CCCL_ASSERT(__n <= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
                "Attempt to prev(it, +n) on a non-bidi iterator");
-  _CUDA_VSTD::advance(__x, -__n);
+  ::cuda::std::advance(__x, -__n);
   return __x;
 }
 
@@ -64,7 +64,7 @@ struct __fn
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
-    _CUDA_VRANGES::advance(__x, -__n);
+    ::cuda::std::ranges::advance(__x, -__n);
     return __x;
   }
 
@@ -73,7 +73,7 @@ struct __fn
   _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
   {
-    _CUDA_VRANGES::advance(__x, -__n, __bound_iter);
+    ::cuda::std::ranges::advance(__x, -__n, __bound_iter);
     return __x;
   }
 };
@@ -88,4 +88,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_PREV_H
+#endif // _CUDA_STD___ITERATOR_PREV_H

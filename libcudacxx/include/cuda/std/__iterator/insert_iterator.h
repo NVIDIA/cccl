@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_INSERT_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_INSERT_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_INSERT_ITERATOR_H
+#define _CUDA_STD___ITERATOR_INSERT_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -56,7 +56,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
-      : container(_CUDA_VSTD::addressof(__x))
+      : container(::cuda::std::addressof(__x))
       , iter(__i)
   {}
 
@@ -71,7 +71,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr insert_iterator& operator=(typename _Container::value_type&& __value)
   {
-    iter = container->insert(iter, _CUDA_VSTD::move(__value));
+    iter = container->insert(iter, ::cuda::std::move(__value));
     ++iter;
     return *this;
   }
@@ -104,4 +104,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_INSERT_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_INSERT_ITERATOR_H

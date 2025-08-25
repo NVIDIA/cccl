@@ -1,5 +1,5 @@
 name: "CCCL Docs Build/Upload"
-description: "Builds the docs and uploads them as workflow and pages artifacts."
+description: "Builds the docs and uploads them as workflow artifacts."
 
 inputs:
   upload_workflow_artifact:
@@ -7,15 +7,46 @@ inputs:
     required: false
     default: "true"
   upload_pages_artifact:
-    description: "Uploads the built docs as a workflow artifact (actions/upload-pages-artifact). Required for docs-deploy action."
+    description: "Uploads the built docs as a workflow artifact (actions/upload-pages-artifact). Legacy option, not used for branch deployment."
     required: false
     default: "true"
 
 runs:
   using: "composite"
   steps:
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
+    # Install required dependencies
+    - name: Install docs build dependencies
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build python3-venv git flex bison
+
+    # Cache Doxygen binary to avoid rebuilding
+    - name: Cache Doxygen binary
+      uses: actions/cache@v4
+      with:
+        path: docs/doxygen_build/bin/doxygen
+        key: doxygen-1.9.6-${{ runner.os }}
+        restore-keys: |
+          doxygen-1.9.6-${{ runner.os }}
+
+    # Cache Python virtual environment
+    - name: Cache Python virtual environment
+      uses: actions/cache@v4
+      with:
+        path: docs/env
+        key: python-env-${{ runner.os }}-${{ hashFiles('docs/requirements.txt') }}
+        restore-keys: |
+          python-env-${{ runner.os }}-
+
+    # Cache Doxygen XML output (expensive to regenerate)
+    - name: Cache Doxygen XML output
+      uses: actions/cache@v4
+      with:
+        path: docs/_build/doxygen
+        key: doxygen-xml-${{ runner.os }}-${{ hashFiles('cub/**/*.h', 'cub/**/*.cuh', 'thrust/**/*.h', 'thrust/**/*.cuh', 'cudax/**/*.cuh', 'libcudacxx/**/*.h') }}
+        restore-keys: |
+          doxygen-xml-${{ runner.os }}-
 
     # Build all docs
     - name: Build all docs
@@ -28,6 +59,8 @@ runs:
       run: |
         mkdir -p _site
         cp -rf ./docs/_build/html/* _site/
+        # Create .nojekyll to prevent GitHub Pages from ignoring _static directories
+        touch _site/.nojekyll
         ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:

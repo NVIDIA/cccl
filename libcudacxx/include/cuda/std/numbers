@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/version>
@@ -116,55 +116,55 @@ struct __numbers<__half>
 {
   static _CCCL_API constexpr __half __e() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x4170u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x4170u});
   }
   static _CCCL_API constexpr __half __log2e() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3dc5u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3dc5u});
   }
   static _CCCL_API constexpr __half __log10e() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x36f3u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x36f3u});
   }
   static _CCCL_API constexpr __half __pi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x4248u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x4248u});
   }
   static _CCCL_API constexpr __half __inv_pi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3518u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3518u});
   }
   static _CCCL_API constexpr __half __inv_sqrtpi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3883u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3883u});
   }
   static _CCCL_API constexpr __half __ln2() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x398cu});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x398cu});
   }
   static _CCCL_API constexpr __half __ln10() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x409bu});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x409bu});
   }
   static _CCCL_API constexpr __half __sqrt2() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3da8u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3da8u});
   }
   static _CCCL_API constexpr __half __sqrt3() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3eeeu});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3eeeu});
   }
   static _CCCL_API constexpr __half __inv_sqrt3() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x389eu});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x389eu});
   }
   static _CCCL_API constexpr __half __egamma() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x389eu});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x389eu});
   }
   static _CCCL_API constexpr __half __phi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3e79u});
+    return ::cuda::std::__fp_from_storage<__half>(__fp_storage_of_t<__half>{0x3e79u});
   }
 };
 #endif // _CCCL_HAS_NVFP16()
@@ -175,55 +175,55 @@ struct __numbers<__nv_bfloat16>
 {
   static _CCCL_API constexpr __nv_bfloat16 __e() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x402eu});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x402eu});
   }
   static _CCCL_API constexpr __nv_bfloat16 __log2e() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fb9u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fb9u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __log10e() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3edeu});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3edeu});
   }
   static _CCCL_API constexpr __nv_bfloat16 __pi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x4049u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x4049u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __inv_pi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3ea3u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3ea3u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __inv_sqrtpi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f10u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f10u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __ln2() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f31u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f31u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __ln10() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x4013u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x4013u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __sqrt2() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fb5u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fb5u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __sqrt3() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fdeu});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fdeu});
   }
   static _CCCL_API constexpr __nv_bfloat16 __inv_sqrt3() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f14u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f14u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __egamma() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f14u});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3f14u});
   }
   static _CCCL_API constexpr __nv_bfloat16 __phi() noexcept
   {
-    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fcfu});
+    return ::cuda::std::__fp_from_storage<__nv_bfloat16>(__fp_storage_of_t<__nv_bfloat16>{0x3fcfu});
   }
 };
 #endif // _CCCL_HAS_NVBF16()

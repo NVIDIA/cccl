@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H
-#define _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H
+#ifndef _CUDA_STD___FUNCTIONAL_REFERENCE_WRAPPER_H
+#define _CUDA_STD___FUNCTIONAL_REFERENCE_WRAPPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -52,7 +52,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
-    __f_      = _CUDA_VSTD::addressof(__f);
+    __f_      = ::cuda::std::addressof(__f);
   }
 
   // access
@@ -70,7 +70,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
-    return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::__invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
@@ -110,4 +110,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H
+#endif // _CUDA_STD___FUNCTIONAL_REFERENCE_WRAPPER_H

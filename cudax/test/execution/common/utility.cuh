@@ -244,27 +244,27 @@ void check_values(Sndr&& sndr, const Values&... values) noexcept
 #endif // !defined(__CUDA_ARCH__)
 
 template <class... Ts>
-using types = _CUDA_VSTD::__type_list<Ts...>;
+using types = ::cuda::std::__type_list<Ts...>;
 
 template <class... Values, class Sndr>
 _CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
-  using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, _CUDA_VSTD::__make_type_set>;
-  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>)
+  using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, ::cuda::std::__make_type_set>;
+  if constexpr (!::cuda::std::__type_set_eq_v<actual_t, Values...>)
   {
-    _CUDA_VSTD::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
-    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+    ::cuda::std::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(::cuda::std::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
   }
 }
 
 template <class... Errors, class Sndr>
 _CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
-  using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, _CUDA_VSTD::__make_type_set>;
-  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>)
+  using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, ::cuda::std::__make_type_set>;
+  if constexpr (!::cuda::std::__type_set_eq_v<actual_t, Errors...>)
   {
-    _CUDA_VSTD::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
-    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+    ::cuda::std::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(::cuda::std::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
   }
 }
 
@@ -277,12 +277,12 @@ _CCCL_HOST_DEVICE void check_sends_stopped(Sndr&&) noexcept
 template <class Sndr, class... Ts>
 inline void wait_for_value(Sndr&& snd, Ts&&... val)
 {
-  _CUDA_VSTD::optional<_CUDA_VSTD::tuple<Ts...>> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd));
+  ::cuda::std::optional<::cuda::std::tuple<Ts...>> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd));
   CHECK(res.has_value());
-  _CUDA_VSTD::tuple<Ts...> expected(static_cast<Ts&&>(val)...);
-  if constexpr (_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::tuple<Ts...>> == 1)
+  ::cuda::std::tuple<Ts...> expected(static_cast<Ts&&>(val)...);
+  if constexpr (::cuda::std::tuple_size_v<::cuda::std::tuple<Ts...>> == 1)
   {
-    C2H_CHECK_TUPLE(_CUDA_VSTD::get<0>(res.value()) == _CUDA_VSTD::get<0>(expected));
+    C2H_CHECK_TUPLE(::cuda::std::get<0>(res.value()) == ::cuda::std::get<0>(expected));
   }
   else
   {

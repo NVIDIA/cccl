@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_CONJUGATE_IF_NEEDED_HPP
-#define _LIBCUDACXX___LINALG_CONJUGATE_IF_NEEDED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_H
+#define _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,7 +43,7 @@ namespace linalg
 _CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 
 template <class _Type>
-_CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(_CUDA_VSTD::conj(__a)));
+_CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
 struct __conj_if_needed
 {
@@ -56,7 +56,7 @@ struct __conj_if_needed
     }
     else
     {
-      return _CUDA_VSTD::conj(__t);
+      return ::cuda::std::conj(__t);
     }
     _CCCL_UNREACHABLE();
   }
@@ -75,4 +75,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP
+#endif // _CUDA_STD___LINALG_CONJUGATED_HPP

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MOVE_H
-#define _LIBCUDACXX___ALGORITHM_MOVE_H
+#ifndef _CUDA_STD___ALGORITHM_MOVE_H
+#define _CUDA_STD___ALGORITHM_MOVE_H
 
 #include <cuda/std/detail/__config>
 
@@ -57,7 +57,7 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __move(_Tp* __first, _Tp* __last, _Up* __re
   const ptrdiff_t __n = __last - __first;
   if (__n > 0)
   {
-    if (_CUDA_VSTD::__dispatch_memmove(__result, __first, __n))
+    if (::cuda::std::__dispatch_memmove(__result, __first, __n))
     {
       return {__first + __n, __result + __n};
     }
@@ -74,8 +74,8 @@ _CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator 
 {
   static_assert(is_copy_constructible_v<_InputIterator>, "Iterators has to be copy constructible.");
   static_assert(is_copy_constructible_v<_OutputIterator>, "The output iterator has to be copy constructible.");
-  return _CUDA_VSTD::__move<_ClassicAlgPolicy>(
-           _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result))
+  return ::cuda::std::__move<_ClassicAlgPolicy>(
+           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
     .second;
 }
 
@@ -83,4 +83,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MOVE_H
+#endif // _CUDA_STD___ALGORITHM_MOVE_H

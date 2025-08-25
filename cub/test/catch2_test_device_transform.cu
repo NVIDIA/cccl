@@ -603,7 +603,7 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
 
 C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
 {
-  using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
 
   STATIC_REQUIRE(cuda::std::is_constructible_v<kernel_arg>);
@@ -701,3 +701,65 @@ C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
   REQUIRE(cudaFuncGetAttributes(&attrs, unrelated_kernel) == cudaSuccess);
   REQUIRE(attrs.sharedSizeBytes == 4 + 12);
 }
+
+#if TEST_LAUNCH == 0
+
+template <int BlockThreads, int ItemsPerPthread, typename T>
+__global__ void fill_pdl_kernel(T* data, size_t n, T value)
+{
+  // we trigger the next kernel's launch very soon and wait a bit for it to spin up before starting to write. this way
+  // we try to expose the next kernel reading uninitialized data, if it contains a bug.
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  NV_IF_TARGET(NV_PROVIDES_SM_70, __nanosleep(100'000);); // must be enough to cover the next kernel's launch overhead
+
+  const int tile_size = ItemsPerPthread * BlockThreads;
+  const size_t offset = size_t{blockIdx.x} * tile_size;
+
+  data += offset;
+  n -= offset;
+
+  for (int j = 0; j < ItemsPerPthread; j++)
+  {
+    const int i = threadIdx.x + j * BlockThreads;
+    if (i < n)
+    {
+      data[i] = value;
+    }
+  }
+}
+
+template <typename T>
+void fill_pdl(T* data, size_t n, T value)
+{
+  constexpr auto block_threads    = 256;
+  constexpr auto items_per_thread = 4;
+  const auto blocks               = static_cast<unsigned>(::cuda::ceil_div(n, block_threads * items_per_thread));
+
+  THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+    blocks, block_threads, /* smem */ 0, /*stream*/ 0, /* pdl */ true)
+    .doit(fill_pdl_kernel<block_threads, items_per_thread, T>, data, n, value);
+}
+
+C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
+{
+  using type = int;
+  // need a warmup run to lazy load kernels and perform some setup, then a problem size that occupies 1/2 of all SMs
+  const int num_items = GENERATE(1, 50 * 128);
+
+  c2h::device_vector<type> data(num_items, thrust::no_init);
+  c2h::device_vector<bool> flags(num_items, thrust::no_init);
+  c2h::device_vector<type> result(1, thrust::no_init);
+
+  using thrust::placeholders::_1;
+
+  // completely async work of filling, 2x transforming and 1x reduction. we also avoid using the launch wrapper, since
+  // it would synchronize
+  fill_pdl(thrust::raw_pointer_cast(data.data()), num_items, 42);
+  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), data.begin(), num_items, cuda::std::negate{});
+  cub::DeviceTransform::Transform(::cuda::std::make_tuple(data.begin()), flags.begin(), num_items, _1 == -42);
+  thrust::reduce_into(
+    thrust::cuda::par_nosync, flags.begin(), flags.end(), result.begin(), true, ::cuda::std::logical_and{});
+  REQUIRE(result[0]); // access finally synchronize
+}
+#endif

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CALLABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CALLABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CALLABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CALLABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Func, class... _Args>
-using __call_result_t _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::declval<_Func>()(_CUDA_VSTD::declval<_Args>()...));
+using __call_result_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::declval<_Func>()(::cuda::std::declval<_Args>()...));
 
 template <class _Func, class... _Args>
 struct __is_callable : _IsValidExpansion<__call_result_t, _Func, _Args...>
@@ -42,7 +42,7 @@ namespace detail
 {
 template <class _Func, class... _Args>
 using __if_nothrow_callable_t _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::enable_if_t<noexcept(_CUDA_VSTD::declval<_Func>()(_CUDA_VSTD::declval<_Args>()...))>;
+  ::cuda::std::enable_if_t<noexcept(::cuda::std::declval<_Func>()(::cuda::std::declval<_Args>()...))>;
 } // namespace detail
 
 template <class _Func, class... _Args>
@@ -57,4 +57,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CALLABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CALLABLE_H

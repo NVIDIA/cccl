@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_DESTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_DESTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -60,7 +60,7 @@ struct __is_destructor_wellformed
 {
   template <typename _Tp1>
   _CCCL_API inline static true_type
-    __test(typename __is_destructible_apply<decltype(_CUDA_VSTD::declval<_Tp1&>().~_Tp1())>::type);
+    __test(typename __is_destructible_apply<decltype(::cuda::std::declval<_Tp1&>().~_Tp1())>::type);
 
   template <typename _Tp1>
   _CCCL_API inline static false_type __test(...);
@@ -112,4 +112,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_DESTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_DESTRUCTIBLE_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API inline void __cccl_thread_yield() {}
 
-_CCCL_API inline void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns)
+_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
 {
   NV_IF_TARGET(NV_IS_DEVICE,
                (auto const __step = __ns.count(); assert(__step < numeric_limits<unsigned>::max());
@@ -44,4 +44,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H

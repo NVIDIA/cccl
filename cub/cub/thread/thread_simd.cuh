@@ -58,7 +58,7 @@ extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm53();
 template <typename T>
 struct SimdMin
 {
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+  static_assert(::cuda::std::__always_false_v<T>, "Unsupported specialization");
 };
 
 template <>
@@ -68,9 +68,9 @@ struct SimdMin<short2>
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
-      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
-       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
-       return _CUDA_VSTD::bit_cast<short2>(::__vmins2(a1, b1));),
+      (auto a1 = ::cuda::std::bit_cast<uint32_t>(a); //
+       auto b1 = ::cuda::std::bit_cast<uint32_t>(b);
+       return ::cuda::std::bit_cast<short2>(::__vmins2(a1, b1));),
       (return short2{::cuda::minimum<>{}(a.x, b.x), ::cuda::minimum<>{}(a.y, b.y)};))
   }
 };
@@ -82,9 +82,9 @@ struct SimdMin<ushort2>
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
-      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
-       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
-       return _CUDA_VSTD::bit_cast<ushort2>(::__vminu2(a1, b1));),
+      (auto a1 = ::cuda::std::bit_cast<uint32_t>(a); //
+       auto b1 = ::cuda::std::bit_cast<uint32_t>(b);
+       return ::cuda::std::bit_cast<ushort2>(::__vminu2(a1, b1));),
       (return ushort2{::cuda::minimum<>{}(a.x, b.x), ::cuda::minimum<>{}(a.y, b.y)};))
   }
 };
@@ -122,7 +122,7 @@ struct SimdMin<__nv_bfloat162>
 template <typename T>
 struct SimdMax
 {
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+  static_assert(::cuda::std::__always_false_v<T>, "Unsupported specialization");
 };
 
 template <>
@@ -132,9 +132,9 @@ struct SimdMax<short2>
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
-      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
-       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
-       return _CUDA_VSTD::bit_cast<short2>(::__vmaxs2(a1, b1));),
+      (auto a1 = ::cuda::std::bit_cast<uint32_t>(a); //
+       auto b1 = ::cuda::std::bit_cast<uint32_t>(b);
+       return ::cuda::std::bit_cast<short2>(::__vmaxs2(a1, b1));),
       (return short2{::cuda::maximum<>{}(a.x, b.x), ::cuda::maximum<>{}(a.y, b.y)};))
   }
 };
@@ -146,9 +146,9 @@ struct SimdMax<ushort2>
   {
     NV_IF_ELSE_TARGET(
       NV_PROVIDES_SM_90,
-      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
-       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
-       return _CUDA_VSTD::bit_cast<ushort2>(::__vmaxu2(a1, b1));),
+      (auto a1 = ::cuda::std::bit_cast<uint32_t>(a); //
+       auto b1 = ::cuda::std::bit_cast<uint32_t>(b);
+       return ::cuda::std::bit_cast<ushort2>(::__vmaxu2(a1, b1));),
       (return ushort2{::cuda::maximum<>{}(a.x, b.x), ::cuda::maximum<>{}(a.y, b.y)};))
   }
 };
@@ -186,7 +186,7 @@ struct SimdMax<__nv_bfloat162>
 template <typename T>
 struct SimdSum
 {
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+  static_assert(::cuda::std::__always_false_v<T>, "Unsupported specialization");
 };
 
 #  if _CCCL_HAS_NVFP16()
@@ -229,9 +229,9 @@ struct SimdSum<ushort2>
                      (uint32_t ret;
                       asm("add.u16x2 %0, %1, %2;"
                           : "=r"(ret)
-                          : "r"(_CUDA_VSTD::bit_cast<uint32_t>(a)),
-                            "r"(_CUDA_VSTD::bit_cast<uint32_t>(b)));
-                      return _CUDA_VSTD::bit_cast<ushort2>(ret);),
+                          : "r"(::cuda::std::bit_cast<uint32_t>(a)),
+                            "r"(::cuda::std::bit_cast<uint32_t>(b)));
+                      return ::cuda::std::bit_cast<ushort2>(ret);),
                      (return ushort2{static_cast<uint16_t>(a.x + b.x), static_cast<uint16_t>(a.y + b.y)};));
     // clang-format on
   }
@@ -247,9 +247,9 @@ struct SimdSum<short2>
                      (uint32_t ret;
                       asm("add.s16x2 %0, %1, %2;"
                           : "=r"(ret)
-                          : "r"(_CUDA_VSTD::bit_cast<uint32_t>(a)),
-                            "r"(_CUDA_VSTD::bit_cast<uint32_t>(b)));
-                      return _CUDA_VSTD::bit_cast<short2>(ret);),
+                          : "r"(::cuda::std::bit_cast<uint32_t>(a)),
+                            "r"(::cuda::std::bit_cast<uint32_t>(b)));
+                      return ::cuda::std::bit_cast<short2>(ret);),
                      (return short2{static_cast<int16_t>(a.x + b.x), static_cast<int16_t>(a.y + b.y)};));
     // clang-format on
   }
@@ -265,9 +265,9 @@ struct SimdSum<float2>
                      (uint64_t ret;
                       asm("add.f32x2 %0, %1, %2;"
                            : "=l"(ret)
-                           : "l"(_CUDA_VSTD::bit_cast<uint64_t>(a)),
-                             "l"(_CUDA_VSTD::bit_cast<uint64_t>(b)));
-                      return _CUDA_VSTD::bit_cast<float2>(ret);),
+                           : "l"(::cuda::std::bit_cast<uint64_t>(a)),
+                             "l"(::cuda::std::bit_cast<uint64_t>(b)));
+                      return ::cuda::std::bit_cast<float2>(ret);),
                      (return float2{a.x + b.x,  a.y + b.y};))
     // clang-format on
   }
@@ -278,7 +278,7 @@ struct SimdSum<float2>
 template <typename T>
 struct SimdMul
 {
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+  static_assert(::cuda::std::__always_false_v<T>, "Unsupported specialization");
 };
 
 #  if _CCCL_HAS_NVFP16()
@@ -334,7 +334,7 @@ inline constexpr bool is_simd_operator_v<SimdMax<T>> = true;
 template <typename T>
 struct VectorTypeX2
 {
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+  static_assert(::cuda::std::__always_false_v<T>, "Unsupported specialization");
 };
 
 template <>
@@ -378,7 +378,7 @@ using vector_type_x2_t = typename VectorTypeX2<T>::type;
 template <typename ReduceOp, typename T>
 struct CudaOperatorToSimdX2
 {
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+  static_assert(::cuda::std::__always_false_v<T>, "Unsupported specialization");
 };
 
 template <typename T>
@@ -406,25 +406,25 @@ struct CudaOperatorToSimdX2<::cuda::maximum<T>, T>
 };
 
 template <typename T>
-struct CudaOperatorToSimdX2<_CUDA_VSTD::plus<>, T>
+struct CudaOperatorToSimdX2<::cuda::std::plus<>, T>
 {
   using type = SimdSum<vector_type_x2_t<T>>;
 };
 
 template <typename T>
-struct CudaOperatorToSimdX2<_CUDA_VSTD::plus<T>, T>
+struct CudaOperatorToSimdX2<::cuda::std::plus<T>, T>
 {
   using type = SimdSum<vector_type_x2_t<T>>;
 };
 
 template <typename T>
-struct CudaOperatorToSimdX2<_CUDA_VSTD::multiplies<>, T>
+struct CudaOperatorToSimdX2<::cuda::std::multiplies<>, T>
 {
   using type = SimdMul<vector_type_x2_t<T>>;
 };
 
 template <typename T>
-struct CudaOperatorToSimdX2<_CUDA_VSTD::multiplies<T>, T>
+struct CudaOperatorToSimdX2<::cuda::std::multiplies<T>, T>
 {
   using type = SimdMul<vector_type_x2_t<T>>;
 };
@@ -437,7 +437,7 @@ using cuda_operator_to_simd_x2_t = typename CudaOperatorToSimdX2<ReduceOp, T>::t
 template <typename T, typename Op>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
 {
-  using _CUDA_VSTD::is_same_v;
+  using ::cuda::std::is_same_v;
   constexpr bool is_supported_vector_type = is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>;
   if constexpr (is_cuda_std_plus_v<Op> && (is_same_v<T, float2> || is_supported_vector_type))
   {

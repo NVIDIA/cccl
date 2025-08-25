@@ -231,36 +231,4 @@ C2H_TEST("starts_on works with const sender", "[adaptors][starts_on]")
   auto op                = cudax_async::connect(std::move(snd), checked_value_receiver{42});
   cudax_async::start(op);
 }
-
-struct test_domain
-{
-  _CCCL_TEMPLATE(class Sndr, class Env)
-  _CCCL_REQUIRES(cudax_async::sender_for<Sndr, cudax_async::starts_on_t>)
-  auto transform_sender(Sndr&&, Env const&) const
-  {
-    return cudax_async::just(-1);
-  }
-};
-
-C2H_TEST("starts_on domain forwarding", "[adaptors][starts_on]")
-{
-  // Test that the domain is properly forwarded from the scheduler
-  cudax_async::prop attrs{cudax_async::get_domain, cudax_async::default_domain{}};
-  auto snd =
-    cudax_async::starts_on(inline_scheduler<test_domain>{}, cudax_async::write_attrs(cudax_async::just(42), attrs));
-
-  // Check that the sender has the expected domain
-  STATIC_REQUIRE(
-    _CUDA_VSTD::is_same_v<decltype(cudax_async::get_domain(cudax_async::get_env(snd))), cudax_async::default_domain>);
-
-  // Check that the sender has the expected domain override
-  STATIC_REQUIRE(
-    _CUDA_VSTD::is_same_v<decltype(cudax_async::get_domain_override(cudax_async::get_env(snd))), test_domain>);
-
-  // Verify that the correct lazy transformation from the test_domain is applied:
-  auto op = cudax_async::connect(std::move(snd), checked_value_receiver{-1});
-  cudax_async::start(op);
-  // The receiver checks if we receive the transformed value
-}
-
 } // namespace

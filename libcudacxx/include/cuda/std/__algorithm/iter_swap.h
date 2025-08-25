@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_ITER_SWAP_H
-#define _LIBCUDACXX___ALGORITHM_ITER_SWAP_H
+#ifndef _CUDA_STD___ALGORITHM_ITER_SWAP_H
+#define _CUDA_STD___ALGORITHM_ITER_SWAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -39,7 +39,7 @@ void iter_swap(_ForwardIterator1, _ForwardIterator2) = delete;
 template <class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_CONCEPT __unqualified_iter_swap =
   _CCCL_REQUIRES_EXPR((_ForwardIterator1, _ForwardIterator2), _ForwardIterator1&& __a, _ForwardIterator2&& __b)(
-    iter_swap(_CUDA_VSTD::forward<_ForwardIterator1>(__a), _CUDA_VSTD::forward<_ForwardIterator2>(__b)));
+    iter_swap(::cuda::std::forward<_ForwardIterator1>(__a), ::cuda::std::forward<_ForwardIterator2>(__b)));
 
 template <class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_CONCEPT __readable_swappable =
@@ -52,16 +52,16 @@ struct __fn
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_ForwardIterator1, _ForwardIterator2>)
   _CCCL_API constexpr void operator()(_ForwardIterator1&& __a, _ForwardIterator2&& __b) const
-    noexcept(noexcept(iter_swap(_CUDA_VSTD::declval<_ForwardIterator1>(), _CUDA_VSTD::declval<_ForwardIterator2>())))
+    noexcept(noexcept(iter_swap(::cuda::std::declval<_ForwardIterator1>(), ::cuda::std::declval<_ForwardIterator2>())))
   {
-    (void) iter_swap(_CUDA_VSTD::forward<_ForwardIterator1>(__a), _CUDA_VSTD::forward<_ForwardIterator2>(__b));
+    (void) iter_swap(::cuda::std::forward<_ForwardIterator1>(__a), ::cuda::std::forward<_ForwardIterator2>(__b));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _ForwardIterator1, class _ForwardIterator2)
   _CCCL_REQUIRES(__readable_swappable<_ForwardIterator1, _ForwardIterator2>)
   _CCCL_API constexpr void operator()(_ForwardIterator1&& __a, _ForwardIterator2&& __b) const
-    noexcept(noexcept(swap(*_CUDA_VSTD::declval<_ForwardIterator1>(), *_CUDA_VSTD::declval<_ForwardIterator2>())))
+    noexcept(noexcept(swap(*::cuda::std::declval<_ForwardIterator1>(), *::cuda::std::declval<_ForwardIterator2>())))
   {
     swap(*__a, *__b);
   }
@@ -79,4 +79,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_ITER_SWAP_H
+#endif // _CUDA_STD___ALGORITHM_ITER_SWAP_H
