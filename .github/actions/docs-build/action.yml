@@ -14,6 +14,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Setup proxy cache
+    - name: Setup proxy cache
+      uses: nv-gha-runners/setup-proxy-cache@main
+
     # Install required dependencies
     - name: Install docs build dependencies
       shell: bash --noprofile --norc -euo pipefail {0}
