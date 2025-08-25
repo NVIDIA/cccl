@@ -33,7 +33,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Lhs, class _Rhs>
 using __fp_common_type_t =
-  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered,
+  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered
+                && __fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__invalid,
               conditional_t<__fp_conv_rank_order_v<_Lhs, _Rhs> == __fp_conv_rank_order::__greater, _Lhs, _Rhs>>;
 
 template <class _Lhs, class _Rhs>

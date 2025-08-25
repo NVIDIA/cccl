@@ -54,7 +54,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__fp_is_implicit_conversion_v<_Tp, __cccl_fp>))
+  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND __fp_is_explicit_conversion_v<_Tp, __cccl_fp>)
   _CCCL_API explicit constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
@@ -84,7 +84,7 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__is_ext_cccl_fp_v<_Tp>)
-                   _CCCL_AND(!__fp_is_implicit_conversion_v<__cccl_fp, _Tp>))
+                   _CCCL_AND __fp_is_explicit_conversion_v<__cccl_fp, _Tp>)
   _CCCL_API explicit constexpr operator _Tp() const noexcept
   {
     // todo: implement conversion to a floating-point type using __fp_cast

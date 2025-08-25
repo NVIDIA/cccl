@@ -33,6 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_conv_rank_order
 {
+  __invalid = -1,
   __unordered,
   __greater,
   __equal,
@@ -84,17 +85,17 @@ template <class _Lhs, class _Rhs>
   }
   else
   {
-    return __fp_conv_rank_order::__unordered;
+    return __fp_conv_rank_order::__invalid;
   }
 }
 
 //! @brief Returns the conversion rank order between two types. If any of the types is not a known floating point type,
-//!        returns __fp_conv_rank_order::__unordered.
+//!        returns __fp_conv_rank_order::__invalid.
 template <class _Lhs, class _Rhs>
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = ::cuda::std::__fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
 
 //! @brief Returns the conversion rank order between two types. Integral types are treated as `double`. Other types are
-//!        treated as unknown and return __fp_conv_rank_order::__unordered.
+//!        treated as unknown and return __fp_conv_rank_order::__invalid.
 template <class _Lhs, class _Rhs>
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
   __fp_conv_rank_order_v<conditional_t<is_integral_v<_Lhs>, double, _Lhs>,
@@ -102,10 +103,19 @@ inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
 
 //! @brief True if _From can be implicitly converted to _To according to the floating point conversion rank rules.
 //! @warning User should ensure that the types are known floating point types.
+//! @note If you want to check for explicit conversions, use __fp_is_explicit_conversion_v instead.
 template <class _From, class _To>
 inline constexpr bool __fp_is_implicit_conversion_v =
   __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__less
   || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__equal;
+
+//! @brief True if _From can be explicitly converted to _To according to the floating point conversion rank rules.
+//! @warning User should ensure that the types are known floating point types.
+//! @note If you want to check for implicit conversions, use __fp_is_implicit_conversion_v instead.
+template <class _From, class _To>
+inline constexpr bool __fp_is_explicit_conversion_v =
+  __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__greater
+  || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__unordered;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
