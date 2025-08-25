@@ -8,6 +8,8 @@
 
 #include <unittest/unittest.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 // ensure that we properly support thrust::constant_iterator from cuda::std
 void TestConstantIteratorTraits()
 {
@@ -184,3 +186,5 @@ void TestConstantIteratorReduce()
   ASSERT_EQUAL(sum, 4 * 7);
 };
 DECLARE_UNITTEST(TestConstantIteratorReduce);
+
+_CCCL_SUPPRESS_DEPRECATED_POP

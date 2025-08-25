@@ -582,9 +582,9 @@ struct offset_to_iterator_t
 template <class T>
 struct repeat_index_t
 {
-  __host__ __device__ __forceinline__ ::cuda::constant_iterator<T> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<T> operator()(std::size_t i)
   {
-    return ::cuda::constant_iterator<T>(static_cast<T>(i));
+    return cuda::constant_iterator<T>(static_cast<T>(i));
   }
 };
 
