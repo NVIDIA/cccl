@@ -4,7 +4,6 @@
 parse_python_args() {
     # Initialize variables
     py_version=""
-    cuda_version=""
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -20,18 +19,6 @@ parse_python_args() {
                 py_version="$2"
                 shift 2
                 ;;
-            -cuda-version=*)
-                cuda_version="${1#*=}"
-                shift
-                ;;
-            -cuda-version)
-                if [[ $# -gt 1 && ! "$2" =~ ^- ]]; then
-                    cuda_version="$2"
-                    shift 2
-                else
-                    shift 1
-                fi
-                ;;
             *)
                 # Unknown argument, ignore
                 shift
@@ -41,7 +28,6 @@ parse_python_args() {
 
     # Export for use by calling script
     export py_version
-    export cuda_version
 }
 
 require_py_version() {
