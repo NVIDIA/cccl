@@ -668,7 +668,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1permutation__iterator.html">thrust::permutation_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1pointer.html">thrust::pointer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1mr_1_1polymorphic__adaptor__resource.html">thrust::mr::polymorphic_adaptor_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1reverse__iterator.html">thrust::reverse_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1shuffle__iterator.html">thrust::shuffle_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1mr_1_1stateless__resource__allocator.html">thrust::mr::stateless_resource_allocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1strided__iterator.html">thrust::strided_iterator</a></li>
@@ -830,7 +829,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html"><code class="docutils literal notranslate"><span class="pre">make_counting_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"><code class="docutils literal notranslate"><span class="pre">make_discard_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html"><code class="docutils literal notranslate"><span class="pre">make_permutation_iterator</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15.html"><code class="docutils literal notranslate"><span class="pre">make_reverse_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html"><code class="docutils literal notranslate"><span class="pre">make_shuffle_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"><code class="docutils literal notranslate"><span class="pre">make_strided_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html"><code class="docutils literal notranslate"><span class="pre">make_tabulate_output_iterator</span></code></a></li>
@@ -1179,13 +1177,13 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1heterogeneous__iterator.html">cuda::experimental::heterogeneous_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html">cuda::experimental::stf::interpreted_execution_policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1legacy__managed__memory__resource.html">cuda::experimental::legacy_managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html">cuda::experimental::legacy_pinned_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html">cuda::experimental::stf::reducer::logical_and</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1logical__data.html">cuda::experimental::stf::logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1logical__data__untyped.html">cuda::experimental::stf::logical_data_untyped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1logical__device.html">cuda::experimental::logical_device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html">cuda::experimental::stf::reducer::logical_or</a></li>
-<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1managed__memory__resource.html">cuda::experimental::managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html">cuda::experimental::stf::reducer::maxval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval.html">cuda::experimental::stf::reducer::minval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1no__init.html">cuda::experimental::stf::no_init</a></li>
@@ -1542,6 +1540,11 @@ For example, <code class="docutils literal notranslate"><span class="pre">typena
 </dl>
 </dd></dl>
 
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf15task_dep_vector19non_void_instance_tE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task__dep__vector_1a6df84122a6b03a24fb99bc63af1160ac"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">non_void_instance_t</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">reserved</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">remove_void_interface_from_pack_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4IDpEN4cuda12experimental3stf15task_dep_vectorE" title="cuda::experimental::stf::task_dep_vector::Data"><span class="n"><span class="pre">Data</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector19non_void_instance_tE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
 </div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
@@ -1594,6 +1597,12 @@ The physical data extracted is usable only after the dependencies have been sati
 <dd class="field-odd"><p>::std::tuple&lt;Data…&gt;</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf15task_dep_vector17non_void_instanceER4task">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task__dep__vector_1a12c6923251aab2cfe12c3d9e5910da27"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector19non_void_instance_tE" title="cuda::experimental::stf::task_dep_vector::non_void_instance_t"><span class="n"><span class="pre">non_void_instance_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">non_void_instance</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#_CPPv4N4cuda12experimental3stf4taskE" title="cuda::experimental::stf::task"><span class="n"><span class="pre">task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector17non_void_instanceER4task" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get all non void instances. </p>
 </dd></dl>
 
 </div>
@@ -1669,10 +1678,12 @@ The physical data extracted is usable only after the dependencies have been sati
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDpEN4cuda12experimental3stf15task_dep_vectorE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::task_dep_vector</span></code></a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_6size_tEN4cuda12experimental3stf15task_dep_vector7type_atE"><code class="docutils literal notranslate"><span class="pre">type_at</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector19non_void_instance_tE"><code class="docutils literal notranslate"><span class="pre">non_void_instance_t</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf15task_dep_vector15task_dep_vectorE8task_depI1TE"><code class="docutils literal notranslate"><span class="pre">task_dep_vector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector15task_dep_vectorEDp8task_depI4DataE"><code class="docutils literal notranslate"><span class="pre">task_dep_vector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_6size_tEN4cuda12experimental3stf15task_dep_vector2atER8task_depI7type_atI1iEEv"><code class="docutils literal notranslate"><span class="pre">at()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector8instanceER4task"><code class="docutils literal notranslate"><span class="pre">instance()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector17non_void_instanceER4task"><code class="docutils literal notranslate"><span class="pre">non_void_instance()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15task_dep_vector8elementsE"><code class="docutils literal notranslate"><span class="pre">elements</span></code></a></li>
 </ul>
 </li>

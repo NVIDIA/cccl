@@ -668,7 +668,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1permutation__iterator.html">thrust::permutation_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1pointer.html">thrust::pointer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1mr_1_1polymorphic__adaptor__resource.html">thrust::mr::polymorphic_adaptor_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1reverse__iterator.html">thrust::reverse_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1shuffle__iterator.html">thrust::shuffle_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1mr_1_1stateless__resource__allocator.html">thrust::mr::stateless_resource_allocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/classthrust_1_1strided__iterator.html">thrust::strided_iterator</a></li>
@@ -830,7 +829,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html"><code class="docutils literal notranslate"><span class="pre">make_counting_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"><code class="docutils literal notranslate"><span class="pre">make_discard_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html"><code class="docutils literal notranslate"><span class="pre">make_permutation_iterator</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15.html"><code class="docutils literal notranslate"><span class="pre">make_reverse_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html"><code class="docutils literal notranslate"><span class="pre">make_shuffle_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"><code class="docutils literal notranslate"><span class="pre">make_strided_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html"><code class="docutils literal notranslate"><span class="pre">make_tabulate_output_iterator</span></code></a></li>
@@ -1179,13 +1177,13 @@
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1heterogeneous__iterator.html">cuda::experimental::heterogeneous_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html">cuda::experimental::stf::interpreted_execution_policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html">cuda::experimental::legacy_managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html">cuda::experimental::legacy_pinned_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html">cuda::experimental::stf::reducer::logical_and</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1logical__data.html">cuda::experimental::stf::logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1logical__data__untyped.html">cuda::experimental::stf::logical_data_untyped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1logical__device.html">cuda::experimental::logical_device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html">cuda::experimental::stf::reducer::logical_or</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html">cuda::experimental::managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html">cuda::experimental::stf::reducer::maxval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval.html">cuda::experimental::stf::reducer::minval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1stf_1_1no__init.html">cuda::experimental::stf::no_init</a></li>
@@ -1519,16 +1517,24 @@ and the <a class="reference external" href="https://github.com/NVIDIA/cccl/issue
 <h2>CUDA Toolkit changes<a class="headerlink" href="#cuda-toolkit-changes" title="Link to this heading">#</a></h2>
 <p>CCCL is moving to its own include directory within the CUDA Toolkit. This may cause build failures and some initial confusion.
 This section will have some suggestions and mitigations to help maintain builds across both CUDA12 and future releases.</p>
-<p>The CTK-provided includes are changing in the following ways:
-+——————————-+————————————+
-| <strong>Before CUDA 13.0</strong>          | <strong>After CUDA 13.0</strong>                |
-+===============================+====================================+
-| <cite>${CTK_ROOT}/include/cuda/</cite>   | <cite>${CTK_ROOT}/include/cccl/cuda/</cite>   |
-+===============================+====================================+
-| <cite>${CTK_ROOT}/include/cub/</cite>    | <cite>${CTK_ROOT}/include/cccl/cub/</cite>    |
-+===============================+====================================+
-| <cite>${CTK_ROOT}/include/thrust/</cite> | <cite>${CTK_ROOT}/include/cccl/thrust/</cite> |
-+——————————-+————————————+</p>
+<p>The CTK-provided includes are changing in the following ways:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<tbody>
+<tr class="row-odd"><td><p><strong>Before CUDA 13.0</strong></p></td>
+<td><p><strong>After CUDA 13.0</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><cite>${CTK_ROOT}/include/cuda/</cite></p></td>
+<td><p><cite>${CTK_ROOT}/include/cccl/cuda/</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><cite>${CTK_ROOT}/include/cub/</cite></p></td>
+<td><p><cite>${CTK_ROOT}/include/cccl/cub/</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><cite>${CTK_ROOT}/include/thrust/</cite></p></td>
+<td><p><cite>${CTK_ROOT}/include/cccl/thrust/</cite></p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p>Due to these changes, and the fact that NVCC by default includes its own directories, you may encounter errors when including
 CCCL headers in source files that are compiled <em>only</em> by the host compiler.</p>
 <p>For example, when compiling with GCC or MSVC alone, you may see <code class="docutils literal notranslate"><span class="pre">&lt;cuda/...&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cub/...&gt;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&lt;thrust/...&gt;</span></code> headers missing.</p>

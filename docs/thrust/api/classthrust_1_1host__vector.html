@@ -668,7 +668,6 @@
 <li class="toctree-l4"><a class="reference internal" href="classthrust_1_1permutation__iterator.html">thrust::permutation_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classthrust_1_1pointer.html">thrust::pointer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classthrust_1_1mr_1_1polymorphic__adaptor__resource.html">thrust::mr::polymorphic_adaptor_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="classthrust_1_1reverse__iterator.html">thrust::reverse_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classthrust_1_1shuffle__iterator.html">thrust::shuffle_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classthrust_1_1mr_1_1stateless__resource__allocator.html">thrust::mr::stateless_resource_allocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classthrust_1_1strided__iterator.html">thrust::strided_iterator</a></li>
@@ -830,7 +829,6 @@
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html"><code class="docutils literal notranslate"><span class="pre">make_counting_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"><code class="docutils literal notranslate"><span class="pre">make_discard_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html"><code class="docutils literal notranslate"><span class="pre">make_permutation_iterator</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15.html"><code class="docutils literal notranslate"><span class="pre">make_reverse_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html"><code class="docutils literal notranslate"><span class="pre">make_shuffle_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"><code class="docutils literal notranslate"><span class="pre">make_strided_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html"><code class="docutils literal notranslate"><span class="pre">make_tabulate_output_iterator</span></code></a></li>
@@ -1179,13 +1177,13 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1heterogeneous__iterator.html">cuda::experimental::heterogeneous_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html">cuda::experimental::stf::interpreted_execution_policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html">cuda::experimental::legacy_managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html">cuda::experimental::legacy_pinned_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html">cuda::experimental::stf::reducer::logical_and</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1logical__data.html">cuda::experimental::stf::logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1logical__data__untyped.html">cuda::experimental::stf::logical_data_untyped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1logical__device.html">cuda::experimental::logical_device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html">cuda::experimental::stf::reducer::logical_or</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html">cuda::experimental::managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html">cuda::experimental::stf::reducer::maxval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval.html">cuda::experimental::stf::reducer::minval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1no__init.html">cuda::experimental::stf::no_init</a></li>
@@ -2062,11 +2060,11 @@ This operator allows for easy, array-style, data access. Note that data access w
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N6thrust11host_vector6rbeginEv">
-<span class="target" id="classthrust_1_1host__vector_1a960a8666dc7555066df118bb47a7ec29"></span><a class="reference internal" href="classthrust_1_1reverse__iterator.html#_CPPv4I0EN6thrust16reverse_iteratorE" title="thrust::reverse_iterator"><span class="n"><span class="pre">reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rbegin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6thrust11host_vector6rbeginEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>This method returns a <a class="reference internal" href="classthrust_1_1reverse__iterator.html#classthrust_1_1reverse__iterator"><span class="std std-ref">reverse_iterator</span></a> pointing to the beginning of this vector’s reversed sequence. </p>
+<span class="target" id="classthrust_1_1host__vector_1a960a8666dc7555066df118bb47a7ec29"></span><span class="n"><span class="pre">reverse_iterator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rbegin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6thrust11host_vector6rbeginEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>This method returns a reverse_iterator pointing to the beginning of this vector’s reversed sequence. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>A <a class="reference internal" href="classthrust_1_1reverse__iterator.html#classthrust_1_1reverse__iterator"><span class="std std-ref">reverse_iterator</span></a> pointing to the beginning of this vector’s reversed sequence. </p>
+<dd class="field-odd"><p>A reverse_iterator pointing to the beginning of this vector’s reversed sequence. </p>
 </dd>
 </dl>
 </dd></dl>
@@ -2128,8 +2126,8 @@ This operator allows for easy, array-style, data access. Note that data access w
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N6thrust11host_vector4rendEv">
-<span class="target" id="classthrust_1_1host__vector_1a5b9890ea9034b8726b1b4de9dc979647"></span><a class="reference internal" href="classthrust_1_1reverse__iterator.html#_CPPv4I0EN6thrust16reverse_iteratorE" title="thrust::reverse_iterator"><span class="n"><span class="pre">reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6thrust11host_vector4rendEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>This method returns a <a class="reference internal" href="classthrust_1_1reverse__iterator.html#classthrust_1_1reverse__iterator"><span class="std std-ref">reverse_iterator</span></a> pointing to one element past the last of this vector’s reversed sequence. </p>
+<span class="target" id="classthrust_1_1host__vector_1a5b9890ea9034b8726b1b4de9dc979647"></span><span class="n"><span class="pre">reverse_iterator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N6thrust11host_vector4rendEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>This method returns a reverse_iterator pointing to one element past the last of this vector’s reversed sequence. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#classthrust_1_1host__vector_1a960a8666dc7555066df118bb47a7ec29"><span class="std std-ref">rbegin()</span></a> + <a class="reference internal" href="#classthrust_1_1host__vector_1a70301f21db26cd1b11a8a00771e9ee8b"><span class="std std-ref">size()</span></a>. </p>

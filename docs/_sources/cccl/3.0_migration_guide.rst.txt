@@ -17,13 +17,14 @@ CCCL is moving to its own include directory within the CUDA Toolkit. This may ca
 This section will have some suggestions and mitigations to help maintain builds across both CUDA12 and future releases.
 
 The CTK-provided includes are changing in the following ways:
+
 +-------------------------------+------------------------------------+
 | **Before CUDA 13.0**          | **After CUDA 13.0**                |
-+===============================+====================================+
++-------------------------------+------------------------------------+
 | `${CTK_ROOT}/include/cuda/`   | `${CTK_ROOT}/include/cccl/cuda/`   |
-+===============================+====================================+
++-------------------------------+------------------------------------+
 | `${CTK_ROOT}/include/cub/`    | `${CTK_ROOT}/include/cccl/cub/`    |
-+===============================+====================================+
++-------------------------------+------------------------------------+
 | `${CTK_ROOT}/include/thrust/` | `${CTK_ROOT}/include/cccl/thrust/` |
 +-------------------------------+------------------------------------+
 

@@ -661,7 +661,6 @@
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1permutation__iterator.html">thrust::permutation_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1pointer.html">thrust::pointer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1mr_1_1polymorphic__adaptor__resource.html">thrust::mr::polymorphic_adaptor_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1reverse__iterator.html">thrust::reverse_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1shuffle__iterator.html">thrust::shuffle_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1mr_1_1stateless__resource__allocator.html">thrust::mr::stateless_resource_allocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/classthrust_1_1strided__iterator.html">thrust::strided_iterator</a></li>
@@ -823,7 +822,6 @@
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html"><code class="docutils literal notranslate"><span class="pre">make_counting_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"><code class="docutils literal notranslate"><span class="pre">make_discard_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html"><code class="docutils literal notranslate"><span class="pre">make_permutation_iterator</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15.html"><code class="docutils literal notranslate"><span class="pre">make_reverse_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html"><code class="docutils literal notranslate"><span class="pre">make_shuffle_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"><code class="docutils literal notranslate"><span class="pre">make_strided_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html"><code class="docutils literal notranslate"><span class="pre">make_tabulate_output_iterator</span></code></a></li>
@@ -1172,13 +1170,13 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1heterogeneous__iterator.html">cuda::experimental::heterogeneous_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html">cuda::experimental::stf::interpreted_execution_policy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html">cuda::experimental::legacy_managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html">cuda::experimental::legacy_pinned_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html">cuda::experimental::stf::reducer::logical_and</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1logical__data.html">cuda::experimental::stf::logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1logical__data__untyped.html">cuda::experimental::stf::logical_data_untyped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1logical__device.html">cuda::experimental::logical_device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html">cuda::experimental::stf::reducer::logical_or</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html">cuda::experimental::managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html">cuda::experimental::stf::reducer::maxval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval.html">cuda::experimental::stf::reducer::minval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1no__init.html">cuda::experimental::stf::no_init</a></li>
@@ -2886,6 +2884,20 @@
 </li>
       <li><a href="cudax/api/structcuda_1_1experimental_1_1launch__priority.html#_CPPv4N4cuda12experimental15launch_priority8priorityE">cuda::experimental::launch_priority::priority (C++ member)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE">cuda::experimental::legacy_managed_memory_resource (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4NK4cuda12experimental30legacy_managed_memory_resource13allocate_syncEK6size_tK6size_t">cuda::experimental::legacy_managed_memory_resource::allocate_sync (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4NK4cuda12experimental30legacy_managed_memory_resource15deallocate_syncEPvK6size_tK6size_t">cuda::experimental::legacy_managed_memory_resource::deallocate_sync (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4N4cuda12experimental30legacy_managed_memory_resource15default_queriesE">cuda::experimental::legacy_managed_memory_resource::default_queries (C++ type)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource15host_accessible">cuda::experimental::legacy_managed_memory_resource::get_property (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource17device_accessible">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4N4cuda12experimental30legacy_managed_memory_resource30legacy_managed_memory_resourceEKj">cuda::experimental::legacy_managed_memory_resource::legacy_managed_memory_resource (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource.html#_CPPv4NK4cuda12experimental30legacy_managed_memory_resourceeqERK30legacy_managed_memory_resource">cuda::experimental::legacy_managed_memory_resource::operator== (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html#_CPPv4N4cuda12experimental29legacy_pinned_memory_resourceE">cuda::experimental::legacy_pinned_memory_resource (C++ class)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html#_CPPv4NK4cuda12experimental29legacy_pinned_memory_resource13allocate_syncEK6size_tK6size_t">cuda::experimental::legacy_pinned_memory_resource::allocate_sync (C++ function)</a>
@@ -2935,24 +2947,6 @@
       <li><a href="cudax/api/namespacecuda_1_1experimental_1ab04039bc09c8136f3619e8e30ac739ab.html#_CPPv4I00DpEN4cuda12experimental14make_hierarchyEDa2L1Dp6Levels">cuda::experimental::make_hierarchy (C++ function)</a>
 </li>
       <li><a href="cudax/api/namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f.html#_CPPv4I0DpEN4cuda12experimental20make_shared_resourceE15shared_resourceI9_ResourceEDpRR5_Args">cuda::experimental::make_shared_resource (C++ function)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resourceE">cuda::experimental::managed_memory_resource (C++ class)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_t">cuda::experimental::managed_memory_resource::allocate (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_tK6size_t">[1]</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4NK4cuda12experimental23managed_memory_resource13allocate_syncEK6size_tK6size_t">cuda::experimental::managed_memory_resource::allocate_sync (C++ function)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPv6size_t">cuda::experimental::managed_memory_resource::deallocate (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPvK6size_tK6size_t">[1]</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4NK4cuda12experimental23managed_memory_resource15deallocate_syncEPvK6size_tK6size_t">cuda::experimental::managed_memory_resource::deallocate_sync (C++ function)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource15default_queriesE">cuda::experimental::managed_memory_resource::default_queries (C++ type)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource15host_accessible">cuda::experimental::managed_memory_resource::get_property (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource17device_accessible">[1]</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4N4cuda12experimental23managed_memory_resource23managed_memory_resourceEKj">cuda::experimental::managed_memory_resource::managed_memory_resource (C++ function)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1managed__memory__resource.html#_CPPv4NK4cuda12experimental23managed_memory_resourceeqERK23managed_memory_resource">cuda::experimental::managed_memory_resource::operator== (C++ function)</a>
 </li>
       <li><a href="cudax/api/structcuda_1_1experimental_1_1memory__pool__properties.html#_CPPv4N4cuda12experimental22memory_pool_propertiesE">cuda::experimental::memory_pool_properties (C++ struct)</a>
 </li>
@@ -4562,12 +4556,12 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx11cuda_kernelEDp8task_depI4DepsE">cuda::experimental::stf::graph_ctx::cuda_kernel (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx17cuda_kernel_chainEDp8task_depI4DepsE">cuda::experimental::stf::graph_ctx::cuda_kernel_chain (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctx16current_affinityEv">cuda::experimental::stf::graph_ctx::current_affinity (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctx18current_exec_placeEv">cuda::experimental::stf::graph_ctx::current_exec_place (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4I0EN4cuda12experimental3stf9graph_ctx14data_interfaceE">cuda::experimental::stf::graph_ctx::data_interface (C++ type)</a>
@@ -6426,9 +6420,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4.html#_CPPv4I0EN4cuda12experimental3stf8task_depI1TvXL0EEEE">cuda::experimental::stf::task_dep&lt;T, void, false&gt; (C++ class)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4.html#_CPPv4NK4cuda12experimental3stf8task_depI1TvXL0EEE12as_read_modeEv">cuda::experimental::stf::task_dep&lt;T, void, false&gt;::as_read_mode (C++ function)</a>
-</li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4.html#_CPPv4NK4cuda12experimental3stf8task_depI1TvXL0EEE20as_read_mode_untypedEv">cuda::experimental::stf::task_dep&lt;T, void, false&gt;::as_read_mode_untyped (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4.html#_CPPv4NK4cuda12experimental3stf8task_depI1TvXL0EEE7as_modeE11access_mode">cuda::experimental::stf::task_dep&lt;T, void, false&gt;::as_mode (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4.html#_CPPv4N4cuda12experimental3stf8task_depI1TvXL0EEE6data_tE">cuda::experimental::stf::task_dep&lt;T, void, false&gt;::data_t (C++ type)</a>
 </li>
@@ -6472,7 +6464,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__untyped.html#_CPPv4N4cuda12experimental3stf16task_dep_untypedE">cuda::experimental::stf::task_dep_untyped (C++ class)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__untyped.html#_CPPv4NK4cuda12experimental3stf16task_dep_untyped20as_read_mode_untypedEv">cuda::experimental::stf::task_dep_untyped::as_read_mode_untyped (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__untyped.html#_CPPv4NK4cuda12experimental3stf16task_dep_untyped7as_modeE11access_mode">cuda::experimental::stf::task_dep_untyped::as_mode (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__untyped.html#_CPPv4N4cuda12experimental3stf16task_dep_untyped16dependency_indexE">cuda::experimental::stf::task_dep_untyped::dependency_index (C++ member)</a>
 </li>
@@ -6517,6 +6509,10 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html#_CPPv4N4cuda12experimental3stf15task_dep_vector8elementsE">cuda::experimental::stf::task_dep_vector::elements (C++ member)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html#_CPPv4N4cuda12experimental3stf15task_dep_vector8instanceER4task">cuda::experimental::stf::task_dep_vector::instance (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html#_CPPv4N4cuda12experimental3stf15task_dep_vector17non_void_instanceER4task">cuda::experimental::stf::task_dep_vector::non_void_instance (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html#_CPPv4N4cuda12experimental3stf15task_dep_vector19non_void_instance_tE">cuda::experimental::stf::task_dep_vector::non_void_instance_t (C++ type)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html#_CPPv4I0EN4cuda12experimental3stf15task_dep_vector15task_dep_vectorE8task_depI1TE">cuda::experimental::stf::task_dep_vector::task_dep_vector (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1task__dep__vector.html#_CPPv4N4cuda12experimental3stf15task_dep_vector15task_dep_vectorEDp8task_depI4DataE">[1]</a>
 </li>
@@ -8943,8 +8939,6 @@
 </li>
       <li><a href="thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html#_CPPv4I00EN6thrust25make_permutation_iteratorE20permutation_iteratorI15ElementIterator13IndexIteratorE15ElementIterator13IndexIterator">thrust::make_permutation_iterator (C++ function)</a>
 </li>
-      <li><a href="thrust/api/group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15.html#_CPPv4I0EN6thrust21make_reverse_iteratorE16reverse_iteratorI21BidirectionalIteratorE21BidirectionalIterator">thrust::make_reverse_iterator (C++ function)</a>
-</li>
       <li><a href="thrust/api/group__type__traits_1ga95fbb1696d9e8d1c61891da69cc02c03.html#_CPPv4I_N4cudaSt6size_tEEN6thrust28make_reversed_index_sequenceE">thrust::make_reversed_index_sequence (C++ type)</a>
 </li>
       <li><a href="thrust/api/group__type__traits_1ga902b3a0313d9d2dffe1b71785fbc17f7.html#_CPPv4I0_N4cudaSt6size_tEEN6thrust30make_reversed_integer_sequenceE">thrust::make_reversed_integer_sequence (C++ type)</a>
@@ -9115,12 +9109,12 @@
 </li>
       <li><a href="thrust/api/classthrust_1_1mr_1_1memory__resource.html#_CPPv4NK6thrust2mr15memory_resource8is_equalERK15memory_resource">thrust::mr::memory_resource::is_equal (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="thrust/api/classthrust_1_1mr_1_1memory__resource.html#_CPPv4N6thrust2mr15memory_resource7pointerE">thrust::mr::memory_resource::pointer (C++ type)</a>
 </li>
       <li><a href="thrust/api/classthrust_1_1mr_1_1memory__resource.html#_CPPv4N6thrust2mr15memory_resourceD0Ev">thrust::mr::memory_resource::~memory_resource (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="thrust/api/classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4.html#_CPPv4IEN6thrust2mr15memory_resourceIPvEE">thrust::mr::memory_resource&lt;void*&gt; (C++ class)</a>
 </li>
       <li><a href="thrust/api/classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4.html#_CPPv4N6thrust2mr15memory_resourceIPvE8allocateENSt6size_tENSt6size_tE">thrust::mr::memory_resource&lt;void*&gt;::allocate (C++ function)</a>
@@ -9714,14 +9708,6 @@
       <li><a href="thrust/api/group__reordering_1gac20b29a89a6fac38529d801b6bfc2b2f.html#_CPPv4I00EN6thrust7reverseEvRKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE21BidirectionalIterator21BidirectionalIterator">thrust::reverse (C++ function)</a>, <a href="thrust/api/group__reordering_1gac20b29a89a6fac38529d801b6bfc2b2f.html#_CPPv4I0EN6thrust7reverseEv21BidirectionalIterator21BidirectionalIterator">[1]</a>
 </li>
       <li><a href="thrust/api/group__reordering_1ga96a1db1860b1b0e7be7cf53856a9b456.html#_CPPv4I000EN6thrust12reverse_copyE14OutputIteratorRKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE21BidirectionalIterator21BidirectionalIterator14OutputIterator">thrust::reverse_copy (C++ function)</a>, <a href="thrust/api/group__reordering_1ga96a1db1860b1b0e7be7cf53856a9b456.html#_CPPv4I00EN6thrust12reverse_copyE14OutputIterator21BidirectionalIterator21BidirectionalIterator14OutputIterator">[1]</a>
-</li>
-      <li><a href="thrust/api/classthrust_1_1reverse__iterator.html#_CPPv4I0EN6thrust16reverse_iteratorE">thrust::reverse_iterator (C++ class)</a>
-</li>
-      <li><a href="thrust/api/classthrust_1_1reverse__iterator.html#_CPPv4NK6thrust16reverse_iterator4baseEv">thrust::reverse_iterator::base (C++ function)</a>
-</li>
-      <li><a href="thrust/api/classthrust_1_1reverse__iterator.html#_CPPv4N6thrust16reverse_iterator9base_typeE">thrust::reverse_iterator::base_type (C++ type)</a>
-</li>
-      <li><a href="thrust/api/classthrust_1_1reverse__iterator.html#_CPPv4I0_N6detail23enable_if_convertible_tI26OtherBidirectionalIterator21BidirectionalIteratoriEEEN6thrust16reverse_iterator16reverse_iteratorERK16reverse_iteratorI26OtherBidirectionalIteratorE">thrust::reverse_iterator::reverse_iterator (C++ function)</a>, <a href="thrust/api/classthrust_1_1reverse__iterator.html#_CPPv4N6thrust16reverse_iterator16reverse_iteratorE21BidirectionalIterator">[1]</a>, <a href="thrust/api/classthrust_1_1reverse__iterator.html#_CPPv4N6thrust16reverse_iterator16reverse_iteratorEv">[2]</a>
 </li>
       <li><a href="thrust/api/structthrust_1_1runtime__value.html#_CPPv4I0EN6thrust13runtime_valueE">thrust::runtime_value (C++ struct)</a>
 </li>

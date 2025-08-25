@@ -45,7 +45,6 @@ Classes
 * :doc:`thrust::random::uniform_int_distribution <classthrust_1_1random_1_1uniform__int__distribution>`
 * :doc:`thrust::random::uniform_real_distribution <classthrust_1_1random_1_1uniform__real__distribution>`
 * :doc:`thrust::random::xor_combine_engine <classthrust_1_1random_1_1xor__combine__engine>`
-* :doc:`thrust::reverse_iterator <classthrust_1_1reverse__iterator>`
 * :doc:`thrust::shuffle_iterator <classthrust_1_1shuffle__iterator>`
 * :doc:`thrust::strided_iterator <classthrust_1_1strided__iterator>`
 * :doc:`thrust::system::error_category <classthrust_1_1system_1_1error__category>`
@@ -195,7 +194,6 @@ Functions
 * :doc:`make_counting_iterator <group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac>`
 * :doc:`make_discard_iterator <group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469>`
 * :doc:`make_permutation_iterator <group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e>`
-* :doc:`make_reverse_iterator <group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15>`
 * :doc:`make_shuffle_iterator <group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80>`
 * :doc:`make_strided_iterator <group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02>`
 * :doc:`make_tabulate_output_iterator <group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297>`
@@ -490,7 +488,6 @@ Variables
    classthrust_1_1permutation__iterator
    classthrust_1_1pointer
    classthrust_1_1mr_1_1polymorphic__adaptor__resource
-   classthrust_1_1reverse__iterator
    classthrust_1_1shuffle__iterator
    classthrust_1_1mr_1_1stateless__resource__allocator
    classthrust_1_1strided__iterator
@@ -652,7 +649,6 @@ Variables
    group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac
    group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469
    group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e
-   group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15
    group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80
    group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02
    group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297

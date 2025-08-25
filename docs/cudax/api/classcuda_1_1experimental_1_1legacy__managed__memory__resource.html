@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>cuda::experimental::managed_memory_resource &#8212; CUDA Core Compute Libraries</title>
+    <title>cuda::experimental::legacy_managed_memory_resource &#8212; CUDA Core Compute Libraries</title>
   
   
   
@@ -50,12 +50,12 @@
     <script src="../../_static/copybutton.js?v=5ceeb459"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'cudax/api/classcuda_1_1experimental_1_1managed__memory__resource';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cudax/api/classcuda_1_1experimental_1_1legacy__managed__memory__resource';</script>
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="cuda::experimental::stf::reducer::maxval" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html" />
-    <link rel="prev" title="cuda::experimental::stf::reducer::logical_or" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html" />
+    <link rel="next" title="cuda::experimental::stf::reducer::logical_and" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html" />
+    <link rel="prev" title="cuda::experimental::stf::interpreted_execution_policy" href="classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -668,7 +668,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1permutation__iterator.html">thrust::permutation_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1pointer.html">thrust::pointer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1mr_1_1polymorphic__adaptor__resource.html">thrust::mr::polymorphic_adaptor_resource</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1reverse__iterator.html">thrust::reverse_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1shuffle__iterator.html">thrust::shuffle_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1mr_1_1stateless__resource__allocator.html">thrust::mr::stateless_resource_allocator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/classthrust_1_1strided__iterator.html">thrust::strided_iterator</a></li>
@@ -830,7 +829,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html"><code class="docutils literal notranslate"><span class="pre">make_counting_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"><code class="docutils literal notranslate"><span class="pre">make_discard_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html"><code class="docutils literal notranslate"><span class="pre">make_permutation_iterator</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gab4733e78bd91390ef843fad4ecbf5f15.html"><code class="docutils literal notranslate"><span class="pre">make_reverse_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html"><code class="docutils literal notranslate"><span class="pre">make_shuffle_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"><code class="docutils literal notranslate"><span class="pre">make_strided_iterator</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html"><code class="docutils literal notranslate"><span class="pre">make_tabulate_output_iterator</span></code></a></li>
@@ -1179,13 +1177,13 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1heterogeneous__iterator.html">cuda::experimental::heterogeneous_iterator</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html">cuda::experimental::stf::interpreted_execution_policy</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">cuda::experimental::legacy_managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1legacy__pinned__memory__resource.html">cuda::experimental::legacy_pinned_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html">cuda::experimental::stf::reducer::logical_and</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1logical__data.html">cuda::experimental::stf::logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1logical__data__untyped.html">cuda::experimental::stf::logical_data_untyped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1logical__device.html">cuda::experimental::logical_device</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html">cuda::experimental::stf::reducer::logical_or</a></li>
-<li class="toctree-l4 current active"><a class="current reference internal" href="#">cuda::experimental::managed_memory_resource</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html">cuda::experimental::stf::reducer::maxval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval.html">cuda::experimental::stf::reducer::minval</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1no__init.html">cuda::experimental::stf::no_init</a></li>
@@ -1497,7 +1495,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">CUDAX API Reference</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cuda::experimental::managed_memory_resource</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cuda::experimental::legacy_managed_memory_resource</span></li>
   </ul>
 </nav>
 </div>
@@ -1514,43 +1512,43 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="cuda-experimental-managed-memory-resource">
-<h1>cuda::experimental::managed_memory_resource<a class="headerlink" href="#cuda-experimental-managed-memory-resource" title="Link to this heading">#</a></h1>
+  <section id="cuda-experimental-legacy-managed-memory-resource">
+<h1>cuda::experimental::legacy_managed_memory_resource<a class="headerlink" href="#cuda-experimental-legacy-managed-memory-resource" title="Link to this heading">#</a></h1>
 <dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resourceE">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">managed_memory_resource</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resourceE" title="Link to this definition">#</a><br /></dt>
-<dd><p><code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1managed__memory__resource"><span class="std std-ref"><span class="pre">managed_memory_resource</span></span></a></code> uses <code class="docutils literal notranslate"><span class="pre">cudaMallocManaged</span></code> / <code class="docutils literal notranslate"><span class="pre">cudaFree</span></code> for allocation / deallocation. </p>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">legacy_managed_memory_resource</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE" title="Link to this definition">#</a><br /></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">managed_memory_resource</span></code> uses <code class="docutils literal notranslate"><span class="pre">cudaMallocManaged</span></code> / <code class="docutils literal notranslate"><span class="pre">cudaFree</span></code> for allocation / deallocation. </p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
 <dl class="cpp type">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource15default_queriesE">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a8cd3239a062254487c8f659d1460a634"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">default_queries</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="structcuda_1_1experimental_1_1properties__list.html#_CPPv4IDpEN4cuda12experimental15properties_listE" title="cuda::experimental::properties_list"><span class="n"><span class="pre">properties_list</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">device_accessible</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">host_accessible</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource15default_queriesE" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental30legacy_managed_memory_resource15default_queriesE">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1af400a99aed1d3016e92c2512c7c84f64"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">default_queries</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="structcuda_1_1experimental_1_1properties__list.html#_CPPv4IDpEN4cuda12experimental15properties_listE" title="cuda::experimental::properties_list"><span class="n"><span class="pre">properties_list</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">device_accessible</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">host_accessible</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource15default_queriesE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 </div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource23managed_memory_resourceEKj">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a04f2796584d6e02cb3f103470a30bbfd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">managed_memory_resource</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental30legacy_managed_memory_resource30legacy_managed_memory_resourceEKj">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1a558de77c205fb05511f96d02e6614fa4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">legacy_managed_memory_resource</span></span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__flags</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">cudaMemAttachGlobal</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource23managed_memory_resourceEKj" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource30legacy_managed_memory_resourceEKj" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental23managed_memory_resource13allocate_syncEK6size_tK6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1aaeb00ea93d8ec8c64c91237b50126bde"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">allocate_sync</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental30legacy_managed_memory_resource13allocate_syncEK6size_tK6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1a3056d09b643b9fb8f9bdd77325288c33"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">allocate_sync</span></span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__bytes</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__alignment</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">mr</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">default_cuda_malloc_alignment</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental23managed_memory_resource13allocate_syncEK6size_tK6size_t" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental30legacy_managed_memory_resource13allocate_syncEK6size_tK6size_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Allocate CUDA unified memory of size at least <code class="docutils literal notranslate"><span class="pre">__bytes</span></code>. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1569,67 +1567,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_tK6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a8560f84dbbb7f75c96e2cf657df7c1ad"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">allocate</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_ref</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__stream</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__bytes</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__alignment</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_tK6size_t" title="Link to this definition">#</a><br /></dt>
-<dd><p>Allocate CUDA unified memory of size at least <code class="docutils literal notranslate"><span class="pre">__bytes</span></code>. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>__bytes</strong> – The size in bytes of the allocation. </p></li>
-<li><p><strong>__alignment</strong> – The requested alignment of the allocation. </p></li>
-<li><p><strong>__stream</strong> – Stream on which to perform allocation. Currently ignored </p></li>
-</ul>
-</dd>
-<dt class="field-even">Throws<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">invalid_argument</span></span></span> – In case of invalid alignment. </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">cuda</span><span class="p">::</span><span class="n">cuda_error</span></span></span> – If an error code was return by the cuda api call. </p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Pointer to the newly allocated memory. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a98dbd3bb203d121951664a156f20e3d8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">allocate</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_ref</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__stream</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__bytes</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_t" title="Link to this definition">#</a><br /></dt>
-<dd><p>Allocate CUDA unified memory of size at least <code class="docutils literal notranslate"><span class="pre">__bytes</span></code>. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>__bytes</strong> – The size in bytes of the allocation. </p></li>
-<li><p><strong>__stream</strong> – Stream on which to perform allocation. </p></li>
-</ul>
-</dd>
-<dt class="field-even">Throws<span class="colon">:</span></dt>
-<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">cuda</span><span class="p">::</span><span class="n">cuda_error</span></span></span> – If an error code was return by the cuda api call. </p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Pointer to the newly allocated memory. </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental23managed_memory_resource15deallocate_syncEPvK6size_tK6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1ab7e308ad5816419a60f07b634038486e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate_sync</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental30legacy_managed_memory_resource15deallocate_syncEPvK6size_tK6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1a21b0d77af2a0a18bd07ff839cff79fa3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate_sync</span></span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">__ptr</span></span></em>,</dd>
@@ -1637,7 +1576,7 @@
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__alignment</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">mr</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">default_cuda_malloc_alignment</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental23managed_memory_resource15deallocate_syncEPvK6size_tK6size_t" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental30legacy_managed_memory_resource15deallocate_syncEPvK6size_tK6size_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Deallocate memory pointed to by <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1651,77 +1590,21 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPvK6size_tK6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a42325015761b7c43df5121afd98b8a90"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental30legacy_managed_memory_resourceeqERK30legacy_managed_memory_resource">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1ae448b60b0148ae9517e35e4884969550"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_ref</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__stream</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">__ptr</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__bytes</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__alignment</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE" title="cuda::experimental::legacy_managed_memory_resource"><span class="n"><span class="pre">legacy_managed_memory_resource</span></span></a><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__other</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPvK6size_tK6size_t" title="Link to this definition">#</a><br /></dt>
-<dd><p>Deallocate memory pointed to by <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The pointer passed to <code class="docutils literal notranslate"><span class="pre">deallocate</span></code> must not be in use in a stream other than <code class="docutils literal notranslate"><span class="pre">__stream</span></code>. It is the caller’s responsibility to properly synchronize all relevant streams before calling <code class="docutils literal notranslate"><span class="pre">deallocate</span></code>. </p>
-</div>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental30legacy_managed_memory_resourceeqERK30legacy_managed_memory_resource" title="Link to this definition">#</a><br /></dt>
+<dd><p>Equality comparison with another <code class="docutils literal notranslate"><span class="pre">managed_memory_resource</span></code>. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>__ptr</strong> – Pointer to be deallocated. Must have been allocated through a call to <code class="docutils literal notranslate"><span class="pre">allocate</span></code>. </p></li>
-<li><p><strong>__bytes</strong> – The number of bytes that was passed to the allocation call that returned <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p></li>
-<li><p><strong>__alignment</strong> – The alignment that was passed to the allocation call that returned <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p></li>
-<li><p><strong>__stream</strong> – A stream that has a stream ordering relationship with the stream used in the <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call that returned <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPv6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a00bea29d28c915e9656ffe37f7724bb7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_ref</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__stream</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">__ptr</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__bytes</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPv6size_t" title="Link to this definition">#</a><br /></dt>
-<dd><p>Deallocate memory pointed to by <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The pointer passed to <code class="docutils literal notranslate"><span class="pre">deallocate</span></code> must not be in use in a stream other than <code class="docutils literal notranslate"><span class="pre">__stream</span></code>. It is the caller’s responsibility to properly synchronize all relevant streams before calling <code class="docutils literal notranslate"><span class="pre">deallocate</span></code>. </p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>__ptr</strong> – Pointer to be deallocated. Must have been allocated through a call to <code class="docutils literal notranslate"><span class="pre">allocate</span></code>. </p></li>
-<li><p><strong>__bytes</strong> – The number of bytes that was passed to the allocation call that returned <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p></li>
-<li><p><strong>__stream</strong> – A stream that has a stream ordering relationship with the stream used in the <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call that returned <code class="docutils literal notranslate"><span class="pre">__ptr</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental23managed_memory_resourceeqERK23managed_memory_resource">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1a7b6743c45ebbf4446d338622d5011102"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental23managed_memory_resourceE" title="cuda::experimental::managed_memory_resource"><span class="n"><span class="pre">managed_memory_resource</span></span></a><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__other</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental23managed_memory_resourceeqERK23managed_memory_resource" title="Link to this definition">#</a><br /></dt>
-<dd><p>Equality comparison with another <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1managed__memory__resource"><span class="std std-ref"><span class="pre">managed_memory_resource</span></span></a></code>. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>__other</strong> – The other <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1managed__memory__resource"><span class="std std-ref"><span class="pre">managed_memory_resource</span></span></a></code>. </p>
+<dd class="field-odd"><p><strong>__other</strong> – The other <code class="docutils literal notranslate"><span class="pre">managed_memory_resource</span></code>. </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Whether both <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1managed__memory__resource"><span class="std std-ref"><span class="pre">managed_memory_resource</span></span></a></code> were constructed with the same flags. </p>
+<dd class="field-even"><p>Whether both <code class="docutils literal notranslate"><span class="pre">managed_memory_resource</span></code> were constructed with the same flags. </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1730,28 +1613,28 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-friends">Friends</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource17device_accessible">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1aa920678ade5285c67d7dbe6c908b6020"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_property</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource17device_accessible">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1aebb64d4adcfb3e83c8a0cb9bbfbf7482"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_property</span></span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental23managed_memory_resourceE" title="cuda::experimental::managed_memory_resource"><span class="n"><span class="pre">managed_memory_resource</span></span></a><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE" title="cuda::experimental::legacy_managed_memory_resource"><span class="n"><span class="pre">legacy_managed_memory_resource</span></span></a><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">device_accessible</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource17device_accessible" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource17device_accessible" title="Link to this definition">#</a><br /></dt>
 <dd><p>Enables the <code class="docutils literal notranslate"><span class="pre">device_accessible</span></code> property. </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource15host_accessible">
-<span class="target" id="classcuda_1_1experimental_1_1managed__memory__resource_1ac19d64e4a35504d9b71dcff000db8f96"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_property</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource15host_accessible">
+<span class="target" id="classcuda_1_1experimental_1_1legacy__managed__memory__resource_1a6cf6aec995584b9fde27e66a40f3d208"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_property</span></span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental23managed_memory_resourceE" title="cuda::experimental::managed_memory_resource"><span class="n"><span class="pre">managed_memory_resource</span></span></a><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE" title="cuda::experimental::legacy_managed_memory_resource"><span class="n"><span class="pre">legacy_managed_memory_resource</span></span></a><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">host_accessible</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource15host_accessible" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource15host_accessible" title="Link to this definition">#</a><br /></dt>
 <dd><p>Enables the <code class="docutils literal notranslate"><span class="pre">host_accessible</span></code> property. </p>
 </dd></dl>
 
@@ -1771,20 +1654,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or.html"
+       href="classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">cuda::experimental::stf::reducer::logical_or</p>
+        <p class="prev-next-title">cuda::experimental::stf::interpreted_execution_policy</p>
       </div>
     </a>
     <a class="right-next"
-       href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval.html"
+       href="classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">cuda::experimental::stf::reducer::maxval</p>
+        <p class="prev-next-title">cuda::experimental::stf::reducer::logical_and</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1809,18 +1692,14 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resourceE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::managed_memory_resource</span></code></a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource15default_queriesE"><code class="docutils literal notranslate"><span class="pre">default_queries</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource23managed_memory_resourceEKj"><code class="docutils literal notranslate"><span class="pre">managed_memory_resource()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental23managed_memory_resource13allocate_syncEK6size_tK6size_t"><code class="docutils literal notranslate"><span class="pre">allocate_sync()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_tK6size_t"><code class="docutils literal notranslate"><span class="pre">allocate()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource8allocateEKN4cuda10stream_refEK6size_t"><code class="docutils literal notranslate"><span class="pre">allocate()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental23managed_memory_resource15deallocate_syncEPvK6size_tK6size_t"><code class="docutils literal notranslate"><span class="pre">deallocate_sync()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPvK6size_tK6size_t"><code class="docutils literal notranslate"><span class="pre">deallocate()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource10deallocateEKN4cuda10stream_refEPv6size_t"><code class="docutils literal notranslate"><span class="pre">deallocate()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental23managed_memory_resourceeqERK23managed_memory_resource"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource17device_accessible"><code class="docutils literal notranslate"><span class="pre">get_property</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental23managed_memory_resource12get_propertyERK23managed_memory_resource15host_accessible"><code class="docutils literal notranslate"><span class="pre">get_property</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resourceE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::legacy_managed_memory_resource</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource15default_queriesE"><code class="docutils literal notranslate"><span class="pre">default_queries</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource30legacy_managed_memory_resourceEKj"><code class="docutils literal notranslate"><span class="pre">legacy_managed_memory_resource()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental30legacy_managed_memory_resource13allocate_syncEK6size_tK6size_t"><code class="docutils literal notranslate"><span class="pre">allocate_sync()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental30legacy_managed_memory_resource15deallocate_syncEPvK6size_tK6size_t"><code class="docutils literal notranslate"><span class="pre">deallocate_sync()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental30legacy_managed_memory_resourceeqERK30legacy_managed_memory_resource"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource17device_accessible"><code class="docutils literal notranslate"><span class="pre">get_property</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental30legacy_managed_memory_resource12get_propertyERK30legacy_managed_memory_resource15host_accessible"><code class="docutils literal notranslate"><span class="pre">get_property</span></code></a></li>
 </ul>
 </li>
 </ul>
