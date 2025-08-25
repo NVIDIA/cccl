@@ -244,7 +244,8 @@
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": false,
-        "cudax_ENABLE_DIALECT_CPP20": false
+        "cudax_ENABLE_DIALECT_CPP20": false,
+        "CUDAX_ENABLE_CUFILE_TESTS": true
       }
     },
     {
@@ -421,6 +422,14 @@
     {
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20"
+    },
+    {
+      "name": "cudax-cpp20-tests",
+      "displayName": "Build cudax.cpp20.tests (includes cuFile tests)",
+      "configurePreset": "cudax-cpp20",
+      "targets": [
+        "cudax.cpp20.tests"
+      ]
     },
     {
       "name": "cccl-c-parallel",
@@ -713,6 +722,17 @@
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20",
       "inherits": "cudax-base"
+    },
+    {
+      "name": "cudax-cpp20-cufile",
+      "displayName": "Run only cuFile tests for cudax C++20",
+      "configurePreset": "cudax-cpp20",
+      "inherits": "cudax-base",
+      "filter": {
+        "include": {
+          "name": "^cudax\\.cpp20\\.test\\.cufile.*$"
+        }
+      }
     },
     {
       "name": "cccl-c-parallel",

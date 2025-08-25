@@ -114,6 +114,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
   check_cxx_source_compiles("#if defined(__has_include) && __has_include(<cufile.h>)\nint main(){return 0;}\n#else\n#error no\n#endif" CUDAX_BUILD_CUFILE)
   find_package(CUDAToolkit QUIET)
+  # Normalize cuFile imported target name across CMake versions
+  if (TARGET CUDA::cuFile AND NOT TARGET CUDA::cufile)
+    add_library(CUDA::cufile ALIAS CUDA::cuFile)
+  endif()
   if (CUDAX_BUILD_CUFILE AND TARGET CUDA::cufile)
     cudax_add_catch2_test(test_target cufile_driver ${cn_target}
       ../test/cufile/driver_functions.cu
