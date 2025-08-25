@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr int abs(int __val) noexcept
 {
@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[nodiscard]] _CCCL_API constexpr long abs(long __val) noexcept
 {
-  return _CUDA_VSTD::labs(__val);
+  return ::cuda::std::labs(__val);
 }
 
 [[nodiscard]] _CCCL_API constexpr long long llabs(long long __val) noexcept
@@ -47,10 +47,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[nodiscard]] _CCCL_API constexpr long long abs(long long __val) noexcept
 {
-  return _CUDA_VSTD::llabs(__val);
+  return ::cuda::std::llabs(__val);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

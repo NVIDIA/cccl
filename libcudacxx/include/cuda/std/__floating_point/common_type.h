@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Lhs, class _Rhs>
 using __fp_common_type_t =
@@ -40,7 +40,7 @@ template <class _Lhs, class _Rhs>
 using __fp_int_ext_common_type_t =
   __fp_common_type_t<conditional_t<is_integral_v<_Lhs>, double, _Lhs>, conditional_t<is_integral_v<_Rhs>, double, _Rhs>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -37,9 +37,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
-template <class _Fn, class _Index = _CUDA_VSTD::ptrdiff_t>
+template <class _Fn, class _Index = ::cuda::std::ptrdiff_t>
 class tabulate_output_iterator;
 
 template <class _Fn, class _Index>
@@ -59,22 +59,22 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(_CUDA_VSTD::is_invocable_v<_Fn&, _Index, _Arg> _CCCL_AND(
-    !_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Arg>, __tabulate_proxy>))
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Fn&, _Index, _Arg> _CCCL_AND(
+    !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __tabulate_proxy>))
   _CCCL_API constexpr const __tabulate_proxy&
-  operator=(_Arg&& __arg) noexcept(_CUDA_VSTD::is_nothrow_invocable_v<_Fn&, _Index, _Arg>)
+  operator=(_Arg&& __arg) noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, _Index, _Arg>)
   {
-    _CUDA_VSTD::invoke(__func_, __index_, _CUDA_VSTD::forward<_Arg>(__arg));
+    ::cuda::std::invoke(__func_, __index_, ::cuda::std::forward<_Arg>(__arg));
     return *this;
   }
 
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(_CUDA_VSTD::is_invocable_v<const _Fn&, _Index, _Arg> _CCCL_AND(
-    !_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Arg>, __tabulate_proxy>))
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _Fn&, _Index, _Arg> _CCCL_AND(
+    !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __tabulate_proxy>))
   _CCCL_API constexpr const __tabulate_proxy& operator=(_Arg&& __arg) const
-    noexcept(_CUDA_VSTD::is_nothrow_invocable_v<const _Fn&, _Index, _Arg>)
+    noexcept(::cuda::std::is_nothrow_invocable_v<const _Fn&, _Index, _Arg>)
   {
-    _CUDA_VSTD::invoke(__func_, __index_, _CUDA_VSTD::forward<_Arg>(__arg));
+    ::cuda::std::invoke(__func_, __index_, ::cuda::std::forward<_Arg>(__arg));
     return *this;
   }
 };
@@ -110,12 +110,12 @@ template <class _Fn, class _Index>
 class tabulate_output_iterator
 {
 private:
-  _CUDA_VRANGES::__movable_box<_Fn> __func_;
+  ::cuda::std::ranges::__movable_box<_Fn> __func_;
   _Index __index_ = 0;
 
 public:
-  using iterator_concept  = _CUDA_VSTD::random_access_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
+  using iterator_concept  = ::cuda::std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
   using difference_type   = _Index;
   using value_type        = void;
   using pointer           = void;
@@ -124,19 +124,19 @@ public:
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI tabulate_output_iterator()
-    requires _CUDA_VSTD::default_initializable<_Fn>
+    requires ::cuda::std::default_initializable<_Fn>
   = default;
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
-  _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Fn2>)
-  _CCCL_API constexpr tabulate_output_iterator() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Fn2>) {}
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Fn2>)
+  _CCCL_API constexpr tabulate_output_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Fn2>) {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a \p tabulate_output_iterator with a given functor \p __func and and optional index
   _CCCL_API constexpr tabulate_output_iterator(_Fn __func, _Index __index = 0) noexcept(
-    _CUDA_VSTD::is_nothrow_move_constructible_v<_Fn>)
-      : __func_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__func))
+    ::cuda::std::is_nothrow_move_constructible_v<_Fn>)
+      : __func_(::cuda::std::in_place, ::cuda::std::move(__func))
       , __index_(__index)
   {}
 
@@ -184,7 +184,8 @@ public:
   }
 
   //! @brief Increments the stored index
-  _CCCL_API constexpr tabulate_output_iterator operator++(int) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+  _CCCL_API constexpr tabulate_output_iterator
+  operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     tabulate_output_iterator __tmp = *this;
     ++__index_;
@@ -199,7 +200,8 @@ public:
   }
 
   //! @brief Decrements the stored index
-  _CCCL_API constexpr tabulate_output_iterator operator--(int) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+  _CCCL_API constexpr tabulate_output_iterator
+  operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     tabulate_output_iterator __tmp = *this;
     --__index_;
@@ -209,7 +211,7 @@ public:
   //! @brief Returns a copy of this \c tabulate_output_iterator advanced by \p __n
   //! @param __n The number of elements to advance
   [[nodiscard]] _CCCL_API constexpr tabulate_output_iterator operator+(difference_type __n) const
-    noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+    noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     return tabulate_output_iterator{*__func_, __index_ + __n};
   }
@@ -219,7 +221,7 @@ public:
   //! @param __iter The original \c tabulate_output_iterator
   [[nodiscard]] _CCCL_API friend constexpr tabulate_output_iterator
   operator+(difference_type __n,
-            const tabulate_output_iterator& __iter) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+            const tabulate_output_iterator& __iter) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     return __iter + __n;
   }
@@ -235,7 +237,7 @@ public:
   //! @brief Returns a copy of this \c tabulate_output_iterator decremented by \p __n
   //! @param __n The number of elements to decrement
   [[nodiscard]] _CCCL_API constexpr tabulate_output_iterator operator-(difference_type __n) const
-    noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+    noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
     return tabulate_output_iterator{*__func_, __index_ - __n};
   }
@@ -310,23 +312,23 @@ public:
 };
 
 template <class _Fn>
-_CCCL_HOST_DEVICE tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, _CUDA_VSTD::ptrdiff_t>;
+_CCCL_HOST_DEVICE tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Fn, class _Index)
-_CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Index>)
+_CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
 _CCCL_HOST_DEVICE tabulate_output_iterator(_Fn, _Index) -> tabulate_output_iterator<_Fn, _Index>;
 
 //! @brief Creates a \p tabulate_output_iterator from an optional index.
 //! @param __index The index of the \p tabulate_output_iterator within a range. The default index is \c 0.
 //! @return A new \p tabulate_output_iterator with \p __index as the couner.
-_CCCL_TEMPLATE(class _Fn, class _Integer = _CUDA_VSTD::ptrdiff_t)
-_CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
+_CCCL_TEMPLATE(class _Fn, class _Integer = ::cuda::std::ptrdiff_t)
+_CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)
 [[nodiscard]] _CCCL_API constexpr auto make_tabulate_output_iterator(_Fn __func, _Integer __index = 0)
 {
-  return tabulate_output_iterator{_CUDA_VSTD::move(__func), __index};
+  return tabulate_output_iterator{::cuda::std::move(__func), __index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

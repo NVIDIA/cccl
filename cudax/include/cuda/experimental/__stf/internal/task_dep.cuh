@@ -21,6 +21,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -318,6 +320,26 @@ public:
   {
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
       return at<i>().instance(t);
+    });
+  }
+
+  using non_void_instance_t = reserved::remove_void_interface_from_pack_t<Data...>;
+
+  /**
+   * @brief Get all non void instances
+   */
+  non_void_instance_t non_void_instance(task& t)
+  {
+    // Note that make_tuple_indexwise will remove ::std::ignore entries
+    return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
+      if constexpr (::std::is_same_v<type_at<i>, void_interface>)
+      {
+        return ::std::ignore;
+      }
+      else
+      {
+        return at<i>().instance(t);
+      }
     });
   }
 

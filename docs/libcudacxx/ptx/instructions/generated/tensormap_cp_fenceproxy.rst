@@ -3,7 +3,7 @@
 
 tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.sem.scope.sync.aligned  [dst], [src], size; // PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -18,7 +18,7 @@ tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.a
 
 tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.sem.scope.sync.aligned  [dst], [src], size; // PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -33,7 +33,7 @@ tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sy
 
 tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.sem.scope.sync.aligned  [dst], [src], size; // PTX ISA 83, SM_90
    // .sem       = { .release }
@@ -48,7 +48,7 @@ tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.a
 
 tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.sem.scope.sync.aligned  [dst], [src], size; // PTX ISA 83, SM_90
    // .sem       = { .release }

@@ -33,7 +33,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
@@ -55,10 +55,10 @@ _CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, si
   //! We need to avoid using __aligned_ptr here, as nvcc looses track of the execution space otherwise
   __ptr = reinterpret_cast<void*>(__char_ptr + __diff);
   __space -= __diff;
-  return _CUDA_VSTD::__runtime_assume_aligned(__ptr, __alignment);
+  return ::cuda::std::__runtime_assume_aligned(__ptr, __alignment);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

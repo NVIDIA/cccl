@@ -28,14 +28,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
 template <class _Input1,
           class _Input2,
           class _Output,
-          class _Comp  = _CUDA_VRANGES::less,
+          class _Comp  = ::cuda::std::ranges::less,
           class _Proj1 = identity,
           class _Proj2 = identity>
 concept mergeable =
@@ -58,14 +58,14 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Input1,
           class _Input2,
           class _Output,
-          class _Comp  = _CUDA_VRANGES::less,
+          class _Comp  = ::cuda::std::ranges::less,
           class _Proj1 = identity,
           class _Proj2 = identity>
 _CCCL_CONCEPT mergeable = _CCCL_FRAGMENT(__mergeable_, _Input1, _Input2, _Output, _Comp, _Proj1, _Proj2);
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

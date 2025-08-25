@@ -31,22 +31,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __is_local_smem_barrier returns true if barrier is (1) block-scoped and (2) located in shared memory.
 template <thread_scope _Sco,
           typename _CompF,
           bool _Is_mbarrier = (_Sco == thread_scope_block)
-                           && _CUDA_VSTD::is_same_v<_CompF, _CUDA_VSTD::__empty_completion>>
+                           && ::cuda::std::is_same_v<_CompF, ::cuda::std::__empty_completion>>
 _CCCL_API inline bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (return _Is_mbarrier && _CUDA_DEVICE::is_object_from(__barrier, _CUDA_DEVICE::address_space::shared);),
+    (return _Is_mbarrier && ::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared);),
     (return false;));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

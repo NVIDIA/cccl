@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // MSVC requires an interesting workaround for a /permissive- bug
 // We cannot simply define unreachable_sentinel_t with it friendfunctions,
@@ -77,7 +77,7 @@ struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_bas
 
 _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

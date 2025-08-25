@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
@@ -41,7 +41,7 @@ _CCCL_API constexpr _ForwardIterator __shift_left(
     return __first;
   }
   __m += __n;
-  return _CUDA_VSTD::move(__m, __last, __first);
+  return ::cuda::std::move(__m, __last, __first);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -61,7 +61,7 @@ _CCCL_API constexpr _ForwardIterator __shift_left(
     }
     ++__m;
   }
-  return _CUDA_VSTD::move(__m, __last, __first);
+  return ::cuda::std::move(__m, __last, __first);
 }
 
 template <class _ForwardIterator>
@@ -77,7 +77,7 @@ _CCCL_API constexpr _ForwardIterator shift_left(
   return __shift_left(__first, __last, __n, _IterCategory());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

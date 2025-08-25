@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Predicate, class _Tp>
@@ -43,7 +43,7 @@ _CCCL_API constexpr _OutputIterator replace_copy_if(
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Type, template <class...> class _Template>
 inline constexpr bool __is_specialization_of_v = false;
@@ -30,7 +30,7 @@ inline constexpr bool __is_specialization_of_v = false;
 template <template <class...> class _Template, class... _Args>
 inline constexpr bool __is_specialization_of_v<_Template<_Args...>, _Template> = true;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

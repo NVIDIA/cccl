@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
@@ -62,7 +62,7 @@ public:
   {}
 
   _CCCL_API istream_iterator(istream_type& __s)
-      : __in_stream_(_CUDA_VSTD::addressof(__s))
+      : __in_stream_(::cuda::std::addressof(__s))
   {
     if (!(*__in_stream_ >> __value_))
     {
@@ -77,7 +77,7 @@ public:
 
   [[nodiscard]] _CCCL_API const _Tp* operator->() const noexcept
   {
-    return _CUDA_VSTD::addressof((operator*()));
+    return ::cuda::std::addressof((operator*()));
   }
 
   _CCCL_API istream_iterator& operator++()
@@ -139,7 +139,7 @@ template <class _Tp, class _CharT, class _Traits, class _Distance>
   return !(__x == __y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

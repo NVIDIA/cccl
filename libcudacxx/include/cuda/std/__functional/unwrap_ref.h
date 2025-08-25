@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct unwrap_reference
@@ -49,7 +49,7 @@ struct unwrap_ref_decay : unwrap_reference<decay_t<_Tp>>
 template <class _Tp>
 using unwrap_ref_decay_t = typename unwrap_ref_decay<_Tp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

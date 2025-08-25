@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 inline constexpr size_t dynamic_extent = static_cast<size_t>(-1);
 
@@ -38,7 +38,7 @@ inline constexpr bool __is_std_span_v = false;
 template <class _Tp, size_t _Extent>
 inline constexpr bool __is_std_span_v<span<_Tp, _Extent>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

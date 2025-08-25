@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __apply_cvref_
 {
@@ -138,7 +138,7 @@ using __apply_cvref_fn = decltype(__apply_cvref<_Tp>);
 template <class _From, class _To>
 using __copy_cvref_t = typename __apply_cvref_fn<_From>::template __call<_To>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

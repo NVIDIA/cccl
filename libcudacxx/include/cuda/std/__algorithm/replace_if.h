@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate, class _Tp>
@@ -38,7 +38,7 @@ replace_if(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred,
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [concepts.arithmetic], arithmetic concepts
 
@@ -49,7 +49,7 @@ _CCCL_CONCEPT floating_point = is_floating_point_v<_Tp>;
 template <class _Tp>
 _CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer_v<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
