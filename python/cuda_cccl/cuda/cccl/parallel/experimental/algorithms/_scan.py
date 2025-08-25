@@ -63,7 +63,7 @@ class _Scan:
             else self.build_result.compute_exclusive
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in,
@@ -97,6 +97,49 @@ class _Scan:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array or iterator to store the result of the scan
+            num_items: Number of items to scan
+            h_init: Initial value for the scan
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        """Perform the scan computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array or iterator to store the result of the scan
+            num_items: Number of items to scan
+            h_init: Initial value for the scan
+            stream: CUDA stream for the operation (optional)
+        """
+        self._invoke_build_result(temp_storage, d_in, d_out, num_items, h_init, stream)
 
 
 def make_cache_key(
@@ -170,9 +213,9 @@ def exclusive_scan(
         stream: CUDA stream for the operation (optional)
     """
     scanner = make_exclusive_scan(d_in, d_out, op, h_init)
-    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage_bytes = scanner._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    scanner._invoke_build_result(tmp_storage, d_in, d_out, num_items, h_init, stream)
 
 
 # TODO Figure out `sum` without operator and initial value
@@ -229,6 +272,6 @@ def inclusive_scan(
         stream: CUDA stream for the operation (optional)
     """
     scanner = make_inclusive_scan(d_in, d_out, op, h_init)
-    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage_bytes = scanner._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    scanner(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    scanner._invoke_build_result(tmp_storage, d_in, d_out, num_items, h_init, stream)

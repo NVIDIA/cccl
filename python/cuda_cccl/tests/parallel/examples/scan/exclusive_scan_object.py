@@ -23,9 +23,9 @@ def exclusive_scan_object_example():
     d_output = cp.empty(len(h_input), dtype=dtype)
 
     scanner = parallel.make_exclusive_scan(d_input, d_output, add_op, h_init)
-    temp_storage_size = scanner(None, d_input, d_output, len(h_input), h_init)
+    temp_storage_size = scanner.get_temp_storage_bytes(d_input, d_output, len(h_input), h_init)
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    scanner(d_temp_storage, d_input, d_output, len(h_input), h_init)
+    scanner.compute(d_temp_storage, d_input, d_output, len(h_input), h_init)
 
     expected_result = np.array([0, 1, 3, 6], dtype=dtype)
     actual_result = d_output.get()

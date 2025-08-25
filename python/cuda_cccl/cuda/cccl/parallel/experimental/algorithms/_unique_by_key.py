@@ -101,7 +101,7 @@ class _UniqueByKey:
             self.op_wrapper,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in_keys: DeviceArrayLike | IteratorBase,
@@ -141,6 +141,57 @@ class _UniqueByKey:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | IteratorBase,
+        d_in_items: DeviceArrayLike | IteratorBase,
+        d_out_keys: DeviceArrayLike | IteratorBase,
+        d_out_items: DeviceArrayLike | IteratorBase,
+        d_out_num_selected: DeviceArrayLike,
+        num_items: int,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in_keys: Device array or iterator containing the input keys
+            d_in_items: Device array or iterator containing the input items
+            d_out_keys: Device array or iterator to store the unique keys
+            d_out_items: Device array or iterator to store the unique items
+            d_out_num_selected: Device array to store the number of unique items
+            num_items: Number of items to process
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self._invoke_build_result(None, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | IteratorBase,
+        d_in_items: DeviceArrayLike | IteratorBase,
+        d_out_keys: DeviceArrayLike | IteratorBase,
+        d_out_items: DeviceArrayLike | IteratorBase,
+        d_out_num_selected: DeviceArrayLike,
+        num_items: int,
+        stream=None,
+    ):
+        """Perform the unique by key computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in_keys: Device array or iterator containing the input keys
+            d_in_items: Device array or iterator containing the input items
+            d_out_keys: Device array or iterator to store the unique keys
+            d_out_items: Device array or iterator to store the unique items
+            d_out_num_selected: Device array to store the number of unique items
+            num_items: Number of items to process
+            stream: CUDA stream for the operation (optional)
+        """
+        self._invoke_build_result(temp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, d_out_num_selected, num_items, stream)
 
 
 @cache_with_key(make_cache_key)

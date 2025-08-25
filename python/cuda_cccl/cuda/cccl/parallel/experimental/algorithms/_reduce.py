@@ -54,7 +54,7 @@ class _Reduce:
             self.h_init_cccl,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in,
@@ -88,6 +88,49 @@ class _Reduce:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array to store the result of the reduction
+            num_items: Number of items to reduce
+            h_init: Initial value for the reduction
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct,
+        stream=None,
+    ):
+        """Perform the reduction computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in: Device array or iterator containing the input sequence of data items
+            d_out: Device array to store the result of the reduction
+            num_items: Number of items to reduce
+            h_init: Initial value for the reduction
+            stream: CUDA stream for the operation (optional)
+        """
+        self._invoke_build_result(temp_storage, d_in, d_out, num_items, h_init, stream)
 
 
 def make_cache_key(
@@ -159,6 +202,6 @@ def reduce_into(
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_reduce_into(d_in, d_out, op, h_init)
-    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage_bytes = reducer._invoke_build_result(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    reducer._invoke_build_result(tmp_storage, d_in, d_out, num_items, h_init, stream)

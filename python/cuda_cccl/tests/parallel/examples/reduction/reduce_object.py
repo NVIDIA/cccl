@@ -24,9 +24,9 @@ def reduce_object_example():
     d_output = cp.empty(1, dtype=dtype)
 
     reducer = parallel.make_reduce_into(d_input, d_output, add_op, h_init)
-    temp_storage_size = reducer(None, d_input, d_output, len(h_input), h_init)
+    temp_storage_size = reducer.get_temp_storage_bytes(d_input, d_output, len(h_input), h_init)
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    reducer(d_temp_storage, d_input, d_output, len(h_input), h_init)
+    reducer.compute(d_temp_storage, d_input, d_output, len(h_input), h_init)
 
     expected_result = np.sum(h_input) + init_value
     actual_result = d_output.get()[0]

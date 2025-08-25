@@ -139,7 +139,7 @@ class _RadixSort:
             decomposer_return_type,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in_keys: DeviceArrayLike | DoubleBuffer,
@@ -207,6 +207,64 @@ class _RadixSort:
                 d_in_values.selector = selector
 
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
+        num_items: int,
+        begin_bit: int | None = None,
+        end_bit: int | None = None,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in_keys: Device array or DoubleBuffer containing input keys
+            d_out_keys: Device array to store sorted keys (optional for DoubleBuffer)
+            d_in_values: Device array or DoubleBuffer containing input values (optional)
+            d_out_values: Device array to store sorted values (optional)
+            num_items: Number of items to sort
+            begin_bit: Starting bit position for sorting (optional)
+            end_bit: Ending bit position for sorting (optional)
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self._invoke_build_result(None, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items, begin_bit, end_bit, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
+        num_items: int,
+        begin_bit: int | None = None,
+        end_bit: int | None = None,
+        stream=None,
+    ):
+        """Perform the radix sort computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in_keys: Device array or DoubleBuffer containing input keys
+            d_out_keys: Device array to store sorted keys (optional for DoubleBuffer)
+            d_in_values: Device array or DoubleBuffer containing input values (optional)
+            d_out_values: Device array to store sorted values (optional)
+            num_items: Number of items to sort
+            begin_bit: Starting bit position for sorting (optional)
+            end_bit: Ending bit position for sorting (optional)
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self._invoke_build_result(temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, num_items, begin_bit, end_bit, stream)
 
 
 @cache_with_key(make_cache_key)

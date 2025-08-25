@@ -15,9 +15,9 @@ def reduce_pointer(input_array, build_only):
 
     alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg.compute(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -32,9 +32,9 @@ def reduce_struct(input_array, build_only):
 
     alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg.compute(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -49,9 +49,9 @@ def reduce_iterator(inp, size, build_only):
 
     alg = parallel.make_reduce_into(inp, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, inp, res, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(inp, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, inp, res, size, h_init)
+        alg.compute(temp_storage, inp, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 

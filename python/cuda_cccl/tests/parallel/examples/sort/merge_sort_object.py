@@ -28,8 +28,7 @@ def merge_sort_object_example():
         d_input_keys, d_input_values, d_output_keys, d_output_values, compare_op
     )
 
-    temp_storage_size = sorter(
-        None,
+    temp_storage_size = sorter.get_temp_storage_bytes(
         d_input_keys,
         d_input_values,
         d_output_keys,
@@ -37,7 +36,7 @@ def merge_sort_object_example():
         len(h_input_keys),
     )
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    sorter(
+    sorter.compute(
         d_temp_storage,
         d_input_keys,
         d_input_values,

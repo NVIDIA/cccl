@@ -94,7 +94,7 @@ class _MergeSort:
             self.op_wrapper,
         )
 
-    def __call__(
+    def _invoke_build_result(
         self,
         temp_storage,
         d_in_keys: DeviceArrayLike | IteratorBase,
@@ -138,6 +138,53 @@ class _MergeSort:
         )
 
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | IteratorBase,
+        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_out_keys: DeviceArrayLike,
+        d_out_items: DeviceArrayLike | None,
+        num_items: int,
+        stream=None,
+    ):
+        """Get the required temporary storage size in bytes.
+        
+        Args:
+            d_in_keys: Device array or iterator containing input keys
+            d_in_items: Device array or iterator containing input items (optional)
+            d_out_keys: Device array to store sorted keys
+            d_out_items: Device array to store sorted items (optional)
+            num_items: Number of items to sort
+            stream: CUDA stream for the operation (optional)
+            
+        Returns:
+            Required temporary storage size in bytes
+        """
+        return self._invoke_build_result(None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | IteratorBase,
+        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_out_keys: DeviceArrayLike,
+        d_out_items: DeviceArrayLike | None,
+        num_items: int,
+        stream=None,
+    ):
+        """Perform the merge sort computation.
+        
+        Args:
+            temp_storage: Device-accessible temporary storage allocation
+            d_in_keys: Device array or iterator containing input keys
+            d_in_items: Device array or iterator containing input items (optional)
+            d_out_keys: Device array to store sorted keys
+            d_out_items: Device array to store sorted items (optional)
+            num_items: Number of items to sort
+            stream: CUDA stream for the operation (optional)
+        """
+        self._invoke_build_result(temp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream)
 
 
 @cache_with_key(make_cache_key)

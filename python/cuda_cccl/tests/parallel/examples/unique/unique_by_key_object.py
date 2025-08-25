@@ -34,8 +34,7 @@ def unique_by_key_object_example():
         compare_op,
     )
 
-    temp_storage_size = uniquer(
-        None,
+    temp_storage_size = uniquer.get_temp_storage_bytes(
         d_input_keys,
         d_input_values,
         d_output_keys,
@@ -44,7 +43,7 @@ def unique_by_key_object_example():
         len(h_input_keys),
     )
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    uniquer(
+    uniquer.compute(
         d_temp_storage,
         d_input_keys,
         d_input_values,

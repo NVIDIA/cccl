@@ -40,8 +40,7 @@ def histogram_object_example():
     )
 
     # First call to get temp storage size
-    temp_storage_size = histogrammer(
-        None,
+    temp_storage_size = histogrammer.get_temp_storage_bytes(
         d_samples,
         d_histogram,
         h_num_output_levels,
@@ -52,7 +51,7 @@ def histogram_object_example():
 
     # Allocate temp storage and run histogram
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
-    histogrammer(
+    histogrammer.compute(
         d_temp_storage,
         d_samples,
         d_histogram,
