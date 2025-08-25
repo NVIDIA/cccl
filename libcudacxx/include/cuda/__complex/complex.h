@@ -70,11 +70,11 @@ public:
   //!
   //! @tparam _Up The type of the other complex number.
   //! @param __other The other complex number.
-  _CCCL_TEMPLATE(class _Up)
+  _CCCL_TEMPLATE(class _Up, class _UpValT = typename _Up::value_type)
   _CCCL_REQUIRES(__is_any_complex_v<_Up> _CCCL_AND //
                  ::cuda::std::__is_fp_v<_Tp> _CCCL_AND //
-                 ::cuda::std::__is_fp_v<typename _Up::value_type> _CCCL_AND //
-                 ::cuda::std::__fp_is_implicit_conversion_v<typename _Up::value_type, _Tp>)
+                 ::cuda::std::__is_fp_v<_UpValT> _CCCL_AND //
+                 ::cuda::std::__fp_is_implicit_conversion_v<_UpValT, _Tp>)
   _CCCL_API constexpr complex(const _Up& __other) noexcept
       : __re_{static_cast<_Tp>(::cuda::__get_real(__other))}
       , __im_{static_cast<_Tp>(::cuda::__get_imag(__other))}
@@ -84,11 +84,11 @@ public:
   //!
   //! @tparam _Up The type of the other complex number.
   //! @param __other The other complex number.
-  _CCCL_TEMPLATE(class _Up)
+  _CCCL_TEMPLATE(class _Up, class _UpValT = typename _Up::value_type)
   _CCCL_REQUIRES(__is_any_complex_v<_Up> _CCCL_AND //
                  ::cuda::std::__is_fp_v<_Tp> _CCCL_AND //
-                 ::cuda::std::__is_fp_v<typename _Up::value_type> _CCCL_AND //
-                 ::cuda::std::__fp_is_explicit_conversion_v<typename _Up::value_type, _Tp>)
+                 ::cuda::std::__is_fp_v<_UpValT> _CCCL_AND //
+                 ::cuda::std::__fp_is_explicit_conversion_v<_UpValT, _Tp>)
   _CCCL_API explicit constexpr complex(const _Up& __other) noexcept
       : __re_{static_cast<_Tp>(::cuda::__get_real(__other))}
       , __im_{static_cast<_Tp>(::cuda::__get_imag(__other))}
@@ -98,9 +98,9 @@ public:
   //!
   //! @tparam _Up The type of the other complex number.
   //! @param __other The other complex number.
-  _CCCL_TEMPLATE(class _Up)
+  _CCCL_TEMPLATE(class _Up, class _UpValT = typename _Up::value_type)
   _CCCL_REQUIRES(__is_any_complex_v<_Up> _CCCL_AND //
-                 (!::cuda::std::__is_fp_v<_Tp> || !::cuda::std::__is_fp_v<typename _Up::value_type>))
+                 (!::cuda::std::__is_fp_v<_Tp> || !::cuda::std::__is_fp_v<_UpValT>))
   _CCCL_API constexpr complex(const _Up& __other) noexcept
       : __re_{static_cast<_Tp>(::cuda::__get_real(__other))}
       , __im_{static_cast<_Tp>(::cuda::__get_imag(__other))}
