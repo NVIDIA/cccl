@@ -193,7 +193,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   SECTION("constant iterator")
   {
-    thrust::constant_iterator<type> input(1.0f);
+    cuda::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
     REQUIRE(cudaSuccess

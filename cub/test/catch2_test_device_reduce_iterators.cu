@@ -55,7 +55,7 @@ using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::in
 template <typename T, typename offset_t>
 void test_big_indices_helper(offset_t num_items)
 {
-  thrust::constant_iterator<T> const_iter(T{1});
+  cuda::constant_iterator<T> const_iter(T{1});
   c2h::device_vector<std::size_t> out(1);
   std::size_t* d_out = thrust::raw_pointer_cast(out.data());
   device_sum(const_iter, d_out, num_items);

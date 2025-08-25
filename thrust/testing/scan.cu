@@ -589,8 +589,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
@@ -620,8 +620,8 @@ DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);

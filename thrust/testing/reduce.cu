@@ -179,8 +179,8 @@ DECLARE_GENERIC_UNITTEST(TestReduceCountingIterator);
 
 void TestReduceWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   long long result = thrust::reduce(thrust::device, begin, end);

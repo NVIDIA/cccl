@@ -162,9 +162,9 @@ template <typename AtomicT>
 struct RepeatIndex
 {
   template <typename OffsetT>
-  __host__ __device__ __forceinline__ thrust::constant_iterator<AtomicT> operator()(OffsetT i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<AtomicT> operator()(OffsetT i)
   {
-    return thrust::constant_iterator<AtomicT>(static_cast<AtomicT>(i));
+    return cuda::constant_iterator<AtomicT>(static_cast<AtomicT>(i));
   }
 };
 

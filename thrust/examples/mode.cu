@@ -54,7 +54,7 @@ int main()
   thrust::device_vector<int> d_output_keys(num_unique);
   thrust::device_vector<int> d_output_counts(num_unique);
   thrust::reduce_by_key(
-    d_data.begin(), d_data.end(), thrust::constant_iterator<int>(1), d_output_keys.begin(), d_output_counts.begin());
+    d_data.begin(), d_data.end(), cuda::constant_iterator<int>(1), d_output_keys.begin(), d_output_counts.begin());
 
   // print the counts
   std::cout << "values" << std::endl;

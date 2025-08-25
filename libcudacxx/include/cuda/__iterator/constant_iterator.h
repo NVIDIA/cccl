@@ -24,8 +24,11 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/movable_box.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -46,6 +49,8 @@ public:
   using iterator_concept  = ::cuda::std::random_access_iterator_tag;
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
+  using reference         = _Tp;
+  using pointer           = void;
   using difference_type   = ::cuda::std::ptrdiff_t;
 
 #if _CCCL_HAS_CONCEPTS()
@@ -115,7 +120,10 @@ public:
   //! @brief Decrements the stored index
   _CCCL_API constexpr constant_iterator& operator--() noexcept
   {
-    _CCCL_ASSERT(__index_ > 0, "The index must be greater than or equal to 0");
+    if constexpr (::cuda::std::is_signed_v<_Index> || !::cuda::std::is_integral_v<_Index>)
+    {
+      _CCCL_ASSERT(__index_ > 0, "The index must be greater than or equal to 0");
+    }
     --__index_;
     return *this;
   }
@@ -133,18 +141,58 @@ public:
   //! @param __n The amount of elements to advance
   _CCCL_API constexpr constant_iterator& operator+=(difference_type __n) noexcept
   {
-    _CCCL_ASSERT(__index_ + __n >= 0, "The index must be greater than or equal to 0");
+    if constexpr (::cuda::std::is_signed_v<_Index> || !::cuda::std::is_integral_v<_Index>)
+    {
+      _CCCL_ASSERT(__index_ + static_cast<_Index>(__n) >= 0, "The index must be greater than or equal to 0");
+    }
     __index_ += static_cast<_Index>(__n);
     return *this;
+  }
+
+  //! @brief Advances a \c constant_iterator \p __iter  by \p __n
+  //! @param __iter The \c constant_iterator to advance
+  //! @param __n The amount of elements to advance
+  [[nodiscard]] _CCCL_API friend constexpr constant_iterator operator+(
+    const constant_iterator& __iter, difference_type __n) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
+  {
+    return constant_iterator{*__iter.__value_, __iter.__index_ + __n};
+  }
+
+  //! @brief Advances a \c constant_iterator \p __iter  by \p __n
+  //! @param __n The amount of elements to advance
+  //! @param __iter The \c constant_iterator to advance
+  [[nodiscard]] _CCCL_API friend constexpr constant_iterator operator+(
+    difference_type __n, const constant_iterator& __iter) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
+  {
+    return constant_iterator{*__iter.__value_, __iter.__index_ + __n};
   }
 
   //! @brief Decrements the stored index by \p __n
   //! @param __n The amount of elements to decrement
   _CCCL_API constexpr constant_iterator& operator-=(difference_type __n) noexcept
   {
-    _CCCL_ASSERT(__index_ - __n >= 0, "The index must be greater than or equal to 0");
+    if constexpr (::cuda::std::is_signed_v<_Index> || !::cuda::std::is_integral_v<_Index>)
+    {
+      _CCCL_ASSERT(__index_ - static_cast<_Index>(__n) >= 0, "The index must be greater than or equal to 0");
+    }
     __index_ -= static_cast<_Index>(__n);
     return *this;
+  }
+
+  //! @brief Decrements a \c constant_iterator \p __iter  by \p __n
+  //! @param __iter The \c constant_iterator to decrement
+  //! @param __n The amount of elements to decrement
+  [[nodiscard]] _CCCL_API friend constexpr constant_iterator operator-(
+    const constant_iterator& __iter, difference_type __n) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
+  {
+    return constant_iterator{*__iter.__value_, __iter.__index_ - __n};
+  }
+
+  //! @brief Returns the distance between two \c constant_iterator
+  [[nodiscard]] _CCCL_API friend constexpr difference_type
+  operator-(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
+  {
+    return static_cast<difference_type>(__lhs.__index_) - static_cast<difference_type>(__rhs.__index_);
   }
 
   //! @brief Compares two \c constant_iterator for equality. Only compares the index in the sequence
@@ -195,43 +243,6 @@ public:
   {
     return __lhs.__index_ >= __rhs.__index_;
   }
-
-  //! @brief Advances a \c constant_iterator \p __iter  by \p __n
-  //! @param __iter The \c constant_iterator to advance
-  //! @param __n The amount of elements to advance
-  [[nodiscard]] _CCCL_API friend constexpr constant_iterator
-  operator+(constant_iterator __iter, difference_type __n) noexcept
-  {
-    __iter += __n;
-    return __iter;
-  }
-
-  //! @brief Advances a \c constant_iterator \p __iter  by \p __n
-  //! @param __n The amount of elements to advance
-  //! @param __iter The \c constant_iterator to advance
-  [[nodiscard]] _CCCL_API friend constexpr constant_iterator
-  operator+(difference_type __n, constant_iterator __iter) noexcept
-  {
-    __iter += __n;
-    return __iter;
-  }
-
-  //! @brief Decrements a \c constant_iterator \p __iter  by \p __n
-  //! @param __iter The \c constant_iterator to decrement
-  //! @param __n The amount of elements to decrement
-  [[nodiscard]] _CCCL_API friend constexpr constant_iterator
-  operator-(constant_iterator __iter, difference_type __n) noexcept
-  {
-    __iter -= __n;
-    return __iter;
-  }
-
-  //! @brief Returns the distance between two \c constant_iterator
-  [[nodiscard]] _CCCL_API friend constexpr difference_type
-  operator-(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
-  {
-    return static_cast<difference_type>(__lhs.__index_) - static_cast<difference_type>(__rhs.__index_);
-  }
 };
 
 template <class _Tp>
@@ -244,10 +255,10 @@ _CCCL_HOST_DEVICE constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Inde
 //! @brief make_constant_iterator creates a bounded \p constant_iterator from a value and an index
 //! @param __value The value to be returned by the \p constant_iterator
 //! @param __index The optional index of the \p constant_iterator representing the position in a sequence. Defaults to 0
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr auto make_constant_iterator(_Tp __value, ::cuda::std::ptrdiff_t __index = 0)
+template <class _Tp, class _Index = ::cuda::std::ptrdiff_t>
+[[nodiscard]] _CCCL_API constexpr constant_iterator<_Tp, _Index> make_constant_iterator(_Tp __value, _Index __index = 0)
 {
-  return constant_iterator<_Tp>{::cuda::std::move(__value), __index};
+  return constant_iterator<_Tp, _Index>{::cuda::std::move(__value), __index};
 }
 
 _CCCL_END_NAMESPACE_CUDA

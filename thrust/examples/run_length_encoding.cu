@@ -34,7 +34,7 @@ int main()
     thrust::reduce_by_key(
       input.begin(),
       input.end(), // input key sequence
-      thrust::constant_iterator<int>(1), // input value sequence
+      cuda::constant_iterator<int>(1), // input value sequence
       output.begin(), // output key sequence
       lengths.begin() // output value sequence
       )
