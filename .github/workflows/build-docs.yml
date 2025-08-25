@@ -21,7 +21,7 @@ concurrency:
 jobs:
   # Build and deploy job
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: linux-amd64-cpu32
     steps:
       - name: Checkout
         uses: actions/checkout@v4
