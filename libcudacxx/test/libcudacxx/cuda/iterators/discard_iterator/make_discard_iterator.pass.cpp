@@ -21,13 +21,13 @@ __host__ __device__ constexpr bool test()
 {
   {
     auto iter = cuda::make_discard_iterator();
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::discard_iterator>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::discard_iterator<>>);
     *iter = 42;
   }
 
   {
     auto iter = cuda::make_discard_iterator(static_cast<short>(42));
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::discard_iterator>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::discard_iterator<>>);
     *iter = 42;
   }
 

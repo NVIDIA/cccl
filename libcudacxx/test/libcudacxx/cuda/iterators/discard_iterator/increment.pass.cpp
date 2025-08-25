@@ -23,8 +23,8 @@ __host__ __device__ constexpr bool test()
   assert(iter++ == cuda::discard_iterator(index + 0));
   assert(++iter == cuda::discard_iterator(index + 2));
 
-  static_assert(cuda::std::is_same_v<decltype(iter++), cuda::discard_iterator>);
-  static_assert(cuda::std::is_same_v<decltype(++iter), cuda::discard_iterator&>);
+  static_assert(cuda::std::is_same_v<decltype(iter++), cuda::discard_iterator<>>);
+  static_assert(cuda::std::is_same_v<decltype(++iter), cuda::discard_iterator<>&>);
 
   return true;
 }

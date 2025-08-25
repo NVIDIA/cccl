@@ -19,10 +19,10 @@ __host__ __device__ constexpr bool test()
 {
   [[maybe_unused]] cuda::discard_iterator iter{};
 
-  static_assert(cuda::std::is_copy_constructible_v<cuda::discard_iterator>);
-  static_assert(cuda::std::is_move_constructible_v<cuda::discard_iterator>);
-  static_assert(cuda::std::is_copy_assignable_v<cuda::discard_iterator>);
-  static_assert(cuda::std::is_move_assignable_v<cuda::discard_iterator>);
+  static_assert(cuda::std::is_copy_constructible_v<cuda::discard_iterator<>>);
+  static_assert(cuda::std::is_move_constructible_v<cuda::discard_iterator<>>);
+  static_assert(cuda::std::is_copy_assignable_v<cuda::discard_iterator<>>);
+  static_assert(cuda::std::is_move_assignable_v<cuda::discard_iterator<>>);
 
   return true;
 }

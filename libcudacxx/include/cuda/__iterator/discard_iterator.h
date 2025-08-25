@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/any_system_tag.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -31,6 +32,16 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+struct __discard_proxy
+{
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, __discard_proxy>) )
+  _CCCL_API constexpr const __discard_proxy& operator=(_Tp&&) const noexcept
+  {
+    return *this;
+  }
+};
 
 //! @brief \p discard_iterator is an iterator which represents a special kind of pointer that ignores values written to
 //! it upon dereference. This iterator is useful for ignoring the output of certain algorithms without wasting memory
@@ -64,28 +75,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!   return 0;
 //! }
 //! @endcode
+template <class _System = __cccl_any_system_tag>
 class discard_iterator
 {
 private:
   ::cuda::std::ptrdiff_t __index_ = 0;
 
 public:
-  struct __discard_proxy
-  {
-    _CCCL_TEMPLATE(class _Tp)
-    _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, __discard_proxy>) )
-    _CCCL_API constexpr const __discard_proxy& operator=(_Tp&&) const noexcept
-    {
-      return *this;
-    }
-  };
-
   using iterator_concept  = ::cuda::std::random_access_iterator_tag;
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using difference_type   = ::cuda::std::ptrdiff_t;
   using value_type        = void;
   using pointer           = void;
   using reference         = void;
+  using __system          = _System;
 
   //! @brief Default constructs a \p discard_iterator at index zero
   _CCCL_HIDE_FROM_ABI constexpr discard_iterator() = default;
@@ -297,14 +300,17 @@ public:
   }
 };
 
+template <class _Integer>
+_CCCL_HOST_DEVICE discard_iterator(_Integer) -> discard_iterator<__cccl_any_system_tag>;
+
 //! @brief Creates a \p discard_iterator from an optional index.
 //! @param __index The index of the \p discard_iterator within a range. The default index is \c 0.
 //! @return A new \p discard_iterator with \p __index as the couner.
-_CCCL_TEMPLATE(class _Integer = ::cuda::std::ptrdiff_t)
+_CCCL_TEMPLATE(class _Integer = ::cuda::std::ptrdiff_t, class _System = __cccl_any_system_tag)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)
-[[nodiscard]] _CCCL_API constexpr discard_iterator make_discard_iterator(_Integer __index = 0)
+[[nodiscard]] _CCCL_API constexpr discard_iterator<_System> make_discard_iterator(_Integer __index = 0)
 {
-  return discard_iterator{__index};
+  return discard_iterator<_System>{__index};
 }
 
 _CCCL_END_NAMESPACE_CUDA

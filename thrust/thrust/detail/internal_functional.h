@@ -94,7 +94,7 @@ struct tuple_binary_predicate
 
 // We need to mark proxy iterators as such
 template <>
-inline constexpr bool is_proxy_reference_v<::cuda::discard_iterator::__discard_proxy> = true;
+inline constexpr bool is_proxy_reference_v<::cuda::__discard_proxy> = true;
 
 template <class Fn, class Index>
 inline constexpr bool is_proxy_reference_v<::cuda::__tabulate_proxy<Fn, Index>> = true;

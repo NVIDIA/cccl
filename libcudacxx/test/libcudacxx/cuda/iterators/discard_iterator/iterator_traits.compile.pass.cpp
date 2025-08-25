@@ -18,15 +18,15 @@ void print() = delete;
 
 __host__ __device__ void test()
 {
-  using IterTraits = cuda::std::iterator_traits<cuda::discard_iterator>;
+  using IterTraits = cuda::std::iterator_traits<cuda::discard_iterator<>>;
 
   static_assert(cuda::std::same_as<IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::same_as<IterTraits::value_type, void>);
   static_assert(cuda::std::same_as<IterTraits::difference_type, cuda::std::ptrdiff_t>);
   static_assert(cuda::std::same_as<IterTraits::pointer, void>);
   static_assert(cuda::std::same_as<IterTraits::reference, void>);
-  static_assert(cuda::std::input_or_output_iterator<cuda::discard_iterator>);
-  static_assert(cuda::std::output_iterator<cuda::discard_iterator, float>);
+  static_assert(cuda::std::input_or_output_iterator<cuda::discard_iterator<>>);
+  static_assert(cuda::std::output_iterator<cuda::discard_iterator<>, float>);
 }
 
 int main(int, char**)

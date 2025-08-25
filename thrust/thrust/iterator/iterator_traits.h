@@ -194,35 +194,39 @@ template <typename Iterator>
 using iterator_system_t = typename iterator_system<Iterator>::type;
 
 // specialize the respective cuda iterators
-template <>
-struct iterator_system<::cuda::discard_iterator>
+template <class System>
+using __cccl_translate_system =
+  ::cuda::std::conditional<::cuda::std::is_same_v<System, ::cuda::__cccl_any_system_tag>, any_system_tag, System>;
+
+template <class System>
+struct iterator_system<::cuda::discard_iterator<System>>
 {
-  using type = any_system_tag;
+  using type = __cccl_translate_system<System>;
 };
-template <>
-struct iterator_traversal<::cuda::discard_iterator>
+template <class System>
+struct iterator_traversal<::cuda::discard_iterator<System>>
 {
   using type = random_access_traversal_tag;
 };
 
-template <class T, class Index>
-struct iterator_system<::cuda::constant_iterator<T, Index>>
+template <class T, class Index, class System>
+struct iterator_system<::cuda::constant_iterator<T, Index, System>>
 {
-  using type = any_system_tag;
+  using type = __cccl_translate_system<System>;
 };
-template <class T, class Index>
-struct iterator_traversal<::cuda::constant_iterator<T, Index>>
+template <class T, class Index, class System>
+struct iterator_traversal<::cuda::constant_iterator<T, Index, System>>
 {
   using type = random_access_traversal_tag;
 };
 
-template <class Start>
-struct iterator_system<::cuda::counting_iterator<Start>>
+template <class Start, class System>
+struct iterator_system<::cuda::counting_iterator<Start, System>>
 {
-  using type = any_system_tag;
+  using type = __cccl_translate_system<System>;
 };
-template <class Start>
-struct iterator_traversal<::cuda::counting_iterator<Start>>
+template <class Start, class System>
+struct iterator_traversal<::cuda::counting_iterator<Start, System>>
 {
   using type = random_access_traversal_tag;
 };

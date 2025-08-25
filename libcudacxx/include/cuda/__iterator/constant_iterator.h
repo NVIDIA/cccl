@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/any_system_tag.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/movable_box.h>
@@ -33,7 +34,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief The \c constant_iterator class represents an iterator in a sequence of repeated values.
-template <class _Tp, class _Index = ::cuda::std::ptrdiff_t>
+template <class _Tp, class _Index = ::cuda::std::ptrdiff_t, class _System = __cccl_any_system_tag>
 class constant_iterator
 {
 private:
@@ -47,6 +48,7 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
+  using __system          = _System;
 
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constant_iterator()

@@ -23,6 +23,7 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/any_system_tag.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
@@ -176,10 +177,11 @@ struct __counting_iterator_category<_Tp, ::cuda::std::enable_if_t<::cuda::std::i
 //! }
 //! @endcode
 #if _CCCL_HAS_CONCEPTS()
-template <::cuda::std::weakly_incrementable _Start>
+template <::cuda::std::weakly_incrementable _Start, class _System = __cccl_any_system_tag>
   requires ::cuda::std::copyable<_Start>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
+          class _System                                                            = __cccl_any_system_tag,
           ::cuda::std::enable_if_t<::cuda::std::weakly_incrementable<_Start>, int> = 0,
           ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>             = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
@@ -196,6 +198,7 @@ struct counting_iterator : public __counting_iterator_category<_Start>
 
   using value_type      = _Start;
   using difference_type = _IotaDiffT<_Start>;
+  using __system        = _System;
 
   _Start __value_ = _Start();
 

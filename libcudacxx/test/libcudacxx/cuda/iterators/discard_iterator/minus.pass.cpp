@@ -32,7 +32,7 @@ __host__ __device__ constexpr bool test()
       assert(iter - diff == cuda::discard_iterator(index - diff));
       assert(iter - 0 == cuda::discard_iterator(index));
 
-      static_assert(cuda::std::is_same_v<decltype(iter - 2), cuda::discard_iterator>);
+      static_assert(cuda::std::is_same_v<decltype(iter - 2), cuda::discard_iterator<>>);
     }
 
     {
@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
       assert(iter - diff == cuda::discard_iterator(index - diff));
       assert(iter - 0 == cuda::discard_iterator(index));
 
-      static_assert(cuda::std::is_same_v<decltype(iter - 2), cuda::discard_iterator>);
+      static_assert(cuda::std::is_same_v<decltype(iter - 2), cuda::discard_iterator<>>);
     }
   }
 
@@ -77,7 +77,7 @@ __host__ __device__ constexpr bool test()
     assert((iter -= diff) == cuda::discard_iterator(1));
     assert((iter -= 0) == cuda::discard_iterator(1));
 
-    static_assert(cuda::std::is_same_v<decltype(iter -= 2), cuda::discard_iterator&>);
+    static_assert(cuda::std::is_same_v<decltype(iter -= 2), cuda::discard_iterator<>&>);
   }
 
   { // operator-(const discard_iterator& x, default_sentinel_t)
