@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_COUNTED_H
-#define _LIBCUDACXX___RANGES_COUNTED_H
+#ifndef _CUDA_STD___RANGES_COUNTED_H
+#define _CUDA_STD___RANGES_COUNTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -87,4 +87,4 @@ _CCCL_END_NAMESPACE_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_COUNTED_H
+#endif // _CUDA_STD___RANGES_COUNTED_H
