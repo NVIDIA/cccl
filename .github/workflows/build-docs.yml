@@ -56,6 +56,7 @@ jobs:
           publish_branch: gh-pages
           destination_dir: ${{ inputs.destination_dir || 'docs' }}
           keep_files: ${{ inputs.pr_number != '' }}
+          commit_message: ${{ inputs.pr_number != '' && format('Deploy doc preview for PR {0} ({1})', inputs.pr_number, github.sha) || format('Deploy main docs ({0})', github.sha) }}
 
       - name: Leave PR preview comment
         if: ${{ inputs.pr_number != '' }}
