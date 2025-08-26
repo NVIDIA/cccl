@@ -34,10 +34,10 @@ permissions:
   contents: write
   pull-requests: write
 
-# Allow only one concurrent deployment per destination and operation type
+# Allow only one concurrent deployment per destination, but allow PR previews to run in parallel
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: pages-${{ inputs.destination_dir }}-${{ inputs.remove_pr_preview && 'cleanup' || 'deploy' }}
+  group: ${{ inputs.remove_pr_preview && 'cleanup' || 'pages' }}-${{ inputs.destination_dir }}
   cancel-in-progress: false
 
 jobs:
