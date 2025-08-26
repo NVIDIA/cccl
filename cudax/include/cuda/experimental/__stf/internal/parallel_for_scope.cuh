@@ -452,8 +452,7 @@ public:
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
   parallel_for_scope(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
-      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
-      , deps(mv(deps)...)
+      : deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
@@ -529,8 +528,6 @@ public:
         t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
       }
     }
-
-    t.add_post_submission_hook(dump_hooks);
 
     t.add_deps(deps);
     if (!symbol.empty())
@@ -999,7 +996,6 @@ public:
   }
 
 private:
-  ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
   exec_place_t e_place;
