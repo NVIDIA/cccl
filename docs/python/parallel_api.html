@@ -1549,7 +1549,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_in1</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the first input sequence of data items.</p></li>
 <li><p><strong>d_in2</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the second input sequence of data items.</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the transformation.</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Binary operation to apply to each pair of items from the input sequences.</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operation to apply to each pair of items from the input sequences.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1585,7 +1585,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array that will store the result of the scan</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the binary operator to apply</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the scan</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
 </ul>
@@ -1693,7 +1693,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array that will store the result of the scan</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the binary operator to apply</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the scan</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
 </ul>
@@ -1750,7 +1750,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_in_items</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em><em> | </em><em>None</em>) – Optional device array or iterator that contains each key’s corresponding item</p></li>
 <li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em>) – Device array to store the sorted keys</p></li>
 <li><p><strong>d_out_items</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted items</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the comparison operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the comparison operator</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1904,7 +1904,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array (of size 1) that will store the result of the reduction</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the binary operator to apply</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
 </ul>
@@ -1972,7 +1972,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array that will store the result of the reduction</p></li>
 <li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing offsets to start of segments</p></li>
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing offsets to end of segments</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the binary operator to apply</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
 </ul>
@@ -2056,7 +2056,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the outputted keys</p></li>
 <li><p><strong>d_out_items</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store each outputted key’s item</p></li>
 <li><p><strong>d_out_num_selected</strong> (<em>DeviceArrayLike</em>) – Device array to store how many items were selected</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the equality operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the equality operator</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -2094,7 +2094,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items.</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the transformation.</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Unary operation to apply to each element of the input.</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the unary operation to apply to each element of the input.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -2159,7 +2159,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_in_items</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em><em> | </em><em>None</em>) – Device array or iterator containing the input sequence of items (optional)</p></li>
 <li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em>) – Device array to store the sorted keys</p></li>
 <li><p><strong>d_out_items</strong> (<em>DeviceArrayLike</em><em> | </em><em>None</em>) – Device array to store the sorted items (optional)</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Comparison operator for sorting</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Comparison operator for sorting</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to sort</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
 </ul>
@@ -2177,7 +2177,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the result of the reduction</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Binary reduction operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Binary reduction operator</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to reduce</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><em>Any</em></a>) – Initial value for the reduction</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
@@ -2196,7 +2196,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the scan</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Binary scan operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Binary scan operator</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><em>Any</em></a>) – Initial value for the scan</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to scan</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
@@ -2215,7 +2215,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the scan</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Binary scan operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Binary scan operator</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><em>Any</em></a>) – Initial value for the scan</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to scan</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
@@ -2249,7 +2249,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the result of the reduction for each segment</p></li>
 <li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the sequence of beginning offsets</p></li>
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the sequence of ending offsets</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Binary reduction operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Binary reduction operator</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><em>Any</em></a>) – Initial value for the reduction</p></li>
 <li><p><strong>num_segments</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of segments to reduce</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
@@ -2284,7 +2284,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_out_keys</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the outputted keys</p></li>
 <li><p><strong>d_out_items</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store each outputted key’s item</p></li>
 <li><p><strong>d_out_num_selected</strong> (<em>DeviceArrayLike</em>) – Device array to store how many items were selected</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Callable representing the equality operator</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the equality operator</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to process</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
 </ul>
@@ -2422,7 +2422,7 @@ to the given pair of input sequences according to the binary operation <code cla
 <li><p><strong>d_in1</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the first input sequence of data items.</p></li>
 <li><p><strong>d_in2</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the second input sequence of data items.</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the transformation.</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Binary operation to apply to each pair of items from the input sequences.</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operation to apply to each pair of items from the input sequences.</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to transform.</p></li>
 <li><p><strong>stream</strong> – CUDA stream to use for the operation.</p></li>
 </ul>
@@ -2458,7 +2458,7 @@ to each element of the input according to the unary operation <code class="docut
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items.</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the transformation.</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a>) – Unary operation to apply to each element of the input.</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the unary operation to apply to each element of the input.</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to transform.</p></li>
 <li><p><strong>stream</strong> – CUDA stream to use for the operation.</p></li>
 </ul>

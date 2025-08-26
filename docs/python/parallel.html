@@ -1521,10 +1521,7 @@ reduce an array of integers.</p>
 <div class="literal-block-wrapper docutils container" id="id1">
 <div class="code-block-caption"><span class="caption-text">Basic reduction example. <a class="reference external" href="https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/reduction/basic_reduction.py">View complete source on GitHub</a></span><a class="headerlink" href="#id1" title="Link to this code">#</a></div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sum_reduction_example</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sum all values in an array using reduction.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sum all values in an array using reduction with PLUS operation.&quot;&quot;&quot;</span>
 
     <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
     <span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -1532,7 +1529,7 @@ reduce an array of integers.</p>
     <span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
 
     <span class="c1"># Run reduction</span>
-    <span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_op</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+    <span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">parallel</span><span class="o">.</span><span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 
     <span class="n">expected_output</span> <span class="o">=</span> <span class="mi">15</span>  <span class="c1"># 1+2+3+4+5</span>
     <span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
@@ -1554,9 +1551,6 @@ generates a sequence of numbers starting from a specified value.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">counting_iterator_example</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Demonstrate reduction with counting iterator.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
-
     <span class="n">first_item</span> <span class="o">=</span> <span class="mi">10</span>
     <span class="n">num_items</span> <span class="o">=</span> <span class="mi">3</span>
 
@@ -1565,7 +1559,7 @@ generates a sequence of numbers starting from a specified value.</p>
     <span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>  <span class="c1"># Storage for output</span>
 
     <span class="c1"># Run reduction</span>
-    <span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">first_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_op</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+    <span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">first_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">parallel</span><span class="o">.</span><span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
 
     <span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_item</span><span class="p">,</span> <span class="n">first_item</span> <span class="o">+</span> <span class="n">num_items</span><span class="p">)</span>
@@ -1584,9 +1578,6 @@ of a sequence of numbers.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">transform_iterator_example</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Demonstrate reduction with transform iterator.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">transform_op</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
         <span class="k">return</span> <span class="o">-</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">a</span>
 
@@ -1600,7 +1591,9 @@ of a sequence of numbers.</p>
     <span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>  <span class="c1"># Storage for output</span>
 
     <span class="c1"># Run reduction</span>
-    <span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">transform_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_op</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+    <span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span>
+        <span class="n">transform_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">parallel</span><span class="o">.</span><span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span>
+    <span class="p">)</span>
 
     <span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span>
