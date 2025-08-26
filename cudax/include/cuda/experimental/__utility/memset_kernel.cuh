@@ -29,8 +29,8 @@
 
 namespace cuda::experimental::__detail
 {
-template <typename T, typename Config>
-__global__ static void __memset_kernel(Config __config, T* __ptr, T __value, ::cuda::std::size_t __count)
+template <typename _T, typename _Config>
+__global__ static void __memset_kernel(_Config __config, _T* __ptr, _T __value, ::cuda::std::size_t __count)
 {
   ::cuda::std::size_t __idx = __config.dims.rank();
   if (__idx < __count)
@@ -39,8 +39,8 @@ __global__ static void __memset_kernel(Config __config, T* __ptr, T __value, ::c
   }
 }
 
-template <typename T>
-void __launch_memset_kernel(stream_ref __stream, T* __ptr, T __value, ::cuda::std::size_t __count)
+template <typename _T>
+void __launch_memset_kernel(stream_ref __stream, _T* __ptr, _T __value, ::cuda::std::size_t __count)
 {
   constexpr unsigned int __block_size = 256;
   cudaLaunchConfig_t __config{};
@@ -50,7 +50,7 @@ void __launch_memset_kernel(stream_ref __stream, T* __ptr, T __value, ::cuda::st
   __config.stream   = __stream.get();
   __config.numAttrs = 0;
 
-  cudaLaunchKernelExC(&__config, __memset_kernel<T, decltype(__config)>, __args);
+  cudaLaunchKernelExC(&__config, __memset_kernel<_T, decltype(__config)>, __args);
 }
 } // namespace cuda::experimental::__detail
 
