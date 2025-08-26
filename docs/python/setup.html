@@ -1514,7 +1514,7 @@
 <p>Before installing cuda-cccl, ensure you have:</p>
 <ul class="simple">
 <li><p><strong>Python 3.9 or later</strong></p></li>
-<li><p><strong>CUDA Toolkit 12.x</strong></p></li>
+<li><p><strong>CUDA Toolkit 12.x or 13.x</strong></p></li>
 <li><p><strong>Compatible NVIDIA GPU</strong> with Compute Capability 6.0 or higher</p></li>
 <li><p><strong>Operating Systems:</strong> Linux (tested on Ubuntu 20.04+) or Windows 10/11 (with WSL2 support)</p></li>
 </ul>
@@ -1523,18 +1523,18 @@
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
 <section id="install-from-pypi">
 <h3>Install from PyPI<a class="headerlink" href="#install-from-pypi" title="Link to this heading">#</a></h3>
-<p>The easiest way to install cuda-cccl is using pip:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>cuda-cccl
+<p>The easiest way to install <code class="docutils literal notranslate"><span class="pre">cuda-cccl</span></code> is using pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>cuda-cccl<span class="o">[</span>cu13<span class="o">]</span><span class="w">  </span><span class="c1"># or cuda-cccl[cu12]</span>
 </pre></div>
 </div>
-<p>This will install cuda-cccl along with all required dependencies including:</p>
+<p>This will install <code class="docutils literal notranslate"><span class="pre">cuda-cccl</span></code> along with all required dependencies.</p>
 </section>
 <section id="install-from-source">
 <h3>Install from Source<a class="headerlink" href="#install-from-source" title="Link to this heading">#</a></h3>
 <p>For development or to access the latest features:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/NVIDIA/cccl.git
 <span class="nb">cd</span><span class="w"> </span>cccl/python/cuda_cccl
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>test-cu13<span class="o">]</span><span class="w">  </span><span class="c1"># or -e .[test-cu12]</span>
 </pre></div>
 </div>
 </section>
@@ -1546,7 +1546,7 @@ git<span class="w"> </span>clone<span class="w"> </span>https://github.com/NVIDI
 <span class="nb">cd</span><span class="w"> </span>cccl/python/cuda_cccl
 
 <span class="c1"># Install in development mode with test dependencies</span>
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>test<span class="o">]</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>test-cu13<span class="o">]</span><span class="w">  </span><span class="c1"># or -e .[test-cu12]</span>
 
 <span class="c1"># Run tests to verify everything works</span>
 pytest<span class="w"> </span>tests/
