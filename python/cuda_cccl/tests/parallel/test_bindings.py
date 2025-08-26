@@ -41,19 +41,17 @@ def test_TypeEnum_positive(cccl_type_enum):
     assert isinstance(cccl_type_enum.value, int)
 
 
-def test_TypeEnum_negative(cccl_op_kind):
-    assert not bindings.is_TypeEnum(cccl_op_kind)
+def test_TypeEnum_negative(cccl_iterator_kind):
+    assert not bindings.is_TypeEnum(cccl_iterator_kind)
 
 
 def test_OpKind_positive(cccl_op_kind):
-    assert bindings.is_OpKind(cccl_op_kind)
-    assert "OpKind" in repr(cccl_op_kind)
-    assert "OpKind" in str(cccl_op_kind)
+    assert isinstance(cccl_op_kind, bindings.OpKind)
     assert isinstance(cccl_op_kind.value, int)
 
 
 def test_OpKind_negative(cccl_iterator_kind):
-    assert not bindings.is_OpKind(cccl_iterator_kind)
+    assert not isinstance(cccl_iterator_kind, bindings.OpKind)
 
 
 def test_IteratorKind_positive(cccl_iterator_kind):
@@ -63,8 +61,8 @@ def test_IteratorKind_positive(cccl_iterator_kind):
     assert isinstance(cccl_iterator_kind.value, int)
 
 
-def test_IteratorKind_negative(cccl_op_kind):
-    assert not bindings.is_IteratorKind(cccl_op_kind)
+def test_IteratorKind_negative(cccl_type_enum):
+    assert not bindings.is_IteratorKind(cccl_type_enum)
 
 
 def test_Op_default():
