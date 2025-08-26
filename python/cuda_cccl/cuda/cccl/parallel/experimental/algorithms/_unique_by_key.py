@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import TYPE_CHECKING, Callable, Union
+from typing import Callable, Union
 
 import numba
 
@@ -20,9 +20,6 @@ from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..op import OpKind
 from ..typing import DeviceArrayLike
-
-if TYPE_CHECKING:
-    pass
 
 
 def make_cache_key(

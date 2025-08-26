@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Callable, Union
+from typing import Callable, Union
 
 import numba
 import numpy as np
@@ -16,9 +16,6 @@ from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..op import OpKind
 from ..typing import DeviceArrayLike, GpuStruct
-
-if TYPE_CHECKING:
-    pass
 
 
 class _SegmentedReduce:
