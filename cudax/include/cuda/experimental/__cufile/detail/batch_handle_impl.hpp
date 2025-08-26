@@ -109,7 +109,7 @@ inline bool batch_handle::is_valid() const noexcept
 template <typename T>
 void batch_handle::submit(const file_handle_base& file_handle_ref,
                           ::cuda::std::span<const batch_io_params_span<T>> operations,
-                          unsigned int flags)
+                          cu_file_batch_submit_flags flags)
 {
   ::std::vector<CUfileIOParams_t> cufile_ops;
   cufile_ops.reserve(operations.size());
@@ -127,7 +127,7 @@ void batch_handle::submit(const file_handle_base& file_handle_ref,
     cufile_op.cookie                = op.cookie;
   }
 
-  CUfileError_t error = cuFileBatchIOSubmit(handle_, cufile_ops.size(), cufile_ops.data(), flags);
+  CUfileError_t error = cuFileBatchIOSubmit(handle_, cufile_ops.size(), cufile_ops.data(), to_c_enum(flags));
   detail::check_cufile_result(error, "cuFileBatchIOSubmit");
 }
 
