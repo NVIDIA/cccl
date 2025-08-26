@@ -9,12 +9,8 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
-/**
- * @file cufile.hpp
- * @brief Modern C++ bindings for NVIDIA cuFILE (GPU Direct Storage)
- *
- * Provides clean, modern C++ interface that directly maps to the cuFILE C API.
- */
+// cufile.hpp — Modern C++ bindings for NVIDIA cuFILE (GPU Direct Storage)
+// Provides a clean interface that directly maps to the cuFILE C API.
 
 // ================================================================================================
 // Core Components
@@ -24,10 +20,7 @@
 #include "file_handle.hpp" // File operations
 #include "utils.hpp" // Utility functions
 
-/**
- * @namespace cuda::experimental::cufile
- * @brief CUDA Experimental cuFILE Library namespace
- */
+// CUDA Experimental cuFILE Library namespace
 namespace cuda::experimental::cufile
 {
 
@@ -37,21 +30,13 @@ namespace cuda::experimental::cufile
 
 using cufile_exception = detail::cufile_exception;
 
-/**
- * @brief Initialize the cuFILE library
- *
- * Must be called before using any cuFILE operations. Use driver_handle for RAII management.
- */
+//! Initialize the cuFILE library
 inline void initialize()
 {
   driver_open();
 }
 
-/**
- * @brief Shutdown the cuFILE library
- *
- * Should be called after all cuFILE operations are complete.
- */
+//! Shutdown the cuFILE library
 inline void shutdown() noexcept
 {
   try
@@ -62,17 +47,13 @@ inline void shutdown() noexcept
   {}
 }
 
-/**
- * @brief Check if the cuFILE library is initialized
- */
+//! Check if the cuFILE library is initialized
 inline bool is_initialized() noexcept
 {
   return driver_use_count() > 0;
 }
 
-/**
- * @brief Get cuFILE library version information
- */
+//! Get cuFILE library version information
 inline int get_cufile_version() noexcept
 {
   return get_version();

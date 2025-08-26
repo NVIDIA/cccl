@@ -29,9 +29,7 @@ namespace cuda::experimental::cufile
 namespace utils
 {
 
-/**
- * @brief Check if a pointer is GPU memory
- */
+//! Check if a pointer is GPU memory
 inline bool is_gpu_memory(const void* ptr)
 {
   cudaPointerAttributes attrs;
@@ -39,9 +37,7 @@ inline bool is_gpu_memory(const void* ptr)
   return (err == cudaSuccess) && (attrs.type == cudaMemoryTypeDevice);
 }
 
-/**
- * @brief Get device ID for a GPU memory pointer
- */
+//! Get device ID for a GPU memory pointer
 inline int get_device_id(const void* ptr)
 {
   cudaPointerAttributes attrs;
@@ -53,17 +49,13 @@ inline int get_device_id(const void* ptr)
   return attrs.device;
 }
 
-/**
- * @brief Get optimal alignment for cuFile operations
- */
+//! Get optimal alignment for cuFile operations
 inline size_t get_optimal_alignment()
 {
   return 4096; // 4KB alignment for most file systems
 }
 
-/**
- * @brief Check if a pointer is suitable for cuFile operations
- */
+//! Check if a pointer is suitable for cuFile operations
 inline bool is_cufile_compatible(const void* ptr)
 {
   cudaPointerAttributes attrs;

@@ -20,9 +20,7 @@
 namespace cuda::experimental::cufile::detail
 {
 
-/**
- * @brief Unified cuFile exception class
- */
+//! Unified cuFile exception class
 class cufile_exception : public ::std::runtime_error
 {
 private:
@@ -52,9 +50,7 @@ private:
   }
 };
 
-/**
- * @brief Check cuFile operation result and throw on error
- */
+//! Check cuFile operation result and throw on error
 inline void check_cufile_result(CUfileError_t error, const ::std::string& operation = "")
 {
   if (error.err != to_c_enum(cu_file_error::success))
@@ -64,9 +60,7 @@ inline void check_cufile_result(CUfileError_t error, const ::std::string& operat
   }
 }
 
-/**
- * @brief Check cuFile operation result and throw on error (for ssize_t returns)
- */
+//! Check cuFile operation result and throw on error (for ssize_t returns)
 inline ssize_t check_cufile_result(ssize_t result, const ::std::string& operation = "")
 {
   if (result < 0)

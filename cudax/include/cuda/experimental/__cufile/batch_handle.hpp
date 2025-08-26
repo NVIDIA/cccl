@@ -33,18 +33,16 @@
 namespace cuda::experimental::cufile
 {
 
-//! @brief Batch I/O operation descriptor using span
-//! @tparam T Element type (must be trivially copyable)
+//! Batch I/O operation descriptor using span
 template <typename T>
 struct batch_io_params_span
 {
-  ::cuda::std::span<T> buffer; ///< Buffer span
-  off_t file_offset; ///< File offset
-  off_t buffer_offset; ///< Buffer offset (in bytes)
-  cu_file_opcode opcode; ///< cuFile operation code (read or write)
-  void* cookie; ///< User data for tracking
+  ::cuda::std::span<T> buffer;
+  off_t file_offset;
+  off_t buffer_offset; // in bytes
+  cu_file_opcode opcode; // read or write
+  void* cookie; // user data for tracking
 
-  // Constructor
   batch_io_params_span(::cuda::std::span<T> buf, off_t f_off, off_t b_off, cu_file_opcode op, void* ck = nullptr)
       : buffer(buf)
       , file_offset(f_off)
@@ -56,14 +54,12 @@ struct batch_io_params_span
   }
 };
 
-/**
- * @brief Batch I/O operation result
- */
+//! Batch I/O operation result
 struct batch_io_result
 {
-  void* cookie; ///< User data from operation
-  cu_file_status status; ///< Operation status
-  size_t result; ///< Bytes transferred or error code
+  void* cookie;
+  cu_file_status status;
+  size_t result; // bytes transferred or error code
 
   bool is_complete() const noexcept
   {
@@ -79,9 +75,7 @@ struct batch_io_result
   }
 };
 
-/**
- * @brief RAII wrapper for batch operations
- */
+//! RAII wrapper for batch operations
 class batch_handle
 {
 private:
@@ -90,45 +84,27 @@ private:
   detail::raii_resource<CUfileBatchHandle_t, ::std::function<void(CUfileBatchHandle_t)>> batch_resource_;
 
 public:
-  /**
-   * @brief Create batch handle
-   * @param max_operations Maximum number of operations
-   */
   explicit batch_handle(unsigned int max_operations);
 
   batch_handle(batch_handle&& other) noexcept;
   batch_handle& operator=(batch_handle&& other) noexcept;
 
-  /**
-   * @brief Submit batch operations using span
-   * @tparam T Element type (must be trivially copyable)
-   * @param file_handle_ref File handle to operate on
-   * @param operations Span of span-based batch operations
-   * @param flags Additional flags (default: none)
-   */
+  //! Submit batch operations using span
   template <typename T, typename FileHandle>
   void submit(const FileHandle& file_handle_ref,
               ::cuda::std::span<const batch_io_params_span<T>> operations,
               cu_file_batch_submit_flags flags = cu_file_batch_submit_flags::none);
 
-  /**
-   * @brief Get batch status
-   */
+  //! Get batch status
   ::std::vector<batch_io_result> get_status(unsigned int min_completed, int timeout_ms = 0);
 
-  /**
-   * @brief Cancel batch operations
-   */
+  //! Cancel batch operations
   void cancel();
 
-  /**
-   * @brief Get maximum operations capacity
-   */
+  //! Get maximum operations capacity
   unsigned int max_operations() const noexcept;
 
-  /**
-   * @brief Check if the handle owns a valid resource
-   */
+  //! Check if the handle owns a valid resource
   bool is_valid() const noexcept;
 };
 
