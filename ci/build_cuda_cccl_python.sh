@@ -5,7 +5,7 @@ ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage="Usage: $0 -py-version <python_version> [additional options...]"
 
-source "$ci_dir/common_arg_parser.sh"
+source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
 
 # Check if py_version was provided (this script requires it)

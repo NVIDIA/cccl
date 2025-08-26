@@ -6,7 +6,7 @@ ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ci_dir/pyenv_helper.sh"
 
 # Parse common arguments
-source "$ci_dir/common_arg_parser.sh"
+source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
 cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
 
