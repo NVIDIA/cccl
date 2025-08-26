@@ -294,7 +294,8 @@ public:
   template <typename... Deps>
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
-    return graph_task<Deps...>(*this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
+    return graph_task<Deps...>(
+      *this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
   }
 
   // submit a new stage : this will submit a graph in a stream that we return
