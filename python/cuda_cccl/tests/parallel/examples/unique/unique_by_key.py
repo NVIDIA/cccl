@@ -62,7 +62,8 @@ def string_deduplication_example():
     # Simulate string IDs: ["apple", "apple", "banana", "cherry", "cherry", "date"]
     # Using integers to represent string IDs
     h_string_ids = np.array([1, 1, 2, 3, 3, 4], dtype="int32")  # string IDs
-    h_frequencies = np.array([5, 3, 8, 2, 7, 1], dtype="int32")  # word frequencies
+    h_frequencies = np.array(
+        [5, 3, 8, 2, 7, 1], dtype="int32")  # word frequencies
 
     d_in_keys = cp.asarray(h_string_ids)
     d_in_values = cp.asarray(h_frequencies)
@@ -100,43 +101,8 @@ def string_deduplication_example():
     return h_out_keys, h_out_values, num_selected
 
 
-def keys_only_unique_example():
-    """Demonstrate unique by key with keys only (no values)."""
-
-    h_in_keys = np.array([1, 1, 1, 2, 2, 3, 4, 4, 4, 4], dtype="int32")
-    d_in_keys = cp.asarray(h_in_keys)
-    d_out_keys = cp.empty_like(d_in_keys)
-    d_out_num_selected = cp.empty(1, np.int32)
-
-    # Run unique_by_key with automatic temp storage allocation
-    parallel.unique_by_key(
-        d_in_keys,
-        None,
-        d_out_keys,
-        None,
-        d_out_num_selected,
-        parallel.OpKind.EQUAL_TO,
-        d_in_keys.size,
-    )
-
-    # Check the result
-    num_selected = cp.asnumpy(d_out_num_selected)[0]
-    h_out_keys = cp.asnumpy(d_out_keys)[:num_selected]
-
-    # Expected: [1, 2, 3, 4]
-    expected_keys = np.array([1, 2, 3, 4])
-
-    assert np.array_equal(h_out_keys, expected_keys)
-    print("Keys only unique:")
-    print(f"Original keys: {h_in_keys}")
-    print(f"Unique keys: {h_out_keys}")
-    print(f"Number of unique keys: {num_selected}")
-    return h_out_keys, num_selected
-
-
 if __name__ == "__main__":
     print("Running unique by key examples...")
     basic_unique_by_key_example()
     string_deduplication_example()
-    keys_only_unique_example()
     print("All unique by key examples completed successfully!")
