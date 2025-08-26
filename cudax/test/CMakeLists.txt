@@ -109,30 +109,21 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     utility/ensure_current_device.cu
   )
 
-  # cuFILE tests (conditionally build only when cuFILE headers and CUDA::cufile are available)
-  include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
-  check_cxx_source_compiles("#if defined(__has_include) && __has_include(<cufile.h>)\nint main(){return 0;}\n#else\n#error no\n#endif" CUDAX_BUILD_CUFILE)
+  # cuFILE tests: rely on CUDAToolkit providing CUDA::cufile instead of probing headers
   find_package(CUDAToolkit QUIET)
   # Normalize cuFile imported target name across CMake versions
   if (TARGET CUDA::cuFile AND NOT TARGET CUDA::cufile)
     add_library(CUDA::cufile ALIAS CUDA::cuFile)
   endif()
-  if (CUDAX_BUILD_CUFILE AND TARGET CUDA::cufile)
-    cudax_add_catch2_test(test_target cufile_driver ${cn_target}
-      ../test/cufile/driver_functions.cu
-    )
-    target_link_libraries(${test_target} PRIVATE CUDA::cufile)
-    cudax_add_catch2_test(test_target cufile_utils ${cn_target}
-      ../test/cufile/utils_functions.cu
-    )
-    target_link_libraries(${test_target} PRIVATE CUDA::cufile)
-    cudax_add_catch2_test(test_target cufile_file ${cn_target}
-      ../test/cufile/file_handle_functions.cu
-    )
-    target_link_libraries(${test_target} PRIVATE CUDA::cufile)
-  elseif(CUDAX_BUILD_CUFILE)
-    message(STATUS "cuFile headers found but CUDA::cufile target not available; skipping cuFile tests")
+  set(CUDAX_BUILD_CUFILE OFF)
+  if (TARGET CUDA::cufile)
+    set(CUDAX_BUILD_CUFILE ON)
+  endif()
+  # Only record availability here; the actual cuFile tests are added below
+  # when CUDAX_ENABLE_CUFILE_TESTS is enabled.
+  set(CUDAX_BUILD_CUFILE OFF)
+  if (TARGET CUDA::cufile)
+    set(CUDAX_BUILD_CUFILE ON)
   endif()
 
   cudax_add_catch2_test(test_target containers ${cn_target}
