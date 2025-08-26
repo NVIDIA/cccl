@@ -1,12 +1,5 @@
-//===----------------------------------------------------------------------===//
-//
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
-// under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
-//
-//===----------------------------------------------------------------------===//
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <thrust/device_vector.h>
 
@@ -44,9 +37,9 @@ __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool mate
   size_t const gid         = BlockSize * blockIdx.x + threadIdx.x;
   size_t const loop_stride = gridDim.x * BlockSize;
   size_t idx               = gid;
-  using result_type        = decltype(hash(0));
+  using result_t           = decltype(hash(0));
 
-  result_type agg{};
+  result_t agg{};
 
   while (idx < n)
   {
@@ -64,9 +57,7 @@ __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool mate
   }
 }
 
-/**
- * @brief A benchmark evaluating performance of various hash functions
- */
+// benchmark evaluating performance of various hash functions
 template <typename StrategyTag, typename Key>
 void hash_eval(nvbench::state& state, nvbench::type_list<StrategyTag, Key>)
 {
@@ -76,9 +67,9 @@ void hash_eval(nvbench::state& state, nvbench::type_list<StrategyTag, Key>)
   constexpr auto block_size     = 128;
   auto const num_keys           = state.get_int64("NumInputs");
   auto const grid_size          = (num_keys + block_size * 16 - 1) / block_size * 16;
-  using result_type             = decltype(std::declval<Hash>()(std::declval<cuda::std::int32_t>()));
+  using result_t                = decltype(std::declval<Hash>()(std::declval<cuda::std::int32_t>()));
 
-  thrust::device_vector<result_type> hash_values((materialize_result) ? num_keys : 1);
+  thrust::device_vector<result_t> hash_values((materialize_result) ? num_keys : 1);
 
   state.add_element_count(num_keys);
 
