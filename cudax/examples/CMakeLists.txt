@@ -5,6 +5,13 @@ find_package(Thrust ${cudax_VERSION} EXACT CONFIG
 )
 thrust_create_target(cudax.examples.thrust)
 
+# cuFILE support: rely on CUDAToolkit providing CUDA::cufile
+find_package(CUDAToolkit QUIET)
+# Normalize cuFile imported target name across CMake versions
+if (TARGET CUDA::cuFile AND NOT TARGET CUDA::cufile)
+  add_library(CUDA::cufile ALIAS CUDA::cuFile)
+endif()
+
 function(cudax_add_example target_name_var example_src cudax_target)
   cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
   cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
@@ -25,6 +32,11 @@ function(cudax_add_example target_name_var example_src cudax_target)
     ${cudax_target}
     cudax.examples.thrust
   )
+
+  if (${example_name} STREQUAL "cufile_basic_example" AND TARGET CUDA::cufile)
+    target_link_libraries(${example_target} PRIVATE CUDA::cufile)
+  endif()
+
   target_compile_options(${example_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr --extended-lambda>

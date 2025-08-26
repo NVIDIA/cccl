@@ -6,7 +6,7 @@
 
 int main()
 {
-#if CUDAX_HAS_CUFILE
+#if CUDAX_HAS_CUFILE()
   try
   {
     cuda::experimental::cufile::driver_handle driver; // RAII driver open/close
