@@ -22,7 +22,7 @@ from ..op import OpKind
 from ..typing import DeviceArrayLike, GpuStruct
 
 if TYPE_CHECKING:
-    from .._bindings import IntEnumerationMember
+    pass
 
 
 class _Reduce:
@@ -110,7 +110,7 @@ def make_cache_key(
     )
     d_out_key = protocols.get_dtype(d_out)
     # Handle well-known operations differently
-    op_key: Union[tuple[str, IntEnumerationMember], CachableFunction]
+    op_key: Union[tuple[str, int], CachableFunction]
     if isinstance(op, OpKind):
         op_key = (op.name, op.value)
     else:

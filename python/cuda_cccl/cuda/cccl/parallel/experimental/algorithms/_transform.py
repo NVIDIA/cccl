@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import TYPE_CHECKING, Callable, Union
+from typing import Callable, Union
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -14,9 +14,6 @@ from ..iterators._iterators import IteratorBase
 from ..numba_utils import get_inferred_return_type
 from ..op import OpKind
 from ..typing import DeviceArrayLike
-
-if TYPE_CHECKING:
-    from .._bindings import IntEnumerationMember
 
 
 class _UnaryTransform:
@@ -148,7 +145,7 @@ def make_unary_transform_cache_key(
     d_out_key = protocols.get_dtype(d_out)
 
     # Handle well-known operations differently
-    op_key: Union[tuple[str, IntEnumerationMember], CachableFunction]
+    op_key: Union[tuple[str, int], CachableFunction]
     if isinstance(op, OpKind):
         op_key = (op.name, op.value)
     else:
@@ -172,7 +169,7 @@ def make_binary_transform_cache_key(
     d_out_key = protocols.get_dtype(d_out)
 
     # Handle well-known operations differently
-    op_key: Union[tuple[str, IntEnumerationMember], CachableFunction]
+    op_key: Union[tuple[str, int], CachableFunction]
     if isinstance(op, OpKind):
         op_key = (op.name, op.value)
     else:

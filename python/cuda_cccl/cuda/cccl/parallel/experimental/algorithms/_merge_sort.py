@@ -22,7 +22,7 @@ from ..op import OpKind
 from ..typing import DeviceArrayLike
 
 if TYPE_CHECKING:
-    from .._bindings import IntEnumerationMember
+    pass
 
 
 def make_cache_key(
@@ -56,7 +56,7 @@ def make_cache_key(
         )
 
     # Handle well-known operations differently
-    op_key: Union[tuple[str, IntEnumerationMember], CachableFunction]
+    op_key: Union[tuple[str, int], CachableFunction]
     if isinstance(op, OpKind):
         op_key = (op.name, op.value)
     else:

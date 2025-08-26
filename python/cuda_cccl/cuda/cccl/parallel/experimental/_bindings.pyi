@@ -1,5 +1,5 @@
 import ctypes
-from enum import Enum
+from enum import IntEnum
 from typing import Any, Optional
 
 from typing_extensions import Buffer
@@ -70,31 +70,31 @@ class Enumeration_OpKind:
     MINIMUM = IntEnumerationMember
     MAXIMUM = IntEnumerationMember
 
-class OpKind(Enum):
-    STATELESS = IntEnumerationMember
-    STATEFUL = IntEnumerationMember
-    PLUS = IntEnumerationMember
-    MINUS = IntEnumerationMember
-    MULTIPLIES = IntEnumerationMember
-    DIVIDES = IntEnumerationMember
-    MODULUS = IntEnumerationMember
-    EQUAL_TO = IntEnumerationMember
-    NOT_EQUAL_TO = IntEnumerationMember
-    GREATER = IntEnumerationMember
-    LESS = IntEnumerationMember
-    GREATER_EQUAL = IntEnumerationMember
-    LESS_EQUAL = IntEnumerationMember
-    LOGICAL_AND = IntEnumerationMember
-    LOGICAL_OR = IntEnumerationMember
-    LOGICAL_NOT = IntEnumerationMember
-    BIT_AND = IntEnumerationMember
-    BIT_OR = IntEnumerationMember
-    BIT_XOR = IntEnumerationMember
-    BIT_NOT = IntEnumerationMember
-    # IDENTITY = IntEnumerationMember
-    NEGATE = IntEnumerationMember
-    # MINIMUM = IntEnumerationMember
-    # MAXIMUM = IntEnumerationMember
+class OpKind(IntEnum):
+    STATELESS = 0
+    STATEFUL = 1
+    PLUS = 2
+    MINUS = 3
+    MULTIPLIES = 4
+    DIVIDES = 5
+    MODULUS = 6
+    EQUAL_TO = 7
+    NOT_EQUAL_TO = 8
+    GREATER = 9
+    LESS = 10
+    GREATER_EQUAL = 11
+    LESS_EQUAL = 12
+    LOGICAL_AND = 13
+    LOGICAL_OR = 14
+    LOGICAL_NOT = 15
+    BIT_AND = 16
+    BIT_OR = 17
+    BIT_XOR = 18
+    BIT_NOT = 19
+    # IDENTITY = 20
+    NEGATE = 21
+    # MINIMUM = 22
+    # MAXIMUM = 23
 
 class Enumeration_IteratorKind:
     @property

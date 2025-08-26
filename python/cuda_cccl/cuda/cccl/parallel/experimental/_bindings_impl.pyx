@@ -19,7 +19,7 @@ from cpython.pycapsule cimport (
 )
 
 import ctypes
-from enum import Enum
+from enum import IntEnum
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
     cdef struct OpaqueCUkernel_st
@@ -433,7 +433,7 @@ cdef class Enumeration_OpKind(IntEnumerationBase):
         )
 
 
-class OpKind(Enum):
+class OpKind(IntEnum):
     """Enumeration of well-known operations for CCCL parallel algorithms.
 
     This enum provides type-safe access to well-known operations that can be used
@@ -450,42 +450,42 @@ class OpKind(Enum):
     """
 
     # Arithmetic operations
-    PLUS = Enumeration_OpKind.PLUS
-    MINUS = Enumeration_OpKind.MINUS
-    MULTIPLIES = Enumeration_OpKind.MULTIPLIES
-    DIVIDES = Enumeration_OpKind.DIVIDES
-    MODULUS = Enumeration_OpKind.MODULUS
+    PLUS = Enumeration_OpKind.PLUS.value
+    MINUS = Enumeration_OpKind.MINUS.value
+    MULTIPLIES = Enumeration_OpKind.MULTIPLIES.value
+    DIVIDES = Enumeration_OpKind.DIVIDES.value
+    MODULUS = Enumeration_OpKind.MODULUS.value
 
     # Comparison operations
-    EQUAL_TO = Enumeration_OpKind.EQUAL_TO
-    NOT_EQUAL_TO = Enumeration_OpKind.NOT_EQUAL_TO
-    GREATER = Enumeration_OpKind.GREATER
-    LESS = Enumeration_OpKind.LESS
-    GREATER_EQUAL = Enumeration_OpKind.GREATER_EQUAL
-    LESS_EQUAL = Enumeration_OpKind.LESS_EQUAL
+    EQUAL_TO = Enumeration_OpKind.EQUAL_TO.value
+    NOT_EQUAL_TO = Enumeration_OpKind.NOT_EQUAL_TO.value
+    GREATER = Enumeration_OpKind.GREATER.value
+    LESS = Enumeration_OpKind.LESS.value
+    GREATER_EQUAL = Enumeration_OpKind.GREATER_EQUAL.value
+    LESS_EQUAL = Enumeration_OpKind.LESS_EQUAL.value
 
     # Logical operations
-    LOGICAL_AND = Enumeration_OpKind.LOGICAL_AND
-    LOGICAL_OR = Enumeration_OpKind.LOGICAL_OR
-    LOGICAL_NOT = Enumeration_OpKind.LOGICAL_NOT
+    LOGICAL_AND = Enumeration_OpKind.LOGICAL_AND.value
+    LOGICAL_OR = Enumeration_OpKind.LOGICAL_OR.value
+    LOGICAL_NOT = Enumeration_OpKind.LOGICAL_NOT.value
 
     # Bitwise operations
-    BIT_AND = Enumeration_OpKind.BIT_AND
-    BIT_OR = Enumeration_OpKind.BIT_OR
-    BIT_XOR = Enumeration_OpKind.BIT_XOR
-    BIT_NOT = Enumeration_OpKind.BIT_NOT
+    BIT_AND = Enumeration_OpKind.BIT_AND.value
+    BIT_OR = Enumeration_OpKind.BIT_OR.value
+    BIT_XOR = Enumeration_OpKind.BIT_XOR.value
+    BIT_NOT = Enumeration_OpKind.BIT_NOT.value
 
     # Unary operations
-    # IDENTITY = Enumeration_OpKind.IDENTITY  # GH 5515
-    NEGATE = Enumeration_OpKind.NEGATE
+    # IDENTITY = Enumeration_OpKind.IDENTITY.value  # GH 5515
+    NEGATE = Enumeration_OpKind.NEGATE.value
 
     # Min/max operations
-    # MINIMUM = Enumeration_OpKind.MINIMUM  # GH 5515
-    # MAXIMUM = Enumeration_OpKind.MAXIMUM  # GH 5515
+    # MINIMUM = Enumeration_OpKind.MINIMUM.value  # GH 5515
+    # MAXIMUM = Enumeration_OpKind.MAXIMUM.value  # GH 5515
 
     # Custom operations
-    STATELESS = Enumeration_OpKind.STATELESS
-    STATEFUL = Enumeration_OpKind.STATEFUL
+    STATELESS = Enumeration_OpKind.STATELESS.value
+    STATEFUL = Enumeration_OpKind.STATEFUL.value
 
 
 cdef class Enumeration_IteratorKind(IntEnumerationBase):
