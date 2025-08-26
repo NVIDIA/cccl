@@ -1631,14 +1631,15 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads);
 
     // Exclusive scan in registers with prefix as seed
-    cub::detail::ThreadScanExclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+    cub::detail::ThreadScanExclusivePartial<Input, Output, ScanOp, T, T, T>(
+      input, output, scan_op, thread_valid_items, thread_prefix);
   }
 
   //! @rst
@@ -1733,14 +1734,15 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    cub::detail::ThreadScanExclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+    cub::detail::ThreadScanExclusivePartial<Input, Output, ScanOp, T, T, T>(
+      input, output, scan_op, thread_valid_items, thread_prefix);
   }
 
   //! @rst
@@ -1876,14 +1878,15 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads, block_prefix_callback_op);
 
     // Exclusive scan in registers with prefix as seed
-    cub::detail::ThreadScanExclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+    cub::detail::ThreadScanExclusivePartial<Input, Output, ScanOp, T, T, T>(
+      input, output, scan_op, thread_valid_items, thread_prefix);
   }
 
   //! @} end member group // Exclusive prefix scans (multiple data per thread)
@@ -2151,14 +2154,14 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_partial             = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_partial = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_partial, thread_partial, scan_op, valid_threads);
 
     // Exclusive scan in registers with prefix
-    cub::detail::ThreadScanExclusivePartial(
+    cub::detail::ThreadScanExclusivePartial<Input, Output, ScanOp, T, T, T>(
       input, output, scan_op, thread_valid_items, thread_partial, (linear_tid != 0u));
   }
 
@@ -2210,14 +2213,14 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_partial             = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_partial = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_partial, thread_partial, scan_op, valid_threads, block_aggregate);
 
     // Exclusive scan in registers with prefix
-    cub::detail::ThreadScanExclusivePartial(
+    cub::detail::ThreadScanExclusivePartial<Input, Output, ScanOp, T, T, T>(
       input, output, scan_op, thread_valid_items, thread_partial, (linear_tid != 0u));
   }
 
@@ -3680,14 +3683,14 @@ public:
     {
       // Reduce consecutive thread items in registers
       const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-      T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+      T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
       // Exclusive thread block-scan
       const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
       ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      cub::detail::ThreadScanInclusivePartial(
+      cub::detail::ThreadScanInclusivePartial<Input, Output, ScanOp, T, T, T>(
         input, output, scan_op, thread_valid_items, thread_prefix, (linear_tid != 0u));
     }
   }
@@ -3753,14 +3756,15 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads);
 
     // Exclusive scan in registers with prefix as seed
-    cub::detail::ThreadScanInclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+    cub::detail::ThreadScanInclusivePartial<Input, Output, ScanOp, T, T, T>(
+      input, output, scan_op, thread_valid_items, thread_prefix);
   }
 
   //! @rst
@@ -3851,14 +3855,14 @@ public:
     {
       // Reduce consecutive thread items in registers
       const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-      T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+      T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
       // Exclusive thread block-scan (with no initial value)
       const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
       ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      cub::detail::ThreadScanInclusivePartial(
+      cub::detail::ThreadScanInclusivePartial<Input, Output, ScanOp, T, T, T>(
         input, output, scan_op, thread_valid_items, thread_prefix, (linear_tid != 0u));
     }
   }
@@ -3933,14 +3937,15 @@ public:
 
     // Reduce consecutive thread items in registers
     const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-    T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+    T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
     // Exclusive thread block-scan
     const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
     ExclusiveScanPartialTile(thread_prefix, thread_prefix, initial_value, scan_op, valid_threads, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    cub::detail::ThreadScanInclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+    cub::detail::ThreadScanInclusivePartial<Input, Output, ScanOp, T, T, T>(
+      input, output, scan_op, thread_valid_items, thread_prefix);
   }
 
   //! @rst
@@ -4080,14 +4085,15 @@ public:
     {
       // Reduce consecutive thread items in registers
       const int thread_valid_items = valid_items - static_cast<int>(linear_tid) * items_per_thread;
-      T thread_prefix              = cub::detail::ThreadReducePartial(input, scan_op, thread_valid_items);
+      T thread_prefix = cub::detail::ThreadReducePartial<Input, ScanOp, T, T>(input, scan_op, thread_valid_items);
 
       // Exclusive thread block-scan
       const int valid_threads = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), items_per_thread);
       ExclusiveScanPartialTile(thread_prefix, thread_prefix, scan_op, valid_threads, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      cub::detail::ThreadScanInclusivePartial(input, output, scan_op, thread_valid_items, thread_prefix);
+      cub::detail::ThreadScanInclusivePartial<Input, Output, ScanOp, T, T, T>(
+        input, output, scan_op, thread_valid_items, thread_prefix);
     }
   }
 
