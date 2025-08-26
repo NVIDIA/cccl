@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H
-#define _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H
+#ifndef _CUDA_STD___RANGES_ENABLE_BORROWED_RANGE_H
+#define _CUDA_STD___RANGES_ENABLE_BORROWED_RANGE_H
 
 // These customization variables are used in <span> and <string_view>. The
 // separate header is used to avoid including the entire <ranges> header in
@@ -38,4 +38,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H
+#endif // _CUDA_STD___RANGES_ENABLE_BORROWED_RANGE_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,4 +44,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H
