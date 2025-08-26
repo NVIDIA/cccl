@@ -75,17 +75,17 @@ void stf_logical_data_destroy(stf_logical_data_handle ld)
   delete ld;
 }
 
-void stf_logical_data_like_empty(stf_ctx_handle ctx, const stf_logical_data_handle* from, stf_logical_data_handle* to)
-{
-  assert(ctx);
-  assert(from);
-  assert(to);
-
-  auto ld_typed = ctx->ctx.logical_data(from->ld.shape());
-
-  // Stored in its untyped version
-  *to = new stf_logical_data_handle_t{ld_typed};
-}
+// void stf_logical_data_like_empty(stf_ctx_handle ctx, const stf_logical_data_handle from, stf_logical_data_handle* to)
+// {
+//   assert(ctx);
+//   assert(from);
+//   assert(to);
+//
+//   auto ld_typed = ctx->ctx.logical_data(from->ld.shape());
+//
+//   // Stored in its untyped version
+//   *to = new stf_logical_data_handle_t{ld_typed};
+// }
 
 void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
 {
