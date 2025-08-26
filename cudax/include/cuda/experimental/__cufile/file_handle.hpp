@@ -39,12 +39,9 @@
 namespace cuda::experimental::cufile
 {
 
-// Forward declarations
 class file_handle;
 
-/**
- * @brief Base class for file handle operations
- */
+//! Base class for file handle operations
 class file_handle_base
 {
 protected:
@@ -55,58 +52,25 @@ protected:
   void register_file();
 
 public:
-  /**
-   * @brief Get file descriptor
-   */
   int get_fd() const noexcept
   {
     return fd_;
   }
 
-  /**
-   * @brief Read data from file using span
-   * @tparam T Element type (must be trivially copyable)
-   * @param buffer Span representing the destination buffer
-   * @param file_offset Offset in file to read from
-   * @param buffer_offset Offset in buffer to read into (in bytes)
-   * @return Number of bytes read
-   */
+  //! Read data from file using span
   template <typename T>
   size_t read(::cuda::std::span<T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
 
-  /**
-   * @brief Write data to file using span
-   * @tparam T Element type (must be trivially copyable)
-   * @param buffer Span representing the source buffer
-   * @param file_offset Offset in file to write to
-   * @param buffer_offset Offset in buffer to write from (in bytes)
-   * @return Number of bytes written
-   */
+  //! Write data to file using span
   template <typename T>
   size_t write(::cuda::std::span<const T> buffer, off_t file_offset = 0, off_t buffer_offset = 0);
 
-  /**
-   * @brief Asynchronous read using span
-   * @tparam T Element type (must be trivially copyable)
-   * @param stream CUDA stream for async operation
-   * @param buffer Span representing the destination buffer
-   * @param file_offset Offset in file to read from
-   * @param buffer_offset Offset in buffer to read into (in bytes)
-   * @param bytes_read Output parameter for bytes read
-   */
+  //! Asynchronous read using span
   template <typename T>
   void read_async(
     ::cuda::stream_ref stream, ::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, ssize_t& bytes_read);
 
-  /**
-   * @brief Asynchronous write using span
-   * @tparam T Element type (must be trivially copyable)
-   * @param stream CUDA stream for async operation
-   * @param buffer Span representing the source buffer
-   * @param file_offset Offset in file to write to
-   * @param buffer_offset Offset in buffer to write from (in bytes)
-   * @param bytes_written Output parameter for bytes written
-   */
+  //! Asynchronous write using span
   template <typename T>
   void write_async(::cuda::stream_ref stream,
                    ::cuda::std::span<const T> buffer,
@@ -114,27 +78,18 @@ public:
                    off_t buffer_offset,
                    ssize_t& bytes_written);
 
-  /**
-   * @brief Get native cuFILE handle
-   */
+  //! Get native cuFILE handle
   CUfileHandle_t native_handle() const noexcept;
 
-  /**
-   * @brief Check if the handle owns a valid resource
-   */
+  //! Check if the handle owns a valid resource
   bool is_valid() const noexcept;
 };
 
-/**
- * @brief Non-owning reference to a file handle for cuFILE operations
- */
+//! Non-owning reference to a file handle for cuFILE operations
 class file_handle_ref : public file_handle_base
 {
 public:
-  /**
-   * @brief Create from existing file descriptor (non-owning)
-   * @param fd File descriptor (should be opened with O_DIRECT)
-   */
+  //! Create from existing file descriptor (non-owning)
   explicit file_handle_ref(int fd);
 
   file_handle_ref(const file_handle_ref&)            = delete;
@@ -144,23 +99,14 @@ public:
   ~file_handle_ref()                                 = default;
 };
 
-/**
- * @brief RAII file handle for cuFILE operations (owning)
- */
+//! RAII file handle for cuFILE operations (owning)
 class file_handle : public file_handle_base
 {
 public:
-  /**
-   * @brief Open file for cuFILE operations
-   * @param path File path
-   * @param mode STL-compatible open mode flags
-   */
+  //! Open file for cuFILE operations
   explicit file_handle(const ::std::string& path, ::std::ios_base::openmode mode = ::std::ios_base::in);
 
-  /**
-   * @brief Create from existing file descriptor (owning)
-   * @param fd File descriptor (should be opened with O_DIRECT)
-   */
+  //! Create from existing file descriptor (owning)
   explicit file_handle(int fd);
 
   file_handle(file_handle&& other) noexcept;

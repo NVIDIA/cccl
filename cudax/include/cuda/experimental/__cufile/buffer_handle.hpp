@@ -29,9 +29,7 @@
 namespace cuda::experimental::cufile
 {
 
-/**
- * @brief RAII wrapper for GPU buffer registration
- */
+//! RAII wrapper for GPU buffer registration
 class buffer_handle
 {
 private:
@@ -39,66 +37,38 @@ private:
   detail::raii_resource<const void*, void (*)(const void*)> registered_buffer_;
 
 public:
-  /**
-   * @brief Register GPU buffer using span
-   * @tparam T Element type (must be trivially copyable)
-   * @param buffer Span representing the GPU buffer
-   * @param flags Registration flags (default: 0)
-   */
+  //! Register GPU buffer using span
   template <typename T>
   explicit buffer_handle(::cuda::std::span<T> buffer, int flags = 0);
 
-  /**
-   * @brief Register GPU buffer using span - const version
-   * @tparam T Element type (must be trivially copyable)
-   * @param buffer Span representing the GPU buffer
-   * @param flags Registration flags (default: 0)
-   */
+  //! Register GPU buffer using span - const version
   template <typename T>
   explicit buffer_handle(::cuda::std::span<const T> buffer, int flags = 0);
 
   buffer_handle(buffer_handle&& other) noexcept;
   buffer_handle& operator=(buffer_handle&& other) noexcept;
 
-  /**
-   * @brief Get the registered buffer pointer
-   */
+  //! Get the registered buffer pointer
   const void* data() const noexcept;
 
-  /**
-   * @brief Get the buffer size in bytes
-   */
+  //! Get the buffer size in bytes
   size_t size() const noexcept;
 
-  /**
-   * @brief Get the buffer as a span of bytes
-   */
+  //! Get the buffer as a span of bytes
   ::cuda::std::span<const ::cuda::std::byte> as_bytes() const noexcept;
 
-  /**
-   * @brief Get the buffer as a span of mutable bytes
-   */
+  //! Get the buffer as a span of mutable bytes
   ::cuda::std::span<::cuda::std::byte> as_writable_bytes() const noexcept;
 
-  /**
-   * @brief Get the buffer as a typed span
-   * @tparam T Element type (must be trivially copyable)
-   * @return Span of type T over the buffer
-   */
+  //! Get the buffer as a typed span
   template <typename T>
   ::cuda::std::span<T> as_span() const noexcept;
 
-  /**
-   * @brief Get the buffer as a typed const span
-   * @tparam T Element type (must be trivially copyable)
-   * @return Const span of type T over the buffer
-   */
+  //! Get the buffer as a typed const span
   template <typename T>
   ::cuda::std::span<const T> as_const_span() const noexcept;
 
-  /**
-   * @brief Check if the handle owns a valid resource
-   */
+  //! Check if the handle owns a valid resource
   bool is_valid() const noexcept;
 };
 

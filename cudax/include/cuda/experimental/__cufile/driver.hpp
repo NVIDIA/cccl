@@ -31,18 +31,14 @@
 namespace cuda::experimental::cufile
 {
 
-/**
- * @brief C++ wrapper for CUfileDrvProps_t with convenient accessor methods
- */
+//! C++ wrapper for CUfileDrvProps_t with convenient accessor methods
 class driver_properties
 {
 private:
   CUfileDrvProps_t props_;
 
 public:
-  /**
-   * @brief Initialize and get driver properties
-   */
+  //! Initialize and get driver properties
   driver_properties();
 
   // NVFS Properties
@@ -121,9 +117,7 @@ public:
     return (props_.fflags & (1 << CU_FILE_STREAMS_SUPPORTED)) != 0;
   }
 
-  /**
-   * @brief Get direct access to the underlying C struct
-   */
+  //! Get direct access to the underlying C struct
   const CUfileDrvProps_t& get_raw_properties() const noexcept;
 };
 
@@ -171,9 +165,7 @@ bool is_cufile_available() noexcept;
 bool is_batch_api_available() noexcept;
 bool is_stream_api_available() noexcept;
 
-/**
- * @brief RAII wrapper for automatic driver management
- */
+//! RAII wrapper for automatic driver management
 class driver_handle
 {
 public:
