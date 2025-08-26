@@ -24,8 +24,8 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-  # Use pull_request_target for proper permissions to deploy docs and comment on PRs
-  pull_request_target:
+  # Use pull_request for same-repo PRs (sufficient permissions)
+  pull_request:
     types: [opened, synchronize, reopened]
 
 concurrency:
