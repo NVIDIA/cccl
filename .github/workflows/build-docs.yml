@@ -9,6 +9,8 @@ on:
   workflow_dispatch:
 
   # Reusable workflow for PR previews
+  # NOTE: For fork testing, ensure GitHub Pages is enabled in repository settings
+  # and set to deploy from "gh-pages" branch
   workflow_call:
     inputs:
       destination_dir:
@@ -27,9 +29,10 @@ on:
         default: false
         type: boolean
 
-# Sets permissions of the GITHUB_TOKEN to allow pushing to gh-pages branch
+# Sets permissions of the GITHUB_TOKEN to allow pushing to gh-pages branch and PR comments
 permissions:
   contents: write
+  pull-requests: write
 
 # Allow only one concurrent deployment per destination, but allow PR previews to run in parallel
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -42,8 +45,19 @@ jobs:
   build-and-deploy:
     runs-on: linux-amd64-cpu32
     steps:
-      - name: Validate inputs
+      - name: Validate inputs and show deployment info
         run: |
+          echo "=== Deployment Configuration ==="
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository Owner: ${{ github.repository_owner }}"
+          echo "Repository Name: ${{ github.event.repository.name }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Destination: ${{ inputs.destination_dir }}"
+          echo "PR Number: ${{ inputs.pr_number }}"
+          echo "Remove Preview: ${{ inputs.remove_pr_preview }}"
+          echo "Event Name: ${{ github.event_name }}"
+          echo "================================"
+
           if [ "${{ inputs.remove_pr_preview }}" = "true" ] && [ -z "${{ inputs.pr_number }}" ]; then
             echo "Error: remove_pr_preview requires pr_number to be set"
             exit 1
@@ -51,6 +65,11 @@ jobs:
           if [ -n "${{ inputs.pr_number }}" ] && ! echo "${{ inputs.pr_number }}" | grep -qE '^[0-9]+$'; then
             echo "Error: pr_number must be numeric (got: '${{ inputs.pr_number }}')"
             exit 1
+          fi
+
+          # Show final GitHub Pages URL for testing
+          if [ -n "${{ inputs.pr_number }}" ]; then
+            echo "📖 Expected Preview URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ inputs.destination_dir }}/"
           fi
 
       - name: Checkout
@@ -86,7 +105,7 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
           publish_branch: gh-pages
           destination_dir: ${{ inputs.destination_dir }}
@@ -100,6 +119,7 @@ jobs:
           header: pr-preview
           number: ${{ inputs.pr_number }}
           skip_unchanged: true
+          GITHUB_TOKEN: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
           message: |
             ## 📖 Doc Preview CI
 
@@ -115,6 +135,7 @@ jobs:
           number: ${{ inputs.pr_number }}
           hide_and_recreate: true
           hide_classify: "OUTDATED"
+          GITHUB_TOKEN: ${{ secrets.FORK_DEPLOY_TOKEN || secrets.GITHUB_TOKEN }}
           message: |
             ## 📖 Doc Preview CI
 

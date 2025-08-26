@@ -24,6 +24,9 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
+  # Add pull_request trigger for fork testing (limited permissions)
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -175,15 +178,15 @@ jobs:
 
   docs-build:
     name: Build and deploy documentation preview
-    if: ${{ contains(github.event.head_commit.message, '[build-docs]') || needs.build-workflow.outputs.pr_number }}
+    if: ${{ contains(github.event.head_commit.message, '[build-docs]') || needs.build-workflow.outputs.pr_number || github.event.pull_request.number }}
     needs: build-workflow
     permissions:
       contents: write
       pull-requests: write
     uses: ./.github/workflows/build-docs.yml
     with:
-      destination_dir: docs/pr-preview/pr-${{ needs.build-workflow.outputs.pr_number }}
-      pr_number: ${{ needs.build-workflow.outputs.pr_number }}
+      destination_dir: docs/pr-preview/pr-${{ github.event.pull_request.number || needs.build-workflow.outputs.pr_number }}
+      pr_number: ${{ github.event.pull_request.number || needs.build-workflow.outputs.pr_number }}
 
   build-rapids:
     name: Build RAPIDS (optional)
