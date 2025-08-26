@@ -24,8 +24,8 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-  # Add pull_request trigger for fork testing (limited permissions)
-  pull_request:
+  # Use pull_request_target for proper permissions to deploy docs and comment on PRs
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 concurrency:
