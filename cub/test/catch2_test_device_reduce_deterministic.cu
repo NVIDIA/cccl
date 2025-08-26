@@ -127,8 +127,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
          "[reduce][deterministic]",
          large_offset_type_list)
 {
-  using type                    = typename c2h::get<0, TestType>;
-  const size_t random_num_items = (1uL << 32) + GENERATE_COPY(take(1, random(1, 1000)));
+  using type = typename c2h::get<0, TestType>;
+  const size_t random_num_items =
+    cuda::std::numeric_limits<::cuda::std::int32_t>::max() + GENERATE_COPY(take(1, random(1, 1000)));
 
   const size_t half_chunk_size = GENERATE_COPY(take(1, random(1, 128)));
 
