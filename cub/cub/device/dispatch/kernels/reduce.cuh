@@ -338,7 +338,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   constexpr auto block_threads    = reduce_policy_t::BLOCK_THREADS;
 
   using block_reduce_t = BlockReduce<AccumT, block_threads, reduce_policy_t::BLOCK_ALGORITHM>;
-  using offset_t       = OffsetT;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
@@ -360,15 +359,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   AccumT thread_aggregate{};
   int count = 0;
 
-  offset_t n_threads = static_cast<offset_t>(reduce_grid_size) * block_threads;
+  int n_threads = reduce_grid_size * block_threads;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (offset_t i = tid; i < num_items; i += (n_threads * items_per_thread))
+  for (::cuda::std::uint32_t i = tid; i < num_items; i += (n_threads * items_per_thread))
   {
     ftype items[items_per_thread] = {};
     for (int j = 0; j < items_per_thread; j++)
     {
-      const offset_t idx = i + static_cast<offset_t>(j) * n_threads;
+      const ::cuda::std::uint32_t idx = i + j * n_threads;
       if (idx < num_items)
       {
         items[j] = transform_op(d_in[idx]);

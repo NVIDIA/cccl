@@ -270,7 +270,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
           cub::detail::reduce::DeterministicDeviceReduceKernel<
             policy_t,
             decltype(d_in),
-            offset_t,
+            int,
             reduction_op_t,
             deterministic_accum_t,
             transform_t>),
@@ -376,7 +376,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
           cub::detail::reduce::DeterministicDeviceReduceKernel<
             policy_t,
             decltype(d_in),
-            offset_t,
+            int,
             reduction_op_t,
             deterministic_accum_t,
             transform_t>),
