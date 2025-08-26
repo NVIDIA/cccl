@@ -391,4 +391,4 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep leaning inference
 - [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
 - [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
-- [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms
+- [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms# Testing concurrency fix
