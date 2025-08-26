@@ -116,7 +116,7 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
                   "n"(16) : "memory");),
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
-#  endif
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
 
 template <size_t _Alignment, typename _Group>
 inline _CCCL_DEVICE void
