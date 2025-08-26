@@ -48,6 +48,39 @@ enum class cu_file_handle_type : int
   opaque_fd = CU_FILE_HANDLE_TYPE_OPAQUE_FD
 };
 
+//! @brief cuFile batch submit flags
+enum class cu_file_batch_submit_flags : unsigned int
+{
+  none = 0u
+};
+
+inline constexpr cu_file_batch_submit_flags operator|(cu_file_batch_submit_flags lhs, cu_file_batch_submit_flags rhs)
+{
+  return static_cast<cu_file_batch_submit_flags>(static_cast<unsigned int>(lhs) | static_cast<unsigned int>(rhs));
+}
+
+inline constexpr cu_file_batch_submit_flags& operator|=(cu_file_batch_submit_flags& lhs, cu_file_batch_submit_flags rhs)
+{
+  lhs = lhs | rhs;
+  return lhs;
+}
+
+inline constexpr cu_file_batch_submit_flags operator&(cu_file_batch_submit_flags lhs, cu_file_batch_submit_flags rhs)
+{
+  return static_cast<cu_file_batch_submit_flags>(static_cast<unsigned int>(lhs) & static_cast<unsigned int>(rhs));
+}
+
+inline constexpr bool any(cu_file_batch_submit_flags flags)
+{
+  return static_cast<unsigned int>(flags) != 0u;
+}
+
+// flags -> underlying C value
+inline unsigned int to_c_enum(cu_file_batch_submit_flags flags)
+{
+  return static_cast<unsigned int>(flags);
+}
+
 // ===================== Converters (C++ <-> C) =====================
 
 // cu_file_opcode -> CUfileOpcode_t

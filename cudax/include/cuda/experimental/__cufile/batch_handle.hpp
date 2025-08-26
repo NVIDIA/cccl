@@ -107,12 +107,12 @@ public:
    * @tparam T Element type (must be trivially copyable)
    * @param file_handle_ref File handle to operate on
    * @param operations Span of span-based batch operations
-   * @param flags Additional flags (default: 0)
+   * @param flags Additional flags (default: none)
    */
   template <typename T>
   void submit(const file_handle_base& file_handle_ref,
               ::cuda::std::span<const batch_io_params_span<T>> operations,
-              unsigned int flags = 0);
+              cu_file_batch_submit_flags flags = cu_file_batch_submit_flags::none);
 
   /**
    * @brief Get batch status
