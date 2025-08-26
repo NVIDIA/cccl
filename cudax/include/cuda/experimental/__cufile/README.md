@@ -45,7 +45,7 @@ auto buffer = cuda::io::buffer_handle{gpu_ptr, size, flags};
 ```cpp
 auto batch = cuda::io::batch_handle{max_operations};
 std::vector<cuda::io::batch_io_params> operations = {
-    {gpu_buffer, file_offset, buffer_offset, size, CUFILE_READ, cookie}
+    {gpu_buffer, file_offset, buffer_offset, size, cuda::experimental::cufile::cu_file_opcode::read, cookie}
 };
 batch.submit(file, operations);
 auto results = batch.get_status(min_completed, timeout_ms);
@@ -116,8 +116,8 @@ auto file = cuda::experimental::cufile::file_handle{"data.bin", std::ios_base::i
 
 auto batch = cuda::experimental::cufile::batch_handle{10};
 std::vector<cuda::experimental::cufile::batch_io_params_span<char>> ops = {
-    {buffer_span1, 0, 0, CUFILE_READ},
-    {buffer_span2, size1, 0, CUFILE_READ}
+    {buffer_span1, 0, 0, cuda::experimental::cufile::cu_file_opcode::read},
+    {buffer_span2, size1, 0, cuda::experimental::cufile::cu_file_opcode::read}
 };
 
 batch.submit(file, ops);

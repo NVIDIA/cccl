@@ -9,6 +9,8 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
+#include <cuda/experimental/__cufile/detail/enums.hpp>
+
 #include <stdexcept>
 #include <string>
 
@@ -34,7 +36,7 @@ public:
 
   explicit cufile_exception(const ::std::string& message)
       : ::std::runtime_error(message)
-      , error_{CU_FILE_SUCCESS, CUDA_SUCCESS}
+      , error_{to_c_enum(cu_file_error::success), CUDA_SUCCESS}
   {}
 
   CUfileError_t error() const noexcept
@@ -55,7 +57,7 @@ private:
  */
 inline void check_cufile_result(CUfileError_t error, const ::std::string& operation = "")
 {
-  if (error.err != CU_FILE_SUCCESS)
+  if (error.err != to_c_enum(cu_file_error::success))
   {
     ::std::string message = operation.empty() ? "" : operation + ": ";
     throw cufile_exception(error);
@@ -69,7 +71,7 @@ inline ssize_t check_cufile_result(ssize_t result, const ::std::string& operatio
 {
   if (result < 0)
   {
-    CUfileError_t error   = {static_cast<CUfileOpError>(result), CUDA_SUCCESS};
+    CUfileError_t error   = {to_c_enum_from_result(result), CUDA_SUCCESS};
     ::std::string message = operation.empty() ? "" : operation + ": ";
     throw cufile_exception(error);
   }

@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
+#include <cuda/experimental/__cufile/detail/enums.hpp>
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
 #include <cuda/experimental/__cufile/driver.hpp>
 
@@ -278,21 +279,21 @@ inline bool is_cufile_library_available() noexcept
 {
   int version         = 0;
   CUfileError_t error = cuFileGetVersion(&version);
-  return (error.err == CU_FILE_SUCCESS);
+  return (error.err == to_c_enum(cu_file_error::success));
 }
 
 inline bool is_cufile_available() noexcept
 {
   CUfileDrvProps_t props;
   CUfileError_t error = cuFileDriverGetProperties(&props);
-  return (error.err == CU_FILE_SUCCESS);
+  return (error.err == to_c_enum(cu_file_error::success));
 }
 
 inline bool is_batch_api_available() noexcept
 {
   CUfileDrvProps_t props = {};
   CUfileError_t error    = cuFileDriverGetProperties(&props);
-  if (error.err != CU_FILE_SUCCESS)
+  if (error.err != to_c_enum(cu_file_error::success))
   {
     return false;
   }
@@ -303,7 +304,7 @@ inline bool is_stream_api_available() noexcept
 {
   CUfileDrvProps_t props = {};
   CUfileError_t error    = cuFileDriverGetProperties(&props);
-  if (error.err != CU_FILE_SUCCESS)
+  if (error.err != to_c_enum(cu_file_error::success))
   {
     return false;
   }

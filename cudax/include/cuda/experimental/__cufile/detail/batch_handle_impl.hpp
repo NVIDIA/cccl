@@ -13,6 +13,7 @@
 // It's included after the class definition to avoid circular dependency issues
 
 #include <cuda/experimental/__cufile/batch_handle.hpp>
+#include <cuda/experimental/__cufile/detail/enums.hpp>
 
 namespace cuda::experimental::cufile
 {
@@ -78,7 +79,7 @@ inline ::std::vector<batch_io_result> batch_handle::get_status(unsigned int min_
   {
     batch_io_result result = {};
     result.cookie          = events[i].cookie;
-    result.status          = events[i].status;
+    result.status          = to_cpp_enum(events[i].status);
     result.result          = events[i].ret;
     results.push_back(result);
   }
@@ -116,13 +117,13 @@ void batch_handle::submit(const file_handle_base& file_handle_ref,
   for (const auto& op : operations)
   {
     auto& cufile_op                 = cufile_ops.emplace_back();
-    cufile_op.mode                  = CUFILE_BATCH;
+    cufile_op.mode                  = to_c_enum(cu_file_mode::batch);
     cufile_op.u.batch.devPtr_base   = op.buffer.data();
     cufile_op.u.batch.file_offset   = op.file_offset;
     cufile_op.u.batch.devPtr_offset = op.buffer_offset;
     cufile_op.u.batch.size          = op.buffer.size_bytes();
     cufile_op.fh                    = file_handle_ref.native_handle();
-    cufile_op.opcode                = op.opcode;
+    cufile_op.opcode                = to_c_enum(op.opcode);
     cufile_op.cookie                = op.cookie;
   }
 
@@ -135,14 +136,14 @@ template <typename T>
 batch_io_params_span<T>
 make_read_operation(cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, void* cookie)
 {
-  return batch_io_params_span<T>(buffer, file_offset, buffer_offset, CUFILE_READ, cookie);
+  return batch_io_params_span<T>(buffer, file_offset, buffer_offset, cu_file_opcode::read, cookie);
 }
 
 template <typename T>
 batch_io_params_span<const T>
 make_write_operation(cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset, void* cookie)
 {
-  return batch_io_params_span<const T>(buffer, file_offset, buffer_offset, CUFILE_WRITE, cookie);
+  return batch_io_params_span<const T>(buffer, file_offset, buffer_offset, cu_file_opcode::write, cookie);
 }
 
 } // namespace cuda::experimental::cufile

@@ -12,6 +12,7 @@
 // This file provides the implementation of file_handle methods
 // It's included after the class definition to avoid circular dependency issues
 
+#include <cuda/experimental/__cufile/detail/enums.hpp>
 #include <cuda/experimental/__cufile/file_handle.hpp>
 
 #include <ios>
@@ -72,7 +73,7 @@ inline void file_handle_base::register_file()
 {
   CUfileDescr_t desc = {};
   desc.handle.fd     = fd_;
-  desc.type          = CU_FILE_HANDLE_TYPE_OPAQUE_FD;
+  desc.type          = to_c_enum(cu_file_handle_type::opaque_fd);
   desc.fs_ops        = nullptr;
 
   CUfileHandle_t handle;
@@ -171,7 +172,7 @@ size_t file_handle_base::read(::cuda::std::span<T> buffer, off_t file_offset, of
   size_t size_bytes = buffer.size_bytes();
 
   ssize_t result = cuFileRead(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
-  return static_cast<size_t>(::cuda::experimental::cufile::detail::check_cufile_result(result, "cuFileRead"));
+  return static_cast<size_t>(detail::check_cufile_result(result, "cuFileRead"));
 }
 
 template <typename T>
@@ -184,7 +185,7 @@ size_t file_handle_base::write(::cuda::std::span<const T> buffer, off_t file_off
   size_t size_bytes      = buffer.size_bytes();
 
   ssize_t result = cuFileWrite(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
-  return static_cast<size_t>(::cuda::experimental::cufile::detail::check_cufile_result(result, "cuFileWrite"));
+  return static_cast<size_t>(detail::check_cufile_result(result, "cuFileWrite"));
 }
 
 template <typename T>

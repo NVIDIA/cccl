@@ -21,6 +21,7 @@
 
 #include <cuda/std/span>
 
+#include <cuda/experimental/__cufile/detail/enums.hpp>
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
 #include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 
@@ -43,11 +44,11 @@ struct batch_io_params_span
   ::cuda::std::span<T> buffer; ///< Buffer span
   off_t file_offset; ///< File offset
   off_t buffer_offset; ///< Buffer offset (in bytes)
-  ::CUfileOpcode_t opcode; ///< CUFILE_READ or CUFILE_WRITE
+  cu_file_opcode opcode; ///< cuFile operation code (read or write)
   void* cookie; ///< User data for tracking
 
   // Constructor
-  batch_io_params_span(::cuda::std::span<T> buf, off_t f_off, off_t b_off, CUfileOpcode_t op, void* ck = nullptr)
+  batch_io_params_span(::cuda::std::span<T> buf, off_t f_off, off_t b_off, cu_file_opcode op, void* ck = nullptr)
       : buffer(buf)
       , file_offset(f_off)
       , buffer_offset(b_off)
@@ -64,16 +65,16 @@ struct batch_io_params_span
 struct batch_io_result
 {
   void* cookie; ///< User data from operation
-  CUfileStatus_t status; ///< Operation status
+  cu_file_status status; ///< Operation status
   size_t result; ///< Bytes transferred or error code
 
   bool is_complete() const noexcept
   {
-    return status == CUFILE_COMPLETE;
+    return status == cu_file_status::complete;
   }
   bool is_failed() const noexcept
   {
-    return status == CUFILE_FAILED;
+    return status == cu_file_status::failed;
   }
   bool has_error() const noexcept
   {
