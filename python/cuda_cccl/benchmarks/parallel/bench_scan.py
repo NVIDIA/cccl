@@ -10,13 +10,14 @@ def scan_pointer(input_array, build_only, scan_type):
     res = cp.empty_like(input_array)
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
-    def my_add(a, b):
-        return a + b
-
     if scan_type == "exclusive":
-        alg = parallel.make_exclusive_scan(input_array, res, my_add, h_init)
+        alg = parallel.make_exclusive_scan(
+            input_array, res, parallel.OpKind.PLUS, h_init
+        )
     else:  # inclusive
-        alg = parallel.make_inclusive_scan(input_array, res, my_add, h_init)
+        alg = parallel.make_inclusive_scan(
+            input_array, res, parallel.OpKind.PLUS, h_init
+        )
 
     if not build_only:
         temp_storage_bytes = alg(None, input_array, res, size, h_init)
@@ -26,19 +27,18 @@ def scan_pointer(input_array, build_only, scan_type):
     cp.cuda.runtime.deviceSynchronize()
 
 
-def scan_pointer_well_known(input_array, build_only, scan_type):
+def scan_pointer_custom_op(input_array, build_only, scan_type):
     size = len(input_array)
     res = cp.empty_like(input_array)
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
+    def my_add(a, b):
+        return a + b
+
     if scan_type == "exclusive":
-        alg = parallel.make_exclusive_scan(
-            input_array, res, parallel.OpKind.PLUS, h_init
-        )
+        alg = parallel.make_exclusive_scan(input_array, res, my_add, h_init)
     else:  # inclusive
-        alg = parallel.make_inclusive_scan(
-            input_array, res, parallel.OpKind.PLUS, h_init
-        )
+        alg = parallel.make_inclusive_scan(input_array, res, my_add, h_init)
 
     if not build_only:
         temp_storage_bytes = alg(None, input_array, res, size, h_init)
@@ -73,13 +73,10 @@ def scan_iterator(inp, size, build_only, scan_type):
     res = cp.empty(size, dtype=np.int32)
     h_init = np.zeros(tuple(), dtype=np.int32)
 
-    def my_add(a, b):
-        return a + b
-
     if scan_type == "exclusive":
-        alg = parallel.make_exclusive_scan(inp, res, my_add, h_init)
+        alg = parallel.make_exclusive_scan(inp, res, parallel.OpKind.PLUS, h_init)
     else:  # inclusive
-        alg = parallel.make_inclusive_scan(inp, res, my_add, h_init)
+        alg = parallel.make_inclusive_scan(inp, res, parallel.OpKind.PLUS, h_init)
 
     if not build_only:
         temp_storage_bytes = alg(None, inp, res, size, h_init)
@@ -121,11 +118,11 @@ def bench_scan_pointer(bench_fixture, request, size, scan_type):
 
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
 @pytest.mark.parametrize("bench_fixture", ["benchmark"])
-def bench_scan_pointer_well_known(bench_fixture, request, size, scan_type):
+def bench_scan_pointer_custom_op(bench_fixture, request, size, scan_type):
     input_array = cp.random.randint(0, 10, size)
 
     def run():
-        scan_pointer_well_known(input_array, build_only=False, scan_type=scan_type)
+        scan_pointer_custom_op(input_array, build_only=False, scan_type=scan_type)
 
     fixture = request.getfixturevalue(bench_fixture)
     fixture(run)

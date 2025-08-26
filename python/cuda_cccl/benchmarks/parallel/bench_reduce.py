@@ -10,10 +10,7 @@ def reduce_pointer(input_array, build_only):
     res = cp.empty(1, dtype=input_array.dtype)
     h_init = np.zeros(1, dtype=input_array.dtype)
 
-    def my_add(a, b):
-        return a + b
-
-    alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
+    alg = parallel.make_reduce_into(input_array, res, parallel.OpKind.PLUS, h_init)
     if not build_only:
         temp_storage_bytes = alg(None, input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -22,13 +19,15 @@ def reduce_pointer(input_array, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-def reduce_pointer_well_known(input_array, build_only):
+def reduce_pointer_custom_op(input_array, build_only):
     size = len(input_array)
     res = cp.empty(1, dtype=input_array.dtype)
     h_init = np.zeros(1, dtype=input_array.dtype)
 
-    # Use the well-known PLUS operation from OpKind
-    alg = parallel.make_reduce_into(input_array, res, parallel.OpKind.PLUS, h_init)
+    def my_add(a, b):
+        return a + b
+
+    alg = parallel.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
         temp_storage_bytes = alg(None, input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -130,11 +129,11 @@ def bench_reduce_struct(bench_fixture, request, size):
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
-def bench_reduce_pointer_well_known(bench_fixture, request, size):
+def bench_reduce_pointer_custom_op(bench_fixture, request, size):
     input_array = cp.random.randint(0, 10, size)
 
     def run():
-        reduce_pointer_well_known(input_array, build_only=False)
+        reduce_pointer_custom_op(input_array, build_only=False)
 
     fixture = request.getfixturevalue(bench_fixture)
     if bench_fixture == "compile_benchmark":
@@ -188,10 +187,7 @@ def reduce_pointer_single_phase(input_array, build_only):
     res = cp.empty(1, dtype=input_array.dtype)
     h_init = np.zeros(1, dtype=input_array.dtype)
 
-    def my_add(a, b):
-        return a + b
-
-    parallel.reduce_into(input_array, res, my_add, size, h_init)
+    parallel.reduce_into(input_array, res, parallel.OpKind.PLUS, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -216,9 +212,6 @@ def reduce_iterator_single_phase(inp, size, build_only):
     res = cp.empty(1, dtype=dt)
     h_init = np.zeros(1, dtype=dt)
 
-    def my_add(a, b):
-        return a + b
-
-    parallel.reduce_into(inp, res, my_add, size, h_init)
+    parallel.reduce_into(inp, res, parallel.OpKind.PLUS, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
