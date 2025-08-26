@@ -175,7 +175,7 @@ jobs:
 
   docs-build:
     name: Build and deploy documentation preview
-    if: ${{ contains(github.event.head_commit.message, '[build-docs]') || (github.event_name == 'pull_request') }}
+    if: ${{ contains(github.event.head_commit.message, '[build-docs]') || needs.build-workflow.outputs.pr_number }}
     needs: build-workflow
     permissions:
       contents: write

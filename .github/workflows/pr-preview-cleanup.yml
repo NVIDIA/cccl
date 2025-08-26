@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [closed]
 
+# Prevent multiple cleanup runs for the same PR from interfering
+concurrency:
+  group: pr-preview-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -11,39 +16,10 @@ permissions:
 jobs:
   cleanup-preview:
     name: Clean up documentation preview
-    if: ${{ github.event.pull_request.merged == true }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          ref: main
-
-      - name: Create empty directory for cleanup
-        run: |
-          mkdir -p _site
-          echo "# Preview Removed" > _site/README.md
-          echo "This PR preview has been removed because the pull request was merged." >> _site/README.md
-
-      - name: Clean up PR preview
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
-          publish_branch: gh-pages
-          destination_dir: docs/pr-preview/pr-${{ github.event.pull_request.number }}
-          keep_files: false
-          commit_message: "Clean up doc preview for PR ${{ github.event.pull_request.number }} (${{ github.sha }})"
-
-      - name: Leave cleanup comment
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-        with:
-          header: pr-preview
-          number: ${{ github.event.pull_request.number }}
-          hide_and_recreate: true
-          hide_classify: "OUTDATED"
-          message: |
-            ## 📖 Doc Preview CI
-
-            Preview removed because the pull request was closed or merged.
+    # Clean up previews for any closed PR (merged or not)
+    # If a PR is closed, the preview is no longer relevant
+    uses: ./.github/workflows/build-docs.yml
+    with:
+      destination_dir: docs/pr-preview/pr-${{ github.event.pull_request.number }}
+      pr_number: ${{ github.event.pull_request.number }}
+      remove_pr_preview: true
