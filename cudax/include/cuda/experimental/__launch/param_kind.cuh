@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_PARAM_KIND
-#define _CUDAX__LAUNCH_PARAM_KIND
+#ifndef _CUDAX__LAUNCH_PARAM_KIND_CUH
+#define _CUDAX__LAUNCH_PARAM_KIND_CUH
 
 #include <cuda/__cccl_config>
 
@@ -86,4 +86,4 @@ _CCCL_GLOBAL_CONSTANT __detail::__inout_t inout{};
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__LAUNCH_PARAM_KIND
+#endif // _CUDAX__LAUNCH_PARAM_KIND_CUH

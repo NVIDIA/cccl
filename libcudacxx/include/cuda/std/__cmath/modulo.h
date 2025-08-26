@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_MODULO_H
-#define _LIBCUDACXX___CMATH_MODULO_H
+#ifndef _CUDA_STD___CMATH_MODULO_H
+#define _CUDA_STD___CMATH_MODULO_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/rounding_functions.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -205,4 +205,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_MODULO_H
+#endif // _CUDA_STD___CMATH_MODULO_H

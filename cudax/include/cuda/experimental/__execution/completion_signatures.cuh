@@ -25,13 +25,13 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/type_set.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
@@ -189,7 +189,7 @@ using __make_completion_signatures_t _CCCL_NODEBUG_ALIAS =
   decltype(execution::__make_unique(execution::__normalize(static_cast<_Sigs*>(nullptr))...));
 
 template <class... _ExplicitSigs, class... _DeducedSigs>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
   -> __make_completion_signatures_t<_ExplicitSigs..., _DeducedSigs...>
 {
   return {};
@@ -201,12 +201,12 @@ struct __concat_completion_signatures_impl;
 
 template <class... _Sigs>
 using __concat_completion_signatures_t _CCCL_NODEBUG_ALIAS =
-  ::cuda::std::__call_result_t<::cuda::std::__call_result_t<__concat_completion_signatures_impl, const _Sigs&...>>;
+  __call_result_t<__call_result_t<__concat_completion_signatures_impl, const _Sigs&...>>;
 
 struct __concat_completion_signatures_fn
 {
   template <class... _Sigs>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
     -> __concat_completion_signatures_t<_Sigs...>
   {
     return {};
@@ -217,13 +217,13 @@ extern const completion_signatures<>& __empty_completion_signatures;
 
 struct __concat_completion_signatures_impl
 {
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
   {
     return nullptr;
   }
 
   template <class... _Sigs>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
     -> __make_completion_signatures_t<_Sigs...> (*)()
   {
     return nullptr;
@@ -235,7 +235,7 @@ struct __concat_completion_signatures_impl
             class... _Cs,
             class... _Ds,
             class... _Rest>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()(
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(
     const completion_signatures<_As...>&,
     const completion_signatures<_Bs...>&,
     const completion_signatures<_Cs...>& = __empty_completion_signatures,
@@ -243,7 +243,7 @@ struct __concat_completion_signatures_impl
     const _Rest&...) const noexcept
   {
     using _Tmp                           = completion_signatures<_As..., _Bs..., _Cs..., _Ds...>;
-    using _SigsFnPtr _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<_Self, const _Tmp&, const _Rest&...>;
+    using _SigsFnPtr _CCCL_NODEBUG_ALIAS = __call_result_t<_Self, const _Tmp&, const _Rest&...>;
     return static_cast<_SigsFnPtr>(nullptr);
   }
 
@@ -252,7 +252,7 @@ struct __concat_completion_signatures_impl
             class _Cp = ::cuda::std::__ignore_t,
             class _Dp = ::cuda::std::__ignore_t,
             class... _Rest>
-  _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto
+  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto
   operator()(const _Ap&, const _Bp& = {}, const _Cp& = {}, const _Dp& = {}, const _Rest&...) const noexcept
   {
     if constexpr (!__valid_completion_signatures<_Ap>)
@@ -412,7 +412,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! \return The result of calling __fn with all signatures as arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
-  _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> ::cuda::std::__call_result_t<_Fn, _Sigs*...>
+  _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> __call_result_t<_Fn, _Sigs*...>
   {
     return __fn(static_cast<_Sigs*>(nullptr)...);
   }
@@ -466,7 +466,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   template <class _Transform, class _Reduce>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto transform_reduce(_Transform __transform, _Reduce __reduce)
-    -> ::cuda::std::__call_result_t<_Reduce, ::cuda::std::__call_result_t<_Transform, _Sigs*>...>
+    -> __call_result_t<_Reduce, __call_result_t<_Transform, _Sigs*>...>
   {
     return __reduce(__transform(static_cast<_Sigs*>(nullptr))...);
   }
@@ -645,7 +645,7 @@ template <class... _What, class... _Values>
 #else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
 
 template <class... _What, class... _Values>
-[[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
+[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
 {
   return _ERROR<_What...>{};
 }

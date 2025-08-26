@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM
-#define _CUDAX__STREAM_DEVICE_TRANSFORM
+#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+#define _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+
 #include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -127,7 +128,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
     -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (__is_instantiable_with_v<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return _CCCL_MOVE(__storage.__emplace_from([&] {
                return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
@@ -151,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   [[nodiscard]] _CCCL_HOST_API auto operator()(_Stream&& __stream, _Arg&& __arg) const -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (__is_instantiable_with_v<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
     }
@@ -164,7 +165,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   template <typename _Arg>
   [[nodiscard]] _CCCL_HOST_API auto operator()(::cuda::std::__ignore_t, _Arg&& __arg) const -> decltype(auto)
   {
-    if constexpr (__is_instantiable_with_v<__transformed_argument_t, _Arg>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, _Arg>)
     {
       return ::cuda::std::forward<_Arg>(__arg).transformed_argument();
     }
@@ -186,4 +187,4 @@ using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM
+#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM_CUH

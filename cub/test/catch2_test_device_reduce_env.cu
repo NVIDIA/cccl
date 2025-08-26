@@ -137,7 +137,7 @@ struct get_scan_tuning_query_t
 
 struct scan_tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
   {
     return *this;
   }

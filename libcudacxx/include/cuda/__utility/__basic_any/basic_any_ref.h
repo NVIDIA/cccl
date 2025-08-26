@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#define _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -144,13 +144,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto has_value() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto has_value() noexcept -> bool
   {
     return true;
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }
@@ -180,10 +180,10 @@ private:
   {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_API void reset() noexcept {}
+  _CCCL_NODEBUG_API void reset() noexcept {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_API void __release_() noexcept {}
+  _CCCL_NODEBUG_API void __release_() noexcept {}
 
   //! \brief Rebinds the reference with a vtable pointer and object pointer.
   _CCCL_API void __set_ref(__vptr_for<interface_type> __vptr,
@@ -230,17 +230,17 @@ private:
     __set_ref(__to_vptr, __from.__get_optr());
   }
 
-  _CCCL_TRIVIAL_API auto __get_optr() const noexcept -> ::cuda::std::__maybe_const<__is_const_ref, void>*
+  _CCCL_NODEBUG_API auto __get_optr() const noexcept -> ::cuda::std::__maybe_const<__is_const_ref, void>*
   {
     return __optr_;
   }
 
-  _CCCL_TRIVIAL_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
+  _CCCL_NODEBUG_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
   {
     return __vptr_;
   }
 
-  _CCCL_TRIVIAL_API auto __get_rtti() const noexcept -> __rtti const*
+  _CCCL_NODEBUG_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __vptr_->__query_interface(__iunknown());
   }
@@ -262,11 +262,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   using typename __basic_any<__ireference<_Interface>>::interface_type;
   using __basic_any<__ireference<_Interface>>::__is_const_ref;
 
-  _CCCL_TRIVIAL_API __basic_any(__basic_any&& __other) noexcept
+  _CCCL_NODEBUG_API __basic_any(__basic_any&& __other) noexcept
       : __basic_any(const_cast<__basic_any const&>(__other))
   {}
 
-  _CCCL_TRIVIAL_API __basic_any(__basic_any& __other) noexcept
+  _CCCL_NODEBUG_API __basic_any(__basic_any& __other) noexcept
       : __basic_any(const_cast<__basic_any const&>(__other))
   {}
 
@@ -317,7 +317,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   auto operator=(__basic_any&&) -> __basic_any&      = delete;
   auto operator=(__basic_any const&) -> __basic_any& = delete;
 
-  _CCCL_TRIVIAL_API auto move() & noexcept -> __basic_any<__ireference<_Interface>>&&
+  _CCCL_NODEBUG_API auto move() & noexcept -> __basic_any<__ireference<_Interface>>&&
   {
     return ::cuda::std::move(*this);
   }
@@ -334,4 +334,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#endif // _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H

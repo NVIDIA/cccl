@@ -13,7 +13,7 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -37,9 +37,6 @@ class _SegmentedReduce:
         op: Callable,
         h_init: np.ndarray | GpuStruct,
     ):
-        start_offsets_in, end_offsets_in = scrub_duplicate_ltoirs(
-            start_offsets_in, end_offsets_in
-        )
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)

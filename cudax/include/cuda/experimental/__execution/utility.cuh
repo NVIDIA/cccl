@@ -35,6 +35,7 @@
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/initializer_list>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
@@ -84,8 +85,8 @@ _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const
 template <class _Ty, class... _Ts>
 _CCCL_API constexpr auto __index_of() noexcept -> size_t
 {
-  constexpr bool __same[] = {::cuda::std::is_same_v<_Ty, _Ts>...};
-  return execution::__find_pos(__same, __same + sizeof...(_Ts));
+  constexpr bool __map[] = {__same_as<_Ty, _Ts>...};
+  return execution::__find_pos(__map, __map + sizeof...(_Ts));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -118,8 +119,7 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
-[[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
-  -> ::cuda::std::decay_t<_Ty>
+[[nodiscard]] _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }
@@ -205,12 +205,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
 private:
   //! \brief Returns the first function that is callable with a given set of arguments.
   template <class... _Args, class _Self>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
-    constexpr bool __flags[] = {
-      ::cuda::std::__is_callable_v<::cuda::std::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
-    constexpr size_t __idx = execution::__find_pos(__flags, __flags + sizeof...(_Fns));
+    constexpr bool __flags[] = {__callable<::cuda::std::__copy_cvref_t<_Self, _Fns>, _Args...>..., false};
+    constexpr size_t __idx   = execution::__find_pos(__flags, __flags + sizeof...(_Fns));
     if constexpr (__idx != __npos)
     {
       return ::cuda::std::__get<__idx>(static_cast<_Self&&>(__self).__fns_);
@@ -225,9 +224,9 @@ public:
   //! \brief Calls the first function that is callable with a given set of arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr auto
+  _CCCL_NODEBUG_API constexpr auto
   operator()(_Args&&... __args) && noexcept(__nothrow_callable<__1st_fn_t<__first_callable, _Args...>, _Args...>)
-    -> ::cuda::std::__call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
+    -> __call_result_t<__1st_fn_t<__first_callable, _Args...>, _Args...>
   {
     return __first_callable::__get_1st<_Args...>(static_cast<__first_callable&&>(*this))(
       static_cast<_Args&&>(__args)...);
@@ -236,9 +235,9 @@ public:
   //! \overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&... __args) const& noexcept(
+  _CCCL_NODEBUG_API constexpr auto operator()(_Args&&... __args) const& noexcept(
     __nothrow_callable<__1st_fn_t<__first_callable const&, _Args...>, _Args...>)
-    -> ::cuda::std::__call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
+    -> __call_result_t<__1st_fn_t<__first_callable const&, _Args...>, _Args...>
   {
     return __first_callable::__get_1st<_Args...>(*this)(static_cast<_Args&&>(__args)...);
   }
@@ -255,13 +254,13 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __always
 {
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) && noexcept -> _Ty&&
   {
     return static_cast<_Ty&&>(__value);
   }
 
   template <class... _Args>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Args&&...) const& noexcept -> _Ty const&
   {
     return __value;
   }

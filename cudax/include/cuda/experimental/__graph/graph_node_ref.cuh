@@ -71,7 +71,7 @@ struct graph_node_ref
   //! \param __graph The CUDA graph containing the node.
   //! \pre Both of __node and __graph are non-null.
   //! \post `get() == __node`
-  _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node, cudaGraph_t __graph) noexcept
+  _CCCL_NODEBUG_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node, cudaGraph_t __graph) noexcept
       : __node_{__node}
       , __graph_{__graph}
   {
@@ -169,7 +169,7 @@ struct graph_node_ref
 
   //! \brief Retrieves the underlying CUDA graph node.
   //! \return The CUDA graph node.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraphNode_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get() const noexcept -> cudaGraphNode_t
   {
     return __node_;
   }
@@ -178,7 +178,7 @@ struct graph_node_ref
   //! \return The CUDA graph.
   // internal for now because of a clash with get_graph() in path_builder. We could store the device in the
   // graph_node_ref, but that feels like going a bit too far.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
@@ -258,10 +258,10 @@ private:
   friend struct graph_builder_ref;
 
   template <class... _Nodes>
-  friend _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
+  friend _CCCL_NODEBUG_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
     -> ::cuda::std::array<cudaGraphNode_t, sizeof...(_Nodes)>;
 
-  _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node) noexcept
+  _CCCL_NODEBUG_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node) noexcept
       : __node_{__node}
   {}
 

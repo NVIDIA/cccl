@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 
@@ -90,8 +91,8 @@ template <>
 struct __lazy_tupl<::cuda::std::index_sequence<>>
 {
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
-    noexcept(__nothrow_callable<_Fn, _Us...>) -> ::cuda::std::__call_result_t<_Fn, _Us...>
+  _CCCL_NODEBUG_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
+    noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
   }
@@ -103,7 +104,7 @@ struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__l
   template <size_t _Ny>
   using __at _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_index_c<_Ny, _Ts...>;
 
-  _CCCL_TRIVIAL_API __lazy_tupl() noexcept {}
+  _CCCL_NODEBUG_API __lazy_tupl() noexcept {}
 
   _CCCL_API ~__lazy_tupl()
   {
@@ -111,13 +112,13 @@ struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__l
   }
 
   template <size_t _Ny, class _Ty>
-  _CCCL_TRIVIAL_API _Ty* __get() noexcept
+  _CCCL_NODEBUG_API _Ty* __get() noexcept
   {
     return reinterpret_cast<_Ty*>(this->__detail::__lazy_box<_Ny, _Ty>::__data_);
   }
 
   template <size_t _Ny, class... _Us>
-  _CCCL_TRIVIAL_API __at<_Ny>& __emplace(_Us&&... __us) //
+  _CCCL_NODEBUG_API __at<_Ny>& __emplace(_Us&&... __us) //
     noexcept(__nothrow_constructible<__at<_Ny>, _Us...>)
   {
     using _Ty _CCCL_NODEBUG_ALIAS = __at<_Ny>;
@@ -127,9 +128,9 @@ struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__l
   }
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+  _CCCL_NODEBUG_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us..., ::cuda::std::__copy_cvref_t<_Self, _Ts>...>)
-      -> ::cuda::std::__call_result_t<_Fn, _Us..., ::cuda::std::__copy_cvref_t<_Self, _Ts>...>
+      -> __call_result_t<_Fn, _Us..., ::cuda::std::__copy_cvref_t<_Self, _Ts>...>
   {
     return static_cast<_Fn&&>(
       __fn)(static_cast<_Us&&>(__us)...,
@@ -155,7 +156,7 @@ using __lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tupl<::cuda::std::make_index_seq
 #endif // !_CCCL_COMPILER(MSVC)
 
 template <class... _Ts>
-using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<::cuda::std::decay_t<_Ts>...>;
+using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<decay_t<_Ts>...>;
 
 } // namespace cuda::experimental::execution
 

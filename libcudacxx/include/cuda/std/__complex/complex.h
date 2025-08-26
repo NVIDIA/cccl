@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_COMPLEX_H
-#define _LIBCUDACXX___COMPLEX_COMPLEX_H
+#ifndef _CUDA_STD___COMPLEX_COMPLEX_H
+#define _CUDA_STD___COMPLEX_COMPLEX_H
 
 #include <cuda/std/detail/__config>
 
@@ -412,8 +412,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __b      = __z.imag();
   _Tp __c      = __w.real();
   _Tp __d      = __w.imag();
-  _Tp __logbw =
-    ::cuda::std::__constexpr_logb(::cuda::std::__constexpr_fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
+  _Tp __logbw  = ::cuda::std::__constexpr_logb(::cuda::std::fmax(::cuda::std::fabs(__c), ::cuda::std::fabs(__d)));
   if (::cuda::std::isfinite(__logbw))
   {
     __ilogbw = static_cast<int>(__logbw);
@@ -674,4 +673,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_COMPLEX_H
+#endif // _CUDA_STD___COMPLEX_COMPLEX_H

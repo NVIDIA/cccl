@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_ARG_H
-#define _LIBCUDACXX___COMPLEX_ARG_H
+#ifndef _CUDA_STD___COMPLEX_ARG_H
+#define _CUDA_STD___COMPLEX_ARG_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -81,4 +81,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_MATH_H
+#endif // _CUDA_STD___COMPLEX_MATH_H

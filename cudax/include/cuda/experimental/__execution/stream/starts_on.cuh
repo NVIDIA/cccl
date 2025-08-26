@@ -26,6 +26,7 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
@@ -68,7 +69,7 @@ struct __starts_on_t
   using __sndr_base_t = decltype(__starts_on_t::__mk_sndr_base(declval<_Sch>(), declval<_Sndr>()));
 
   template <class _Sch, class _Sndr>
-  using __with_sch_t = ::cuda::std::__call_result_t<write_env_t, _Sndr, __sch_env_t<_Sch>>;
+  using __with_sch_t = __call_result_t<write_env_t, _Sndr, __sch_env_t<_Sch>>;
 
   // Wrap the sender returned from __mk_sndr_base in a type that hides the complexity of
   // the sender's type name. This results in more readable diagnostics.

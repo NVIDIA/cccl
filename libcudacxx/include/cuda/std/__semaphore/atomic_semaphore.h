@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
-#define _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#ifndef _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#define _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -230,4 +230,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#endif // _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H

@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__utility/rel_ops.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -137,7 +138,7 @@ struct get_completion_behavior_t
     return __attrs.query(*this, __env);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -174,13 +175,13 @@ _CCCL_GLOBAL_CONSTANT min_t min{};
 template <class _Sndr, class... _Env>
 [[nodiscard]] _CCCL_API constexpr auto get_completion_behavior() noexcept
 {
-  using __behavior_t = ::cuda::std::__call_result_t<get_completion_behavior_t, env_of_t<_Sndr>, const _Env&...>;
+  using __behavior_t = __call_result_t<get_completion_behavior_t, env_of_t<_Sndr>, const _Env&...>;
   return __behavior_t{};
 }
 
 template <class _Attrs, class... _Env>
 _CCCL_CONCEPT __completes_inline =
-  (::cuda::std::__call_result_t<get_completion_behavior_t, const _Attrs&, const _Env&...>{}
+  (__call_result_t<get_completion_behavior_t, const _Attrs&, const _Env&...>{}
    == completion_behavior::inline_completion);
 
 } // namespace cuda::experimental::execution

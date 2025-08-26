@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_CONFIGURATION
-#define _CUDAX__LAUNCH_CONFIGURATION
+#ifndef _CUDAX__LAUNCH_CONFIGURATION_CUH
+#define _CUDAX__LAUNCH_CONFIGURATION_CUH
 
 #include <cuda/std/span>
 #include <cuda/std/tuple>
@@ -664,4 +664,4 @@ _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>&
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__LAUNCH_CONFIGURATION
+#endif // _CUDAX__LAUNCH_CONFIGURATION_CUH

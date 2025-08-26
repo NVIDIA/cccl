@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H
-#define _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H
+#ifndef _CUDA_STD___CUDA_COMPLEX_NVFP16_H
+#define _CUDA_STD___CUDA_COMPLEX_NVFP16_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,11 +23,10 @@
 
 #if _LIBCUDACXX_HAS_NVFP16()
 
-#  include <cuda/std/__cmath/nvfp16.h>
 #  include <cuda/std/__complex/complex.h>
 #  include <cuda/std/__complex/tuple.h>
 #  include <cuda/std/__complex/vector_support.h>
-#  include <cuda/std/__floating_point/nvfp_types.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -319,4 +318,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
-#endif // _LIBCUDACXX___CUDA_COMPLEX_NVFP16_H
+#endif // _CUDA_STD___CUDA_COMPLEX_NVFP16_H

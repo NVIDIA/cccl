@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL
-#define _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL
+#ifndef _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL_CUH
+#define _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -97,4 +97,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL
+#endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL_CUH

@@ -25,6 +25,7 @@
 #include <cuda/cmath>
 #include <cuda/memory>
 #include <cuda/ptx>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
@@ -99,6 +100,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
     out += offset;
   }
 
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   (..., prefetch_tile<block_threads>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
@@ -126,6 +128,9 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   {
     process_tile(::cuda::std::false_type{}, ins...);
   }
+
+  // benchmarking showed that triggering at the end is 1% better than right after prefetching
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 }
 
 #if _CCCL_CTK_BELOW(13, 0)
@@ -241,7 +246,10 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         input_vec[i] = in_vec[i * VectorizedPolicy::block_threads + threadIdx.x];
       }
     };
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     (load_tile_vectorized(ins, inputs), ...);
+    // Benchmarks showed up to 38% slowdown on H200 (some improvements as well), so omitted. See #5249 for details.
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // process
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -491,6 +499,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
+// note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
 template <typename LdgstsPolicy,
           typename Offset,
           typename Predicate,
@@ -748,11 +757,19 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
       };
 
+      // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+
+      // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
+      // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
+      // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we decided
+      // to omit PREEXIT here. See #5249 for details.
+      // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
   else
@@ -789,6 +806,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       smem += tile_padding + int{sizeof(T)} * tile_size;
     };
 
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     // Order of evaluation is left-to-right
     (..., bulk_copy_tile_fallback(aligned_ptrs));
 
@@ -797,6 +815,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
       ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
     }
+
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
   }
 
   // all threads wait for bulk copy

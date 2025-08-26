@@ -14,6 +14,7 @@
 #include <cuda/std/__algorithm_>
 
 #include <format>
+#include <vector>
 
 #include "cccl/c/types.h"
 #include "cub/util_type.cuh"
@@ -23,6 +24,7 @@
 #include "util/types.h"
 #include <cccl/c/histogram.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 // int32_t is generally faster. Depending on the number of samples we
 // instantiate the kernels below with int32 or int64, but we set this to int64
@@ -158,7 +160,7 @@ std::string get_sweep_kernel_name(
 
 } // namespace histogram
 
-CUresult cccl_device_histogram_build(
+CUresult cccl_device_histogram_build_ex(
   cccl_device_histogram_build_result_t* build_ptr,
   int num_channels,
   int num_active_channels,
@@ -174,7 +176,8 @@ CUresult cccl_device_histogram_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -269,15 +272,16 @@ struct {5} {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
     appender.add_iterator_definition(d_samples);
     appender.add_iterator_definition(d_output_histograms);
@@ -287,11 +291,11 @@ struct {5} {{
         ->add_program(nvrtc_translation_unit({src.c_str(), name}))
         ->add_expression({init_kernel_name})
         ->add_expression({sweep_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({init_kernel_name, init_kernel_lowered_name})
         ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -437,6 +441,44 @@ CUresult cccl_device_histogram_even(
     num_rows,
     row_stride_samples,
     stream);
+}
+
+CUresult cccl_device_histogram_build(
+  cccl_device_histogram_build_result_t* build_ptr,
+  int num_channels,
+  int num_active_channels,
+  cccl_iterator_t d_samples,
+  int num_output_levels_val,
+  cccl_iterator_t d_output_histograms,
+  cccl_value_t lower_level,
+  int64_t num_rows,
+  int64_t row_stride_samples,
+  bool is_evenly_segmented,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_histogram_build_ex(
+    build_ptr,
+    num_channels,
+    num_active_channels,
+    d_samples,
+    num_output_levels_val,
+    d_output_histograms,
+    lower_level,
+    num_rows,
+    row_stride_samples,
+    is_evenly_segmented,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* build_ptr)

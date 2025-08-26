@@ -27,7 +27,6 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/underlying_type.h>
@@ -35,6 +34,7 @@
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
@@ -109,13 +109,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   template <class _StateZip, size_t _Index>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
-    using __state_t _CCCL_NODEBUG_ALIAS        = __unzip<_StateZip>;
+    using receiver_concept              = receiver_t;
+    using __state_t _CCCL_NODEBUG_ALIAS = __unzip<_StateZip>;
 
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_TRIVIAL_API constexpr void set_value(_Ts&&... __ts) noexcept
+    _CCCL_NODEBUG_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
       constexpr ::cuda::std::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -123,7 +123,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
@@ -186,7 +186,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     template <size_t _Index, size_t... _Jdx, class... _Ts>
     _CCCL_API void __set_value(::cuda::std::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
     {
-      if constexpr (!::cuda::std::is_same_v<__values_t, __nil>)
+      if constexpr (!__same_as<__values_t, __nil>)
       {
         constexpr size_t _Offset = __completions_and_offsets.second[_Index];
         if constexpr (__nothrow_decay_copyable<_Ts...>)
@@ -218,13 +218,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
         // without worry.
         if constexpr (__nothrow_decay_copyable<_Error>)
         {
-          __errors_.template __emplace<::cuda::std::decay_t<_Error>>(static_cast<_Error&&>(__err));
+          __errors_.template __emplace<decay_t<_Error>>(static_cast<_Error&&>(__err));
         }
         else
         {
           _CCCL_TRY
           {
-            __errors_.template __emplace<::cuda::std::decay_t<_Error>>(static_cast<_Error&&>(__err));
+            __errors_.template __emplace<decay_t<_Error>>(static_cast<_Error&&>(__err));
           }
           _CCCL_CATCH_ALL
           {
@@ -263,7 +263,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       switch (__state_.load(::cuda::std::memory_order_relaxed))
       {
         case __started:
-          if constexpr (!::cuda::std::is_same_v<__values_t, __nil>)
+          if constexpr (!__same_as<__values_t, __nil>)
           {
             // All child operations completed successfully:
             __values_.__apply(execution::set_value, static_cast<__values_t&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
@@ -293,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __start_all
   {
     template <class... _Ops>
-    _CCCL_TRIVIAL_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_NODEBUG_API void operator()(_Ops&... __ops) const noexcept
     {
       (execution::start(__ops), ...);
     }
@@ -310,7 +310,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT
   __opstate_t<_Rcvr, _CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>, ::cuda::std::index_sequence<_Idx...>>
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using operation_state_concept = operation_state_t;
     using __sndrs_t _CCCL_NODEBUG_ALIAS =
       ::cuda::std::__type_call<_CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>;
     using __state_t _CCCL_NODEBUG_ALIAS =
@@ -330,7 +330,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
         // completions. All child senders can be connected to receivers
         // of the same type, saving template instantiations.
         [[maybe_unused]] constexpr bool __no_values =
-          ::cuda::std::is_same_v<decltype(__state_t::__completions_and_offsets.second), __nil>;
+          __same_as<decltype(__state_t::__completions_and_offsets.second), __nil>;
         // The offsets are used to determine which elements in the values
         // tuple each receiver is responsible for setting.
         return ::cuda::std::__tuple{execution::connect(
@@ -386,11 +386,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   };
 
   template <class... _Ts>
-  using __decay_all _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_list<::cuda::std::decay_t<_Ts>...>;
+  using __decay_all _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_list<decay_t<_Ts>...>;
 
 public:
   template <class... _Sndrs>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
@@ -464,8 +464,8 @@ template <class... _Sndrs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
     : ::cuda::std::__tuple<when_all_t, ::cuda::std::__ignore_t, _Sndrs...>
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  using __sndrs_t _CCCL_NODEBUG_ALIAS      = ::cuda::std::__tuple<when_all_t, ::cuda::std::__ignore_t, _Sndrs...>;
+  using sender_concept                = sender_t;
+  using __sndrs_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<when_all_t, ::cuda::std::__ignore_t, _Sndrs...>;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completions_and_offsets()
@@ -519,15 +519,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 };
 
 template <class... _Sndrs>
-_CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_NODEBUG_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {
     return __sndr_t{};
   }
-  else if constexpr (!__is_instantiable_with_v<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>)
+  else if constexpr (!__is_instantiable_with<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>)
   {
-    static_assert(__is_instantiable_with_v<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>,
+    static_assert(__is_instantiable_with<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>,
                   "when_all: all child senders must have the same domain");
   }
   else

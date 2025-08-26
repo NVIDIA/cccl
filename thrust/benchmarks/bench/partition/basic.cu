@@ -57,7 +57,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
                  input.cbegin(),
                  input.cend(),
                  output.begin(),
-                 thrust::make_reverse_iterator(output.begin() + elements),
+                 cuda::std::make_reverse_iterator(output.begin() + elements),
                  select_op);
              });
 }

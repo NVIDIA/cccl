@@ -31,7 +31,32 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+#  if defined(__CUDACC__) || defined(_NVHPC_CUDA) || defined(__CUDACC_RTC__)
+#    define _CUDA_PTX_CUDACC_MAJOR() __CUDACC_VER_MAJOR__
+#  elif defined(__CUDA__) && defined(__clang__)
+#    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
+#  endif // ^^^ has cuda compiler ^^^
+
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
+
+#  if _CUDA_PTX_CUDACC_MAJOR() < 13
+struct alignas(32) longlong4_32a
+{
+  long long x, y, z, w;
+};
+struct alignas(32) ulonglong4_32a
+{
+  unsigned long long x, y, z, w;
+};
+struct alignas(32) double4_32a
+{
+  double x, y, z, w;
+};
+#  else
+using ::double4_32a;
+using ::longlong4_32a;
+using ::ulonglong4_32a;
+#  endif // _CUDA_PTX_CUDACC_MAJOR() < 13
 
 /*************************************************************
  *

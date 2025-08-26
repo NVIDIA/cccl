@@ -26,6 +26,7 @@
 #include <cuda/std/__functional/compose.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
@@ -72,11 +73,11 @@ using __get_stream_from_env_t   = decltype(__get_stream_from_env);
 struct __get_stream_fn
 {
   _CCCL_TEMPLATE(class _Sndr, class _Env)
-  _CCCL_REQUIRES((::cuda::std::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>
-                  || ::cuda::std::__is_callable_v<__get_stream_from_env_t, _Env>) )
+  _CCCL_REQUIRES((__callable<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>
+                  || __callable<__get_stream_from_env_t, _Env>) )
   _CCCL_API constexpr auto operator()(const _Sndr& __sndr, const _Env& __env) const noexcept -> stream_ref
   {
-    if constexpr (::cuda::std::__is_callable_v<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>)
+    if constexpr (__callable<__get_stream_from_attrs_t, env_of_t<_Sndr>, const _Env&>)
     {
       // If the sender's attributes have a stream, use it.
       return __get_stream_from_attrs(execution::get_env(__sndr), __env);
@@ -156,19 +157,19 @@ struct stream_domain
 
 public:
   _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
-  _CCCL_REQUIRES(::cuda::std::__is_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
-  _CCCL_TRIVIAL_HOST_API static constexpr auto
+  _CCCL_REQUIRES(__callable<__apply_t<_Tag>, _Sndr, _Args...>)
+  _CCCL_NODEBUG_HOST_API static constexpr auto
   apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(__nothrow_callable<__apply_t<_Tag>, _Sndr, _Args...>)
-    -> ::cuda::std::__call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
+    -> __call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
     return __apply_t<_Tag>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
   }
 
   _CCCL_TEMPLATE(class _Sndr, class _Env)
-  _CCCL_REQUIRES(::cuda::std::__is_callable_v<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
+  _CCCL_REQUIRES(__callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
+  _CCCL_NODEBUG_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
     __nothrow_callable<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>)
-    -> ::cuda::std::__call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
+    -> __call_result_t<__transform_strategy_t<_Sndr, _Env>, _Sndr, const _Env&>
   {
     return __transform_strategy_t<_Sndr, _Env>{}(static_cast<_Sndr&&>(__sndr), __env);
   }

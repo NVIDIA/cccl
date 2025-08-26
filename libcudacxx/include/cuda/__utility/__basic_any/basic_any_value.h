@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
+#define _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
 
 #include <cuda/std/detail/__config>
 
@@ -302,7 +302,7 @@ public:
   }
 
   //! \brief Exchanges the values of two `__basic_any` objects.
-  friend _CCCL_TRIVIAL_API void swap(__basic_any& __lhs, __basic_any& __rhs) noexcept
+  friend _CCCL_NODEBUG_API void swap(__basic_any& __lhs, __basic_any& __rhs) noexcept
   {
     __lhs.swap(__rhs);
   }
@@ -518,4 +518,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H
+#endif // _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_VALUE_H

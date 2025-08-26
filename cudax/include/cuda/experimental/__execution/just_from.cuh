@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -80,7 +81,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   template <class _Rcvr, class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using operation_state_concept = operation_state_t;
 
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API constexpr void start() noexcept
@@ -97,7 +98,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
 
 public:
   template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct just_from_t : __just_from_t<just_from_t, set_value_t>
@@ -122,12 +123,12 @@ template <class _JustFromTag, class _SetTag>
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__sndr_base_t
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  using sender_concept = sender_t;
 
   template <class _Self, class...>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    return ::cuda::std::__call_result_t<_Fn, __probe_fn>{};
+    return __call_result_t<_Fn, __probe_fn>{};
   }
 
   template <class _Rcvr>
@@ -164,10 +165,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_from_t::__sndr_t
 
 template <class _JustFromTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
+_CCCL_NODEBUG_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
   using __sndr_t                          = typename _JustFromTag::template __sndr_t<_Fn>;
-  using __completions _CCCL_NODEBUG_ALIAS = ::cuda::std::__call_result_t<_Fn, __probe_fn>;
+  using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;
   static_assert(__valid_completion_signatures<__completions>,
                 "The function passed to just_from must return an instance of a specialization of "
                 "completion_signatures<>.");
