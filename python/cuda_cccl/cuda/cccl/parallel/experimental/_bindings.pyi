@@ -65,10 +65,10 @@ class Enumeration_OpKind:
     BIT_OR = IntEnumerationMember
     BIT_XOR = IntEnumerationMember
     BIT_NOT = IntEnumerationMember
-    IDENTITY = IntEnumerationMember
+    # IDENTITY = IntEnumerationMember
     NEGATE = IntEnumerationMember
-    MINIMUM = IntEnumerationMember
-    MAXIMUM = IntEnumerationMember
+    # MINIMUM = IntEnumerationMember
+    # MAXIMUM = IntEnumerationMember
 
 class OpKind(IntEnum):
     _value_: int
