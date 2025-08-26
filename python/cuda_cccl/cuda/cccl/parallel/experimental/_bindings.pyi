@@ -68,7 +68,7 @@ class Enumeration_OpKind:
     IDENTITY = IntEnumerationMember
     NEGATE = IntEnumerationMember
     MINIMUM = IntEnumerationMember
-    MAXIMUM: IntEnumerationMember
+    MAXIMUM = IntEnumerationMember
 
 class OpKind(Enum):
     STATELESS = IntEnumerationMember
