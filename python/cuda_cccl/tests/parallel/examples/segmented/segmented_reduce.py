@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Segmented reduction examples demonstrating reduction operations on segmented data with both
-custom operations and well-known operations.
+Segmented reduction examples demonstrating reduction operations on segmented data.
 """
 
 import cupy as cp
@@ -53,10 +52,6 @@ def basic_segmented_reduce_example():
 
 def rowwise_sum_example():
     """Demonstrate segmented reduction for computing row-wise sums of a matrix."""
-
-    def add_op(a, b):
-        return a + b
-
     n_rows, n_cols = 5, 4  # Smaller example for clarity
     # Create a simple matrix for demonstration
     mat = cp.array(
@@ -90,7 +85,13 @@ def rowwise_sum_example():
 
     # Run segmented reduction with automatic temp storage allocation
     parallel.segmented_reduce(
-        d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
+        d_input,
+        d_output,
+        start_offsets,
+        end_offsets,
+        parallel.OpKind.PLUS,
+        h_init,
+        n_rows,
     )
 
     # Verify correctness
@@ -103,9 +104,6 @@ def rowwise_sum_example():
 
 def mixed_segments_example():
     """Demonstrate segmented reduction with different segment sizes."""
-
-    def add_op(a, b):
-        return a + b
 
     # Create segments of different sizes
     # Segment 0: [1] (size 1)
@@ -124,7 +122,7 @@ def mixed_segments_example():
 
     # Run segmented reduction with automatic temp storage allocation
     parallel.segmented_reduce(
-        d_input, d_output, start_o, end_o, add_op, h_init, n_segments
+        d_input, d_output, start_o, end_o, parallel.OpKind.PLUS, h_init, n_segments
     )
 
     # Expected results: [1, 9, 11, 34]
