@@ -54,22 +54,6 @@ inline int get_device_id(const void* ptr)
 }
 
 /**
- * @brief Check if size is properly aligned
- */
-inline bool is_aligned(size_t size, size_t alignment)
-{
-  return (size % alignment) == 0;
-}
-
-/**
- * @brief Round up to nearest alignment boundary
- */
-inline size_t align_up(size_t size, size_t alignment)
-{
-  return ((size + alignment - 1) / alignment) * alignment;
-}
-
-/**
  * @brief Get optimal alignment for cuFile operations
  */
 inline size_t get_optimal_alignment()
