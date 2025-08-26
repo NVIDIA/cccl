@@ -1329,14 +1329,14 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a8825b7779e8e063b6f02254bf89fe9ae.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::shape</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1ab2c0a36d560b5d94af5eea4073fa7d95.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::operator&amp;</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a60ecf9bfc15107583bff32163672d8c1.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::operator~</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1aa31e5e28fd145cb7a7c71dc1304105b3.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::data_dump</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1af2283cf984d37d11d45ce28943328427.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::data_hash</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1af3013a012be4ed020b2a4f5523b1b225.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::unpack_state</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a2d806e586bfb0a9aaf002c498029a12f.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::reclaim_memory</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a6c8a14c350bd50f902ca929a7ed3964b.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::contiguous_dims</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a6e1e1d7e034f7e4b86eb9d22a3c01421.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::make_slice</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1c139b69c2b9733394833312ef7c477f.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::pin</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1a0a071a123dfa3c957c8797d49db909.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::unpin</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::data_hash</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::data_dump</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::pack_state</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::get_cuda_context_id</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1f897184dc7f58de3c5f56c456defe2d.html"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::loop_dispatch</span></code></a></li>
@@ -1750,17 +1750,6 @@
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4task24add_post_submission_hookERNSt6vectorINSt8functionIFvvEEEEE">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a286a2ad12be3763ddd5de3e8f8a0918a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_post_submission_hook</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">hooks</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4task24add_post_submission_hookERNSt6vectorINSt8functionIFvvEEEEE" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf4task7acquireER19backend_ctx_untyped">
 <span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a6292dc44f2c88ce19c0c7e9b7f69de2e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">acquire</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4task7acquireER19backend_ctx_untyped" title="Link to this definition">#</a><br /></dt>
 <dd><p>Start a task. </p>
@@ -1804,7 +1793,7 @@
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf4task7releaseER19backend_ctx_untypedR10event_list" title="Link to this definition">#</a><br /></dt>
 <dd><p>Releases resources associated with a task and transitions it to the finished phase. </p>
 <p>This function releases a task after it has completed its execution. It merges the list of prerequisites (events) that are marked as done, updates the dependencies for the task’s logical data, resets the execution context to its original configuration, and marks the task as finished.</p>
-<p>After calling this function, the task is considered “over” and is transitioned from the <code class="docutils literal notranslate"><span class="pre">running</span></code> phase to the <code class="docutils literal notranslate"><span class="pre">finished</span></code> phase. All associated resources are unlocked and post-submission hooks (if any) are executed.</p>
+<p>After calling this function, the task is considered “over” and is transitioned from the <code class="docutils literal notranslate"><span class="pre">running</span></code> phase to the <code class="docutils literal notranslate"><span class="pre">finished</span></code> phase. All associated resources are unlocked.</p>
 <p>
 The function performs the following actions:<ul class="simple">
 <li><p>Merges the provided list of <code class="docutils literal notranslate"><span class="pre">done_prereqs</span></code> into the task’s list of prerequisites.</p></li>
@@ -1814,7 +1803,6 @@ The function performs the following actions:<ul class="simple">
 <li><p>Resets the execution context (device, SM affinity, etc.) to its previous state.</p></li>
 <li><p>Unlocks mutexes for the logical data that were locked during task execution.</p></li>
 <li><p>Releases any references to logical data, preventing potential memory leaks.</p></li>
-<li><p>Executes any post-submission hooks attached to the task.</p></li>
 </ul>
 </p>
 <p>The function also interacts with tracing and debugging tools, marking the task’s completion and declaring the task as a prerequisite for future tasks in the trace.</p>
@@ -1944,7 +1932,6 @@ The function performs the following actions:<ul class="simple">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf4task13get_unique_idEv"><code class="docutils literal notranslate"><span class="pre">get_unique_id()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf4task14get_mapping_idEv"><code class="docutils literal notranslate"><span class="pre">get_mapping_id()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf4task4hashEv"><code class="docutils literal notranslate"><span class="pre">hash()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf4task24add_post_submission_hookERNSt6vectorINSt8functionIFvvEEEEE"><code class="docutils literal notranslate"><span class="pre">add_post_submission_hook()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf4task7acquireER19backend_ctx_untyped"><code class="docutils literal notranslate"><span class="pre">acquire()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf4task7releaseER19backend_ctx_untypedR10event_list"><code class="docutils literal notranslate"><span class="pre">release()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf4task14get_task_phaseEv"><code class="docutils literal notranslate"><span class="pre">get_task_phase()</span></code></a></li>
