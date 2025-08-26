@@ -43,33 +43,6 @@ class Enumeration_CCCLType:
     @property
     def STORAGE(self) -> IntEnumerationMember: ...
 
-class Enumeration_OpKind:
-    STATELESS = IntEnumerationMember
-    STATEFUL = IntEnumerationMember
-    # Well-known operations
-    PLUS = IntEnumerationMember
-    MINUS = IntEnumerationMember
-    MULTIPLIES = IntEnumerationMember
-    DIVIDES = IntEnumerationMember
-    MODULUS = IntEnumerationMember
-    EQUAL_TO = IntEnumerationMember
-    NOT_EQUAL_TO = IntEnumerationMember
-    GREATER = IntEnumerationMember
-    LESS = IntEnumerationMember
-    GREATER_EQUAL = IntEnumerationMember
-    LESS_EQUAL = IntEnumerationMember
-    LOGICAL_AND = IntEnumerationMember
-    LOGICAL_OR = IntEnumerationMember
-    LOGICAL_NOT = IntEnumerationMember
-    BIT_AND = IntEnumerationMember
-    BIT_OR = IntEnumerationMember
-    BIT_XOR = IntEnumerationMember
-    BIT_NOT = IntEnumerationMember
-    IDENTITY = IntEnumerationMember
-    NEGATE = IntEnumerationMember
-    MINIMUM = IntEnumerationMember
-    MAXIMUM = IntEnumerationMember
-
 class OpKind(IntEnum):
     _value_: int
     STATELESS = ...

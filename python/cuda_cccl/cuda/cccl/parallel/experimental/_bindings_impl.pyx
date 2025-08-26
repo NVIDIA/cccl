@@ -46,32 +46,31 @@ cdef extern from "cccl/c/types.h":
         CCCL_STORAGE
         CCCL_BOOLEAN
 
-    ctypedef enum cccl_op_kind_t:
-       CCCL_STATELESS
-       CCCL_STATEFUL
-       # Well-known operations
-       CCCL_PLUS
-       CCCL_MINUS
-       CCCL_MULTIPLIES
-       CCCL_DIVIDES
-       CCCL_MODULUS
-       CCCL_EQUAL_TO
-       CCCL_NOT_EQUAL_TO
-       CCCL_GREATER
-       CCCL_LESS
-       CCCL_GREATER_EQUAL
-       CCCL_LESS_EQUAL
-       CCCL_LOGICAL_AND
-       CCCL_LOGICAL_OR
-       CCCL_LOGICAL_NOT
-       CCCL_BIT_AND
-       CCCL_BIT_OR
-       CCCL_BIT_XOR
-       CCCL_BIT_NOT
-       CCCL_IDENTITY
-       CCCL_NEGATE
-       CCCL_MINIMUM
-       CCCL_MAXIMUM
+    cpdef enum cccl_op_kind_t:
+       STATELESS "CCCL_STATELESS"
+       STATEFUL "CCCL_STATEFUL"
+       PLUS "CCCL_PLUS"
+       MINUS "CCCL_MINUS"
+       MULTIPLIES "CCCL_MULTIPLIES"
+       DIVIDES "CCCL_DIVIDES"
+       MODULUS "CCCL_MODULUS"
+       EQUAL_TO "CCCL_EQUAL_TO"
+       NOT_EQUAL_TO "CCCL_NOT_EQUAL_TO"
+       GREATER "CCCL_GREATER"
+       LESS "CCCL_LESS"
+       GREATER_EQUAL "CCCL_GREATER_EQUAL"
+       LESS_EQUAL "CCCL_LESS_EQUAL"
+       LOGICAL_AND "CCCL_LOGICAL_AND"
+       LOGICAL_OR "CCCL_LOGICAL_OR"
+       LOGICAL_NOT "CCCL_LOGICAL_NOT"
+       BIT_AND "CCCL_BIT_AND"
+       BIT_OR "CCCL_BIT_OR"
+       BIT_XOR "CCCL_BIT_XOR"
+       BIT_NOT "CCCL_BIT_NOT"
+       IDENTITY "CCCL_IDENTITY"
+       NEGATE "CCCL_NEGATE"
+       MINIMUM "CCCL_MINIMUM"
+       MAXIMUM "CCCL_MAXIMUM"
 
     ctypedef enum cccl_iterator_kind_t:
        CCCL_POINTER
@@ -119,6 +118,7 @@ cdef extern from "cccl/c/types.h":
     ctypedef enum cccl_sort_order_t:
         CCCL_ASCENDING
         CCCL_DESCENDING
+
 
 cdef void arg_type_check(
     str arg_name,
@@ -392,101 +392,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
             cccl_type_enum.CCCL_BOOLEAN
         )
 
-
-cdef class Enumeration_OpKind(IntEnumerationBase):
-    "Enumeration of operator kinds"
-
-    STATELESS = Enumeration_OpKind.make_member("STATELESS", cccl_op_kind_t.CCCL_STATELESS)
-    STATEFUL = Enumeration_OpKind.make_member("STATEFUL", cccl_op_kind_t.CCCL_STATEFUL)
-
-    # Well-known operations
-    PLUS = Enumeration_OpKind.make_member("PLUS", cccl_op_kind_t.CCCL_PLUS)
-    MINUS = Enumeration_OpKind.make_member("MINUS", cccl_op_kind_t.CCCL_MINUS)
-    MULTIPLIES = Enumeration_OpKind.make_member("MULTIPLIES", cccl_op_kind_t.CCCL_MULTIPLIES)
-    DIVIDES = Enumeration_OpKind.make_member("DIVIDES", cccl_op_kind_t.CCCL_DIVIDES)
-    MODULUS = Enumeration_OpKind.make_member("MODULUS", cccl_op_kind_t.CCCL_MODULUS)
-    EQUAL_TO = Enumeration_OpKind.make_member("EQUAL_TO", cccl_op_kind_t.CCCL_EQUAL_TO)
-    NOT_EQUAL_TO = Enumeration_OpKind.make_member("NOT_EQUAL_TO", cccl_op_kind_t.CCCL_NOT_EQUAL_TO)
-    GREATER = Enumeration_OpKind.make_member("GREATER", cccl_op_kind_t.CCCL_GREATER)
-    LESS = Enumeration_OpKind.make_member("LESS", cccl_op_kind_t.CCCL_LESS)
-    GREATER_EQUAL = Enumeration_OpKind.make_member("GREATER_EQUAL", cccl_op_kind_t.CCCL_GREATER_EQUAL)
-    LESS_EQUAL = Enumeration_OpKind.make_member("LESS_EQUAL", cccl_op_kind_t.CCCL_LESS_EQUAL)
-    LOGICAL_AND = Enumeration_OpKind.make_member("LOGICAL_AND", cccl_op_kind_t.CCCL_LOGICAL_AND)
-    LOGICAL_OR = Enumeration_OpKind.make_member("LOGICAL_OR", cccl_op_kind_t.CCCL_LOGICAL_OR)
-    LOGICAL_NOT = Enumeration_OpKind.make_member("LOGICAL_NOT", cccl_op_kind_t.CCCL_LOGICAL_NOT)
-    BIT_AND = Enumeration_OpKind.make_member("BIT_AND", cccl_op_kind_t.CCCL_BIT_AND)
-    BIT_OR = Enumeration_OpKind.make_member("BIT_OR", cccl_op_kind_t.CCCL_BIT_OR)
-    BIT_XOR = Enumeration_OpKind.make_member("BIT_XOR", cccl_op_kind_t.CCCL_BIT_XOR)
-    BIT_NOT = Enumeration_OpKind.make_member("BIT_NOT", cccl_op_kind_t.CCCL_BIT_NOT)
-    IDENTITY = Enumeration_OpKind.make_member("IDENTITY", cccl_op_kind_t.CCCL_IDENTITY)
-    NEGATE = Enumeration_OpKind.make_member("NEGATE", cccl_op_kind_t.CCCL_NEGATE)
-    MINIMUM = Enumeration_OpKind.make_member("MINIMUM", cccl_op_kind_t.CCCL_MINIMUM)
-    MAXIMUM = Enumeration_OpKind.make_member("MAXIMUM", cccl_op_kind_t.CCCL_MAXIMUM)
-
-    @staticmethod
-    cdef IntEnumerationMember make_member(str member_name, cccl_op_kind_t op_kind):
-        return IntEnumerationMember(
-            Enumeration_OpKind,
-            "OpKindEnum",
-            member_name,
-            op_kind
-        )
-
-
-class OpKind(IntEnum):
-    """Enumeration of well-known operations for CCCL parallel algorithms.
-
-    This enum provides type-safe access to well-known operations that can be used
-    with parallel algorithms like reduce, scan, etc. These can provide better
-    performance than user-defined callable equivalents by a avoiding the need for
-    compilation, and enabling specialized implementations.
-
-    Example:
-        >>> import cuda.cccl.parallel.experimental as parallel
-        >>>
-        >>> # Use well-known operations with algorithms
-        >>> parallel.reduce_into(data, output, OpKind.PLUS, num_items, init)
-        >>> parallel.reduce_into(data, output, OpKind.MINIMUM, num_items, init)
-    """
-
-    # Arithmetic operations
-    PLUS = Enumeration_OpKind.PLUS.value
-    MINUS = Enumeration_OpKind.MINUS.value
-    MULTIPLIES = Enumeration_OpKind.MULTIPLIES.value
-    DIVIDES = Enumeration_OpKind.DIVIDES.value
-    MODULUS = Enumeration_OpKind.MODULUS.value
-
-    # Comparison operations
-    EQUAL_TO = Enumeration_OpKind.EQUAL_TO.value
-    NOT_EQUAL_TO = Enumeration_OpKind.NOT_EQUAL_TO.value
-    GREATER = Enumeration_OpKind.GREATER.value
-    LESS = Enumeration_OpKind.LESS.value
-    GREATER_EQUAL = Enumeration_OpKind.GREATER_EQUAL.value
-    LESS_EQUAL = Enumeration_OpKind.LESS_EQUAL.value
-
-    # Logical operations
-    LOGICAL_AND = Enumeration_OpKind.LOGICAL_AND.value
-    LOGICAL_OR = Enumeration_OpKind.LOGICAL_OR.value
-    LOGICAL_NOT = Enumeration_OpKind.LOGICAL_NOT.value
-
-    # Bitwise operations
-    BIT_AND = Enumeration_OpKind.BIT_AND.value
-    BIT_OR = Enumeration_OpKind.BIT_OR.value
-    BIT_XOR = Enumeration_OpKind.BIT_XOR.value
-    BIT_NOT = Enumeration_OpKind.BIT_NOT.value
-
-    # Unary operations
-    # IDENTITY = Enumeration_OpKind.IDENTITY.value  # GH 5515
-    NEGATE = Enumeration_OpKind.NEGATE.value
-
-    # Min/max operations
-    # MINIMUM = Enumeration_OpKind.MINIMUM.value  # GH 5515
-    # MAXIMUM = Enumeration_OpKind.MAXIMUM.value  # GH 5515
-
-    # Custom operations
-    STATELESS = Enumeration_OpKind.STATELESS.value
-    STATEFUL = Enumeration_OpKind.STATEFUL.value
-
+OpKind = cccl_op_kind_t
 
 cdef class Enumeration_IteratorKind(IntEnumerationBase):
     "Enumeration of iterator kinds"
@@ -568,11 +474,6 @@ SortOrder = Enumeration_SortOrder()
 cpdef bint is_TypeEnum(IntEnumerationMember attr):
     "Return True if attribute is a member of TypeEnum enumeration"
     return attr.parent_class is Enumeration_CCCLType
-
-
-cpdef bint is_OpKind(IntEnumerationMember attr):
-    "Return True if attribute is a member of OpKind enumeration"
-    return attr.parent_class is Enumeration_OpKind
 
 
 cpdef bint is_IteratorKind(IntEnumerationMember attr):
