@@ -11,36 +11,34 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
-#include <cstdint>
-#include <type_traits>
-
-// #include <cuco/utility/key_generator.cuh>
 #include <nvbench/nvbench.cuh>
+#include <nvbench/range.cuh>
 
 namespace cudax = cuda::experimental;
 
 // repeat hash computation n times
 static constexpr auto n_repeats = 100;
 
-template <int32_t Words>
+template <cuda::std::int32_t Words>
 struct large_key
 {
-  constexpr __host__ __device__ large_key(int32_t seed) noexcept
+  constexpr __host__ __device__ large_key(cuda::std::int32_t seed) noexcept
   {
-    for (int32_t i = 0; i < Words; ++i)
+    for (cuda::std::int32_t i = 0; i < Words; ++i)
     {
       data_[i] = seed;
     }
   }
 
 private:
-  int32_t data_[Words];
+  cuda::std::int32_t data_[Words];
 };
 
-template <int32_t BlockSize, typename Key, typename Hasher, typename OutputIt>
+template <cuda::std::int32_t BlockSize, typename Key, typename Hasher, typename OutputIt>
 __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool materialize_result)
 {
   size_t const gid         = BlockSize * blockIdx.x + threadIdx.x;
@@ -53,7 +51,7 @@ __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool mate
   while (idx < n)
   {
     Key key(idx);
-    for (int32_t i = 0; i < n_repeats; ++i)
+    for (cuda::std::int32_t i = 0; i < n_repeats; ++i)
     { // execute hash func n times
       agg += hash(key);
     }
@@ -65,12 +63,6 @@ __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool mate
     out[gid] = agg;
   }
 }
-
-struct xxhash_32_tag
-{
-  template <typename Key>
-  using fn = cudax::cuco::Hash<Key, cudax::cuco::HashStrategy::XXHash_32>;
-};
 
 /**
  * @brief A benchmark evaluating performance of various hash functions
@@ -84,7 +76,7 @@ void hash_eval(nvbench::state& state, nvbench::type_list<StrategyTag, Key>)
   constexpr auto block_size     = 128;
   auto const num_keys           = state.get_int64("NumInputs");
   auto const grid_size          = (num_keys + block_size * 16 - 1) / block_size * 16;
-  using result_type             = decltype(std::declval<Hash>()(std::declval<int32_t>()));
+  using result_type             = decltype(std::declval<Hash>()(std::declval<cuda::std::int32_t>()));
 
   thrust::device_vector<result_type> hash_values((materialize_result) ? num_keys : 1);
 
@@ -96,10 +88,16 @@ void hash_eval(nvbench::state& state, nvbench::type_list<StrategyTag, Key>)
   });
 }
 
+struct xxhash_32_tag
+{
+  template <typename Key>
+  using fn = cudax::cuco::Hash<Key, cudax::cuco::HashStrategy::XXHash_32>;
+};
+
 NVBENCH_BENCH_TYPES(
   hash_eval,
   NVBENCH_TYPE_AXES(nvbench::type_list<xxhash_32_tag>,
-                    nvbench::type_list<int32_t, large_key<4>, large_key<8>, large_key<16>, large_key<32>>))
+                    nvbench::type_list<cuda::std::int32_t, large_key<4>, large_key<8>, large_key<16>, large_key<32>>))
   .set_name("hash_function_eval")
   .set_type_axes_names({"Hash", "Key"})
-  .add_int64_axis("NumInputs", {1'000'000'000});
+  .add_int64_power_of_two_axis("NumInputs", nvbench::range(18, 26, 4));

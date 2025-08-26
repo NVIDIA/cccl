@@ -1,7 +1,7 @@
 include(${CMAKE_SOURCE_DIR}/benchmarks/cmake/CCCLBenchmarkRegistry.cmake)
 
 if(NOT CCCL_ENABLE_CUB)
-  message(FATAL_ERROR "Thrust benchmarks depend on CUB: set CCCL_ENABLE_CUB.")
+  message(FATAL_ERROR "cudax benchmarks depend on CUB: set CCCL_ENABLE_CUB.")
 endif()
 
 cccl_get_nvbench()
