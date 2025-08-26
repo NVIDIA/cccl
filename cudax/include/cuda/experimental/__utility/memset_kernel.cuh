@@ -27,8 +27,11 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::__detail
+namespace cuda::experimental
 {
+
+_LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN
+
 template <typename _T, typename _Config>
 __global__ static void __memset_kernel(_Config __config, _T* __ptr, _T __value, ::cuda::std::size_t __count)
 {
@@ -53,6 +56,8 @@ void __launch_memset_kernel(stream_ref __stream, _T* __ptr, _T __value, ::cuda::
   cudaLaunchKernelExC(&__config, __memset_kernel<_T, decltype(__config)>, __args);
 }
 } // namespace cuda::experimental::__detail
+
+_LIBCUDACXX_DETAIL_MAGIC_NS_END
 
 #endif // _CUDAX__UTILITY_MEMSET_KERNEL_CUH
 

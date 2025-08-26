@@ -552,6 +552,8 @@ void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFro
     __stream.get());
 }
 
+_LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN
+
 //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
 //! @param __first Pointer to the first element to be initialized.
 //! @param __count The number of elements to be initialized.
@@ -579,13 +581,15 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     {
 #if _CCCL_HAS_CUDA_COMPILER()
       ::cuda::experimental::__ensure_current_device __guard(__stream);
-      ::cuda::experimental::__detail::__launch_memset_kernel(__stream, __first, __value, __count);
+      ::cuda::experimental::__launch_memset_kernel(__stream, __first, __value, __count);
 #else
       static_assert(0, "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
 #endif
     }
   }
 }
+
+_LIBCUDACXX_DETAIL_MAGIC_NS_END
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
@@ -629,6 +633,8 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr)
   return __buffer_type{__env};
 }
 
+_LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN
+
 // Size and value make function
 template <class _Tp, class... _Properties>
 async_buffer<_Tp, _Properties...>
@@ -653,6 +659,8 @@ auto make_async_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, con
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
+
+_LIBCUDACXX_DETAIL_MAGIC_NS_END
 
 // Size with no initialization make function
 template <class _Tp, class... _Properties>

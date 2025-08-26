@@ -87,6 +87,23 @@
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
 #endif // !_CCCL_COMPILER(CLANG, ==, 16)
 
+#if defined(LIBCUDACXX_DISABLE_NAMESPACE_MAGIC)
+#  define _LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN
+#  define _LIBCUDACXX_DETAIL_MAGIC_NS_END
+#else // not defined(LIBCUDACXX_DISABLE_NAMESPACE_MAGIC)
+#  if defined(_NVHPC_CUDA)
+#    define _LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN                                                    \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, LIBCUDACXX, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
+      {
+#    define _LIBCUDACXX_DETAIL_MAGIC_NS_END }
+#  else // not defined(_NVHPC_CUDA)
+#    define _LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN                                                    \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, LIBCUDACXX, SM, __CUDA_ARCH_LIST__)               \
+      {
+#    define _LIBCUDACXX_DETAIL_MAGIC_NS_END }
+#  endif // not defined(_NVHPC_CUDA)
+#endif // not defined(LIBCUDACXX_DISABLE_NAMESPACE_MAGIC)
+
 // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
 #  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
