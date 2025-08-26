@@ -33,9 +33,6 @@
 namespace cuda::experimental::cufile
 {
 
-// Forward declarations
-class file_handle_base;
-
 //! @brief Batch I/O operation descriptor using span
 //! @tparam T Element type (must be trivially copyable)
 template <typename T>
@@ -109,8 +106,8 @@ public:
    * @param operations Span of span-based batch operations
    * @param flags Additional flags (default: none)
    */
-  template <typename T>
-  void submit(const file_handle_base& file_handle_ref,
+  template <typename T, typename FileHandle>
+  void submit(const FileHandle& file_handle_ref,
               ::cuda::std::span<const batch_io_params_span<T>> operations,
               cu_file_batch_submit_flags flags = cu_file_batch_submit_flags::none);
 
@@ -135,28 +132,127 @@ public:
   bool is_valid() const noexcept;
 };
 
-/**
- * @brief Create a read operation for batch processing
- * @tparam T Element type
- * @param buffer Buffer span to read into
- * @param file_offset File offset to read from
- * @param buffer_offset Buffer offset (in bytes)
- * @param cookie User data for tracking
- */
+// ===================== Inline implementations =====================
+
+inline batch_handle::batch_handle(unsigned int max_operations)
+    : max_operations_(max_operations)
+{
+  CUfileError_t error = cuFileBatchIOSetUp(&handle_, max_operations);
+  detail::check_cufile_result(error, "cuFileBatchIOSetUp");
+
+  batch_resource_.emplace(handle_, [](CUfileBatchHandle_t h) {
+    cuFileBatchIODestroy(h);
+  });
+}
+
+inline batch_handle::batch_handle(batch_handle&& other) noexcept
+    : handle_(other.handle_)
+    , max_operations_(other.max_operations_)
+    , batch_resource_(::std::move(other.batch_resource_))
+{}
+
+inline batch_handle& batch_handle::operator=(batch_handle&& other) noexcept
+{
+  if (this != &other)
+  {
+    handle_         = other.handle_;
+    max_operations_ = other.max_operations_;
+    batch_resource_ = ::std::move(other.batch_resource_);
+  }
+  return *this;
+}
+
+inline ::std::vector<batch_io_result> batch_handle::get_status(unsigned int min_completed, int timeout_ms)
+{
+  ::std::vector<CUfileIOEvents_t> events(max_operations_);
+  unsigned int num_events = max_operations_;
+
+  timespec timeout_spec = {};
+  timespec* timeout_ptr = nullptr;
+
+  if (timeout_ms > 0)
+  {
+    timeout_spec.tv_sec  = timeout_ms / 1000;
+    timeout_spec.tv_nsec = (timeout_ms % 1000) * 1000000;
+    timeout_ptr          = &timeout_spec;
+  }
+
+  CUfileError_t error = cuFileBatchIOGetStatus(handle_, min_completed, &num_events, events.data(), timeout_ptr);
+  detail::check_cufile_result(error, "cuFileBatchIOGetStatus");
+
+  ::std::vector<batch_io_result> results;
+  results.reserve(num_events);
+
+  for (unsigned int i = 0; i < num_events; ++i)
+  {
+    batch_io_result result = {};
+    result.cookie          = events[i].cookie;
+    result.status          = to_cpp_enum(events[i].status);
+    result.result          = events[i].ret;
+    results.push_back(result);
+  }
+
+  return results;
+}
+
+inline void batch_handle::cancel()
+{
+  CUfileError_t error = cuFileBatchIOCancel(handle_);
+  detail::check_cufile_result(error, "cuFileBatchIOCancel");
+  batch_resource_.release();
+}
+
+inline unsigned int batch_handle::max_operations() const noexcept
+{
+  return max_operations_;
+}
+
+inline bool batch_handle::is_valid() const noexcept
+{
+  return batch_resource_.has_value();
+}
+
+// Generic submit<T, Handle> implementation (Handle must provide native_handle())
+template <typename T, typename Handle>
+inline void batch_handle::submit(const Handle& file_handle_ref,
+                                 ::cuda::std::span<const batch_io_params_span<T>> operations,
+                                 cu_file_batch_submit_flags flags)
+{
+  ::std::vector<CUfileIOParams_t> cufile_ops;
+  cufile_ops.reserve(operations.size());
+
+  for (const auto& op : operations)
+  {
+    auto& cufile_op                 = cufile_ops.emplace_back();
+    cufile_op.mode                  = to_c_enum(cu_file_mode::batch);
+    cufile_op.u.batch.devPtr_base   = op.buffer.data();
+    cufile_op.u.batch.file_offset   = op.file_offset;
+    cufile_op.u.batch.devPtr_offset = op.buffer_offset;
+    cufile_op.u.batch.size          = op.buffer.size_bytes();
+    cufile_op.fh                    = file_handle_ref.native_handle();
+    cufile_op.opcode                = to_c_enum(op.opcode);
+    cufile_op.cookie                = op.cookie;
+  }
+
+  CUfileError_t error = cuFileBatchIOSubmit(handle_, cufile_ops.size(), cufile_ops.data(), to_c_enum(flags));
+  detail::check_cufile_result(error, "cuFileBatchIOSubmit");
+}
+
+// Free function template implementations
 template <typename T>
 batch_io_params_span<T>
-make_read_operation(::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
+make_read_operation(::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, void* cookie)
+{
+  return batch_io_params_span<T>(buffer, file_offset, buffer_offset, cu_file_opcode::read, cookie);
+}
 
-/**
- * @brief Create a write operation for batch processing
- * @tparam T Element type
- * @param buffer Buffer span to write from
- * @param file_offset File offset to write to
- * @param buffer_offset Buffer offset (in bytes)
- * @param cookie User data for tracking
- */
 template <typename T>
-batch_io_params_span<const T> make_write_operation(
-  ::cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset = 0, void* cookie = nullptr);
+batch_io_params_span<const T>
+make_write_operation(::cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset, void* cookie)
+{
+  return batch_io_params_span<const T>(buffer, file_offset, buffer_offset, cu_file_opcode::write, cookie);
+}
+
+// Free function templates are defined below; no separate declarations needed
 
 } // namespace cuda::experimental::cufile
