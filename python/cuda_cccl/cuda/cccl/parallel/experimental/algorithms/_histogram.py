@@ -202,9 +202,9 @@ def histogram_even(
     # each of these parameters. The API only supports one channel for now but we
     # pass arrays to make_histogram_even to support multiple channels in the
     # future.
-    h_num_output_levels = np.array([num_output_levels], dtype=np.int32)
-    h_lower_level = np.array([lower_level], dtype=type(lower_level))
-    h_upper_level = np.array([upper_level], dtype=type(upper_level))
+    h_num_output_levels = np.atleast_1d(num_output_levels).astype(np.int32)
+    h_lower_level = np.atleast_1d(lower_level)
+    h_upper_level = np.atleast_1d(upper_level)
 
     histogram = make_histogram_even(
         d_samples,
