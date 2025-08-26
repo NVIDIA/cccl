@@ -120,7 +120,7 @@ TEMPLATE_TEST_CASE_METHOD(
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::managed_memory_resource managed1{}, managed2{};
+      cudax::legacy_managed_memory_resource managed1{}, managed2{};
       CHECK(managed1 == managed2);
       cudax::any_synchronous_resource<cudax::device_accessible> mr{managed1};
       CHECK(mr == managed1);

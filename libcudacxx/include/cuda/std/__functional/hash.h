@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_HASH_H
-#define _LIBCUDACXX___FUNCTIONAL_HASH_H
+#ifndef _CUDA_STD___FUNCTIONAL_HASH_H
+#define _CUDA_STD___FUNCTIONAL_HASH_H
 
 #include <cuda/std/detail/__config>
 
@@ -647,4 +647,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_HASH_H
+#endif // _CUDA_STD___FUNCTIONAL_HASH_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___EXECUTION_POLICY_H
-#define _LIBCUDACXX___EXECUTION_POLICY_H
+#ifndef _CUDA_STD___EXECUTION_POLICY_H
+#define _CUDA_STD___EXECUTION_POLICY_H
 
 #include <cuda/std/detail/__config>
 
@@ -85,4 +85,4 @@ _CCCL_END_NAMESPACE_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXECUTION_POLICY_H
+#endif // _CUDA_STD___EXECUTION_POLICY_H

@@ -3,10 +3,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 
 #include <algorithm>
@@ -237,7 +237,7 @@ void TestSortWithMagnitude(int magnitude)
     thrust::device_vector<std::uint8_t> vec(num_items);
     auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
     auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<std::uint8_t>{});
-    auto rev_sorted_it = thrust::make_reverse_iterator(key_value_it + num_items);
+    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
     thrust::copy(rev_sorted_it, rev_sorted_it + num_items, vec.begin());
     thrust::sort(vec.begin(), vec.end());
     auto expected_result_it = thrust::make_transform_iterator(

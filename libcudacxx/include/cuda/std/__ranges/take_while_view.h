@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H
-#define _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H
+#ifndef _CUDA_STD___RANGES_TAKE_WHILE_VIEW_H
+#define _CUDA_STD___RANGES_TAKE_WHILE_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -256,4 +256,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H
+#endif // _CUDA_STD___RANGES_TAKE_WHILE_VIEW_H

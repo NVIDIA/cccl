@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
-#define _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#ifndef _CUDA_STD___TUPLE_VECTOR_TYPES_H
+#define _CUDA_STD___TUPLE_VECTOR_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  include <cuda/std/__floating_point/nvfp_types.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__tuple_dir/structured_bindings.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
@@ -288,4 +288,4 @@ _CCCL_DIAG_POP
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#endif // _CUDA_STD___TUPLE_VECTOR_TYPES_H

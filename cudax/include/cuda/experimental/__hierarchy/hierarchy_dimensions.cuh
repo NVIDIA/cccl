@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS
-#define _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS
+#ifndef _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS_CUH
+#define _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS_CUH
 
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -913,4 +913,4 @@ constexpr auto hierarchy_add_level(const hierarchy_dimensions<Unit, Levels...>& 
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS
+#endif // _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS_CUH

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_INTERFACES_H
+#define _CUDA___UTILITY_BASIC_ANY_INTERFACES_H
 
 #include <cuda/std/detail/__config>
 
@@ -356,4 +356,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_INTERFACES_H
+#endif // _CUDA___UTILITY_BASIC_ANY_INTERFACES_H

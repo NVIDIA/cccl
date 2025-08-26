@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MDSPAN_HOST_DEVICE_MDSPAN
-#define _CUDA___MDSPAN_HOST_DEVICE_MDSPAN
+#ifndef _CUDA___MDSPAN_HOST_DEVICE_MDSPAN_H
+#define _CUDA___MDSPAN_HOST_DEVICE_MDSPAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -60,4 +60,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MDSPAN_HOST_DEVICE_MDSPAN
+#endif // _CUDA___MDSPAN_HOST_DEVICE_MDSPAN_H
