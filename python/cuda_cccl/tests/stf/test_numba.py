@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+
 import numba
 import numpy as np
-import unittest
 import pytest
 from numba import cuda
 

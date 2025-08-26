@@ -87,8 +87,6 @@ void stf_logical_data_like_empty(stf_ctx_handle ctx, const stf_logical_data_hand
   *to = new stf_logical_data_handle_t{ld_typed};
 }
 
-
-
 void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
 {
   assert(ctx);
