@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANDOM_UNIFORM_INT_DISTRIBUTION_H
-#define _LIBCUDACXX___RANDOM_UNIFORM_INT_DISTRIBUTION_H
+#ifndef _CUDA_STD___RANDOM_UNIFORM_INT_DISTRIBUTION_H
+#define _CUDA_STD___RANDOM_UNIFORM_INT_DISTRIBUTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Engine, class _UIntType>
 class __independent_bits_engine
@@ -56,7 +56,7 @@ private:
   _Engine_result_type __mask1_;
 
   static constexpr const _Working_result_type _Rp = _Engine::max() - _Engine::min() + _Working_result_type(1);
-  static constexpr const size_t __m               = _CUDA_VSTD::__bit_log2<_Working_result_type>(_Rp);
+  static constexpr const size_t __m               = ::cuda::std::__bit_log2<_Working_result_type>(_Rp);
   static constexpr const size_t _WDt              = numeric_limits<_Working_result_type>::digits;
   static constexpr const size_t _EDt              = numeric_limits<_Engine_result_type>::digits;
 
@@ -223,7 +223,7 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__libcpp_random_is_valid_urng<_URng>, "");
+    static_assert(__cccl_random_is_valid_urng<_URng>, "");
     using _UIntType = conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, make_unsigned_t<result_type>>;
     const _UIntType __rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
     if (__rp == 1)
@@ -238,7 +238,7 @@ public:
       return static_cast<result_type>(_Eng(__g, __dt)());
     }
 
-    size_t __w = __dt - _CUDA_VSTD::countl_zero(__rp) - 1;
+    size_t __w = __dt - ::cuda::std::countl_zero(__rp) - 1;
     if ((__rp & ((numeric_limits<_UIntType>::max)() >> (__dt - __w))) != 0)
     {
       ++__w;
@@ -328,8 +328,8 @@ operator>>(basic_istream<_CharT, _Traits>& __is, uniform_int_distribution<_IT>& 
 }
 #endif // Implement stream operators
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANDOM_UNIFORM_INT_DISTRIBUTION_H
+#endif // _CUDA_STD___RANDOM_UNIFORM_INT_DISTRIBUTION_H

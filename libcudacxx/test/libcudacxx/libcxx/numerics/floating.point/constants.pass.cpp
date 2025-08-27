@@ -20,55 +20,22 @@
 template <class T>
 __host__ __device__ void test_fp_storage()
 {
-  constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
-
-  // __fp_has_inf_v must match numeric_limits::has_infinity
-  static_assert(cuda::std::__fp_has_inf_v<fmt> == cuda::std::numeric_limits<T>::has_infinity);
-
-  // test __fp_inf value to match numeric_limits::infinity()
-  if constexpr (cuda::std::__fp_has_inf_v<fmt>)
+  // test __fp_zero to be all zeros
+#if _CCCL_HAS_NVFP8_E8M0()
+  if constexpr (!cuda::std::is_same_v<T, __nv_fp8_e8m0>)
+#endif // _CCCL_HAS_NVFP8_E8M0()
   {
-    const auto val = cuda::std::__fp_inf<T>();
-    const auto ref = cuda::std::numeric_limits<T>::infinity();
+    const auto val = cuda::std::__fp_zero<T>();
+    const auto ref = cuda::std::__fp_storage_of_t<T>(0);
     assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+    assert(!cuda::std::signbit(val));
   }
 
-  // __fp_has_nan_v must match numeric_limits::has_quiet_NaN
-  static_assert(cuda::std::__fp_has_nan_v<fmt> == cuda::std::numeric_limits<T>::has_quiet_NaN);
-
-  // test __fp_nan value
-  if constexpr (cuda::std::__fp_has_nan_v<fmt>)
+  // test __fp_one for standard types only
+  if constexpr (cuda::std::__fp_is_native_type_v<T>)
   {
-    assert(cuda::std::isnan(cuda::std::__fp_nan<T>()));
-  }
-
-  // __fp_has_nans_v must match numeric_limits::has_signaling_NaN
-  static_assert(cuda::std::__fp_has_nans_v<fmt> == cuda::std::numeric_limits<T>::has_signaling_NaN);
-
-  // test __fp_nans value
-  if constexpr (cuda::std::__fp_has_nans_v<fmt>)
-  {
-    assert(cuda::std::isnan(cuda::std::__fp_nans<T>()));
-  }
-
-  // test __fp_max value to match numeric_limits::max()
-  {
-    const auto val = cuda::std::__fp_max<T>();
-    const auto ref = cuda::std::numeric_limits<T>::max();
-    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
-  }
-
-  // test __fp_min value to match numeric_limits::min()
-  {
-    const auto val = cuda::std::__fp_min<T>();
-    const auto ref = cuda::std::numeric_limits<T>::min();
-    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
-  }
-
-  // test __fp_lowest value to match numeric_limits::lowest()
-  {
-    const auto val = cuda::std::__fp_lowest<T>();
-    const auto ref = cuda::std::numeric_limits<T>::lowest();
+    const auto val = cuda::std::__fp_one<T>();
+    const auto ref = T{1};
     assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
   }
 }

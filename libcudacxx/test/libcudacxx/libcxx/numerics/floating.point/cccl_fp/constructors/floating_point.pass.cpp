@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstring>
@@ -23,6 +26,7 @@ __host__ __device__ constexpr void test_fp_constructor()
 
   // Construction from a floating point type is implicit if T has the greater or equal conversion rank
   static_assert(cuda::std::__fp_is_implicit_conversion_v<Fp, T> == cuda::std::is_convertible_v<Fp, T>);
+  static_assert(cuda::std::__fp_is_explicit_conversion_v<Fp, T> == !cuda::std::is_convertible_v<Fp, T>);
 
   // TODO: check construction from a floating point type
   [[maybe_unused]] T val{Fp{}};

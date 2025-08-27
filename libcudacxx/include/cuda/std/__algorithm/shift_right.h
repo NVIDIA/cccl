@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SHIFT_RIGHT_H
-#define _LIBCUDACXX___ALGORITHM_SHIFT_RIGHT_H
+#ifndef _CUDA_STD___ALGORITHM_SHIFT_RIGHT_H
+#define _CUDA_STD___ALGORITHM_SHIFT_RIGHT_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
@@ -44,7 +44,7 @@ _CCCL_API constexpr _ForwardIterator __shift_right(
     return __last;
   }
   _ForwardIterator __m = __first + (__d - __n);
-  return _CUDA_VSTD::move_backward(__first, __m, __last);
+  return ::cuda::std::move_backward(__first, __m, __last);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -64,7 +64,7 @@ _CCCL_API constexpr _ForwardIterator __shift_right(
     }
     --__m;
   }
-  return _CUDA_VSTD::move_backward(__first, __m, __last);
+  return ::cuda::std::move_backward(__first, __m, __last);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -97,7 +97,7 @@ _CCCL_API constexpr _ForwardIterator __shift_right(
   {
     if (__lead == __last)
     {
-      _CUDA_VSTD::move(__first, __trail, __ret);
+      ::cuda::std::move(__first, __trail, __ret);
       return __ret;
     }
     ++__trail;
@@ -109,8 +109,8 @@ _CCCL_API constexpr _ForwardIterator __shift_right(
   {
     if (__lead == __last)
     {
-      __trail = _CUDA_VSTD::move(__mid, __ret, __trail);
-      _CUDA_VSTD::move(__first, __mid, __trail);
+      __trail = ::cuda::std::move(__mid, __ret, __trail);
+      ::cuda::std::move(__first, __mid, __trail);
       return __ret;
     }
     swap(*__mid, *__trail);
@@ -137,8 +137,8 @@ _CCCL_API constexpr _ForwardIterator shift_right(
   return __shift_right(__first, __last, __n, _IterCategory());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_SHIFT_RIGHT_H
+#endif // _CUDA_STD___ALGORITHM_SHIFT_RIGHT_H

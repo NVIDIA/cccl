@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_PARTIAL_SUM_H
-#define _LIBCUDACXX___NUMERIC_PARTIAL_SUM_H
+#ifndef _CUDA_STD___NUMERIC_PARTIAL_SUM_H
+#define _CUDA_STD___NUMERIC_PARTIAL_SUM_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
@@ -38,7 +38,7 @@ _CCCL_API constexpr _OutputIterator partial_sum(_InputIterator __first, _InputIt
     *__result = __t;
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
-      __t       = _CUDA_VSTD::move(__t) + *__first;
+      __t       = ::cuda::std::move(__t) + *__first;
       *__result = __t;
     }
   }
@@ -55,15 +55,15 @@ partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __res
     *__result = __t;
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
-      __t       = __binary_op(_CUDA_VSTD::move(__t), *__first);
+      __t       = __binary_op(::cuda::std::move(__t), *__first);
       *__result = __t;
     }
   }
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NUMERIC_PARTIAL_SUM_H
+#endif // _CUDA_STD___NUMERIC_PARTIAL_SUM_H

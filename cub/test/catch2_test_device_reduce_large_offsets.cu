@@ -29,7 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 // List of offset types to test
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE uint64_t
+__host__ __device__ _CCCL_FORCEINLINE uint64_t
 get_segmented_guassian_sum(const uint64_t num_items, const uint64_t segment_size)
 {
   const uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
@@ -46,7 +46,7 @@ struct mod_op
 {
   uint64_t segment_size;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE uint64_t operator()(const uint64_t index) const
+  __host__ __device__ _CCCL_FORCEINLINE uint64_t operator()(const uint64_t index) const
   {
     return static_cast<ItemT>(index % segment_size);
   }
@@ -55,7 +55,7 @@ struct mod_op
 struct custom_sum_op
 {
   template <typename ItemT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
+  __host__ __device__ _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
   {
     return lhs + rhs;
   }
@@ -134,7 +134,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const index_t iterator_offset = 1000;
     c2h::device_vector<index_t> out_result(1);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    const auto d_in_it  = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+    const auto d_in_it  = cuda::std::make_reverse_iterator(index_it + num_items + iterator_offset);
 
     device_min(d_in_it, d_out_it, num_items);
 
@@ -160,7 +160,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   SECTION("argmin")
   {
-    using result_t = cuda::std::pair<::cuda::std::int64_t, index_t>;
+    using result_t = cuda::std::pair<cuda::std::int64_t, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
@@ -169,13 +169,13 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     auto d_index_out    = &d_result_ptr->first;
     auto d_extremum_out = &d_result_ptr->second;
 
-    const auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+    const auto d_in_it = cuda::std::make_reverse_iterator(index_it + num_items + iterator_offset);
 
     device_arg_min(d_in_it, d_extremum_out, d_index_out, num_items);
 
     // Verify result
     const index_t expected_value = iterator_offset;
-    const auto expected_index    = static_cast<::cuda::std::int64_t>(num_items - 1);
+    const auto expected_index    = static_cast<cuda::std::int64_t>(num_items - 1);
 
     // Verify result
     const result_t gpu_result = out_result[0];
@@ -185,7 +185,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   SECTION("argmax")
   {
-    using result_t = cuda::std::pair<::cuda::std::int64_t, index_t>;
+    using result_t = cuda::std::pair<cuda::std::int64_t, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
@@ -200,7 +200,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const index_t expected_value = iterator_offset + num_items - index_t{1};
-    const auto expected_index    = static_cast<::cuda::std::int64_t>(num_items - 1);
+    const auto expected_index    = static_cast<cuda::std::int64_t>(num_items - 1);
 
     // Verify result
     const result_t gpu_result = out_result[0];

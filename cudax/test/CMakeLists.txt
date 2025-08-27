@@ -82,6 +82,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_sequence.cu
     execution/test_starts_on.cu
     #execution/test_stream_context.cu
+    execution/test_then.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
@@ -105,7 +106,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target misc ${cn_target}
-    utility/basic_any.cu
     utility/ensure_current_device.cu
   )
 

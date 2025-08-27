@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___LIMITS_NUMERIC_LIMITS_H
-#define _LIBCUDACXX___LIMITS_NUMERIC_LIMITS_H
+#ifndef _CUDA_STD___LIMITS_NUMERIC_LIMITS_H
+#define _CUDA_STD___LIMITS_NUMERIC_LIMITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum float_round_style
 {
@@ -59,15 +59,15 @@ enum class __numeric_limits_type
 template <class _Tp>
 _CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, bool))
+  if constexpr (is_same_v<_Tp, bool>)
   {
     return __numeric_limits_type::__bool;
   }
-  else if constexpr (_CCCL_TRAIT(is_integral, _Tp))
+  else if constexpr (is_integral_v<_Tp>)
   {
     return __numeric_limits_type::__integral;
   }
-  else if constexpr (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp))
+  else if constexpr (is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>)
   {
     return __numeric_limits_type::__floating_point;
   }
@@ -372,7 +372,7 @@ public:
 #else // ^^^ _CCCL_BUILTIN_HUGE_VALF ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF vvv
   _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(0x7f800000);
+    return ::cuda::std::bit_cast<type>(0x7f800000);
   }
 #endif // !_CCCL_BUILTIN_HUGE_VALF
 #if defined(_CCCL_BUILTIN_NANF)
@@ -383,7 +383,7 @@ public:
 #else // ^^^ _CCCL_BUILTIN_NANF ^^^ // vvv !_CCCL_BUILTIN_NANF vvv
   _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(0x7fc00000);
+    return ::cuda::std::bit_cast<type>(0x7fc00000);
   }
 #endif // !_CCCL_BUILTIN_NANF
 #if defined(_CCCL_BUILTIN_NANSF)
@@ -394,7 +394,7 @@ public:
 #else // ^^^ _CCCL_BUILTIN_NANSF ^^^ // vvv !_CCCL_BUILTIN_NANSF vvv
   _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(0x7fa00000);
+    return ::cuda::std::bit_cast<type>(0x7fa00000);
   }
 #endif // !_CCCL_BUILTIN_NANSF
   _CCCL_API static constexpr type denorm_min() noexcept
@@ -471,7 +471,7 @@ public:
 #else // ^^^ _CCCL_BUILTIN_HUGE_VAL ^^^ // vvv !_CCCL_BUILTIN_HUGE_VAL vvv
   _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(0x7ff0000000000000);
+    return ::cuda::std::bit_cast<type>(0x7ff0000000000000);
   }
 #endif // !_CCCL_BUILTIN_HUGE_VAL
 #if defined(_CCCL_BUILTIN_NAN)
@@ -482,7 +482,7 @@ public:
 #else // ^^^ _CCCL_BUILTIN_NAN ^^^ // vvv !_CCCL_BUILTIN_NAN vvv
   _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(0x7ff8000000000000);
+    return ::cuda::std::bit_cast<type>(0x7ff8000000000000);
   }
 #endif // !_CCCL_BUILTIN_NAN
 #if defined(_CCCL_BUILTIN_NANS)
@@ -493,7 +493,7 @@ public:
 #else // ^^^ _CCCL_BUILTIN_NANS ^^^ // vvv !_CCCL_BUILTIN_NANS vvv
   _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
-    return _CUDA_VSTD::bit_cast<type>(0x7ff4000000000000);
+    return ::cuda::std::bit_cast<type>(0x7ff4000000000000);
   }
 #endif // !_CCCL_BUILTIN_NANS
   _CCCL_API static constexpr type denorm_min() noexcept
@@ -610,8 +610,8 @@ template <class _Tp>
 class numeric_limits<const volatile _Tp> : public numeric_limits<_Tp>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LIMITS_NUMERIC_LIMITS_H
+#endif // _CUDA_STD___LIMITS_NUMERIC_LIMITS_H

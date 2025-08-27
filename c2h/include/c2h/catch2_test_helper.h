@@ -5,6 +5,7 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -292,7 +293,7 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
   }
 
 #include <cuda/std/tuple>
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t N, typename... T>
 enable_if_t<(N == sizeof...(T))> print_elem(::std::ostream&, const tuple<T...>&)
 {}
@@ -304,18 +305,18 @@ enable_if_t<(N < sizeof...(T))> print_elem(::std::ostream& os, const tuple<T...>
   {
     os << ", ";
   }
-  os << _CUDA_VSTD::get<N>(tup);
-  _CUDA_VSTD::print_elem<N + 1>(os, tup);
+  os << ::cuda::std::get<N>(tup);
+  ::cuda::std::print_elem<N + 1>(os, tup);
 }
 
 template <typename... T>
 ::std::ostream& operator<<(::std::ostream& os, const tuple<T...>& tup)
 {
   os << "[";
-  _CUDA_VSTD::print_elem<0>(os, tup);
+  ::cuda::std::print_elem<0>(os, tup);
   return os << "]";
 }
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 template <>
 struct Catch::StringMaker<cudaError>
@@ -329,6 +330,22 @@ struct Catch::StringMaker<cudaError>
 #include <c2h/custom_type.h>
 #include <c2h/generators.h>
 
+namespace detail
+{
+struct nvtx_c2h_domain
+{
+  static constexpr const char* name = "C2H";
+};
+
+template <typename T>
+class nvtx_fixture
+{
+#if _CCCL_HAS_NVTX3()
+  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
+#endif // _CCCL_HAS_NVTX3()
+};
+} // namespace detail
+
 #define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 
 #define C2H_TEST_NAME(NAME) C2H_TEST_NAME_IMPL(NAME, VAR_IDX)
@@ -338,7 +355,7 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE(C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
@@ -351,7 +368,7 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE(C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 

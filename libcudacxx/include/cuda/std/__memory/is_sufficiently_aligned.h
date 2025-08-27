@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
-#define _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
+#ifndef _CUDA_STD___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
+#define _CUDA_STD___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,16 +28,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _ByteAlignment, class _ElementType>
 [[nodiscard]] _CCCL_API inline bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
 {
-  return _CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _ByteAlignment == 0;
+  return ::cuda::std::bit_cast<uintptr_t>(__ptr) % _ByteAlignment == 0;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
+#endif // _CUDA_STD___MEMORY_IS_SUFFICIENTLY_ALIGNED_H

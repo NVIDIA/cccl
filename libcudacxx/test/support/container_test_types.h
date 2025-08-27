@@ -497,8 +497,8 @@ bool operator<(CopyInsertable<ID> const& L, CopyInsertable<ID> const& R)
   return L.data < R.data;
 }
 
-#ifdef _LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#ifdef _CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 #else
 namespace std
 {
@@ -537,8 +537,8 @@ class unordered_set;
 template <class _Value, class _Hash, class _Equals, class _Alloc>
 class unordered_multiset;
 
-#ifdef _LIBCUDACXX_END_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
+#ifdef _CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 #else
 } // end namespace std
 #endif

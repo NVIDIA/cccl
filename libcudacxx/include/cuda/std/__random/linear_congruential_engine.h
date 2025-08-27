@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
-#define _LIBCUDACXX___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#ifndef _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#define _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <uint64_t __a,
           uint64_t __c,
@@ -390,8 +390,8 @@ operator>>(basic_istream<_CharT, _Traits>& __is, linear_congruential_engine<_UIn
 using minstd_rand0 = linear_congruential_engine<uint_fast32_t, 16807, 0, 2147483647>;
 using minstd_rand  = linear_congruential_engine<uint_fast32_t, 48271, 0, 2147483647>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#endif // _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H

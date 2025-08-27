@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_CONFIGURATION
-#define _CUDAX__LAUNCH_CONFIGURATION
+#ifndef _CUDAX__LAUNCH_CONFIGURATION_CUH
+#define _CUDAX__LAUNCH_CONFIGURATION_CUH
 
 #include <cuda/std/span>
 #include <cuda/std/tuple>
@@ -546,7 +546,8 @@ template <typename... Prev>
   }
   else
   {
-    return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous));
+    constexpr auto fn = &make_hierarchy<void, const Prev&...>;
+    return kernel_config(::cuda::std::apply(fn, previous));
   }
 }
 
@@ -564,7 +565,8 @@ __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& ar
     }
     else
     {
-      return kernel_config(::cuda::std::apply(make_hierarchy<void, const Prev&...>, previous), arg, rest...);
+      constexpr auto fn = make_hierarchy<void, const Prev&...>;
+      return kernel_config(::cuda::std::apply(fn, previous), arg, rest...);
     }
   }
   else
@@ -662,4 +664,4 @@ _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>&
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__LAUNCH_CONFIGURATION
+#endif // _CUDAX__LAUNCH_CONFIGURATION_CUH

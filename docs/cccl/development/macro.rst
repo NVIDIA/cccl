@@ -253,8 +253,6 @@ The following macros are required only if the target C++ version does not suppor
 +------------------------+--------------------------------------------------------------------------------------------+
 | ``_CCCL_REQUIRES(X)``  | ``requires`` clause                                                                        |
 +------------------------+--------------------------------------------------------------------------------------------+
-| ``_CCCL_TRAIT(X)``     | Selects variable template ``is_meow_v<T>`` instead of ``is_meow<T>::value`` when available |
-+------------------------+--------------------------------------------------------------------------------------------+
 | ``_CCCL_AND``          | Traits conjunction only used with ``_CCCL_REQUIRES``                                       |
 +------------------------+--------------------------------------------------------------------------------------------+
 
@@ -263,12 +261,12 @@ Usage example:
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, T) _CCCL_AND(sizeof(T) > 1))
+    _CCCL_REQUIRES(is_integral_v<T> _CCCL_AND(sizeof(T) > 1))
 
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, T) _CCCL_AND (!_CCCL_TRAIT(is_integral, T)))
+    _CCCL_REQUIRES(is_arithmetic_v<T> _CCCL_AND (!is_integral_v<T>))
 
 
 **Portable feature testing**:
@@ -350,8 +348,6 @@ Visibility Macros
 Other Common Macros
 -------------------
 
-+-----------------------------+--------------------------------------------+
-| ``_CUDA_VSTD``              | ``cuda::std`` namespace. To use in libcu++ |
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_TO_STRING(X)``      | ``X`` to literal string                    |
 +-----------------------------+--------------------------------------------+

@@ -106,9 +106,6 @@
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 
-// Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
-#define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-
 // We need to treat host and device separately
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr

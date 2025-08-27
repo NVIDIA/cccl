@@ -90,12 +90,12 @@ struct DispatchStreamingReduceByKey
   // Types and constants
   //-------------------------------------------------------------------------
   // Offsets to index items within one partition (i.e., a single kernel invocation)
-  using local_offset_t = _CUDA_VSTD::int32_t;
+  using local_offset_t = ::cuda::std::int32_t;
 
   // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
   // invocation, we may require multiple kernel invocations
-  static constexpr bool use_streaming_invocation = _CUDA_VSTD::numeric_limits<OffsetT>::max()
-                                                 > _CUDA_VSTD::numeric_limits<local_offset_t>::max();
+  static constexpr bool use_streaming_invocation = ::cuda::std::numeric_limits<OffsetT>::max()
+                                                 > ::cuda::std::numeric_limits<local_offset_t>::max();
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = OffsetT;
@@ -167,14 +167,15 @@ struct DispatchStreamingReduceByKey
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
-      capped_num_items_per_invocation = static_cast<global_offset_t>(_CUDA_VSTD::numeric_limits<local_offset_t>::max());
+      capped_num_items_per_invocation =
+        static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
       // Make sure that the number of items is a multiple of tile size
       capped_num_items_per_invocation -= (capped_num_items_per_invocation % (block_threads * items_per_thread));
     }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
     const auto max_num_items_per_invocation =
-      use_streaming_invocation ? _CUDA_VSTD::min(capped_num_items_per_invocation, num_items) : num_items;
+      use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
@@ -252,7 +253,7 @@ struct DispatchStreamingReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
@@ -305,7 +306,8 @@ struct DispatchStreamingReduceByKey
               equality_op,
               reduction_op,
               static_cast<local_offset_t>(current_num_items),
-              streaming_context);
+              streaming_context,
+              cub::detail::vsmem_t{nullptr});
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());

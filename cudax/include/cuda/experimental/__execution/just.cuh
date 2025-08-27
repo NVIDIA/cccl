@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -48,7 +49,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using __tuple_t               = _CUDA_VSTD::__tuple<_Ts...>;
+    using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
     _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
         : __rcvr_{__rcvr}
@@ -61,25 +62,34 @@ private:
     // operation state doesn't strictly need to be immovable, since its address never
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 #endif // !_CCCL_COMPILER(GCC)
 
     _CCCL_API constexpr void start() noexcept
     {
-      _CUDA_VSTD::__apply(
-        _SetTag{}, static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
+      ::cuda::std::__apply(
+        _SetTag{}, static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
     }
 
     _Rcvr __rcvr_;
     __tuple_t __values_;
   };
 
+  struct __attrs_t
+  {
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    {
+      return completion_behavior::inline_completion;
+    }
+  };
+
   template <class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Ts>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 struct just_t : __just_t<just_t, set_value_t>
@@ -117,7 +127,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
     -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{
-      static_cast<_Rcvr&&>(__rcvr), static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_)};
+      static_cast<_Rcvr&&>(__rcvr), static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_)};
   }
 
   template <class _Rcvr>
@@ -127,8 +137,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
   }
 
+  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  {
+    return __attrs_t{};
+  }
+
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
-  _CUDA_VSTD::__tuple<_Ts...> __values_;
+  ::cuda::std::__tuple<_Ts...> __values_;
 };
 
 template <class... _Ts>
@@ -148,9 +163,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
   static_assert(sizeof...(_Ts) == 0, "just_stopped_t must not be called with any types.");
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _JustTag, class _SetTag>
 template <class... _Ts>
-_CCCL_TRIVIAL_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
+_CCCL_NODEBUG_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
 {
   using __sndr_t = typename _JustTag::template __sndr_t<_Ts...>;
   return __sndr_t{{{}, {static_cast<_Ts&&>(__ts)...}}};

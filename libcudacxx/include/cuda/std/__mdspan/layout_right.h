@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_RIGHT_H
-#define _LIBCUDACXX___MDSPAN_LAYOUT_RIGHT_H
+#ifndef _CUDA_STD___MDSPAN_LAYOUT_RIGHT_H
+#define _CUDA_STD___MDSPAN_LAYOUT_RIGHT_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Extents>
 class layout_right::mapping : private __mdspan_ebco<_Extents>
@@ -105,8 +105,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
-                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherExtents, extents_type))
+  _CCCL_REQUIRES(is_constructible_v<extents_type, _OtherExtents> _CCCL_AND is_convertible_v<_OtherExtents, extents_type>)
   _CCCL_API constexpr mapping(const mapping<_OtherExtents>& __other) noexcept
       : __base(__other.extents())
   {
@@ -118,8 +117,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherExtents, extents_type)))
+  _CCCL_REQUIRES(
+    is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(!is_convertible_v<_OtherExtents, extents_type>))
   _CCCL_API explicit constexpr mapping(const mapping<_OtherExtents>& __other) noexcept
       : __base(__other.extents())
   {
@@ -131,8 +130,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND _CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
-                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherExtents, extents_type))
+  _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND is_constructible_v<extents_type, _OtherExtents> _CCCL_AND
+                   is_convertible_v<_OtherExtents, extents_type>)
   _CCCL_API constexpr mapping(const layout_left::mapping<_OtherExtents>& __other) noexcept
       : __base(__other.extents())
   {
@@ -148,8 +147,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND _CCCL_TRAIT(is_constructible, extents_type, _OtherExtents)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherExtents, extents_type)))
+  _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(
+    !is_convertible_v<_OtherExtents, extents_type>))
   _CCCL_API explicit constexpr mapping(const layout_left::mapping<_OtherExtents>& __other) noexcept
       : __base(__other.extents())
   {
@@ -180,7 +179,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents) _CCCL_AND(extents_type::rank() > 0))
+  _CCCL_REQUIRES(is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(extents_type::rank() > 0))
   _CCCL_API explicit constexpr mapping(const layout_stride::mapping<_OtherExtents>& __other) noexcept
       : __base(__other.extents())
   {
@@ -192,7 +191,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _OtherExtents)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, extents_type, _OtherExtents) _CCCL_AND(extents_type::rank() == 0))
+  _CCCL_REQUIRES(is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(extents_type::rank() == 0))
   _CCCL_API constexpr mapping(const layout_stride::mapping<_OtherExtents>& __other) noexcept
       : __base(__other.extents())
   {}
@@ -301,8 +300,8 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_LAYOUT_RIGHT_H
+#endif // _CUDA_STD___MDSPAN_LAYOUT_RIGHT_H

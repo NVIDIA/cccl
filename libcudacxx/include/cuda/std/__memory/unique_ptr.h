@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_UNIQUE_PTR_H
-#define _LIBCUDACXX___MEMORY_UNIQUE_PTR_H
+#ifndef _CUDA_STD___MEMORY_UNIQUE_PTR_H
+#define _CUDA_STD___MEMORY_UNIQUE_PTR_H
 
 #include <cuda/std/detail/__config>
 
@@ -54,18 +54,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 {
-  static_assert(!_CCCL_TRAIT(is_function, _Tp), "default_delete cannot be instantiated for function types");
+  static_assert(!is_function_v<_Tp>, "default_delete cannot be instantiated for function types");
 
   _CCCL_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20
-  default_delete(const default_delete<_Up>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
+  default_delete(const default_delete<_Up>&, enable_if_t<is_convertible_v<_Up*, _Tp*>, int> = 0) noexcept
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -83,13 +83,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   _CCCL_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 default_delete(
-    const default_delete<_Up[]>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
+  default_delete(const default_delete<_Up[]>&, enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, int> = 0) noexcept
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Up>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, void>
   operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
@@ -100,7 +100,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
-  static_assert(!_CCCL_TRAIT(is_reference, _Deleter), "incorrect specialization");
+  static_assert(!is_reference_v<_Deleter>, "incorrect specialization");
   typedef const _Deleter& __lval_ref_type;
   typedef _Deleter&& __good_rval_ref_type;
   typedef true_type __enable_rval_overload;
@@ -136,8 +136,7 @@ public:
   typedef _Dp deleter_type;
   typedef _CCCL_NODEBUG_ALIAS typename __pointer<_Tp, deleter_type>::type pointer;
 
-  static_assert(!_CCCL_TRAIT(is_rvalue_reference, deleter_type),
-                "the specified deleter type cannot be an rvalue reference");
+  static_assert(!is_rvalue_reference_v<deleter_type>, "the specified deleter type cannot be an rvalue reference");
 
 private:
   __compressed_pair<pointer, deleter_type> __ptr_;
@@ -201,7 +200,7 @@ public:
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy>>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(pointer __p, _GoodRValRefType<_Dummy> __d) noexcept
-      : __ptr_(__p, _CUDA_VSTD::move(__d))
+      : __ptr_(__p, ::cuda::std::move(__d))
   {
     static_assert(!is_reference<deleter_type>::value, "rvalue deleter bound to reference");
   }
@@ -210,7 +209,7 @@ public:
   _CCCL_API inline unique_ptr(pointer __p, _BadRValRefType<_Dummy> __d) = delete;
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<deleter_type>(__u.get_deleter()))
+      : __ptr_(__u.release(), ::cuda::std::forward<deleter_type>(__u.get_deleter()))
   {}
 
   template <class _Up,
@@ -218,13 +217,13 @@ public:
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter()))
+      : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
   {}
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<deleter_type>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<deleter_type>(__u.get_deleter());
     return *this;
   }
 
@@ -235,7 +234,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<_Ep>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<_Ep>(__u.get_deleter());
     return *this;
   }
 
@@ -397,14 +396,14 @@ public:
             class       = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy>>,
             class       = _EnableIfPointerConvertible<_Pp>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(_Pp __p, _GoodRValRefType<_Dummy> __d) noexcept
-      : __ptr_(__p, _CUDA_VSTD::move(__d))
+      : __ptr_(__p, ::cuda::std::move(__d))
   {
     static_assert(!is_reference<deleter_type>::value, "rvalue deleter bound to reference");
   }
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy>>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(nullptr_t, _GoodRValRefType<_Dummy> __d) noexcept
-      : __ptr_(nullptr, _CUDA_VSTD::move(__d))
+      : __ptr_(nullptr, ::cuda::std::move(__d))
   {
     static_assert(!is_reference<deleter_type>::value, "rvalue deleter bound to reference");
   }
@@ -416,13 +415,13 @@ public:
   _CCCL_API inline unique_ptr(_Pp __p, _BadRValRefType<_Dummy> __d) = delete;
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<deleter_type>(__u.get_deleter()))
+      : __ptr_(__u.release(), ::cuda::std::forward<deleter_type>(__u.get_deleter()))
   {}
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<deleter_type>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<deleter_type>(__u.get_deleter());
     return *this;
   }
 
@@ -431,7 +430,7 @@ public:
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter()))
+      : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
   {}
 
   template <class _Up,
@@ -441,7 +440,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<_Ep>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<_Ep>(__u.get_deleter());
     return *this;
   }
 
@@ -709,7 +708,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique(_Args&&... __args)
 {
-  return unique_ptr<_Tp>(new _Tp(_CUDA_VSTD::forward<_Args>(__args)...));
+  return unique_ptr<_Tp>(new _Tp(::cuda::std::forward<_Args>(__args)...));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -761,8 +760,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 };
 #endif // __cuda_std__
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_UNIQUE_PTR_H
+#endif // _CUDA_STD___MEMORY_UNIQUE_PTR_H

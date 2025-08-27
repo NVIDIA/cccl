@@ -79,7 +79,7 @@
  */
 #  define EXPECT(...)                              \
     ::cuda::experimental::stf::expecter::validate( \
-      _CUDA_VSTD::source_location::current(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
+      ::cuda::std::source_location::current(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
 
 namespace cuda::experimental::stf
 {
@@ -97,12 +97,12 @@ struct expecter
   struct failure : ::std::runtime_error
   {
     template <typename... Msgs>
-    failure(_CUDA_VSTD::source_location loc, const Msgs&... msgs)
+    failure(::cuda::std::source_location loc, const Msgs&... msgs)
         : ::std::runtime_error(text(loc, msgs...))
     {}
 
     template <typename... Msgs>
-    static ::std::string text(_CUDA_VSTD::source_location loc, const Msgs&... msgs)
+    static ::std::string text(::cuda::std::source_location loc, const Msgs&... msgs)
     {
       ::std::stringstream s;
       s << loc.file_name() << '(' << loc.line() << "): ";
@@ -132,12 +132,12 @@ struct expecter
 
   template <typename... Msgs>
   [[noreturn]] static _CCCL_API inline void
-  __throw_stf_failure([[maybe_unused]] _CUDA_VSTD::source_location loc, [[maybe_unused]] const Msgs&... msgs)
+  __throw_stf_failure([[maybe_unused]] ::cuda::std::source_location loc, [[maybe_unused]] const Msgs&... msgs)
   {
 #  if _CCCL_HAS_EXCEPTIONS()
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (_CUDA_VSTD_NOVERSION::terminate();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (::cuda::std::terminate();))
 #  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    _CUDA_VSTD_NOVERSION::terminate();
+    ::cuda::std::terminate();
 #  endif // !_CCCL_HAS_EXCEPTIONS()
   }
 
@@ -285,7 +285,7 @@ struct expecter
    * @param t term value, an exception will be thrown if non-true
    */
   template <typename T, typename... Msgs>
-  static decltype(auto) validate(_CUDA_VSTD::source_location loc, term<T>&& t, const Msgs&... msgs)
+  static decltype(auto) validate(::cuda::std::source_location loc, term<T>&& t, const Msgs&... msgs)
   {
     if (t.value)
     {
@@ -317,7 +317,7 @@ struct expecter
    * @param e expression, an exception will be thrown is `e.value` is false
    */
   template <typename L, typename R, typename... Msgs>
-  static decltype(auto) validate(_CUDA_VSTD::source_location loc, comparison_expression<L, R>&& e, const Msgs&... msgs)
+  static decltype(auto) validate(::cuda::std::source_location loc, comparison_expression<L, R>&& e, const Msgs&... msgs)
   {
     if (e.value)
     {
@@ -355,7 +355,7 @@ public:
    * @param name name of the unittest, e.g. `UNITTEST("name goes here") { ... };`
    * @param loc current location of the use of `UNITTEST`, automatically provided by the `UNITTEST` macro.
    */
-  unittest(const char* name, _CUDA_VSTD::source_location loc)
+  unittest(const char* name, ::cuda::std::source_location loc)
       : name(name)
       , loc(mv(loc))
   {}
@@ -373,7 +373,7 @@ public:
    * `unittest<>::make("name", cuda::std::source_location::current(), 1, 2,2)`.
    */
   template <typename... Params>
-  static unittest<Params...> make(const char* name, _CUDA_VSTD::source_location loc, Params&&... params)
+  static unittest<Params...> make(const char* name, ::cuda::std::source_location loc, Params&&... params)
   {
     return unittest<Params...>(name, loc, ::std::forward<Params>(params)...);
   }
@@ -428,7 +428,7 @@ public:
 
 protected:
   const char* const name;
-  const _CUDA_VSTD::source_location loc;
+  const ::cuda::std::source_location loc;
 };
 
 /*
@@ -452,7 +452,7 @@ public:
    * @param param first parameter, is saved in this object and forwarded to the unittest lambda
    * @param params other parameters, if any
    */
-  unittest(const char* name, _CUDA_VSTD::source_location loc, Param param, Params... params)
+  unittest(const char* name, ::cuda::std::source_location loc, Param param, Params... params)
       : unittest<Params...>(name, loc, ::std::forward<Params>(params)...)
       , param(::std::forward<Param>(param))
   {}
@@ -502,15 +502,15 @@ int main()
 }
 
 #    ifdef STF_HAS_UNITTEST_WITH_ARGS
-#      define UNITTEST(name, ...)                                                   \
-        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =          \
-          ::cuda::experimental::stf::unittest<>::make(                              \
-            name, _CUDA_VSTD::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
+#      define UNITTEST(name, ...)                                                    \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =           \
+          ::cuda::experimental::stf::unittest<>::make(                               \
+            name, ::cuda::std::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
             ->*[]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 #    else
-#      define UNITTEST(name)                                                                            \
-        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                              \
-          ::cuda::experimental::stf::unittest<>::make(name, _CUDA_VSTD::source_location::current())->*[ \
+#      define UNITTEST(name)                                                                             \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                               \
+          ::cuda::experimental::stf::unittest<>::make(name, ::cuda::std::source_location::current())->*[ \
           ]([[maybe_unused]] const char* unittest_name)
 #    endif
 
@@ -655,11 +655,11 @@ UNITTEST("all_convertible")
 UNITTEST("shuffled arguments")
 {
   using namespace cuda::experimental::stf;
-  auto x0 = only_convertible_or(42);
+  auto x0 = reserved::only_convertible_or(42);
   EXPECT(x0 == 42);
-  auto x1 = only_convertible_or(42, 23);
+  auto x1 = reserved::only_convertible_or(42, 23);
   EXPECT(x1 == 23);
-  auto x2 = only_convertible_or(42, "23", ::std::tuple{1});
+  auto x2 = reserved::only_convertible_or(42, "23", ::std::tuple{1});
   EXPECT(x2 == 42);
   // Note that a needs to be iniliazed because shuffled_args_check takes a const ref
   int a = 0;
@@ -710,7 +710,7 @@ UNITTEST("shuffled_array_tuple")
 
 UNITTEST("cuda::std::source_location")
 {
-  auto test_func = [](const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current()) {
+  auto test_func = [](const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) {
     // Check the source location metadata
     EXPECT(loc.line() > 0); // The line number should be positive
     EXPECT(loc.file_name() != nullptr); // File name should not be null

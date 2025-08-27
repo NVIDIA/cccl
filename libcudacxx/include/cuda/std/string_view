@@ -62,7 +62,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool __cccl_is_string_view_v = false;
@@ -78,7 +78,7 @@ inline constexpr bool __cccl_is_string_view_v<basic_string_view<_CharT, _Traits>
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
   _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(
-    (__d.operator _CUDA_VSTD::basic_string_view<_CharT, _Traits>()));
+    (__d.operator ::cuda::std::basic_string_view<_CharT, _Traits>()));
 
 template <class _CharT, class _Traits>
 class basic_string_view
@@ -92,7 +92,7 @@ public:
   using const_reference        = const _CharT&;
   using const_iterator         = const_pointer;
   using iterator               = const_iterator;
-  using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
+  using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
   using reverse_iterator       = const_reverse_iterator;
   using size_type              = size_t;
   using difference_type        = ptrdiff_t;
@@ -140,7 +140,7 @@ public:
   _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It> _CCCL_AND
                    is_same_v<iter_value_t<_It>, _CharT> _CCCL_AND(!is_convertible_v<_End, size_type>))
   _CCCL_API constexpr basic_string_view(_It __begin, _End __end)
-      : __data_{_CUDA_VSTD::to_address(__begin)}
+      : __data_{::cuda::std::to_address(__begin)}
       , __size_{static_cast<size_type>(__end - __begin)}
   {
     _CCCL_ASSERT((__end - __begin) >= 0, "string_view::string_view(iterator, sentinel) received invalid range");
@@ -148,13 +148,13 @@ public:
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
-    (!is_same_v<remove_cvref_t<_Range>, basic_string_view>)
-      _CCCL_AND _CUDA_VRANGES::contiguous_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range> _CCCL_AND
-        is_same_v<_CUDA_VRANGES::range_value_t<_Range>, _CharT> _CCCL_AND(!is_convertible_v<_Range, const _CharT*>)
+    (!is_same_v<remove_cvref_t<_Range>, basic_string_view>) _CCCL_AND ::cuda::std::ranges::contiguous_range<_Range>
+      _CCCL_AND ::cuda::std::ranges::sized_range<_Range> _CCCL_AND
+        is_same_v<::cuda::std::ranges::range_value_t<_Range>, _CharT> _CCCL_AND(!is_convertible_v<_Range, const _CharT*>)
           _CCCL_AND(!__cccl_has_basic_sv_conv_operator<_Range, _CharT, _Traits>))
   _CCCL_API explicit constexpr basic_string_view(_Range&& __r)
-      : __data_{_CUDA_VRANGES::data(__r)}
-      , __size_{_CUDA_VRANGES::size(__r)}
+      : __data_{::cuda::std::ranges::data(__r)}
+      , __size_{::cuda::std::ranges::size(__r)}
   {}
 
   [[nodiscard]] _CCCL_API constexpr const_iterator begin() const noexcept
@@ -227,7 +227,7 @@ public:
   {
     if (__pos >= __size_)
     {
-      _CUDA_VSTD::__throw_out_of_range("string_view::at");
+      ::cuda::std::__throw_out_of_range("string_view::at");
     }
     return __data_[__pos];
   }
@@ -277,9 +277,9 @@ public:
   {
     if (__pos > __size_)
     {
-      _CUDA_VSTD::__throw_out_of_range("string_view::copy");
+      ::cuda::std::__throw_out_of_range("string_view::copy");
     }
-    const auto __rlen = _CUDA_VSTD::min(__n, __size_ - __pos);
+    const auto __rlen = ::cuda::std::min(__n, __size_ - __pos);
     _Traits::copy(__s, __data_ + __pos, __rlen);
     return __rlen;
   }
@@ -291,16 +291,16 @@ public:
     // new size is also smaller. See also https://github.com/llvm/llvm-project/issues/91634.
     if (__pos > __size_)
     {
-      _CUDA_VSTD::__throw_out_of_range("string_view::substr");
+      ::cuda::std::__throw_out_of_range("string_view::substr");
     }
-    return basic_string_view{__assume_valid{}, __data_ + __pos, _CUDA_VSTD::min(__n, __size_ - __pos)};
+    return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
   }
 
   // compare
 
   [[nodiscard]] _CCCL_API constexpr int compare(basic_string_view __sv) const noexcept
   {
-    const auto __rlen = _CUDA_VSTD::min(__size_, __sv.__size_);
+    const auto __rlen = ::cuda::std::min(__size_, __sv.__size_);
     int __retval      = _Traits::compare(__data_, __sv.__data_, __rlen);
     if (__retval == 0) // first __rlen chars matched
     {
@@ -341,25 +341,25 @@ public:
   [[nodiscard]] _CCCL_API constexpr size_type find(basic_string_view __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s.__size_ == 0 || __s.__data_ != nullptr, "string_view::find(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s.__data_, __pos, __s.__size_);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find(_CharT __c, size_type __pos = 0) const noexcept
   {
-    return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(__data_, __size_, __c, __pos);
+    return ::cuda::std::__cccl_str_find<value_type, size_type, traits_type, npos>(__data_, __size_, __c, __pos);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
+    return ::cuda::std::__cccl_str_find<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, traits_type::length(__s));
   }
 
@@ -368,25 +368,25 @@ public:
   [[nodiscard]] _CCCL_API constexpr size_type rfind(basic_string_view __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s.__size_ == 0 || __s.__data_ != nullptr, "string_view::find(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_rfind<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s.__data_, __pos, __s.__size_);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type rfind(_CharT __c, size_type __pos = npos) const noexcept
   {
-    return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(__data_, __size_, __c, __pos);
+    return ::cuda::std::__cccl_str_rfind<value_type, size_type, traits_type, npos>(__data_, __size_, __c, __pos);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type rfind(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::rfind(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
+    return ::cuda::std::__cccl_str_rfind<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type rfind(const _CharT* __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::rfind(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_rfind<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, traits_type::length(__s));
   }
 
@@ -395,7 +395,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr size_type find_first_of(basic_string_view __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s.__size_ == 0 || __s.__data_ != nullptr, "string_view::find_first_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s.__data_, __pos, __s.__size_);
   }
 
@@ -408,14 +408,14 @@ public:
   find_first_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_first_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, __n);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find_first_of(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_first_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, traits_type::length(__s));
   }
 
@@ -424,7 +424,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr size_type find_last_of(basic_string_view __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s.__size_ == 0 || __s.__data_ != nullptr, "string_view::find_last_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s.__data_, __pos, __s.__size_);
   }
 
@@ -437,14 +437,14 @@ public:
   find_last_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_last_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, __n);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find_last_of(const _CharT* __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_last_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, traits_type::length(__s));
   }
 
@@ -454,13 +454,13 @@ public:
   find_first_not_of(basic_string_view __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s.__size_ == 0 || __s.__data_ != nullptr, "string_view::find_first_not_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s.__data_, __pos, __s.__size_);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find_first_not_of(_CharT __c, size_type __pos = 0) const noexcept
   {
-    return _CUDA_VSTD::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __c, __pos);
   }
 
@@ -468,14 +468,14 @@ public:
   find_first_not_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_first_not_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, __n);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find_first_not_of(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_first_not_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, traits_type::length(__s));
   }
 
@@ -485,13 +485,13 @@ public:
   find_last_not_of(basic_string_view __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s.__size_ == 0 || __s.__data_ != nullptr, "string_view::find_last_not_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s.__data_, __pos, __s.__size_);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find_last_not_of(_CharT __c, size_type __pos = npos) const noexcept
   {
-    return _CUDA_VSTD::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __c, __pos);
   }
 
@@ -499,14 +499,14 @@ public:
   find_last_not_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_last_not_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, __n);
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type find_last_not_of(const _CharT* __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_last_not_of(): received nullptr");
-    return _CUDA_VSTD::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
+    return ::cuda::std::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, traits_type::length(__s));
   }
 
@@ -722,8 +722,8 @@ _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
 _CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
 
 _CCCL_TEMPLATE(class _Range)
-_CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
+_CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
+_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
 
 // operator <<
 
@@ -782,17 +782,17 @@ _CCCL_API constexpr basic_string_view<char32_t> operator""sv(const char32_t* __s
 
 _CCCL_DIAG_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-
-template <class _CharT, class _Traits>
-inline constexpr bool enable_view<_CUDA_VSTD::basic_string_view<_CharT, _Traits>> = true;
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _CharT, class _Traits>
-inline constexpr bool enable_borrowed_range<_CUDA_VSTD::basic_string_view<_CharT, _Traits>> = true;
+inline constexpr bool enable_view<::cuda::std::basic_string_view<_CharT, _Traits>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+template <class _CharT, class _Traits>
+inline constexpr bool enable_borrowed_range<::cuda::std::basic_string_view<_CharT, _Traits>> = true;
+
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

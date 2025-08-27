@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/__stream/get_stream.h>
+#include <cuda/__type_traits/is_specialization_of.h>
+#include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/forward_like.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -57,7 +59,7 @@ struct __continues_on_t
       // no-op
     }
 
-    _CCCL_API constexpr void set_error(_CUDA_VSTD::__ignore_t) noexcept
+    _CCCL_API constexpr void set_error(::cuda::std::__ignore_t) noexcept
     {
       // no-op
     }
@@ -88,7 +90,7 @@ struct __continues_on_t
         , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Rcvr>{__rcvr_}))
     {}
 
-    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+    _CCCL_IMMOVABLE(__opstate_t);
 
     _CCCL_HOST_API void start() noexcept
     {
@@ -142,19 +144,19 @@ struct __continues_on_t
     }
 
     _CCCL_NO_UNIQUE_ADDRESS __thunk_t __tag_;
-    _CUDA_VSTD::__ignore_t __ignore_;
+    ::cuda::std::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
+  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     auto& [__tag, __sched, __child] = __sndr;
-    using __child_t                 = _CUDA_VSTD::__copy_cvref_t<_Sndr, decltype(__child)>;
+    using __child_t                 = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
 
     // If the child sender has not already been adapted to be a stream sender,
     // we adapt it now.
-    if constexpr (!__is_specialization_of_v<decltype(__child), __stream::__sndr_t>)
+    if constexpr (!::cuda::__is_specialization_of_v<decltype(__child), __stream::__sndr_t>)
     {
       auto __adapted_sndr    = __stream::__adapt(static_cast<__child_t&&>(__child));
       using __adapted_sndr_t = decltype(__adapted_sndr);

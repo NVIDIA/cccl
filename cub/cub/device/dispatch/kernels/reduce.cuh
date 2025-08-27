@@ -43,6 +43,8 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/atomic>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -516,6 +518,72 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   if (threadIdx.x == 0)
   {
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
+  }
+}
+
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename AccumT,
+          typename InitT,
+          typename TransformOpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy::
+    BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
+                                                                  OutputIteratorT d_out,
+                                                                  OffsetT num_items,
+                                                                  GridEvenShare<OffsetT> even_share,
+                                                                  ReductionOpT reduction_op,
+                                                                  InitT init,
+                                                                  TransformOpT transform_op)
+{
+  NV_IF_TARGET(NV_PROVIDES_SM_60,
+               (),
+               (static_assert(!cuda::std::is_same_v<AccumT, double>,
+                              "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
+
+  static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
+                "Only plus is currently supported in nondeterministic reduce");
+
+  // Check if empty problem
+  if (num_items == 0)
+  {
+    if (threadIdx.x == 0)
+    {
+      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+    }
+
+    return;
+  }
+
+  // Thread block type for reducing input tiles
+  using AgentReduceT = detail::reduce::AgentReduce<
+    typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
+    InputIteratorT,
+    AccumT*,
+    OffsetT,
+    ReductionOpT,
+    AccumT,
+    TransformOpT>;
+
+  // Shared memory storage
+  __shared__ typename AgentReduceT::TempStorage temp_storage;
+
+  // Consume input tiles
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op, transform_op).ConsumeTiles(even_share);
+
+  // Output result
+  // only thread 0 has valid value in block aggregate
+  if (threadIdx.x == 0)
+  {
+    // TODO: replace this with other atomic operations when specified
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_60,
+      (::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]); atomic_target.fetch_add(
+        blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate, ::cuda::memory_order_relaxed);),
+      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
   }
 }
 

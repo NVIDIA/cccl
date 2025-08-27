@@ -19,7 +19,7 @@ from cpython.pycapsule cimport (
 )
 
 import ctypes
-
+from enum import IntEnum
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
     cdef struct OpaqueCUkernel_st
@@ -44,10 +44,33 @@ cdef extern from "cccl/c/types.h":
         CCCL_FLOAT32
         CCCL_FLOAT64
         CCCL_STORAGE
+        CCCL_BOOLEAN
 
-    ctypedef enum cccl_op_kind_t:
-       CCCL_STATELESS
-       CCCL_STATEFUL
+    cpdef enum cccl_op_kind_t:
+       STATELESS "CCCL_STATELESS"
+       STATEFUL "CCCL_STATEFUL"
+       PLUS "CCCL_PLUS"
+       MINUS "CCCL_MINUS"
+       MULTIPLIES "CCCL_MULTIPLIES"
+       DIVIDES "CCCL_DIVIDES"
+       MODULUS "CCCL_MODULUS"
+       EQUAL_TO "CCCL_EQUAL_TO"
+       NOT_EQUAL_TO "CCCL_NOT_EQUAL_TO"
+       GREATER "CCCL_GREATER"
+       LESS "CCCL_LESS"
+       GREATER_EQUAL "CCCL_GREATER_EQUAL"
+       LESS_EQUAL "CCCL_LESS_EQUAL"
+       LOGICAL_AND "CCCL_LOGICAL_AND"
+       LOGICAL_OR "CCCL_LOGICAL_OR"
+       LOGICAL_NOT "CCCL_LOGICAL_NOT"
+       BIT_AND "CCCL_BIT_AND"
+       BIT_OR "CCCL_BIT_OR"
+       BIT_XOR "CCCL_BIT_XOR"
+       BIT_NOT "CCCL_BIT_NOT"
+       IDENTITY "CCCL_IDENTITY"
+       NEGATE "CCCL_NEGATE"
+       MINIMUM "CCCL_MINIMUM"
+       MAXIMUM "CCCL_MAXIMUM"
 
     ctypedef enum cccl_iterator_kind_t:
        CCCL_POINTER
@@ -58,11 +81,16 @@ cdef extern from "cccl/c/types.h":
         size_t alignment
         cccl_type_enum type
 
+    cdef enum cccl_op_code_type:
+        CCCL_OP_LTOIR = 0
+        CCCL_OP_CPP_SOURCE = 1
+
     cdef struct cccl_op_t:
         cccl_op_kind_t type
         const char* name
-        const char* ltoir
-        size_t ltoir_size
+        const char* code
+        size_t code_size
+        cccl_op_code_type code_type
         size_t size
         size_t alignment
         void *state
@@ -90,6 +118,7 @@ cdef extern from "cccl/c/types.h":
     ctypedef enum cccl_sort_order_t:
         CCCL_ASCENDING
         CCCL_DESCENDING
+
 
 cdef void arg_type_check(
     str arg_name,
@@ -188,6 +217,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     cdef IntEnumerationMember _float32
     cdef IntEnumerationMember _float64
     cdef IntEnumerationMember _storage
+    cdef IntEnumerationMember _boolean
 
     def __cinit__(self):
         self.enum_name = "TypeEnum"
@@ -202,6 +232,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
         self._float32 = self.make_FLOAT32()
         self._float64 = self.make_FLOAT64()
         self._storage = self.make_STORAGE()
+        self._boolean = self.make_BOOLEAN()
 
     @property
     def INT8(self):
@@ -246,6 +277,10 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     @property
     def STORAGE(self):
         return self._storage
+
+    @property
+    def BOOLEAN(self):
+        return self._boolean
 
     cdef IntEnumerationMember make_INT8(self):
         cdef str prop_name = "INT8"
@@ -348,44 +383,16 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
             cccl_type_enum.CCCL_STORAGE
         )
 
-
-cdef class Enumeration_OpKind(IntEnumerationBase):
-    "Enumeration of operator kinds"
-    cdef IntEnumerationMember _stateless
-    cdef IntEnumerationMember _stateful
-
-    def __cinit__(self):
-        self.enum_name = "OpKindEnum"
-        self._stateless = self.make_STATELESS()
-        self._stateful = self.make_STATEFUL()
-
-    cdef IntEnumerationMember make_STATELESS(self):
-        cdef str prop_name = "STATELESS"
+    cdef IntEnumerationMember make_BOOLEAN(self):
+        cdef str prop_name = "BOOLEAN"
         return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
-            cccl_op_kind_t.CCCL_STATELESS
+            cccl_type_enum.CCCL_BOOLEAN
         )
 
-    cdef IntEnumerationMember make_STATEFUL(self):
-        cdef str prop_name = "STATEFUL"
-        return IntEnumerationMember(
-            type(self),
-            self.enum_name,
-            prop_name,
-            cccl_op_kind_t.CCCL_STATEFUL
-        )
-
-
-    @property
-    def STATELESS(self):
-        return self._stateless
-
-    @property
-    def STATEFUL(self):
-        return self._stateful
-
+OpKind = cccl_op_kind_t
 
 cdef class Enumeration_IteratorKind(IntEnumerationBase):
     "Enumeration of iterator kinds"
@@ -461,18 +468,12 @@ cdef class Enumeration_SortOrder(IntEnumerationBase):
 
 
 TypeEnum = Enumeration_CCCLType()
-OpKind = Enumeration_OpKind()
 IteratorKind = Enumeration_IteratorKind()
 SortOrder = Enumeration_SortOrder()
 
 cpdef bint is_TypeEnum(IntEnumerationMember attr):
     "Return True if attribute is a member of TypeEnum enumeration"
     return attr.parent_class is Enumeration_CCCLType
-
-
-cpdef bint is_OpKind(IntEnumerationMember attr):
-    "Return True if attribute is a member of OpKind enumeration"
-    return attr.parent_class is Enumeration_OpKind
 
 
 cpdef bint is_IteratorKind(IntEnumerationMember attr):
@@ -521,7 +522,7 @@ cdef class Op:
     """
     # need Python owner of memory used for operator name
     cdef bytes op_encoded_name
-    cdef bytes ltoir_bytes
+    cdef bytes code_bytes
     cdef bytes state_bytes
     cdef cccl_op_t op_data
 
@@ -530,30 +531,32 @@ cdef class Op:
         memset(&self.op_data, 0, sizeof(cccl_op_t))
         # Reference Python objects in the class to ensure lifetime
         self.op_encoded_name = name.encode("utf-8")
-        self.ltoir_bytes = lto_ir
+        self.code_bytes = lto_ir
         self.state_bytes = state
         # set fields of op_data struct
         self.op_data.type = op_type
         self.op_data.name = <const char *>self.op_encoded_name
-        self.op_data.ltoir = <const char *>lto_ir
-        self.op_data.ltoir_size = len(lto_ir)
+        self.op_data.code = <const char *>lto_ir
+        self.op_data.code_size = len(lto_ir)
+        self.op_data.code_type = cccl_op_code_type.CCCL_OP_LTOIR
         self.op_data.size = len(state)
         self.op_data.alignment = state_alignment
         self.op_data.state = <void *><const char *>state
 
 
-    def __cinit__(self, /, *, name = None, operator_type = OpKind.STATELESS, ltoir = None, state = None, state_alignment = 1):
+    def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1):
         if name is None and ltoir is None:
             name = ""
             ltoir = b""
         if state is None:
             state = b""
+        if operator_type is None:
+            operator_type = OpKind.STATELESS
         arg_type_check(arg_name="name", expected_type=str, arg=name)
         arg_type_check(arg_name="ltoir", expected_type=bytes, arg=ltoir)
         arg_type_check(arg_name="state", expected_type=bytes, arg=state)
         arg_type_check(arg_name="state_alignment", expected_type=int, arg=state_alignment)
-        arg_type_check(arg_name="operator_type", expected_type=IntEnumerationMember, arg=operator_type)
-        if not is_OpKind(operator_type):
+        if not isinstance(operator_type, OpKind):
             raise TypeError(
                 f"The operator_type argument should be an enumerator of operator kinds"
             )
@@ -585,7 +588,12 @@ cdef class Op:
 
     @property
     def ltoir(self):
-        return self.ltoir_bytes
+        # Backward compatibility property
+        return self.code_bytes
+
+    @property
+    def code(self):
+        return self.code_bytes
 
     @property
     def state_alignment(self):
@@ -1571,6 +1579,7 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def _get_cubin(self):
         return self.build_data.cubin[:self.build_data.cubin_size]
+
 # -----------------
 #   DeviceMergeSort
 # -----------------
@@ -2153,6 +2162,150 @@ cdef class DeviceBinaryTransform:
             )
         if (status != 0):
             raise RuntimeError("Failed to compute binary transform")
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
+
+# -----------------
+#   DeviceHistogram
+# -----------------
+cdef extern from "cccl/c/histogram.h":
+    cdef struct cccl_device_histogram_build_result_t 'cccl_device_histogram_build_result_t':
+        const char* cubin
+        size_t cubin_size
+
+    cdef CUresult cccl_device_histogram_build(
+        cccl_device_histogram_build_result_t *build_ptr,
+        int num_channels,
+        int num_active_channels,
+        cccl_iterator_t d_samples,
+        int num_output_levels_val,
+        cccl_iterator_t d_output_histograms,
+        cccl_value_t h_levels,
+        int64_t num_rows,
+        int64_t row_stride_samples,
+        bint is_evenly_segmented,
+        int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    cdef CUresult cccl_device_histogram_even(
+        cccl_device_histogram_build_result_t build,
+        void *d_storage_ptr,
+        size_t *d_storage_nbytes,
+        cccl_iterator_t d_samples,
+        cccl_iterator_t d_output_histograms,
+        cccl_value_t num_output_levels,
+        cccl_value_t lower_level,
+        cccl_value_t upper_level,
+        int64_t num_row_pixels,
+        int64_t num_rows,
+        int64_t row_stride_samples,
+        CUstream stream
+    ) nogil
+
+    cdef CUresult cccl_device_histogram_cleanup(
+        cccl_device_histogram_build_result_t *build_ptr,
+    ) nogil
+
+
+cdef class DeviceHistogramBuildResult:
+    cdef cccl_device_histogram_build_result_t build_data
+
+    def __dealloc__(DeviceHistogramBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_histogram_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during histogram result cleanup")
+
+
+    def __cinit__(
+        DeviceHistogramBuildResult self,
+        int num_channels,
+        int num_active_channels,
+        Iterator d_samples,
+        int num_levels,
+        Iterator d_histogram,
+        Value h_levels,
+        int num_rows,
+        int row_stride_samples,
+        bint is_evenly_segmented,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        memset(&self.build_data, 0, sizeof(cccl_device_histogram_build_result_t))
+        with nogil:
+            status = cccl_device_histogram_build(
+                &self.build_data,
+                num_channels,
+                num_active_channels,
+                d_samples.iter_data,
+                num_levels,
+                d_histogram.iter_data,
+                h_levels.value_data,
+                num_rows,
+                row_stride_samples,
+                is_evenly_segmented,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed building histogram, error code: {status}"
+            )
+
+    cpdef int compute_even(
+        DeviceHistogramBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_samples,
+        Iterator d_histogram,
+        Value h_num_output_levels,
+        Value h_lower_level,
+        Value h_upper_level,
+        int num_row_pixels,
+        int num_rows,
+        int row_stride_samples,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_histogram_even(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_samples.iter_data,
+                d_histogram.iter_data,
+                h_num_output_levels.value_data,
+                h_lower_level.value_data,
+                h_upper_level.value_data,
+                num_row_pixels,
+                num_rows,
+                row_stride_samples,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing histogram, error code: {status}"
+            )
+        return storage_sz
+
 
     def _get_cubin(self):
         return self.build_data.cubin[:self.build_data.cubin_size]

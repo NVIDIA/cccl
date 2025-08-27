@@ -7,4 +7,4 @@ Transformed Prefix Sums
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__transformed__prefixsums*
+   ../../../api/group__transformed__prefixsums*

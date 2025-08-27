@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_DEFAULT_SEARCHER_H
-#define _LIBCUDACXX___FUNCTIONAL_DEFAULT_SEARCHER_H
+#ifndef _CUDA_STD___FUNCTIONAL_DEFAULT_SEARCHER_H
+#define _CUDA_STD___FUNCTIONAL_DEFAULT_SEARCHER_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
 
@@ -49,14 +49,14 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pair<_ForwardIterator2, _ForwardIterator2>
   operator()(_ForwardIterator2 __f, _ForwardIterator2 __l) const
   {
-    return _CUDA_VSTD::__search(
+    return ::cuda::std::__search(
       __f,
       __l,
       __first_,
       __last_,
       __pred_,
-      typename _CUDA_VSTD::iterator_traits<_ForwardIterator>::iterator_category(),
-      typename _CUDA_VSTD::iterator_traits<_ForwardIterator2>::iterator_category());
+      typename ::cuda::std::iterator_traits<_ForwardIterator>::iterator_category(),
+      typename ::cuda::std::iterator_traits<_ForwardIterator2>::iterator_category());
   }
 
 private:
@@ -68,8 +68,8 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(default_searcher);
 
 #endif // __cuda_std__
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_DEFAULT_SEARCHER_H
+#endif // _CUDA_STD___FUNCTIONAL_DEFAULT_SEARCHER_H

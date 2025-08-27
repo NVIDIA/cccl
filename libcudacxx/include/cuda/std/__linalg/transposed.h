@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_TRANSPOSED_HPP
-#define _LIBCUDACXX___LINALG_TRANSPOSED_HPP
+#ifndef _CUDA_STD___LINALG_TRANSPOSED_H
+#define _CUDA_STD___LINALG_TRANSPOSED_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
@@ -134,8 +134,7 @@ public:
     }
 
     _CCCL_TEMPLATE(class _IndexType0, class _IndexType1)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _IndexType0, index_type)
-                     _CCCL_AND _CCCL_TRAIT(is_convertible, _IndexType1, index_type))
+    _CCCL_REQUIRES(is_convertible_v<_IndexType0, index_type> _CCCL_AND is_convertible_v<_IndexType1, index_type>)
     _CCCL_API constexpr index_type operator()(_IndexType0 __i, _IndexType1 __j) const
     {
       return __nested_mapping_(__j, __i);
@@ -315,8 +314,8 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
 
 } // end namespace linalg
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LINALG_TRANSPOSED_HPP
+#endif // _CUDA_STD___LINALG_TRANSPOSED_HPP

@@ -41,6 +41,7 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
@@ -164,8 +165,8 @@ struct ReduceByKeyAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt   = typename core::detail::LoadIterator<PtxPlan, KeysInputIt>::type;
-    using ValuesLoadIt = typename core::detail::LoadIterator<PtxPlan, ValuesInputIt>::type;
+    using KeysLoadIt   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysInputIt>;
+    using ValuesLoadIt = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesInputIt>;
 
     using BlockLoadKeys   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt>::type;
     using BlockLoadValues = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt>::type;
@@ -628,8 +629,8 @@ struct ReduceByKeyAgent
       int /*num_tiles*/,
       ScanTileState& tile_state)
         : storage(storage_)
-        , keys_load_it(core::detail::make_load_iterator(ptx_plan(), keys_input_it_))
-        , values_load_it(core::detail::make_load_iterator(ptx_plan(), values_input_it_))
+        , keys_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys_input_it_))
+        , values_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values_input_it_))
         , keys_output_it(keys_output_it_)
         , values_output_it(values_output_it_)
         , num_runs_output_it(num_runs_output_it_)

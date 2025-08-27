@@ -21,12 +21,12 @@ __host__ __device__ constexpr void test(Stride stride)
 {
   {
     cuda::strided_iterator<int*, Stride> iter;
-    assert(iter.stride() == _CUDA_VSTD::__de_ice(Stride{}));
+    assert(iter.stride() == ::cuda::std::__de_ice(Stride{}));
   }
 
   {
     cuda::strided_iterator<int*, Stride> iter{nullptr, stride};
-    assert(iter.stride() == _CUDA_VSTD::__de_ice(stride));
+    assert(iter.stride() == ::cuda::std::__de_ice(stride));
   }
 }
 

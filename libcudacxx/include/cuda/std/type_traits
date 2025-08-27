@@ -77,6 +77,7 @@
 #include <cuda/std/__type_traits/is_destructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__type_traits/is_execution_policy.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_final.h>
 #include <cuda/std/__type_traits/is_floating_point.h>

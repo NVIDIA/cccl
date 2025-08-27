@@ -20,6 +20,7 @@ set(stf_test_sources
   error_checks/non_managed_data.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
+  examples/cuda_kernels_driver.cu
   examples/05-stencil-no-copy.cu
   examples/05-stencil-places.cu
   examples/05-stencil.cu
@@ -27,12 +28,17 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/explicit_graph.cu
+  graph/explicit_graph_while.cu
+  graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
   interface/cuda_kernel_chain-add_deps.cu
+  interface/cuda_kernel_chain-add_deps_low_level.cu
+  interface/cuda_kernel_empty_args.cu
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
@@ -143,7 +149,6 @@ set(stf_test_codegen_sources
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
   threads/axpy-threads-graph.cu
   threads/axpy-threads-graph-capture.cu
-  tools/auto_dump/auto_dump.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...

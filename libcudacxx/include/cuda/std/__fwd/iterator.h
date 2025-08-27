@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_ITERATOR_H
-#define _LIBCUDACXX___FWD_ITERATOR_H
+#ifndef _CUDA_STD___FWD_ITERATOR_H
+#define _CUDA_STD___FWD_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __back_insert_iterator;
@@ -36,8 +36,8 @@ template <class, class = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_ITERATOR_H
+#endif // _CUDA_STD___FWD_ITERATOR_H

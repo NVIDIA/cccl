@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_COPY_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_COPY_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_COPY_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_COPY_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
@@ -36,8 +36,8 @@ is_copy_constructible : public is_constructible<_Tp, add_lvalue_reference_t<type
 template <class _Tp>
 inline constexpr bool is_copy_constructible_v = is_copy_constructible<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_COPY_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_COPY_CONSTRUCTIBLE_H

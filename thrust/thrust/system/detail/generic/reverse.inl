@@ -29,9 +29,10 @@
 #include <thrust/detail/copy.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/swap.h>
 #include <thrust/system/detail/generic/reverse.h>
+
+#include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -53,7 +54,7 @@ reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator f
   ::cuda::std::advance(mid, N / 2);
 
   // swap elements of [first,mid) with [last - 1, mid)
-  thrust::swap_ranges(exec, first, mid, thrust::make_reverse_iterator(last));
+  thrust::swap_ranges(exec, first, mid, ::cuda::std::make_reverse_iterator(last));
 } // end reverse()
 
 template <typename ExecutionPolicy, typename BidirectionalIterator, typename OutputIterator>
@@ -63,7 +64,7 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
   BidirectionalIterator last,
   OutputIterator result)
 {
-  return thrust::copy(exec, thrust::make_reverse_iterator(last), thrust::make_reverse_iterator(first), result);
+  return thrust::copy(exec, ::cuda::std::reverse_iterator{last}, ::cuda::std::reverse_iterator{first}, result);
 } // end reverse_copy()
 
 } // end namespace generic

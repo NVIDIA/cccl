@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/forward_like.h>
 
@@ -51,7 +52,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
 
       if (__tid < this->__state_->__shape_)
       {
-        if constexpr (__is_specialization_of_v<_Fn, bulk_t::__bulk_chunked_fn>)
+        if constexpr (::cuda::__is_specialization_of_v<_Fn, bulk_t::__bulk_chunked_fn>)
         {
           // If the chunked function was adapted from an unchunked function, we can call
           // the unchunked functions directly.
@@ -88,7 +89,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
   // domain argument of stream_domain. It adapts a `bulk_chunked` sender to the stream
   // domain.
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
+  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     // Decompose the bulk sender into its components:
     auto& [__tag, __state, __child] = __sndr;
@@ -100,8 +101,8 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
     using __sndr_t    = __bulk_chunked_t::__sndr_t<decltype(__child), __policy_t, __shape_t, __fn_t>;
     using __closure_t = __bulk_t::__closure_base_t<__policy_t, __shape_t, __fn_t>;
 
-    auto __closure  = __closure_t{__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)};
-    auto __new_sndr = __sndr_t{{{}, static_cast<__closure_t&&>(__closure), _CUDA_VSTD::forward_like<_Sndr>(__child)}};
+    auto __closure  = __closure_t{__policy, __shape, ::cuda::std::forward_like<_Sndr>(__fn)};
+    auto __new_sndr = __sndr_t{{{}, static_cast<__closure_t&&>(__closure), ::cuda::std::forward_like<_Sndr>(__child)}};
     return __stream::__adapt(static_cast<__sndr_t&&>(__new_sndr));
   }
 
@@ -151,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
   // domain argument of stream_domain. It adapts a `bulk_unchunked` sender to the stream
   // domain.
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
+  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     // Decompose the bulk sender into its components:
     auto& [__tag, __state, __child] = __sndr;
@@ -163,8 +164,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
     using __sndr_t    = __bulk_unchunked_t::__sndr_t<decltype(__child), __policy_t, __shape_t, __fn_t>;
     using __closure_t = __bulk_t::__closure_base_t<__policy_t, __shape_t, __fn_t>;
 
-    auto __closure  = __closure_t{__policy, __shape, _CUDA_VSTD::forward_like<_Sndr>(__fn)};
-    auto __new_sndr = __sndr_t{{{}, static_cast<__closure_t&&>(__closure), _CUDA_VSTD::forward_like<_Sndr>(__child)}};
+    auto __closure  = __closure_t{__policy, __shape, ::cuda::std::forward_like<_Sndr>(__fn)};
+    auto __new_sndr = __sndr_t{{{}, static_cast<__closure_t&&>(__closure), ::cuda::std::forward_like<_Sndr>(__child)}};
     return __stream::__adapt(static_cast<__sndr_t&&>(__new_sndr));
   }
 
@@ -185,7 +186,7 @@ struct __bulk_t : execution::__bulk_t<__bulk_t>
   {};
 
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const -> decltype(auto)
+  _CCCL_API constexpr auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const -> decltype(auto)
   {
     // This converts a bulk sender into a bulk_chunked sender, which will then be
     // further transformed by __bulk_chunked_t above.
