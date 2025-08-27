@@ -784,7 +784,7 @@ enum BlockLoadAlgorithm
 //! @endrst
 //!
 //! @tparam T
-// The data type to read into (which must be convertible from the input iterator's value type).
+//!   The data type to read into (which must be convertible from the input iterator's value type).
 //!
 //! @tparam BLOCK_DIM_X
 //!   The thread block length in threads along the X dimension
