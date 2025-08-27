@@ -1989,18 +1989,21 @@ inline event_list enforce_stf_deps_before(
       // writer
       assert(ctx_.current_writer.has_value());
       ctx_.previous_writer = mv(ctx_.current_writer);
-      const auto& pw       = ctx_.previous_writer;
 
-      result.merge(pw->get_done_prereqs());
-
-      const int pw_id = pw->get_unique_id();
-
-      if (dot_is_tracing)
+      if (ctx_.previous_writer.has_value())
       {
-        dot.add_edge(pw_id, task.get_unique_id());
-      }
+        const auto& pw = ctx_.previous_writer.value();
+        result.merge(pw.get_done_prereqs());
 
-      ctx_st.leaves.remove(pw_id);
+        const int pw_id = pw.get_unique_id();
+
+        if (dot_is_tracing)
+        {
+          dot.add_edge(pw_id, task.get_unique_id());
+        }
+
+        ctx_st.leaves.remove(pw_id);
+      }
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
