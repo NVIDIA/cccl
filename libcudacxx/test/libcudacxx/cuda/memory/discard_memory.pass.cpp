@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/discard_memory>
+#include <cuda/memory>
 
 #include "utils.h"
 #define ARR_SZ 128
