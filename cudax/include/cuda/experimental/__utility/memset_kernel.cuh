@@ -55,7 +55,7 @@ void __launch_memset_kernel(stream_ref __stream, _T* __ptr, _T __value, ::cuda::
 
   cudaLaunchKernelExC(&__config, __memset_kernel<_T, decltype(__config)>, __args);
 }
-} // namespace cuda::experimental::__detail
+} // namespace cuda::experimental
 
 _LIBCUDACXX_DETAIL_MAGIC_NS_END
 
