@@ -1976,6 +1976,10 @@ inline event_list enforce_stf_deps_before(
 
         ctx_st.leaves.remove(pw_id);
       }
+      else
+      {
+        EXPECT(false, "Internal error: previous_writer must be set");
+      }
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
