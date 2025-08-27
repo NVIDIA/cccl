@@ -367,21 +367,6 @@ public:
     enable_write_back = flag;
   }
 
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    enable_auto_dump = flag;
-  }
-
-  bool get_auto_dump() const
-  {
-    return enable_auto_dump;
-  }
-
-  bool enable_auto_dump = true;
-
   bool was_erased = false;
 
   // Get the index of the first available instance_id
@@ -1648,19 +1633,6 @@ public:
   void set_write_back(bool flag)
   {
     pimpl->set_write_back(flag);
-  }
-
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    pimpl->set_auto_dump(flag);
-  }
-
-  bool get_auto_dump() const
-  {
-    return pimpl->get_auto_dump();
   }
 
   reserved::logical_data_state& get_state()

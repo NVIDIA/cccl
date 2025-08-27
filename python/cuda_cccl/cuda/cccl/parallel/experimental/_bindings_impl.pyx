@@ -19,7 +19,7 @@ from cpython.pycapsule cimport (
 )
 
 import ctypes
-
+from enum import IntEnum
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
     cdef struct OpaqueCUkernel_st
@@ -44,10 +44,33 @@ cdef extern from "cccl/c/types.h":
         CCCL_FLOAT32
         CCCL_FLOAT64
         CCCL_STORAGE
+        CCCL_BOOLEAN
 
-    ctypedef enum cccl_op_kind_t:
-       CCCL_STATELESS
-       CCCL_STATEFUL
+    cpdef enum cccl_op_kind_t:
+       STATELESS "CCCL_STATELESS"
+       STATEFUL "CCCL_STATEFUL"
+       PLUS "CCCL_PLUS"
+       MINUS "CCCL_MINUS"
+       MULTIPLIES "CCCL_MULTIPLIES"
+       DIVIDES "CCCL_DIVIDES"
+       MODULUS "CCCL_MODULUS"
+       EQUAL_TO "CCCL_EQUAL_TO"
+       NOT_EQUAL_TO "CCCL_NOT_EQUAL_TO"
+       GREATER "CCCL_GREATER"
+       LESS "CCCL_LESS"
+       GREATER_EQUAL "CCCL_GREATER_EQUAL"
+       LESS_EQUAL "CCCL_LESS_EQUAL"
+       LOGICAL_AND "CCCL_LOGICAL_AND"
+       LOGICAL_OR "CCCL_LOGICAL_OR"
+       LOGICAL_NOT "CCCL_LOGICAL_NOT"
+       BIT_AND "CCCL_BIT_AND"
+       BIT_OR "CCCL_BIT_OR"
+       BIT_XOR "CCCL_BIT_XOR"
+       BIT_NOT "CCCL_BIT_NOT"
+       IDENTITY "CCCL_IDENTITY"
+       NEGATE "CCCL_NEGATE"
+       MINIMUM "CCCL_MINIMUM"
+       MAXIMUM "CCCL_MAXIMUM"
 
     ctypedef enum cccl_iterator_kind_t:
        CCCL_POINTER
@@ -95,6 +118,7 @@ cdef extern from "cccl/c/types.h":
     ctypedef enum cccl_sort_order_t:
         CCCL_ASCENDING
         CCCL_DESCENDING
+
 
 cdef void arg_type_check(
     str arg_name,
@@ -193,6 +217,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     cdef IntEnumerationMember _float32
     cdef IntEnumerationMember _float64
     cdef IntEnumerationMember _storage
+    cdef IntEnumerationMember _boolean
 
     def __cinit__(self):
         self.enum_name = "TypeEnum"
@@ -207,6 +232,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
         self._float32 = self.make_FLOAT32()
         self._float64 = self.make_FLOAT64()
         self._storage = self.make_STORAGE()
+        self._boolean = self.make_BOOLEAN()
 
     @property
     def INT8(self):
@@ -251,6 +277,10 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     @property
     def STORAGE(self):
         return self._storage
+
+    @property
+    def BOOLEAN(self):
+        return self._boolean
 
     cdef IntEnumerationMember make_INT8(self):
         cdef str prop_name = "INT8"
@@ -353,44 +383,16 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
             cccl_type_enum.CCCL_STORAGE
         )
 
-
-cdef class Enumeration_OpKind(IntEnumerationBase):
-    "Enumeration of operator kinds"
-    cdef IntEnumerationMember _stateless
-    cdef IntEnumerationMember _stateful
-
-    def __cinit__(self):
-        self.enum_name = "OpKindEnum"
-        self._stateless = self.make_STATELESS()
-        self._stateful = self.make_STATEFUL()
-
-    cdef IntEnumerationMember make_STATELESS(self):
-        cdef str prop_name = "STATELESS"
+    cdef IntEnumerationMember make_BOOLEAN(self):
+        cdef str prop_name = "BOOLEAN"
         return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
-            cccl_op_kind_t.CCCL_STATELESS
+            cccl_type_enum.CCCL_BOOLEAN
         )
 
-    cdef IntEnumerationMember make_STATEFUL(self):
-        cdef str prop_name = "STATEFUL"
-        return IntEnumerationMember(
-            type(self),
-            self.enum_name,
-            prop_name,
-            cccl_op_kind_t.CCCL_STATEFUL
-        )
-
-
-    @property
-    def STATELESS(self):
-        return self._stateless
-
-    @property
-    def STATEFUL(self):
-        return self._stateful
-
+OpKind = cccl_op_kind_t
 
 cdef class Enumeration_IteratorKind(IntEnumerationBase):
     "Enumeration of iterator kinds"
@@ -466,18 +468,12 @@ cdef class Enumeration_SortOrder(IntEnumerationBase):
 
 
 TypeEnum = Enumeration_CCCLType()
-OpKind = Enumeration_OpKind()
 IteratorKind = Enumeration_IteratorKind()
 SortOrder = Enumeration_SortOrder()
 
 cpdef bint is_TypeEnum(IntEnumerationMember attr):
     "Return True if attribute is a member of TypeEnum enumeration"
     return attr.parent_class is Enumeration_CCCLType
-
-
-cpdef bint is_OpKind(IntEnumerationMember attr):
-    "Return True if attribute is a member of OpKind enumeration"
-    return attr.parent_class is Enumeration_OpKind
 
 
 cpdef bint is_IteratorKind(IntEnumerationMember attr):
@@ -548,18 +544,19 @@ cdef class Op:
         self.op_data.state = <void *><const char *>state
 
 
-    def __cinit__(self, /, *, name = None, operator_type = OpKind.STATELESS, ltoir = None, state = None, state_alignment = 1):
+    def __cinit__(self, /, *, name = None, operator_type = None, ltoir = None, state = None, state_alignment = 1):
         if name is None and ltoir is None:
             name = ""
             ltoir = b""
         if state is None:
             state = b""
+        if operator_type is None:
+            operator_type = OpKind.STATELESS
         arg_type_check(arg_name="name", expected_type=str, arg=name)
         arg_type_check(arg_name="ltoir", expected_type=bytes, arg=ltoir)
         arg_type_check(arg_name="state", expected_type=bytes, arg=state)
         arg_type_check(arg_name="state_alignment", expected_type=int, arg=state_alignment)
-        arg_type_check(arg_name="operator_type", expected_type=IntEnumerationMember, arg=operator_type)
-        if not is_OpKind(operator_type):
+        if not isinstance(operator_type, OpKind):
             raise TypeError(
                 f"The operator_type argument should be an enumerator of operator kinds"
             )
@@ -1582,6 +1579,7 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def _get_cubin(self):
         return self.build_data.cubin[:self.build_data.cubin_size]
+
 # -----------------
 #   DeviceMergeSort
 # -----------------
