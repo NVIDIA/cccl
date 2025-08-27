@@ -41,6 +41,7 @@ cdef extern from "cccl/c/types.h":
         CCCL_UINT16
         CCCL_UINT32
         CCCL_UINT64
+        CCCL_FLOAT16
         CCCL_FLOAT32
         CCCL_FLOAT64
         CCCL_STORAGE
@@ -214,6 +215,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     cdef IntEnumerationMember _uint16
     cdef IntEnumerationMember _uint32
     cdef IntEnumerationMember _uint64
+    cdef IntEnumerationMember _float16
     cdef IntEnumerationMember _float32
     cdef IntEnumerationMember _float64
     cdef IntEnumerationMember _storage
@@ -229,6 +231,7 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
         self._uint16 = self.make_UINT16()
         self._uint32 = self.make_UINT32()
         self._uint64 = self.make_UINT64()
+        self._float16 = self.make_FLOAT16()
         self._float32 = self.make_FLOAT32()
         self._float64 = self.make_FLOAT64()
         self._storage = self.make_STORAGE()
@@ -265,6 +268,10 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     @property
     def UINT64(self):
         return self._uint64
+
+    @property
+    def FLOAT16(self):
+        return self._float16
 
     @property
     def FLOAT32(self):
@@ -354,6 +361,14 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
             cccl_type_enum.CCCL_UINT64
         )
 
+    cdef IntEnumerationMember make_FLOAT16(self):
+        cdef str prop_name = "FLOAT16"
+        return IntEnumerationMember(
+            type(self),
+            self.enum_name,
+            prop_name,
+            cccl_type_enum.CCCL_FLOAT16
+        )
 
     cdef IntEnumerationMember make_FLOAT32(self):
         cdef str prop_name = "FLOAT32"
