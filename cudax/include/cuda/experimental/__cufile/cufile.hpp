@@ -16,9 +16,9 @@
 // Core Components
 // ================================================================================================
 
-#include "driver.hpp" // Driver management and configuration
-#include "file_handle.hpp" // File operations
-#include "utils.hpp" // Utility functions
+#include <cuda/experimental/__cufile/detail/driver.hpp> // Driver management and configuration
+#include <cuda/experimental/__cufile/detail/file_handle.hpp> // File operations
+#include <cuda/experimental/__cufile/detail/utils.hpp> // Utility functions
 
 // CUDA Experimental cuFILE Library namespace
 namespace cuda::experimental::cufile
