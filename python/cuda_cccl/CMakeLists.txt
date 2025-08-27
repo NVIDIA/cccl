@@ -66,9 +66,12 @@ install(
     DESTINATION cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR}/cccl
 )
 
+
+file(MAKE_DIRECTORY "cuda/cccl/experimental/stf/${CUDA_VERSION_DIR}/cccl")
+
 install(
     TARGETS cccl.c.experimental.stf
-    DESTINATION cuda/cccl/experimental/stf/cccl
+    DESTINATION cuda/cccl/experimental/stf/${CUDA_VERSION_DIR}/cccl
 )
 
 # Build and install Cython extension
@@ -144,6 +147,7 @@ add_custom_command(
     ARGS ${CYTHON_FLAGS_LIST} "${stf_pyx_source_file}" --output-file ${_stf_generated_extension_src}
     DEPENDS "${stf_pyx_source_file}"
     DEPFILE "${_stf_depfile}"
+    COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
 )
 set_source_files_properties("${_stf_generated_extension_src}" PROPERTIES GENERATED TRUE)
 add_custom_target(cythonize_stf_bindings_impl ALL
