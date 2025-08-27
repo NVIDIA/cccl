@@ -38,11 +38,13 @@ private:
 public:
   //! Register GPU buffer using span
   template <typename T>
-  explicit buffer_handle(::cuda::std::span<T> buffer, int flags = 0);
+  explicit buffer_handle(::cuda::std::span<T> buffer,
+                         cu_file_buf_register_flags flags = cu_file_buf_register_flags::none);
 
   //! Register GPU buffer using span - const version
   template <typename T>
-  explicit buffer_handle(::cuda::std::span<const T> buffer, int flags = 0);
+  explicit buffer_handle(::cuda::std::span<const T> buffer,
+                         cu_file_buf_register_flags flags = cu_file_buf_register_flags::none);
 
   buffer_handle(buffer_handle&& other) noexcept;
   buffer_handle& operator=(buffer_handle&& other) noexcept;
@@ -77,23 +79,23 @@ public:
 
 // Constructor implementations
 template <typename T>
-inline buffer_handle::buffer_handle(::cuda::std::span<T> buffer, int flags)
+inline buffer_handle::buffer_handle(::cuda::std::span<T> buffer, cu_file_buf_register_flags flags)
     : buffer_(::cuda::std::as_bytes(buffer))
 {
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
-  CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
+  CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), to_c_enum(flags));
   detail::check_cufile_result(error, "cuFileBufRegister");
   registered_buffer_ = buffer_.data();
 }
 
 template <typename T>
-inline buffer_handle::buffer_handle(::cuda::std::span<const T> buffer, int flags)
+inline buffer_handle::buffer_handle(::cuda::std::span<const T> buffer, cu_file_buf_register_flags flags)
     : buffer_(::cuda::std::as_bytes(buffer))
 {
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
-  CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
+  CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), to_c_enum(flags));
   detail::check_cufile_result(error, "cuFileBufRegister");
   registered_buffer_ = buffer_.data();
 }
