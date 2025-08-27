@@ -220,6 +220,7 @@ private:
     // remaining data can be processed in 4-byte chunks
     if ((__size % 16) >= 4)
     {
+      _CCCL_PRAGMA_UNROLL(4)
       for (; __offset <= __size - 4; __offset += 4)
       {
         __h32 += ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)
@@ -356,7 +357,7 @@ private:
     // remaining data can be processed in 8-byte chunks
     if ((__size % 32) >= 8)
     {
-      _CCCL_PRAGMA_UNROLL(8)
+      _CCCL_PRAGMA_UNROLL(4)
       for (; __offset <= __size - 8; __offset += 8)
       {
         _CUDA_VSTD::uint64_t __k1 =
@@ -370,7 +371,6 @@ private:
     // remaining data can be processed in 4-byte chunks
     if ((__size % 8) >= 4)
     {
-      _CCCL_PRAGMA_UNROLL(4)
       for (; __offset <= __size - 4; __offset += 4)
       {
         __h64 ^= (::cuda::experimental::cuco::__detail::__load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __offset / 4)
