@@ -266,10 +266,10 @@ C2H_TEST("starts_on has the right completion scheduler", "[adaptors][starts_on]"
 
   SECTION("inline scheduler with inline sender completion with an inline starting scheduler")
   {
-    auto sch                  = ex::inline_scheduler{};
-    [[maybe_unused]] auto env = ex::prop{ex::get_scheduler, sch};
-    [[maybe_unused]] auto snd = ex::starts_on(sch, ex::just());
-    using snd_t               = decltype(snd);
+    constexpr auto sch                  = ex::inline_scheduler{};
+    [[maybe_unused]] constexpr auto env = ex::prop{ex::get_scheduler, sch};
+    [[maybe_unused]] constexpr auto snd = ex::starts_on(sch, ex::just());
+    using snd_t                         = decltype(snd);
     STATIC_REQUIRE(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_value_t>, ex::env_of_t<snd_t>>);
     STATIC_REQUIRE(ex::get_completion_scheduler<ex::set_value_t>(ex::get_env(snd), env) == sch);
   }

@@ -35,8 +35,8 @@ C2H_TEST("simple test of just sender factory", "[just]")
   STATIC_CHECK(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_value_t>, ex::env_of_t<Sndr>>);
   STATIC_CHECK(!cudax::__callable<ex::get_completion_domain_t<ex::set_value_t>, ex::env_of_t<Sndr>>);
 
-  auto sch = dummy_scheduler<test_domain>{};
-  auto env = ex::prop{ex::get_scheduler, sch};
+  constexpr auto sch = dummy_scheduler<test_domain>{};
+  constexpr auto env = ex::prop{ex::get_scheduler, sch};
   STATIC_CHECK(ex::get_completion_scheduler<ex::set_value_t>(ex::get_env(sndr), env) == sch);
   STATIC_CHECK(
     cuda::std::is_same_v<decltype(ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr), env)), test_domain>);
@@ -56,8 +56,8 @@ C2H_TEST("simple test of just_error sender factory", "[just]")
   STATIC_REQUIRE(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_error_t>, ex::env_of_t<Sndr>>);
   STATIC_REQUIRE(!cudax::__callable<ex::get_completion_domain_t<ex::set_error_t>, ex::env_of_t<Sndr>>);
 
-  auto sch = dummy_scheduler<test_domain>{};
-  auto env = ex::prop{ex::get_scheduler, sch};
+  constexpr auto sch = dummy_scheduler<test_domain>{};
+  constexpr auto env = ex::prop{ex::get_scheduler, sch};
   STATIC_CHECK(ex::get_completion_scheduler<ex::set_error_t>(ex::get_env(sndr), env) == sch);
   STATIC_CHECK(
     cuda::std::is_same_v<decltype(ex::get_completion_domain<ex::set_error_t>(ex::get_env(sndr), env)), test_domain>);
@@ -76,8 +76,8 @@ C2H_TEST("simple test of just_stopped sender factory", "[just]")
   STATIC_REQUIRE(!cudax::__callable<ex::get_completion_scheduler_t<ex::set_stopped_t>, ex::env_of_t<Sndr>>);
   STATIC_REQUIRE(!cudax::__callable<ex::get_completion_domain_t<ex::set_stopped_t>, ex::env_of_t<Sndr>>);
 
-  auto sch = dummy_scheduler<test_domain>{};
-  auto env = ex::prop{ex::get_scheduler, sch};
+  constexpr auto sch = dummy_scheduler<test_domain>{};
+  constexpr auto env = ex::prop{ex::get_scheduler, sch};
   STATIC_CHECK(ex::get_completion_scheduler<ex::set_stopped_t>(ex::get_env(sndr), env) == sch);
   STATIC_CHECK(
     cuda::std::is_same_v<decltype(ex::get_completion_domain<ex::set_stopped_t>(ex::get_env(sndr), env)), test_domain>);
