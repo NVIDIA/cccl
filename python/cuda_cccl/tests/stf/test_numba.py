@@ -10,7 +10,7 @@ from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 
-from cuda.cccl.experimental.stf._stf_bindings_impl import (
+from cuda.cccl.experimental.stf._stf_bindings import (
     context,
     data_place,
     exec_place,

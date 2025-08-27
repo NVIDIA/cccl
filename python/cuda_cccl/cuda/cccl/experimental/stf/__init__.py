@@ -1,4 +1,4 @@
-from ._stf_bindings_impl import (
+from ._stf_bindings import (
     context,
     data_place,
     dep,
