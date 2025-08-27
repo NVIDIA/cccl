@@ -8,12 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Add tasks to a user-provided graph
- *
- */
+//! @file
+//! @brief Add tasks to a user-provided graph
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 

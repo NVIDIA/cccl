@@ -8,11 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Add tasks to a user-provided child graph from a while loop
- */
+//! @file
+//! @brief Add tasks to a user-provided child graph from a while loop
+
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 using namespace cuda::experimental::stf;
