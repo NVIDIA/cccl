@@ -50,7 +50,7 @@ inline int get_device_id(const void* ptr)
 }
 
 //! Get optimal alignment for cuFile operations
-inline size_t get_optimal_alignment()
+[[nodiscard]] constexpr size_t get_optimal_alignment()
 {
   return 4096; // 4KB alignment for most file systems
 }
