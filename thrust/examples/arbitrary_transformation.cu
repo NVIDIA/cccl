@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-// #include "include/host_device.h"  // Not needed for this example
-
 // This example shows how to implement an arbitrary transformation of
 // the form output[i] = F(first[i], second[i], third[i], ... ).
 // In this example, we use a function with 3 inputs and 1 output.
