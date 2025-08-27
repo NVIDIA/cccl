@@ -41,10 +41,7 @@ thrust::host_vector<int> random_vector(size_t N)
   static thrust::default_random_engine rng;
   static thrust::uniform_int_distribution<int> dist(0, 9);
 
-  for (size_t i = 0; i < N; i++)
-  {
-    vec[i] = dist(rng);
-  }
+  std::generate(vec.begin(), vec.end(), [&]() { return dist(rng); });
 
   return vec;
 }
@@ -59,7 +56,7 @@ int main()
   thrust::device_vector<int> lower  = random_vector(N);
 
   std::cout << "Unsorted Keys" << std::endl;
-  for (size_t i = 0; i < N; i++)
+  for (size_t i = 0; i < upper.size(); i++)
   {
     std::cout << "(" << upper[i] << "," << middle[i] << "," << lower[i] << ")" << std::endl;
   }
@@ -82,7 +79,7 @@ int main()
   apply_permutation(upper, permutation);
 
   std::cout << "Sorted Keys" << std::endl;
-  for (size_t i = 0; i < N; i++)
+  for (size_t i = 0; i < upper.size(); i++)
   {
     std::cout << "(" << upper[i] << "," << middle[i] << "," << lower[i] << ")" << std::endl;
   }

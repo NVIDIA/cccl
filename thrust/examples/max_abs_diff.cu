@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "include/host_device.h"
+// #include "include/host_device.h"  // Legacy header - commented out
 
 // this example computes the maximum absolute difference
 // between the elements of two vectors
@@ -21,15 +21,8 @@ struct abs_diff
 
 int main()
 {
-  thrust::device_vector<float> d_a(4);
-  thrust::device_vector<float> d_b(4);
-
-  // clang-format off
-  d_a[0] = 1.0;  d_b[0] = 2.0;
-  d_a[1] = 2.0;  d_b[1] = 4.0;
-  d_a[2] = 3.0;  d_b[2] = 3.0;
-  d_a[3] = 4.0;  d_b[3] = 0.0;
-  // clang-format on
+  thrust::device_vector<float> d_a = {1.0, 2.0, 3.0, 4.0};
+  thrust::device_vector<float> d_b = {2.0, 4.0, 3.0, 0.0};
 
   // initial value of the reduction
   float init = 0;

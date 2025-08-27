@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "include/host_device.h"
+// #include "include/host_device.h"  // Not needed for this example
 
 // define a 2d float vector
 using vec2 = thrust::tuple<float, float>;

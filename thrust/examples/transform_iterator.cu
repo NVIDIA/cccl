@@ -8,8 +8,6 @@
 #include <iterator>
 #include <string>
 
-#include "include/host_device.h"
-
 // this functor clamps a value to the range [lo, hi]
 template <typename T>
 struct clamp

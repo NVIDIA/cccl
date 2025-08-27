@@ -5,7 +5,6 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
-#include "include/host_device.h"
 
 // compute minimum and maximum values in a single reduction
 
@@ -60,10 +59,7 @@ int main()
 
   // initialize data on host
   thrust::device_vector<int> data(N);
-  for (size_t i = 0; i < data.size(); i++)
-  {
-    data[i] = dist(rng);
-  }
+  std::generate(data.begin(), data.end(), [&]() { return dist(rng); });
 
   // setup arguments
   minmax_unary_op<int> unary_op;
@@ -77,7 +73,7 @@ int main()
 
   // print results
   std::cout << "[ ";
-  for (size_t i = 0; i < N; i++)
+  for (size_t i = 0; i < data.size(); i++)
   {
     std::cout << data[i] << " ";
   }

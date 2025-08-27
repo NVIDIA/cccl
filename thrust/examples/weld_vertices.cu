@@ -41,15 +41,12 @@ int main()
   // allocate memory for input mesh representation
   thrust::device_vector<vec2> input(9);
 
-  input[0] = vec2(0, 0); // First Triangle
-  input[1] = vec2(1, 0);
-  input[2] = vec2(0, 1);
-  input[3] = vec2(1, 0); // Second Triangle
-  input[4] = vec2(1, 1);
-  input[5] = vec2(0, 1);
-  input[6] = vec2(1, 0); // Third Triangle
-  input[7] = vec2(2, 0);
-  input[8] = vec2(1, 1);
+  thrust::host_vector<vec2> h_input{
+    vec2(0, 0), vec2(1, 0), vec2(0, 1), // First Triangle
+    vec2(1, 0), vec2(1, 1), vec2(0, 1), // Second Triangle
+    vec2(1, 0), vec2(2, 0), vec2(1, 1)  // Third Triangle
+  };
+  input = h_input;
 
   // allocate space for output mesh representation
   thrust::device_vector<vec2> vertices = input;

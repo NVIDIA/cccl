@@ -4,7 +4,7 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
-#include "include/host_device.h"
+// #include "include/host_device.h"  // Not needed for this example
 
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
@@ -54,7 +54,7 @@ struct bbox
 };
 
 // reduce a pair of bounding boxes (a,b) to a bounding box containing a and b
-struct bbox_reduction
+struct bbox_union : public thrust::binary_function<bbox,bbox,bbox>
 {
   __host__ __device__ bbox operator()(bbox a, bbox b)
   {
@@ -78,21 +78,17 @@ int main()
   thrust::device_vector<point2d> points(N);
 
   // generate some random points in the unit square
-  for (size_t i = 0; i < N; i++)
-  {
-    float x   = u01(rng);
-    float y   = u01(rng);
-    points[i] = point2d(x, y);
-  }
+  std::generate(points.begin(), points.end(), [&] {
+    auto x = u01(rng);
+    auto y = u01(rng);
+    return point2d(x, y);
+  });
 
   // initial bounding box contains first point
-  bbox init = bbox(points[0], points[0]);
-
-  // binary reduction operation
-  bbox_reduction binary_op;
+  bbox first_point = bbox(points[0], points[0]);
 
   // compute the bounding box for the point set
-  bbox result = thrust::reduce(points.begin(), points.end(), init, binary_op);
+  bbox result = thrust::reduce(points.begin(), points.end(), first_point, bbox_union());
 
   // print output
   std::cout << "bounding box " << std::fixed;

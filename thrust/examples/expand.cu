@@ -62,15 +62,11 @@ void print(const std::string& s, const Vector& v)
 
 int main()
 {
-  int counts[] = {3, 5, 2, 0, 1, 3, 4, 2, 4};
-  int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+  thrust::device_vector<int> d_counts = {3, 5, 2, 0, 1, 3, 4, 2, 4};
+  thrust::device_vector<int> d_values = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  size_t input_size  = sizeof(counts) / sizeof(int);
-  size_t output_size = thrust::reduce(counts, counts + input_size);
-
-  // copy inputs to device
-  thrust::device_vector<int> d_counts(counts, counts + input_size);
-  thrust::device_vector<int> d_values(values, values + input_size);
+  size_t input_size  = d_counts.size();
+  size_t output_size = thrust::reduce(d_counts.begin(), d_counts.end());
   thrust::device_vector<int> d_output(output_size);
 
   // expand values according to counts

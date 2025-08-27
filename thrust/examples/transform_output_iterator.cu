@@ -5,7 +5,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
 struct Functor
 {
   template <class Tuple>
@@ -19,15 +18,15 @@ struct Functor
 
 int main()
 {
-  float u[4] = {4, 3, 2, 1};
-  float v[4] = {-1, 1, 1, -1};
-  int idx[3] = {3, 0, 1};
-  float w[3] = {0, 0, 0};
+  thrust::host_vector<float> u{4, 3, 2, 1};
+  thrust::host_vector<float> v{-1, 1, 1, -1};
+  thrust::host_vector<int> idx{3, 0, 1};
+  thrust::host_vector<float> w{0, 0, 0};
 
-  thrust::device_vector<float> U(u, u + 4);
-  thrust::device_vector<float> V(v, v + 4);
-  thrust::device_vector<int> IDX(idx, idx + 3);
-  thrust::device_vector<float> W(w, w + 3);
+  thrust::device_vector<float> U(u);
+  thrust::device_vector<float> V(v);
+  thrust::device_vector<int> IDX(idx);
+  thrust::device_vector<float> W(w);
 
   // gather multiple elements and apply a function before writing result in memory
   thrust::gather(IDX.begin(),
@@ -36,9 +35,9 @@ int main()
                  thrust::make_transform_output_iterator(W.begin(), Functor()));
 
   std::cout << "result= [ ";
-  for (size_t i = 0; i < 3; i++)
+  for (const auto& value : W)
   {
-    std::cout << W[i] << " ";
+    std::cout << value << " ";
   }
   std::cout << "] \n";
 

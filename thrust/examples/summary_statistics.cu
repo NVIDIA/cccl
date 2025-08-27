@@ -8,8 +8,6 @@
 #include <iostream>
 #include <limits>
 
-#include "include/host_device.h"
-
 // This example computes several statistical properties of a data
 // series in a single reduction.  The algorithm is described in detail here:
 // http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
@@ -135,10 +133,10 @@ int main()
   using T = float;
 
   // initialize host array
-  T h_x[] = {4, 7, 13, 16};
+  thrust::host_vector<T> h_x{4, 7, 13, 16};
 
   // transfer to device
-  thrust::device_vector<T> d_x(h_x, h_x + sizeof(h_x) / sizeof(T));
+  thrust::device_vector<T> d_x(h_x);
 
   // setup arguments
   summary_stats_unary_op<T> unary_op;

@@ -149,15 +149,14 @@ int main()
 
   // generate random data on the host
   thrust::host_vector<int> input(N);
-  for (int i = 0; i < N; i++)
-  {
+  std::generate(input.begin(), input.end(), [&]() {
     int sum = 0;
     for (int j = 0; j < S; j++)
     {
       sum += dist(rng);
     }
-    input[i] = sum / S;
-  }
+    return sum / S;
+  });
 
   // demonstrate dense histogram method
   {

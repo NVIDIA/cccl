@@ -8,8 +8,6 @@
 #include <iterator>
 #include <string>
 
-#include "include/host_device.h"
-
 // this functor returns true if the argument is odd, and false otherwise
 template <typename T>
 struct is_odd

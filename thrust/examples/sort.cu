@@ -2,10 +2,10 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
-
-#include "include/host_device.h"
+#include <numeric>
 
 // Helper routines
 
@@ -13,68 +13,57 @@ void initialize(thrust::device_vector<int>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  for (size_t i = 0; i < v.size(); i++)
-  {
-    v[i] = dist(rng);
-  }
+  std::generate(v.begin(), v.end(), [&]() { return dist(rng); });
 }
 
 void initialize(thrust::device_vector<float>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(2, 19);
-  for (size_t i = 0; i < v.size(); i++)
-  {
-    v[i] = dist(rng) / 2.0f;
-  }
+  std::generate(v.begin(), v.end(), [&]() { return dist(rng) / 2.0f; });
 }
 
 void initialize(thrust::device_vector<thrust::pair<int, int>>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(0, 9);
-  for (size_t i = 0; i < v.size(); i++)
-  {
+  std::generate(v.begin(), v.end(), [&]() {
     int a = dist(rng);
     int b = dist(rng);
-    v[i]  = thrust::make_pair(a, b);
-  }
+    return thrust::make_pair(a, b);
+  });
 }
 
 void initialize(thrust::device_vector<int>& v1, thrust::device_vector<int>& v2)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  for (size_t i = 0; i < v1.size(); i++)
-  {
-    v1[i] = dist(rng);
-    v2[i] = static_cast<int>(i);
-  }
+  std::generate(v1.begin(), v1.end(), [&]() { return dist(rng); });
+  std::iota(v2.begin(), v2.end(), 0);
 }
 
 void print(const thrust::device_vector<int>& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& value : v)
   {
-    std::cout << " " << v[i];
+    std::cout << " " << value;
   }
   std::cout << "\n";
 }
 
 void print(const thrust::device_vector<float>& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& value : v)
   {
-    std::cout << " " << std::fixed << std::setprecision(1) << v[i];
+    std::cout << " " << std::fixed << std::setprecision(1) << value;
   }
   std::cout << "\n";
 }
 
 void print(const thrust::device_vector<thrust::pair<int, int>>& v)
 {
-  for (size_t i = 0; i < v.size(); i++)
+  for (const auto& p : v)
   {
-    thrust::pair<int, int> p = v[i];
     std::cout << " (" << p.first << "," << p.second << ")";
   }
   std::cout << "\n";
