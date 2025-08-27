@@ -55,6 +55,7 @@ CUB_NAMESPACE_BEGIN
 //! Load a linear segment of items into a blocked arrangement across the thread block.
 //!
 //! @blocked
+//!
 //! @endrst
 //!
 //! @tparam T
