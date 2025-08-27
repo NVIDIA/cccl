@@ -4,7 +4,6 @@ from typing import Any, Optional
 
 from typing_extensions import Buffer
 
-
 class OpKind(IntEnum):
     _value_: int
     STATELESS = ...
@@ -32,7 +31,6 @@ class OpKind(IntEnum):
     # MINIMUM = ...
     # MAXIMUM = ...
 
-
 class TypeEnum(IntEnum):
     _value_: int
     INT8 = ...
@@ -48,18 +46,15 @@ class TypeEnum(IntEnum):
     STORAGE = ...
     BOOLEAN = ...
 
-
 class IteratorKind(IntEnum):
     _value_: int
     POINTER = ...
     ITERATOR = ...
 
-
 class SortOrder(IntEnum):
     _value_: int
     ASCENDING = ...
     DESCENDING = ...
-
 
 class Op:
     def __init__(
@@ -84,7 +79,6 @@ class Op:
     def state_typenum(self) -> int: ...
     def as_bytes(self) -> bytes: ...
 
-
 class TypeInfo:
     def __init__(self, size: int, alignment: int, type_enum: TypeEnum): ...
     @property
@@ -94,7 +88,6 @@ class TypeInfo:
     @property
     def typenum(self) -> int: ...
     def as_bytes(self) -> bytes: ...
-
 
 class Value:
     def __init__(self, type: TypeInfo, state: memoryview): ...
@@ -106,19 +99,15 @@ class Value:
     def state(self, new_value: memoryview) -> None: ...
     def as_bytes(self) -> bytes: ...
 
-
 class Pointer:
     def __init__(self, arg): ...
 
-
 def make_pointer_object(ptr: int | ctypes.c_void_p, owner: Any) -> Pointer: ...
-
 
 class IteratorState(Buffer):
     def __init__(self, arg): ...
     @property
     def size(self) -> int: ...
-
 
 class Iterator:
     def __init__(
@@ -151,7 +140,6 @@ class Iterator:
     @host_advance_fn.setter
     def host_advance_fn(self, value) -> None: ...
 
-
 class CommonData:
     def __init__(
         self,
@@ -177,7 +165,6 @@ class CommonData:
 # DeviceReduce
 # ------------
 
-
 class DeviceReduceBuildResult:
     def __init__(
         self,
@@ -187,7 +174,6 @@ class DeviceReduceBuildResult:
         h_init: Value,
         info: CommonData,
     ): ...
-
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -204,7 +190,6 @@ class DeviceReduceBuildResult:
 # DeviceScan
 # ----------
 
-
 class DeviceScanBuildResult:
     def __init__(
         self,
@@ -215,7 +200,6 @@ class DeviceScanBuildResult:
         force_inclusive: bool,
         info: CommonData,
     ): ...
-
     def compute_inclusive(
         self,
         temp_storage_ptr: int | None,
@@ -227,7 +211,6 @@ class DeviceScanBuildResult:
         h_init: Value,
         stream,
     ) -> int: ...
-
     def compute_exclusive(
         self,
         temp_storage_ptr: int | None,
@@ -244,7 +227,6 @@ class DeviceScanBuildResult:
 # DeviceSegmentedReduce
 # ---------------------
 
-
 class DeviceSegmentedReduceBuildResult:
     def __init__(
         self,
@@ -256,7 +238,6 @@ class DeviceSegmentedReduceBuildResult:
         h_init: Value,
         info: CommonData,
     ): ...
-
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -275,7 +256,6 @@ class DeviceSegmentedReduceBuildResult:
 # DeviceMergeSort
 # ---------------
 
-
 class DeviceMergeSortBuildResult:
     def __init__(
         self,
@@ -286,7 +266,6 @@ class DeviceMergeSortBuildResult:
         binary_op: Op,
         info: CommonData,
     ): ...
-
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -304,7 +283,6 @@ class DeviceMergeSortBuildResult:
 # DeviceUniqueByKey
 # -----------------
 
-
 class DeviceUniqueByKeyBuildResult:
     def __init__(
         self,
@@ -316,7 +294,6 @@ class DeviceUniqueByKeyBuildResult:
         binary_op: Op,
         info: CommonData,
     ): ...
-
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -335,10 +312,8 @@ class DeviceUniqueByKeyBuildResult:
 # DeviceRadixSort
 # -----------------
 
-
 class DeviceRadixSortBuildResult:
     def __init__(self): ...
-
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -360,7 +335,6 @@ class DeviceRadixSortBuildResult:
 # DeviceUnaryTransform
 # --------------------
 
-
 class DeviceUnaryTransform:
     def __init__(
         self,
@@ -369,7 +343,6 @@ class DeviceUnaryTransform:
         op: Op,
         info: CommonData,
     ): ...
-
     def compute(
         self,
         d_in: Iterator,
@@ -382,7 +355,6 @@ class DeviceUnaryTransform:
 # DeviceBinaryTransform
 # ---------------------
 
-
 class DeviceBinaryTransform:
     def __init__(
         self,
@@ -392,7 +364,6 @@ class DeviceBinaryTransform:
         op: Op,
         info: CommonData,
     ): ...
-
     def compute(
         self,
         d_in1: Iterator,
@@ -405,7 +376,6 @@ class DeviceBinaryTransform:
 # ---------------
 # DeviceHistogram
 # ---------------
-
 
 class DeviceHistogramBuildResult:
     def __init__(
@@ -420,7 +390,6 @@ class DeviceHistogramBuildResult:
         row_stride_samples: int,
         is_evenly_segmented: bool,
     ): ...
-
     def compute_even(
         self,
         d_samples: Iterator,
