@@ -162,7 +162,7 @@ using __scheduler_domain_t _CCCL_NODEBUG_ALIAS = decay_t<decltype(__detail::__ge
 //!   `get_domain(get_env(schedule(sch)))`.
 struct get_domain_t
 {
-  //! @brief If there is a \c get_domain_t query in \c __env, return it.
+  //! @brief If there is a @c get_domain_t query in @c __env, return it.
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_domain_t>)
@@ -174,8 +174,8 @@ struct get_domain_t
     return __domain_t{};
   }
 
-  //! @brief If there is not a \c get_domain_t query in \c __env, but there is a
-  //! scheduler, return the domain of the scheduler if it has one, and \c default_domain
+  //! @brief If there is not a @c get_domain_t query in @c __env, but there is a
+  //! scheduler, return the domain of the scheduler if it has one, and @c default_domain
   //! otherwise.
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
@@ -200,7 +200,7 @@ _CCCL_GLOBAL_CONSTANT get_domain_t get_domain{};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //! @brief A query type for asking a sender's attributes for the domain on which that
-//! sender will complete. As with \c get_domain, it is used in tag dispatching to find a
+//! sender will complete. As with @c get_domain, it is used in tag dispatching to find a
 //! custom implementation of a sender algorithm.
 //!
 //! @tparam _Tag one of set_value_t, set_error_t, or set_stopped_t

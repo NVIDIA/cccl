@@ -60,7 +60,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_;
 //////////////////////////////////////////////////////////////////////////////////////////
 // __env_ref
 
-//! \brief __env_ref_ is a utility that builds a queryable object from a reference
+//! @brief __env_ref_ is a utility that builds a queryable object from a reference
 //! to another queryable object.
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_
@@ -121,7 +121,7 @@ _CCCL_GLOBAL_CONSTANT __detail::__env_ref_fn __env_ref{};
 //////////////////////////////////////////////////////////////////////////////////////////
 // __fwd_env
 
-//! \brief __fwd_env_ is a utility that forwards queries to a given queryable object
+//! @brief __fwd_env_ is a utility that forwards queries to a given queryable object
 //! provided those queries that satisfy the __forwarding_query concept.
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
@@ -179,7 +179,7 @@ _CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
 //////////////////////////////////////////////////////////////////////////////////////////
 // __sch_env
 
-//! \brief __sch_env_t is a utility that builds an environment from a scheduler. It
+//! @brief __sch_env_t is a utility that builds an environment from a scheduler. It
 //! defines the `get_scheduler` query and provides a default for the `get_domain` query.
 template <class _Sch, class... _PrevSch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t;
@@ -246,7 +246,7 @@ _CCCL_GLOBAL_CONSTANT __mk_sch_env_t __mk_sch_env{};
 //////////////////////////////////////////////////////////////////////////////////////////
 // __sch_attrs
 
-//! \brief __sch_attrs_t is a utility that builds an attributes queryable from a
+//! @brief __sch_attrs_t is a utility that builds an attributes queryable from a
 //! scheduler. It defines the `get_completion_scheduler` query and provides a default for
 //! the `get_completion_domain` query.
 template <class _Sch>
@@ -271,12 +271,12 @@ _CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 //////////////////////////////////////////////////////////////////////////////////////////
 // __inln_attrs
 
-//! \brief __inln_attrs_t is a utility that builds an attributes queryable for a sender
-//! that completes inline. It delegates the \c get_completion_scheduler and \c get_completion_domain
+//! @brief __inln_attrs_t is a utility that builds an attributes queryable for a sender
+//! that completes inline. It delegates the @c get_completion_scheduler and @c get_completion_domain
 //! queries to the receiver's environment.
 //!
-//! \tparam _Tags The completion tags for which \c get_completion_signatures should return
-//! the current scheduler, and \c get_completion_domain should return the current domain.
+//! @tparam _Tags The completion tags for which @c get_completion_signatures should return
+//! the current scheduler, and @c get_completion_domain should return the current domain.
 template <class... _Tags>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __inln_attrs_t
 {
@@ -311,25 +311,25 @@ namespace __detail
 struct __join_env_fn
 {
   template <class _Env>
-  _CCCL_API constexpr auto operator()(_Env&& __env, env<> = {}) const noexcept -> _Env
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Env&& __env, env<> = {}) const noexcept -> _Env
   {
     static_assert(__nothrow_movable<_Env>);
     return static_cast<_Env&&>(__env);
   }
 
   template <class _Env>
-  _CCCL_API constexpr auto operator()(env<>, _Env&& __env) const noexcept -> __fwd_env_t<_Env>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(env<>, _Env&& __env) const noexcept -> __fwd_env_t<_Env>
   {
     return __fwd_env(static_cast<_Env&&>(__env));
   }
 
-  _CCCL_API constexpr auto operator()(env<>, env<>) const noexcept -> env<>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(env<>, env<>) const noexcept -> env<>
   {
     return {};
   }
 
   template <class _First, class _Second>
-  _CCCL_API constexpr auto operator()(_First&& __first, _Second&& __second) const noexcept
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_First&& __first, _Second&& __second) const noexcept
     -> env<_First, __fwd_env_t<_Second>>
   {
     static_assert(__nothrow_movable<_First>);

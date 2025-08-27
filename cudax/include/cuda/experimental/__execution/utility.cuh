@@ -200,13 +200,13 @@ private:
   ~__managed_box() = default;
 };
 
-//! \brief A callable that wraps a set of functions and calls the first one that is
+//! @brief A callable that wraps a set of functions and calls the first one that is
 //! callable with a given set of arguments.
 template <class... _Fns>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __first_callable
 {
 private:
-  //! \brief Returns the first function that is callable with a given set of arguments.
+  //! @brief Returns the first function that is callable with a given set of arguments.
   template <class... _Args, class _Self>
   [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __get_1st(_Self&& __self) noexcept -> decltype(auto)
   {
@@ -219,12 +219,12 @@ private:
     }
   }
 
-  //! \brief Alias for the type of the first function that is callable with a given set of arguments.
+  //! @brief Alias for the type of the first function that is callable with a given set of arguments.
   template <class _Self, class... _Args>
   using __1st_fn_t _CCCL_NODEBUG_ALIAS = decltype(__first_callable::__get_1st<_Args...>(declval<_Self>()));
 
 public:
-  //! \brief Calls the first function that is callable with a given set of arguments.
+  //! @brief Calls the first function that is callable with a given set of arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_NODEBUG_API constexpr auto
@@ -235,7 +235,7 @@ public:
       static_cast<_Args&&>(__args)...);
   }
 
-  //! \overload
+  //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_NODEBUG_API constexpr auto operator()(_Args&&... __args) const& noexcept(
@@ -283,7 +283,7 @@ template <class _Fn, class _Default, class... _Args>
 using __call_result_or_t _CCCL_NODEBUG_ALIAS =
   decltype(__call_or(::cuda::std::declval<_Fn>(), ::cuda::std::declval<_Default>(), ::cuda::std::declval<_Args>()...));
 
-//! \brief A callable that always return a value of type _Ty, regardless of the arguments
+//! @brief A callable that always return a value of type _Ty, regardless of the arguments
 //! passed to it.
 template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __always

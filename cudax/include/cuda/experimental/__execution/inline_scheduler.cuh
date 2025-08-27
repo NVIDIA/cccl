@@ -63,34 +63,34 @@ public:
     using sender_concept = sender_t;
 
     template <class Self>
-    _CCCL_API static constexpr auto get_completion_signatures() noexcept
+    [[nodiscard]] _CCCL_API static constexpr auto get_completion_signatures() noexcept
     {
       return completion_signatures<set_value_t()>{};
     }
 
     template <class _Rcvr>
-    _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
     {
       return {{}, static_cast<_Rcvr&&>(__rcvr)};
     }
 
-    _CCCL_API static constexpr auto get_env() noexcept -> __attrs_t
+    [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept -> __attrs_t
     {
       return {};
     }
   };
 
-  _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
+  [[nodiscard]] _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
   {
     return {};
   }
 
-  _CCCL_API friend constexpr bool operator==(inline_scheduler, inline_scheduler) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(inline_scheduler, inline_scheduler) noexcept
   {
     return true;
   }
 
-  _CCCL_API friend constexpr bool operator!=(inline_scheduler, inline_scheduler) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(inline_scheduler, inline_scheduler) noexcept
   {
     return false;
   }

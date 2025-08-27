@@ -35,7 +35,7 @@
 
 namespace cuda::experimental::execution
 {
-//! \brief Execution algorithm that starts a given sender on a specified scheduler.
+//! @brief Execution algorithm that starts a given sender on a specified scheduler.
 //!
 //! The `starts_on` algorithm takes a scheduler and a sender, and returns a new sender
 //! that, when connected and started, will first schedule work on the provided scheduler,
@@ -45,7 +45,7 @@ namespace cuda::experimental::execution
 //! execution on a specific execution context, such as a particular GPU stream or thread
 //! pool.
 //!
-//! \details The operation proceeds in two phases:
+//! @details The operation proceeds in two phases:
 //! 1. **Scheduling Phase**: The algorithm first calls `schedule()` on the provided
 //!    scheduler to obtain a sender that represents scheduling work on that scheduler's
 //!    execution context.
@@ -56,33 +56,33 @@ namespace cuda::experimental::execution
 //! `schedule()` sender and the original sender. Error and stopped signals from either
 //! operation are propagated to the final receiver.
 //!
-//! \tparam _Sch A scheduler type that satisfies the `scheduler` concept
-//! \tparam _Sndr A sender type that satisfies the `sender` concept
+//! @tparam _Sch A scheduler type that satisfies the `scheduler` concept
+//! @tparam _Sndr A sender type that satisfies the `sender` concept
 //!
-//! \param __sch The scheduler on which the sender should start execution
-//! \param __sndr The sender to be started on the scheduler's execution context
+//! @param __sch The scheduler on which the sender should start execution
+//! @param __sndr The sender to be started on the scheduler's execution context
 //!
-//! \return A sender that, when started, will first schedule on `__sch` and then execute
+//! @return A sender that, when started, will first schedule on `__sch` and then execute
 //!         `__sndr`
 //!
-//! \note The returned sender's environment includes the provided scheduler as the current
+//! @note The returned sender's environment includes the provided scheduler as the current
 //!       scheduler, allowing nested senders to query and use the same execution context.
 //!
-//! \note This implementation follows the C++26 standard specification for
+//! @note This implementation follows the C++26 standard specification for
 //!       `std::execution::starts_on` as defined in [exec.starts.on].
 //!
 //! Example usage:
-//! \code
+//! @code
 //! auto work = cuda::experimental::execution::just(42)
 //!           | cuda::experimental::execution::then([](int x) { return x * 2; });
 //!
 //! auto scheduled_work = cuda::experimental::execution::starts_on(some_scheduler, work);
-//! \endcode
+//! @endcode
 //!
-//! \see schedule
-//! \see scheduler
-//! \see sender
-//! \see receiver
+//! @see schedule
+//! @see scheduler
+//! @see sender
+//! @see receiver
 struct starts_on_t
 {
 private:

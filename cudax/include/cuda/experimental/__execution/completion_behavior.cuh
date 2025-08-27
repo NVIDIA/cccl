@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__utility/rel_ops.h>
+#include <cuda/std/initializer_list>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
@@ -148,15 +149,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
 {
   using __completion_behavior_t = __completion_behavior::completion_behavior;
 
-  [[nodiscard]] _CCCL_API static constexpr auto __minimum(const __completion_behavior_t* __cbs, size_t __count) noexcept
-    -> __completion_behavior_t
+  [[nodiscard]] _CCCL_API static constexpr auto
+  __minimum(::cuda::std::initializer_list<__completion_behavior_t> __cbs) noexcept -> __completion_behavior_t
   {
     auto __result = __completion_behavior::completion_behavior::inline_completion;
-    for (; __count != 0; --__count, ++__cbs)
+    for (auto __cb : __cbs)
     {
-      if (*__cbs < __result)
+      if (__cb < __result)
       {
-        __result = *__cbs;
+        __result = __cb;
       }
     }
     return __result;
@@ -165,8 +166,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT min_t
   template <__completion_behavior_t... _CBs>
   [[nodiscard]] _CCCL_API constexpr auto operator()(completion_behavior::__constant_t<_CBs>...) const noexcept
   {
-    constexpr __completion_behavior_t __s_cbs[] = {_CBs..., __completion_behavior_t::inline_completion};
-    constexpr auto __behavior                   = __minimum(__s_cbs, sizeof...(_CBs));
+    constexpr auto __behavior = __minimum({_CBs...});
 
     if constexpr (__behavior == completion_behavior::unknown)
     {

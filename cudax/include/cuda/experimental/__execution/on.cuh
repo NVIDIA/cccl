@@ -38,7 +38,7 @@
 
 namespace cuda::experimental::execution
 {
-//! \brief Sender adaptor that transfers execution to a specified scheduler and back.
+//! @brief Sender adaptor that transfers execution to a specified scheduler and back.
 //!
 //! The `on` algorithm provides execution context control by moving computation to
 //! different execution resources. It has two primary forms:
@@ -49,9 +49,9 @@ namespace cuda::experimental::execution
 //! resource, and upon completion, transfers execution back to the original execution
 //! resource where the `on` sender was started.
 //!
-//! \code
+//! @code
 //! auto result = on(gpu_scheduler, some_computation) | sync_wait();
-//! \endcode
+//! @endcode
 //!
 //! ## Form 2: `on(sender, scheduler, closure)` or `sender | on(scheduler, closure)`
 //!
@@ -59,9 +59,9 @@ namespace cuda::experimental::execution
 //! execution resource, executes the closure with the sender's results, and then transfers
 //! execution back to where the original sender completed.
 //!
-//! \code
+//! @code
 //! auto result = some_computation | on(gpu_scheduler, then([](auto value) { return process(value); }));
-//! \endcode
+//! @endcode
 //!
 //! ## Behavior
 //!
@@ -78,10 +78,10 @@ namespace cuda::experimental::execution
 //! If any scheduling operation fails, an error completion is executed on an unspecified
 //! execution agent.
 //!
-//! \note This is CUDA's experimental implementation of the C++26 `std::execution::on` algorithm
+//! @note This is CUDA's experimental implementation of the C++26 `std::execution::on` algorithm
 //!       as specified in [exec.on].
 //!
-//! \see \c starts_on and \c continues_on for related scheduling primitives
+//! @see @c starts_on and @c continues_on for related scheduling primitives
 struct on_t
 {
   _CUDAX_SEMI_PRIVATE :
