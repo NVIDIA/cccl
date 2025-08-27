@@ -39,17 +39,25 @@ namespace cuda::experimental::cufile
 
 class file_handle;
 
-//! Base class for file handle operations
-class file_handle_base
+//! Non-owning reference to a file handle for cuFILE operations
+class file_handle_ref
 {
 protected:
-  int fd_;
+  int fd_                       = -1;
   CUfileHandle_t cufile_handle_ = nullptr;
 
-  static int convert_ios_mode(::std::ios_base::openmode mode);
+  file_handle_ref() = default; // for derived move-ctor
   void register_file();
 
-  ~file_handle_base() noexcept
+public:
+  //! Create from existing file descriptor (non-owning)
+  explicit file_handle_ref(int fd);
+
+  file_handle_ref(const file_handle_ref&)            = delete;
+  file_handle_ref& operator=(const file_handle_ref&) = delete;
+  file_handle_ref(file_handle_ref&&)                 = delete;
+  file_handle_ref& operator=(file_handle_ref&&)      = delete;
+  ~file_handle_ref() noexcept
   {
     if (cufile_handle_ != nullptr)
     {
@@ -58,7 +66,6 @@ protected:
     }
   }
 
-public:
   int get_fd() const noexcept
   {
     return fd_;
@@ -86,28 +93,20 @@ public:
                    ssize_t& bytes_written);
 
   //! Get native cuFILE handle
-  CUfileHandle_t native_handle() const noexcept;
+  CUfileHandle_t native_handle() const noexcept
+  {
+    return cufile_handle_;
+  }
 
   //! Check if the handle owns a valid resource
-  bool is_valid() const noexcept;
-};
-
-//! Non-owning reference to a file handle for cuFILE operations
-class file_handle_ref : public file_handle_base
-{
-public:
-  //! Create from existing file descriptor (non-owning)
-  explicit file_handle_ref(int fd);
-
-  file_handle_ref(const file_handle_ref&)            = delete;
-  file_handle_ref& operator=(const file_handle_ref&) = delete;
-  file_handle_ref(file_handle_ref&&)                 = delete;
-  file_handle_ref& operator=(file_handle_ref&&)      = delete;
-  ~file_handle_ref()                                 = default;
+  bool is_valid() const noexcept
+  {
+    return cufile_handle_ != nullptr;
+  }
 };
 
 //! RAII file handle for cuFILE operations (owning)
-class file_handle : public file_handle_base
+class file_handle : public file_handle_ref
 {
 public:
   //! Open file for cuFILE operations
@@ -119,6 +118,11 @@ public:
   file_handle(file_handle&& other) noexcept;
   file_handle& operator=(file_handle&& other) noexcept;
   ~file_handle() noexcept;
+
+private:
+  static int convert_ios_mode(::std::ios_base::openmode mode);
+  static int open_file_descriptor(const ::std::string& path, ::std::ios_base::openmode mode);
+  static int validate_fd_or_throw(int fd);
 };
 
 } // namespace cuda::experimental::cufile
@@ -129,7 +133,7 @@ namespace cuda::experimental::cufile
 {
 
 // Static method implementations
-inline int file_handle_base::convert_ios_mode(::std::ios_base::openmode mode)
+inline int file_handle::convert_ios_mode(::std::ios_base::openmode mode)
 {
   int flags = 0;
 
@@ -169,7 +173,7 @@ inline int file_handle_base::convert_ios_mode(::std::ios_base::openmode mode)
   return flags;
 }
 
-inline void file_handle_base::register_file()
+inline void file_handle_ref::register_file()
 {
   CUfileDescr_t desc = {};
   desc.handle.fd     = fd_;
@@ -182,36 +186,38 @@ inline void file_handle_base::register_file()
   cufile_handle_ = handle;
 }
 
-// Constructor implementations
-inline file_handle::file_handle(const ::std::string& path, ::std::ios_base::openmode mode)
-    : file_handle_base()
+inline int file_handle::open_file_descriptor(const ::std::string& path, ::std::ios_base::openmode mode)
 {
   int flags = convert_ios_mode(mode);
-  fd_       = open(path.c_str(), flags, 0644);
-
-  if (fd_ < 0)
+  int fd    = open(path.c_str(), flags, 0644);
+  if (fd < 0)
   {
     throw ::std::system_error(errno, ::std::system_category(), "Failed to open file: " + path);
   }
-
-  register_file();
+  return fd;
 }
 
-inline file_handle::file_handle(int fd)
-    : file_handle_base()
+inline int file_handle::validate_fd_or_throw(int fd)
 {
-  fd_ = fd;
-  if (fd_ < 0)
+  if (fd < 0)
   {
     throw ::std::invalid_argument("Invalid file descriptor");
   }
-
-  register_file();
+  return fd;
 }
+
+// Constructor implementations
+inline file_handle::file_handle(const ::std::string& path, ::std::ios_base::openmode mode)
+    : file_handle_ref(open_file_descriptor(path, mode))
+{}
+
+inline file_handle::file_handle(int fd)
+    : file_handle_ref(validate_fd_or_throw(fd))
+{}
 
 // Move constructor and assignment
 inline file_handle::file_handle(file_handle&& other) noexcept
-    : file_handle_base()
+    : file_handle_ref()
 {
   fd_                  = other.fd_;
   cufile_handle_       = other.cufile_handle_;
@@ -254,20 +260,18 @@ inline file_handle::~file_handle() noexcept
 
 // file_handle_ref constructors
 inline file_handle_ref::file_handle_ref(int fd)
-    : file_handle_base()
 {
   fd_ = fd;
   if (fd_ < 0)
   {
     throw ::std::invalid_argument("Invalid file descriptor");
   }
-
   register_file();
 }
 
 // Template method implementations
 template <typename T>
-inline size_t file_handle_base::read(::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset)
+inline size_t file_handle_ref::read(::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset)
 {
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
@@ -280,7 +284,7 @@ inline size_t file_handle_base::read(::cuda::std::span<T> buffer, off_t file_off
 }
 
 template <typename T>
-inline size_t file_handle_base::write(::cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset)
+inline size_t file_handle_ref::write(::cuda::std::span<const T> buffer, off_t file_offset, off_t buffer_offset)
 {
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
@@ -293,7 +297,7 @@ inline size_t file_handle_base::write(::cuda::std::span<const T> buffer, off_t f
 }
 
 template <typename T>
-inline void file_handle_base::read_async(
+inline void file_handle_ref::read_async(
   ::cuda::stream_ref stream, ::cuda::std::span<T> buffer, off_t file_offset, off_t buffer_offset, ssize_t& bytes_read)
 {
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
@@ -308,7 +312,7 @@ inline void file_handle_base::read_async(
 }
 
 template <typename T>
-inline void file_handle_base::write_async(
+inline void file_handle_ref::write_async(
   ::cuda::stream_ref stream,
   ::cuda::std::span<const T> buffer,
   off_t file_offset,
@@ -332,15 +336,6 @@ inline void file_handle_base::write_async(
   ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileWriteAsync");
 }
 
-// Simple getter implementations
-inline CUfileHandle_t file_handle_base::native_handle() const noexcept
-{
-  return cufile_handle_;
-}
-
-inline bool file_handle_base::is_valid() const noexcept
-{
-  return cufile_handle_ != nullptr;
-}
+// getters implemented inline in class
 
 } // namespace cuda::experimental::cufile
