@@ -80,11 +80,11 @@ public:
   }
 
   /* Returns the same untyped task dependency with a read-only access mode */
-  task_dep_untyped as_read_mode_untyped() const
+  task_dep_untyped as_mode(access_mode another) const
   {
-    task_dep_untyped res(*this);
-    res.m = access_mode::read;
-    return res;
+    auto result = *this;
+    result.m    = another;
+    return result;
   }
 
   // We should only assign it once
@@ -215,9 +215,9 @@ public:
   }
 
   /* Returns the same task dependency with a read-only access mode */
-  task_dep<T> as_read_mode() const
+  task_dep<T> as_mode(access_mode another) const
   {
-    return task_dep<T>(as_read_mode_untyped());
+    return task_dep<T>(task_dep_untyped::as_mode(another));
   }
 
   /**
