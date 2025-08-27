@@ -45,7 +45,7 @@ int main()
   auto lB = sctx.logical_data(lA.shape());
   lB.set_symbol("B");
 
-  sctx.parallel_for(lB.shape(), lB.write(), lA.read(), ltoken.rw())->*[] __device__(size_t i, auto b, auto a, auto) {
+  sctx.parallel_for(lB.shape(), lB.write(), lA.read(), ltoken.rw())->*[] __device__(size_t i, auto b, auto a) {
     b(i) = 17 - 3 * a(i);
   };
 
