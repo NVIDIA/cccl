@@ -108,7 +108,7 @@ inline buffer_handle::buffer_handle(buffer_handle&& other) noexcept
 
 inline buffer_handle& buffer_handle::operator=(buffer_handle&& other) noexcept
 {
-  if (this != &other)
+  if (this != ::cuda::std::addressof(other))
   {
     // Deregister current buffer if owned
     if (registered_buffer_ != nullptr)

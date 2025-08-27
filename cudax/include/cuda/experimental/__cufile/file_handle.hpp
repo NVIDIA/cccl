@@ -221,7 +221,7 @@ inline file_handle::file_handle(file_handle&& other) noexcept
 
 inline file_handle& file_handle::operator=(file_handle&& other) noexcept
 {
-  if (this != &other)
+  if (this != ::cuda::std::addressof(other))
   {
     // Clean up file descriptor
     if (fd_ >= 0)

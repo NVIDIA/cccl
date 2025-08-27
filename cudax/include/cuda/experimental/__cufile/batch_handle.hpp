@@ -135,7 +135,7 @@ inline batch_handle::batch_handle(batch_handle&& other) noexcept
 
 inline batch_handle& batch_handle::operator=(batch_handle&& other) noexcept
 {
-  if (this != &other)
+  if (this != ::cuda::std::addressof(other))
   {
     if (handle_ != nullptr)
     {
