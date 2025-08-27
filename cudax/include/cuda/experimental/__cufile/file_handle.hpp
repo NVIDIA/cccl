@@ -26,11 +26,9 @@
 #include <cuda/experimental/__cufile/buffer_handle.hpp>
 #include <cuda/experimental/__cufile/detail/enums.hpp>
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
-#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 #include <cuda/experimental/__cufile/stream_handle.hpp>
 
 #include <ios>
-#include <iostream>
 #include <string>
 
 #include <fcntl.h>
@@ -46,10 +44,19 @@ class file_handle_base
 {
 protected:
   int fd_;
-  detail::raii_resource<CUfileHandle_t, void (*)(CUfileHandle_t)> cufile_handle_;
+  CUfileHandle_t cufile_handle_ = nullptr;
 
   static int convert_ios_mode(::std::ios_base::openmode mode);
   void register_file();
+
+  ~file_handle_base() noexcept
+  {
+    if (cufile_handle_ != nullptr)
+    {
+      cuFileHandleDeregister(cufile_handle_);
+      cufile_handle_ = nullptr;
+    }
+  }
 
 public:
   int get_fd() const noexcept
@@ -172,10 +179,7 @@ inline void file_handle_base::register_file()
   CUfileHandle_t handle;
   CUfileError_t error = cuFileHandleRegister(&handle, &desc);
   ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileHandleRegister");
-
-  cufile_handle_.emplace(handle, [](CUfileHandle_t h) {
-    cuFileHandleDeregister(h);
-  });
+  cufile_handle_ = handle;
 }
 
 // Constructor implementations
@@ -209,9 +213,10 @@ inline file_handle::file_handle(int fd)
 inline file_handle::file_handle(file_handle&& other) noexcept
     : file_handle_base()
 {
-  fd_            = other.fd_;
-  cufile_handle_ = ::std::move(other.cufile_handle_);
-  other.fd_      = -1;
+  fd_                  = other.fd_;
+  cufile_handle_       = other.cufile_handle_;
+  other.cufile_handle_ = nullptr;
+  other.fd_            = -1;
 }
 
 inline file_handle& file_handle::operator=(file_handle&& other) noexcept
@@ -224,8 +229,14 @@ inline file_handle& file_handle::operator=(file_handle&& other) noexcept
       close(fd_);
     }
 
-    fd_            = other.fd_;
-    cufile_handle_ = ::std::move(other.cufile_handle_);
+    fd_ = other.fd_;
+    // Deregister current handle if owned
+    if (cufile_handle_ != nullptr)
+    {
+      cuFileHandleDeregister(cufile_handle_);
+    }
+    cufile_handle_       = other.cufile_handle_;
+    other.cufile_handle_ = nullptr;
 
     other.fd_ = -1;
   }
@@ -264,7 +275,7 @@ inline size_t file_handle_base::read(::cuda::std::span<T> buffer, off_t file_off
   void* buffer_ptr  = static_cast<void*>(buffer.data());
   size_t size_bytes = buffer.size_bytes();
 
-  ssize_t result = cuFileRead(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
+  ssize_t result = cuFileRead(cufile_handle_, buffer_ptr, size_bytes, file_offset, buffer_offset);
   return static_cast<size_t>(detail::check_cufile_result(result, "cuFileRead"));
 }
 
@@ -277,7 +288,7 @@ inline size_t file_handle_base::write(::cuda::std::span<const T> buffer, off_t f
   const void* buffer_ptr = static_cast<const void*>(buffer.data());
   size_t size_bytes      = buffer.size_bytes();
 
-  ssize_t result = cuFileWrite(cufile_handle_.get(), buffer_ptr, size_bytes, file_offset, buffer_offset);
+  ssize_t result = cuFileWrite(cufile_handle_, buffer_ptr, size_bytes, file_offset, buffer_offset);
   return static_cast<size_t>(detail::check_cufile_result(result, "cuFileWrite"));
 }
 
@@ -291,9 +302,9 @@ inline void file_handle_base::read_async(
   size_t size_bytes = buffer.size_bytes();
   void* buffer_ptr  = static_cast<void*>(buffer.data());
 
-  CUfileError_t error = cuFileReadAsync(
-    cufile_handle_.get(), buffer_ptr, &size_bytes, &file_offset, &buffer_offset, &bytes_read, stream.get());
-  ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileReadAsync");
+  CUfileError_t error =
+    cuFileReadAsync(cufile_handle_, buffer_ptr, &size_bytes, &file_offset, &buffer_offset, &bytes_read, stream.get());
+  detail::check_cufile_result(error, "cuFileReadAsync");
 }
 
 template <typename T>
@@ -311,7 +322,7 @@ inline void file_handle_base::write_async(
   const void* buffer_ptr = static_cast<const void*>(buffer.data());
 
   CUfileError_t error = cuFileWriteAsync(
-    cufile_handle_.get(),
+    cufile_handle_,
     const_cast<void*>(buffer_ptr),
     &size_bytes,
     &file_offset,
@@ -324,12 +335,12 @@ inline void file_handle_base::write_async(
 // Simple getter implementations
 inline CUfileHandle_t file_handle_base::native_handle() const noexcept
 {
-  return cufile_handle_.get();
+  return cufile_handle_;
 }
 
 inline bool file_handle_base::is_valid() const noexcept
 {
-  return cufile_handle_.has_value();
+  return cufile_handle_ != nullptr;
 }
 
 } // namespace cuda::experimental::cufile

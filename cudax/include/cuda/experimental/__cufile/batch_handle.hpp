@@ -23,7 +23,6 @@
 
 #include <cuda/experimental/__cufile/detail/enums.hpp>
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
-#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 
 #include <functional>
 #include <vector>
@@ -79,15 +78,23 @@ struct batch_io_result
 class batch_handle
 {
 private:
-  CUfileBatchHandle_t handle_;
+  CUfileBatchHandle_t handle_ = nullptr;
   unsigned int max_operations_;
-  detail::raii_resource<CUfileBatchHandle_t, ::std::function<void(CUfileBatchHandle_t)>> batch_resource_;
 
 public:
   explicit batch_handle(unsigned int max_operations);
 
   batch_handle(batch_handle&& other) noexcept;
   batch_handle& operator=(batch_handle&& other) noexcept;
+
+  ~batch_handle() noexcept
+  {
+    if (handle_ != nullptr)
+    {
+      cuFileBatchIODestroy(handle_);
+      handle_ = nullptr;
+    }
+  }
 
   //! Submit batch operations using span
   template <typename T, typename FileHandle>
@@ -115,25 +122,26 @@ inline batch_handle::batch_handle(unsigned int max_operations)
 {
   CUfileError_t error = cuFileBatchIOSetUp(&handle_, max_operations);
   detail::check_cufile_result(error, "cuFileBatchIOSetUp");
-
-  batch_resource_.emplace(handle_, [](CUfileBatchHandle_t h) {
-    cuFileBatchIODestroy(h);
-  });
 }
 
 inline batch_handle::batch_handle(batch_handle&& other) noexcept
     : handle_(other.handle_)
     , max_operations_(other.max_operations_)
-    , batch_resource_(::std::move(other.batch_resource_))
-{}
+{
+  other.handle_ = nullptr;
+}
 
 inline batch_handle& batch_handle::operator=(batch_handle&& other) noexcept
 {
   if (this != &other)
   {
+    if (handle_ != nullptr)
+    {
+      cuFileBatchIODestroy(handle_);
+    }
     handle_         = other.handle_;
     max_operations_ = other.max_operations_;
-    batch_resource_ = ::std::move(other.batch_resource_);
+    other.handle_   = nullptr;
   }
   return *this;
 }
@@ -175,7 +183,7 @@ inline void batch_handle::cancel()
 {
   CUfileError_t error = cuFileBatchIOCancel(handle_);
   detail::check_cufile_result(error, "cuFileBatchIOCancel");
-  batch_resource_.release();
+  handle_ = nullptr;
 }
 
 inline unsigned int batch_handle::max_operations() const noexcept
@@ -185,7 +193,7 @@ inline unsigned int batch_handle::max_operations() const noexcept
 
 inline bool batch_handle::is_valid() const noexcept
 {
-  return batch_resource_.has_value();
+  return handle_ != nullptr;
 }
 
 // Generic submit<T, Handle> implementation (Handle must provide native_handle())

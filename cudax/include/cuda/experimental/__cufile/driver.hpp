@@ -171,11 +171,11 @@ class driver_handle
 public:
   driver_handle()
   {
-    driver_open();
+    cuda::experimental::cufile::driver_open();
   }
   ~driver_handle() noexcept
   {
-    driver_close();
+    cuda::experimental::cufile::driver_close();
   }
 
   driver_handle(const driver_handle&)            = delete;
