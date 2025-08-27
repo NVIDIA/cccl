@@ -415,13 +415,8 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             deterministic_accum_t,
             transform_t>),
         reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceKernel<
-            policy_t,
-            decltype(d_in),
-            int,
-            reduction_op_t,
-            deterministic_accum_t,
-            transform_t>),
+          cub::detail::reduce::
+            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
         reinterpret_cast<void*>(
           cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
             policy_t,
