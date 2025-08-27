@@ -275,7 +275,6 @@ public:
     destroy(__stream_);
   }
 
-
   //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream
   //! that was used to create the buffer.
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
