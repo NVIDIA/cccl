@@ -14,6 +14,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # Install required dependencies
+    - name: Install docs build dependencies
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build python3-venv git flex bison
+
     # Build all docs
     - name: Build all docs
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -25,6 +32,8 @@ runs:
       run: |
         mkdir -p _site
         cp -rf ./docs/_build/html/* _site/
+        # Create .nojekyll to prevent GitHub Pages from ignoring _static directories
+        touch _site/.nojekyll
         ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Unary transform example demonstrating the object API.
+Unary transform examples demonstrating the object API and well-known operations.
 """
 
 import cupy as cp
@@ -33,6 +33,6 @@ def unary_transform_object_example():
 
 
 if __name__ == "__main__":
-    print("Running unary_transform_object_example...")
+    print("Running unary transform examples...")
     unary_transform_object_example()
-    print("All examples completed successfully!")
+    print("All unary transform examples completed successfully!")

@@ -13,9 +13,6 @@ import cuda.cccl.parallel.experimental as parallel
 
 
 def unique_by_key_object_example():
-    def compare_op(lhs, rhs):
-        return np.uint8(lhs == rhs)
-
     dtype = np.int32
     h_input_keys = np.array([1, 1, 2, 3, 3], dtype=dtype)
     h_input_values = np.array([10, 20, 30, 40, 50], dtype=dtype)
@@ -31,7 +28,7 @@ def unique_by_key_object_example():
         d_output_keys,
         d_output_values,
         d_num_selected,
-        compare_op,
+        parallel.OpKind.EQUAL_TO,
     )
 
     temp_storage_size = uniquer(
