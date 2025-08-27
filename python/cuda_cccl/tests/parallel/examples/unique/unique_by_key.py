@@ -62,8 +62,7 @@ def string_deduplication_example():
     # Simulate string IDs: ["apple", "apple", "banana", "cherry", "cherry", "date"]
     # Using integers to represent string IDs
     h_string_ids = np.array([1, 1, 2, 3, 3, 4], dtype="int32")  # string IDs
-    h_frequencies = np.array(
-        [5, 3, 8, 2, 7, 1], dtype="int32")  # word frequencies
+    h_frequencies = np.array([5, 3, 8, 2, 7, 1], dtype="int32")  # word frequencies
 
     d_in_keys = cp.asarray(h_string_ids)
     d_in_values = cp.asarray(h_frequencies)
