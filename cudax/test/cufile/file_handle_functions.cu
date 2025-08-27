@@ -611,7 +611,7 @@ TEST_CASE("Buffer handle operations", "[file_handle][buffer_handle]")
     cuda::std::span<const char> buffer_span(static_cast<const char*>(gpu_buffer.get()), test_size_);
 
     // Test buffer registration with flags
-    buffer_handle buf_handle(buffer_span, 0); // Default flags
+    buffer_handle buf_handle(buffer_span, cuda::experimental::cufile::cu_file_buf_register_flags::none);
 
     // Verify buffer handle properties
     REQUIRE(buf_handle.data() == gpu_buffer.get());

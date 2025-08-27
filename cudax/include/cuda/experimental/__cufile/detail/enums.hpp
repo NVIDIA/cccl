@@ -81,6 +81,39 @@ inline unsigned int to_c_enum(cu_file_batch_submit_flags flags)
   return static_cast<unsigned int>(flags);
 }
 
+//! @brief cuFile buffer registration flags (bitmask)
+enum class cu_file_buf_register_flags : int
+{
+  none = 0
+};
+
+inline constexpr cu_file_buf_register_flags operator|(cu_file_buf_register_flags lhs, cu_file_buf_register_flags rhs)
+{
+  return static_cast<cu_file_buf_register_flags>(static_cast<int>(lhs) | static_cast<int>(rhs));
+}
+
+inline constexpr cu_file_buf_register_flags& operator|=(cu_file_buf_register_flags& lhs, cu_file_buf_register_flags rhs)
+{
+  lhs = lhs | rhs;
+  return lhs;
+}
+
+inline constexpr cu_file_buf_register_flags operator&(cu_file_buf_register_flags lhs, cu_file_buf_register_flags rhs)
+{
+  return static_cast<cu_file_buf_register_flags>(static_cast<int>(lhs) & static_cast<int>(rhs));
+}
+
+inline constexpr bool any(cu_file_buf_register_flags flags)
+{
+  return static_cast<int>(flags) != 0;
+}
+
+// flags -> underlying C value
+inline int to_c_enum(cu_file_buf_register_flags flags)
+{
+  return static_cast<int>(flags);
+}
+
 // ===================== Converters (C++ <-> C) =====================
 
 // cu_file_opcode -> CUfileOpcode_t
