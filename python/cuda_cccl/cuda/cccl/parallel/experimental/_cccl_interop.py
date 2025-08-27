@@ -35,7 +35,6 @@ from ._bindings import (
     IteratorKind,
     IteratorState,
     Op,
-    OpKind,
     Pointer,
     TypeEnum,
     TypeInfo,
@@ -44,6 +43,7 @@ from ._bindings import (
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
+from .op import OpKind
 from .typing import DeviceArrayLike, GpuStruct
 
 _TYPE_TO_ENUM = {
@@ -251,15 +251,29 @@ def _create_void_ptr_wrapper(op, sig):
     return wrapper_func, void_sig
 
 
-def to_cccl_op(op: Callable, sig: Signature) -> Op:
-    """Return an `Op` object corresponding to the given callable.
+def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
+    """Return an `Op` object corresponding to the given callable or well-known operation.
 
-    Importantly, this wraps the callable in a device function that takes void* arguments
+    For well-known operations (Ops), returns an Op with the appropriate
+    kind and empty ltoir/state.
+
+    For callables, wraps the callable in a device function that takes void* arguments
     and a void* return value. This is the only way to match the corresponding "extern"
     declaration of the device function in the C code, which knows nothing about the types
     of the arguments and return value. The two functions must have the same signature in
     order to link correctly without violating ODR.
     """
+    # Check if op is a well-known operation
+    if isinstance(op, OpKind):
+        return Op(
+            operator_type=op,
+            name="",
+            ltoir=b"",
+            state_alignment=1,
+            state=b"",
+        )
+
+    # op is a callable:
     wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
 
     ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")

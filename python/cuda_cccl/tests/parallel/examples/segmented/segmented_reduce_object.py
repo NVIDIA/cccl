@@ -13,9 +13,6 @@ import cuda.cccl.parallel.experimental as parallel
 
 
 def segmented_reduce_object_example():
-    def add_op(a, b):
-        return a + b
-
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
     h_input = np.array([1, 2, 3, 4, 5, 6], dtype=dtype)
@@ -26,7 +23,7 @@ def segmented_reduce_object_example():
     end_offsets = cp.array([3, 6], dtype=np.int64)
 
     reducer = parallel.make_segmented_reduce(
-        d_input, d_output, start_offsets, end_offsets, add_op, h_init
+        d_input, d_output, start_offsets, end_offsets, parallel.OpKind.PLUS, h_init
     )
 
     temp_storage_size = reducer(
