@@ -4,6 +4,7 @@
 #include <thrust/sort.h>
 
 #include <algorithm>
+
 #include <assert.h>
 
 #include "include/timer.h"
@@ -35,7 +36,9 @@ void initialize_keys(thrust::device_vector<int>& keys)
 
   thrust::host_vector<int> h_keys(keys.size());
 
-  std::generate(h_keys.begin(), h_keys.end(), [&]() { return dist(rng); });
+  std::generate(h_keys.begin(), h_keys.end(), [&]() {
+    return dist(rng);
+  });
 
   keys = h_keys;
 }

@@ -42,9 +42,15 @@ int main()
   thrust::device_vector<vec2> input(9);
 
   thrust::host_vector<vec2> h_input{
-    vec2(0, 0), vec2(1, 0), vec2(0, 1), // First Triangle
-    vec2(1, 0), vec2(1, 1), vec2(0, 1), // Second Triangle
-    vec2(1, 0), vec2(2, 0), vec2(1, 1)  // Third Triangle
+    vec2(0, 0),
+    vec2(1, 0),
+    vec2(0, 1), // First Triangle
+    vec2(1, 0),
+    vec2(1, 1),
+    vec2(0, 1), // Second Triangle
+    vec2(1, 0),
+    vec2(2, 0),
+    vec2(1, 1) // Third Triangle
   };
   input = h_input;
 

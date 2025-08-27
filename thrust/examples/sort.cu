@@ -13,14 +13,18 @@ void initialize(thrust::device_vector<int>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  std::generate(v.begin(), v.end(), [&]() { return dist(rng); });
+  std::generate(v.begin(), v.end(), [&]() {
+    return dist(rng);
+  });
 }
 
 void initialize(thrust::device_vector<float>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(2, 19);
-  std::generate(v.begin(), v.end(), [&]() { return dist(rng) / 2.0f; });
+  std::generate(v.begin(), v.end(), [&]() {
+    return dist(rng) / 2.0f;
+  });
 }
 
 void initialize(thrust::device_vector<thrust::pair<int, int>>& v)
@@ -38,7 +42,9 @@ void initialize(thrust::device_vector<int>& v1, thrust::device_vector<int>& v2)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  std::generate(v1.begin(), v1.end(), [&]() { return dist(rng); });
+  std::generate(v1.begin(), v1.end(), [&]() {
+    return dist(rng);
+  });
   std::iota(v2.begin(), v2.end(), 0);
 }
 

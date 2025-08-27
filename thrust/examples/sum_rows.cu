@@ -33,7 +33,9 @@ int main()
 
   // initialize data
   thrust::device_vector<int> array(R * C);
-  std::generate(array.begin(), array.end(), [&]() { return dist(rng); });
+  std::generate(array.begin(), array.end(), [&]() {
+    return dist(rng);
+  });
 
   // allocate storage for row sums and indices
   thrust::device_vector<int> row_sums(R);

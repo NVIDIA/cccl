@@ -69,7 +69,9 @@ int main()
   thrust::device_vector<float> data(n);
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 10);
-  std::generate(data.begin(), data.end(), [&]() { return static_cast<float>(dist(rng)); });
+  std::generate(data.begin(), data.end(), [&]() {
+    return static_cast<float>(dist(rng));
+  });
 
   // allocate storage for averages
   thrust::device_vector<float> averages(data.size() - (w - 1));

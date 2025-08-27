@@ -4,7 +4,6 @@
 
 #include <iostream>
 
-
 // This example demonstrates the use of placeholders to implement
 // the SAXPY operation (i.e. Y[i] = a * X[i] + Y[i]).
 //
@@ -40,7 +39,7 @@ struct saxpy_functor
 int main()
 {
   // input data
-  float a = 2.0f;
+  float a                             = 2.0f;
   thrust::device_vector<float> x_data = {1, 2, 3, 4};
   thrust::device_vector<float> y_data = {1, 1, 1, 1};
 
