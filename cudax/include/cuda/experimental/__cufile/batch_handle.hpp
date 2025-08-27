@@ -36,6 +36,8 @@ namespace cuda::experimental::cufile
 template <typename T>
 struct batch_io_params_span
 {
+  static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
+
   ::cuda::std::span<T> buffer;
   off_t file_offset;
   off_t buffer_offset; // in bytes
@@ -48,9 +50,7 @@ struct batch_io_params_span
       , buffer_offset(b_off)
       , opcode(op)
       , cookie(ck)
-  {
-    static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
-  }
+  {}
 };
 
 //! Batch I/O operation result
