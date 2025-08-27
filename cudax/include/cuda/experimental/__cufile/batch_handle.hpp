@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/chrono>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cufile/detail/enums.hpp>
@@ -103,7 +104,8 @@ public:
               cu_file_batch_submit_flags flags = cu_file_batch_submit_flags::none);
 
   //! Get batch status
-  ::std::vector<batch_io_result> get_status(unsigned int min_completed, int timeout_ms = 0);
+  ::std::vector<batch_io_result> get_status(
+    unsigned int min_completed, ::cuda::std::chrono::milliseconds timeout = ::cuda::std::chrono::milliseconds{0});
 
   //! Cancel batch operations
   void cancel();
@@ -146,22 +148,23 @@ inline batch_handle& batch_handle::operator=(batch_handle&& other) noexcept
   return *this;
 }
 
-inline ::std::vector<batch_io_result> batch_handle::get_status(unsigned int min_completed, int timeout_ms)
+inline ::std::vector<batch_io_result>
+batch_handle::get_status(unsigned int min_completed, ::cuda::std::chrono::milliseconds timeout)
 {
   ::std::vector<CUfileIOEvents_t> events(max_operations_);
   unsigned int num_events = max_operations_;
 
-  timespec timeout_spec = {};
-  timespec* timeout_ptr = nullptr;
+  timespec timeout_spec;
 
-  if (timeout_ms > 0)
+  if (timeout.count() > 0)
   {
-    timeout_spec.tv_sec  = timeout_ms / 1000;
-    timeout_spec.tv_nsec = (timeout_ms % 1000) * 1000000;
-    timeout_ptr          = &timeout_spec;
+    const auto total_ms  = timeout.count();
+    timeout_spec.tv_sec  = total_ms / 1000;
+    timeout_spec.tv_nsec = (total_ms % 1000) * 1000000;
   }
 
-  CUfileError_t error = cuFileBatchIOGetStatus(handle_, min_completed, &num_events, events.data(), timeout_ptr);
+  CUfileError_t error = cuFileBatchIOGetStatus(
+    handle_, min_completed, &num_events, events.data(), timeout.count() > 0 ? &timeout_spec : nullptr);
   detail::check_cufile_result(error, "cuFileBatchIOGetStatus");
 
   ::std::vector<batch_io_result> results;

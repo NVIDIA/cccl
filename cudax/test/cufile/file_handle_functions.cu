@@ -670,7 +670,7 @@ TEST_CASE("Batch operations", "[file_handle][batch]")
     batch.submit(handle, cuda::std::span<const batch_io_params_span<char>>(operations));
 
     // Wait for all submitted operations to complete
-    auto results = batch.get_status(operations.size(), 5000); // Wait for all operations, 5s timeout
+    auto results = batch.get_status(operations.size(), ::cuda::std::chrono::milliseconds{5000});
 
     // Verify all operations completed
     REQUIRE(results.size() == operations.size());
