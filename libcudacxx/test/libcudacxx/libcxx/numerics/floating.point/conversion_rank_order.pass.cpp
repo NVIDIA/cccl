@@ -377,6 +377,14 @@ static_assert(fp_conv_rank_order_v<__nv_fp4_e2m1, __nv_fp4_e2m1> == fp_conv_rank
 #  endif // _CCCL_HAS_NVFP4_E2M1()
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
+enum class NotFloatingPoint
+{
+};
+
+static_assert(fp_conv_rank_order_v<NotFloatingPoint, float> == fp_conv_rank_order::__invalid);
+static_assert(fp_conv_rank_order_v<float, NotFloatingPoint> == fp_conv_rank_order::__invalid);
+static_assert(fp_conv_rank_order_v<NotFloatingPoint, NotFloatingPoint> == fp_conv_rank_order::__invalid);
+
 int main(int, char**)
 {
   return 0;

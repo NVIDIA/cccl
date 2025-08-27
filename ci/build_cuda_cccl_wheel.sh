@@ -4,10 +4,16 @@ set -euo pipefail
 # Target script for `docker run` command in build_cuda_cccl_python.sh
 # The /workspace pathnames are hard-wired here.
 
-# Enable GCC toolset
+# Install GCC 13 toolset (needed for the build)
 dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
 echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
 source /etc/profile.d/enable_devtools.sh
+
+# Check what's available
+which gcc
+gcc --version
+which nvcc
+nvcc --version
 
 # Set up Python environment
 source /workspace/ci/pyenv_helper.sh
@@ -26,29 +32,26 @@ echo "Using package version ${package_version}"
 # Override the version used by setuptools_scm to the custom version
 export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_CCCL="${package_version}"
 
-# Build wheels
-python -m pip wheel --no-deps /workspace/python/cuda_cccl
 
-# Repair wheel
-python -m pip install patchelf auditwheel
-python -m auditwheel repair \
-    --exclude 'libcuda.so*' \
-    --exclude 'libnvrtc.so*' \
-    --exclude 'libnvJitLink.so*' \
-    cuda_cccl-*.whl
+cd /workspace/python/cuda_cccl
+
+# Determine CUDA version from nvcc
+cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f1)
+echo "Detected CUDA version: ${cuda_version}"
+
+# Build the wheel
+python -m pip wheel --no-deps --verbose --wheel-dir dist .
+
+# Rename wheel to include CUDA version suffix
+for wheel in dist/cuda_cccl-*.whl; do
+    if [[ -f "$wheel" ]]; then
+        base_name=$(basename "$wheel" .whl)
+        new_name="${base_name}.cu${cuda_version}.whl"
+        mv "$wheel" "dist/${new_name}"
+        echo "Renamed wheel to: ${new_name}"
+    fi
+done
 
 # Move wheel to output directory
-mv wheelhouse/cuda_cccl-*.whl /workspace/wheelhouse/
-
-cd /workspace
-if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  # This env var is set by the build_cuda_parallel_python.sh script to avoid having to
-  # pass the GitHub auth token into the container as required for the util/workflow scripts.
-  if [[ -z "${WHEEL_ARTIFACT_NAME:-}" ]]; then
-    echo "Warning: WHEEL_ARTIFACT_NAME is not set. Falling back to querying workflow metadata..." >&2
-    wheel_artifact_name="$(ci/util/workflow/get_wheel_artifact_name.sh)"
-  else
-    wheel_artifact_name="${WHEEL_ARTIFACT_NAME}"
-  fi
-  ci/util/artifacts/upload.sh $wheel_artifact_name 'wheelhouse/.*'
-fi
+mkdir -p /workspace/wheelhouse
+mv dist/cuda_cccl-*.cu*.whl /workspace/wheelhouse/

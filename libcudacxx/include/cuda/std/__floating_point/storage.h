@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_STORAGE_H
-#define _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#ifndef _CUDA_STD___FLOATING_POINT_STORAGE_H
+#define _CUDA_STD___FLOATING_POINT_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/format.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -245,4 +245,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#endif // _CUDA_STD___FLOATING_POINT_STORAGE_H

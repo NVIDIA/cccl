@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H
+#define _CUDA_STD___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -78,4 +78,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_EXTENDED_FLOATING_POINT_H

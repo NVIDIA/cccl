@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT
-#define _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT
+#ifndef _CUDA_STD___FUNCTIONAL_IS_TRANSPARENT_H
+#define _CUDA_STD___FUNCTIONAL_IS_TRANSPARENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,4 +40,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT
+#endif // _CUDA_STD___FUNCTIONAL_IS_TRANSPARENT_H

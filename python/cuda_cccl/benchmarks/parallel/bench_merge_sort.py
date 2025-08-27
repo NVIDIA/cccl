@@ -8,6 +8,20 @@ import cuda.cccl.parallel.experimental as parallel
 def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):
     size = len(keys)
 
+    alg = parallel.make_merge_sort(
+        keys, vals, output_keys, output_vals, parallel.OpKind.LESS
+    )
+    if not build_only:
+        temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        alg(temp_storage, keys, vals, output_keys, output_vals, size)
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
+def merge_sort_pointer_custom_op(keys, vals, output_keys, output_vals, build_only):
+    size = len(keys)
+
     def my_cmp(a: np.int32, b: np.int32) -> np.int32:
         return np.int32(a < b)
 
@@ -21,10 +35,9 @@ def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):
 
 
 def merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only):
-    def my_cmp(a: np.int32, b: np.int32) -> np.int32:
-        return np.int32(a < b)
-
-    alg = parallel.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
+    alg = parallel.make_merge_sort(
+        keys, vals, output_keys, output_vals, parallel.OpKind.LESS
+    )
     if not build_only:
         temp_storage_bytes = alg(None, keys, vals, output_keys, output_vals, size)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -65,6 +78,30 @@ def bench_merge_sort_pointer(bench_fixture, request, size):
 
     def run():
         merge_sort_pointer(
+            keys,
+            vals,
+            output_keys,
+            output_vals,
+            build_only=(bench_fixture == "compile_benchmark"),
+        )
+
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_merge_sort, run)
+    else:
+        fixture(run)
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_merge_sort_pointer_custom_op(bench_fixture, request, size):
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    keys = cp.random.randint(0, 10, actual_size)
+    vals = cp.random.randint(0, 10, actual_size)
+    output_keys = cp.empty_like(keys)
+    output_vals = cp.empty_like(vals)
+
+    def run():
+        merge_sort_pointer_custom_op(
             keys,
             vals,
             output_keys,
