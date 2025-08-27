@@ -50,11 +50,11 @@ public:
 
 // ===================== Inline implementations =====================
 
-inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
+inline stream_handle::stream_handle(cuda::stream_ref stream, unsigned int flags)
 {
-  CUfileError_t error = cuFileStreamRegister(stream, flags);
+  CUfileError_t error = cuFileStreamRegister(stream.get(), flags);
   detail::check_cufile_result(error, "cuFileStreamRegister");
-  registered_stream_ = stream;
+  registered_stream_ = stream.get();
 }
 
 inline stream_handle::stream_handle(stream_handle&& other) noexcept
