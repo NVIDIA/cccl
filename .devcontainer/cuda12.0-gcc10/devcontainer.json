@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.08-cpp-gcc10-cuda12.0",
+  "image": "rapidsai/devcontainers:25.10-cpp-gcc10-cuda12.0",
   "hostRequirements": {
     "gpu": "optional"
   },
