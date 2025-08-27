@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___STREAM_STREAM
-#define _CUDA___STREAM_STREAM
+#ifndef _CUDA___STREAM_STREAM_H
+#define _CUDA___STREAM_STREAM_H
 
 #include <cuda/std/detail/__config>
 
@@ -139,4 +139,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA___STREAM_STREAM
+#endif // _CUDA___STREAM_STREAM_H

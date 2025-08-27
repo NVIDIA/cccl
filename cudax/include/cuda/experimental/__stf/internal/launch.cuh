@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
-#include <cuda/experimental/__stf/internal/hooks.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
@@ -277,8 +276,7 @@ public:
    * @param deps Dependencies for the task to be launched.
    */
   launch_scope(Ctx& ctx, thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
-      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
-      , deps(mv(deps)...)
+      : deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , spec(mv(spec))
@@ -343,8 +341,6 @@ public:
       // Create a composite data place defined by the grid of places + the partitioning function
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));
     }
-
-    t.add_post_submission_hook(dump_hooks);
 
     t.add_deps(deps);
     if (!symbol.empty())
@@ -489,7 +485,6 @@ private:
     }
   }
 
-  ::std::vector<::std::function<void()>> dump_hooks;
   task_dep_vector<Deps...> deps;
   Ctx& ctx;
   exec_place e_place;

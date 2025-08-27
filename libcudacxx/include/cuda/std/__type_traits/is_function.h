@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_FUNCTIONAL_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_FUNCTIONAL_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_FUNCTIONAL_H
+#define _CUDA_STD___TYPE_TRAITS_IS_FUNCTIONAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -58,4 +58,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_FUNCTIONAL_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_FUNCTIONAL_H

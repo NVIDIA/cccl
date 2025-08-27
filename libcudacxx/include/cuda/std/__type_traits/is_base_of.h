@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_BASE_OF_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_BASE_OF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_BASE_OF_H
+#define _CUDA_STD___TYPE_TRAITS_IS_BASE_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -80,4 +80,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_BASE_OF_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_BASE_OF_H

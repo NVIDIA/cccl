@@ -1393,23 +1393,6 @@ UNITTEST("make_tuple_indexwise")
   EXPECT(t2 == ::std::tuple(0, 2));
 };
 
-UNITTEST("auto_dump set/get")
-{
-  context ctx;
-
-  int A[1024];
-  int B[1024];
-  auto lA = ctx.logical_data(A);
-  auto lB = ctx.logical_data(B);
-
-  // Disable auto dump
-  lA.set_auto_dump(false);
-  EXPECT(lA.get_auto_dump() == false);
-
-  // Enabled by default
-  EXPECT(lB.get_auto_dump() == true);
-};
-
 UNITTEST("cuda stream place")
 {
   cudaStream_t user_stream;

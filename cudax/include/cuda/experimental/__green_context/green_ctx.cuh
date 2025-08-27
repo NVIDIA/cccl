@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX
-#define _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
+#define _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
 
 #include <cuda/__cccl_config>
 
@@ -90,4 +90,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
-#define _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
+#ifndef _CUDA_STD___FLOATING_POINT_COMMON_TYPE_H
+#define _CUDA_STD___FLOATING_POINT_COMMON_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Lhs, class _Rhs>
 using __fp_common_type_t =
-  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered,
+  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered
+                && __fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__invalid,
               conditional_t<__fp_conv_rank_order_v<_Lhs, _Rhs> == __fp_conv_rank_order::__greater, _Lhs, _Rhs>>;
 
 template <class _Lhs, class _Rhs>
@@ -44,4 +45,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
+#endif // _CUDA_STD___FLOATING_POINT_COMMON_TYPE_H

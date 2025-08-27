@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_COPY_CVREF_H
-#define _LIBCUDACXX___TYPE_TRAITS_COPY_CVREF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_COPY_CVREF_H
+#define _CUDA_STD___TYPE_TRAITS_COPY_CVREF_H
 
 #include <cuda/std/detail/__config>
 
@@ -145,4 +145,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #undef _CCCL_ADD_RVALUE_REFERENCE_WAR
 #undef _CCCL_ADD_LVALUE_REFERENCE_WAR
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_COPY_CVREF_H
+#endif // _CUDA_STD___TYPE_TRAITS_COPY_CVREF_H

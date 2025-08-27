@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_EMPTY_H
-#define _LIBCUDACXX___RANGES_EMPTY_H
+#ifndef _CUDA_STD___RANGES_EMPTY_H
+#define _CUDA_STD___RANGES_EMPTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -106,4 +106,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_EMPTY_H
+#endif // _CUDA_STD___RANGES_EMPTY_H

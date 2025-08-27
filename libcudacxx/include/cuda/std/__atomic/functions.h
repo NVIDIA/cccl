@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_FUNCTIONS_H
-#define __LIBCUDACXX___ATOMIC_FUNCTIONS_H
+#ifndef __CUDA_STD___ATOMIC_FUNCTIONS_H
+#define __CUDA_STD___ATOMIC_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,4 +30,4 @@
 // Host atomics
 #include <cuda/std/__atomic/functions/host.h>
 
-#endif // __LIBCUDACXX___ATOMIC_FUNCTIONS_H
+#endif // __CUDA_STD___ATOMIC_FUNCTIONS_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_FP_H
-#define _LIBCUDACXX___FLOATING_POINT_FP_H
+#ifndef _CUDA_STD___FLOATING_POINT_FP_H
+#define _CUDA_STD___FLOATING_POINT_FP_H
 
 #include <cuda/__cccl_config>
 
@@ -36,4 +36,4 @@
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__floating_point/traits.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_FP_H
+#endif // _CUDA_STD___FLOATING_POINT_FP_H

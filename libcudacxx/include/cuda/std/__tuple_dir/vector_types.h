@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
-#define _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#ifndef _CUDA_STD___TUPLE_VECTOR_TYPES_H
+#define _CUDA_STD___TUPLE_VECTOR_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -288,4 +288,4 @@ _CCCL_DIAG_POP
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#endif // _CUDA_STD___TUPLE_VECTOR_TYPES_H

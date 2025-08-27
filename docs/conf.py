@@ -207,11 +207,11 @@ autodoc_mock_imports = [
     "cuda.bindings",
     "cuda.bindings.driver",
     "cuda.bindings.runtime",
-    "cuda.bindings.path_finder",
     "cuda.core",
     "cuda.core.experimental",
     "cuda.core.experimental._utils",
     "cuda.core.experimental._utils.cuda_utils",
+    "cuda.pathfinder",
     "llvmlite",
     "llvmlite.ir",
     # numpy is installed as a real dependency (see requirements.txt)

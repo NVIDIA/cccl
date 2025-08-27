@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_NAMESPACES_H
-#define _LIBCUDACXX___INTERNAL_NAMESPACES_H
+#ifndef _CUDA_STD___INTERNAL_NAMESPACES_H
+#define _CUDA_STD___INTERNAL_NAMESPACES_H
 
 #include <cuda/__cccl_config>
 
@@ -102,4 +102,4 @@
 
 // clang-format on
 
-#endif // _LIBCUDACXX___INTERNAL_NAMESPACES_H
+#endif // _CUDA_STD___INTERNAL_NAMESPACES_H

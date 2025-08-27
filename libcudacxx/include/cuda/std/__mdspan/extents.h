@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_EXTENTS_HPP
-#define _LIBCUDACXX___MDSPAN_EXTENTS_HPP
+#ifndef _CUDA_STD___MDSPAN_EXTENTS_H
+#define _CUDA_STD___MDSPAN_EXTENTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -754,4 +754,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_EXTENTS_H
+#endif // _CUDA_STD___MDSPAN_EXTENTS_H

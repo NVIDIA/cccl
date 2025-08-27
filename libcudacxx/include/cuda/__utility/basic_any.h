@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_H
+#define _CUDA___UTILITY_BASIC_ANY_H
 
 #include <cuda/__cccl_config>
 
@@ -504,4 +504,4 @@
 #include <cuda/__utility/__basic_any/virtual_tables.h>
 // IWYU pragma: end_exports
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_H
+#endif // _CUDA___UTILITY_BASIC_ANY_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
-#define _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
+#ifndef _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H
+#define _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H
 
 #include <cuda/std/detail/__config>
 
@@ -215,4 +215,4 @@ struct tuple_element<_Idx, const volatile ::cuda::std::ranges::subrange<_Ip, _Sp
 
 _CCCL_DIAG_POP
 
-#endif // _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
+#endif // _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H

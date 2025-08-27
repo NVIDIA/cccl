@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H
-#define _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H
+#ifndef _CUDA_STD___ITERATOR_UNREACHABLE_SENTINEL_H
+#define _CUDA_STD___ITERATOR_UNREACHABLE_SENTINEL_H
 
 #include <cuda/std/detail/__config>
 
@@ -81,4 +81,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H
+#endif // _CUDA_STD___ITERATOR_UNREACHABLE_SENTINEL_H

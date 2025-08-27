@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H
-#define _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H
+#ifndef _CUDA_STD___FUNCTIONAL_RANGES_OPERATIONS_H
+#define _CUDA_STD___FUNCTIONAL_RANGES_OPERATIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -110,4 +110,4 @@ _CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H
+#endif // _CUDA_STD___FUNCTIONAL_RANGES_OPERATIONS_H

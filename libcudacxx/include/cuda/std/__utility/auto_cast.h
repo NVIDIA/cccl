@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_AUTO_CAST_H
-#define _LIBCUDACXX___UTILITY_AUTO_CAST_H
+#ifndef _CUDA_STD___UTILITY_AUTO_CAST_H
+#define _CUDA_STD___UTILITY_AUTO_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,4 +31,4 @@
 #  define _LIBCUDACXX_AUTO_CAST(expr) static_cast<::cuda::std::decay_t<decltype((expr))>>(expr)
 #endif
 
-#endif // _LIBCUDACXX___UTILITY_AUTO_CAST_H
+#endif // _CUDA_STD___UTILITY_AUTO_CAST_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_BIND_H
-#define _LIBCUDACXX___FUNCTIONAL_BIND_H
+#ifndef _CUDA_STD___FUNCTIONAL_BIND_H
+#define _CUDA_STD___FUNCTIONAL_BIND_H
 
 // `cuda::std::bind` is not currently supported.
 
@@ -334,4 +334,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_BIND_H
+#endif // _CUDA_STD___FUNCTIONAL_BIND_H

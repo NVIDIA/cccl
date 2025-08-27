@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMATERS_STR_H
-#define _LIBCUDACXX___FORMAT_FORMATERS_STR_H
+#ifndef _CUDA_STD__FORMAT_FORMATERS_STR_H
+#define _CUDA_STD__FORMAT_FORMATERS_STR_H
 
 #include <cuda/std/detail/__config>
 
@@ -175,4 +175,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMATERS_STR_H
+#endif // _CUDA_STD__FORMAT_FORMATERS_STR_H

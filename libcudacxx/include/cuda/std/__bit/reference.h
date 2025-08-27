@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_REFERENCE
-#define _LIBCUDACXX___BIT_REFERENCE
+#ifndef _CUDA_STD___BIT_REFERENCE_H
+#define _CUDA_STD___BIT_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -1269,4 +1269,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_REFERENCE
+#endif // _CUDA_STD___BIT_REFERENCE_H

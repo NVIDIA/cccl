@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CONCEPTS
-#define _CUDA___CONCEPTS
+#ifndef _CUDA___CONCEPTS_CONCEPT_MACROS_H
+#define _CUDA___CONCEPTS_CONCEPT_MACROS_H
 
 #include <cuda/std/detail/__config>
 
@@ -271,4 +271,4 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDA___CONCEPTS
+#endif //_CUDA___CONCEPTS_CONCEPT_MACROS_H

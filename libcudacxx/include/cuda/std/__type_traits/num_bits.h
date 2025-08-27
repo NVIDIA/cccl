@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_NUM_BITS
-#define _LIBCUDACXX___TYPE_TRAITS_NUM_BITS
+#ifndef _CUDA_STD___TYPE_TRAITS_NUM_BITS_H
+#define _CUDA_STD___TYPE_TRAITS_NUM_BITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -120,4 +120,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_NUM_BITS
+#endif // _CUDA_STD___TYPE_TRAITS_NUM_BITS_H

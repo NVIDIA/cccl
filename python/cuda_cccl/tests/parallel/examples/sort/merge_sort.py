@@ -15,9 +15,6 @@ import cuda.cccl.parallel.experimental as parallel
 def basic_merge_sort_example():
     """Demonstrate basic merge sort with keys and values."""
 
-    def compare_op(lhs, rhs):
-        return np.uint8(lhs < rhs)
-
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
         [-3.2, 2.2, 1.9, 4.0, -3.9, 2.7, 0, 8.3 - 1, 2.9, 5.4], dtype="float32"
@@ -28,7 +25,12 @@ def basic_merge_sort_example():
 
     # Run merge_sort with automatic temp storage allocation
     parallel.merge_sort(
-        d_in_keys, d_in_values, d_in_keys, d_in_values, compare_op, d_in_keys.size
+        d_in_keys,
+        d_in_values,
+        d_in_keys,
+        d_in_values,
+        parallel.OpKind.LESS,
+        d_in_keys.size,
     )
 
     # Check the result is correct

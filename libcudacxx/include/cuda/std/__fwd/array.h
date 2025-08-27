@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_ARRAY_H
-#define _LIBCUDACXX___FWD_ARRAY_H
+#ifndef _CUDA_STD___FWD_ARRAY_H
+#define _CUDA_STD___FWD_ARRAY_H
 
 #include <cuda/std/detail/__config>
 
@@ -39,4 +39,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_ARRAY_H
+#endif // _CUDA_STD___FWD_ARRAY_H

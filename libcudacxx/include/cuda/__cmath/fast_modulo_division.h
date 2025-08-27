@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
-#define _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
+#ifndef _CUDA___CMATH_FAST_MODULO_DIVISION_H
+#define _CUDA___CMATH_FAST_MODULO_DIVISION_H
 
 #include <cuda/std/detail/__config>
 
@@ -246,4 +246,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
+#endif // _CUDA___CMATH_FAST_MODULO_DIVISION_H

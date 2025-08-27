@@ -147,8 +147,6 @@ private:
     // affine data place of the execution place, but this can be a
     // composite data place when using a grid of places for example.
     data_place affine_data_place;
-
-    ::std::vector<::std::function<void()>> post_submission_hooks;
   };
 
 protected:
@@ -360,14 +358,6 @@ public:
   size_t hash() const
   {
     return ::std::hash<impl*>()(pimpl.get());
-  }
-
-  void add_post_submission_hook(::std::vector<::std::function<void()>>& hooks)
-  {
-    for (auto& h : hooks)
-    {
-      pimpl->post_submission_hooks.push_back(h);
-    }
   }
 
   /**

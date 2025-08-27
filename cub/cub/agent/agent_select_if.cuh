@@ -131,8 +131,24 @@ struct guarded_inequality_op
   EqualityOpT op;
   int num_remaining;
 
-  template <typename T>
+  template <typename T,
+            ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<EqualityOpT&, const T&, const T&>, int> = 0>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) noexcept(
+    ::cuda::std::__is_nothrow_callable_v<EqualityOpT&, const T&, const T&>)
+  {
+    if (idx < num_remaining)
+    {
+      return !op(a, b); // In bounds
+    }
+
+    // Flag out-of-bounds items as selected (as they are discounted for in the agent implementation)
+    return true;
+  }
+
+  template <typename T,
+            ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<const EqualityOpT&, const T&, const T&>, int> = 0>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+    noexcept(::cuda::std::__is_nothrow_callable_v<const EqualityOpT&, const T&, const T&>)
   {
     if (idx < num_remaining)
     {

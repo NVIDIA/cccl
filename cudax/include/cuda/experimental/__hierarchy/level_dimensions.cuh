@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
-#define _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
+#ifndef _CUDAX__HIERARCHY_LEVEL_DIMENSIONS_CUH
+#define _CUDAX__HIERARCHY_LEVEL_DIMENSIONS_CUH
 
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -224,4 +224,4 @@ _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_LEVEL_DIMENSIONS
+#endif // _CUDAX__HIERARCHY_LEVEL_DIMENSIONS_CUH

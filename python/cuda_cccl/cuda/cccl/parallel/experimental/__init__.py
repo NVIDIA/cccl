@@ -35,6 +35,7 @@ from .iterators import (
     TransformIterator,
     ZipIterator,
 )
+from .op import OpKind
 from .struct import gpu_struct
 
 __all__ = [
@@ -58,6 +59,7 @@ __all__ = [
     "make_unary_transform",
     "make_unique_by_key",
     "merge_sort",
+    "OpKind",
     "radix_sort",
     "reduce_into",
     "ReverseInputIterator",

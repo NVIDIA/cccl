@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H
-#define _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H
+#ifndef _CUDA_STD___ATOMIC_WAIT_NOTIFY_WAIT_H
+#define _CUDA_STD___ATOMIC_WAIT_NOTIFY_WAIT_H
 
 #include <cuda/std/detail/__config>
 
@@ -92,4 +92,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H
+#endif // _CUDA_STD___ATOMIC_WAIT_NOTIFY_WAIT_H

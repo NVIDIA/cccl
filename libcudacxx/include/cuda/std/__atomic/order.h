@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_ORDER_H
-#define __LIBCUDACXX___ATOMIC_ORDER_H
+#ifndef __CUDA_STD___ATOMIC_ORDER_H
+#define __CUDA_STD___ATOMIC_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -156,4 +156,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___ATOMIC_ORDER_H
+#endif // __CUDA_STD___ATOMIC_ORDER_H

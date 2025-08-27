@@ -46,7 +46,7 @@ C2H_TEST("1d Copy", "[data_manipulation]")
 
   SECTION("Host and managed resource")
   {
-    cudax::managed_memory_resource managed_resource;
+    cudax::legacy_managed_memory_resource managed_resource;
     cudax::legacy_pinned_memory_resource host_resource;
 
     {

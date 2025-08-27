@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ITER_MOVE_H
-#define _LIBCUDACXX___ITERATOR_ITER_MOVE_H
+#ifndef _CUDA_STD___ITERATOR_ITER_MOVE_H
+#define _CUDA_STD___ITERATOR_ITER_MOVE_H
 
 #include <cuda/std/detail/__config>
 
@@ -158,4 +158,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ITER_MOVE_H
+#endif // _CUDA_STD___ITERATOR_ITER_MOVE_H

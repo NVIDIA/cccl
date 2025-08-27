@@ -233,12 +233,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-
-    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-
-    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    result.add_post_submission_hook(dump_hooks);
-    return result;
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
   }
 
   template <typename... Deps>

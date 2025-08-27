@@ -17,9 +17,6 @@ import cuda.cccl.parallel.experimental as parallel
 def transform_iterator_example():
     """Demonstrate reduction with transform iterator."""
 
-    def add_op(a, b):
-        return a + b
-
     def transform_op(a):
         return -a if a % 2 == 0 else a
 
@@ -33,7 +30,9 @@ def transform_iterator_example():
     d_output = cp.empty(1, dtype=np.int64)  # Storage for output
 
     # Run reduction
-    parallel.reduce_into(transform_it, d_output, add_op, num_items, h_init)
+    parallel.reduce_into(
+        transform_it, d_output, parallel.OpKind.PLUS, num_items, h_init
+    )
 
     expected_output = functools.reduce(
         lambda a, b: a + b,

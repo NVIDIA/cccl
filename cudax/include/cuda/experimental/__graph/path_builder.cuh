@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__GRAPH_PATH_BUILDER
-#define _CUDAX__GRAPH_PATH_BUILDER
+#ifndef _CUDAX__GRAPH_PATH_BUILDER_CUH
+#define _CUDAX__GRAPH_PATH_BUILDER_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -229,4 +229,4 @@ template <typename _FirstNode, typename... _Nodes>
 
 } // namespace cuda::experimental
 
-#endif // _CUDAX__GRAPH_PATH_BUILDER
+#endif // _CUDAX__GRAPH_PATH_BUILDER_CUH

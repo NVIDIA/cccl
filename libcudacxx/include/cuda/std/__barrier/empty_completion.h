@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___BARRIER_EMPTY_COMPLETION_H
-#define __LIBCUDACXX___BARRIER_EMPTY_COMPLETION_H
+#ifndef __CUDA_STD___BARRIER_EMPTY_COMPLETION_H
+#define __CUDA_STD___BARRIER_EMPTY_COMPLETION_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,4 +34,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___BARRIER_EMPTY_COMPLETION_H
+#endif // __CUDA_STD___BARRIER_EMPTY_COMPLETION_H
