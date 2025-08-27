@@ -9,6 +9,7 @@ import pytest
 from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
+numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 from cuda.cccl.experimental.stf._stf_bindings import (
     context,
@@ -39,7 +40,7 @@ def test_numba():
     Y = np.ones(16, dtype=np.float32)
     Z = np.ones(16, dtype=np.float32)
 
-    ctx = context(use_graph=True)
+    ctx = context()
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)
