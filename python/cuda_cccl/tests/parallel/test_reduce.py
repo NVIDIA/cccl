@@ -20,6 +20,8 @@ def random_int(shape, dtype):
 def type_to_problem_sizes(dtype):
     if dtype in [np.uint8, np.int8]:
         return [2, 4, 5, 6]
+    elif dtype in [np.float16]:
+        return [4, 8, 10]
     elif dtype in [np.uint16, np.int16]:
         return [4, 8, 12, 14]
     elif dtype in [np.uint32, np.int32]:
@@ -38,7 +40,7 @@ def get_mark(dt, log_size):
 
 dtype_size_pairs = [
     pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
-    for dt in [np.uint8, np.uint16, np.uint32, np.uint64]
+    for dt in [np.uint8, np.uint16, np.uint32, np.uint64, np.float16]
     for log_size in type_to_problem_sizes(dt)
 ]
 
@@ -54,9 +56,17 @@ def test_device_reduce(dtype, num_items):
 
     h_input = random_int(num_items, dtype)
     d_input = numba.cuda.to_device(h_input)
-    parallel.reduce_into(d_input, d_output, op, d_input.size, h_init)
+
+    if dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = op
+
+    parallel.reduce_into(d_input, d_output, reduce_op, d_input.size, h_init)
     h_output = d_output.copy_to_host()
-    assert h_output[0] == sum(h_input) + init_value
+    assert h_output[0] == pytest.approx(
+        sum(h_input) + init_value, rel=0.08 if dtype == np.float16 else 0
+    )  # obtained relative error value from c2h/include/c2h/check_results.cuh
 
 
 def test_complex_device_reduce():
@@ -98,7 +108,12 @@ def _test_device_sum_with_iterator(
 
     h_init = np.array([start_sum_with], dtype_out)
 
-    parallel.reduce_into(d_input, d_output, add_op, len(l_varr), h_init)
+    if dtype_inp == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = add_op
+
+    parallel.reduce_into(d_input, d_output, reduce_op, len(l_varr), h_init)
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
@@ -119,6 +134,7 @@ SUPPORTED_VALUE_TYPE_NAMES = (
     "uint32",
     "int64",
     "uint64",
+    # "float16", # TODO: this doesn't work with iterators right now due to a numba ctypes error
     "float32",
     "float64",
 )
@@ -176,6 +192,7 @@ def test_device_sum_counting_it(
     "value_type_name_pair",
     list(zip(SUPPORTED_VALUE_TYPE_NAMES, SUPPORTED_VALUE_TYPE_NAMES))
     + [
+        # ("float16", "int16"), # TODO: this doesn't work with numba right now due to an unresolved extern operator definition
         ("float32", "int16"),
         ("float32", "int32"),
         ("float64", "int32"),

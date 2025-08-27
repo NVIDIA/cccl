@@ -19,6 +19,7 @@ DTYPE_LIST = [
     np.int16,
     np.int32,
     np.int64,
+    np.float16,
     np.float32,
     np.float64,
 ]
@@ -46,6 +47,8 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
             max_value = np.iinfo(dtype).max
         return rng.integers(max_value, size=size, dtype=dtype)
     elif np.isdtype(dtype, "real floating"):
+        if dtype == np.float16:  # Cannot generate float16 directly
+            return rng.random(size=size, dtype=np.float32).astype(dtype)
         return rng.random(size=size, dtype=dtype)
     else:
         raise ValueError(f"Unsupported dtype {dtype}")
@@ -120,13 +123,18 @@ def test_unique_by_key(dtype, num_items):
     d_out_items = numba.cuda.to_device(h_out_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
+    if dtype == np.float16:
+        op = parallel.OpKind.EQUAL_TO
+    else:
+        op = compare_op
+
     unique_by_key_device(
         d_in_keys,
         d_in_items,
         d_out_keys,
         d_out_items,
         d_out_num_selected,
-        compare_op,
+        op,
         num_items,
     )
 
@@ -173,13 +181,18 @@ def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
     i_in_keys = parallel.CacheModifiedInputIterator(d_in_keys, modifier="stream")
     i_in_items = parallel.CacheModifiedInputIterator(d_in_items, modifier="stream")
 
+    if dtype == np.float16:
+        op = parallel.OpKind.EQUAL_TO
+    else:
+        op = compare_op
+
     unique_by_key_device(
         i_in_keys,
         i_in_items,
         d_out_keys,
         d_out_items,
         d_out_num_selected,
-        compare_op,
+        op,
         num_items,
     )
 

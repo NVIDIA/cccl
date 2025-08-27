@@ -28,6 +28,11 @@ def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=
 
 
 def test_unary_transform(input_array):
+    import numpy as np
+
+    if input_array.dtype == np.float16:
+        pytest.xfail("float16 is not supported with custom operators")
+
     # example-begin transform-unary
     import numpy as np
 
@@ -47,6 +52,11 @@ def test_unary_transform(input_array):
 
 
 def test_binary_transform(input_array):
+    import numpy as np
+
+    if input_array.dtype == np.float16:
+        pytest.xfail("float16 is not supported with custom operators")
+
     # example-begin transform-binary
     import numpy as np
 
@@ -285,9 +295,9 @@ def test_unary_transform_well_known_identity():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-def test_binary_transform_well_known_plus():
+@pytest.mark.parametrize("dtype", [np.int32, np.float16])
+def test_binary_transform_well_known_plus(dtype):
     """Test binary transform with well-known PLUS operation."""
-    dtype = np.int32
     d_input1 = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_input2 = cp.array([10, 20, 30, 40, 50], dtype=dtype)
     d_output = cp.empty_like(d_input1, dtype=dtype)
