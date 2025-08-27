@@ -13,13 +13,10 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdlib>
 
-template <typename T>
-__device__ __host__ void test_discard_memory()
+template <class T>
+__host__ __device__ volatile T* make_array(cuda::std::size_t n)
 {
-  constexpr cuda::std::size_t n      = 128;
-  constexpr cuda::std::size_t nbytes = n * sizeof(T);
-
-  auto ptr = static_cast<volatile T*>(cuda::std::malloc(nbytes));
+  auto ptr = static_cast<T*>(cuda::std::malloc(n * sizeof(T)));
   assert(ptr != nullptr);
 
   for (cuda::std::size_t i = 0; i < n; ++i)
@@ -27,14 +24,48 @@ __device__ __host__ void test_discard_memory()
     ptr[i] = static_cast<T>(i);
   }
 
-  cuda::discard_memory(ptr, nbytes);
+  return const_cast<volatile T*>(ptr);
+}
 
-  cuda::std::free(const_cast<T*>(ptr));
+__host__ __device__ void destroy_array(volatile void* ptr)
+{
+  cuda::std::free(const_cast<void*>(ptr));
 }
 
 __device__ __host__ void test()
 {
-  test_discard_memory<int>();
+  using T = int;
+
+  constexpr cuda::std::size_t n      = 128;
+  constexpr cuda::std::size_t nbytes = n * sizeof(T);
+
+  // 1. Test on well aligned memory
+  {
+    auto ptr = make_array<T>(n);
+    cuda::discard_memory(ptr, nbytes);
+    destroy_array(ptr);
+  }
+
+  // 2. Test on misaligned begin address
+  {
+    auto ptr = make_array<T>(n);
+    cuda::discard_memory(reinterpret_cast<volatile unsigned char*>(ptr) + 1, nbytes - 1);
+    destroy_array(ptr);
+  }
+
+  // 3. Test on misaligned end address
+  {
+    auto ptr = make_array<T>(n);
+    cuda::discard_memory(ptr, nbytes - 1);
+    destroy_array(ptr);
+  }
+
+  // 4. Test on misaligned begin and end address
+  {
+    auto ptr = make_array<T>(n);
+    cuda::discard_memory(reinterpret_cast<volatile unsigned char*>(ptr) + 1, nbytes - 2);
+    destroy_array(ptr);
+  }
 }
 
 int main(int, char**)
