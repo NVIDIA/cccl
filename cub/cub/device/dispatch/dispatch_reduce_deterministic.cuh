@@ -212,7 +212,7 @@ struct DispatchReduceDeterministic
 #endif
     // Invoke single_reduce_sweep_kernel
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-      .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
+      .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op);
     // Check for failure to launch
     auto error = CubDebug(cudaPeekAtLastError());
     if (cudaSuccess != error)
@@ -430,7 +430,6 @@ struct DispatchReduceDeterministic
           MaxPolicyT,
           input_unwrapped_it_t,
           OutputIteratorT,
-          int,
           reduction_op_t,
           InitT,
           deterministic_accum_t,
@@ -439,18 +438,15 @@ struct DispatchReduceDeterministic
     else
     {
       return InvokePasses<ActivePolicyT>(
-        detail::reduce::DeterministicDeviceReduceKernel<
-          MaxPolicyT,
-          input_unwrapped_it_t,
-          int,
-          reduction_op_t,
-          deterministic_accum_t,
-          TransformOpT>,
+        detail::reduce::DeterministicDeviceReduceKernel<MaxPolicyT,
+                                                        input_unwrapped_it_t,
+                                                        reduction_op_t,
+                                                        deterministic_accum_t,
+                                                        TransformOpT>,
         detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
           deterministic_accum_t*,
           OutputIteratorT,
-          int, // Always used with int offsets
           reduction_op_t,
           InitT,
           deterministic_accum_t>);

@@ -290,9 +290,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `auto operator()(const T &a, const U &b)`
@@ -319,17 +316,12 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
  * @param[in] reduction_op
  *   Binary reduction functor
  */
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename AccumT,
-          typename TransformOpT>
+template <typename ChainedPolicyT, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
   InputIteratorT d_in,
   AccumT* d_out,
-  OffsetT num_items,
+  int num_items,
   ReductionOpT reduction_op,
   TransformOpT transform_op,
   const int reduce_grid_size)
@@ -426,9 +418,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  * @tparam OutputIteratorT
  *   Output iterator type for recording the reduced aggregate @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
  * @tparam ReductionOpT
  *   Binary reduction functor type having member
  *   `T operator()(const T &a, const U &b)`
@@ -457,7 +446,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
-          typename OffsetT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
@@ -466,7 +454,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeterministicDeviceReduceSingleTileKernel(InputIteratorT d_in,
                                                     OutputIteratorT d_out,
-                                                    OffsetT num_items,
+                                                    int num_items,
                                                     ReductionOpT reduction_op,
                                                     InitT init,
                                                     TransformOpT transform_op)
