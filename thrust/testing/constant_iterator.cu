@@ -8,20 +8,19 @@
 
 #include <unittest/unittest.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 // ensure that we properly support thrust::constant_iterator from cuda::std
 void TestConstantIteratorTraits()
 {
-  using it       = thrust::constant_iterator<int>;
-  using traits   = cuda::std::iterator_traits<it>;
-  using category = thrust::detail::iterator_category_with_system_and_traversal<::cuda::std::random_access_iterator_tag,
-                                                                               thrust::any_system_tag,
-                                                                               thrust::random_access_traversal_tag>;
+  using it     = thrust::constant_iterator<int>;
+  using traits = cuda::std::iterator_traits<it>;
 
   static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
-  static_assert(cuda::std::is_same_v<traits::reference, signed int>);
-  static_assert(cuda::std::is_same_v<traits::iterator_category, category>);
+  static_assert(cuda::std::is_same_v<traits::reference, int>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, ::cuda::std::random_access_iterator_tag>);
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
@@ -35,20 +34,6 @@ void TestConstantIteratorTraits()
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
 DECLARE_UNITTEST(TestConstantIteratorTraits);
-
-void TestConstantIteratorConstructFromConvertibleSystem()
-{
-  using namespace thrust;
-
-  constant_iterator<int> default_system(13);
-
-  constant_iterator<int, use_default, host_system_tag> host_system = default_system;
-  ASSERT_EQUAL(*default_system, *host_system);
-
-  constant_iterator<int, use_default, device_system_tag> device_system = default_system;
-  ASSERT_EQUAL(*default_system, *device_system);
-}
-DECLARE_UNITTEST(TestConstantIteratorConstructFromConvertibleSystem);
 
 void TestConstantIteratorIncrement()
 {
@@ -201,3 +186,5 @@ void TestConstantIteratorReduce()
   ASSERT_EQUAL(sum, 4 * 7);
 };
 DECLARE_UNITTEST(TestConstantIteratorReduce);
+
+_CCCL_SUPPRESS_DEPRECATED_POP

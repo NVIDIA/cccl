@@ -112,7 +112,8 @@ struct make_constant_iterator_base
 //!
 //! \see make_constant_iterator
 template <typename Value, typename Incrementable = use_default, typename System = use_default>
-class constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
+[[deprecated("Use cuda::constant_iterator instead.")]] class constant_iterator
+    : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
 {
   //! \cond
   friend class iterator_core_access;
@@ -210,7 +211,7 @@ inline _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT> make_constant_iterato
 //! \return A new \p constant_iterator with constant value equal to \p x and index equal to \c 0.
 //! \see constant_iterator
 template <typename V>
-inline _CCCL_HOST_DEVICE constant_iterator<V> make_constant_iterator(V x)
+[[deprecated("Use cuda::make_constant_iterator instead.")]] _CCCL_API constant_iterator<V> make_constant_iterator(V x)
 {
   return constant_iterator<V>(x, 0);
 } // end make_constant_iterator()

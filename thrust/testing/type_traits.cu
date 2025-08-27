@@ -44,7 +44,7 @@ void TestIsContiguousIterator()
 
   using HostIteratorTuple = thrust::tuple<HostVector::iterator, HostVector::iterator>;
 
-  using ConstantIterator  = thrust::constant_iterator<int>;
+  using ConstantIterator  = cuda::constant_iterator<int>;
   using CountingIterator  = thrust::counting_iterator<int>;
   using TransformIterator = thrust::transform_iterator<cuda::std::identity, HostVector::iterator>;
   using ZipIterator       = thrust::zip_iterator<HostIteratorTuple>;

@@ -192,7 +192,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
   StrictWeakOrdering comp)
 {
   using value_type1       = thrust::detail::it_value_t<InputIterator3>;
-  using constant_iterator = thrust::constant_iterator<value_type1>;
+  using constant_iterator = ::cuda::constant_iterator<value_type1>;
 
   using iterator_tuple1 = thrust::tuple<InputIterator1, InputIterator3>;
   using iterator_tuple2 = thrust::tuple<InputIterator2, constant_iterator>;
