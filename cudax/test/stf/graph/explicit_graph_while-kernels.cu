@@ -15,7 +15,6 @@
  *
  * Adapted from https://developer.nvidia.com/blog/dynamic-control-flow-in-cuda-graphs-with-conditional-nodes/
  */
-
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 using namespace cuda::experimental::stf;
@@ -23,18 +22,10 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void dummy() {}
 
-__device__ int counter = 5;
-
 __global__ void setHandle(cudaGraphConditionalHandle handle)
 {
-  unsigned int value = 0;
-  // We could perform some work here and set value based on the result of that work.
-  if (counter-- > 0)
-  {
-    // Set ‘value’ to non-zero if we want the conditional body to execute
-    value = 1;
-  }
-  cudaGraphSetConditional(handle, value);
+  static int count = 5;
+  cudaGraphSetConditional(handle, --count ? 1 : 0);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
@@ -48,30 +39,23 @@ int main()
   cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
   cudaGraph_t graph;
-  cudaGraphNode_t kernelNode, conditionalNode;
-  void* kernelArgs[1];
+  cudaGraphNode_t conditionalNode;
 
   cudaGraphCreate(&graph, 0);
 
   cudaGraphConditionalHandle handle;
-  cudaGraphConditionalHandleCreate(&handle, graph);
-
-  // Use a kernel upstream of the conditional to set the handle value
-  cudaGraphNodeParams kParams = {};
-  kParams.type                = cudaGraphNodeTypeKernel;
-  kParams.kernel.func         = (void*) setHandle;
-  kParams.kernel.gridDim.x = kParams.kernel.gridDim.y = kParams.kernel.gridDim.z = 1;
-  kParams.kernel.blockDim.x = kParams.kernel.blockDim.y = kParams.kernel.blockDim.z = 1;
-  kParams.kernel.kernelParams                                                       = kernelArgs;
-  kernelArgs[0]                                                                     = &handle;
-  cudaGraphAddNode(&kernelNode, graph, NULL, 0, &kParams);
+  cudaGraphConditionalHandleCreate(&handle, graph, 1, cudaGraphCondAssignDefault);
 
   cudaGraphNodeParams cParams = {};
   cParams.type                = cudaGraphNodeTypeConditional;
   cParams.conditional.handle  = handle;
-  cParams.conditional.type    = cudaGraphCondTypeSwitch;
-  cParams.conditional.size    = 3;
-  cudaGraphAddNode(&conditionalNode, graph, &kernelNode, 1, &cParams);
+  cParams.conditional.type    = cudaGraphCondTypeWhile;
+  cParams.conditional.size    = 1;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams);
+#  else
+  cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams);
+#  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
 
@@ -95,6 +79,10 @@ int main()
 
   ctx.cuda_kernel(lY.rw(), lZ.rw())->*[]() {
     return cuda_kernel_desc{dummy, 1, 1, 0};
+  };
+
+  ctx.cuda_kernel()->*[handle]() {
+    return cuda_kernel_desc{setHandle, 1, 1, 0, handle};
   };
 
   ctx.finalize_as_graph();
