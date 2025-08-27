@@ -22,8 +22,8 @@
 #include <cuda/std/chrono>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__cufile/cufile.hpp>
 #include <cuda/experimental/__cufile/detail/enums.hpp>
-#include <cuda/experimental/__cufile/detail/error_handling.hpp>
 
 #include <functional>
 #include <vector>

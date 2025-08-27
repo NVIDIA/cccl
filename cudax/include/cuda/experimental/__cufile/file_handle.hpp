@@ -24,8 +24,8 @@
 
 #include <cuda/experimental/__cufile/batch_handle.hpp>
 #include <cuda/experimental/__cufile/buffer_handle.hpp>
+#include <cuda/experimental/__cufile/cufile.hpp>
 #include <cuda/experimental/__cufile/detail/enums.hpp>
-#include <cuda/experimental/__cufile/detail/error_handling.hpp>
 #include <cuda/experimental/__cufile/stream_handle.hpp>
 
 #include <ios>

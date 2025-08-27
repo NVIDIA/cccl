@@ -19,7 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__cufile/detail/error_handling.hpp>
+#include <cuda/experimental/__cufile/cufile.hpp>
 
 #include <functional>
 
