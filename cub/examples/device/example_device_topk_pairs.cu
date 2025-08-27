@@ -19,8 +19,9 @@
 
 #include <algorithm>
 
-#include "../../test/test_util.h"
 #include <stdio.h>
+
+#include "../../test/test_util.h"
 
 using namespace cub;
 
