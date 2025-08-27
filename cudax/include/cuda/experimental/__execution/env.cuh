@@ -27,9 +27,6 @@
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__tuple_dir/ignore.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
@@ -39,7 +36,6 @@
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -271,6 +267,42 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_attrs_t
 
 template <class _Sch>
 _CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __inln_attrs
+
+//! \brief __inln_attrs_t is a utility that builds an attributes queryable for a sender
+//! that completes inline. It delegates the \c get_completion_scheduler and \c get_completion_domain
+//! queries to the receiver's environment.
+//!
+//! \tparam _Tags The completion tags for which \c get_completion_signatures should return
+//! the current scheduler, and \c get_completion_domain should return the current domain.
+template <class... _Tags>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __inln_attrs_t
+{
+  _CCCL_TEMPLATE(class _Tag, class _Env)
+  _CCCL_REQUIRES(__one_of<_Tag, _Tags...> _CCCL_AND __callable<get_scheduler_t, const _Env&>)
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>, const _Env& __env) const noexcept
+  {
+    auto __sch = get_scheduler(__env);
+    // We must ask the scheduler where its schedule operations will complete, since it may
+    // not be on the scheduler itself.
+    return __call_or(get_completion_scheduler<set_value_t>, __sch, __sch, __detail::__hide_scheduler{__env});
+  }
+
+  _CCCL_TEMPLATE(class _Tag, class _Env)
+  _CCCL_REQUIRES(__one_of<_Tag, _Tags...> _CCCL_AND __callable<get_domain_t, const _Env&>)
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_Tag>, const _Env& __env) const noexcept
+    -> __call_result_t<get_domain_t, const _Env&>
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+  {
+    return completion_behavior::inline_completion;
+  }
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __join_env

@@ -27,6 +27,7 @@
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
@@ -34,41 +35,15 @@
 
 namespace cuda::experimental::execution
 {
-namespace __detail
-{
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __inln_sch_attrs_t
-{
-  _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(__callable<get_scheduler_t, const _Env&>)
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>, const _Env& __env) const noexcept
-  {
-    return get_scheduler(__env);
-  }
-
-  _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES((!__callable<get_scheduler_t, const _Env&>) //
-                 _CCCL_AND __callable<get_domain_t, const _Env&>)
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env& __env) const noexcept
-  {
-    return get_domain(__env);
-  }
-
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
-  {
-    return completion_behavior::inline_completion;
-  }
-};
-} // namespace __detail
-
 //! Scheduler that returns a sender that always completes inline (successfully).
-struct inline_scheduler : __detail::__inln_sch_attrs_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT inline_scheduler : __inln_attrs_t<set_value_t>
 {
 private:
-  struct __attrs_t : __detail::__inln_sch_attrs_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t : __inln_attrs_t<set_value_t>
   {};
 
   template <class _Rcvr>
-  struct __opstate_t : __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __immovable
   {
     using operation_state_concept = operation_state_t;
 
@@ -83,7 +58,7 @@ private:
 public:
   using scheduler_concept = scheduler_t;
 
-  struct __sndr_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   {
     using sender_concept = sender_t;
 

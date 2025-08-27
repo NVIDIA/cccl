@@ -121,24 +121,20 @@ struct on_t
 
   struct __lower_sndr_fn
   {
+    // This is the the lowering for the `on(sch, sndr)` case
     template <class _Sndr, class _NewSch, class _OldSch>
     [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _NewSch __new_sch, _OldSch __old_sch) const
     {
       return continues_on(starts_on(static_cast<_NewSch&&>(__new_sch), static_cast<_Sndr&&>(__sndr)), __old_sch);
     }
 
+    // This is the the lowering for the `sndr | on(sch, clsr)` case
     template <class _Sndr, class _NewSch, class _OldSch, class _Closure>
     [[nodiscard]] _CCCL_API constexpr auto
     operator()(_Sndr __sndr, _NewSch __new_sch, _OldSch __old_sch, _Closure __closure) const
     {
-      return write_env( //
-        continues_on( //
-          static_cast<_Closure&&>(__closure)( //
-            continues_on( //
-              write_env(static_cast<_Sndr&&>(__sndr), __sch_env_t{__old_sch, __new_sch}), //
-              __new_sch)), //
-          __old_sch), //
-        __sch_env_t{__new_sch, __old_sch});
+      return continues_on(static_cast<_Closure&&>(__closure)(continues_on(static_cast<_Sndr&&>(__sndr), __new_sch)),
+                          __old_sch);
     }
   };
 

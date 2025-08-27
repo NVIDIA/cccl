@@ -157,10 +157,6 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 template <class _Tag>
 struct get_completion_scheduler_t
 {
-private:
-  template <class>
-  friend struct get_completion_scheduler_t;
-
   // This function object reads the completion scheduler from an attribute object or a
   // scheduler, accounting for the fact that the query member function may or may not
   // accept an environment.
@@ -172,7 +168,8 @@ private:
       -> __query_result_t<_Attrs, _GetComplSch>
     {
       static_assert(noexcept(__attrs.query(_GetComplSch{})));
-      static_assert(__is_scheduler<decltype(__attrs.query(_GetComplSch{}))>);
+      static_assert(__is_scheduler<decltype(__attrs.query(_GetComplSch{}))>,
+                    "The get_completion_scheduler query must return a scheduler type.");
       return __attrs.query(_GetComplSch{});
     }
 
@@ -182,11 +179,13 @@ private:
       -> __query_result_t<_Attrs, _GetComplSch, const _Env&>
     {
       static_assert(noexcept(__attrs.query(_GetComplSch{}, __env)));
-      static_assert(__is_scheduler<decltype(__attrs.query(_GetComplSch{}, __env))>);
+      static_assert(__is_scheduler<decltype(__attrs.query(_GetComplSch{}, __env))>,
+                    "The get_completion_scheduler query must return a scheduler type.");
       return __attrs.query(_GetComplSch{}, __env);
     }
   };
 
+private:
   // A scheduler might have a completion scheduler different from itself; for example, an
   // inline_scheduler completes wherever the scheduler's sender is started. So we
   // recursively ask the scheduler for its completion scheduler until we find one whose
@@ -204,8 +203,8 @@ private:
 
       if constexpr (__callable<__read_query_t, _Sch, const _Env&...>)
       {
-        using _Sch2 = __call_result_t<__read_query_t, _Sch, const _Env&...>;
-        if constexpr (__same_as<_Sch, _Sch2>)
+        using __sch2_t = __call_result_t<__read_query_t, _Sch, const _Env&...>;
+        if constexpr (__same_as<_Sch, __sch2_t>)
         {
           _Sch __prev = __sch;
           do

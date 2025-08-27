@@ -33,25 +33,7 @@ namespace _impulse
 {
 struct _attrs_t
 {
-  template <class Env>
-  auto query(ex::get_completion_scheduler_t<ex::set_value_t>, const Env& env) const noexcept
-    -> cuda::std::__call_result_t<ex::get_completion_scheduler_t<ex::set_value_t>,
-                                  ex::__scheduler_of_t<Env>,
-                                  ex::__detail::__hide_scheduler<Env>>
-  {
-    return ex::get_completion_scheduler<ex::set_value_t>(ex::get_scheduler(env), ex::__detail::__hide_scheduler{env});
-  }
-
-  template <class Env>
-  auto query(ex::get_completion_scheduler_t<ex::set_stopped_t>, const Env& env) const noexcept
-    -> cuda::std::__call_result_t<ex::get_completion_scheduler_t<ex::set_value_t>,
-                                  ex::__scheduler_of_t<Env>,
-                                  ex::__detail::__hide_scheduler<Env>>
-  {
-    return ex::get_completion_scheduler<ex::set_value_t>(ex::get_scheduler(env), ex::__detail::__hide_scheduler{env});
-  }
-
-  static constexpr auto query(ex::get_completion_behavior_t) noexcept
+  constexpr auto query(ex::get_completion_behavior_t) const noexcept
   {
     return ex::completion_behavior::asynchronous;
   }

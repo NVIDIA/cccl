@@ -27,6 +27,7 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
@@ -34,14 +35,6 @@
 
 namespace cuda::experimental::execution
 {
-struct __just_attrs_t
-{
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
-  {
-    return completion_behavior::inline_completion;
-  }
-};
-
 template <class _JustTag, class _SetTag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t
 {
@@ -139,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 
   [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
   {
-    return __just_attrs_t{};
+    return __inln_attrs_t<_SetTag>{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;

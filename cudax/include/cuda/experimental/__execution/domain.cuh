@@ -179,14 +179,13 @@ struct get_domain_t
   //! otherwise.
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES((!__queryable_with<_Env, get_domain_t>) _CCCL_AND //
-                   __callable<get_scheduler_t, const _Env&>)
+  _CCCL_REQUIRES((!__queryable_with<_Env, get_domain_t>) _CCCL_AND __callable<get_scheduler_t, const _Env&>)
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env&) const noexcept
   {
-    using __sch_t = __scheduler_of_t<const _Env&>;
-    using __cmpl_sch_t =
-      __call_result_or_t<get_completion_scheduler_t<set_value_t>, __sch_t, __sch_t, __detail::__hide_scheduler<_Env>>;
-    using __domain_t = decay_t<__query_result_or_t<__cmpl_sch_t, get_domain_t, default_domain>>;
+    using __sch_t      = __scheduler_of_t<const _Env&>;
+    using __env_t      = __detail::__hide_scheduler<const _Env&>; // to prevent recursion
+    using __cmpl_sch_t = __call_result_or_t<get_completion_scheduler_t<set_value_t>, __sch_t, __sch_t, __env_t>;
+    using __domain_t   = __scheduler_domain_t<__cmpl_sch_t, __env_t>;
     static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
     return __domain_t{};
   }
@@ -208,22 +207,30 @@ _CCCL_GLOBAL_CONSTANT get_domain_t get_domain{};
 template <class _Tag>
 struct get_completion_domain_t
 {
+  // This function object reads the completion domain from an attribute object or a
+  // scheduler, accounting for the fact that the query member function may or may not
+  // accept an environment.
+  struct __read_query_t
+  {
+    _CCCL_TEMPLATE(class _Attrs)
+    _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_domain_t>)
+    _CCCL_API constexpr auto operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
+      -> decay_t<__query_result_t<_Attrs, get_completion_domain_t>>;
+
+    _CCCL_TEMPLATE(class _Attrs, class _Env)
+    _CCCL_REQUIRES(__queryable_with<_Attrs, get_completion_domain_t, const _Env&>)
+    _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
+      -> decay_t<__query_result_t<_Attrs, get_completion_domain_t, const _Env&>>;
+  };
+
 private:
   template <class _Attrs, class... _Env>
   [[nodiscard]] _CCCL_API static constexpr auto __impl(const _Attrs&, const _Env&...) noexcept
   {
-    // If __attrs has a completion domain, then return it (after checking the domain for
-    // _its_ completion domain):
-    if constexpr (__queryable_with<_Attrs, get_completion_domain_t, const _Env&...>)
+    // If __attrs has a completion domain, then return it:
+    if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
     {
-      using __domain_t = decay_t<__query_result_t<_Attrs, get_completion_domain_t, const _Env&...>>;
-      static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
-      return __domain_t{};
-    }
-    // Also try querying without the environment:
-    else if constexpr (__queryable_with<_Attrs, get_completion_domain_t>)
-    {
-      using __domain_t = decay_t<__query_result_t<_Attrs, get_completion_domain_t>>;
+      using __domain_t = __call_result_t<__read_query_t, const _Attrs&, const _Env&...>;
       static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
       return __domain_t{};
     }
@@ -231,18 +238,12 @@ private:
     // completion domain.
     else if constexpr (__callable<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>)
     {
-      using __sch_t = __call_result_t<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>;
+      using __sch_t        = __call_result_t<get_completion_scheduler_t<_Tag>, const _Attrs&, const _Env&...>;
+      using __read_query_t = typename get_completion_domain_t<set_value_t>::__read_query_t;
 
-      if constexpr (__queryable_with<__sch_t, get_completion_domain_t, const _Env&...>)
+      if constexpr (__callable<__read_query_t, __sch_t, const _Env&...>)
       {
-        using __domain_t = decay_t<__query_result_t<__sch_t, get_completion_domain_t, const _Env&...>>;
-        static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
-        return __domain_t{};
-      }
-      // Also try querying without the environment:
-      else if constexpr (__queryable_with<__sch_t, get_completion_domain_t>)
-      {
-        using __domain_t = decay_t<__query_result_t<__sch_t, get_completion_domain_t>>;
+        using __domain_t = __call_result_t<__read_query_t, __sch_t, const _Env&...>;
         static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
         return __domain_t{};
       }
@@ -253,6 +254,17 @@ private:
       {
         return __call_result_t<get_domain_t, const _Env&...>{};
       }
+      // Otherwise, if we are asking "late" (with an environment), return the default_domain
+      else if constexpr (sizeof...(_Env) != 0)
+      {
+        return default_domain{};
+      }
+    }
+    // Otherwise, if the attributes indicates that the sender completes inline, we can ask
+    // the environment for its domain.
+    else if constexpr (__completes_inline<_Attrs, _Env...> && __callable<get_domain_t, const _Env&...>)
+    {
+      return __call_result_t<get_domain_t, const _Env&...>{};
     }
     // Otherwise, no completion domain can be determined. Return void.
   }
