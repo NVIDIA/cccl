@@ -30,7 +30,6 @@ namespace cuda::experimental::cufile
 class stream_handle
 {
 private:
-  cudaStream_t stream_;
   cudaStream_t registered_stream_ = nullptr;
 
 public:
@@ -52,7 +51,6 @@ public:
 // ===================== Inline implementations =====================
 
 inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
-    : stream_(stream)
 {
   CUfileError_t error = cuFileStreamRegister(stream, flags);
   detail::check_cufile_result(error, "cuFileStreamRegister");
@@ -60,8 +58,7 @@ inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
 }
 
 inline stream_handle::stream_handle(stream_handle&& other) noexcept
-    : stream_(other.stream_)
-    , registered_stream_(other.registered_stream_)
+    : registered_stream_(other.registered_stream_)
 {
   other.registered_stream_ = nullptr;
 }
@@ -74,7 +71,6 @@ inline stream_handle& stream_handle::operator=(stream_handle&& other) noexcept
     {
       cuFileStreamDeregister(registered_stream_);
     }
-    stream_                  = other.stream_;
     registered_stream_       = other.registered_stream_;
     other.registered_stream_ = nullptr;
   }
@@ -92,7 +88,7 @@ inline stream_handle::~stream_handle() noexcept
 
 inline cudaStream_t stream_handle::get() const noexcept
 {
-  return stream_;
+  return registered_stream_;
 }
 
 inline bool stream_handle::is_valid() const noexcept
