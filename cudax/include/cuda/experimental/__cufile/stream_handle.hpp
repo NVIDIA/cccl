@@ -65,7 +65,7 @@ inline stream_handle::stream_handle(stream_handle&& other) noexcept
 
 inline stream_handle& stream_handle::operator=(stream_handle&& other) noexcept
 {
-  if (this != &other)
+  if (this != ::cuda::std::addressof(other))
   {
     if (registered_stream_ != nullptr)
     {
