@@ -38,24 +38,27 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief \p permutation_iterator is an iterator which represents a pointer into a reordered view of a given range.
-//! \p permutation_iterator is an imprecise name; the reordered view need not be a strict permutation. This iterator is
+//! @addtogroup iterators
+//! @{
+
+//! @brief @c permutation_iterator is an iterator which represents a pointer into a reordered view of a given range.
+//! @c permutation_iterator is an imprecise name; the reordered view need not be a strict permutation. This iterator is
 //! useful for fusing a scatter or gather operation with other algorithms.
 //!
 //! This iterator takes two arguments:
 //!
-//!   - an iterator to the range \c V on which the "permutation" will be applied
-//!   - an iterator to a range of indices defining the reindexing scheme that determines how the elements of \c V will
+//!   - an iterator to the range @c V on which the "permutation" will be applied
+//!   - an iterator to a range of indices defining the reindexing scheme that determines how the elements of @c V will
 //!   be permuted.
 //!
-//! Note that \p permutation_iterator is not limited to strict permutations of the given range \c V. The distance
-//! between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range \c V,
-//! in which case the \p permutation_iterator only provides a "permutation" of a subset of \c V. The indices do not
-//! need to be unique. In this same context, it must be noted that the past-the-end \p permutation_iterator is
+//! Note that @c permutation_iterator is not limited to strict permutations of the given range @c V. The distance
+//! between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range @c V,
+//! in which case the @c permutation_iterator only provides a "permutation" of a subset of @c V. The indices do not
+//! need to be unique. In this same context, it must be noted that the past-the-end @c permutation_iterator is
 //! completely defined by means of the past-the-end iterator to the indices.
 //!
-//! The following code snippet demonstrates how to create a \p permutation_iterator which represents a reordering of the
-//! contents of a \p device_vector.
+//! The following code snippet demonstrates how to create a @c permutation_iterator which represents a reordering of the
+//! contents of a @c device_vector.
 //!
 //! @code
 //! #include <cuda/iterator>
@@ -136,11 +139,11 @@ public:
   static_assert(::cuda::std::random_access_iterator<_Iter>,
                 "cuda::permutation_iterator: _Iter must be a random access iterator!");
 
-  //! @brief Default constructs an \p permutation_iterator with a value initialized iterator and index
+  //! @brief Default constructs an @c permutation_iterator with a value initialized iterator and index
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI constexpr permutation_iterator() = default;
 
-  //! @brief Constructs an \p permutation_iterator from an iterator and an optional index
+  //! @brief Constructs an @c permutation_iterator from an iterator and an optional index
   //! @param __iter The iterator to to index from
   //! @param __index The iterator with the permutations
   _CCCL_EXEC_CHECK_DISABLE
@@ -176,8 +179,7 @@ public:
     return static_cast<difference_type>(*__index_);
   }
 
-  //! @brief Dereferences the stored iterator offset by \c index()
-  //! @returns __iter_[index()]
+  //! @brief Dereferences the stored iterator offset by index()
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator*() noexcept(noexcept(__iter_[static_cast<__iter_difference_t>(*__index_)]))
@@ -185,8 +187,7 @@ public:
     return __iter_[static_cast<__iter_difference_t>(*__index_)];
   }
 
-  //! @brief Dereferences the stored iterator offset by \p index()
-  //! @returns __iter_[index()]
+  //! @brief Dereferences the stored iterator offset by index()
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
@@ -196,9 +197,8 @@ public:
     return __iter_[static_cast<__iter_difference_t>(*__index_)];
   }
 
-  //! @brief Subscripts the stored iterator by \p __n
+  //! @brief Subscripts the stored iterator offset by index(__n)
   //! @param __n The additional offset
-  //! @returns __iter_[__index_[__n]]
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator[](difference_type __n) noexcept(noexcept(__iter_[static_cast<__iter_difference_t>(__index_[__n])]))
@@ -206,9 +206,8 @@ public:
     return __iter_[static_cast<__iter_difference_t>(__index_[__n])];
   }
 
-  //! @brief Subscripts the stored iterator by \p __n
+  //! @brief Subscripts the stored iterator offset by index(__n)
   //! @param __n The additional offset
-  //! @returns __iter_[__index_[__n]]
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
@@ -256,7 +255,7 @@ public:
     return __tmp;
   }
 
-  //! @brief Advances the stored index iterator by \p __n
+  //! @brief Advances the stored index iterator by a given number of elements
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr permutation_iterator operator+(difference_type __n) const
@@ -266,19 +265,19 @@ public:
     return permutation_iterator{__iter_, __index_ + __n};
   }
 
-  //! @brief Returns a copy of \p __x advanced by \p __n
+  //! @brief Returns a copy of a @c permutation_iterator advanced by a given number of elements
   //! @param __n The number of elements to advance
-  //! @param __x The original \c permutation_iterator
+  //! @param __iter The original @c permutation_iterator
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
-  operator+(difference_type __n, const permutation_iterator& __x) noexcept(
+  operator+(difference_type __n, const permutation_iterator& __iter) noexcept(
     noexcept(__index_ + __n)
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
-    return __x + __n;
+    return __iter + __n;
   }
 
-  //! @brief Advances the \c permutation_iterator by \p __n
+  //! @brief Advances the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator& operator+=(difference_type __n) noexcept(noexcept(__index_ += __n))
@@ -287,7 +286,7 @@ public:
     return *this;
   }
 
-  //! @brief Returns a copy of the \c permutation_iterator decremented by \p __n
+  //! @brief Returns a copy of a @c permutation_iterator decremented by a given number of elements
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr permutation_iterator operator-(difference_type __n) const
@@ -297,7 +296,7 @@ public:
     return permutation_iterator{__iter_, __index_ - __n};
   }
 
-  //! @brief Decrements the \c permutation_iterator by \p __n
+  //! @brief Decrements the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator& operator-=(difference_type __n) noexcept(noexcept(__index_ -= __n))
@@ -306,7 +305,7 @@ public:
     return *this;
   }
 
-  //! @brief Returns the difference in index between two \c permutation_iterators. Returns distance between indices
+  //! @brief Returns the distance between two @c permutation_iterators.
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const permutation_iterator& __lhs, const permutation_iterator& __rhs) noexcept(__nothrow_difference<_Index>)
@@ -314,7 +313,7 @@ public:
     return __lhs.__index_ - __rhs.__index();
   }
 
-  //! @brief Compares two \c permutation_iterator for equality, by comparing the memory location they point at
+  //! @brief Compares two @c permutation_iterator for equality, compares the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
@@ -326,7 +325,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two \c permutation_iterator for inequality, by comparing the memory location they point at
+  //! @brief Compares two @c permutation_iterator for inequality, compares the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
@@ -343,7 +342,7 @@ public:
   static constexpr bool __nothrow_three_way =
     noexcept(::cuda::std::declval<_Iter1>() <=> ::cuda::std::declval<_Iter2>());
 
-  //! @brief Three-way-compares two \c permutation_iterator for inequality, by three-way-comparing the memory location
+  //! @brief Three-way-compares two @c permutation_iterator for inequality, compares the indices
   //! they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
@@ -354,9 +353,8 @@ public:
   {
     return __lhs.__index_ <=> __rhs.__index();
   }
-#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-
-  //! @brief Compares two \c permutation_iterator for less than, by comparing the memory location they point at
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+  //! @brief Compares two @c permutation_iterator for less than, compares the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -367,7 +365,7 @@ public:
     return __lhs.__index_ < __rhs.__index();
   }
 
-  //! @brief Compares two \c permutation_iterator for less equal, by comparing the memory location they point at
+  //! @brief Compares two @c permutation_iterator for less equal, compares the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -378,7 +376,7 @@ public:
     return __lhs.__index_ <= __rhs.__index();
   }
 
-  //! @brief Compares two \c permutation_iterator for greater than, by comparing the memory location they point at
+  //! @brief Compares two @c permutation_iterator for greater than, compares the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -389,7 +387,7 @@ public:
     return __lhs.__index_ > __rhs.__index();
   }
 
-  //! @brief Compares two \c permutation_iterator for greater equal, by comparing the memory location they point at
+  //! @brief Compares two @c permutation_iterator for greater equal, compares the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -399,15 +397,17 @@ public:
   {
     return __lhs.__index_ >= __rhs.__index();
   }
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter> _CCCL_AND ::cuda::std::random_access_iterator<_Index>)
 _CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
 
-//! @brief Creates an \c permutation_iterator from an iterator and an iterator to an integral index
+//! @brief Creates an @c permutation_iterator from a base iterator and an iterator to an integral index
 //! @param __iter The iterator
 //! @param __index The iterator to an integral index
+//! @relates permutation_iterator
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter> _CCCL_AND ::cuda::std::random_access_iterator<_Index>)
 [[nodiscard]] _CCCL_API constexpr permutation_iterator<_Iter, _Index>
@@ -416,6 +416,8 @@ make_permutation_iterator(_Iter __iter, _Index __index) noexcept(
 {
   return permutation_iterator<_Iter, _Index>{__iter, __index};
 }
+
+//! @}
 
 _CCCL_END_NAMESPACE_CUDA
 
