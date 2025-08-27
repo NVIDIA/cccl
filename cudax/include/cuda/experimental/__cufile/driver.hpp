@@ -19,8 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__cufile/cufile.hpp>
 #include <cuda/experimental/__cufile/detail/enums.hpp>
-#include <cuda/experimental/__cufile/detail/error_handling.hpp>
 
 #include <memory>
 #include <string>
@@ -30,6 +30,8 @@
 
 namespace cuda::experimental::cufile
 {
+
+// no additional declarations
 
 //! C++ wrapper for CUfileDrvProps_t with convenient accessor methods
 class driver_properties
