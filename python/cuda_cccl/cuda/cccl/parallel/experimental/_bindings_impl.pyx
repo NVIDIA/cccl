@@ -82,8 +82,8 @@ cdef extern from "cccl/c/types.h":
         cccl_type_enum type
 
     cdef enum cccl_op_code_type:
-        CCCL_OP_LTOIR = 0
-        CCCL_OP_CPP_SOURCE = 1
+        CCCL_OP_LTOIR
+        CCCL_OP_CPP_SOURCE
 
     cdef struct cccl_op_t:
         cccl_op_kind_t type
@@ -270,7 +270,7 @@ cdef class TypeInfo:
             Size of the type in bytes.
         alignment (int):
             Alignment of the type in bytes.
-        type_enum TypeEnum:
+        type_enum (TypeEnum):
             Enumeration member identifying the type.
     """
     cdef cccl_type_info type_info
@@ -281,7 +281,7 @@ cdef class TypeInfo:
         _validate_alignment(alignment)
         self.type_info.size = size
         self.type_info.alignment = alignment
-        self.type_info.type = <cccl_type_enum> type_enum
+        self.type_info.type = type_enum
 
     @property
     def size(self):
