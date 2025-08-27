@@ -20,7 +20,6 @@
 #endif // no system header
 
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
-#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 
 #include <functional>
 
@@ -32,7 +31,7 @@ class stream_handle
 {
 private:
   cudaStream_t stream_;
-  detail::raii_resource<cudaStream_t, ::std::function<void(cudaStream_t)>> registered_stream_;
+  cudaStream_t registered_stream_ = nullptr;
 
 public:
   //! Register CUDA stream
@@ -40,6 +39,8 @@ public:
 
   stream_handle(stream_handle&& other) noexcept;
   stream_handle& operator=(stream_handle&& other) noexcept;
+
+  ~stream_handle() noexcept;
 
   //! Get the registered CUDA stream
   cudaStream_t get() const noexcept;
@@ -55,25 +56,38 @@ inline stream_handle::stream_handle(cudaStream_t stream, unsigned int flags)
 {
   CUfileError_t error = cuFileStreamRegister(stream, flags);
   detail::check_cufile_result(error, "cuFileStreamRegister");
-
-  registered_stream_.emplace(stream, [](cudaStream_t s) {
-    cuFileStreamDeregister(s);
-  });
+  registered_stream_ = stream;
 }
 
 inline stream_handle::stream_handle(stream_handle&& other) noexcept
     : stream_(other.stream_)
-    , registered_stream_(::std::move(other.registered_stream_))
-{}
+    , registered_stream_(other.registered_stream_)
+{
+  other.registered_stream_ = nullptr;
+}
 
 inline stream_handle& stream_handle::operator=(stream_handle&& other) noexcept
 {
   if (this != &other)
   {
-    stream_            = other.stream_;
-    registered_stream_ = ::std::move(other.registered_stream_);
+    if (registered_stream_ != nullptr)
+    {
+      cuFileStreamDeregister(registered_stream_);
+    }
+    stream_                  = other.stream_;
+    registered_stream_       = other.registered_stream_;
+    other.registered_stream_ = nullptr;
   }
   return *this;
+}
+
+inline stream_handle::~stream_handle() noexcept
+{
+  if (registered_stream_ != nullptr)
+  {
+    cuFileStreamDeregister(registered_stream_);
+    registered_stream_ = nullptr;
+  }
 }
 
 inline cudaStream_t stream_handle::get() const noexcept
@@ -83,7 +97,7 @@ inline cudaStream_t stream_handle::get() const noexcept
 
 inline bool stream_handle::is_valid() const noexcept
 {
-  return registered_stream_.has_value();
+  return registered_stream_ != nullptr;
 }
 
 } // namespace cuda::experimental::cufile

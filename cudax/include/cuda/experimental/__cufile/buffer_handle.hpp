@@ -22,7 +22,6 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cufile/detail/error_handling.hpp>
-#include <cuda/experimental/__cufile/detail/raii_resource.hpp>
 
 #include <functional>
 
@@ -34,7 +33,7 @@ class buffer_handle
 {
 private:
   ::cuda::std::span<const ::cuda::std::byte> buffer_;
-  detail::raii_resource<const void*, void (*)(const void*)> registered_buffer_;
+  const void* registered_buffer_ = nullptr;
 
 public:
   //! Register GPU buffer using span
@@ -47,6 +46,8 @@ public:
 
   buffer_handle(buffer_handle&& other) noexcept;
   buffer_handle& operator=(buffer_handle&& other) noexcept;
+
+  ~buffer_handle() noexcept;
 
   //! Get the registered buffer pointer
   const void* data() const noexcept;
@@ -83,10 +84,7 @@ inline buffer_handle::buffer_handle(::cuda::std::span<T> buffer, int flags)
 
   CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
   detail::check_cufile_result(error, "cuFileBufRegister");
-
-  registered_buffer_.emplace(buffer_.data(), [](const void* buf) {
-    cuFileBufDeregister(buf);
-  });
+  registered_buffer_ = buffer_.data();
 }
 
 template <typename T>
@@ -97,26 +95,41 @@ inline buffer_handle::buffer_handle(::cuda::std::span<const T> buffer, int flags
 
   CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), flags);
   detail::check_cufile_result(error, "cuFileBufRegister");
-
-  registered_buffer_.emplace(buffer_.data(), [](const void* buf) {
-    cuFileBufDeregister(buf);
-  });
+  registered_buffer_ = buffer_.data();
 }
 
 // Move constructor and assignment
 inline buffer_handle::buffer_handle(buffer_handle&& other) noexcept
     : buffer_(other.buffer_)
-    , registered_buffer_(::std::move(other.registered_buffer_))
-{}
+    , registered_buffer_(other.registered_buffer_)
+{
+  other.registered_buffer_ = nullptr;
+}
 
 inline buffer_handle& buffer_handle::operator=(buffer_handle&& other) noexcept
 {
   if (this != &other)
   {
-    buffer_            = other.buffer_;
-    registered_buffer_ = ::std::move(other.registered_buffer_);
+    // Deregister current buffer if owned
+    if (registered_buffer_ != nullptr)
+    {
+      cuFileBufDeregister(registered_buffer_);
+    }
+
+    buffer_                  = other.buffer_;
+    registered_buffer_       = other.registered_buffer_;
+    other.registered_buffer_ = nullptr;
   }
   return *this;
+}
+
+inline buffer_handle::~buffer_handle() noexcept
+{
+  if (registered_buffer_ != nullptr)
+  {
+    cuFileBufDeregister(registered_buffer_);
+    registered_buffer_ = nullptr;
+  }
 }
 
 // Simple getter implementations
@@ -158,7 +171,7 @@ inline ::cuda::std::span<const T> buffer_handle::as_const_span() const noexcept
 
 inline bool buffer_handle::is_valid() const noexcept
 {
-  return registered_buffer_.has_value();
+  return registered_buffer_ != nullptr;
 }
 
 } // namespace cuda::experimental::cufile
