@@ -132,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 
   [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
   {
-    return __inln_attrs_t<_SetTag>{};
+    return __inln_attrs_t<__set_tag_t>{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
