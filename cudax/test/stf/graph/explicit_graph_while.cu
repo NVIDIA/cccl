@@ -12,8 +12,6 @@
  * @file
  *
  * @brief Add tasks to a user-provided child graph from a while loop
- *
- * Adapted from https://developer.nvidia.com/blog/dynamic-control-flow-in-cuda-graphs-with-conditional-nodes/
  */
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
