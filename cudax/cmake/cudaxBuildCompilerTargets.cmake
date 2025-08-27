@@ -29,7 +29,7 @@ function(cudax_build_compiler_targets)
     # __cplusplus to be defined for this to work:
     append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
 
-    # cudax requires __VA_OPT__ for its unit tests
+    # We require the new preprocessor
     append_option_if_available("/Zc:preprocessor" cxx_compile_options)
 
     # XXX Temporary hack for STF !

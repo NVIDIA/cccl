@@ -24,6 +24,9 @@ function(thrust_build_compiler_targets)
     # Disable warning about applying unary operator- to unsigned type.
     # TODO Re-enable.
     append_option_if_available("/wd4146" cxx_compile_options)
+
+    # We require the new preprocessor
+    append_option_if_available("/Zc:preprocessor" cxx_compile_options)
   endif()
 
   cccl_build_compiler_interface(thrust.compiler_interface
