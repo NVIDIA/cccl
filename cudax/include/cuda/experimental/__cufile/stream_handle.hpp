@@ -34,7 +34,7 @@ private:
 
 public:
   //! Register CUDA stream
-  stream_handle(cudaStream_t stream, unsigned int flags = 0);
+  stream_handle(cuda::stream_ref stream, unsigned int flags = 0);
 
   stream_handle(stream_handle&& other) noexcept;
   stream_handle& operator=(stream_handle&& other) noexcept;
