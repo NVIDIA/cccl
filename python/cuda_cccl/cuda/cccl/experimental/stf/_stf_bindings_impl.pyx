@@ -403,6 +403,14 @@ cdef class task:
         cdef CUstream s = stf_task_get_custream(self._t)
         return <uintptr_t> s         # cast pointer -> Py int
 
+    def stream_cdata(self):
+        """
+        Return the raw CUstream as a ctypes void pointer.
+        This can be passed directly to torch.cuda.Stream(cdata=...).
+        """
+        cdef CUstream s = stf_task_get_custream(self._t)
+        return ctypes.c_void_p(<uintptr_t> s)
+
     def get_arg(self, index) -> int:
         cdef void *ptr = stf_task_get(self._t, index)
         return <uintptr_t>ptr
