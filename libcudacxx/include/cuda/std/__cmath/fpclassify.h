@@ -68,7 +68,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr int __fpclassify_impl(_Tp __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int __fpclassify_impl(_Tp __x) noexcept
 {
   static_assert(numeric_limits<_Tp>::has_denorm, "The type must have denorm support");
 
@@ -105,7 +110,13 @@ template <class _Tp>
   }
 }
 
-[[nodiscard]] _CCCL_API constexpr int fpclassify(float __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
@@ -118,7 +129,12 @@ template <class _Tp>
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 
-[[nodiscard]] _CCCL_API constexpr int fpclassify(double __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
@@ -132,7 +148,12 @@ template <class _Tp>
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(long double __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
@@ -145,69 +166,117 @@ template <class _Tp>
 #  endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#endif
 
 #if _CCCL_HAS_NVFP16()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__half __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__half __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_bfloat16 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_bfloat16 __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e4m3 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_fp8_e4m3 __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e5m2 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_fp8_e5m2 __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
   return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e8m0>) == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp6_e2m3 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_fp6_e2m3 __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp6_e3m2 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_fp6_e3m2 __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
-[[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp4_e2m1 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(__nv_fp4_e2m1 __x) noexcept
 {
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
+#if !_CCCL_COMPILER(GCC)
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr int fpclassify(_Tp __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr int fpclassify(_Tp __x) noexcept
 {
   return (__x == 0) ? FP_ZERO : FP_NORMAL;
 }
+#endif
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
