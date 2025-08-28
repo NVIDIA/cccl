@@ -109,6 +109,13 @@ public:
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
     }
 
+    if (is_capture_enabled())
+    {
+      // Select a stream from the pool
+      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+    }
+
     return *this;
   }
 
