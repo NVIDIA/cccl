@@ -69,7 +69,10 @@ struct strided_slice
 };
 
 template <class _OffsetType, class _ExtentType, class _StrideType>
-_CCCL_HOST_DEVICE strided_slice(_OffsetType, _ExtentType, _StrideType)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+strided_slice(_OffsetType, _ExtentType, _StrideType)
   -> strided_slice<_OffsetType, _ExtentType, _StrideType>;
 
 template <typename>
