@@ -35,20 +35,34 @@ def scale(a, x):
         x[i] = a * x[i]
 
 
-def test_numba():
+# One test with a single kernel in a CUDA graph
+def test_numba_graph():
     X = np.ones(16, dtype=np.float32)
-    Y = np.ones(16, dtype=np.float32)
-    Z = np.ones(16, dtype=np.float32)
+    ctx = context(use_graph=True)
+    lX = ctx.logical_data(X)
+    with ctx.task(rw(lX)) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = t.get_arg_numba(0)
+        scale[32, 64, nb_stream](2.0, dX)
+        pass
+    ctx.finalize()
 
-    ctx = context()
+
+def test_numba():
+    n=1024*1024
+    X = np.ones(n, dtype=np.float32)
+    Y = np.ones(n, dtype=np.float32)
+    Z = np.ones(n, dtype=np.float32)
+
+    ctx = context(use_graph=True)
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)
 
     with ctx.task(rw(lX)) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        # dX = t.get_arg_numba(0)
-        dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
+        dX = t.get_arg_numba(0)
+        # dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
         scale[32, 64, nb_stream](2.0, dX)
         pass
 
@@ -73,6 +87,8 @@ def test_numba():
         dZ = t.get_arg_numba(1)
         axpy[32, 64, nb_stream](2.0, dY, dZ)
         pass
+
+    ctx.finalize()
 
 
 @cuda.jit
@@ -239,4 +255,5 @@ def test_numba_places():
 
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
-    test_numba_exec_place()
+    # test_numba_graph()
+    test_numba()
