@@ -1670,6 +1670,28 @@
 <p>Compared to <code class="docutils literal notranslate"><span class="pre">device()</span></code> member function the returned <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1logical__device.html#classcuda_1_1experimental_1_1logical__device"><span class="std std-ref"><span class="pre">logical_device</span></span></a></code> will hold a green context for streams created under one. </p>
 </dd></dl>
 
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental6stream5queryERKN9execution32get_forward_progress_guarantee_tE">
+<span class="target" id="structcuda_1_1experimental_1_1stream__ref_1a036e8d379339f96b6a6141515bc4f3eb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">query</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">get_forward_progress_guarantee_t</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">forward_progress_guarantee</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental6stream5queryERKN9execution32get_forward_progress_guarantee_tE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental6stream5queryERKN9execution12get_domain_tE">
+<span class="target" id="structcuda_1_1experimental_1_1stream__ref_1a223d6667def71a7e100da321cce45675"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">query</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">get_domain_t</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_domain</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental6stream5queryERKN9execution12get_domain_tE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
 </div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-functions">Public Static Functions</p>
@@ -1699,28 +1721,6 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental6stream18from_native_handleEN4cudaSt9nullptr_tE">
 <span class="target" id="structcuda_1_1experimental_1_1stream_1a0fc4180ea0e3d4bb561e757a6dbe1254"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental6streamE" title="cuda::experimental::stream"><span class="n"><span class="pre">stream</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">from_native_handle</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">nullptr_t</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental6stream18from_native_handleEN4cudaSt9nullptr_tE" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental6stream5queryERKN9execution32get_forward_progress_guarantee_tE">
-<span class="target" id="structcuda_1_1experimental_1_1stream__ref_1ade64e8409a07b742ad724728104c8023"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">query</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">get_forward_progress_guarantee_t</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">forward_progress_guarantee</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental6stream5queryERKN9execution32get_forward_progress_guarantee_tE" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental6stream5queryERKN9execution12get_domain_tE">
-<span class="target" id="structcuda_1_1experimental_1_1stream__ref_1a65d9dd9f6c6e6d1970cdc9cd93fdcdbe"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">query</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">get_domain_t</span></span><span class="p"><span class="pre">&amp;</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="n"><span class="pre">execution</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_domain</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental6stream5queryERKN9execution12get_domain_tE" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 </div>
@@ -1800,11 +1800,11 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental6stream5readyEv"><code class="docutils literal notranslate"><span class="pre">ready()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental6stream8scheduleEv"><code class="docutils literal notranslate"><span class="pre">schedule()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental6stream14logical_deviceEv"><code class="docutils literal notranslate"><span class="pre">logical_device()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental6stream5queryERKN9execution32get_forward_progress_guarantee_tE"><code class="docutils literal notranslate"><span class="pre">query()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental6stream5queryERKN9execution12get_domain_tE"><code class="docutils literal notranslate"><span class="pre">query()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental6stream18from_native_handleE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">from_native_handle()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental6stream18from_native_handleEi"><code class="docutils literal notranslate"><span class="pre">from_native_handle()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental6stream18from_native_handleEN4cudaSt9nullptr_tE"><code class="docutils literal notranslate"><span class="pre">from_native_handle()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental6stream5queryERKN9execution32get_forward_progress_guarantee_tE"><code class="docutils literal notranslate"><span class="pre">query()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental6stream5queryERKN9execution12get_domain_tE"><code class="docutils literal notranslate"><span class="pre">query()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental6stream16default_priorityE"><code class="docutils literal notranslate"><span class="pre">default_priority</span></code></a></li>
 </ul>
 </li>
