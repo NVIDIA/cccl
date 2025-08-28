@@ -88,8 +88,8 @@ runs:
         # Build cluster auth
         SCCACHE_DIST_TOKEN: "${{inputs.dist-token}}"
         SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
-        # Infinitely retry all retryable errors
-        SCCACHE_DIST_MAX_RETRIES: "inf"
+        # Retry intermittent failures
+        SCCACHE_DIST_MAX_RETRIES: "9"
         # Never fallback to building locally, fail instead
         SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
         SCCACHE_IDLE_TIMEOUT: 0
@@ -230,10 +230,7 @@ runs:
         ) || exit_code=$?
 
         # Dump artifact matrix for upload step:
-        ( # Subshell to contain the set -x log
-          set -x
-          printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
-        )
+        printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
 
         exit $exit_code
 
