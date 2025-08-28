@@ -34,7 +34,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES NonStandard
     : BaseA
     , BaseB
 {
-  virtual ~NonStandard() = default;
+  __host__ __device__ virtual ~NonStandard() = default;
 
   int m;
 };
