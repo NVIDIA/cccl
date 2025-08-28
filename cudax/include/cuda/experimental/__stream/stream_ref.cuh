@@ -102,13 +102,13 @@ struct stream_ref : ::cuda::stream_ref
     return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_forward_progress_guarantee_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_forward_progress_guarantee_t&) const noexcept
     -> execution::forward_progress_guarantee
   {
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_domain_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_domain_t&) const noexcept
     -> execution::stream_domain;
 };
 

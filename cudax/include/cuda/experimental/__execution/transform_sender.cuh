@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
@@ -36,10 +37,8 @@ namespace cuda::experimental::execution
 struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
 {
   template <class _Domain, class _Sndr, class... _Env>
-  using __transform_domain_t =
-    ::cuda::std::_If<::cuda::std::_IsValidExpansion<__transform_sender_result_t, _Domain, _Sndr, _Env...>::value,
-                     _Domain,
-                     default_domain>;
+  using __transform_domain_t = ::cuda::std::
+    _If<__is_instantiable_with<__transform_sender_result_t, _Domain, _Sndr, _Env...>, _Domain, default_domain>;
 
   enum class __strategy
   {

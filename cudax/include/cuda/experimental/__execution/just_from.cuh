@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
@@ -143,6 +144,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__snd
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate_t<_Rcvr, _Fn>
   {
     return __opstate_t<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  {
+    return __inln_attrs_t<_SetTag>{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_from_tag_t __tag_;

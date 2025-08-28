@@ -493,7 +493,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_domain_t) const noexcept
     {
       if constexpr (sizeof...(_Sndrs) == 0)
       {
@@ -506,7 +506,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
     }
 
     template <class... _Env>
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t, const _Env&...) noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
     {
       return (execution::min) (execution::get_completion_behavior<_Sndrs, _Env...>()...);
     }

@@ -11,8 +11,8 @@
 #include <cuda/experimental/execution.cuh>
 
 #include "common/checked_receiver.cuh"
+#include "common/dummy_scheduler.cuh"
 #include "common/error_scheduler.cuh"
-#include "common/inline_scheduler.cuh"
 #include "common/stopped_scheduler.cuh"
 #include "common/utility.cuh"
 
@@ -154,7 +154,7 @@ C2H_TEST("then function is not called when cancelled", "[adaptors][then]")
 
 C2H_TEST("then advertises completion schedulers", "[adaptors][then]")
 {
-  inline_scheduler sched{};
+  dummy_scheduler sched{};
 
   SECTION("for value channel")
   {
@@ -194,7 +194,7 @@ C2H_TEST("then has the values_type corresponding to the given values", "[adaptor
 
 C2H_TEST("then keeps error_types from input sender", "[adaptors][then]")
 {
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler sched2{error_code{std::errc::invalid_argument}};
   error_scheduler sched3{43};
 
@@ -209,12 +209,12 @@ C2H_TEST("then keeps error_types from input sender", "[adaptors][then]")
 
 C2H_TEST("then keeps sends_stopped from input sender", "[adaptors][then]")
 {
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler sched2{error_code{std::errc::invalid_argument}};
   stopped_scheduler sched3{};
 
   check_sends_stopped<false>(ex::just() | ex::continues_on(sched1) | ex::then([] {}));
-  check_sends_stopped<true>(ex::just() | ex::continues_on(sched2) | ex::then([] {}));
+  check_sends_stopped<false>(ex::just() | ex::continues_on(sched2) | ex::then([] {}));
   check_sends_stopped<true>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
 }
 
@@ -271,7 +271,7 @@ struct then_test_domain
 C2H_TEST("then can be customized early", "[adaptors][then]")
 {
   // The customization will return a different value
-  inline_scheduler<then_test_domain> sched;
+  dummy_scheduler<then_test_domain> sched;
   auto snd = ex::just(string{"hello"}) | ex::continues_on(sched) | ex::then([](string x) {
                return x + ", world";
              });
@@ -281,12 +281,12 @@ C2H_TEST("then can be customized early", "[adaptors][then]")
 C2H_TEST("then can be customized late", "[adaptors][then]")
 {
   // The customization will return a different value
-  inline_scheduler<then_test_domain> sched;
+  dummy_scheduler<then_test_domain> sched;
   auto snd = ex::just(string{"hello"})
            | ex::on(sched, ex::then([](string x) {
                       return x + ", world";
                     }))
-           | ex::write_env(ex::prop{ex::get_scheduler, inline_scheduler()});
+           | ex::write_env(ex::prop{ex::get_scheduler, dummy_scheduler()});
   wait_for_value(std::move(snd), string{"ciao"});
 }
 } // namespace

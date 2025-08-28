@@ -200,6 +200,11 @@ struct sync_wait_t
     _CCCL_HOST_API auto value() const -> const __bad_sync_wait&;
     _CCCL_HOST_API auto operator*() const -> const __bad_sync_wait&;
 
+    // Attempt to suppress follow-on errors about non-convertibility after the one already
+    // reported.
+    template <class _Ty>
+    _CCCL_API operator _Ty&&() const noexcept;
+
     int i{}; // so that structured bindings kinda work
   };
 
