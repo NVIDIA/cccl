@@ -596,22 +596,37 @@ _CCCL_API inline auto as_writable_bytes(span<_Tp, _Extent> __s) noexcept
 
 //  Deduction guides
 template <class _Tp, size_t _Sz>
-_CCCL_HOST_DEVICE span(_Tp (&)[_Sz]) -> span<_Tp, _Sz>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+span(_Tp (&)[_Sz]) -> span<_Tp, _Sz>;
 
 template <class _Tp, size_t _Sz>
-_CCCL_HOST_DEVICE span(array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+span(array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
 
 template <class _Tp, size_t _Sz>
-_CCCL_HOST_DEVICE span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
 
 _CCCL_TEMPLATE(class _It, class _EndOrSize)
 _CCCL_REQUIRES(contiguous_iterator<_It>)
-_CCCL_HOST_DEVICE span(_It, _EndOrSize)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+span(_It, _EndOrSize)
   -> span<remove_reference_t<iter_reference_t<_It>>, __maybe_static_ext<_EndOrSize>>;
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>>>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+span(_Range&&) -> span<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
