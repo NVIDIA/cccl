@@ -45,6 +45,7 @@ function(libcudacxx_add_public_header_test header)
     _CCCL_HEADER_TEST
     CCCL_ENABLE_ASSERTIONS
     CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+    CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER
     CCCL_ENABLE_OPTIONAL_REF)
 
   # Ensure that if this is an atomic header, we only include the right architectures

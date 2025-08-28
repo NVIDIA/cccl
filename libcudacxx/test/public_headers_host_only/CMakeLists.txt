@@ -33,6 +33,7 @@ function(libcudacxx_add_std_header_test header)
     _CCCL_HEADER_TEST
     CCCL_ENABLE_ASSERTIONS
     CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+    CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER
     CCCL_ENABLE_OPTIONAL_REF)
 
   # We want to ensure that we can build headers within <cuda/> with a host compiler but we need cuda_runtime_api.h

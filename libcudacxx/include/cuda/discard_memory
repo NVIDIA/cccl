@@ -21,6 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#if !defined(CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER)
+_CCCL_WARNING("The <cuda/discard_memory> header is deprecated and will be removed in the next major release. The \
+contents were moved to <cuda/memory>. To ignore this message, define CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER.")
+#endif // !CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER
+
 #include <cuda/__memory/discard_memory.h>
 #include <cuda/version>
 
