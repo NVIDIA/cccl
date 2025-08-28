@@ -112,7 +112,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::std::fpclassify(__x);))
   }
   return ::cuda::std::__fpclassify_impl(__x);
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
@@ -125,7 +125,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::std::fpclassify(__x);))
   }
   return ::cuda::std::__fpclassify_impl(__x);
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
@@ -139,7 +139,7 @@ template <class _Tp>
 #  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::std::fpclassify(__x);))
   }
   return ::cuda::std::__fpclassify_impl(__x);
 #  endif // !_CCCL_BUILTIN_FPCLASSIFY
