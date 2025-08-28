@@ -105,7 +105,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
 // This kernel is used when the block size is known at compile time
 template <class ChainedPolicyT, class OffsetT, class OpT>
 CUB_DETAIL_KERNEL_ATTRIBUTES //
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
+#endif
   void static_kernel(OffsetT num_items, OpT op)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
