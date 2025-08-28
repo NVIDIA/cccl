@@ -123,7 +123,7 @@ def canonicalize_ctk_version(ctk_string):
     for ctk_key, ctk_value in matrix_yaml["ctk_versions"].items():
         if "alias" in ctk_value:
             # Allow a string or list of strings:
-            aliases = ctk_value['alias']
+            aliases = ctk_value["alias"]
             aliases = [aliases] if isinstance(aliases, str) else aliases
             if ctk_string in aliases:
                 return ctk_key
@@ -172,7 +172,7 @@ def canonicalize_host_compiler_name(cxx_string):
         for version_key, version_data in hc_def["versions"].items():
             if "alias" in version_data:
                 # Allow a string or list of strings:
-                aliases = version_data['alias']
+                aliases = version_data["alias"]
                 aliases = [aliases] if isinstance(aliases, str) else aliases
                 if version in aliases:
                     version = version_key
@@ -293,7 +293,9 @@ def get_job_type_info(job):
     if "cuda_ext" not in result:
         result["cuda_ext"] = False
     if "force_producer_ctk" in result:
-        result["force_producer_ctk"] = canonicalize_ctk_version(result["force_producer_ctk"])
+        result["force_producer_ctk"] = canonicalize_ctk_version(
+            result["force_producer_ctk"]
+        )
     else:
         result["force_producer_ctk"] = None
     if "needs" not in result:
