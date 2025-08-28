@@ -249,7 +249,7 @@ public:
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
-  //! was used to create the buffer and destroys the memory resource.
+  //! is stored in the buffer and destroys the memory resource.
   //! @param __stream The stream to deallocate the buffer on.
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
@@ -267,7 +267,7 @@ public:
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
-  //! was used to create the buffer and destroys the memory resource.
+  //! is stored in the buffer and destroys the memory resource.
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
@@ -343,6 +343,7 @@ public:
   }
 
   //! @brief Returns the stored stream
+  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
   {
     return __stream_;

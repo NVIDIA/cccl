@@ -550,6 +550,7 @@ public:
   }
 
   //! @brief Returns the stored stream
+  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref stream() const noexcept
   {
     return __buf_.stream();
