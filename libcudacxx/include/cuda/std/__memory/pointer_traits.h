@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_POINTER_TRAITS_H
-#define _LIBCUDACXX___MEMORY_POINTER_TRAITS_H
+#ifndef _CUDA_STD___MEMORY_POINTER_TRAITS_H
+#define _CUDA_STD___MEMORY_POINTER_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class = void>
 struct __has_element_type : false_type
@@ -167,7 +167,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
   {
-    return _CUDA_VSTD::addressof(__r);
+    return ::cuda::std::addressof(__r);
   }
 };
 
@@ -224,10 +224,10 @@ template <class _Pointer, class>
 struct __to_address_helper
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
+  _CCCL_API constexpr static decltype(::cuda::std::__to_address(declval<const _Pointer&>().operator->()))
   __call(const _Pointer& __p) noexcept
   {
-    return _CUDA_VSTD::__to_address(__p.operator->());
+    return ::cuda::std::__to_address(__p.operator->());
   }
 };
 
@@ -245,17 +245,17 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
 template <class _Tp>
 _CCCL_API constexpr auto to_address(_Tp* __p) noexcept
 {
-  return _CUDA_VSTD::__to_address(__p);
+  return ::cuda::std::__to_address(__p);
 }
 
 template <class _Pointer>
-_CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
+_CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(::cuda::std::__to_address(__p))
 {
-  return _CUDA_VSTD::__to_address(__p);
+  return ::cuda::std::__to_address(__p);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_POINTER_TRAITS_H
+#endif // _CUDA_STD___MEMORY_POINTER_TRAITS_H

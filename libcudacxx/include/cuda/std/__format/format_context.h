@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMAT_CONTEXT_H
-#define _LIBCUDACXX___FORMAT_FORMAT_CONTEXT_H
+#ifndef _CUDA_STD___FORMAT_FORMAT_CONTEXT_H
+#define _CUDA_STD___FORMAT_FORMAT_CONTEXT_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Since CCCL doesn't support localization, we don't implement the locale() method
 template <class _OutIt, class _CharT>
@@ -55,11 +55,11 @@ public:
   }
   [[nodiscard]] _CCCL_API iterator out()
   {
-    return _CUDA_VSTD::move(__out_it_);
+    return ::cuda::std::move(__out_it_);
   }
   _CCCL_API void advance_to(iterator __it)
   {
-    __out_it_ = _CUDA_VSTD::move(__it);
+    __out_it_ = ::cuda::std::move(__it);
   }
 
   template <class _OtherOutIt, class _OtherCharT>
@@ -68,7 +68,7 @@ public:
 
 private:
   _CCCL_API explicit basic_format_context(_OutIt __out_it, basic_format_args<basic_format_context> __args)
-      : __out_it_(_CUDA_VSTD::move(__out_it))
+      : __out_it_(::cuda::std::move(__out_it))
       , __args_(__args)
   {}
 
@@ -82,11 +82,11 @@ template <class _OutIt, class _CharT>
 [[nodiscard]] _CCCL_API basic_format_context<_OutIt, _CharT>
 __fmt_make_format_context(_OutIt __out_it, basic_format_args<basic_format_context<_OutIt, _CharT>> __args)
 {
-  return basic_format_context{_CUDA_VSTD::move(__out_it), __args};
+  return basic_format_context{::cuda::std::move(__out_it), __args};
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMAT_CONTEXT_H
+#endif // _CUDA_STD___FORMAT_FORMAT_CONTEXT_H

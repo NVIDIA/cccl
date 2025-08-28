@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_RTTI_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_RTTI_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_RTTI_H
+#define _CUDA___UTILITY_BASIC_ANY_RTTI_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,12 +37,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __iunknown: Logically, the root of all interfaces.
 //!
-struct __iunknown : __basic_interface<_CUDA_VSTD::__type_always<__iunknown>::__call>
+struct __iunknown : __basic_interface<::cuda::std::__type_always<__iunknown>::__call>
 {};
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -64,29 +64,29 @@ struct __bad_any_cast : ::std::bad_cast
 
 [[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw __bad_any_cast();), (::cuda::std::terminate();))
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 [[noreturn]] _CCCL_API inline void __throw_bad_any_cast()
 {
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 }
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 struct __rtti_base : __immovable
 {
   _CCCL_API constexpr __rtti_base(
-    __vtable_kind __kind, uint16_t __nbr_interfaces, _CUDA_VSTD::__type_info_ref __self) noexcept
+    __vtable_kind __kind, uint16_t __nbr_interfaces, ::cuda::std::__type_info_ref __self) noexcept
       : __kind_(__kind)
       , __nbr_interfaces_(__nbr_interfaces)
       , __typeid_(&__self)
   {}
 
-  uint8_t __version_                    = __basic_any_version;
-  __vtable_kind __kind_                 = __vtable_kind::__normal;
-  uint16_t __nbr_interfaces_            = 0;
-  uint32_t const __cookie_              = 0xDEADBEEF;
-  _CUDA_VSTD::__type_info_ptr __typeid_ = nullptr;
+  uint8_t __version_                     = __basic_any_version;
+  __vtable_kind __kind_                  = __vtable_kind::__normal;
+  uint16_t __nbr_interfaces_             = 0;
+  uint32_t const __cookie_               = 0xDEADBEEF;
+  ::cuda::std::__type_info_ptr __typeid_ = nullptr;
 };
 
 static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
@@ -94,7 +94,7 @@ static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
 // Used to map an interface typeid to a pointer to the vtable for that interface.
 struct __base_info
 {
-  _CUDA_VSTD::__type_info_ptr __typeid_;
+  ::cuda::std::__type_info_ptr __typeid_;
   __base_vptr __vptr_;
 };
 
@@ -106,9 +106,9 @@ struct __object_metadata
 {
   size_t __size_ : __half_size_t_bits;
   size_t __align_ : __half_size_t_bits;
-  _CUDA_VSTD::__type_info_ptr __object_typeid_;
-  _CUDA_VSTD::__type_info_ptr __pointer_typeid_;
-  _CUDA_VSTD::__type_info_ptr __const_pointer_typeid_;
+  ::cuda::std::__type_info_ptr __object_typeid_;
+  ::cuda::std::__type_info_ptr __pointer_typeid_;
+  ::cuda::std::__type_info_ptr __const_pointer_typeid_;
 };
 
 template <class _Tp>
@@ -130,7 +130,7 @@ _CCCL_API void __dtor_fn(void* __pv, bool __small) noexcept
 struct __rtti : __rtti_base
 {
   template <class _Tp, class _Super, class... _Interfaces>
-  _CCCL_TRIVIAL_API constexpr __rtti(
+  _CCCL_NODEBUG_API constexpr __rtti(
     __tag<_Tp, _Super>, __tag<_Interfaces...>, __base_info const* __base_vptr_map) noexcept
       : __rtti_base{__vtable_kind::__rtti, sizeof...(_Interfaces), _CCCL_TYPEID(__rtti)}
       , __dtor_(&__dtor_fn<_Tp>)
@@ -158,7 +158,7 @@ struct __rtti : __rtti_base
     // addresses and, if that fails, it does a string comparison. What we want is
     // to check _all_ the addresses first, and only if they all fail, resort to
     // string comparisons. So do two passes over the __base_vptr_map.
-    constexpr _CUDA_VSTD::__type_info_ref __id = _CCCL_TYPEID(_Interface);
+    constexpr ::cuda::std::__type_info_ref __id = _CCCL_TYPEID(_Interface);
 
     for (size_t __i = 0; __i < __nbr_interfaces_; ++__i)
     {
@@ -181,7 +181,7 @@ struct __rtti : __rtti_base
 
   void (*__dtor_)(void*, bool) noexcept;
   __object_metadata const* __object_info_;
-  _CUDA_VSTD::__type_info_ptr __interface_typeid_ = nullptr;
+  ::cuda::std::__type_info_ptr __interface_typeid_ = nullptr;
   __base_info const* __base_vptr_map_;
 };
 
@@ -206,12 +206,13 @@ struct __rtti_ex : __rtti
 template <class _SrcInterface, class _DstInterface>
 [[nodiscard]] _CCCL_API auto __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept -> __vptr_for<_DstInterface>
 {
-  static_assert(_CUDA_VSTD::is_class_v<_SrcInterface> && _CUDA_VSTD::is_class_v<_DstInterface>, "expected class types");
+  static_assert(::cuda::std::is_class_v<_SrcInterface> && ::cuda::std::is_class_v<_DstInterface>,
+                "expected class types");
   if (__src_vptr == nullptr)
   {
     return nullptr;
   }
-  else if constexpr (_CUDA_VSTD::is_same_v<_SrcInterface const, _DstInterface const>)
+  else if constexpr (::cuda::std::is_same_v<_SrcInterface const, _DstInterface const>)
   {
     return __src_vptr;
   }
@@ -230,10 +231,10 @@ template <class _SrcInterface, class _DstInterface>
 
 template <class _SrcInterface, class _DstInterface>
 [[nodiscard]] _CCCL_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
-  noexcept(_CUDA_VSTD::is_same_v<_SrcInterface, _DstInterface>) //
+  noexcept(::cuda::std::is_same_v<_SrcInterface, _DstInterface>) //
   -> __vptr_for<_DstInterface>
 {
-  if constexpr (_CUDA_VSTD::is_same_v<_SrcInterface, _DstInterface>)
+  if constexpr (::cuda::std::is_same_v<_SrcInterface, _DstInterface>)
   {
     return __src_vptr;
   }
@@ -249,8 +250,8 @@ template <class _SrcInterface, class _DstInterface>
   _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_RTTI_H
+#endif // _CUDA___UTILITY_BASIC_ANY_RTTI_H

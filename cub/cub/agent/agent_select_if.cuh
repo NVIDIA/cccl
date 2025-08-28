@@ -125,6 +125,41 @@ namespace detail
 namespace select
 {
 
+template <typename EqualityOpT>
+struct guarded_inequality_op
+{
+  EqualityOpT op;
+  int num_remaining;
+
+  template <typename T,
+            ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<EqualityOpT&, const T&, const T&>, int> = 0>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) noexcept(
+    ::cuda::std::__is_nothrow_callable_v<EqualityOpT&, const T&, const T&>)
+  {
+    if (idx < num_remaining)
+    {
+      return !op(a, b); // In bounds
+    }
+
+    // Flag out-of-bounds items as selected (as they are discounted for in the agent implementation)
+    return true;
+  }
+
+  template <typename T,
+            ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<const EqualityOpT&, const T&, const T&>, int> = 0>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+    noexcept(::cuda::std::__is_nothrow_callable_v<const EqualityOpT&, const T&, const T&>)
+  {
+    if (idx < num_remaining)
+    {
+      return !op(a, b); // In bounds
+    }
+
+    // Flag out-of-bounds items as selected (as they are discounted for in the agent implementation)
+    return true;
+  }
+};
+
 template <typename SelectedOutputItT, typename RejectedOutputItT>
 struct partition_distinct_output_t
 {
@@ -326,7 +361,7 @@ struct AgentSelectIf
   WrappedInputIteratorT d_in; ///< Input items
   OutputIteratorWrapperT d_selected_out; ///< Output iterator for the selected items
   WrappedFlagsInputIteratorT d_flags_in; ///< Input selection flags (if applicable)
-  InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
+  EqualityOpT equality_op; ///< T equality operator
   SelectOpT select_op; ///< Selection operator
   OffsetT num_items; ///< Total number of input items
 
@@ -375,7 +410,7 @@ struct AgentSelectIf
       , d_in(d_in)
       , d_selected_out(d_selected_out)
       , d_flags_in(d_flags_in)
-      , inequality_op(equality_op)
+      , equality_op(equality_op)
       , select_op(select_op)
       , num_items(num_items)
       , streaming_context(streaming_context)
@@ -496,12 +531,35 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_DISCONTINUITY> /*select_method*/)
   {
+    // We previously invoked the equality operator on out-of-bounds items
+    // While fixing that issue there were some performance regressions that we had to work around
+    // To avoid invoking equality operator on unexpected values we are doing on of two things:
+    // (1) for primitive types AND ::cuda::std::equal_to: we compare all items, including out-of-bounds items and later
+    // correct the flags of the out-of-bounds items
+    // (2) otherwise, we are guarding against invoking the equality operator on out-of-bounds items
+    static constexpr bool use_flag_fixup_code_path =
+      ::cuda::std::is_arithmetic_v<InputT>
+      && (::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<>>
+          || ::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<InputT>>);
+
     if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
       __syncthreads();
 
-      // Set head selection_flags.  First tile sets the first flag for the first item
-      BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, inequality_op);
+      if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
+
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, flag_op);
+      }
+      else
+      {
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op});
+      }
     }
     else
     {
@@ -513,18 +571,34 @@ struct AgentSelectIf
 
       __syncthreads();
 
-      BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
-        .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
+      if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
+      {
+        // Use custom flag operator to additionally flag the first out-of-bounds item
+        guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
+
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, flag_op, tile_predecessor);
+      }
+      else
+      {
+        // Set head selection_flags.  First tile sets the first flag for the first item
+        BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items, InequalityWrapper<EqualityOpT>{equality_op}, tile_predecessor);
+      }
     }
 
-    // Set selection flags for out-of-bounds items
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    // For primitive types with default equality operator, we need to fix up the flags for the out-of-bounds items
+    if constexpr (use_flag_fixup_code_path)
     {
-      // Set selection_flags for out-of-bounds items
-      if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
-        selection_flags[ITEM] = 1;
+        // Set selection_flags for out-of-bounds items
+        if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+        {
+          selection_flags[ITEM] = 1;
+        }
       }
     }
   }
@@ -1003,7 +1077,15 @@ struct AgentSelectIf
     // Blocks are launched in increasing order, so just assign one tile per block
     // TODO (elstehle): replacing this term with just `blockIdx.x` degrades perf for partition. Once we get to re-tune
     // the algorithm, we want to replace this term with `blockIdx.x`
-    int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    int tile_idx{};
+    if constexpr (SELECT_METHOD != USE_DISCONTINUITY)
+    {
+      tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    }
+    else
+    {
+      tile_idx = blockIdx.x; // Current tile index
+    }
     OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
 
     if (tile_idx < num_tiles - 1)

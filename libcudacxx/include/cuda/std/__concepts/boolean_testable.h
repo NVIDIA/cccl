@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H
-#define _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H
+#ifndef _CUDA_STD___CONCEPTS_BOOLEAN_TESTABLE_H
+#define _CUDA_STD___CONCEPTS_BOOLEAN_TESTABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -37,7 +37,7 @@ concept __boolean_testable_impl = convertible_to<_Tp, bool>;
 
 template <class _Tp>
 concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t) {
-  { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
+  { !::cuda::std::forward<_Tp>(__t) } -> __boolean_testable_impl;
 };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
@@ -49,15 +49,15 @@ template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __boolean_testable_,
   requires(_Tp&& __t)(requires(__boolean_testable_impl<_Tp>),
-                      requires(__boolean_testable_impl<decltype(!_CUDA_VSTD::forward<_Tp>(__t))>)));
+                      requires(__boolean_testable_impl<decltype(!::cuda::std::forward<_Tp>(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __boolean_testable = _CCCL_FRAGMENT(__boolean_testable_, _Tp);
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H
+#endif // _CUDA_STD___CONCEPTS_BOOLEAN_TESTABLE_H

@@ -17,11 +17,6 @@ if ("${CMAKE_CUDA_COMPILER_VERSION}" MATCHES "11\.*\.*" OR
   list(FILTER public_headers EXCLUDE REGEX "annotated_ptr")
 endif()
 
-# mdspan is currently not supported on msvc outside of C++20
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "20")
-  list(FILTER public_headers EXCLUDE REGEX "mdspan")
-endif()
-
 # We need to handle atomic headers differently as they do not compile on architectures below sm70
 set(architectures_at_least_sm70)
 foreach(item IN LISTS CMAKE_CUDA_ARCHITECTURES)

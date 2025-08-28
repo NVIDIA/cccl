@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_SINGLE_VIEW_H
-#define _LIBCUDACXX___RANGES_SINGLE_VIEW_H
+#ifndef _CUDA_STD___RANGES_SINGLE_VIEW_H
+#define _CUDA_STD___RANGES_SINGLE_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp>
@@ -73,7 +73,7 @@ public:
 
   _CCCL_API constexpr explicit single_view(_Tp&& __t) noexcept(is_nothrow_move_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
-      , __value_(in_place, _CUDA_VSTD::move(__t))
+      , __value_(in_place, ::cuda::std::move(__t))
   {}
 
   _CCCL_TEMPLATE(class... _Args)
@@ -81,7 +81,7 @@ public:
   _CCCL_API constexpr explicit single_view(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : view_interface<single_view<_Tp>>()
-      , __value_{in_place, _CUDA_VSTD::forward<_Args>(__args)...}
+      , __value_{in_place, ::cuda::std::forward<_Args>(__args)...}
   {}
 
   [[nodiscard]] _CCCL_API constexpr _Tp* begin() noexcept
@@ -123,10 +123,10 @@ public:
 template <class _Tp>
 _CCCL_HOST_DEVICE single_view(_Tp) -> single_view<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__single_view)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__single_view)
 
 template <class _Tp>
 _CCCL_CONCEPT __can_single_view = _CCCL_REQUIRES_EXPR((_Tp))(typename(single_view<decay_t<_Tp>>));
@@ -136,20 +136,20 @@ struct __fn : __range_adaptor_closure<__fn>
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_single_view<_Tp>) // MSVC breaks without it
   _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(single_view<decay_t<_Tp>>(_CUDA_VSTD::forward<_Tp>(__t)))) -> single_view<decay_t<_Tp>>
+    noexcept(noexcept(single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t)))) -> single_view<decay_t<_Tp>>
   {
-    return single_view<decay_t<_Tp>>(_CUDA_VSTD::forward<_Tp>(__t));
+    return single_view<decay_t<_Tp>>(::cuda::std::forward<_Tp>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto single = __single_view::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_SINGLE_VIEW_H
+#endif // _CUDA_STD___RANGES_SINGLE_VIEW_H

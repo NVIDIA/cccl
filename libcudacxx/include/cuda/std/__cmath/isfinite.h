@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ISFINITE_H
-#define _LIBCUDACXX___CMATH_ISFINITE_H
+#ifndef _CUDA_STD___CMATH_ISFINITE_H
+#define _CUDA_STD___CMATH_ISFINITE_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
@@ -45,11 +45,11 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     return ::isfinite(__x);
   }
-  return !_CUDA_VSTD::isnan(__x) && !_CUDA_VSTD::isinf(__x);
+  return !::cuda::std::isnan(__x) && !::cuda::std::isinf(__x);
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isfinite(float __x) noexcept
@@ -57,14 +57,14 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     return ::isfinite(__x);
   }
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_of_v<float>) != __fp_exp_mask_of_v<float>;
+  return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<float>) != __fp_exp_mask_of_v<float>;
 #  else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
-  return _CUDA_VSTD::__isfinite_impl(__x);
+  return ::cuda::std::__isfinite_impl(__x);
 #  endif // ^^^ !_CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
@@ -74,14 +74,14 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     return ::isfinite(__x);
   }
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
+  return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
 #  else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
-  return _CUDA_VSTD::__isfinite_impl(__x);
+  return ::cuda::std::__isfinite_impl(__x);
 #  endif // ^^^ !_CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^
 #endif // ^^^ !_CCCL_BUILTIN_ISFINITE ^^^
 }
@@ -92,7 +92,7 @@ template <class _Tp>
 #  if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #  else
-  return _CUDA_VSTD::__isfinite_impl(__x);
+  return ::cuda::std::__isfinite_impl(__x);
 #  endif // defined(_CCCL_BUILTIN_ISFINITE)
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
@@ -100,14 +100,14 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP16()
 [[nodiscard]] _CCCL_API constexpr bool isfinite(__half __x) noexcept
 {
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_of_v<__half>) != __fp_exp_mask_of_v<__half>;
+  return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<__half>) != __fp_exp_mask_of_v<__half>;
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
 [[nodiscard]] _CCCL_API constexpr bool isfinite(__nv_bfloat16 __x) noexcept
 {
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_of_v<__nv_bfloat16>) != __fp_exp_mask_of_v<__nv_bfloat16>;
+  return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<__nv_bfloat16>) != __fp_exp_mask_of_v<__nv_bfloat16>;
 }
 #endif // _CCCL_HAS_NVBF16()
 
@@ -160,8 +160,8 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
   return true;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_ISFINITE_H
+#endif // _CUDA_STD___CMATH_ISFINITE_H

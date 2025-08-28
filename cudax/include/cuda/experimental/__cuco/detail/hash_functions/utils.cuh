@@ -36,25 +36,25 @@ template <typename _Tp, typename _Extent>
   _Tp __chunk;
 
   auto __ptr     = __bytes + __index * sizeof(_Tp);
-  auto __uintptr = reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr);
+  auto __uintptr = reinterpret_cast<::cuda::std::uintptr_t>(__ptr);
 
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
 
   if (alignof(_Tp) == 8 && ((__uintptr % 8) == 0))
   {
-    _CUDA_VSTD::memcpy(&__chunk, _CUDA_VSTD::assume_aligned<8>(__ptr), sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
   }
   else if ((__uintptr % 4) == 0)
   {
-    _CUDA_VSTD::memcpy(&__chunk, _CUDA_VSTD::assume_aligned<4>(__ptr), sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<4>(__ptr), sizeof(_Tp));
   }
   else if ((__uintptr % 2) == 0)
   {
-    _CUDA_VSTD::memcpy(&__chunk, _CUDA_VSTD::assume_aligned<2>(__ptr), sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<2>(__ptr), sizeof(_Tp));
   }
   else
   {
-    _CUDA_VSTD::memcpy(&__chunk, __bytes, sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, __bytes, sizeof(_Tp));
   }
   return __chunk;
 }

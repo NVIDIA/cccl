@@ -183,8 +183,10 @@ private:
   //! \endcond
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <typename Iterator>
 _CCCL_HOST_DEVICE offset_iterator(Iterator) -> offset_iterator<Iterator>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! \} // end fancyiterators
 //! \} // end iterators

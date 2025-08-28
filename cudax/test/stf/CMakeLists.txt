@@ -28,6 +28,9 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/explicit_graph.cu
+  graph/explicit_graph_while.cu
+  graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
@@ -146,7 +149,6 @@ set(stf_test_codegen_sources
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
   threads/axpy-threads-graph.cu
   threads/axpy-threads-graph-capture.cu
-  tools/auto_dump/auto_dump.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...

@@ -32,7 +32,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace __detail
 {
 //! @brief A random-access range of all available CUDA devices
@@ -117,11 +117,11 @@ struct all_devices::__initializer_iterator
   {
     if (size() == 0)
     {
-      _CUDA_VSTD::__throw_out_of_range("device was requested but no CUDA devices found");
+      ::cuda::std::__throw_out_of_range("device was requested but no CUDA devices found");
     }
     else
     {
-      _CUDA_VSTD::__throw_out_of_range(
+      ::cuda::std::__throw_out_of_range(
         (::std::string("device index out of range: ") + ::std::to_string(__id_)).c_str());
     }
   }
@@ -231,7 +231,7 @@ inline const arch::traits_t& device_ref::arch_traits() const
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

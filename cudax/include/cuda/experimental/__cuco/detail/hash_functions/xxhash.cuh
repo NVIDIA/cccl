@@ -77,11 +77,11 @@ template <typename _Key>
 struct _XXHash_32
 {
 private:
-  static constexpr _CUDA_VSTD::uint32_t __prime1 = 0x9e3779b1u;
-  static constexpr _CUDA_VSTD::uint32_t __prime2 = 0x85ebca77u;
-  static constexpr _CUDA_VSTD::uint32_t __prime3 = 0xc2b2ae3du;
-  static constexpr _CUDA_VSTD::uint32_t __prime4 = 0x27d4eb2fu;
-  static constexpr _CUDA_VSTD::uint32_t __prime5 = 0x165667b1u;
+  static constexpr ::cuda::std::uint32_t __prime1 = 0x9e3779b1u;
+  static constexpr ::cuda::std::uint32_t __prime2 = 0x85ebca77u;
+  static constexpr ::cuda::std::uint32_t __prime3 = 0xc2b2ae3du;
+  static constexpr ::cuda::std::uint32_t __prime4 = 0x27d4eb2fu;
+  static constexpr ::cuda::std::uint32_t __prime5 = 0x165667b1u;
 
   static constexpr size_t __block_size = 4;
   static constexpr size_t __chunk_size = 16;
@@ -102,7 +102,7 @@ private:
     //! The number of 16-byte chunks
     static constexpr size_t __num_chunks = _KeySize / __chunk_size;
 
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
+    alignas(_Alignment)::cuda::std::uint32_t __blocks[__num_blocks];
     unsigned char __bytes[__tail_size];
   };
 
@@ -135,52 +135,52 @@ private:
     //! The number of 16-byte chunks
     static constexpr size_t __num_chunks = _KeySize / __chunk_size;
 
-    alignas(_Alignment) _CUDA_VSTD::uint32_t __blocks[__num_blocks];
+    alignas(_Alignment)::cuda::std::uint32_t __blocks[__num_blocks];
   };
 
 public:
   //! @brief Constructs a XXH32 hash function with the given `seed`.
   //! @param seed A custom number to randomize the resulting hash value
-  _CCCL_API constexpr _XXHash_32(_CUDA_VSTD::uint32_t __seed = 0)
+  _CCCL_API constexpr _XXHash_32(::cuda::std::uint32_t __seed = 0)
       : __seed_{__seed}
   {}
 
-  //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //! @param __key The input argument to hash
   //! @return The resulting hash value for `__key`
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t operator()(_Key const& __key) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t operator()(_Key const& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), alignof(_Key)>;
     // explicit copy to avoid emitting a bunch of LDG.8 instructions
     const _Key __copy{__key};
-    return __compute_hash(_CUDA_VSTD::bit_cast<_Holder>(__copy));
+    return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));
   }
 
   template <size_t _Extent>
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t
-  operator()(_CUDA_VSTD::span<_Key, _Extent> __keys) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t
+  operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
     // TODO: optimize when _Extent is known at compile time i.e
-    // _Extent != _CUDA_VSTD::dynamic_extent, dispatch to bit_cast based implementation
+    // _Extent != ::cuda::std::dynamic_extent, dispatch to bit_cast based implementation
     return __compute_hash_span(__keys);
   }
 
 private:
-  //! @brief Returns a hash value for its argument, as a value of type `_CUDA_VSTD::uint32_t`.
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //!
   //! @tparam _Extent The extent type
   //!
   //! @return The resulting hash value
   template <class _Holder>
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t __compute_hash(_Holder __holder) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
   {
-    size_t __offset            = 0;
-    _CUDA_VSTD::uint32_t __h32 = {};
+    size_t __offset             = 0;
+    ::cuda::std::uint32_t __h32 = {};
 
     // process data in 16-byte chunks
     if constexpr (_Holder::__num_chunks > 0)
     {
-      _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, 4> __v;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
       __v[0] = __seed_ + __prime1 + __prime2;
       __v[1] = __seed_ + __prime2;
       __v[2] = __seed_;
@@ -190,19 +190,19 @@ private:
       {
         cuda::static_for<4>([&](auto i) {
           __v[i] += __holder.__blocks[__offset++] * __prime2;
-          __v[i] = _CUDA_VSTD::rotl(__v[i], 13);
+          __v[i] = ::cuda::std::rotl(__v[i], 13);
           __v[i] *= __prime1;
         });
       }
-      __h32 = _CUDA_VSTD::rotl(__v[0], 1) + _CUDA_VSTD::rotl(__v[1], 7) + _CUDA_VSTD::rotl(__v[2], 12)
-            + _CUDA_VSTD::rotl(__v[3], 18);
+      __h32 = ::cuda::std::rotl(__v[0], 1) + ::cuda::std::rotl(__v[1], 7) + ::cuda::std::rotl(__v[2], 12)
+            + ::cuda::std::rotl(__v[3], 18);
     }
     else
     {
       __h32 = __seed_ + __prime5;
     }
 
-    __h32 += _CUDA_VSTD::uint32_t{sizeof(_Holder)};
+    __h32 += ::cuda::std::uint32_t{sizeof(_Holder)};
 
     // remaining data can be processed in 4-byte chunks
     if constexpr (_Holder::__num_blocks % __chunk_size > 0)
@@ -210,7 +210,7 @@ private:
       for (; __offset < _Holder::__num_blocks; ++__offset)
       {
         __h32 += __holder.__blocks[__offset] * __prime3;
-        __h32 = _CUDA_VSTD::rotl(__h32, 17) * __prime4;
+        __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
 
@@ -219,27 +219,27 @@ private:
     {
       for (size_t __i = 0; __i < _Holder::__tail_size; ++__i)
       {
-        __h32 += (static_cast<_CUDA_VSTD::uint32_t>(__holder.__bytes[__i]) & 255) * __prime5;
-        __h32 = _CUDA_VSTD::rotl(__h32, 11) * __prime1;
+        __h32 += (static_cast<::cuda::std::uint32_t>(__holder.__bytes[__i]) & 255) * __prime5;
+        __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
       }
     }
 
     return __finalize(__h32);
   }
 
-  [[nodiscard]] _CCCL_API _CUDA_VSTD::uint32_t __compute_hash_span(_CUDA_VSTD::span<_Key> __keys) const noexcept
+  [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
   {
-    auto __bytes      = _CUDA_VSTD::as_bytes(__keys).data();
+    auto __bytes      = ::cuda::std::as_bytes(__keys).data();
     auto const __size = __keys.size_bytes();
 
-    size_t __offset            = 0;
-    _CUDA_VSTD::uint32_t __h32 = {};
+    size_t __offset             = 0;
+    ::cuda::std::uint32_t __h32 = {};
 
     // data can be processed in 16-byte chunks
     if (__size >= 16)
     {
       auto const __limit = __size - 16;
-      _CUDA_VSTD::array<_CUDA_VSTD::uint32_t, 4> __v;
+      ::cuda::std::array<::cuda::std::uint32_t, 4> __v;
 
       __v[0] = __seed_ + __prime1 + __prime2;
       __v[1] = __seed_ + __prime2;
@@ -251,14 +251,14 @@ private:
         // pipeline 4*4byte computations
         auto const __pipeline_offset = __offset / 4;
         cuda::static_for<4>([&](auto i) {
-          __v[i] += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __pipeline_offset + i) * __prime2;
-          __v[i] = _CUDA_VSTD::rotl(__v[i], 13);
+          __v[i] += __load_chunk<::cuda::std::uint32_t>(__bytes, __pipeline_offset + i) * __prime2;
+          __v[i] = ::cuda::std::rotl(__v[i], 13);
           __v[i] *= __prime1;
         });
       }
 
-      __h32 = _CUDA_VSTD::rotl(__v[0], 1) + _CUDA_VSTD::rotl(__v[1], 7) + _CUDA_VSTD::rotl(__v[2], 12)
-            + _CUDA_VSTD::rotl(__v[3], 18);
+      __h32 = ::cuda::std::rotl(__v[0], 1) + ::cuda::std::rotl(__v[1], 7) + ::cuda::std::rotl(__v[2], 12)
+            + ::cuda::std::rotl(__v[3], 18);
     }
     else
     {
@@ -272,8 +272,8 @@ private:
     {
       for (; __offset <= __size - 4; __offset += 4)
       {
-        __h32 += __load_chunk<_CUDA_VSTD::uint32_t>(__bytes, __offset / 4) * __prime3;
-        __h32 = _CUDA_VSTD::rotl(__h32, 17) * __prime4;
+        __h32 += __load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4) * __prime3;
+        __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
 
@@ -282,8 +282,8 @@ private:
     {
       while (__offset < __size)
       {
-        __h32 += (::cuda::std::to_integer<_CUDA_VSTD::uint32_t>(__bytes[__offset]) & 255) * __prime5;
-        __h32 = _CUDA_VSTD::rotl(__h32, 11) * __prime1;
+        __h32 += (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset]) & 255) * __prime5;
+        __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
         ++__offset;
       }
     }
@@ -291,7 +291,7 @@ private:
     return __finalize(__h32);
   }
 
-  [[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::uint32_t __finalize(_CUDA_VSTD::uint32_t __h) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __finalize(::cuda::std::uint32_t __h) const noexcept
   {
     __h ^= __h >> 15;
     __h *= __prime2;
@@ -301,7 +301,7 @@ private:
     return __h;
   }
 
-  _CUDA_VSTD::uint32_t __seed_;
+  ::cuda::std::uint32_t __seed_;
 };
 
 } // namespace cuda::experimental::cuco::__detail

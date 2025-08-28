@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ILOG
-#define _LIBCUDACXX___CMATH_ILOG
+#ifndef _CUDA___CMATH_ILOG_H
+#define _CUDA___CMATH_ILOG_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,28 +35,28 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
 _CCCL_API constexpr int ilog2(_Tp __t) noexcept
 {
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
-  auto __log2_approx = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
-  _CCCL_ASSUME(__log2_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
+  auto __log2_approx = ::cuda::std::__bit_log2(static_cast<_Up>(__t));
+  _CCCL_ASSUME(__log2_approx <= ::cuda::std::numeric_limits<_Tp>::digits);
   return __log2_approx;
 }
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
 _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
 {
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-  return ::cuda::ilog2(__t) + !_CUDA_VSTD::has_single_bit(static_cast<_Up>(__t));
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+  return ::cuda::ilog2(__t) + !::cuda::std::has_single_bit(static_cast<_Up>(__t));
 }
 
-[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<uint32_t, 10> __power_of_10_32bit() noexcept
 {
   return {10,
           100,
@@ -67,10 +67,10 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
           10'000'000,
           100'000'000,
           1'000'000'000,
-          _CUDA_VSTD::numeric_limits<uint32_t>::max()};
+          ::cuda::std::numeric_limits<uint32_t>::max()};
 }
 
-[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::array<uint64_t, 20> __power_of_10_64bit() noexcept
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<uint64_t, 20> __power_of_10_64bit() noexcept
 {
   return {
     10,
@@ -92,12 +92,12 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
     100'000'000'000'000'000,
     1'000'000'000'000'000'000,
     10'000'000'000'000'000'000ull,
-    _CUDA_VSTD::numeric_limits<uint64_t>::max()};
+    ::cuda::std::numeric_limits<uint64_t>::max()};
 }
 
 #if _CCCL_HAS_INT128()
 
-[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::array<__uint128_t, 39> __power_of_10_128bit() noexcept
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::array<__uint128_t, 39> __power_of_10_128bit() noexcept
 {
   return {
     10,
@@ -138,12 +138,12 @@ _CCCL_API constexpr int ceil_ilog2(_Tp __t) noexcept
     __uint128_t{10'000'000'000'000'000'000ull} * 10'000'000'000'000'0000,
     __uint128_t{10'000'000'000'000'000'000ull} * 100'000'000'000'000'0000,
     __uint128_t{10'000'000'000'000'000'000ull} * 1'000'000'000'000'000'0000ull,
-    _CUDA_VSTD::numeric_limits<__uint128_t>::max()};
+    ::cuda::std::numeric_limits<__uint128_t>::max()};
 }
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_cv_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_cv_integer_v<_Tp>)
 _CCCL_API constexpr int ilog10(_Tp __t) noexcept
 {
   _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");
@@ -153,7 +153,7 @@ _CCCL_API constexpr int ilog10(_Tp __t) noexcept
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
     _CCCL_ASSERT(__log10_approx < static_cast<int>(::cuda::__power_of_10_32bit().size()), "out of bounds");
-    if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint32_t>)
+    if constexpr (::cuda::std::is_same_v<_Tp, uint32_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
       __log10_approx += static_cast<uint32_t>(__t) + 1 > ::cuda::__power_of_10_32bit()[__log10_approx];
@@ -173,7 +173,7 @@ _CCCL_API constexpr int ilog10(_Tp __t) noexcept
   else
   {
     _CCCL_ASSERT(__log10_approx < static_cast<int>(::cuda::__power_of_10_128bit().size()), "out of bounds");
-    if constexpr (_CUDA_VSTD::is_same_v<_Tp, __uint128_t>)
+    if constexpr (::cuda::std::is_same_v<_Tp, __uint128_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
       __log10_approx += static_cast<__uint128_t>(__t) + 1 > ::cuda::__power_of_10_128bit()[__log10_approx];
@@ -184,12 +184,12 @@ _CCCL_API constexpr int ilog10(_Tp __t) noexcept
     }
   }
 #endif // _CCCL_HAS_INT128()
-  _CCCL_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
+  _CCCL_ASSUME(__log10_approx <= ::cuda::std::numeric_limits<_Tp>::digits / 3); // 2^X < 10^(x/3) -> 8^X < 10^x
   return __log10_approx;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_ILOG
+#endif // _CUDA___CMATH_ILOG_H

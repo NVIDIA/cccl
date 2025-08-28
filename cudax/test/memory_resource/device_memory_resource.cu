@@ -405,18 +405,18 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
     CHECK(!(first == second));
   }
 
-  { // comparison against a device_memory_resource wrapped inside a resource_ref<device_accessible>
+  { // comparison against a device_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
+    cudax::device_memory_resource second{cuda::device_ref{0}};
+    cudax::synchronous_resource_ref<cudax::device_accessible> second_ref{second};
+    CHECK((first == second_ref));
+    CHECK(!(first != second_ref));
+    CHECK((second_ref == first));
+    CHECK(!(second_ref != first));
+  }
+
+  { // comparison against a device_memory_resource wrapped inside a resource_ref
     cudax::device_memory_resource second{cuda::device_ref{0}};
     cudax::resource_ref<cudax::device_accessible> second_ref{second};
-    CHECK((first == second_ref));
-    CHECK(!(first != second_ref));
-    CHECK((second_ref == first));
-    CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a device_memory_resource wrapped inside a async_resource_ref
-    cudax::device_memory_resource second{cuda::device_ref{0}};
-    cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
@@ -424,7 +424,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a different resource through resource_ref
+  { // comparison against a different resource through synchronous_resource_ref
     resource<AccessibilityType::Host> host_resource{};
     resource<AccessibilityType::Device> device_resource{};
     CHECK(!(first == host_resource));
@@ -438,7 +438,7 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
     CHECK((device_resource != first));
   }
 
-  { // comparison against a different resource through resource_ref
+  { // comparison against a different resource through synchronous_resource_ref
     test_resource<AccessibilityType::Host> host_async_resource{};
     test_resource<AccessibilityType::Device> device_async_resource{};
     CHECK(!(first == host_async_resource));

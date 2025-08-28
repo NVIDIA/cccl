@@ -14,5 +14,5 @@ This living document serves to describe the internal details and the development
 
 Documentation:
 
-- `CCCL Internal Macros <https://nvidia.github.io/cccl/cccl/development/macro.html>`__
-- `CCCL Testing Utilities <https://nvidia.github.io/cccl/cccl/development/testing.html>`__
+- :doc:`CCCL Internal Macros <macro>`
+- :doc:`CCCL Testing Utilities <testing>`

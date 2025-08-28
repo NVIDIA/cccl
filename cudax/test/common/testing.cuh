@@ -32,7 +32,11 @@ namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-al
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
 __device__ inline void cudax_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+  bool condition,
+  [[maybe_unused]] const char* condition_text,
+  [[maybe_unused]] const char* filename,
+  [[maybe_unused]] unsigned int linenum,
+  [[maybe_unused]] const char* funcname)
 {
   if (!condition)
   {

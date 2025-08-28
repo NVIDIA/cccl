@@ -15,7 +15,7 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
-// ensure that we properly support thrust::reverse_iterator from cuda::std
+// ensure that we properly support thrust::transform_input_output_iterator from cuda::std
 void TestTransformInputOutputIteratorTraits()
 {
   using input_func  = ::cuda::std::negate<int>;

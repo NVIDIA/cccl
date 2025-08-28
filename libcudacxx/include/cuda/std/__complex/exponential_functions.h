@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_EXPONENTIAL_FUNCTIONS_H
-#define _LIBCUDACXX___COMPLEX_EXPONENTIAL_FUNCTIONS_H
+#ifndef _CUDA_STD___COMPLEX_EXPONENTIAL_FUNCTIONS_H
+#define _CUDA_STD___COMPLEX_EXPONENTIAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // exp
 
@@ -47,28 +47,28 @@ template <class _Tp>
   _Tp __i = __x.imag();
   if (__i == _Tp(0))
   {
-    return complex<_Tp>(_CUDA_VSTD::exp(__x.real()), _CUDA_VSTD::copysign(_Tp(0), __x.imag()));
+    return complex<_Tp>(::cuda::std::exp(__x.real()), ::cuda::std::copysign(_Tp(0), __x.imag()));
   }
-  if (_CUDA_VSTD::isinf(__x.real()))
+  if (::cuda::std::isinf(__x.real()))
   {
     if (__x.real() < _Tp(0))
     {
-      if (!_CUDA_VSTD::isfinite(__i))
+      if (!::cuda::std::isfinite(__i))
       {
         __i = _Tp(1);
       }
     }
-    else if (__i == _Tp(0) || !_CUDA_VSTD::isfinite(__i))
+    else if (__i == _Tp(0) || !::cuda::std::isfinite(__i))
     {
-      if (_CUDA_VSTD::isinf(__i))
+      if (::cuda::std::isinf(__i))
       {
         __i = numeric_limits<_Tp>::quiet_NaN();
       }
       return complex<_Tp>(__x.real(), __i);
     }
   }
-  _Tp __e = _CUDA_VSTD::exp(__x.real());
-  return complex<_Tp>(__e * _CUDA_VSTD::cos(__i), __e * _CUDA_VSTD::sin(__i));
+  _Tp __e = ::cuda::std::exp(__x.real());
+  return complex<_Tp>(__e * ::cuda::std::cos(__i), __e * ::cuda::std::sin(__i));
 }
 
 // A real exp that doesn't combine the final polynomial estimate with the ldexp factor.
@@ -79,25 +79,25 @@ template <class _Tp>
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   constexpr float __round_shift = 12582912.0f; // 1.5 * 2^23;
-  constexpr float __log2_e      = _CUDA_VSTD::numbers::log2e_v<float>;
-  float __j                     = _CUDA_VSTD::fmaf(__r, __log2_e, __round_shift);
+  constexpr float __log2_e      = ::cuda::std::numbers::log2e_v<float>;
+  float __j                     = ::cuda::std::fmaf(__r, __log2_e, __round_shift);
   __j                           = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   float __r_reduced;
-  __r_reduced = _CUDA_VSTD::fmaf(-__j, 0.693147182464599609375f, __r);
-  __r_reduced = _CUDA_VSTD::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
+  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r);
+  __r_reduced = ::cuda::std::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
   float __exp_mant = 1.95693559362553060054779052734375e-4f;
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.39354146085679531097412109375e-3f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 8.333896286785602569580078125e-3f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 4.16664592921733856201171875e-2f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.16666664183139801025390625f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 0.5f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
-  __exp_mant       = _CUDA_VSTD::fmaf(__exp_mant, __r_reduced, 1.0f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 1.39354146085679531097412109375e-3f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 8.333896286785602569580078125e-3f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 4.16664592921733856201171875e-2f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 0.16666664183139801025390625f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 0.5f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 1.0f);
+  __exp_mant       = ::cuda::std::fmaf(__exp_mant, __r_reduced, 1.0f);
 
   *__ldexp_factor = __j;
   return __exp_mant;
@@ -109,29 +109,29 @@ template <class _Tp>
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   constexpr double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
-  constexpr double __log2_e      = _CUDA_VSTD::numbers::log2e_v<double>;
-  double __j                     = _CUDA_VSTD::fma(__r, __log2_e, __round_shift);
+  constexpr double __log2_e      = ::cuda::std::numbers::log2e_v<double>;
+  double __j                     = ::cuda::std::fma(__r, __log2_e, __round_shift);
   __j                            = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   double __r_reduced;
-  __r_reduced = _CUDA_VSTD::fma(-__j, 0.6931471805599453972491, __r);
-  __r_reduced = _CUDA_VSTD::fma(-__j, -8.78318343240526554e-17, __r_reduced);
+  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r);
+  __r_reduced = ::cuda::std::fma(-__j, -8.78318343240526554e-17, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
   double __exp_mant = 2.5022322536502990e-8;
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7630903488173108e-7);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.7557514545882439e-6);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 2.4801491039099165e-5);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.9841269589115497e-4);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.3888888945916380e-3);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 8.3333333334550432e-3);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 4.1666666666519754e-2);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.6666666666666477e-1);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 5.0000000000000122e-1);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
-  __exp_mant        = _CUDA_VSTD::fma(__exp_mant, __r_reduced, 1.0);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 2.7630903488173108e-7);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 2.7557514545882439e-6);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 2.4801491039099165e-5);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 1.9841269589115497e-4);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 1.3888888945916380e-3);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 8.3333333334550432e-3);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 4.1666666666519754e-2);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 1.6666666666666477e-1);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 5.0000000000000122e-1);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 1.0);
+  __exp_mant        = ::cuda::std::fma(__exp_mant, __r_reduced, 1.0);
 
   *__ldexp_factor = __j;
   return __exp_mant;
@@ -145,18 +145,18 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   const float __i = __x.imag();
 
   // Some Inf/NaN special cases that don't filter through:
-  if (!_CUDA_VSTD::isfinite(__r))
+  if (!::cuda::std::isfinite(__r))
   {
-    if (_CUDA_VSTD::isinf(__r) && !_CUDA_VSTD::isfinite(__i))
+    if (::cuda::std::isinf(__r) && !::cuda::std::isfinite(__i))
     {
       // __r == +-INF
-      return _CUDA_VSTD::signbit(__r)
+      return ::cuda::std::signbit(__r)
              ? complex<float>{}
-             : complex<float>{_CUDA_VSTD::numeric_limits<float>::infinity(),
-                              _CUDA_VSTD::numeric_limits<float>::quiet_NaN()};
+             : complex<float>{::cuda::std::numeric_limits<float>::infinity(),
+                              ::cuda::std::numeric_limits<float>::quiet_NaN()};
     }
     // __r NaN:
-    if (_CUDA_VSTD::isnan(__r) && (__i == 0.0f))
+    if (::cuda::std::isnan(__r) && (__i == 0.0f))
     {
       return __x;
     }
@@ -168,7 +168,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
 
   // Get some close bounds when the answer is fully guaranteed to under/overflow.
   // Sometime close to but >= log(max_flt / min_denom_float):
-  if (_CUDA_VSTD::fabsf(__r) >= 194.0f)
+  if (::cuda::std::fabsf(__r) >= 194.0f)
   {
     // real/imag return value must always underflow or overflow.
     // Clamp to a low value that still under/overflows.
@@ -181,7 +181,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   float __cos_i;
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (::sincosf(__i, &__sin_i, &__cos_i);),
-                    (__sin_i = _CUDA_VSTD::sinf(__i); __cos_i = _CUDA_VSTD::cosf(__i);))
+                    (__sin_i = ::cuda::std::sinf(__i); __cos_i = ::cuda::std::cosf(__i);))
 
   // Our answer now is: (ldexp(__exp_r_reduced * __sin_r, __j_int), ldexp(__exp_r_reduced * __sin_r, __j_int))
   // However we don't need a full ldexp here, and if __exp_r_reduced*__sin_r is denormal we can lose bits.
@@ -215,8 +215,8 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   __ans_ldexp_factor_quarter   = (__ans_ldexp_factor_quarter + 127) << 23;
   __ans_ldexp_factor_remainder = (__ans_ldexp_factor_remainder + 127) << 23;
 
-  const float __ldexp_factor_1 = _CUDA_VSTD::bit_cast<float>(__ans_ldexp_factor_quarter);
-  const float __ldexp_factor_2 = _CUDA_VSTD::bit_cast<float>(__ans_ldexp_factor_remainder);
+  const float __ldexp_factor_1 = ::cuda::std::bit_cast<float>(__ans_ldexp_factor_quarter);
+  const float __ldexp_factor_2 = ::cuda::std::bit_cast<float>(__ans_ldexp_factor_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all
@@ -238,18 +238,18 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   const double __i = __x.imag();
 
   // Special cases that don't filter through:
-  if (!_CUDA_VSTD::isfinite(__r))
+  if (!::cuda::std::isfinite(__r))
   {
     // __r == +-INF
-    if (_CUDA_VSTD::isinf(__r) && !_CUDA_VSTD::isfinite(__i))
+    if (::cuda::std::isinf(__r) && !::cuda::std::isfinite(__i))
     {
-      return _CUDA_VSTD::signbit(__r)
+      return ::cuda::std::signbit(__r)
              ? complex<double>{}
-             : complex<double>{_CUDA_VSTD::numeric_limits<double>::infinity(),
-                               _CUDA_VSTD::numeric_limits<double>::quiet_NaN()};
+             : complex<double>{::cuda::std::numeric_limits<double>::infinity(),
+                               ::cuda::std::numeric_limits<double>::quiet_NaN()};
     }
     // __r NaN:
-    if (_CUDA_VSTD::isnan(__r) && (__i == 0.0))
+    if (::cuda::std::isnan(__r) && (__i == 0.0))
     {
       return __x;
     }
@@ -259,7 +259,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   double __exp_r_ldexp_factor;
   double __exp_r_reduced = __internal_unsafe_exp_with_reduction(__r, &__exp_r_ldexp_factor);
 
-  if (_CUDA_VSTD::fabs(__r) >= 1457.0)
+  if (::cuda::std::fabs(__r) >= 1457.0)
   {
     // real/imag return value must always underflow or overflow.
     // This helps avoid other checks later.
@@ -271,7 +271,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   double __cos_i;
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (::sincos(__i, &__sin_i, &__cos_i);),
-                    (__sin_i = _CUDA_VSTD::sin(__i); __cos_i = _CUDA_VSTD::cos(__i);))
+                    (__sin_i = ::cuda::std::sin(__i); __cos_i = ::cuda::std::cos(__i);))
 
   // Our answer now is: (ldexp(__exp_mant * __sin_r, __j_int), ldexp(__exp_mant * __sin_r, __j_int))
   // However we don't need a full ldexp here, and if __exp_mant*__sin_r is denormal we can lose bits.
@@ -306,8 +306,8 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   __ans_ldexp_factor_quarter   = (__ans_ldexp_factor_quarter + 1023) << 52;
   __ans_ldexp_factor_remainder = (__ans_ldexp_factor_remainder + 1023) << 52;
 
-  const double __ldexp_factor_1 = _CUDA_VSTD::bit_cast<double>(__ans_ldexp_factor_quarter);
-  const double __ldexp_factor_2 = _CUDA_VSTD::bit_cast<double>(__ans_ldexp_factor_remainder);
+  const double __ldexp_factor_1 = ::cuda::std::bit_cast<double>(__ans_ldexp_factor_quarter);
+  const double __ldexp_factor_2 = ::cuda::std::bit_cast<double>(__ans_ldexp_factor_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all
@@ -324,7 +324,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
 template <>
 _CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::exp(complex<float>{__x})};
+  return complex<__nv_bfloat16>{::cuda::std::exp(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -332,7 +332,7 @@ _CCCL_API inline complex<__nv_bfloat16> exp(const complex<__nv_bfloat16>& __x)
 template <>
 _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
 {
-  return complex<__half>{_CUDA_VSTD::exp(complex<float>{__x})};
+  return complex<__half>{::cuda::std::exp(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -341,7 +341,7 @@ _CCCL_API inline complex<__half> exp(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> pow(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
-  return _CUDA_VSTD::exp(__y * _CUDA_VSTD::log(__x));
+  return ::cuda::std::exp(__y * ::cuda::std::log(__x));
 }
 
 #if _LIBCUDACXX_HAS_NVFP16()
@@ -352,7 +352,7 @@ _CCCL_API inline complex<__half> pow(const complex<__half>& __x, const complex<_
   // faster and more accurate.
   // With this in mind it also makes sense for complex<__half>pow to call the fp32 version,
   // avoiding the intermediate narrowing conversion and losing accuracy.
-  return complex<__half>{_CUDA_VSTD::pow(complex<float>{__x}, complex<float>{__y})};
+  return complex<__half>{::cuda::std::pow(complex<float>{__x}, complex<float>{__y})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -364,7 +364,7 @@ _CCCL_API inline complex<__nv_bfloat16> pow(const complex<__nv_bfloat16>& __x, c
   // faster and more accurate.
   // With this in mind it also makes sense for complex<__nv_bfloat16>pow to call the fp32 version,
   // avoiding the intermediate narrowing conversion and losing accuracy.
-  return complex<__nv_bfloat16>{_CUDA_VSTD::pow(complex<float>{__x}, complex<float>{__y})};
+  return complex<__nv_bfloat16>{::cuda::std::pow(complex<float>{__x}, complex<float>{__y})};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -375,7 +375,7 @@ template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
-  return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
+  return ::cuda::std::pow(__result_type(__x), __result_type(__y));
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -383,7 +383,7 @@ _CCCL_REQUIRES((!__is_complex_v<_Up>) )
 [[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const _Up& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
-  return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
+  return ::cuda::std::pow(__result_type(__x), __result_type(__y));
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -391,7 +391,7 @@ _CCCL_REQUIRES((!__is_complex_v<_Tp>) )
 [[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const _Tp& __x, const complex<_Up>& __y)
 {
   using __result_type = complex<common_type_t<_Tp, _Up>>;
-  return _CUDA_VSTD::pow(__result_type(__x, 0), __result_type(__y));
+  return ::cuda::std::pow(__result_type(__x, 0), __result_type(__y));
 }
 
 _CCCL_DIAG_POP
@@ -404,8 +404,8 @@ template <class _Tp>
   return complex<_Tp>((__x.real() - __x.imag()) * (__x.real() + __x.imag()), _Tp(2) * __x.real() * __x.imag());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_EXPONENTIAL_FUNCTIONS_H
+#endif // _CUDA_STD___COMPLEX_EXPONENTIAL_FUNCTIONS_H

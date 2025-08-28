@@ -13,9 +13,6 @@ import cuda.cccl.parallel.experimental as parallel
 
 
 def merge_sort_object_example():
-    def compare_op(lhs, rhs):
-        return np.uint8(lhs < rhs)
-
     dtype = np.int32
     h_input_keys = np.array([4, 2, 3, 1], dtype=dtype)
     h_input_values = np.array([40, 20, 30, 10], dtype=dtype)
@@ -25,7 +22,11 @@ def merge_sort_object_example():
     d_output_values = cp.empty_like(d_input_values)
 
     sorter = parallel.make_merge_sort(
-        d_input_keys, d_input_values, d_output_keys, d_output_values, compare_op
+        d_input_keys,
+        d_input_values,
+        d_output_keys,
+        d_output_values,
+        parallel.OpKind.LESS,
     )
 
     temp_storage_size = sorter(

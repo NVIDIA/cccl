@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_CMP_H
-#define _LIBCUDACXX___UTILITY_CMP_H
+#ifndef _CUDA_STD___UTILITY_CMP_H
+#define _CUDA_STD___UTILITY_CMP_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
@@ -58,7 +58,7 @@ _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _CCCL_API constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
 {
-  return !_CUDA_VSTD::cmp_equal(__t, __u);
+  return !::cuda::std::cmp_equal(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -84,33 +84,33 @@ _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _CCCL_API constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
-  return _CUDA_VSTD::cmp_less(__u, __t);
+  return ::cuda::std::cmp_less(__u, __t);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _CCCL_API constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
 {
-  return !_CUDA_VSTD::cmp_greater(__t, __u);
+  return !::cuda::std::cmp_greater(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _CCCL_API constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
 {
-  return !_CUDA_VSTD::cmp_less(__t, __u);
+  return !::cuda::std::cmp_less(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
 _CCCL_API constexpr bool in_range(_Up __u) noexcept
 {
-  return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
-      && _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
+  return ::cuda::std::cmp_less_equal(__u, numeric_limits<_Tp>::max())
+      && ::cuda::std::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_CMP_H
+#endif // _CUDA_STD___UTILITY_CMP_H

@@ -16,11 +16,6 @@ file(GLOB public_headers_host_only
   "${libcudacxx_SOURCE_DIR}/include/cuda/*"
 )
 
-# mdspan is currently not supported on msvc outside of C++20
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "20")
-  list(FILTER public_headers_host_only EXCLUDE REGEX "mdspan")
-endif()
-
 function(libcudacxx_add_std_header_test header)
   # ${header} contains the "/" from the subfolder, replace by "_" for actual names
   string(REPLACE "/" "_" header_name "${header}")

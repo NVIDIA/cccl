@@ -4,12 +4,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_MIN_MAX_H
-#define _LIBCUDACXX___CMATH_MIN_MAX_H
+#ifndef _CUDA_STD___CMATH_MIN_MAX_H
+#define _CUDA_STD___CMATH_MIN_MAX_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,228 +21,240 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/promote.h>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// We do explicitly also enable GCC here, because that makes the condition below simpler
+#if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+[[nodiscard]] _CCCL_API _Tp __with_builtin_fmax(_Tp __x, _Tp __y) noexcept
+{
+  if constexpr (is_same_v<_Tp, float>)
+  {
+    return __builtin_fmaxf(__x, __y);
+  }
+  else if constexpr (is_same_v<_Tp, double>)
+  {
+    return __builtin_fmax(__x, __y);
+  }
+#  if _CCCL_HAS_LONG_DOUBLE()
+  else if constexpr (is_same_v<_Tp, long double>)
+  {
+    return __builtin_fmaxl(__x, __y);
+  }
+#  endif // _CCCL_HAS_LONG_DOUBLE()
+}
+
+#  define _CCCL_USE_BUILTIN_FMAX() 1
+#else //
+#  define _CCCL_USE_BUILTIN_FMAX() 0
+#endif // _CCCL_BUILTIN_FABSF
 
 // fmax
-
-#if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMAXL(...) __builtin_fmaxl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
-
-[[nodiscard]] _CCCL_API inline float fmax(float __x, float __y) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmax(_Tp __x, _Tp __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxf(__x, __y);
-#endif // !_CCCL_BUILTIN_FMAX
+#if _CCCL_HAS_NVFP16()
+  if constexpr (is_same_v<_Tp, __half>)
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 2)
+    return ::__hmax(__x, __y);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmax(__x, __y);),
+                      (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
+  }
+  else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 2)
+    return ::__hmax(__x, __y);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmax(__x, __y);),
+                      (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
+    if constexpr (is_integral_v<_Tp>)
+    {
+      return static_cast<double>(__x < __y ? __y : __x);
+    }
+    else
+    {
+#if _CCCL_USE_BUILTIN_FMAX()
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      {
+// GCC builtins do not treat NaN properly
+#  if _CCCL_COMPILER(GCC)
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmax(__x, __y);))
+#  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
+        return ::cuda::std::__with_builtin_fmax(__x, __y);
+#  endif // !_CCCL_COMPILER(GCC)
+      }
+#endif // _CCCL_USE_BUILTIN_FMAX
+      if (::cuda::std::isnan(__x))
+      {
+        return __y;
+      }
+      else if (::cuda::std::isnan(__y))
+      {
+        return __x;
+      }
+      return __x < __y ? __y : __x;
+    }
 }
 
-[[nodiscard]] _CCCL_API inline float fmaxf(float __x, float __y) noexcept
+[[nodiscard]] _CCCL_API constexpr float fmaxf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxf(__x, __y);
-#endif // !_CCCL_BUILTIN_FMAX
-}
-
-[[nodiscard]] _CCCL_API inline double fmax(double __x, double __y) noexcept
-{
-#if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAX(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmax(__x, __y);
-#endif // !_CCCL_BUILTIN_FMAX
+  return ::cuda::std::fmax(__x, __y);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double fmax(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API constexpr long double fmaxl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxl(__x, __y);
-#  endif // !_CCCL_BUILTIN_FMAX
-}
-[[nodiscard]] _CCCL_API inline long double fmaxl(long double __x, long double __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_FMAX)
-  return _CCCL_BUILTIN_FMAXL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_FMAX ^^^ / vvv !_CCCL_BUILTIN_FMAX vvv
-  return ::fmaxl(__x, __y);
-#  endif // !_CCCL_BUILTIN_FMAX
+  return ::cuda::std::fmax(__x, __y);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half fmax(__half __x, __half __y) noexcept
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(::cuda::is_floating_point_v<_Tp> _CCCL_AND ::cuda::is_floating_point_v<_Up>)
+[[nodiscard]] _CCCL_API constexpr auto fmax(_Tp __x, _Up __y) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmax(__x, __y);),
-                    (return __float2half(_CUDA_VSTD::fmaxf(__half2float(__x), __half2float(__y)));))
-}
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmax(__half __x, _A1 __y) noexcept
-{
-  return _CUDA_VSTD::fmaxf(__half2float(__x), __y);
-}
-
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmax(_A1 __x, __half __y) noexcept
-{
-  return _CUDA_VSTD::fmaxf(__x, __half2float(__y));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
-{
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmax(__x, __y);),
-                    (return __float2bfloat16(_CUDA_VSTD::fmaxf(__bfloat162float(__x), __bfloat162float(__y)));))
-}
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmax(__nv_bfloat16 __x, _A1 __y) noexcept
-{
-  return _CUDA_VSTD::fmaxf(__bfloat162float(__x), __y);
-}
-
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmax(_A1 __x, __nv_bfloat16 __y) noexcept
-{
-  return _CUDA_VSTD::fmaxf(__x, __bfloat162float(__y));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmax(_A1 __x, _A2 __y) noexcept
-{
-  using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
-  return _CUDA_VSTD::fmax((__result_type) __x, (__result_type) __y);
+  using __result_type = __promote_t<_Tp, _Up>;
+  static_assert(!(is_same_v<_Tp, __result_type> && is_same_v<_Up, __result_type>) );
+  return ::cuda::std::fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 
 // fmin
 
+// We do explicitly also enable GCC here, because that makes the condition below simpler
 #if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_FMINF(...) __builtin_fminf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMIN(...)  __builtin_fmin(__VA_ARGS__)
-#  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
-
-[[nodiscard]] _CCCL_API inline float fmin(float __x, float __y) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+[[nodiscard]] _CCCL_API _Tp __with_builtin_fmin(_Tp __x, _Tp __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMIN)
-  return _CCCL_BUILTIN_FMINF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
-  return ::fminf(__x, __y);
-#endif // !_CCCL_BUILTIN_FMIN
+  if constexpr (is_same_v<_Tp, float>)
+  {
+    return __builtin_fminf(__x, __y);
+  }
+  else if constexpr (is_same_v<_Tp, double>)
+  {
+    return __builtin_fmin(__x, __y);
+  }
+#  if _CCCL_HAS_LONG_DOUBLE()
+  else if constexpr (is_same_v<_Tp, long double>)
+  {
+    return __builtin_fminl(__x, __y);
+  }
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-[[nodiscard]] _CCCL_API inline float fminf(float __x, float __y) noexcept
+#  define _CCCL_USE_BUILTIN_FMIN() 1
+#else //
+#  define _CCCL_USE_BUILTIN_FMIN() 0
+#endif // _CCCL_BUILTIN_FABSF
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmin(_Tp __x, _Tp __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMIN)
-  return _CCCL_BUILTIN_FMINF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
-  return ::fminf(__x, __y);
-#endif // !_CCCL_BUILTIN_FMIN
+#if _CCCL_HAS_NVFP16()
+  if constexpr (is_same_v<_Tp, __half>)
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 2)
+    return ::__hmin(__x, __y);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmin(__x, __y);),
+                      (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
+  }
+  else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 2)
+    return ::__hmin(__x, __y);
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__hmin(__x, __y);),
+                      (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
+#  endif // !_CCCL_CTK_AT_LEAST(12, 2)
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
+    if constexpr (is_integral_v<_Tp>)
+    {
+      return static_cast<double>(__y < __x ? __y : __x);
+    }
+    else
+    {
+#if _CCCL_USE_BUILTIN_FMAX()
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      {
+// GCC builtins do not treat NaN properly
+#  if _CCCL_COMPILER(GCC)
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
+#  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
+        return ::cuda::std::__with_builtin_fmin(__x, __y);
+#  endif // !_CCCL_COMPILER(GCC)
+      }
+#endif // _CCCL_USE_BUILTIN_FMAX
+      if (::cuda::std::isnan(__x))
+      {
+        return __y;
+      }
+      else if (::cuda::std::isnan(__y))
+      {
+        return __x;
+      }
+      return __y < __x ? __y : __x;
+    }
 }
 
-[[nodiscard]] _CCCL_API inline double fmin(double __x, double __y) noexcept
+[[nodiscard]] _CCCL_API constexpr float fminf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_FMIN)
-  return _CCCL_BUILTIN_FMIN(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
-  return ::fmin(__x, __y);
-#endif // !_CCCL_BUILTIN_FMIN
+  return ::cuda::std::fmin(__x, __y);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double fmin(long double __x, long double __y) noexcept
+[[nodiscard]] _CCCL_API constexpr long double fminl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FMIN)
-  return _CCCL_BUILTIN_FMINL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
-  return ::fminl(__x, __y);
-#  endif // !_CCCL_BUILTIN_FMIN
-}
-[[nodiscard]] _CCCL_API inline long double fminl(long double __x, long double __y) noexcept
-{
-#  if defined(_CCCL_BUILTIN_FMIN)
-  return _CCCL_BUILTIN_FMINL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_FMIN ^^^ / vvv !_CCCL_BUILTIN_FMIN vvv
-  return ::fminl(__x, __y);
-#  endif // !_CCCL_BUILTIN_FMIN
+  return ::cuda::std::fmin(__x, __y);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half fmin(__half __x, __half __y) noexcept
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(::cuda::is_floating_point_v<_Tp> _CCCL_AND ::cuda::is_floating_point_v<_Up>)
+[[nodiscard]] _CCCL_API constexpr auto fmin(_Tp __x, _Up __y) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmin(__x, __y);),
-                    (return __float2half(_CUDA_VSTD::fminf(__half2float(__x), __half2float(__y)));))
-}
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmin(__half __x, _A1 __y) noexcept
-{
-  return _CUDA_VSTD::fminf(__half2float(__x), __y);
+  using __result_type = __promote_t<_Tp, _Up>;
+  static_assert(!(is_same_v<_Tp, __result_type> && is_same_v<_Up, __result_type>) );
+  return ::cuda::std::fmin(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmin(_A1 __x, __half __y) noexcept
-{
-  return _CUDA_VSTD::fminf(__x, __half2float(__y));
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 fmin(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
-{
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return ::__hmin(__x, __y);),
-                    (return __float2bfloat16(_CUDA_VSTD::fminf(__bfloat162float(__x), __bfloat162float(__y)));))
-}
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<float, _A1> fmin(__nv_bfloat16 __x, _A1 __y) noexcept
-{
-  return _CUDA_VSTD::fminf(__bfloat162float(__x), __y);
-}
-
-template <class _A1, enable_if_t<is_arithmetic_v<_A1>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, float> fmin(_A1 __x, __nv_bfloat16 __y) noexcept
-{
-  return _CUDA_VSTD::fminf(__x, __bfloat162float(__y));
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
-[[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> fmin(_A1 __x, _A2 __y) noexcept
-{
-  using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
-  return _CUDA_VSTD::fmin((__result_type) __x, (__result_type) __y);
-}
-
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_MIN_MAX_H
+#endif // _CUDA_STD___CMATH_MIN_MAX_H

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+from typing import Callable, Union
 
 import numba
 
@@ -17,7 +17,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
+from ..op import OpKind
 from ..typing import DeviceArrayLike
 
 
@@ -27,7 +28,7 @@ def make_cache_key(
     d_out_keys: DeviceArrayLike | IteratorBase,
     d_out_items: DeviceArrayLike | IteratorBase,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable,
+    op: Callable | OpKind,
 ):
     d_in_keys_key = (
         d_in_keys.kind
@@ -50,7 +51,13 @@ def make_cache_key(
         else protocols.get_dtype(d_out_items)
     )
     d_out_num_selected_key = protocols.get_dtype(d_out_num_selected)
-    op_key = CachableFunction(op)
+
+    # Handle well-known operations differently
+    op_key: Union[tuple[str, int], CachableFunction]
+    if isinstance(op, OpKind):
+        op_key = (op.name, op.value)
+    else:
+        op_key = CachableFunction(op)
 
     return (
         d_in_keys_key,
@@ -80,11 +87,8 @@ class _UniqueByKey:
         d_out_keys: DeviceArrayLike | IteratorBase,
         d_out_items: DeviceArrayLike | IteratorBase,
         d_out_num_selected: DeviceArrayLike,
-        op: Callable,
+        op: Callable | OpKind,
     ):
-        d_in_keys, d_in_items, d_out_keys, d_out_items = scrub_duplicate_ltoirs(
-            d_in_keys, d_in_items, d_out_keys, d_out_items
-        )
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
@@ -92,7 +96,14 @@ class _UniqueByKey:
         self.d_out_num_selected_cccl = cccl.to_cccl_iter(d_out_num_selected)
 
         value_type = cccl.get_value_type(d_in_keys)
-        self.op_wrapper = cccl.to_cccl_op(op, numba.types.uint8(value_type, value_type))
+
+        # For well-known operations, we don't need a signature
+        if isinstance(op, OpKind):
+            self.op_wrapper = cccl.to_cccl_op(op, None)
+        else:
+            self.op_wrapper = cccl.to_cccl_op(
+                op, numba.types.uint8(value_type, value_type)
+            )
 
         self.build_result = call_build(
             _bindings.DeviceUniqueByKeyBuildResult,
@@ -153,7 +164,7 @@ def make_unique_by_key(
     d_out_keys: DeviceArrayLike | IteratorBase,
     d_out_items: DeviceArrayLike | IteratorBase,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable,
+    op: Callable | OpKind,
 ):
     """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
 
@@ -172,7 +183,7 @@ def make_unique_by_key(
         d_out_keys: Device array or iterator to store the outputted keys
         d_out_items: Device array or iterator to store each outputted key's item
         d_out_num_selected: Device array to store how many items were selected
-        op: Callable representing the equality operator
+        op: Callable or OpKind representing the equality operator
 
     Returns:
         A callable object that can be used to perform unique by key
@@ -189,7 +200,7 @@ def unique_by_key(
     d_out_keys: DeviceArrayLike | IteratorBase,
     d_out_items: DeviceArrayLike | IteratorBase,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable,
+    op: Callable | OpKind,
     num_items: int,
     stream=None,
 ):
@@ -204,7 +215,7 @@ def unique_by_key(
         d_out_keys: Device array or iterator to store the outputted keys
         d_out_items: Device array or iterator to store each outputted key's item
         d_out_num_selected: Device array to store how many items were selected
-        op: Callable representing the equality operator
+        op: Callable or OpKind representing the equality operator
         num_items: Number of items to process
         stream: CUDA stream for the operation (optional)
     """

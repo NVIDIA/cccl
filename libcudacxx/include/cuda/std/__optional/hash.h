@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___OPTIONAL_HASH_H
-#define _LIBCUDACXX___OPTIONAL_HASH_H
+#ifndef _CUDA_STD___OPTIONAL_HASH_H
+#define _CUDA_STD___OPTIONAL_HASH_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
 
@@ -46,8 +46,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, re
 
 #endif // __cuda_std__
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___OPTIONAL_HASH_H
+#endif // _CUDA_STD___OPTIONAL_HASH_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_IGNORE_H
-#define _LIBCUDACXX___TUPLE_IGNORE_H
+#ifndef _CUDA_STD___TUPLE_IGNORE_H
+#define _CUDA_STD___TUPLE_IGNORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __ignore_t
 {
@@ -44,8 +44,8 @@ namespace
 _CCCL_GLOBAL_CONSTANT __ignore_t ignore = __ignore_t{};
 } // namespace
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_IGNORE_H
+#endif // _CUDA_STD___TUPLE_IGNORE_H
