@@ -1,5 +1,5 @@
-import numpy as np
 import numba
+import numpy as np
 from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
