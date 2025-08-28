@@ -569,7 +569,10 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+optional(_Tp) -> optional<_Tp>;
 
 // Comparisons between optionals
 _CCCL_EXEC_CHECK_DISABLE
