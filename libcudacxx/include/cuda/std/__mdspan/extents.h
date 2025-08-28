@@ -681,7 +681,10 @@ struct __to_dynamic_extent
 
 // Deduction guide for extents
 template <class... _IndexTypes>
-_CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent::template value<_IndexTypes>...>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent::template value<_IndexTypes>...>;
 
 namespace __mdspan_detail
 {
