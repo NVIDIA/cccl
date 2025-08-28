@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MDSPAN_RESTRICT_ACCESSOR
-#define _CUDA___MDSPAN_RESTRICT_ACCESSOR
+#ifndef _CUDA___MDSPAN_RESTRICT_ACCESSOR_H
+#define _CUDA___MDSPAN_RESTRICT_ACCESSOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -119,4 +119,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MDSPAN_RESTRICT_ACCESSOR
+#endif // _CUDA___MDSPAN_RESTRICT_ACCESSOR_H

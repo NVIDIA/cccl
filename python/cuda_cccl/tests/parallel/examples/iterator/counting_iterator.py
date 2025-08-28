@@ -17,9 +17,6 @@ import cuda.cccl.parallel.experimental as parallel
 def counting_iterator_example():
     """Demonstrate reduction with counting iterator."""
 
-    def add_op(a, b):
-        return a + b
-
     first_item = 10
     num_items = 3
 
@@ -28,7 +25,7 @@ def counting_iterator_example():
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
     # Run reduction
-    parallel.reduce_into(first_it, d_output, add_op, num_items, h_init)
+    parallel.reduce_into(first_it, d_output, parallel.OpKind.PLUS, num_items, h_init)
 
     expected_output = functools.reduce(
         lambda a, b: a + b, range(first_item, first_item + num_items)

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_STREAM_REF
-#define _CUDAX__STREAM_STREAM_REF
+#ifndef _CUDAX__STREAM_STREAM_REF_CUH
+#define _CUDAX__STREAM_STREAM_REF_CUH
 
 #include <cuda/std/detail/__config>
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -102,13 +102,13 @@ struct stream_ref : ::cuda::stream_ref
     return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_forward_progress_guarantee_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_forward_progress_guarantee_t&) const noexcept
     -> execution::forward_progress_guarantee
   {
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_domain_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_domain_t&) const noexcept
     -> execution::stream_domain;
 };
 
@@ -116,4 +116,4 @@ struct stream_ref : ::cuda::stream_ref
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_STREAM_REF
+#endif // _CUDAX__STREAM_STREAM_REF_CUH

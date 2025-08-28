@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM
-#define _CUDAX__STREAM_DEVICE_TRANSFORM
+#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+#define _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+
 #include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -186,4 +187,4 @@ using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM
+#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM_CUH

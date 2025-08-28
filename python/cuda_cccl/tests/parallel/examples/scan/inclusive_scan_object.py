@@ -13,16 +13,15 @@ import cuda.cccl.parallel.experimental as parallel
 
 
 def inclusive_scan_object_example():
-    def add_op(x, y):
-        return x + y
-
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
     h_input = np.array([1, 2, 3, 4], dtype=dtype)
     d_input = cp.asarray(h_input)
     d_output = cp.empty(len(h_input), dtype=dtype)
 
-    scanner = parallel.make_inclusive_scan(d_input, d_output, add_op, h_init)
+    scanner = parallel.make_inclusive_scan(
+        d_input, d_output, parallel.OpKind.PLUS, h_init
+    )
     temp_storage_size = scanner(None, d_input, d_output, len(h_input), h_init)
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
     scanner(d_temp_storage, d_input, d_output, len(h_input), h_init)
