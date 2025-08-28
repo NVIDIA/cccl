@@ -156,6 +156,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
           typename VSMemHelperT = VSMemHelper>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(
   VSMemHelperT::template MergeSortVSMemHelperT<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
@@ -167,6 +168,7 @@ __launch_bounds__(
     CompareOpT,
     KeyT,
     ValueT>::policy_t::BLOCK_THREADS)
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     bool ping,
     KeyInputIteratorT keys_in,
@@ -261,6 +263,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
           typename VSMemHelperT = VSMemHelper>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(
   VSMemHelperT::template MergeSortVSMemHelperT<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
@@ -272,6 +275,7 @@ __launch_bounds__(
     CompareOpT,
     KeyT,
     ValueT>::policy_t::BLOCK_THREADS)
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     bool ping,
     KeyIteratorT keys_ping,
