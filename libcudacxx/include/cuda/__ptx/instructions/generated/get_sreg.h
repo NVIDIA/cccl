@@ -13,7 +13,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_tid_x()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%tid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -28,7 +30,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_tid_y()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%tid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -43,7 +47,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_tid_z()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%tid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -58,7 +64,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_ntid_x()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%ntid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -73,7 +81,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_ntid_y()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%ntid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -88,7 +98,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_ntid_z()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%ntid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -103,7 +115,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_laneid()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%laneid;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 130
@@ -118,7 +132,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_warpid()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%warpid;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 130
@@ -135,7 +151,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nwarpid()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%nwarpid;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -155,7 +173,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_ctaid_x()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%ctaid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -170,7 +190,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_ctaid_y()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%ctaid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -185,7 +207,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_ctaid_z()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%ctaid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -200,7 +224,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nctaid_x()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%nctaid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -215,7 +241,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nctaid_y()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%nctaid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -230,7 +258,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nctaid_z()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%nctaid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
@@ -245,7 +275,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_smid()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%smid;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 130
@@ -262,7 +294,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nsmid()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%nsmid;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -282,7 +316,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint64_t get_sreg_gridid()
 {
   ::cuda::std::uint64_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u64 %0, %%gridid;" : "=l"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 300
@@ -299,6 +335,7 @@ _CCCL_DEVICE static inline bool get_sreg_is_explicit_cluster()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("{\n\t .reg .pred P_OUT; \n\t"
       "mov.pred P_OUT, %%is_explicit_cluster;\n\t"
       "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -306,6 +343,7 @@ _CCCL_DEVICE static inline bool get_sreg_is_explicit_cluster()
       : "=r"(__sreg_value)
       :
       :);
+#endif
   return static_cast<bool>(__sreg_value);
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -327,7 +365,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_clusterid_x()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%clusterid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -349,7 +389,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_clusterid_y()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%clusterid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -371,7 +413,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_clusterid_z()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%clusterid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -393,7 +437,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nclusterid_x()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%nclusterid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -415,7 +461,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nclusterid_y()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%nclusterid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -437,7 +485,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_nclusterid_z()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%nclusterid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -459,7 +509,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_ctaid_x()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_ctaid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -481,7 +533,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_ctaid_y()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_ctaid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -503,7 +557,7 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_ctaid_z()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
-  asm("mov.u32 %0, %%cluster_ctaid.z;" : "=r"(__sreg_value) : :);
+  //asm("mov.u32 %0, %%cluster_ctaid.z;" : "=r"(__sreg_value) : :);
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -525,7 +579,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_nctaid_x()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_nctaid.x;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -547,7 +603,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_nctaid_y()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_nctaid.y;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -569,7 +627,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_nctaid_z()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_nctaid.z;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -591,7 +651,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_ctarank()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_ctarank;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -613,7 +675,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_cluster_nctarank()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%cluster_nctarank;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -635,7 +699,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_lanemask_eq()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%lanemask_eq;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -657,7 +723,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_lanemask_le()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%lanemask_le;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -679,7 +747,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_lanemask_lt()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%lanemask_lt;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -701,7 +771,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_lanemask_ge()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%lanemask_ge;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -723,7 +795,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_lanemask_gt()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%lanemask_gt;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -743,7 +817,9 @@ template <typename = void>
 _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_clock()
 {
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%clock;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 100
@@ -760,7 +836,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_clock_hi()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%clock_hi;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -782,7 +860,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t get_sreg_clock64()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint64_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u64 %0, %%clock64;" : "=l"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -804,7 +884,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t get_sreg_globaltimer()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint64_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u64 %0, %%globaltimer;" : "=l"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -826,7 +908,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_globaltimer_lo()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%globaltimer_lo;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -848,7 +932,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_globaltimer_hi()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm volatile("mov.u32 %0, %%globaltimer_hi;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -870,7 +956,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_total_smem_size()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%total_smem_size;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -892,7 +980,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_aggr_smem_size()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%aggr_smem_size;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -914,7 +1004,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t get_sreg_dynamic_smem_size()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 350
   ::cuda::std::uint32_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u32 %0, %%dynamic_smem_size;" : "=r"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -936,7 +1028,9 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t get_sreg_current_graph_exec()
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   ::cuda::std::uint64_t __sreg_value;
+#if !_CCCL_COMPILER(GCC)
   asm("mov.u64 %0, %%current_graph_exec;" : "=l"(__sreg_value) : :);
+#endif
   return __sreg_value;
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
