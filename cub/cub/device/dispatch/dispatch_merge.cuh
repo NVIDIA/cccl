@@ -96,6 +96,7 @@ template <typename MaxPolicy,
           typename ValueIt3,
           typename Offset,
           typename CompareOp>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(
   choose_merge_agent<typename MaxPolicy::ActivePolicy::merge_policy,
                      KeyIt1,
@@ -106,6 +107,7 @@ __launch_bounds__(
                      ValueIt3,
                      Offset,
                      CompareOp>::type::policy::BLOCK_THREADS)
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_merge_kernel(
     KeyIt1 keys1,
     ValueIt1 items1,
