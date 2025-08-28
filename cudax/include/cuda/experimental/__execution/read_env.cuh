@@ -88,7 +88,7 @@ private:
 
   struct __attrs_t
   {
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
     {
       return completion_behavior::inline_completion;
     }

@@ -220,7 +220,6 @@ class Configuration(object):
             self.lit_config.fatal(
                 "Failed to retrieve compute capabilities or no capabilities found."
             )
-            return ""
 
         # Build the same list used by --arch=all-major:
         # Handle special case for eg. 13.0: First arch is 75, not 70.
