@@ -1574,8 +1574,18 @@ UNITTEST("get_stream graph")
   auto t     = ctx.task(token.write());
   t.start();
   cudaStream_t s = t.get_stream();
+  // We are not capturing so there is no stream associated
   EXPECT(s == nullptr);
   t.end();
+
+  auto t2     = ctx.task(token.write());
+  t2.enable_capture();
+  t2.start();
+  cudaStream_t s = t2.get_stream();
+  // We are capturing so the stream used for capture is associated to the task
+  EXPECT(s != nullptr);
+  t2.end();
+
   ctx.finalize();
 };
 
