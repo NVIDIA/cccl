@@ -147,6 +147,10 @@ private:
     // affine data place of the execution place, but this can be a
     // composite data place when using a grid of places for example.
     data_place affine_data_place;
+
+    // Automatically capture work when this is a graph task (ignored with a
+    // CUDA stream backend).
+    bool enable_capture = false;
   };
 
 protected:
@@ -269,13 +273,16 @@ public:
   {
     return pimpl->e_place;
   }
+
   exec_place& get_exec_place()
   {
     return pimpl->e_place;
   }
+
   void set_exec_place(const exec_place& place)
   {
-    pimpl->e_place = place;
+    // This will both update the execution place and the affine data place
+    on(place);
   }
 
   /// Get and Set the affine data place of the task
@@ -358,6 +365,17 @@ public:
   size_t hash() const
   {
     return ::std::hash<impl*>()(pimpl.get());
+  }
+
+  void enable_capture()
+  {
+    fprintf(stderr, "task enable capture (generic task)\n");
+    pimpl->enable_capture = true;
+  }
+
+  bool is_capture_enabled() const
+  {
+    return pimpl->enable_capture;
   }
 
   /**
