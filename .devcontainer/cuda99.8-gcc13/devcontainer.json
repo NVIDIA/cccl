@@ -3,7 +3,6 @@
   "image": "gitlab-master.nvidia.com:5005/cccl/cccl-devcontainers:cpp-gcc13-cuda99.8",
   "runArgs": [
     "--init",
-    "--rm",
     "--name",
     "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda99.8-gcc13"
   ],

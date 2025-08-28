@@ -3,7 +3,6 @@
   "image": "rapidsai/devcontainers:25.10-cpp-llvm14-cuda12.9",
   "runArgs": [
     "--init",
-    "--rm",
     "--name",
     "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-llvm14"
   ],

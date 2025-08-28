@@ -3,7 +3,6 @@
   "image": "rapidsai/devcontainers:25.10-cpp-gcc13-cuda12.5",
   "runArgs": [
     "--init",
-    "--rm",
     "--name",
     "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.5-gcc13"
   ],

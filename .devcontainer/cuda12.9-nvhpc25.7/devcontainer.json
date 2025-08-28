@@ -3,7 +3,6 @@
   "image": "rapidsai/devcontainers:25.10-cpp-nvhpc25.7",
   "runArgs": [
     "--init",
-    "--rm",
     "--name",
     "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-nvhpc25.7"
   ],
