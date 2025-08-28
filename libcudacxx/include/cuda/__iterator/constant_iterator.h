@@ -235,11 +235,17 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE constant_iterator(_Tp) -> constant_iterator<_Tp, ::cuda::std::ptrdiff_t>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+constant_iterator(_Tp) -> constant_iterator<_Tp, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Tp, typename _Index)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
-_CCCL_HOST_DEVICE constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Index>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Index>;
 
 //! @brief make_constant_iterator creates a bounded \p constant_iterator from a value and an index
 //! @param __value The value to be returned by the \p constant_iterator
