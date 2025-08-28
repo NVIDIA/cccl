@@ -110,7 +110,11 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
     else
 #  endif // _CCCL_HAS_PDL()
     {
-      k<<<grid, block, shared_mem, stream>>>(args...);
+      k
+#if !_CCCL_COMPILER(GCC)
+      <<<grid, block, shared_mem, stream>>>
+#endif
+      (args...);
     }
     return cudaPeekAtLastError();
   }
