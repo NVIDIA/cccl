@@ -27,7 +27,8 @@ def test_segmented_reduce(input_array, offset_dtype):
     h_offsets = cp.zeros(n_segments + 1, dtype="int64")
     h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
 
-    offsets = cp.cumsum(cp.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
+    offsets = cp.cumsum(cp.asarray(
+        h_offsets, dtype=offset_dtype), dtype=offset_dtype)
 
     start_offsets = offsets[:-1]
     end_offsets = offsets[1:]
@@ -53,7 +54,7 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     d_expected = cp.empty_like(d_out)
     for i in range(n_segments):
-        d_expected[i] = cp.sum(d_in[start_offsets[i] : end_offsets[i]])
+        d_expected[i] = cp.sum(d_in[start_offsets[i]: end_offsets[i]])
 
     assert cp.all(d_out == d_expected)
 
@@ -76,12 +77,14 @@ def test_segmented_reduce_struct_type():
 
     segment_size = 64
     n_pixels = align_up(4000, 64)
-    offsets = cp.arange(n_pixels + segment_size - 1, step=segment_size, dtype=np.int64)
+    offsets = cp.arange(n_pixels + segment_size - 1,
+                        step=segment_size, dtype=np.int64)
     start_offsets = offsets[:-1]
     end_offsets = offsets[1:]
     n_segments = start_offsets.size
 
-    d_rgb = cp.random.randint(0, 256, (n_pixels, 3), dtype=np.int32).view(Pixel.dtype)
+    d_rgb = cp.random.randint(0, 256, (n_pixels, 3),
+                              dtype=np.int32).view(Pixel.dtype)
     d_out = cp.empty(n_segments, Pixel.dtype)
 
     h_init = Pixel(0, 0, 0)
@@ -141,7 +144,8 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     try:
         res = cp.full(num_segments, fill_value=127, dtype=cp.uint8)
     except cp.cuda.memory.OutOfMemoryError:
-        pytest.skip("Insufficient memory to run the large number of segments test")
+        pytest.skip(
+            "Insufficient memory to run the large number of segments test")
     assert res.size == num_segments
 
     def my_add(a: np.uint8, b: np.uint8) -> np.uint8:
@@ -177,7 +181,8 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        parallel.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
+        parallel.binary_transform(
+            res[id:], expected + id, validate, cmp_op, num_items)
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
@@ -236,7 +241,8 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     try:
         res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
     except cp.cuda.memory.OutOfMemoryError:
-        pytest.skip("Insufficient memory to run the large number of segments test")
+        pytest.skip(
+            "Insufficient memory to run the large number of segments test")
     assert res.size == num_segments
 
     h_init = np.zeros(tuple(), dtype=np.int16)
@@ -263,14 +269,14 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        parallel.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
+        parallel.binary_transform(
+            res[id:], expected + id, validate, cmp_op, num_items)
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
 
 
 def test_segmented_reduce_well_known_plus():
-    """Test segmented reduce with well-known PLUS operation."""
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
 
@@ -280,19 +286,16 @@ def test_segmented_reduce_well_known_plus():
     d_ends = cp.array([3, 5, 9], dtype=np.int32)
     d_output = cp.empty(3, dtype=dtype)
 
-    # Run segmented reduce with well-known PLUS operation
     parallel.segmented_reduce(
         d_input, d_output, d_starts, d_ends, parallel.OpKind.PLUS, h_init, 3
     )
 
-    # Check the result is correct
-    expected = np.array([6, 9, 30])  # sums of each segment
+    expected = np.array([6, 9, 30])
     np.testing.assert_equal(d_output.get(), expected)
 
 
 @pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
 def test_segmented_reduce_well_known_maximum():
-    """Test segmented reduce with well-known MAXIMUM operation."""
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)
 
@@ -302,12 +305,10 @@ def test_segmented_reduce_well_known_maximum():
     d_ends = cp.array([3, 5, 9], dtype=np.int32)
     d_output = cp.empty(3, dtype=dtype)
 
-    # Run segmented reduce with well-known MAXIMUM operation
     parallel.segmented_reduce(
         d_input, d_output, d_starts, d_ends, parallel.OpKind.MAXIMUM, h_init, 3
     )
 
-    # Check the result is correct
     expected = np.array([9, 4, 8])  # max of each segment
     np.testing.assert_equal(d_output.get(), expected)
 
@@ -339,8 +340,42 @@ def test_segmented_reduce_transform_output_iterator(floating_array):
         cp.array(
             [
                 cp.sum(d_input[0:segment_size]),
-                cp.sum(d_input[segment_size : d_input.size]),
+                cp.sum(d_input[segment_size: d_input.size]),
             ]
         )
     )
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+
+
+def test_device_segmented_reduce_for_rowwise_sum():
+    def add_op(a, b):
+        return a + b
+
+    n_rows, n_cols = 67, 12345
+    rng = cp.random.default_rng()
+    mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    zero = np.int32(0)
+    row_offset = make_scaler(np.int32(n_cols))
+    start_offsets = parallel.TransformIterator(
+        parallel.CountingIterator(zero), row_offset
+    )
+
+    end_offsets = start_offsets + 1
+
+    d_input = mat
+    h_init = np.zeros(tuple(), dtype=np.int32)
+    d_output = cp.empty(n_rows, dtype=d_input.dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
+    )
+
+    expected = cp.sum(mat, axis=-1)
+    assert cp.all(d_output == expected)

@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import functools
 import random
 
 import cupy as cp
 import numba.cuda
-import numba.types
 import numpy as np
 import pytest
 
@@ -148,7 +148,8 @@ def test_device_sum_cache_modified_input_it(
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
     input_devarr = numba.cuda.to_device(np.array(l_varr, dtype=dtype_inp))
-    i_input = parallel.CacheModifiedInputIterator(input_devarr, modifier="stream")
+    i_input = parallel.CacheModifiedInputIterator(
+        input_devarr, modifier="stream")
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -372,13 +373,15 @@ def test_reducer_caching():
 
     # inputs are TransformIterators
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -388,13 +391,15 @@ def test_reducer_caching():
     # inputs are TransformIterators with different
     # op:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op2),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op2),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -404,13 +409,15 @@ def test_reducer_caching():
     # inputs are TransformIterators with same op
     # but different name:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op3),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op3),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -454,13 +461,15 @@ def test_reducer_caching():
     # inputs are TransformIterators of same kind
     # but different state:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(1)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(1)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -469,13 +478,15 @@ def test_reducer_caching():
 
     # inputs are TransformIterators with different kind:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(parallel.CountingIterator(np.int64(0)), op1),
+        parallel.TransformIterator(
+            parallel.CountingIterator(np.int64(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -536,7 +547,8 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    parallel.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=cuda_stream)
+    parallel.reduce_into(d_in, d_out, add_op, d_in.size,
+                         h_init, stream=cuda_stream)
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -607,91 +619,193 @@ def test_reduce_invalid_stream():
 
 
 def test_device_reduce_well_known_plus():
-    """Test reduce with well-known PLUS operation."""
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental as parallel
-
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    # Run reduction with well-known PLUS operation
-    parallel.reduce_into(d_input, d_output, parallel.OpKind.PLUS, len(d_input), h_init)
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.PLUS, len(d_input), h_init)
 
-    # Check the result is correct
-    expected_output = 15  # 1+2+3+4+5
+    expected_output = 15
     assert (d_output == expected_output).all()
 
 
 @pytest.mark.xfail(reason="MINIMUM op is not implemented. See GH #5515")
 def test_device_reduce_well_known_minimum():
-    """Test reduce with well-known MINIMUM operation."""
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental as parallel
-
     dtype = np.int32
     h_init = np.array([100], dtype=dtype)
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    # Run reduction with well-known MINIMUM operation
     parallel.reduce_into(
         d_input, d_output, parallel.OpKind.MINIMUM, len(d_input), h_init
     )
 
-    # Check the result is correct
-    expected_output = 0  # minimum value
+    expected_output = 0
     assert (d_output == expected_output).all()
 
 
 @pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
 def test_device_reduce_well_known_maximum():
-    """Test reduce with well-known MAXIMUM operation."""
-    import cupy as cp
-    import numpy as np
-
-    import cuda.cccl.parallel.experimental as parallel
-
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    # Run reduction with well-known MAXIMUM operation
     parallel.reduce_into(
         d_input, d_output, parallel.OpKind.MAXIMUM, len(d_input), h_init
     )
 
-    # Check the result is correct
-    expected_output = 9  # maximum value
+    expected_output = 9
     assert (d_output == expected_output).all()
 
 
-def test_device_reduce_well_known_multiplies():
-    """Test reduce with well-known MULTIPLIES operation."""
-    import cupy as cp
-    import numpy as np
+def test_cache_modified_input_iterator():
+    def add_op(a, b):
+        return a + b
 
-    import cuda.cccl.parallel.experimental as parallel
+    values = [8, 6, 7, 5, 3, 0, 9]
+    d_input = cp.array(values, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
-    dtype = np.int32
-    h_init = np.array([1], dtype=dtype)
-    d_input = cp.array([2, 3, 4], dtype=dtype)
-    d_output = cp.empty(1, dtype=dtype)
+    iterator = parallel.CacheModifiedInputIterator(d_input, modifier="stream")
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
-    # Run reduction with well-known MULTIPLIES operation
-    parallel.reduce_into(
-        d_input, d_output, parallel.OpKind.MULTIPLIES, len(d_input), h_init
+    parallel.reduce_into(iterator, d_output, add_op, len(values), h_init)
+
+    expected_output = functools.reduce(lambda a, b: a + b, values)
+    assert (d_output == expected_output).all()
+
+
+def test_constant_iterator():
+    def add_op(a, b):
+        return a + b
+
+    value = 10
+    num_items = 3
+
+    constant_it = parallel.ConstantIterator(np.int32(value))
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    parallel.reduce_into(constant_it, d_output, add_op, num_items, h_init)
+
+    expected_output = functools.reduce(lambda a, b: a + b, [value] * num_items)
+    assert (d_output == expected_output).all()
+
+
+def test_counting_iterator():
+    def add_op(a, b):
+        return a + b
+
+    first_item = 10
+    num_items = 3
+
+    first_it = parallel.CountingIterator(
+        np.int32(first_item))  # Input sequence
+    h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
+    d_output = cp.empty(1, dtype=np.int32)  # Storage for output
+
+    parallel.reduce_into(first_it, d_output, add_op, num_items, h_init)
+
+    expected_output = functools.reduce(
+        lambda a, b: a + b, range(first_item, first_item + num_items)
     )
-
-    # Check the result is correct
-    expected_output = 24  # 1*2*3*4
     assert (d_output == expected_output).all()
+
+
+def test_transform_iterator():
+    def add_op(a, b):
+        return a + b
+
+    def square_op(a):
+        return a**2
+
+    first_item = 10
+    num_items = 3
+
+    transform_it = parallel.TransformIterator(
+        parallel.CountingIterator(np.int32(first_item)), square_op
+    )
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    parallel.reduce_into(transform_it, d_output, add_op, num_items, h_init)
+
+    expected_output = functools.reduce(
+        lambda a, b: a +
+        b, [a**2 for a in range(first_item, first_item + num_items)]
+    )
+    assert (d_output == expected_output).all()
+
+
+def test_reduce_struct_type():
+    @parallel.gpu_struct
+    class Pixel:
+        r: np.int32
+        g: np.int32
+        b: np.int32
+
+    def max_g_value(x, y):
+        return x if x.g > y.g else y
+
+    d_rgb = cp.random.randint(
+        0, 256, (10, 3), dtype=np.int32).view(Pixel.dtype)
+    d_out = cp.empty(1, Pixel.dtype)
+
+    h_init = Pixel(0, 0, 0)
+
+    parallel.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
+
+    h_rgb = d_rgb.get()
+    expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
+
+    np.testing.assert_equal(expected["g"], d_out.get()["g"])
+
+
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
+def test_reduce_struct_type_minmax():
+    @parallel.gpu_struct
+    class MinMax:
+        min_val: np.float64
+        max_val: np.float64
+
+    def minmax_op(v1: MinMax, v2: MinMax):
+        c_min = min(v1.min_val, v2.min_val)
+        c_max = max(v1.max_val, v2.max_val)
+        return MinMax(c_min, c_max)
+
+    def transform_op(v):
+        av = abs(v)
+        return MinMax(av, av)
+
+    nelems = 4096
+
+    d_in = cp.random.randn(nelems)
+    # input values must be transformed to MinMax structures
+    # in-place to map computation to data-parallel reduction
+    # algorithm that requires commutative binary operation
+    # with both operands having the same type.
+    tr_it = parallel.TransformIterator(d_in, transform_op)
+
+    d_out = cp.empty(tuple(), dtype=MinMax.dtype)
+
+    # initial value set with identity elements of
+    # minimum and maximum operators
+    h_init = MinMax(np.inf, -np.inf)
+
+    # run the reduction algorithm
+    parallel.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
+
+    # display values computed on the device
+    actual = d_out.get()
+
+    h = np.abs(d_in.get())
+    expected = np.asarray([(h.min(), h.max())], dtype=MinMax.dtype)
+
+    assert actual == expected
 
 
 def test_reduce_transform_output_iterator(floating_array):
@@ -708,7 +822,8 @@ def test_reduce_transform_output_iterator(floating_array):
 
     d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
 
-    parallel.reduce_into(d_input, d_out_it, parallel.OpKind.PLUS, len(d_input), h_init)
+    parallel.reduce_into(
+        d_input, d_out_it, parallel.OpKind.PLUS, len(d_input), h_init)
 
     expected = cp.sqrt(cp.sum(d_input))
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)

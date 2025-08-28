@@ -72,7 +72,8 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(d_input),
+                reduce_op, h_init, force_inclusive)
 
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
@@ -159,10 +160,12 @@ def test_scan_struct_type(force_inclusive):
 
     got = d_output.get()
     expected_x = scan_host(
-        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
+        d_input.get()["x"], lambda a, b: a +
+        b, np.asarray([h_init.x]), force_inclusive
     )
     expected_y = scan_host(
-        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
+        d_input.get()["y"], lambda a, b: a +
+        b, np.asarray([h_init.y]), force_inclusive
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)
@@ -196,36 +199,30 @@ def test_scan_with_stream(force_inclusive, cuda_stream):
 
 
 def test_exclusive_scan_well_known_plus():
-    """Test exclusive scan with well-known PLUS operation."""
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    # Run exclusive scan with well-known PLUS operation
     parallel.exclusive_scan(
         d_input, d_output, parallel.OpKind.PLUS, h_init, d_input.size
     )
 
-    # Check the result is correct
-    expected = np.array([0, 1, 3, 6, 10])  # exclusive scan
+    expected = np.array([0, 1, 3, 6, 10])
     np.testing.assert_equal(d_output.get(), expected)
 
 
 def test_inclusive_scan_well_known_plus():
-    """Test inclusive scan with well-known PLUS operation."""
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    # Run inclusive scan with well-known PLUS operation
     parallel.inclusive_scan(
         d_input, d_output, parallel.OpKind.PLUS, h_init, d_input.size
     )
 
-    # Check the result is correct
-    expected = np.array([1, 3, 6, 10, 15])  # inclusive scan
+    expected = np.array([1, 3, 6, 10, 15])
     np.testing.assert_equal(d_output.get(), expected)
 
 
@@ -233,18 +230,15 @@ def test_inclusive_scan_well_known_plus():
     reason="CCCL_MAXIMUM well-known operation fails with NVRTC compilation error in C++ library"
 )
 def test_exclusive_scan_well_known_maximum():
-    """Test exclusive scan with well-known MAXIMUM operation."""
     dtype = np.int32
     h_init = np.array([1], dtype=dtype)
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    # Run exclusive scan with well-known MAXIMUM operation
     parallel.exclusive_scan(
         d_input, d_output, parallel.OpKind.MAXIMUM, h_init, d_input.size
     )
 
-    # Check the result is correct
     expected = np.array([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
     np.testing.assert_equal(d_output.get(), expected)
 
@@ -270,6 +264,66 @@ def test_scan_transform_output_iterator(floating_array):
     expected = cp.cumsum(d_input) ** 2
     # Use more lenient tolerance for float32 due to precision differences
     if dtype == np.float32:
-        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
+        np.testing.assert_allclose(
+            d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
     else:
         np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+
+
+def test_exclusive_scan_max():
+    def max_op(a, b):
+        return max(a, b)
+
+    h_init = np.array([1], dtype="int32")
+    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    d_output = cp.empty_like(d_input, dtype="int32")
+
+    parallel.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
+
+    expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_inclusive_scan_add():
+    def add_op(a, b):
+        return a + b
+
+    h_init = np.array([0], dtype="int32")
+    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    d_output = cp.empty_like(d_input, dtype="int32")
+
+    parallel.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
+
+    expected = np.asarray([-5, -5, -3, -6, -4, 0, 0, -1, 1, 9])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_reverse_input_iterator():
+    def add_op(a, b):
+        return a + b
+
+    h_init = np.array([0], dtype="int32")
+    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    d_output = cp.empty_like(d_input, dtype="int32")
+    reverse_it = parallel.ReverseInputIterator(d_input)
+
+    parallel.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
+
+    # Check the result is correct
+    expected = np.asarray([8, 10, 9, 9, 13, 15, 12, 14, 14, 9])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_reverse_output_iterator():
+    def add_op(a, b):
+        return a + b
+
+    h_init = np.array([0], dtype="int32")
+    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    d_output = cp.empty_like(d_input, dtype="int32")
+    reverse_it = parallel.ReverseOutputIterator(d_output)
+
+    parallel.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
+
+    expected = np.asarray([9, 1, -1, 0, 0, -4, -6, -3, -5, -5])
+    np.testing.assert_equal(d_output.get(), expected)
