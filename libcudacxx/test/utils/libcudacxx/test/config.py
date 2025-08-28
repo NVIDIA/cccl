@@ -217,13 +217,14 @@ class Configuration(object):
         archs = result.stdout.strip().splitlines()
 
         if not archs:
-            self.lit_config.fatal(
-                "Failed to retrieve compute capabilities or no capabilities found."
-            )
+            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
             return ""
 
         # Build the same list used by --arch=all-major:
+        # Handle special case for eg. 13.0: First arch is 75, not 70.
+        oldest = int(archs[0])
         archs = sorted(set([(int(arch) // 10 * 10) for arch in archs]))
+        archs[0] = oldest
         last_arch = archs[-1]
         archs = [f"{arch}-real" for arch in archs]
         archs.append(f"{last_arch}-virtual")
@@ -256,12 +257,10 @@ class Configuration(object):
         archs = result.stdout.strip().splitlines()
 
         if not archs:
-            self.lit_config.fatal(
-                "Failed to retrieve compute capabilities or no capabilities found."
-            )
+            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
             return ""
 
-        archs = sorted(set([int(arch) for arch in archs]))
+        arches = sorted(set([int(arch) for arch in archs]))
         last_arch = archs[-1]
         archs = [f"{arch}-real" for arch in archs]
         archs.append(f"{last_arch}-virtual")
