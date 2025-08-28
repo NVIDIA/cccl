@@ -39,7 +39,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  undef _CCCL_BUILTIN_ISNORMAL
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
-[[nodiscard]] _CCCL_API constexpr bool isnormal(float __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
@@ -48,7 +54,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // !_CCCL_BUILTIN_ISNORMAL
 }
 
-[[nodiscard]] _CCCL_API constexpr bool isnormal(double __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
@@ -58,7 +69,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(long double __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
@@ -67,69 +83,117 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  endif // !_CCCL_BUILTIN_ISNORMAL
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#endif
 
 #if _CCCL_HAS_NVFP16()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__half __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__half __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_bfloat16 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__nv_bfloat16 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e4m3 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__nv_fp8_e4m3 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e5m2 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__nv_fp8_e5m2 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e8m0 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__nv_fp8_e8m0 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp6_e2m3 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__nv_fp6_e2m3 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp6_e3m2 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+ _CCCL_API constexpr bool isnormal(__nv_fp6_e3m2 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
-[[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp4_e2m1 __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(__nv_fp4_e2m1 __x) noexcept
 {
   return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
+#if !_CCCL_COMPILER(GCC)
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr bool isnormal(_Tp __x) noexcept
+#if !_CCCL_COMPILER(GCC)
+[[nodiscard]]
+#elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
+__attribute__((__warn_unused_result__))
+#endif
+_CCCL_API constexpr bool isnormal(_Tp __x) noexcept
 {
   return __x != 0;
 }
+#endif
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
