@@ -35,7 +35,7 @@ struct NonStandard
     : A
     , B
 {
-  virtual ~NonStandard() = default;
+  __host__ __device__ virtual ~NonStandard() = default;
 
   int m;
 };
