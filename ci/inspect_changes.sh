@@ -42,6 +42,7 @@ subprojects=(
   python
   cccl_c_parallel
   c2h
+  nvbench_helper
 )
 
 # ...and their dependencies.
@@ -50,13 +51,14 @@ declare -A dependencies=(
   [cccl]=""
   [packaging]="cccl libcudacxx cub thrust cudax"
   [libcudacxx]="cccl"
-  [cub]="cccl libcudacxx thrust c2h"
-  [thrust]="cccl libcudacxx cub"
-  [cudax]="cccl libcudacxx thrust cub c2h"
+  [cub]="cccl libcudacxx thrust c2h nvbench_helper"
+  [thrust]="cccl libcudacxx cub nvbench_helper"
+  [cudax]="cccl libcudacxx thrust cub c2h nvbench_helper"
   [stdpar]="cccl libcudacxx cub thrust"
   [python]="cccl libcudacxx cub cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust c2h"
   [c2h]="cccl libcudacxx cub thrust"
+  [nvbench_helper]="cccl libcudacxx cub thrust"
 )
 
 declare -A project_names=(
@@ -70,6 +72,7 @@ declare -A project_names=(
   [python]="python"
   [cccl_c_parallel]="CCCL C Parallel Library"
   [c2h]="Catch2Helper"
+  [nvbench_helper]="NVBench Helper"
 )
 
 # By default, the project directory is assumed to be the same as the subproject name,
