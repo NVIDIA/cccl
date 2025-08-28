@@ -495,13 +495,22 @@ public:
 };
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
 
 template <class _Iterator1, class _Iterator2>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::pair<_Iterator1, _Iterator2>) -> zip_iterator<_Iterator1, _Iterator2>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+zip_iterator(::cuda::std::pair<_Iterator1, _Iterator2>) -> zip_iterator<_Iterator1, _Iterator2>;
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
 
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!
