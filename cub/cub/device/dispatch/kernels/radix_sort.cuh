@@ -77,8 +77,10 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS)
                                        : int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
     const KeyT* d_keys,
     OffsetT* d_spine,
@@ -142,7 +144,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
  *   Total number of bin-counts
  */
 template <typename ChainedPolicyT, typename OffsetT>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 1)
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* d_spine, int num_counts)
 {
   // Parameterize the AgentScan type for the current configuration
@@ -234,8 +238,10 @@ template <typename ChainedPolicyT,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = detail::identity_decomposer_t>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
                                        : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -326,7 +332,9 @@ template <typename ChainedPolicyT,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -499,8 +507,10 @@ template <typename ChainedPolicyT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
           typename DecomposerT = detail::identity_decomposer_t>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
                                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -687,8 +697,10 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
+#if !_CCCL_COMPILER(GCC)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS)
+#endif
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortHistogramKernel(
   OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
@@ -706,8 +718,10 @@ template <typename ChainedPolicyT,
           typename PortionOffsetT,
           typename AtomicOffsetT = PortionOffsetT,
           typename DecomposerT   = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
-  DeviceRadixSortOnesweepKernel(
+#if !_CCCL_COMPILER(GCC)
+__launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
+#endif
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortOnesweepKernel(
     AtomicOffsetT* d_lookback,
     AtomicOffsetT* d_ctrs,
     OffsetT* d_bins_out,
