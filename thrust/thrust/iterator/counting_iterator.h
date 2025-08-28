@@ -41,16 +41,26 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/strided_iterator.h>
 
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
 THRUST_NAMESPACE_BEGIN
+
+template <typename T>
+struct __runtime_value
+{
+  T value;
+};
+
+template <auto Value>
+struct __compile_time_value
+{
+  static constexpr decltype(Value) value = Value;
+};
 
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 class counting_iterator;
@@ -86,7 +96,7 @@ struct make_counting_iterator_base
                      difference>;
 };
 
-using unit_stride = compile_time_value<1>;
+using unit_stride = __compile_time_value<1>;
 } // namespace detail
 
 //! \addtogroup iterators
@@ -313,7 +323,7 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 template <typename Incrementable, typename Stride>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
-  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, runtime_value<Stride>>(
+  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, __runtime_value<Stride>>(
     x, {stride});
 }
 
@@ -325,7 +335,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           compile_time_value<Stride>>(x, {});
+                           __compile_time_value<Stride>>(x, {});
 }
 #endif // _CCCL_DOXYGEN_INVOKED
 
