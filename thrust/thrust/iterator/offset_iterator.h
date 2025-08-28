@@ -92,17 +92,26 @@ public:
   using difference_type = typename super_t::difference_type;
   //! \endcond
 
-  _CCCL_HOST_DEVICE offset_iterator(Iterator it = {}, Offset offset = {})
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  offset_iterator(Iterator it = {}, Offset offset = {})
       : super_t(::cuda::std::move(it))
       , m_offset(offset)
   {}
 
-  _CCCL_HOST_DEVICE const Offset& offset() const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  const Offset& offset() const
   {
     return m_offset;
   }
 
-  _CCCL_HOST_DEVICE Offset& offset()
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  Offset& offset()
   {
     return m_offset;
   }
@@ -113,7 +122,10 @@ private:
   static constexpr bool indirect_offset = ::cuda::std::indirectly_readable<Offset>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE auto offset_value() const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  auto offset_value() const
   {
     if constexpr (indirect_offset)
     {
@@ -126,18 +138,27 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  reference dereference() const
   {
     return *(this->base() + offset_value());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  bool equal(const offset_iterator& other) const
   {
     return this->base() + offset_value() == other.base() + other.offset_value();
   }
 
-  _CCCL_HOST_DEVICE void advance(difference_type n)
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  void advance(difference_type n)
   {
     if constexpr (indirect_offset)
     {
@@ -149,7 +170,10 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE void increment()
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  void increment()
   {
     if constexpr (indirect_offset)
     {
@@ -161,7 +185,10 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE void decrement()
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  void decrement()
   {
     if constexpr (indirect_offset)
     {
@@ -174,7 +201,10 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  difference_type distance_to(const offset_iterator& other) const
   {
     return (other.base() + other.offset_value()) - (this->base() + offset_value());
   }
@@ -185,7 +215,10 @@ private:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <typename Iterator>
-_CCCL_HOST_DEVICE offset_iterator(Iterator) -> offset_iterator<Iterator>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+offset_iterator(Iterator) -> offset_iterator<Iterator>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! \} // end fancyiterators
