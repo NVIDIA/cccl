@@ -403,7 +403,10 @@ public:
 
 _CCCL_TEMPLATE(class _Iter, class _Index)
 _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter> _CCCL_AND ::cuda::std::random_access_iterator<_Index>)
-_CCCL_HOST_DEVICE permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+permutation_iterator(_Iter, _Index) -> permutation_iterator<_Iter, _Index>;
 
 //! @brief Creates an \c permutation_iterator from an iterator and an iterator to an integral index
 //! @param __iter The iterator
