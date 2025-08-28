@@ -100,6 +100,14 @@ public:
         ready_dependencies.push_back(ge->node);
       }
     }
+    fprintf(stderr, "graph_task::start() end\n");
+
+    if (is_capture_enabled())
+    {
+      // Select a stream from the pool
+      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+    }
 
     return *this;
   }
@@ -108,6 +116,13 @@ public:
   graph_task<>& end_uncleared()
   {
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
+
+    if (is_capture_enabled())
+    {
+      cudaGraph_t childGraph = nullptr;
+      cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
+      set_child_graph(childGraph);
+    }
 
     cudaGraphNode_t n;
 
@@ -273,6 +288,12 @@ public:
     return dot.is_timing() || (calibrate && statistics.is_calibrating());
   }
 
+  // Only valid if we have defined a capture stream
+  cudaStream_t get_stream() const
+  {
+    return capture_stream;
+  }
+
   /**
    * @brief Invokes a lambda that takes either a `cudaStream_t` or a `cudaGraph_t`. Dependencies must be
    * set with `add_deps` manually before this call.
@@ -337,7 +358,7 @@ public:
       //
 
       // Get a stream from the pool associated to the execution place
-      cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
 
       cudaGraph_t childGraph = nullptr;
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
@@ -454,6 +475,8 @@ private:
    * explicitly, or by the means of a capture mechanism. */
   cudaGraph_t child_graph       = nullptr;
   bool must_destroy_child_graph = false;
+
+  cudaStream_t capture_stream;
 
   /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */

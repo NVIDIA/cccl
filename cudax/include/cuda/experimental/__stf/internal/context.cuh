@@ -243,6 +243,13 @@ public:
       return *this;
     }
 
+    void enable_capture()
+    {
+      payload->*[&](auto& self) {
+        self.enable_capture();
+      };
+    }
+
     /**
      * @brief Add dependencies to this task.
      *
