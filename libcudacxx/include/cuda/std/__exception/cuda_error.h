@@ -59,6 +59,7 @@ static char* __format_cuda_error(
   const char* __api                  = nullptr,
   ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
+#if !_CCCL_COMPILER(GCC)
   ::snprintf(
     __msg_buffer.__buffer,
     512,
@@ -74,6 +75,7 @@ static char* __format_cuda_error(
 #  endif // ^^^ !_CCCL_HAS_CTK() ^^^
     __status,
     __msg);
+#endif
   return __msg_buffer.__buffer;
 }
 
