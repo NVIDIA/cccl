@@ -402,7 +402,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0>
 };
 
 template <class... _Ts>
-_CCCL_HOST_DEVICE __tuple(_Ts...) -> __tuple<_Ts...>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+__tuple(_Ts...) -> __tuple<_Ts...>;
 
 //
 // __apply(fn, tuple, extra...)
@@ -488,7 +491,10 @@ struct __pair
 };
 
 template <class _First, class _Second>
-_CCCL_HOST_DEVICE __pair(_First, _Second) -> __pair<_First, _Second>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+__pair(_First, _Second) -> __pair<_First, _Second>;
 
 //
 // __tuple_size_v
