@@ -158,7 +158,7 @@ typedef struct stf_logical_data_handle_t* stf_logical_data_handle;
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
 void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
 void stf_logical_data_destroy(stf_logical_data_handle ld);
-void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle *to);
+void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to);
 
 // TODO
 // void stf_logical_data_wait(stf_logical_data_handle ld);

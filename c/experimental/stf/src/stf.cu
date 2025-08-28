@@ -75,13 +75,13 @@ void stf_logical_data_destroy(stf_logical_data_handle ld)
   delete ld;
 }
 
-void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle *to)
+void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to)
 {
-   assert(ctx);
-   assert(to);
+  assert(ctx);
+  assert(to);
 
-   auto ld_typed = ctx->ctx.logical_data(shape_of<slice<char>>(length));
-   *to = new stf_logical_data_handle_t{ld_typed};
+  auto ld_typed = ctx->ctx.logical_data(shape_of<slice<char>>(length));
+  *to           = new stf_logical_data_handle_t{ld_typed};
 }
 
 // void stf_logical_data_like_empty(stf_ctx_handle ctx, const stf_logical_data_handle from, stf_logical_data_handle* to)

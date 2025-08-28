@@ -7,6 +7,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 import cuda.cccl.experimental.stf as cudastf
 
+
 @cudastf.jit
 def laplacian_5pt_kernel(u_in, u_out, dx, dy):
     """

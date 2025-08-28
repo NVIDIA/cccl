@@ -49,7 +49,7 @@ def test_numba_graph():
 
 
 def test_numba():
-    n=1024*1024
+    n = 1024 * 1024
     X = np.ones(n, dtype=np.float32)
     Y = np.ones(n, dtype=np.float32)
     Z = np.ones(n, dtype=np.float32)
@@ -255,5 +255,5 @@ def test_numba_places():
 
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
-    # test_numba_graph()
+    # test_numba_graph()
     test_numba()

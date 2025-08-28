@@ -293,7 +293,7 @@ public:
     cudaStream_t get_stream() const
     {
       return payload->*[&](auto& self) {
-         return self.get_stream();
+        return self.get_stream();
       };
     }
 
@@ -1578,7 +1578,7 @@ UNITTEST("get_stream graph")
   EXPECT(s == nullptr);
   t.end();
 
-  auto t2     = ctx.task(token.write());
+  auto t2 = ctx.task(token.write());
   t2.enable_capture();
   t2.start();
   cudaStream_t s = t2.get_stream();

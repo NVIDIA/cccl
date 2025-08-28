@@ -5,8 +5,6 @@
 # A toy example to illustrate how we can compose logical operations
 
 import numba
-import numpy as np
-import pytest
 from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
@@ -14,33 +12,36 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 from cuda.cccl.experimental.stf._stf_bindings import (
     context,
-    read,
-    rw,
-    write,
+    data_place,
+    exec_place,
 )
 
+
 class Plaintext:
+    # Initialize from actual values, or from a logical data
     def __init__(self, ctx, values=None, ld=None):
         self.ctx = ctx
-        if not ld is None:
-           self.l = ld
-        if not values is None:
-           self.values = bytearray(values)
-           self.l = ctx.logical_data(self.values)
+        if ld is not None:
+            self.l = ld
+        if values is not None:
+            self.values = bytearray(values)
+            self.l = ctx.logical_data(self.values)
         self.symbol = None
 
     def set_symbol(self, symbol: str):
         self.l.set_symbol(symbol)
         self.symbol = symbol
 
-    def convert_to_vector(self) -> bytearray:
-        result = bytearray(self.l.buffer)
-        return result
-
     def encrypt(self) -> "Ciphertext":
-        # stub: should return a Ciphertext object wrapping a LogicalData
         encrypted = bytearray([c ^ 0x42 for c in self.values])  # toy XOR
         return Ciphertext(self.ctx, values=encrypted)
+
+    def print_values(self):
+        with ctx.task(exec_place.host(), self.l.read(data_place.managed())) as t:
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            hvalues = t.get_arg_numba(0)
+            print([v for v in hvalues])
+
 
 @cuda.jit
 def and_kernel(a, b, out):
@@ -48,11 +49,13 @@ def and_kernel(a, b, out):
     if i < out.size:
         out[i] = a[i] & b[i]
 
+
 @cuda.jit
 def or_kernel(a, b, out):
     i = cuda.grid(1)
     if i < out.size:
         out[i] = a[i] | b[i]
+
 
 @cuda.jit
 def not_kernel(a, out):
@@ -60,19 +63,27 @@ def not_kernel(a, out):
     if i < out.size:
         out[i] = ~a[i]
 
+
+@cuda.jit
+def xor_kernel(a, out, v):
+    i = cuda.grid(1)
+    if i < out.size:
+        out[i] = a[i] ^ v
+
+
 class Ciphertext:
     def __init__(self, ctx, values=None, ld=None):
         self.ctx = ctx
-        if not ld is None:
-           self.l = ld
+        if ld is not None:
+            self.l = ld
         if values is not None:
-           self.values = bytearray(values)
-           self.l = ctx.logical_data(self.values)
+            self.values = bytearray(values)
+            self.l = ctx.logical_data(self.values)
         self.symbol = None
 
-    # ~ operator
+    # ~ operator
     def __invert__(self):
-        result=Ciphertext(ctx, values=None, ld=self.l.like_empty())
+        result = Ciphertext(ctx, values=None, ld=self.l.like_empty())
 
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -82,12 +93,12 @@ class Ciphertext:
 
         return result
 
-    # | operator
+    # | operator
     def __or__(self, other):
         if not isinstance(other, Ciphertext):
             return NotImplemented
 
-        result=Ciphertext(ctx, ld=self.l.like_empty())
+        result = Ciphertext(ctx, ld=self.l.like_empty())
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -98,16 +109,16 @@ class Ciphertext:
 
         return result
 
-
-    # & operator
+    # & operator
     def __and__(self, other):
         if not isinstance(other, Ciphertext):
             return NotImplemented
 
-        result=Ciphertext(ctx, ld=self.l.like_empty())
+        result = Ciphertext(ctx, ld=self.l.like_empty())
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
+            nb_stream.synchronize()
             da = t.get_arg_numba(0)
             db = t.get_arg_numba(1)
             dresult = t.get_arg_numba(2)
@@ -120,12 +131,20 @@ class Ciphertext:
         self.symbol = symbol
 
     def decrypt(self):
-        # reverse the toy XOR "encryption"
-        decrypted = bytearray([c ^ 0x42 for c in self.values])
-        return Plaintext(self.ctx, decrypted)
+        result = Ciphertext(ctx, ld=self.l.like_empty())
+        with ctx.task(self.l.read(), result.l.write()) as t:
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            da = t.get_arg_numba(0)
+            dresult = t.get_arg_numba(1)
+            # reverse the toy XOR "encryption"
+            xor_kernel[32, 16, nb_stream](da, dresult, 0x42)
+
+        return Plaintext(self.ctx, ld=result.l)
+
 
 def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
-    return (~((eA | ~eB) & (~eA | eB)))
+    return ~((eA | ~eB) & (~eA | eB))
+
 
 ctx = context(use_graph=False)
 
@@ -141,9 +160,5 @@ eA = pA.encrypt()
 eB = pB.encrypt()
 out = circuit(eA, eB)
 
+out.decrypt().print_values()
 ctx.finalize()
-
-# v_out = out.decrypt().values
-# print("Output vector:", list(v_out))
-
-
