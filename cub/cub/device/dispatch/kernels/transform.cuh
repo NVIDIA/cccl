@@ -918,7 +918,9 @@ template <typename MaxPolicy,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteartorsIn>
+#if !_CCCL_COMPILER(GCC)
 __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
+#endif
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
     Offset num_items,
     int num_elem_per_thread,
