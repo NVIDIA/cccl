@@ -444,7 +444,7 @@ struct DispatchTopK : SelectedPolicy
   int ptx_version;
 
   using key_in_t                  = detail::it_value_t<KeyInputIteratorT>;
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
+  static constexpr bool keys_only = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
   /*
    *
    * @param[in] d_temp_storage
@@ -504,19 +504,15 @@ struct DispatchTopK : SelectedPolicy
    * Dispatch entrypoints
    ******************************************************************************/
   template <typename TopKKernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int CalculateBlocksPerSM(TopKKernelPtrT topk_kernel, int block_threads)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int calculate_blocks_per_sm(TopKKernelPtrT topk_kernel, int block_threads)
   {
     int topk_blocks_per_sm;
     cudaError error;
-    do
+    error = CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&topk_blocks_per_sm, topk_kernel, block_threads, 0));
+    if (cudaSuccess != error)
     {
-      error =
-        CubDebug(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&topk_blocks_per_sm, topk_kernel, block_threads, 0));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
+      return error;
+    }
     return topk_blocks_per_sm;
   }
 
@@ -525,9 +521,9 @@ struct DispatchTopK : SelectedPolicy
             typename TopKKernelPtrT,
             typename TopKLastFilterKernelPtrT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  Invoke(TopKFirstPassKernelPtrT topk_firstpass_kernel,
+  Invoke(TopKFirstPassKernelPtrT topk_first_pass_kernel,
          TopKKernelPtrT topk_kernel,
-         TopKLastFilterKernelPtrT topk_lastfilter_kernel)
+         TopKLastFilterKernelPtrT topk_last_filter_kernel)
   {
     using policy_t = typename ActivePolicyT::topk_policy_t;
 
@@ -556,8 +552,8 @@ struct DispatchTopK : SelectedPolicy
       size_histogram,
       num_candidates * sizeof(key_in_t),
       num_candidates * sizeof(key_in_t),
-      KEYS_ONLY ? 0 : num_candidates * sizeof(OffsetT),
-      KEYS_ONLY ? 0 : num_candidates * sizeof(OffsetT)};
+      keys_only ? 0 : num_candidates * sizeof(OffsetT),
+      keys_only ? 0 : num_candidates * sizeof(OffsetT)};
 
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[6] = {};
@@ -600,7 +596,7 @@ struct DispatchTopK : SelectedPolicy
     dim3 topk_grid_size;
     topk_grid_size.z       = 1;
     topk_grid_size.y       = 1;
-    int topk_blocks_per_sm = CalculateBlocksPerSM(topk_kernel, block_threads);
+    int topk_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
     topk_grid_size.x =
       ::cuda::std::min(static_cast<unsigned int>(topk_blocks_per_sm * num_sms),
                        static_cast<unsigned int>((num_items - 1) / (items_per_thread * block_threads) + 1));
@@ -646,7 +642,7 @@ struct DispatchTopK : SelectedPolicy
       // Initialize address variables
       in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
       out_buf = pass == 0 ? nullptr : static_cast<key_in_t*>(pass % 2 == 0 ? allocations[3] : allocations[2]);
-      if (!KEYS_ONLY)
+      if (!keys_only)
       {
         in_idx_buf  = pass <= 1 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[4] : allocations[5]);
         out_idx_buf = pass == 0 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[5] : allocations[4]);
@@ -655,7 +651,7 @@ struct DispatchTopK : SelectedPolicy
       // Invoke kernel
       if (pass == 0)
       {
-        int topk_blocks_per_sm = CalculateBlocksPerSM(topk_firstpass_kernel, block_threads);
+        int topk_blocks_per_sm = calculate_blocks_per_sm(topk_first_pass_kernel, block_threads);
         dim3 topk_firstpass_grid_size;
         topk_firstpass_grid_size.z = 1;
         topk_firstpass_grid_size.y = 1;
@@ -664,7 +660,7 @@ struct DispatchTopK : SelectedPolicy
                            (unsigned int) (num_items - 1) / (items_per_thread * block_threads) + 1);
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_firstpass_grid_size, block_threads, 0, stream)
           .doit(
-            topk_firstpass_kernel,
+            topk_first_pass_kernel,
             d_keys_in,
             d_keys_out,
             d_values_in,
@@ -706,11 +702,11 @@ struct DispatchTopK : SelectedPolicy
     // Set operator
     IdentifyCandidatesOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> identify_candidates_op(
       counter->kth_key_bits, pass);
-    topk_blocks_per_sm = CalculateBlocksPerSM(topk_lastfilter_kernel, block_threads);
+    topk_blocks_per_sm = calculate_blocks_per_sm(topk_last_filter_kernel, block_threads);
     topk_grid_size.x   = ::cuda::std::min((unsigned int) topk_blocks_per_sm * num_sms,
                                         (unsigned int) (num_items - 1) / (items_per_thread * block_threads) + 1);
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_grid_size, block_threads, 0, stream)
-      .doit(topk_lastfilter_kernel,
+      .doit(topk_last_filter_kernel,
             d_keys_in,
             d_keys_out,
             d_values_in,

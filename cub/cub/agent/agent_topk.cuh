@@ -26,9 +26,7 @@
 #include <cuda/atomic>
 
 CUB_NAMESPACE_BEGIN
-/******************************************************************************
- * Tuning policy types
- ******************************************************************************/
+
 /**
  * Parameterizable tuning policy type for AgentTopK
  *
@@ -78,42 +76,16 @@ struct AgentTopKPolicy
 
 namespace detail::topk
 {
-
-/**
- * Overload CUDA atomic functions for other 64bit unsigned/signed integer type
- */
-using ::atomicAdd;
-_CCCL_DEVICE _CCCL_FORCEINLINE long atomicAdd(long* address, long val)
-{
-  return (long) atomicAdd((unsigned long long*) address, (unsigned long long) val);
-}
-
-_CCCL_DEVICE _CCCL_FORCEINLINE long long atomicAdd(long long* address, long long val)
-{
-  return (long long) atomicAdd((unsigned long long*) address, (unsigned long long) val);
-}
-
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned long atomicAdd(unsigned long* address, unsigned long val)
-{
-  return (unsigned long) atomicAdd(reinterpret_cast<unsigned long long*>(address), (unsigned long long) val);
-}
-
-/******************************************************************************
- * Thread block abstractions
- ******************************************************************************/
-
 template <typename KeyInT, typename OffsetT, typename OutOffsetT>
 struct alignas(128) Counter
 {
-  // We are processing the values in multiple passes, from most significant to least
-  // significant. In each pass, we keep the length of input (`len`) and the `k` of
-  // current pass, and update them at the end of the pass.
+  // We are processing the items in multiple passes, from most-significant to least-significant bits. In each pass, we
+  // keep the length of input (`len`) and the `k` of current pass, and update them at the end of the pass.
   OutOffsetT k;
   OffsetT len;
 
-  //  `previous_len` is the length of input in previous pass. Note that `previous_len`
-  //  rather than `len` is used for the filtering step because filtering is indeed for
-  //  previous pass.
+  // `previous_len` is the length of the input in the previous pass. Note that `previous_len` rather than `len` is used
+  // for the filtering step because filtering is indeed for previous pass.
   OffsetT previous_len;
 
   // We determine the bits of the k_th key inside the mask processed by the pass. The
@@ -129,11 +101,11 @@ struct alignas(128) Counter
 
   // For a row inside a batch, we may launch multiple thread blocks. This counter is
   // used to determine if the current block is the last running block. If so, this block
-  // will execute Scan() and ChooseBucket().
+  // will execute Scan() and choose_bucket().
   alignas(128) unsigned int finished_block_cnt;
 
   // Record how many elements have been written to the front of `out`. Elements less (if
-  // SELECT_MIN==true) than the k-th key are written from front to back.
+  // SelectMin==true) than the k-th key are written from front to back.
   alignas(128) OutOffsetT out_cnt;
 
   // Record how many elements have been written to the back of `out`. Elements equal to
@@ -145,24 +117,22 @@ struct alignas(128) Counter
 };
 
 /**
- * Operations for calculating the bin index based on the input
+ * Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
  */
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
 {
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, BitsPerPass);
+  return ::cuda::ceil_div<int>(::cuda::std::numeric_limits<T>::digits, BitsPerPass);
 }
 
 /**
- * Bit 0 is the least significant (rightmost);
- * this implementation processes input from the most to the least significant bit.
- * This way, we can skip some passes in the end at the cost of having an unsorted output.
- *
+ * Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
+ * We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
  */
 template <typename T, int BitsPerPass>
-_CCCL_DEVICE constexpr int calc_start_bit(const int pass)
+_CCCL_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = static_cast<int>(sizeof(T) * 8) - (pass + 1) * BitsPerPass;
+  int start_bit = static_cast<int>(::cuda::std::numeric_limits<T>::digits) - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
   {
     start_bit = 0;
@@ -273,11 +243,10 @@ struct IdentifyCandidatesOp
  * @tparam OutOffsetT
  *   Type of variable k
  *
- * @tparam SELECT_MIN
- *   Determine whether to select the smallest (SELECT_MIN=true) or largest (SELECT_MIN=false) K elements.
+ * @tparam SelectMin
+ *   Determine whether to select the smallest (SelectMin=true) or largest (SelectMin=false) K elements.
  *
  */
-
 template <typename AgentTopKPolicyT,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -287,7 +256,7 @@ template <typename AgentTopKPolicyT,
           typename IdentifyCandidatesOpT,
           typename OffsetT,
           typename OutOffsetT,
-          bool SELECT_MIN>
+          bool SelectMin>
 struct AgentTopK
 {
   //---------------------------------------------------------------------
@@ -450,7 +419,7 @@ struct AgentTopK
   /**
    * Fused filtering of the current pass and building histogram for the next pass
    */
-  template <bool IS_FIRST_PASS>
+  template <bool IsFirstPass>
   _CCCL_DEVICE _CCCL_FORCEINLINE void filter_and_histogram(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
@@ -463,7 +432,7 @@ struct AgentTopK
     int pass,
     bool early_stop)
   {
-    if constexpr (IS_FIRST_PASS)
+    if constexpr (IsFirstPass)
     {
       // Passed to vectorized loading, this function executes in all blocks in parallel,
       // i.e. the work is split along the input (both, in batches and chunks of a single
@@ -587,7 +556,7 @@ struct AgentTopK
   /**
    * Calculate in which bucket the k-th value will fall
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ChooseBucket(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void choose_bucket(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OffsetT* histogram, const OutOffsetT k, const int pass)
   {
     for (int i = threadIdx.x; i < num_buckets; i += blockDim.x)
@@ -647,7 +616,7 @@ struct AgentTopK
       return;
     }
 
-    // changed in ChooseBucket(); need to reload
+    // changed in choose_bucket(); need to reload
     OffsetT num_of_kth_needed  = counter->k;
     OutOffsetT* p_out_cnt      = &counter->out_cnt;
     OutOffsetT* p_out_back_cnt = &counter->out_back_cnt;
@@ -721,7 +690,7 @@ struct AgentTopK
    * @param pass
    *   Indicate which pass are processed currently
    */
-  template <bool IS_FIRST_PASS>
+  template <bool IsFirstPass>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InvokeOneSweep(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
@@ -780,7 +749,7 @@ struct AgentTopK
     }
     __syncthreads();
 
-    filter_and_histogram<IS_FIRST_PASS>(
+    filter_and_histogram<IsFirstPass>(
       in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, histogram_smem, pass, early_stop);
 
     __threadfence();
@@ -815,7 +784,7 @@ struct AgentTopK
       constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
       Scan(histogram, histogram_smem);
       __syncthreads();
-      ChooseBucket(counter, histogram_smem, current_k, pass);
+      choose_bucket(counter, histogram_smem, current_k, pass);
 
       // reset for next pass
       if (pass != num_passes - 1)
