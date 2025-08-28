@@ -292,12 +292,9 @@ public:
 
     cudaStream_t get_stream() const
     {
-      if (auto p = ::std::get_if<stream_task<Deps...>>(&payload))
-      {
-        return p->get_stream();
-      }
-
-      return nullptr;
+      return payload->*[&](auto& self) {
+         return self.get_stream();
+      };
     }
 
   private:
