@@ -33,12 +33,6 @@ def get_mark(dt, log_size):
 
 PROBLEM_SIZES = [2, 8, 16, 22]
 
-DTYPE_SIZE_PAIRS = [
-    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
-    for dt in DTYPE_LIST
-    for log_size in PROBLEM_SIZES
-]
-
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
     rng = np.random.default_rng()
@@ -106,11 +100,20 @@ def compare_op(lhs, rhs):
     return np.uint8(lhs == rhs)
 
 
-@pytest.mark.parametrize(
-    "dtype, num_items",
-    DTYPE_SIZE_PAIRS,
-)
-def test_unique_by_key(dtype, num_items):
+unique_by_key_params = [
+    pytest.param(
+        dt,
+        2**log_size,
+        parallel.OpKind.EQUAL_TO if dt == np.float16 else compare_op,
+        marks=get_mark(dt, log_size),
+    )
+    for dt in DTYPE_LIST
+    for log_size in PROBLEM_SIZES
+]
+
+
+@pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
+def test_unique_by_key(dtype, num_items, op):
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_items = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -122,11 +125,6 @@ def test_unique_by_key(dtype, num_items):
     d_out_keys = numba.cuda.to_device(h_out_keys)
     d_out_items = numba.cuda.to_device(h_out_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
-
-    if dtype == np.float16:
-        op = parallel.OpKind.EQUAL_TO
-    else:
-        op = compare_op
 
     unique_by_key_device(
         d_in_keys,
@@ -149,11 +147,8 @@ def test_unique_by_key(dtype, num_items):
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-@pytest.mark.parametrize(
-    "dtype, num_items",
-    DTYPE_SIZE_PAIRS,
-)
-def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
+@pytest.mark.parametrize("dtype, num_items, op", unique_by_key_params)
+def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
     cc_major, _ = numba.cuda.get_current_device().compute_capability
     # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
     # TODO: add NVRTC version check, ref nvbug 5243118
@@ -180,11 +175,6 @@ def test_unique_by_key_iterators(dtype, num_items, monkeypatch):
 
     i_in_keys = parallel.CacheModifiedInputIterator(d_in_keys, modifier="stream")
     i_in_items = parallel.CacheModifiedInputIterator(d_in_items, modifier="stream")
-
-    if dtype == np.float16:
-        op = parallel.OpKind.EQUAL_TO
-    else:
-        op = compare_op
 
     unique_by_key_device(
         i_in_keys,

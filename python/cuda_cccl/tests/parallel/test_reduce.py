@@ -38,18 +38,24 @@ def get_mark(dt, log_size):
     return pytest.mark.large
 
 
-dtype_size_pairs = [
-    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
+def add_op(a, b):
+    return a + b
+
+
+reduce_params = [
+    pytest.param(
+        dt,
+        2**log_size,
+        parallel.OpKind.PLUS if dt == np.float16 else add_op,
+        marks=get_mark(dt, log_size),
+    )
     for dt in [np.uint8, np.uint16, np.uint32, np.uint64, np.float16]
     for log_size in type_to_problem_sizes(dt)
 ]
 
 
-@pytest.mark.parametrize("dtype,num_items", dtype_size_pairs)
-def test_device_reduce(dtype, num_items):
-    def op(a, b):
-        return a + b
-
+@pytest.mark.parametrize("dtype,num_items,op", reduce_params)
+def test_device_reduce(dtype, num_items, op):
     init_value = 42
     h_init = np.array([init_value], dtype=dtype)
     d_output = numba.cuda.device_array(1, dtype=dtype)
@@ -57,12 +63,7 @@ def test_device_reduce(dtype, num_items):
     h_input = random_int(num_items, dtype)
     d_input = numba.cuda.to_device(h_input)
 
-    if dtype == np.float16:
-        reduce_op = parallel.OpKind.PLUS
-    else:
-        reduce_op = op
-
-    parallel.reduce_into(d_input, d_output, reduce_op, d_input.size, h_init)
+    parallel.reduce_into(d_input, d_output, op, d_input.size, h_init)
     h_output = d_output.copy_to_host()
     assert h_output[0] == pytest.approx(
         sum(h_input) + init_value, rel=0.08 if dtype == np.float16 else 0
@@ -70,9 +71,6 @@ def test_device_reduce(dtype, num_items):
 
 
 def test_complex_device_reduce():
-    def op(a, b):
-        return a + b
-
     h_init = np.array([40.0 + 2.0j], dtype=complex)
     d_output = numba.cuda.device_array(1, dtype=complex)
 
@@ -81,7 +79,7 @@ def test_complex_device_reduce():
         h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
         assert d_input.size == num_items
-        parallel.reduce_into(d_input, d_output, op, num_items, h_init)
+        parallel.reduce_into(d_input, d_output, add_op, num_items, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
@@ -91,9 +89,6 @@ def test_complex_device_reduce():
 def _test_device_sum_with_iterator(
     l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
 ):
-    def add_op(a, b):
-        return a + b
-
     expected_result = start_sum_with
     for v in l_varr:
         expected_result = add_op(expected_result, v)
@@ -108,12 +103,7 @@ def _test_device_sum_with_iterator(
 
     h_init = np.array([start_sum_with], dtype_out)
 
-    if dtype_inp == np.float16:
-        reduce_op = parallel.OpKind.PLUS
-    else:
-        reduce_op = add_op
-
-    parallel.reduce_into(d_input, d_output, reduce_op, len(l_varr), h_init)
+    parallel.reduce_into(d_input, d_output, add_op, len(l_varr), h_init)
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
