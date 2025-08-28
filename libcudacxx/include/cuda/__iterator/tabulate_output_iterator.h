@@ -312,11 +312,17 @@ public:
 };
 
 template <class _Fn>
-_CCCL_HOST_DEVICE tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, ::cuda::std::ptrdiff_t>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+tabulate_output_iterator(_Fn) -> tabulate_output_iterator<_Fn, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Fn, class _Index)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
-_CCCL_HOST_DEVICE tabulate_output_iterator(_Fn, _Index) -> tabulate_output_iterator<_Fn, _Index>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+tabulate_output_iterator(_Fn, _Index) -> tabulate_output_iterator<_Fn, _Index>;
 
 //! @brief Creates a \p tabulate_output_iterator from an optional index.
 //! @param __index The index of the \p tabulate_output_iterator within a range. The default index is \c 0.
