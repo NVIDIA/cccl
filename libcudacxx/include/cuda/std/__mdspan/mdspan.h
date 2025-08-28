@@ -456,37 +456,61 @@ public:
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0) _CCCL_AND(is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
-_CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _OtherIndexTypes...)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+explicit mdspan(_ElementType*, _OtherIndexTypes...)
   -> mdspan<_ElementType, extents<size_t, __maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(is_pointer_v<remove_reference_t<_Pointer>>)
-_CCCL_HOST_DEVICE mdspan(_Pointer&&) -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(_Pointer&&) -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(is_array_v<_CArray> _CCCL_AND(rank_v<_CArray> == 1))
-_CCCL_HOST_DEVICE mdspan(_CArray&) -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(_CArray&) -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
   -> mdspan<_ElementType, dextents<size_t, _Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, span<_OtherIndexType, _Size>) -> mdspan<_ElementType, dextents<size_t, _Size>>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(_ElementType*, span<_OtherIndexType, _Size>) -> mdspan<_ElementType, dextents<size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const extents<_OtherIndexType, _ExtentsPack...>&)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(_ElementType*, const extents<_OtherIndexType, _ExtentsPack...>&)
   -> mdspan<_ElementType, extents<_OtherIndexType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const _MappingType&)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(_ElementType*, const _MappingType&)
   -> mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-_CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,
