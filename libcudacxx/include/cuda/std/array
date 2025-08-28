@@ -395,7 +395,10 @@ _CCCL_DIAG_POP
 
 _CCCL_TEMPLATE(class _Tp, class... _Args)
 _CCCL_REQUIRES((is_same_v<_Tp, _Args> && ...))
-_CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 
 template <class _Tp, size_t _Size>
 [[nodiscard]] _CCCL_API constexpr bool operator==(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
