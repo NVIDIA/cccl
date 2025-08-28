@@ -303,7 +303,10 @@ public:
 };
 
 template <class _Iter, typename _Stride>
-_CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
 
 //! @brief make_strided_iterator creates a \p strided_iterator from a random access iterator and an optional stride
 //! @param __iter The random_access iterator
