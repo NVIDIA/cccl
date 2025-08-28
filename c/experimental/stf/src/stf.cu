@@ -190,6 +190,12 @@ void stf_task_end(stf_task_handle t)
   t->t.end();
 }
 
+void stf_task_enable_capture(stf_task_handle t)
+{
+  assert(t);
+  t->t.enable_capture();
+}
+
 CUstream stf_task_get_custream(stf_task_handle t)
 {
   assert(t);

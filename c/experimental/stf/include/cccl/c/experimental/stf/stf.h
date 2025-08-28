@@ -179,6 +179,7 @@ void stf_task_end(stf_task_handle t);
 CUstream stf_task_get_custream(stf_task_handle t);
 void* stf_task_get(stf_task_handle t, int submitted_index);
 void stf_task_destroy(stf_task_handle t);
+void stf_task_enable_capture(stf_task_handle t);
 
 typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 

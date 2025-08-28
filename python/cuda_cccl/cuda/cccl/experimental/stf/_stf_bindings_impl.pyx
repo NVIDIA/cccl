@@ -127,6 +127,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_task_add_dep_with_dplace(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place* data_p)
     void stf_task_start(stf_task_handle t)
     void stf_task_end(stf_task_handle t)
+    void stf_task_enable_capture(stf_task_handle t)
     CUstream stf_task_get_custream(stf_task_handle t)
     # cudaStream_t stf_task_get_stream(stf_task_handle t)
     void* stf_task_get(stf_task_handle t, int submitted_index)
@@ -350,6 +351,9 @@ cdef class task:
 #        self._lds_args.clear()
 
     def start(self):
+        # This is ignored if this is not a graph task
+        stf_task_enable_capture(self._t)
+
         stf_task_start(self._t)
 
     def end(self):
