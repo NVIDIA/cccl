@@ -21,6 +21,11 @@
 #  include "common/impulse_scheduler.cuh"
 #endif
 
+#if _CCCL_COMPILER(GCC, <, 12)
+// suppress buggy warning on older gcc versions
+_CCCL_DIAG_SUPPRESS_GCC("-Wmissing-field-initializers")
+#endif
+
 namespace ex = cuda::experimental::execution;
 
 namespace

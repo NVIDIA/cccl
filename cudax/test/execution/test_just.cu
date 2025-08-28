@@ -15,6 +15,11 @@
 #include "common/checked_receiver.cuh"
 #include "common/dummy_scheduler.cuh"
 
+#if _CCCL_COMPILER(GCC, <, 12)
+// suppress buggy warning on older gcc versions
+_CCCL_DIAG_SUPPRESS_GCC("-Wmissing-field-initializers")
+#endif
+
 namespace ex = cuda::experimental::execution;
 
 namespace
