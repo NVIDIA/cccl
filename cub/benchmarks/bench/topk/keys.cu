@@ -46,10 +46,13 @@ struct policy_hub_t
 template <typename KeyT, typename OffsetT, typename OutOffsetT>
 void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffsetT>)
 {
-  using key_input_it_t      = const KeyT*;
-  using key_output_it_t     = KeyT*;
-  using offset_t            = cub::detail::choose_offset_t<OffsetT>;
-  using out_offset_t        = OutOffsetT;
+  using key_input_it_t  = const KeyT*;
+  using key_output_it_t = KeyT*;
+  using offset_t        = cub::detail::choose_offset_t<OffsetT>;
+  using out_offset_t =
+    ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
+                               offset_t,
+                               cub::detail::choose_offset_t<OutOffsetT>>;
   constexpr bool select_min = false;
 
 #if !TUNE_BASE

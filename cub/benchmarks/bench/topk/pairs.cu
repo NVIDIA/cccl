@@ -51,7 +51,10 @@ void topk_pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT,
   using value_input_it_t  = const ValueT*;
   using value_output_it_t = ValueT*;
   using offset_t          = cub::detail::choose_offset_t<OffsetT>;
-  using out_offset_t      = OutOffsetT;
+  using out_offset_t =
+    ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
+                               offset_t,
+                               cub::detail::choose_offset_t<OutOffsetT>>;
 
   constexpr bool select_min = false;
 
