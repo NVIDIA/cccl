@@ -210,9 +210,6 @@ struct error_code
   std::errc ec;
 };
 
-// run_loop isn't supported on-device yet, so neither can sync_wait be.
-#if !defined(__CUDA_ARCH__)
-
 template <class Sndr, class... Values>
 void check_values(Sndr&& sndr, const Values&... values) noexcept
 {
@@ -234,14 +231,6 @@ void check_values(Sndr&& sndr, const Values&... values) noexcept
     CUDAX_FAIL("Expected value completion; got error instead.");
   }
 }
-
-#else // !defined(__CUDA_ARCH__)
-
-template <class Sndr, class... Values>
-void check_values(Sndr&& sndr, const Values&... values) noexcept
-{}
-
-#endif // !defined(__CUDA_ARCH__)
 
 template <class... Ts>
 using types = ::cuda::std::__type_list<Ts...>;

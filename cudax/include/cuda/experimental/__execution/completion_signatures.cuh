@@ -310,7 +310,7 @@ using __set_value_sig_t = set_value_t(_Values...);
 template <class _Error>
 using __set_error_sig_t = set_error_t(_Error);
 
-//! \brief Represents a set of completion signatures for senders in the CUDA C++ execution
+//! @brief Represents a set of completion signatures for senders in the CUDA C++ execution
 //! model.
 //!
 //! The `completion_signatures` class template is used to describe the possible ways a
@@ -319,18 +319,18 @@ using __set_error_sig_t = set_error_t(_Error);
 //! compile-time utilities for querying, combining, and transforming sets of completion
 //! signatures.
 //!
-//! \tparam _Sigs... The completion signature types to include in this set.
+//! @tparam _Sigs... The completion signature types to include in this set.
 //!
 //! Example usage:
-//! \code
+//! @code
 //! constexpr auto sigs = completion_signatures<set_value_t(int), set_error_t(float), set_stopped_t()>{};
 //! static_assert(sigs.size() == 3);
 //! static_assert(sigs.contains<set_value_t(int)>());
-//! \endcode
+//! @endcode
 template <class... _Sigs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
 {
-  //! \brief Partitioned view of the completion signatures for efficient querying.
+  //! @brief Partitioned view of the completion signatures for efficient querying.
   struct __partitioned
   {
     // This is defined in a nested struct to avoid computing these types if they are not
@@ -338,7 +338,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     using type _CCCL_NODEBUG_ALIAS = __partition_completion_signatures_t<_Sigs...>;
   };
 
-  //! \brief Type set view of the completion signatures for set operations.
+  //! @brief Type set view of the completion signatures for set operations.
   struct __type_set
   {
     // This is defined in a nested struct to avoid computing this type if it is not
@@ -346,38 +346,38 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     using type _CCCL_NODEBUG_ALIAS = ::cuda::std::__make_type_set<_Sigs...>;
   };
 
-  //! \brief Applies a metafunction to each signature and collects the results.
-  //! \tparam _Fn The metafunction to apply.
-  //! \tparam _Continuation The template to collect results into.
+  //! @brief Applies a metafunction to each signature and collects the results.
+  //! @tparam _Fn The metafunction to apply.
+  //! @tparam _Continuation The template to collect results into.
   template <template <class...> class _Fn, template <class...> class _Continuation = __completion_signatures>
   using __transform_q _CCCL_NODEBUG_ALIAS = _Continuation<::cuda::std::__type_apply_q<_Fn, _Sigs>...>;
 
-  //! \brief Applies a callable metafunction to each signature and collects the results.
-  //! \tparam _Fn The callable metafunction to apply.
-  //! \tparam _Continuation The template to collect results into.
+  //! @brief Applies a callable metafunction to each signature and collects the results.
+  //! @tparam _Fn The callable metafunction to apply.
+  //! @tparam _Continuation The template to collect results into.
   template <class _Fn, class _Continuation = ::cuda::std::__type_quote<__completion_signatures>>
   using __transform _CCCL_NODEBUG_ALIAS = __transform_q<_Fn::template __call, _Continuation::template __call>;
 
-  //! \brief Calls a metafunction with the signatures as arguments.
-  //! \tparam _Fn The metafunction to call.
-  //! \tparam _More Additional arguments to pass.
+  //! @brief Calls a metafunction with the signatures as arguments.
+  //! @tparam _Fn The metafunction to call.
+  //! @tparam _More Additional arguments to pass.
   template <class _Fn, class... _More>
   using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call<_Fn, _More..., _Sigs...>;
 
-  //! \brief Default constructor.
+  //! @brief Default constructor.
   _CCCL_HIDE_FROM_ABI constexpr completion_signatures() = default;
 
-  //! \brief Returns the number of completion signatures in the set.
-  //! \return The number of signatures.
+  //! @brief Returns the number of completion signatures in the set.
+  //! @return The number of signatures.
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto size() noexcept -> size_t
   {
     return sizeof...(_Sigs);
   }
 
-  //! \brief Counts the number of signatures with the given tag.
-  //! \tparam _Tag The tag to count (e.g., set_value, set_error, set_stopped).
-  //! \return The number of signatures with the given tag.
+  //! @brief Counts the number of signatures with the given tag.
+  //! @tparam _Tag The tag to count (e.g., set_value, set_error, set_stopped).
+  //! @return The number of signatures with the given tag.
   template <class _Tag>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto count(_Tag) noexcept -> size_t
@@ -396,9 +396,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     }
   }
 
-  //! \brief Checks if the set contains the given signature.
-  //! \tparam _Sig The signature type to check.
-  //! \return true if the signature is present, false otherwise.
+  //! @brief Checks if the set contains the given signature.
+  //! @tparam _Sig The signature type to check.
+  //! @return true if the signature is present, false otherwise.
   template <class _Sig>
   [[nodiscard]]
   _CCCL_API static _CCCL_CONSTEVAL auto contains(_Sig* = nullptr) noexcept -> bool
@@ -406,10 +406,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     return ::cuda::std::__type_set_contains_v<typename __type_set::type, _Sig>;
   }
 
-  //! \brief Applies a callable to all signatures in the set.
-  //! \tparam _Fn The callable to apply.
-  //! \param __fn The callable instance.
-  //! \return The result of calling __fn with all signatures as arguments.
+  //! @brief Applies a callable to all signatures in the set.
+  //! @tparam _Fn The callable to apply.
+  //! @param __fn The callable instance.
+  //! @return The result of calling __fn with all signatures as arguments.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   _CCCL_API static _CCCL_CONSTEVAL auto apply(_Fn __fn) -> __call_result_t<_Fn, _Sigs*...>
@@ -417,11 +417,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     return __fn(static_cast<_Sigs*>(nullptr)...);
   }
 
-  //! \brief Filters the set using a predicate, returning a new set with only matching
+  //! @brief Filters the set using a predicate, returning a new set with only matching
   //! signatures.
-  //! \tparam _Fn The predicate type (must be empty and trivially constructible).
-  //! \param The predicate instance.
-  //! \return A new completion_signatures set with only the signatures for which the
+  //! @tparam _Fn The predicate type (must be empty and trivially constructible).
+  //! @param The predicate instance.
+  //! @return A new completion_signatures set with only the signatures for which the
   //! predicate returns true.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
@@ -433,9 +433,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     return concat_completion_signatures(execution::__filer_one<_Fn, _Sigs>()...);
   }
 
-  //! \brief Selects all signatures with the given tag.
-  //! \tparam _Tag The tag to select (e.g., set_value, set_error, set_stopped).
-  //! \return A new completion_signatures set containing only signatures with the given
+  //! @brief Selects all signatures with the given tag.
+  //! @tparam _Tag The tag to select (e.g., set_value, set_error, set_stopped).
+  //! @return A new completion_signatures set containing only signatures with the given
   //! tag.
   template <class _Tag>
   [[nodiscard]]
@@ -456,12 +456,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     }
   }
 
-  //! \brief Applies a transform and then reduces the results.
-  //! \tparam _Transform The transform callable.
-  //! \tparam _Reduce The reduce callable.
-  //! \param __transform The transform instance.
-  //! \param __reduce The reduce instance.
-  //! \return The result of reducing the transformed signatures.
+  //! @brief Applies a transform and then reduces the results.
+  //! @tparam _Transform The transform callable.
+  //! @tparam _Reduce The reduce callable.
+  //! @param __transform The transform instance.
+  //! @param __reduce The reduce instance.
+  //! @return The result of reducing the transformed signatures.
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Transform, class _Reduce>
   [[nodiscard]]
@@ -481,12 +481,12 @@ _CCCL_HOST_DEVICE completion_signatures() -> completion_signatures<>;
 #  define _CCCL_CONSTEVAL_OPERATOR _CCCL_CONSTEVAL
 #endif // ^^^ other compilers ^^^
 
-//! \brief Returns the union of two sets of completion signatures.
-//! \tparam _SelfSigs The first set of signature types.
-//! \tparam _OtherSigs The other set of signature types.
-//! \param __self The first `completion_signatures` object.
-//! \param __other The other `completion_signatures` object.
-//! \return The union of the two sets.
+//! @brief Returns the union of two sets of completion signatures.
+//! @tparam _SelfSigs The first set of signature types.
+//! @tparam _OtherSigs The other set of signature types.
+//! @param __self The first `completion_signatures` object.
+//! @param __other The other `completion_signatures` object.
+//! @return The union of the two sets.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
 _CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
@@ -507,10 +507,10 @@ operator+([[maybe_unused]] completion_signatures<_SelfSigs...> __self,
   }
 }
 
-//! \brief Returns the set difference between two sets of completion signatures.
-//! \tparam _SelfSigs The first set of signature types.
-//! \tparam _OtherSigs The second set of signature types.
-//! \return A new set with all signatures from the other set removed.
+//! @brief Returns the set difference between two sets of completion signatures.
+//! @tparam _SelfSigs The first set of signature types.
+//! @tparam _OtherSigs The second set of signature types.
+//! @return A new set with all signatures from the other set removed.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
 _CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
@@ -526,10 +526,10 @@ operator-(completion_signatures<_SelfSigs...> __self, completion_signatures<_Oth
   }
 }
 
-//! \brief Checks if two completion_signatures sets are equal.
-//! \tparam _SelfSigs The first set of signature types.
-//! \tparam _OtherSigs The second set of signature types.
-//! \return `true` if the sets are equal, `false` otherwise.
+//! @brief Checks if two completion_signatures sets are equal.
+//! @tparam _SelfSigs The first set of signature types.
+//! @tparam _OtherSigs The second set of signature types.
+//! @return `true` if the sets are equal, `false` otherwise.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
 _CCCL_API _CCCL_CONSTEVAL_OPERATOR auto
@@ -546,12 +546,12 @@ operator==(completion_signatures<_SelfSigs...>, completion_signatures<_OtherSigs
   }
 }
 
-//! \brief Checks if two completion_signatures sets are not equal.
-//! \tparam _SelfSigs The first set of signature types.
-//! \tparam _OtherSigs The second set of signature types.
-//! \param __self The other `completion_signatures` object.
-//! \param __other The other `completion_signatures` object.
-//! \return `true` if the sets are not equal, `false` otherwise.
+//! @brief Checks if two completion_signatures sets are not equal.
+//! @tparam _SelfSigs The first set of signature types.
+//! @tparam _OtherSigs The second set of signature types.
+//! @param __self The other `completion_signatures` object.
+//! @param __other The other `completion_signatures` object.
+//! @return `true` if the sets are not equal, `false` otherwise.
 template <class... _SelfSigs, class... _OtherSigs>
 [[nodiscard]]
 _CCCL_API _CCCL_CONSTEVAL_OPERATOR auto

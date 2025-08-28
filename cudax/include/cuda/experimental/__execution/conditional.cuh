@@ -44,11 +44,11 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-//! \file conditional.cuh
-//! This file defines the \c conditional sender. \c conditional is a sender that
+//! @file conditional.cuh
+//! This file defines the @c conditional sender. @c conditional is a sender that
 //! selects between two continuations based on the result of a predecessor. It
 //! accepts a predecessor, a predicate, and two continuations. It passes the
-//! result of the predecessor to the predicate. If the predicate returns \c true,
+//! result of the predecessor to the predicate. If the predicate returns @c true,
 //! the result is passed to the first continuation; otherwise, it is passed to
 //! the second continuation.
 //!
