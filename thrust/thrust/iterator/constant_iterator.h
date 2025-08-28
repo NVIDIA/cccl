@@ -136,7 +136,10 @@ public:
             detail::enable_if_convertible_t<iterator_system_t<constant_iterator<Value, Incrementable, OtherSystem>>,
                                             iterator_system_t<super_t>,
                                             int> = 0>
-  _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
       : super_t(rhs.base())
       , m_value(rhs.value())
   {}
@@ -147,7 +150,10 @@ public:
   //! \p v The value of this \p constant_iterator's constant value.
   //! \p i The index of this \p constant_iterator in a sequence. Defaults to the value returned by \c Incrementable's
   //! null constructor. For example, when <tt>Incrementable == int</tt>, \c 0.
-  _CCCL_HOST_DEVICE constant_iterator(value_type const& v, incrementable const& i = incrementable())
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  constant_iterator(value_type const& v, incrementable const& i = incrementable())
       : super_t(base_iterator(i))
       , m_value(v)
   {}
@@ -159,14 +165,20 @@ public:
   //! \p i The index of this \p constant_iterator in a sequence. Defaults to the value returned by \c Incrementable's
   //! null constructor. For example, when <tt>Incrementable == int</tt>, \c 0.
   template <typename OtherValue, typename OtherIncrementable>
-  _CCCL_HOST_DEVICE constant_iterator(OtherValue const& v, OtherIncrementable const& i = incrementable())
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  constant_iterator(OtherValue const& v, OtherIncrementable const& i = incrementable())
       : super_t(base_iterator(i))
       , m_value(v)
   {}
 
   //! This method returns the value of this \p constant_iterator's constant value. \return A \c const reference to this
   //! \p constant_iterator's constant value.
-  _CCCL_HOST_DEVICE Value const& value() const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  Value const& value() const
   {
     return m_value;
   }
@@ -174,7 +186,10 @@ public:
   //! \cond
 
 private: // Core iterator interface
-  _CCCL_HOST_DEVICE reference dereference() const
+#if !_CCCL_COMPILER(GCC)
+  _CCCL_HOST_DEVICE
+#endif
+  reference dereference() const
   {
     return m_value;
   }
@@ -186,7 +201,10 @@ private: // Core iterator interface
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class ValueT>
-_CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+constant_iterator(ValueT) -> constant_iterator<ValueT>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! This version of \p make_constant_iterator creates a \p constant_iterator from values given for both value and index.
@@ -198,7 +216,10 @@ _CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
 //! \return A new \p constant_iterator with constant value & index as given by \p x & \p i.
 //! \see constant_iterator
 template <typename ValueT, typename IndexT>
-inline _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT> make_constant_iterator(ValueT x, IndexT i = int())
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+inline constant_iterator<ValueT, IndexT> make_constant_iterator(ValueT x, IndexT i = int())
 {
   return constant_iterator<ValueT, IndexT>(x, i);
 } // end make_constant_iterator()
@@ -210,7 +231,10 @@ inline _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT> make_constant_iterato
 //! \return A new \p constant_iterator with constant value equal to \p x and index equal to \c 0.
 //! \see constant_iterator
 template <typename V>
-inline _CCCL_HOST_DEVICE constant_iterator<V> make_constant_iterator(V x)
+#if !_CCCL_COMPILER(GCC)
+_CCCL_HOST_DEVICE
+#endif
+inline constant_iterator<V> make_constant_iterator(V x)
 {
   return constant_iterator<V>(x, 0);
 } // end make_constant_iterator()
