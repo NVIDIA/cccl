@@ -217,7 +217,9 @@ class Configuration(object):
         archs = result.stdout.strip().splitlines()
 
         if not archs:
-            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
+            self.lit_config.fatal(
+                "Failed to retrieve compute capabilities or no capabilities found."
+            )
             return ""
 
         # Build the same list used by --arch=all-major:
@@ -257,7 +259,9 @@ class Configuration(object):
         archs = result.stdout.strip().splitlines()
 
         if not archs:
-            self.lit_config.fatal("Failed to retrieve compute capabilities or no capabilities found.")
+            self.lit_config.fatal(
+                "Failed to retrieve compute capabilities or no capabilities found."
+            )
             return ""
 
         arches = sorted(set([int(arch) for arch in archs]))
