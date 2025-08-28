@@ -116,7 +116,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
     void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
     void stf_logical_data_destroy(stf_logical_data_handle ld)
-#    void stf_logical_data_like_empty(stf_ctx_handle ctx, const stf_logical_data_handle* src, stf_logical_data_handle* dst)
+    void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle *to)
 
     ctypedef struct stf_task_handle_t
     ctypedef stf_task_handle_t* stf_task_handle
@@ -162,20 +162,35 @@ class stf_arg_cai:
 
 cdef class logical_data:
     cdef stf_logical_data_handle _ld
+    cdef stf_ctx_handle _ctx
 
     cdef object _dtype
     cdef tuple  _shape
     cdef int    _ndim
+    cdef size_t _len
 
-    def __cinit__(self, context ctx, object buf):
+    def __cinit__(self, context ctx=None, object buf=None):
+        if ctx is None or buf is None:
+            # allow creation via __new__ (eg. in like_empty)
+            self._ld = NULL
+            self._ctx = NULL
+            self._len = 0
+            self._dtype = None
+            self._shape = ()
+            self._ndim = 0
+            return
+
         cdef Py_buffer view
         cdef int flags = PyBUF_FORMAT | PyBUF_ND          # request dtype + shape
+
+        self._ctx = ctx._ctx
 
         if PyObject_GetBuffer(buf, &view, flags) != 0:
             raise ValueError("object doesn’t support the full buffer protocol")
 
         try:
             self._ndim  = view.ndim
+            self._len = view.len
             self._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
             self._dtype = np.dtype(view.format)
             stf_logical_data(ctx._ctx, &self._ld, view.buf, view.len)
@@ -210,29 +225,23 @@ cdef class logical_data:
     def rw(self, dplace=None):
         return dep(self, AccessMode.RW.value, dplace)
 
-#    def like_empty(self):
-#        """
-#        Create a new logical_data with the same shape (and dtype metadata)
-#        as this object.
-#        """
-#        if self._ld == NULL:
-#            raise RuntimeError("source logical_data handle is NULL")
-#
-#        cdef logical_data out = logical_data.__new__(logical_data)
-#
-#        out._ctx   = self._ctx
-#        out._dtype = self._dtype
-#        out._shape = self._shape
-#        out._ndim  = self._ndim
-#
-#        cdef stf_logical_data_handle new_ld = NULL
-#        stf_logical_data_like_empty(self._ctx, &self._ld, &new_ld)
-#
-#        if new_ld == NULL:
-#            raise RuntimeError("stf_logical_data_like_empty returned NULL")
-#
-#        out._ld = new_ld
-#        return out
+    def like_empty(self):
+        """
+        Create a new logical_data with the same shape (and dtype metadata)
+        as this object.
+        """
+        if self._ld == NULL:
+            raise RuntimeError("source logical_data handle is NULL")
+
+        cdef logical_data out = logical_data.__new__(logical_data)
+        stf_logical_data_empty(self._ctx, self._len, &out._ld)
+        out._ctx   = self._ctx
+        out._dtype = self._dtype
+        out._shape = self._shape
+        out._ndim  = self._ndim
+        out._len   = self._len
+
+        return out
 
 class dep:
     __slots__ = ("ld", "mode", "dplace")

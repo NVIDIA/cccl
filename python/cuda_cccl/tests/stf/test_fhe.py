@@ -40,7 +40,7 @@ class Plaintext:
     def encrypt(self) -> "Ciphertext":
         # stub: should return a Ciphertext object wrapping a LogicalData
         encrypted = bytearray([c ^ 0x42 for c in self.values])  # toy XOR
-        return Ciphertext(self.ctx, encrypted)
+        return Ciphertext(self.ctx, values=encrypted)
 
 @cuda.jit
 def and_kernel(a, b, out):
@@ -72,8 +72,7 @@ class Ciphertext:
 
     # ~ operator
     def __invert__(self):
-        result=Ciphertext(ctx, ld=self.l)
-        # result=Ciphertext(ctx, ld=self.l.like_empty())
+        result=Ciphertext(ctx, values=None, ld=self.l.like_empty())
 
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -88,8 +87,7 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
 
-        result=Ciphertext(ctx, ld=self.l)
-        # result=Ciphertext(ctx, ld=self.l.like_empty())
+        result=Ciphertext(ctx, ld=self.l.like_empty())
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -106,8 +104,7 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
 
-        result=Ciphertext(ctx, ld=self.l)
-        # result=Ciphertext(ctx, ld=self.l.like_empty())
+        result=Ciphertext(ctx, ld=self.l.like_empty())
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
