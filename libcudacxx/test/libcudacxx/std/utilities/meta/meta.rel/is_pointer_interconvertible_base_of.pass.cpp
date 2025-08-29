@@ -30,12 +30,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES C
   float m;
 };
 
-// Disable struct due to compiler bugs in 13.0+
 struct _CCCL_DECLSPEC_EMPTY_BASES NonStandard
     : BaseA
     , BaseB
 {
-  TEST_NVRTC_VIRTUAL_DEFAULT_CTOR_ANNOTATION virtual ~NonStandard() = default;
+  TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION virtual ~NonStandard() = default;
 
   int m;
 };
