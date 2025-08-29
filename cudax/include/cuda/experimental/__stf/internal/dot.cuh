@@ -133,9 +133,20 @@ public:
     static_assert(::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
   }
 
+  /**
+   * @brief RAII guard class for managing DOT section lifecycle
+   *
+   * This guard automatically manages the push/pop operations for DOT sections,
+   * ensuring proper nesting and cleanup even in the presence of exceptions.
+   */
   class guard
   {
   public:
+    /**
+     * @brief Construct a guard and push a new DOT section
+     * @param pc_ The per-context DOT object
+     * @param symbol The name/symbol for this section
+     */
     guard(::std::shared_ptr<per_ctx_dot> pc_, ::std::string symbol)
         : pc(mv(pc_))
     {
@@ -170,6 +181,12 @@ public:
     guard(const guard&)            = delete;
     guard& operator=(const guard&) = delete;
 
+    /**
+     * @brief Manually end the section (alternative to destructor)
+     *
+     * This allows explicit control over when the section ends,
+     * useful when the guard lifetime doesn't match the desired section lifetime.
+     */
     void end()
     {
       _CCCL_ASSERT(active, "Attempting to end the same section twice.");
@@ -208,17 +225,28 @@ public:
     return 1 + int(id);
   }
 
-  // rename to to_string()
+  /**
+   * @brief Get the symbol/name of this section for DOT output
+   * @return The section's symbol string
+   */
   const ::std::string& get_symbol() const
   {
     return symbol;
   }
 
+  /**
+   * @brief Get the nesting depth of this section
+   * @return The depth level (higher values = more deeply nested)
+   */
   int get_depth() const
   {
     return depth;
   }
 
+  /**
+   * @brief Set the nesting depth of this section
+   * @param d The depth level to set
+   */
   void set_depth(int d)
   {
     depth = d;
@@ -1427,18 +1455,19 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
 
   ::std::lock_guard<::std::mutex> guard(pc->mtx);
 
-  // This must at least contain the section of the context
+  // Get parent section ID from stack (must have at least the context section)
   auto& section_stack = pc->section_id_stack;
-  sec->parent_id      = section_stack.back();
+  _CCCL_ASSERT(!section_stack.empty(), "Section stack should never be empty");
+  sec->parent_id = section_stack.back();
 
-  // Save the section in the map
+  // Save the section in the global map
   dot_get_section_by_id(id) = sec;
 
   // Add the section to the children of its parent if that was not the root
   auto& parent_section = dot_get_section_by_id(sec->parent_id);
   parent_section->children_ids.push_back(id);
 
-  // Push the id in the current stack
+  // Push the new section ID onto the stack
   section_stack.push_back(id);
 }
 
@@ -1449,9 +1478,12 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
     return;
   }
 
-  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+  {
+    auto guard = ::std::lock_guard{pc->mtx};
 
-  pc->section_id_stack.pop_back();
+    _CCCL_ASSERT(!pc->section_id_stack.empty(), "Cannot pop from empty section stack");
+    pc->section_id_stack.pop_back();
+  } // Release lock before potentially expensive NVTX call
 
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePop();
