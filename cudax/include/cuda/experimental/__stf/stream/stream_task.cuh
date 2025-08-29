@@ -73,7 +73,7 @@ public:
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
   // CUDA stream
-  cudaStream_t get_stream()
+  cudaStream_t get_stream() const
   {
     const auto& e_place = get_exec_place();
     if (e_place.is_grid())
@@ -89,7 +89,7 @@ public:
   }
 
   // TODO use a pos4 and check that we have a grid, of the proper dimension
-  cudaStream_t get_stream(size_t pos)
+  cudaStream_t get_stream(size_t pos) const
   {
     const auto& e_place = get_exec_place();
 
