@@ -9,20 +9,23 @@ workflows:
   #
   override:
     # TODO:
-    # - Pare down nightly matrix to a more reasonable set of runners. Currently:
-    #   |  #   | Runner
-    #   |------|------
-    #   |  245 | `linux-amd64-cpu16`
-    #   |   49 | `linux-amd64-gpu-l4-latest-1`
-    #   |   42 | `linux-arm64-cpu16`
-    #   |   37 | `linux-amd64-gpu-h100-latest-1`
-    #   |   37 | `windows-amd64-cpu16`
-    #   |   32 | `linux-amd64-gpu-rtxa6000-latest-1`
-    #   |   31 | `linux-amd64-gpu-rtx2080-latest-1`
-    #   |   10 | `linux-amd64-gpu-rtx4090-latest-1`
+    # - Fix regression (__host__ __device__ annotations on default dtor) in libcudacxx, #5704
+    # - Figure out why sccache is failing to find objects in libcudacxx 13.0 tests and timing
+    #   out during build.
+    # - Pare down nightly matrix to a more reasonable set of runners. Some of this can be moved to
+    #   weekly. Currently nightly runner usage:
+    #     |  #   | Runner
+    #     |------|------
+    #     |  245 | `linux-amd64-cpu16`
+    #     |   49 | `linux-amd64-gpu-l4-latest-1`
+    #     |   42 | `linux-arm64-cpu16`
+    #     |   37 | `linux-amd64-gpu-h100-latest-1`
+    #     |   37 | `windows-amd64-cpu16`
+    #     |   32 | `linux-amd64-gpu-rtxa6000-latest-1`
+    #     |   31 | `linux-amd64-gpu-rtx2080-latest-1`
+    #     |   10 | `linux-amd64-gpu-rtx4090-latest-1`
 
     # Remaining failures:
-    - {jobs: ['test'],  project: 'cub',        ctk: '13.0',  std: '20',  cxx: ['gcc13', 'gcc14']}
     # The 13.0 libcudacxx test jobs aren't finding the sccacche objects from the build.
     # Add a 12.9 job in to see if this is a new regression in the 13.0 images.
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '12.9',  std: '20',  cxx: ['clang19', 'gcc14']}
@@ -36,16 +39,6 @@ workflows:
     - {jobs: ['build'], project: 'libcudacxx', ctk: '13.0',  std: '17',  cxx: ['msvc14.43']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: 'nvhpc', std: 'all', cxx: 'nvhpc'}
     - {jobs: ['build'], project: 'libcudacxx', ctk: 'nvhpc-prev', std: 'all', cxx: 'nvhpc-prev'}
-
-    # Remaining weekly jobs for verification -- these are currently blocked by CUB CTK 13.0 build failures.
-    - {jobs: ['compute_mem_nolid'],  project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_race_nolid'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_init_nolid'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_sync_nolid'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_mem_lid0'],   project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_race_lid0'],  project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_init_lid0'],  project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
-    - {jobs: ['compute_sync_lid0'],  project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
