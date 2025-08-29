@@ -1671,12 +1671,12 @@ public:
     return pimpl->get_mutex();
   }
 
-private:
   int get_unique_id() const
   {
     return pimpl->get_unique_id();
   }
 
+private:
   ::std::shared_ptr<reserved::logical_data_untyped_impl> pimpl;
 };
 
