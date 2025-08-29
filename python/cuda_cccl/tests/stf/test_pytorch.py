@@ -65,16 +65,46 @@ def test_pytorch():
         sptr = t.stream_ptr()
         torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
         with torch.cuda.stream(torch_stream):
-            # dX = t.get_arg_numba(0)
             dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
             tX = torch_from_cai(dX)
-            # capsule = dX.toDlpack()
-            # tX = torch.utils.dlpack.from_dlpack(capsule)
             tX = tX*2
             pass
-#        nb_stream = cuda.external_stream(t.stream_ptr())
+        pass
 
- #       dX = dX * 2
+    with ctx.task(lX.read(), lY.write()) as t:
+        sptr = t.stream_ptr()
+        torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
+        with torch.cuda.stream(torch_stream):
+            dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
+            tX = torch_from_cai(dX)
+            dY = cuda.from_cuda_array_interface(t.get_arg_cai(1), owner=None, sync=False)
+            tY = torch_from_cai(dY)
+            tY = tX*2
+            pass
+        pass
+
+    with ctx.task(lX.read(), lZ.write()) as t:
+        sptr = t.stream_ptr()
+        torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
+        with torch.cuda.stream(torch_stream):
+            dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
+            tX = torch_from_cai(dX)
+            dZ = cuda.from_cuda_array_interface(t.get_arg_cai(1), owner=None, sync=False)
+            tZ = torch_from_cai(dY)
+            tZ = tX*4 + 1
+            pass
+        pass
+
+    with ctx.task(lY.read(), lZ.rw()) as t:
+        sptr = t.stream_ptr()
+        torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
+        with torch.cuda.stream(torch_stream):
+            dY = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
+            tY = torch_from_cai(dX)
+            dZ = cuda.from_cuda_array_interface(t.get_arg_cai(1), owner=None, sync=False)
+            tZ = torch_from_cai(dY)
+            tZ = tY*2 - 3
+            pass
         pass
 
     ctx.finalize()
