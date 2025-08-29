@@ -1,6 +1,5 @@
 #include <thrust/device_vector.h>
 #include <thrust/extrema.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/pair.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
@@ -70,16 +69,16 @@ struct bbox_union : public thrust::binary_function<bbox, bbox, bbox>
 // functor to generate random points
 struct random_point_generator
 {
-  mutable unsigned int seed;
+  mutable thrust::default_random_engine rng;
+  mutable thrust::uniform_real_distribution<float> u01;
 
   random_point_generator()
-      : seed(0)
+      : rng(0)
+      , u01(0.0f, 1.0f)
   {}
 
   __host__ __device__ point2d operator()() const
   {
-    thrust::default_random_engine rng(seed++);
-    thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
     return point2d(u01(rng), u01(rng));
   }
 };
@@ -95,10 +94,10 @@ int main()
   thrust::generate(points.begin(), points.end(), random_point_generator());
 
   // initial bounding box contains first point
-  bbox first_point{points[0], points[0]};
+  bbox init = bbox(points[0], points[0]);
 
   // compute the bounding box for the point set
-  bbox result = thrust::reduce(points.begin(), points.end(), first_point, bbox_union{});
+  bbox result = thrust::reduce(points.begin(), points.end(), init, bbox_union{});
 
   // print output
   std::cout << "bounding box " << std::fixed;
