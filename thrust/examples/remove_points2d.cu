@@ -39,10 +39,10 @@ int main()
   thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
   thrust::host_vector<float> x(N);
   thrust::host_vector<float> y(N);
-  std::generate(x.begin(), x.end(), [&]() {
+  thrust::generate(x.begin(), x.end(), [&]() {
     return u01(rng);
   });
-  std::generate(y.begin(), y.end(), [&]() {
+  thrust::generate(y.begin(), y.end(), [&]() {
     return u01(rng);
   });
 

@@ -8,8 +8,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // this example illustrates how to make strided access to a range of values
 // examples:
 //   strided_range([0, 1, 2, 3, 4, 5, 6], 1) -> [0, 1, 2, 3, 4, 5, 6]

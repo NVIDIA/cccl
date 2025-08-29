@@ -5,8 +5,6 @@
 #include <cmath>
 #include <iostream>
 
-// #include "include/host_device.h"  // Legacy header - commented out
-
 // this example computes the maximum absolute difference
 // between the elements of two vectors
 
@@ -28,7 +26,7 @@ int main()
   float init = 0;
 
   // binary operations
-  ::cuda::maximum<float> binary_op1;
+  thrust::maximum<float> binary_op1;
   abs_diff<float> binary_op2;
 
   float max_abs_diff = thrust::inner_product(d_a.begin(), d_a.end(), d_b.begin(), init, binary_op1, binary_op2);

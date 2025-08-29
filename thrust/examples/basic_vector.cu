@@ -5,7 +5,7 @@
 
 int main()
 {
-  // H has storage for 4 integers with direct initialization
+  // H holds 4 integers
   thrust::host_vector<int> H{14, 20, 38, 46};
 
   // H.size() returns the size of vector H

@@ -60,7 +60,7 @@ struct arbitrary_functor2
 
 int main()
 {
-  // allocate and initialize storage using initializer lists
+  // allocate and initialize
   thrust::device_vector<float> A{3, 4, 0, 8, 2};
   thrust::device_vector<float> B{6, 7, 2, 1, 8};
   thrust::device_vector<float> C{2, 5, 7, 4, 3};

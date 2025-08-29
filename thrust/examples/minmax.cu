@@ -57,10 +57,11 @@ int main()
   thrust::uniform_int_distribution<int> dist(10, 99);
 
   // initialize data on host
-  thrust::device_vector<int> data(N);
-  std::generate(data.begin(), data.end(), [&]() {
+  thrust::host_vector<int> host_data(N);
+  thrust::generate(host_data.begin(), host_data.end(), [&]() {
     return dist(rng);
   });
+  thrust::device_vector<int> data = host_data;
 
   // setup arguments
   minmax_unary_op<int> unary_op;

@@ -4,8 +4,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // BinaryPredicate for the head flag segment representation
 // equivalent to ::cuda::std::not_fn(thrust::project2nd<int,int>()));
 template <typename HeadFlagType>

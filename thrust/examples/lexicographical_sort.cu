@@ -41,7 +41,7 @@ thrust::host_vector<int> random_vector(size_t N)
   static thrust::default_random_engine rng;
   static thrust::uniform_int_distribution<int> dist(0, 9);
 
-  std::generate(vec.begin(), vec.end(), [&]() {
+  thrust::generate(vec.begin(), vec.end(), [&]() {
     return dist(rng);
   });
 

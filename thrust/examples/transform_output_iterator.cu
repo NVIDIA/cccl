@@ -1,6 +1,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
 #include <thrust/gather.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/transform_output_iterator.h>
 
 #include <iostream>

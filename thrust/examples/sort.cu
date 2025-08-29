@@ -1,4 +1,5 @@
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
@@ -13,39 +14,47 @@ void initialize(thrust::device_vector<int>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  std::generate(v.begin(), v.end(), [&]() {
+  thrust::host_vector<int> host_data(v.size());
+  thrust::generate(host_data.begin(), host_data.end(), [&]() {
     return dist(rng);
   });
+  v = host_data;
 }
 
 void initialize(thrust::device_vector<float>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(2, 19);
-  std::generate(v.begin(), v.end(), [&]() {
+  thrust::host_vector<float> host_data(v.size());
+  thrust::generate(host_data.begin(), host_data.end(), [&]() {
     return dist(rng) / 2.0f;
   });
+  v = host_data;
 }
 
 void initialize(thrust::device_vector<thrust::pair<int, int>>& v)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(0, 9);
-  std::generate(v.begin(), v.end(), [&]() {
+  thrust::host_vector<thrust::pair<int, int>> host_data(v.size());
+  thrust::generate(host_data.begin(), host_data.end(), [&]() {
     int a = dist(rng);
     int b = dist(rng);
     return thrust::make_pair(a, b);
   });
+  v = host_data;
 }
 
 void initialize(thrust::device_vector<int>& v1, thrust::device_vector<int>& v2)
 {
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
-  std::generate(v1.begin(), v1.end(), [&]() {
+  thrust::host_vector<int> host_data(v1.size());
+  thrust::generate(host_data.begin(), host_data.end(), [&]() {
     return dist(rng);
   });
-  std::iota(v2.begin(), v2.end(), 0);
+  v1 = host_data;
+  thrust::sequence(v2.begin(), v2.end(), 0);
 }
 
 void print(const thrust::device_vector<int>& v)
@@ -70,7 +79,8 @@ void print(const thrust::device_vector<thrust::pair<int, int>>& v)
 {
   for (const auto& p : v)
   {
-    std::cout << " (" << p.first << "," << p.second << ")";
+    thrust::pair<int, int> local_p = p;
+    std::cout << " (" << local_p.first << "," << local_p.second << ")";
   }
   std::cout << "\n";
 }

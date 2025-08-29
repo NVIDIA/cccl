@@ -26,7 +26,7 @@ int main()
 
   // generate random data on the host
   thrust::host_vector<int> h_data(N);
-  std::generate(h_data.begin(), h_data.end(), [&]() {
+  thrust::generate(h_data.begin(), h_data.end(), [&]() {
     return dist(rng);
   });
 
@@ -69,7 +69,7 @@ int main()
   thrust::device_vector<int>::iterator mode_iter;
   mode_iter = thrust::max_element(d_output_counts.begin(), d_output_counts.end());
 
-  int mode        = d_output_keys[std::distance(d_output_counts.begin(), mode_iter)];
+  int mode        = d_output_keys[cuda::std::distance(d_output_counts.begin(), mode_iter)];
   int occurrences = *mode_iter;
 
   std::cout << "Modal value " << mode << " occurs " << occurrences << " times " << std::endl;

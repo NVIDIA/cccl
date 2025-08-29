@@ -1,5 +1,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
@@ -66,12 +67,13 @@ int main()
   size_t w = 4;
 
   // generate random data series
-  thrust::device_vector<float> data(n);
+  thrust::host_vector<float> host_data(n);
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 10);
-  std::generate(data.begin(), data.end(), [&]() {
+  thrust::generate(host_data.begin(), host_data.end(), [&]() {
     return static_cast<float>(dist(rng));
   });
+  thrust::device_vector<float> data = host_data;
 
   // allocate storage for averages
   thrust::device_vector<float> averages(data.size() - (w - 1));

@@ -27,7 +27,7 @@ int main()
   // indices now contains [1,2,5,7]
 
   // print result
-  std::cout << "found " << std::distance(indices.begin(), indices_end) << " nonzero values at indices:\n";
+  std::cout << "found " << cuda::std::distance(indices.begin(), indices_end) << " nonzero values at indices:\n";
   thrust::copy(indices.begin(), indices_end, std::ostream_iterator<int>(std::cout, "\n"));
 
   return 0;

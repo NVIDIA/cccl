@@ -149,7 +149,7 @@ int main()
 
   // generate random data on the host
   thrust::host_vector<int> input(N);
-  std::generate(input.begin(), input.end(), [&]() {
+  thrust::generate(input.begin(), input.end(), [&]() {
     int sum = 0;
     for (int j = 0; j < S; j++)
     {
