@@ -10,6 +10,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include <map>
 #include <stdexcept>
@@ -517,9 +518,11 @@ struct less_then_t
   }
 };
 
+_CCCL_BEGIN_NAMESPACE_CUDA
 template <typename T>
-struct ::cuda::proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
 {};
+_CCCL_END_NAMESPACE_CUDA
 
 namespace
 {

@@ -522,6 +522,41 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
   }
 }
 
+using floating_point_types = c2h::type_list<
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+  float,
+  double>;
+struct Transform_FloatingPointTypes_Fixture_Tag;
+C2H_TEST("Transform works with floating point types", "[transform]", floating_point_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op                   = make_operation("op", get_unary_op(get_type_info<T>().type));
+  const std::vector<int> int_input = generate<int>(num_items);
+  const std::vector<T> input(int_input.begin(), int_input.end());
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_FloatingPointTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
+    return T{2} * x;
+  });
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+}
+
 C2H_TEST("Transform works with C++ source operations", "[transform]")
 {
   using T = int32_t;

@@ -244,8 +244,9 @@ CUresult cccl_device_unary_transform_build_ex(
 
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
 
-    constexpr size_t ptx_num_args      = 5;
-    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
 
     std::string src = std::format(
       R"XXX(
@@ -476,8 +477,9 @@ CUresult cccl_device_binary_transform_build_ex(
 
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
 
-    constexpr size_t ptx_num_args      = 5;
-    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
 
     std::string src = std::format(
       R"XXX(

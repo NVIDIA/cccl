@@ -1,10 +1,7 @@
 include(${CMAKE_SOURCE_DIR}/benchmarks/cmake/CCCLBenchmarkRegistry.cmake)
 
-if(NOT CCCL_ENABLE_CUB)
-  message(FATAL_ERROR "Thrust benchmarks depend on CUB: set CCCL_ENABLE_CUB.")
-endif()
-
 cccl_get_nvbench()
+cccl_get_nvbench_helper()
 
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -31,7 +28,7 @@ function(add_bench target_name bench_name bench_src)
 
   add_executable(${bench_target} "${bench_src}")
   cccl_configure_target(${bench_target} DIALECT 17)
-  target_link_libraries(${bench_target} PRIVATE nvbench_helper nvbench::main)
+  target_link_libraries(${bench_target} PRIVATE cccl.nvbench_helper nvbench::main)
 endfunction()
 
 function(thrust_wrap_bench_in_cpp cpp_file_var cu_file thrust_target)

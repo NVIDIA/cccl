@@ -87,9 +87,10 @@ inline std::string compile(const std::string& source)
   nvrtcProgram prog;
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto"};
+  // TEST_CTK_PATH needed to include cuda_fp16.h
+  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 3, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
@@ -181,6 +182,12 @@ cccl_type_info get_type_info()
   {
     info.type = cccl_type_enum::CCCL_UINT64;
   }
+#if _CCCL_HAS_NVFP16()
+  else if constexpr (std::is_same_v<T, __half>)
+  {
+    info.type = cccl_type_enum::CCCL_FLOAT16;
+  }
+#endif
   else if constexpr (std::is_same_v<T, float>)
   {
     info.type = cccl_type_enum::CCCL_FLOAT32;
@@ -254,6 +261,14 @@ inline std::string get_reduce_op(cccl_type_enum t)
              "  double* a = reinterpret_cast<double*>(a_void); "
              "  double* b = reinterpret_cast<double*>(b_void); "
              "  double* out = reinterpret_cast<double*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  __half* a = reinterpret_cast<__half*>(a_void); "
+             "  __half* b = reinterpret_cast<__half*>(b_void); "
+             "  __half* out = reinterpret_cast<__half*>(out_void); "
              "  *out = *a + *b; "
              "}";
     default:
@@ -371,6 +386,14 @@ inline std::string get_merge_sort_op(cccl_type_enum t)
              "  bool* result = reinterpret_cast<bool*>(result_void); "
              "  *result = *lhs < *rhs; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  __half* lhs = reinterpret_cast<__half*>(lhs_void); "
+             "  __half* rhs = reinterpret_cast<__half*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -451,6 +474,14 @@ inline std::string get_unique_by_key_op(cccl_type_enum t)
              "  bool* result = reinterpret_cast<bool*>(result_void); "
              "  *result = *lhs == *rhs; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  __half* lhs = reinterpret_cast<__half*>(lhs_void); "
+             "  __half* rhs = reinterpret_cast<__half*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -502,6 +533,13 @@ inline std::string get_unary_op(cccl_type_enum t)
              "  double* a = reinterpret_cast<double*>(a_void); "
              "  double* result = reinterpret_cast<double*>(result_void); "
              "  *result = 2 * *a; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  __half* a = reinterpret_cast<__half*>(a_void); "
+             "  __half* result = reinterpret_cast<__half*>(result_void); "
+             "  *result = __float2half(2.0f) * (*a); "
              "}";
     default:
       throw std::runtime_error("Unsupported type");
@@ -563,6 +601,12 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
              "  double* key = reinterpret_cast<double*>(key_void); "
              "  return key; "
              "};";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void* op(void* key_void) { "
+             "  __half* key = reinterpret_cast<__half*>(key_void); "
+             "  return key; "
+             "};";
 
     default:
       throw std::runtime_error("Unsupported type");
@@ -590,6 +634,10 @@ std::string type_enum_to_name(cccl_type_enum type)
       return "::cuda::std::uint32_t";
     case cccl_type_enum::CCCL_UINT64:
       return "::cuda::std::uint64_t";
+#if _CCCL_HAS_NVFP16()
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "__half";
+#endif
     case cccl_type_enum::CCCL_FLOAT32:
       return "float";
     case cccl_type_enum::CCCL_FLOAT64:

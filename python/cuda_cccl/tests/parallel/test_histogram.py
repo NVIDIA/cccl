@@ -17,6 +17,7 @@ DTYPE_LIST = [
     np.int16,
     np.int32,
     np.int64,
+    np.float16,
     np.float32,
     np.float64,
 ]
@@ -31,7 +32,7 @@ def get_mark(dt, log_size):
 def type_to_problem_sizes(dtype):
     if dtype in [np.uint8, np.int8]:
         return [8, 10, 12, 14]
-    elif dtype in [np.uint16, np.int16]:
+    elif dtype in [np.float16, np.uint16, np.int16]:
         return [10, 12, 14, 16]
     elif dtype in [np.uint32, np.int32, np.float32]:
         return [12, 14, 16, 18]

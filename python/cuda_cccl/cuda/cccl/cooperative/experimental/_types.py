@@ -29,6 +29,7 @@ NUMBA_TYPES_TO_CPP = {
     types.uint16: "::cuda::std::uint16_t",
     types.uint32: "::cuda::std::uint32_t",
     types.uint64: "::cuda::std::uint64_t",
+    types.float16: "__half",
     types.float32: "float",
     types.float64: "double",
 }

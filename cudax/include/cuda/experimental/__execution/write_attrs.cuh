@@ -29,7 +29,7 @@
 
 namespace cuda::experimental::execution
 {
-//! \brief Sender adaptor that adds attributes to the child sender's attributes.
+//! @brief Sender adaptor that adds attributes to the child sender's attributes.
 struct write_attrs_t
 {
   template <class _Sndr, class _Attrs>
@@ -57,19 +57,19 @@ struct write_attrs_t
     _Attrs __attrs_;
   };
 
-  //! \brief Applies the given attributes to the sender and returns a new sender with the
+  //! @brief Applies the given attributes to the sender and returns a new sender with the
   //! attributes attached.
   //!
-  //! \tparam _Sndr The type of the sender.
-  //! \tparam _Attrs The type of the attributes to be attached.
-  //! \param __sndr The sender to which the attributes will be applied.
-  //! \param __attrs The attributes to attach to the sender.
-  //! \return A new sender type with the specified attributes attached.
+  //! @tparam _Sndr The type of the sender.
+  //! @tparam _Attrs The type of the attributes to be attached.
+  //! @param __sndr The sender to which the attributes will be applied.
+  //! @param __attrs The attributes to attach to the sender.
+  //! @return A new sender type with the specified attributes attached.
   //!
-  //! \note This function does not modify the original sender or attributes, but returns a new composed sender.
+  //! @note This function does not modify the original sender or attributes, but returns a new composed sender.
   //!
   //! **Example:**
-  //! \rst
+  //! @rst
   //! .. code-block:: c++
   //!
   //!    auto sndr = execution::write_attrs(execution::just(),
@@ -77,22 +77,22 @@ struct write_attrs_t
   //!    auto domain = execution::get_domain(execution::get_env(sndr));
   //!    static_assert(std::is_same_v<decltype(domain), MyDomain>);
   //!
-  //! \endrst
+  //! @endrst
   template <class _Sndr, class _Attrs>
   [[nodiscard]] _CCCL_API auto operator()(_Sndr __sndr, _Attrs __attrs) const -> __sndr_t<_Sndr, _Attrs>
   {
     return __sndr_t<_Sndr, _Attrs>{{}, static_cast<_Attrs&&>(__attrs), static_cast<_Sndr&&>(__sndr)};
   }
 
-  //! \brief Create a sender adaptor closure object that, when combined with a sender,
+  //! @brief Create a sender adaptor closure object that, when combined with a sender,
   //! will apply the specified attributes to that sender.
   //!
-  //! \tparam _Attrs The type of the attribute object to be forwarded.
-  //! \param __attrs The attribute object to be forwarded to the closure.
-  //! \return An instance of `__closure_t<_Attrs>` constructed from the forwarded attributes.
+  //! @tparam _Attrs The type of the attribute object to be forwarded.
+  //! @param __attrs The attribute object to be forwarded to the closure.
+  //! @return An instance of `__closure_t<_Attrs>` constructed from the forwarded attributes.
   //!
   //! **Example:**
-  //! \rst
+  //! @rst
   //! .. code-block:: c++
   //!
   //!    auto sndr = execution::just()
@@ -100,7 +100,7 @@ struct write_attrs_t
   //!    auto domain = execution::get_domain(execution::get_env(sndr));
   //!    static_assert(std::is_same_v<decltype(domain), MyDomain>);
   //!
-  //! \endrst
+  //! @endrst
   template <class _Attrs>
   [[nodiscard]] _CCCL_API auto operator()(_Attrs __attrs) const
   {

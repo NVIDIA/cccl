@@ -39,16 +39,40 @@
 
 namespace cuda::experimental
 {
+using ::cuda::std::decay_t;
+
+template <class _Ty>
+using __declfn = _Ty && (*) () noexcept;
+
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
 
-using ::cuda::std::decay_t;
+template <class _Ty, class _Uy>
+_CCCL_CONCEPT __not_same_as = !::cuda::std::_IsSame<_Ty, _Uy>::value;
+
+template <class _Ty, class... _Us>
+_CCCL_CONCEPT __one_of = (__same_as<_Ty, _Us> || ...);
+
+template <class _Ty, class... _Us>
+_CCCL_CONCEPT __none_of = (__not_same_as<_Ty, _Us> && ...);
+
+#if _CCCL_HAS_CONCEPTS()
+
+template <template <class...> class _Fn, class... _Ts>
+_CCCL_CONCEPT __is_instantiable_with = requires { typename _Fn<_Ts...>; };
+
+template <class _Fn, class... _As>
+_CCCL_CONCEPT __callable = requires(__declfn<_Fn> __fn, __declfn<_As>... __as) { __fn()(__as()...); };
+
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <template <class...> class _Fn, class... _Ts>
 _CCCL_CONCEPT __is_instantiable_with = ::cuda::std::_IsValidExpansion<_Fn, _Ts...>::value;
 
 template <class _Fn, class... _As>
 _CCCL_CONCEPT __callable = ::cuda::std::__is_callable_v<_Fn, _As...>;
+
+#endif // !_CCCL_HAS_CONCEPTS()
 
 template <class _Fn, class... _As>
 _CCCL_CONCEPT __constructible = ::cuda::std::is_constructible_v<_Fn, _As...>;

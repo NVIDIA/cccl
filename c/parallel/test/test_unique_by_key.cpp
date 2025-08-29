@@ -204,6 +204,70 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   REQUIRE(input_pairs == output_pairs);
 }
 
+using floating_point_types = c2h::type_list<
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+  float,
+  double>;
+C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_by_key]", floating_point_types)
+{
+  using key_t = c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  const std::vector<int> int_input = generate<int>(num_items);
+  const std::vector<key_t> input_keys(int_input.begin(), int_input.end());
+  std::vector<item_t> input_values = generate<item_t>(num_items);
+
+  pointer_t<key_t> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it(input_values);
+  pointer_t<key_t> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it(num_items);
+  pointer_t<int> output_num_selected_it(1);
+
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
+
+  std::vector<std::pair<key_t, item_t>> input_pairs;
+  for (size_t i = 0; i < input_keys.size(); ++i)
+  {
+    input_pairs.emplace_back(input_keys[i], input_values[i]);
+  }
+  const auto boundary = std::unique(input_pairs.begin(), input_pairs.end(), [](const auto& a, const auto& b) {
+    return a.first == b.first;
+  });
+
+  int num_selected = output_num_selected_it[0];
+
+  REQUIRE((boundary - input_pairs.begin()) == num_selected);
+
+  input_pairs.resize(num_selected);
+
+  std::vector<key_t> host_output_keys(output_keys_it);
+  std::vector<item_t> host_output_values(output_values_it);
+  std::vector<std::pair<key_t, item_t>> output_pairs;
+  for (int i = 0; i < num_selected; ++i)
+  {
+    output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
+  }
+
+  REQUIRE(input_pairs == output_pairs);
+}
+
 struct UniqueByKey_AllPointerInputs_WellKnown_Fixture_Tag;
 C2H_TEST("DeviceSelect::UniqueByKey works with well-known operations", "[unique_by_key][well_known]", key_types)
 {

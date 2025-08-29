@@ -16,6 +16,7 @@
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <variant>
 
 #include <nvrtc.h>
 

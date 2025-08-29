@@ -92,24 +92,16 @@ public:
 
     _CCCL_API static void __execute_impl(__task* __p) noexcept
     {
+      static_assert(noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()));
       auto& __rcvr = static_cast<__opstate_t*>(__p)->__rcvr_;
-      _CCCL_TRY
+
+      if (get_stop_token(get_env(__rcvr)).stop_requested())
       {
-        if (get_stop_token(get_env(__rcvr)).stop_requested())
-        {
-          set_stopped(static_cast<_Rcvr&&>(__rcvr));
-        }
-        else
-        {
-          set_value(static_cast<_Rcvr&&>(__rcvr));
-        }
+        set_stopped(static_cast<_Rcvr&&>(__rcvr));
       }
-      _CCCL_CATCH_ALL
+      else
       {
-        if constexpr (!noexcept(get_stop_token(declval<env_of_t<_Rcvr>>()).stop_requested()))
-        {
-          set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
-        }
+        set_value(static_cast<_Rcvr&&>(__rcvr));
       }
     }
 
@@ -174,7 +166,7 @@ public:
           return __loop_->get_scheduler();
         }
 
-        [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+        [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
         {
           return completion_behavior::asynchronous;
         }
@@ -200,10 +192,25 @@ public:
       return __sndr_t{__loop_};
     }
 
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_forward_progress_guarantee_t) noexcept
+    [[nodiscard]] _CCCL_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
       -> forward_progress_guarantee
     {
       return forward_progress_guarantee::parallel;
+    }
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
+    {
+      return *this;
+    }
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
+    {
+      return *this;
+    }
+
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+    {
+      return completion_behavior::asynchronous;
     }
 
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const scheduler& __a, const scheduler& __b) noexcept

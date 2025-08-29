@@ -27,6 +27,7 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
@@ -73,14 +74,6 @@ private:
 
     _Rcvr __rcvr_;
     __tuple_t __values_;
-  };
-
-  struct __attrs_t
-  {
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
-    {
-      return completion_behavior::inline_completion;
-    }
   };
 
   template <class... _Ts>
@@ -139,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 
   [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
   {
-    return __attrs_t{};
+    return __inln_attrs_t<__set_tag_t>{};
   }
 
   _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;

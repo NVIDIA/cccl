@@ -10,7 +10,7 @@
 
 #include <cuda/experimental/execution.cuh>
 
-#include "common/inline_scheduler.cuh"
+#include "common/dummy_scheduler.cuh"
 #include "testing.cuh" // IWYU pragma: keep
 
 namespace async = ::cuda::experimental::execution;
@@ -82,5 +82,5 @@ C2H_TEST("tests for the sender concepts", "[concepts]")
   static_assert(async::sender<read_env_t>);
   static_assert(!async::sender_in<read_env_t>);
   static_assert(!async::sender_in<read_env_t, async::env<>>);
-  static_assert(async::sender_in<read_env_t, async::prop<async::get_scheduler_t, inline_scheduler<>>>);
+  static_assert(async::sender_in<read_env_t, async::prop<async::get_scheduler_t, dummy_scheduler<>>>);
 }

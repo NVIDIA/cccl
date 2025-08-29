@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 """
-Binary transform example demonstrating the object API.
+Binary transform examples demonstrating the transform object API.
 """
 
 import cupy as cp
@@ -13,9 +13,6 @@ import cuda.cccl.parallel.experimental as parallel
 
 
 def binary_transform_object_example():
-    def add_op(a, b):
-        return a + b
-
     dtype = np.int32
     h_input1 = np.array([1, 2, 3, 4], dtype=dtype)
     h_input2 = np.array([10, 20, 30, 40], dtype=dtype)
@@ -23,7 +20,9 @@ def binary_transform_object_example():
     d_input2 = cp.asarray(h_input2)
     d_output = cp.empty_like(d_input1)
 
-    transformer = parallel.make_binary_transform(d_input1, d_input2, d_output, add_op)
+    transformer = parallel.make_binary_transform(
+        d_input1, d_input2, d_output, parallel.OpKind.PLUS
+    )
 
     transformer(d_input1, d_input2, d_output, len(h_input1))
 
@@ -35,6 +34,6 @@ def binary_transform_object_example():
 
 
 if __name__ == "__main__":
-    print("Running binary_transform_object_example...")
+    print("Running binary transform examples...")
     binary_transform_object_example()
-    print("All examples completed successfully!")
+    print("All binary transform examples completed successfully!")

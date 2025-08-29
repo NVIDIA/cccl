@@ -146,6 +146,9 @@ function(cccl_build_compiler_targets)
     # See https://github.com/microsoft/STL/issues/696
     append_option_if_available("/wd4494" cxx_compile_options)
 
+    # We require the new preprocessor
+    append_option_if_available("/Zc:preprocessor" cxx_compile_options)
+
   else()
     list(APPEND cuda_compile_options "-Wreorder")
 
