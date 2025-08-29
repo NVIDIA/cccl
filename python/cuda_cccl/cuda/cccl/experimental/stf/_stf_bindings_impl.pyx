@@ -464,7 +464,7 @@ cdef class context:
             raise RuntimeError("cannot call borrow_from_handle on this context")
 
         self._ctx = ctx_handle
-        print(f"borrowing ... new ctx handle = {<int>ctx_handle} self={self}")
+        # print(f"borrowing ... new ctx handle = {<int>ctx_handle} self={self}")
 
     def __repr__(self):
         return f"context(handle={<int>self._ctx}, borrowed={self._borrowed})"
