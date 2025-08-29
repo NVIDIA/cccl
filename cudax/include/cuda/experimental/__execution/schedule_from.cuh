@@ -423,9 +423,7 @@ public:
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
-    // schedule_from always dispatches based on the domain of the scheduler
-    using __domain_t = __query_result_or_t<_Sch, get_domain_t, default_domain>;
-    return transform_sender(__domain_t{}, __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+    return __sndr_t<_Sch, _Sndr>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}};
   }
 };
 

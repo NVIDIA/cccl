@@ -182,8 +182,7 @@ public:
   _CCCL_REQUIRES(__is_sender<_Sndr>)
   _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
-    using __domain_t = __query_result_or_t<_Sch, get_domain_t, default_domain>;
-    return execution::transform_sender(__domain_t{}, __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr});
+    return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
   }
 
   _CCCL_TEMPLATE(class _Sch, class _Closure)
@@ -197,9 +196,7 @@ public:
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Sch __sch, _Closure __closure) const
   {
     using __sndr_t = on_t::__sndr_t<_Sch, _Sndr, _Closure>;
-    auto __domain  = __early_domain_of_t<_Sndr>{};
-    return execution::transform_sender(
-      __domain, __sndr_t{{}, {__sch, static_cast<_Closure&&>(__closure)}, static_cast<_Sndr&&>(__sndr)});
+    return __sndr_t{{}, {__sch, static_cast<_Closure&&>(__closure)}, static_cast<_Sndr&&>(__sndr)};
   }
 
   template <class _Sndr, class _Env>
@@ -217,7 +214,7 @@ public:
   }
 
   template <class _Sndr, class _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env)
+  [[nodiscard]] _CCCL_API static constexpr auto transform_sender(start_t, _Sndr&& __sndr, const _Env& __env)
   {
     auto&& [__ign, __data, __child] = __sndr;
     if constexpr (__is_scheduler<decltype(__data)>)
@@ -266,7 +263,7 @@ private:
     {
       // When it completes successfully, the on(sch, sndr) sender completes where it
       // starts.
-      return execution::get_scheduler(__env);
+      return get_completion_scheduler<set_value_t>(__inln_attrs_t<set_value_t>{}, __env);
     }
     else
     {
