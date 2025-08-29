@@ -543,8 +543,8 @@ template <class _LetTag>
 template <class _Sndr, class _Fn>
 [[nodiscard]] _CCCL_NODEBUG_API constexpr auto __let_base_t<_LetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __sndr_t   = typename _LetTag::template __sndr_t<_Sndr, _Fn>;
-  using __domain_t = __early_domain_of_t<_Sndr>;
+  using __sndr_t = typename _LetTag::template __sndr_t<_Sndr, _Fn>;
+
   // If the incoming sender is non-dependent, we can check the completion signatures of
   // the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
@@ -565,7 +565,8 @@ template <class _Sndr, class _Fn>
       execution::__assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
     }
   }
-  return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
+
+  return __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}};
 }
 
 template <class _LetTag>

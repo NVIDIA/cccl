@@ -295,14 +295,10 @@ template <class _Sndr, class... _Env>
   {
     return execution::__get_completion_signatures_helper<_Sndr>();
   }
-  else if constexpr (!__has_sender_transform<_Sndr, _Env...>)
-  {
-    return execution::__get_completion_signatures_helper<_Sndr, _Env...>();
-  }
   else
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
-    using __new_sndr_t = __call_result_t<transform_sender_t, __domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
+    using __new_sndr_t = __call_result_t<transform_sender_t, _Sndr, _Env...>;
     return execution::__get_completion_signatures_helper<__new_sndr_t, _Env...>();
   }
 }

@@ -280,14 +280,15 @@ _CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 template <class... _Tags>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __inln_attrs_t
 {
-  _CCCL_TEMPLATE(class _Tag, class _Env)
+  _CCCL_TEMPLATE(class _Tag, class _Env, class _Sch = __scheduler_of_t<_Env>)
   _CCCL_REQUIRES(__one_of<_Tag, _Tags...> _CCCL_AND __callable<get_scheduler_t, const _Env&>)
   [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_Tag>, const _Env& __env) const noexcept
+    -> __call_result_or_t<get_completion_scheduler_t<set_value_t>, _Sch, _Sch, __hide_scheduler<const _Env&>>
   {
-    auto __sch = get_scheduler(__env);
+    _Sch __sch = get_scheduler(__env);
     // We must ask the scheduler where its schedule operations will complete, since it may
     // not be on the scheduler itself.
-    return __call_or(get_completion_scheduler<set_value_t>, __sch, __sch, __detail::__hide_scheduler{__env});
+    return __call_or(get_completion_scheduler<set_value_t>, __sch, __sch, __hide_scheduler{__env});
   }
 
   _CCCL_TEMPLATE(class _Tag, class _Env)

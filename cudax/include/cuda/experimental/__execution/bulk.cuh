@@ -41,6 +41,7 @@
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
@@ -191,16 +192,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
     {
       static_assert(__is_sender<_Sndr>);
 
-      using __domain_t = __early_domain_of_t<_Sndr>;
-      using __sndr_t   = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
-
       if constexpr (!dependent_sender<_Sndr>)
       {
+        using __sndr_t = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
         __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
       }
 
-      return transform_sender(__domain_t{},
-                              __sndr_t{{{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}});
+      return typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>{
+        {{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}};
     }
 
     _CCCL_NO_UNIQUE_ADDRESS _Policy __policy_;
@@ -406,7 +405,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
   // This function is called when `connect` is called on a `bulk` sender. It transforms
   // the `bulk` sender into a `bulk_chunked` sender.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API static auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t)
+  [[nodiscard]] _CCCL_API static auto transform_sender(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
     static_assert(__same_as<tag_of_t<_Sndr>, bulk_t>);
     auto& [__tag, __data, __child]  = __sndr;
