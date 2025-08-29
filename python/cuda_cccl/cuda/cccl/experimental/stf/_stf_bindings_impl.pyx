@@ -243,6 +243,11 @@ cdef class logical_data:
 
         return out
 
+    def borrow_ctx_handle(self):
+        ctx = context(borrowed=True)
+        ctx.borrow_from_handle(self._ctx)
+        return ctx
+
 class dep:
     __slots__ = ("ld", "mode", "dplace")
     def __init__(self, logical_data ld, int mode, dplace=None):
@@ -255,6 +260,8 @@ class dep:
         yield self.dplace
     def __repr__(self):
         return f"dep({self.ld!r}, {self.mode}, {self.dplace!r})"
+    def get_ld(self):
+        return self.ld
 
 def read(ld, dplace=None):   return dep(ld, AccessMode.READ.value, dplace)
 def write(ld, dplace=None):  return dep(ld, AccessMode.WRITE.value, dplace)
@@ -437,20 +444,42 @@ cdef class task:
 
 cdef class context:
     cdef stf_ctx_handle _ctx
+    # Is this a context that we have borrowed ?
+    cdef bint _borrowed
 
-    def __cinit__(self, bint use_graph=False):
-        if use_graph:
-            stf_ctx_create_graph(&self._ctx)
-        else:
-            stf_ctx_create(&self._ctx)
+    def __cinit__(self, bint use_graph=False, bint borrowed=False):
+        self._ctx = <stf_ctx_handle>NULL
+        self._borrowed = borrowed
+        if not borrowed:
+            if use_graph:
+                stf_ctx_create_graph(&self._ctx)
+            else:
+                stf_ctx_create(&self._ctx)
+
+    cdef borrow_from_handle(self, stf_ctx_handle ctx_handle):
+        if not self._ctx == NULL:
+            raise RuntimeError("context already initialized")
+
+        if not self._borrowed:
+            raise RuntimeError("cannot call borrow_from_handle on this context")
+
+        self._ctx = ctx_handle
+        print(f"borrowing ... new ctx handle = {<int>ctx_handle} self={self}")
+
+    def __repr__(self):
+        return f"context(handle={<int>self._ctx}, borrowed={self._borrowed})"
 
     def __dealloc__(self):
-        self.finalize()
+        if not self._borrowed:
+            self.finalize()
 
     def finalize(self):
+        if self._borrowed:
+            raise RuntimeError("cannot finalize borrowed context")
+
         if self._ctx != NULL:
-            stf_ctx_finalize(self._ctx)
-            self._ctx = NULL
+                stf_ctx_finalize(self._ctx)
+        self._ctx = NULL
 
     def logical_data(self, object buf):
         """

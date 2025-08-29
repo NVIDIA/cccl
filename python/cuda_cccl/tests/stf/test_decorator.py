@@ -32,11 +32,16 @@ def test_decorator(use_graph):
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)
 
-    scale[32, 64, ctx](2.0, lX.rw())
-    axpy[32, 64, ctx](2.0, lX.read(), lY.rw())  # default device
+    scale[32, 64](2.0, lX.rw())
+    axpy[32, 64](2.0, lX.read(), lY.rw())
     axpy[32, 64, ctx, cudastf.exec_place.device(0)](
         2.0, lX.read(), lZ.rw()
     )  # explicit exec place
-    axpy[32, 64, ctx](
+    axpy[32, 64](
         2.0, lY.read(), lZ.rw(cudastf.data_place.device(0))
     )  # per-dep placement override
+
+
+if __name__ == "__main__":
+    print("Running CUDASTF examples...")
+    test_decorator(False)

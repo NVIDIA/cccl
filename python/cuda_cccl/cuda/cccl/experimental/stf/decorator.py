@@ -12,26 +12,38 @@ class stf_kernel_decorator:
         self._jit_args = jit_args
         self._jit_kwargs = jit_kwargs
         self._compiled_kernel = None
-        self._launch_cfg = None  # (gridDim, blockDim, context, exec_place?)
+        # (grid_dim, block_dim, ctx_or_none, exec_place_or_none)
+        self._launch_cfg = None
 
     def __getitem__(self, cfg):
-        if not (len(cfg) == 3 or len(cfg) == 4):
-            raise TypeError("use kernel[gridDim, blockDim, ctx (, exec_place)]")
+        # Normalize cfg into (grid_dim, block_dim, ctx, exec_pl)
+        if not (isinstance(cfg, tuple) or isinstance(cfg, list)):
+            raise TypeError("use kernel[grid, block (, ctx [, exec_place])]")
+        n = len(cfg)
+        if n not in (2, 3, 4):
+            raise TypeError(
+                "use kernel[grid, block], kernel[grid, block, ctx], or kernel[grid, block, ctx, exec_place]"
+            )
 
-        gridDim, blockDim, ctx, *rest = cfg
-        if not isinstance(ctx, context):
-            raise TypeError("3rd item must be an STF context")
+        grid_dim = cfg[0]
+        block_dim = cfg[1]
+        ctx = None
+        exec_pl = None
 
-        exec_pl = rest[0] if rest else None
-        if exec_pl and not isinstance(exec_pl, exec_place):
+        if n >= 3:
+            ctx = cfg[2]
+
+        if n == 4:
+            exec_pl = cfg[3]
+
+        # Type checks (ctx can be None; exec_pl can be None)
+        if ctx is not None and not isinstance(ctx, context):
+            raise TypeError("3rd item must be an STF context (or None to infer)")
+
+        if exec_pl is not None and not isinstance(exec_pl, exec_place):
             raise TypeError("4th item must be an exec_place")
 
-        self._launch_cfg = (
-            tuple(gridDim) if isinstance(gridDim, tuple) else (int(gridDim),),
-            tuple(blockDim) if isinstance(blockDim, tuple) else (int(blockDim),),
-            ctx,
-            exec_pl,
-        )
+        self._launch_cfg = (grid_dim, block_dim, ctx, exec_pl)
 
         return self
 
@@ -47,6 +59,11 @@ class stf_kernel_decorator:
         for i, a in enumerate(args):
             print(f"got one arg {a} is dep ? {isinstance(a, dep)}")
             if isinstance(a, dep):
+                if ctx == None:
+                    ld = a.get_ld()
+                    # This context will be used in the __call__ method itself
+                    # so we can create a temporary object from the handle
+                    ctx = ld.borrow_ctx_handle()
                 dep_items.append((i, a))
 
         task_args = [exec_pl] if exec_pl else []
