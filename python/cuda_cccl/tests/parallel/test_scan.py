@@ -58,6 +58,12 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
         return a + b
 
     dtype = input_array.dtype
+
+    if dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = op
+
     is_short_dtype = dtype.itemsize < 16
     # for small range data types make input small to assure that
     # accumulation does not overflow
@@ -66,12 +72,18 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    scan_device(d_input, d_output, len(d_input), op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
 
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
 
-    np.testing.assert_allclose(expected, got, rtol=1e-5)
+    if np.isdtype(dtype, ("real floating", "complex floating")):
+        real_dt = np.finfo(dtype).dtype
+        eps = np.finfo(real_dt).eps
+        rtol = 82 * eps
+        np.testing.assert_allclose(expected, got, rtol=rtol)
+    else:
+        np.testing.assert_array_equal(expected, got)
 
 
 @pytest.mark.parametrize(
