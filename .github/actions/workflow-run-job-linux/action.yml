@@ -65,7 +65,7 @@ runs:
         matrix_job=$(ci/util/workflow/get_job_def.sh | jq -c '.origin.matrix_job')
 
         # Delete the cxx_family and cudacxx_family fields
-        matrix_job=$(echo "$matrix_job" | jq 'del(.cxx_family, .cudacxx_family)')
+        matrix_job=$(echo "$matrix_job" | jq 'del(.cxx_family, .cudacxx_family, .job_name)')
 
         # Convert to a single line of YAML, with unquoted keys:
         matrix_job=$(
