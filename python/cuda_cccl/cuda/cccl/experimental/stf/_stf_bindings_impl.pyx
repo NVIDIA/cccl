@@ -160,6 +160,40 @@ class stf_arg_cai:
             'stream': self.stream,         # CUDA stream for access
         }
 
+import torch
+
+class CAIWrapper:
+    def __init__(self, cai_dict):
+        self.__cuda_array_interface__ = cai_dict
+
+def torch_from_cai(obj):
+    """
+    Convert an object exposing the CUDA Array Interface (__cuda_array_interface__)
+    into a torch.Tensor (on GPU). Zero-copy if possible.
+
+    Strategy:
+      1. If obj has .to_dlpack(), use it directly.
+      2. Otherwise, try to wrap with CuPy (which understands CAI) and then use DLPack.
+    """
+    # Path 1: direct DLPack (Numba >=0.53, some other libs)
+    if hasattr(obj, "to_dlpack"):
+        return torch.utils.dlpack.from_dlpack(obj.to_dlpack())
+
+    # Path 2: via CuPy bridge
+    try:
+        import cupy as cp
+    except ImportError as e:
+        raise RuntimeError(
+            "Object does not support .to_dlpack and CuPy is not installed. "
+            "Cannot convert __cuda_array_interface__ to torch.Tensor."
+        ) from e
+
+    #if isinstance(obj, dict) and "__cuda_array_interface__" in obj:
+    obj = CAIWrapper(obj)   # wrap the dict
+
+    cupy_arr = cp.asarray(obj)
+    return torch.utils.dlpack.from_dlpack(cupy_arr.toDlpack())
+
 cdef class logical_data:
     cdef stf_logical_data_handle _ld
     cdef stf_ctx_handle _ctx
@@ -429,6 +463,10 @@ cdef class task:
     def get_arg_numba(self, index):
         cai = self.get_arg_cai(index)
         return cuda.from_cuda_array_interface(cai, owner=None, sync=False)
+
+    def get_arg_as_tensor(self, index):
+        cai = self.get_arg_cai(index)
+        return torch_from_cai(cai)
 
     # ---- context‑manager helpers -------------------------------
     def __enter__(self):

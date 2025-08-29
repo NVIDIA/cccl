@@ -67,6 +67,7 @@ def test_pytorch():
         with torch.cuda.stream(torch_stream):
             dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
             tX = torch_from_cai(dX)
+            # same as tX =t.get_arg_as_tensor(0) 
             tX = tX*2
             pass
         pass
@@ -75,10 +76,8 @@ def test_pytorch():
         sptr = t.stream_ptr()
         torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
         with torch.cuda.stream(torch_stream):
-            dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
-            tX = torch_from_cai(dX)
-            dY = cuda.from_cuda_array_interface(t.get_arg_cai(1), owner=None, sync=False)
-            tY = torch_from_cai(dY)
+            tX =t.get_arg_as_tensor(0) 
+            tY =t.get_arg_as_tensor(1) 
             tY = tX*2
             pass
         pass
@@ -87,10 +86,8 @@ def test_pytorch():
         sptr = t.stream_ptr()
         torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
         with torch.cuda.stream(torch_stream):
-            dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
-            tX = torch_from_cai(dX)
-            dZ = cuda.from_cuda_array_interface(t.get_arg_cai(1), owner=None, sync=False)
-            tZ = torch_from_cai(dY)
+            tX =t.get_arg_as_tensor(0) 
+            tZ =t.get_arg_as_tensor(1) 
             tZ = tX*4 + 1
             pass
         pass
@@ -99,10 +96,8 @@ def test_pytorch():
         sptr = t.stream_ptr()
         torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
         with torch.cuda.stream(torch_stream):
-            dY = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
-            tY = torch_from_cai(dX)
-            dZ = cuda.from_cuda_array_interface(t.get_arg_cai(1), owner=None, sync=False)
-            tZ = torch_from_cai(dY)
+            tY =t.get_arg_as_tensor(0) 
+            tZ =t.get_arg_as_tensor(1) 
             tZ = tY*2 - 3
             pass
         pass
