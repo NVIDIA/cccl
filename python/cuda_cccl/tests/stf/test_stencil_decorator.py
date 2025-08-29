@@ -56,7 +56,7 @@ def test_numba2d():
         (ny + threads_per_block[1] - 1) // threads_per_block[1],
     )
 
-    laplacian_5pt_kernel[blocks_per_grid, threads_per_block, ctx](
+    laplacian_5pt_kernel[blocks_per_grid, threads_per_block](
         lu.read(), lu_out.write(), dx, dy
     )
 
