@@ -122,7 +122,7 @@ struct alignas(128) Counter
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
 {
-  return ::cuda::ceil_div<int>(::cuda::std::numeric_limits<T>::digits, BitsPerPass);
+  return ::cuda::ceil_div<int>(sizeof(T) * 8, BitsPerPass);
 }
 
 /**
@@ -132,7 +132,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
 template <typename T, int BitsPerPass>
 _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = static_cast<int>(::cuda::std::numeric_limits<T>::digits) - (pass + 1) * BitsPerPass;
+  int start_bit = static_cast<int>(sizeof(T) * 8) - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
   {
     start_bit = 0;
