@@ -35,7 +35,7 @@ struct NonStandard
     : A
     , B
 {
-  TEST_NVRTC_VIRTUAL_DEFAULT_CTOR_ANNOTATION virtual ~NonStandard() = default;
+  TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION virtual ~NonStandard() = default;
 
   int m;
 };
