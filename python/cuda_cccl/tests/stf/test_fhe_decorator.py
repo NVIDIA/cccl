@@ -11,12 +11,6 @@ numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 import cuda.cccl.experimental.stf as cudastf
-from cuda.cccl.experimental.stf._stf_bindings import (
-    context,
-    data_place,
-    exec_place,
-)
-
 
 class Plaintext:
     # Initialize from actual values, or from a logical data
@@ -38,7 +32,7 @@ class Plaintext:
         return Ciphertext(self.ctx, values=encrypted)
 
     def print_values(self):
-        with ctx.task(exec_place.host(), self.l.read(data_place.managed())) as t:
+        with ctx.task(cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             hvalues = t.get_arg_numba(0)
             print([v for v in hvalues])
@@ -126,7 +120,7 @@ def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
     return ~((eA | ~eB) & (~eA | eB))
 
 
-ctx = context(use_graph=False)
+ctx = cudastf.context(use_graph=False)
 
 vA = [3, 3, 2, 2, 17]
 pA = Plaintext(ctx, vA)
