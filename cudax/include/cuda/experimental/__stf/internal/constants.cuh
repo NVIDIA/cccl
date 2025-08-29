@@ -73,7 +73,7 @@ inline bool access_mode_is_compatible(access_mode previous, access_mode mode)
   // It is not possible to modify a read-only variable
   if (mode == access_mode::rw || mode == access_mode::write)
   {
-    return (previous == access_mode::rw || previous == access_mode::write);
+    return previous == access_mode::rw || previous == access_mode::write;
   }
 
   return true;

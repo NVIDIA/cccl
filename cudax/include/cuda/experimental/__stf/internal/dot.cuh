@@ -144,8 +144,8 @@ public:
 
     // Move constructor: transfer ownership and disable the moved-from guard.
     guard(guard&& other) noexcept
-        : pc(other.pc)
-        , active(cuda::std::exchange(other.active, false))
+        : pc(mv(other.pc))
+        , active(::std::exchange(other.active, false))
     {}
 
     // Move assignment, disable the moved-from guard
@@ -159,10 +159,9 @@ public:
         {
           dot_section::pop(pc);
         }
-        // Transfer ownership.
-        pc           = other.pc;
-        active       = other.active;
-        other.active = false;
+        // Transfer ownership
+        pc     = mv(other.pc);
+        active = ::std::exchange(other.active, false);
       }
       return *this;
     }
@@ -226,7 +225,7 @@ public:
   }
 
   // id of the parent section (0 if this is a root)
-  int parent_id;
+  int parent_id = 0;
 
   // ids of the children sections (if any)
   ::std::vector<int> children_ids;
@@ -492,8 +491,8 @@ public:
       }
     }
 
-    task_metadata.label = task_oss.str();
-    task_metadata.type  = type;
+    task_metadata.label             = task_oss.str();
+    task_metadata.type              = type;
     task_metadata.original_id       = t.get_unique_id();
     task_metadata.representative_id = t.get_unique_id();
   }
@@ -629,7 +628,7 @@ public:
 
   // Non copyable unique id, ok because we use shared pointers
   unique_id<per_ctx_dot> id;
-  
+
   // Get the unique id of this per-context descriptor
   int get_unique_id() const
   {
@@ -839,7 +838,7 @@ private:
   void print_section(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
   {
     int section_id = sec->get_id();
-    fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
+    // fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
 
     if (display_cluster)
     {
@@ -1436,7 +1435,8 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
   dot_get_section_by_id(id) = sec;
 
   // Add the section to the children of its parent if that was not the root
-  dot_get_section_by_id(sec->parent_id)->children_ids.push_back(id);
+  auto& parent_section = dot_get_section_by_id(sec->parent_id);
+  parent_section->children_ids.push_back(id);
 
   // Push the id in the current stack
   section_stack.push_back(id);

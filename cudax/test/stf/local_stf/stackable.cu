@@ -20,11 +20,6 @@
 
 using namespace cuda::experimental::stf;
 
-int X0(int i)
-{
-  return 17 * i + 45;
-}
-
 int main()
 {
   stackable_ctx sctx;

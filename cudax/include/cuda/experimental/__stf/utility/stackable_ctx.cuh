@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <algorithm>
 #include <shared_mutex>
 #include <stack>
 #include <thread>
@@ -35,7 +36,27 @@
 #include "cuda/experimental/stf.cuh"
 
 /**
- * TODO insert a big comment explaining the design and how to reason about this !
+ * @brief Stackable Context Design Overview
+ *
+ * The stackable context allows nesting CUDA STF contexts to create hierarchical task graphs.
+ * This enables complex workflows where tasks can be organized in a tree-like structure.
+ *
+ * Key concepts:
+ * - **Context Stack**: Nested contexts form a stack where each level can have its own task graph
+ * - **Data Movement**: Logical data can be "pushed" between context levels automatically
+ * - **Token Handling**: Tokens (`void_interface`) are automatically filtered from lambda parameters
+ * - **Resource Management**: Contexts manage CUDA streams and memory allocation adapters
+ *
+ * Usage pattern:
+ * ```
+ * stackable_ctx sctx;
+ * auto data = sctx.logical_data(...);
+ *
+ * sctx.push();  // Enter nested context
+ * data.push(access_mode::rw);  // Import data into nested context
+ * // ... work with data in nested context ...
+ * sctx.pop();   // Exit nested context, execute graph
+ * ```
  */
 
 namespace cuda::experimental::stf
@@ -174,13 +195,18 @@ public:
      * class describes a tree using a vector of offsets. Every node has an offset,
      * and we keep track of the parent offset of each node, as well as its
      * children. */
+    // Configuration constants
+    static constexpr int initial_node_pool_size       = 16;
+    static constexpr size_t growth_factor_numerator   = 3;
+    static constexpr size_t growth_factor_denominator = 2;
+
     class node_hierarchy
     {
     public:
       node_hierarchy()
       {
         // May grow up later if more contexts are needed
-        int initialize_size = 16;
+        constexpr int initialize_size = initial_node_pool_size;
         parent.resize(initialize_size);
         children.resize(initialize_size);
         free_list.reserve(initialize_size);
@@ -199,16 +225,16 @@ public:
       {
         // XXX implement growth mechanism
         // remember size of parent, push new items in the free list ? (grow())
-        _CCCL_ASSERT(free_list.size() > 0, "no slot available");
+        _CCCL_ASSERT(!free_list.empty(), "no slot available");
 
-        int res = free_list.back();
+        int result = free_list.back();
         free_list.pop_back();
 
-        parent[res] = -1;
         // the node should be unused
-        _CCCL_ASSERT(children[res].size() == 0, "invalid state");
+        _CCCL_ASSERT(children[result].empty(), "invalid state");
+        parent[result] = -1;
 
-        return res;
+        return result;
       }
 
       // When a node of the tree is destroyed, we can reuse its offset by
@@ -222,24 +248,11 @@ public:
         int p = parent[offset];
         if (p != -1)
         {
-          bool found = false;
-          ::std::vector<int> new_children;
-          new_children.reserve(children[p].size() - 1);
-          for (auto c : children[p])
-          {
-            if (c == offset)
-            {
-              found = true;
-            }
-            else
-            {
-              new_children.push_back(c);
-            }
-          }
-
-          // Ensure we did find the node in it's parent's children
-          _CCCL_ASSERT(found, "invalid hierarchy state");
-          ::std::swap(children[p], new_children);
+          // Use efficient erase-remove idiom instead of rebuilding vector
+          auto& parent_children = children[p];
+          auto it               = ::std::find(parent_children.begin(), parent_children.end(), offset);
+          _CCCL_ASSERT(it != parent_children.end(), "invalid hierarchy state");
+          parent_children.erase(it);
         }
 
         children[offset].clear();
@@ -257,13 +270,13 @@ public:
 
       int get_parent(int offset) const
       {
-        _CCCL_ASSERT(offset < int(parent.size()), "");
+        _CCCL_ASSERT(offset < int(parent.size()), "node offset exceeds parent array size");
         return parent[offset];
       }
 
       const auto& get_children(int offset) const
       {
-        _CCCL_ASSERT(offset < int(children.size()), "");
+        _CCCL_ASSERT(offset < int(children.size()), "node offset exceeds children array size");
         return children[offset];
       }
 
@@ -350,7 +363,10 @@ public:
 
       if (int(nodes.size()) <= node_offset)
       {
-        nodes.resize(node_offset + 1); // TODO round or resize to node_tree size ?
+        // Use exponential growth to reduce allocation overhead
+        size_t new_size = ::std::max(
+          static_cast<size_t>(node_offset + 1), nodes.size() * growth_factor_numerator / growth_factor_denominator);
+        nodes.resize(new_size);
       }
 
       // Ensure the node offset was unused
@@ -618,13 +634,13 @@ public:
 
     int get_parent_offset(int offset) const
     {
-      _CCCL_ASSERT(offset != -1, "");
+      _CCCL_ASSERT(offset != -1, "invalid node offset for parent lookup");
       return node_tree.get_parent(offset);
     }
 
     const auto& get_children_offsets(int parent) const
     {
-      _CCCL_ASSERT(parent != -1, "");
+      _CCCL_ASSERT(parent != -1, "invalid parent offset for children lookup");
       return node_tree.get_children(parent);
     }
 
@@ -633,8 +649,8 @@ public:
     {
       traverse_nodes([this](int offset) {
         auto& ctx = get_ctx(offset);
-        fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
-        //  ctx.print_logical_data_summary();
+        // fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
+        //   ctx.print_logical_data_summary();
       });
     }
 
@@ -1463,7 +1479,8 @@ class stackable_logical_data
 
       impl_state->was_destroyed = true;
 
-      // TODO reset all leaves to destroy ld early
+      // TODO: Implement early cleanup of leaf nodes for better resource management
+      // For now, we remove the last node but should traverse all leaves
       impl_state->data_nodes.pop_back();
 
       // Ensure we don't destroy the state too early by retaining its state
@@ -1566,7 +1583,9 @@ class stackable_logical_data
       }
       else
       {
-        // TODO check that the frozen mode is compatible !
+        // Verify that the frozen mode is compatible with the requested access mode
+        _CCCL_ASSERT(access_mode_is_compatible(from_data_node.frozen_ld.value().get_access_mode(), m),
+                     "Incompatible access mode: existing frozen mode conflicts with requested mode");
       }
 
       _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
@@ -1625,8 +1644,8 @@ class stackable_logical_data
     // The write-back mechanism here refers to the write-back of the data at the bottom of the stack (user visible)
     void set_write_back(bool flag)
     {
-      _CCCL_ASSERT(impl_state->s.size() > 0, "invalid value");
-      impl_state->s[0].set_write_back(flag);
+      _CCCL_ASSERT(!impl_state->data_nodes.empty(), "invalid value");
+      impl_state->data_nodes[0].value().ld.set_write_back(flag);
     }
 
     // Indicate that this logical data will only be used in a read-only mode
@@ -1673,7 +1692,8 @@ class stackable_logical_data
     template <typename, typename, bool>
     friend class stackable_task_dep;
 
-    // TODO replace this mutable by a const ...
+    // Note: mutable required for validate_access() calls from const methods
+    // Consider refactoring to make validation logic const-correct
     mutable stackable_ctx sctx; // in which stackable context was this created ?
 
     ::std::shared_ptr<state> impl_state;

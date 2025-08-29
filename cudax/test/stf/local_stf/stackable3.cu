@@ -21,34 +21,6 @@
 
 using namespace cuda::experimental::stf;
 
-template <typename T>
-static __global__ void kernel_set(T* addr, T val)
-{
-  printf("SETTING ADDR %p at %d\n", addr, val);
-  *addr = val;
-}
-
-template <typename T>
-static __global__ void kernel_add(T* addr, T val)
-{
-  *addr += val;
-}
-
-template <typename T>
-static __global__ void kernel_check_value(T* addr, T val)
-{
-  printf("CHECK %d EXPECTED %d\n", *addr, val);
-  if (*addr != val)
-  {
-    ::cuda::std::terminate();
-  }
-}
-
-int X0(int i)
-{
-  return 17 * i + 45;
-}
-
 int main()
 {
   stackable_ctx sctx;

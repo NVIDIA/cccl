@@ -22,27 +22,27 @@ int main()
 {
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
-  //  // Generate a random filename
-  //  int r = rand();
-  //
-  //  char filename[64];
-  //  snprintf(filename, 64, "output_%d.dot", r);
-  //  // fprintf(stderr, "filename %s\n", filename);
-  //  setenv("CUDASTF_DOT_FILE", filename, 1);
+  // Test configuration constants
+  constexpr size_t buffer_size    = 64;
+  constexpr size_t num_iterations = 3;
 
   stackable_ctx ctx;
 
-  auto lA = ctx.logical_data(shape_of<slice<char>>(64));
-  auto lB = ctx.logical_data(shape_of<slice<char>>(64));
-  auto lC = ctx.logical_data(shape_of<slice<char>>(64));
+  // Create logical data for the computation pipeline
+  auto lA = ctx.logical_data(shape_of<slice<char>>(buffer_size));
+  auto lB = ctx.logical_data(shape_of<slice<char>>(buffer_size));
+  auto lC = ctx.logical_data(shape_of<slice<char>>(buffer_size));
 
+  // Initialize all logical data in a dedicated DOT section
   auto r_init = ctx.dot_section("init");
   ctx.task(lA.write()).set_symbol("initA")->*[](cudaStream_t, auto) {};
   ctx.task(lB.write()).set_symbol("initB")->*[](cudaStream_t, auto) {};
   ctx.task(lC.write()).set_symbol("initC")->*[](cudaStream_t, auto) {};
   r_init.end();
 
-  for (size_t j = 0; j < 3; j++)
+  // Test nested DOT sections with stackable contexts
+  // This creates a hierarchical structure to verify DOT graph generation
+  for (size_t j = 0; j < num_iterations; j++)
   {
     auto r0 = ctx.dot_section("lvl0");
     ctx.task(lA.rw()).set_symbol("f1")->*[](cudaStream_t, auto) {};
@@ -58,13 +58,5 @@ int main()
   }
   ctx.finalize();
 
-//  // Call this explicitly for the purpose of the test
-//  reserved::dot::instance().finish();
-//
-//  // Make sure the file exists, and erase it
-//  // fprintf(stderr, "ERASE. ...\n");
-//  EXPECT(access(filename, F_OK) != -1);
-//
-//  EXPECT(unlink(filename) == 0);
 #endif // !_CCCL_COMPILER(MSVC)
 }

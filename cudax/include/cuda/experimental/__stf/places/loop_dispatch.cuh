@@ -53,7 +53,7 @@ inline size_t customHash(size_t value)
 
 class stackable_ctx;
 
-inline bool disable_stackable()
+inline bool stackable_disabled()
 {
   static const bool disabled = [] {
     const char* env_val = ::std::getenv("DISABLE_STACKABLE");
@@ -82,10 +82,10 @@ inline void loop_dispatch(
 
   int head = -1;
 
-  if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
+  if constexpr (::std::is_same_v<::std::remove_reference_t<context_t>, stackable_ctx>)
   {
     head = ctx.get_head_offset();
-    fprintf(stderr, "LOOP DISPATCH on stackable ctx ... head %d\n", head);
+    // fprintf(stderr, "LOOP DISPATCH on stackable ctx ... head %d\n", head);
   }
 
   ::std::vector<::std::thread> threads;
@@ -97,14 +97,15 @@ inline void loop_dispatch(
     // Work that should be performed by thread "tid"
     auto tid_work = [=, &ctx, &func]() {
       // TODO we should have a prologue and epilogue (per place)
-      if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
+      if constexpr (::std::is_same_v<::std::remove_reference_t<context_t>, stackable_ctx>)
       {
         ctx.set_head_offset(head);
-        fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d - tid %ld / nthreads %ld\n", head, tid, nthreads);
-        if (!disable_stackable())
-        {
-          //      ctx.push();
-        }
+        // fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d - tid %ld / nthreads %ld\n", head, tid,
+        // nthreads);
+        //  if (!stackable_disabled())
+        //  {
+        //    ctx.push();
+        //  }
       }
 
       // Distribute subplaces in a round robin fashion
@@ -124,13 +125,13 @@ inline void loop_dispatch(
         }
       }
 
-      if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
-      {
-        if (!disable_stackable())
-        {
-          //    ctx.pop();
-        }
-      }
+      // if constexpr (::std::is_same_v<::std::remove_reference_t<context_t>, stackable_ctx>)
+      // {
+      //   if (!stackable_disabled())
+      //   {
+      //     ctx.pop();
+      //   }
+      // }
 
       ctx.pop_affinity();
     };

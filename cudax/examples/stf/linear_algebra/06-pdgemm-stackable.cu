@@ -13,6 +13,8 @@
  * @brief An example that implements a tiled matrix product over multiple devices using CUBLAS
  */
 
+#include <cstdlib>
+
 #include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 #include "cuda/experimental/stf.cuh"
 #include <nvtx3/nvToolsExt.h>
@@ -48,23 +50,26 @@ public:
          size_t BLOCKSIZE_ROWS,
          size_t BLOCKSIZE_COLS,
          const char* _symbol = "matrix")
+      : h_array(nullptr)
+      , m(NROWS)
+      , n(NCOLS)
+      , mb(BLOCKSIZE_ROWS)
+      , nb(BLOCKSIZE_COLS)
+      , mt(0)
+      , nt(0)
+      , symbol(_symbol)
+      , ndevs(0)
+      , grid_p(0)
+      , grid_q(0)
   {
-    symbol = _symbol;
-
-    m  = NROWS;
-    mb = BLOCKSIZE_ROWS;
-
-    n  = NCOLS;
-    nb = BLOCKSIZE_COLS;
-
     assert(m % mb == 0);
     assert(n % nb == 0);
 
-    size_t s = ((size_t) m) * ((size_t) n) * sizeof(T);
+    const size_t s = m * n * sizeof(T);
     // cuda_safe_call(cudaMallocHost(&h_array, m*n*sizeof(T)));
     // fprintf(stderr, "Allocating %ld x %ld x %ld = %ld bytes (%f GB) on host for %s\n", m, n, sizeof(T), s,
     //        s / (1024.0 * 1024.0 * 1024.0), _symbol);
-    h_array = (T*) malloc(s);
+    h_array = static_cast<T*>(malloc(s));
     assert(h_array);
     cuda_safe_call(cudaHostRegister(h_array, s, cudaHostRegisterPortable));
 
@@ -114,7 +119,22 @@ public:
     //           << "p=" << grid_p << " q=" << grid_q << std::endl;
   }
 
-  void push(/*stackable_ctx& ctx, */ access_mode mode)
+  ~matrix()
+  {
+    if (h_array)
+    {
+      cuda_safe_call(cudaHostUnregister(h_array));
+      free(h_array);
+    }
+  }
+
+  // Disable copy and move operations - this is a resource-owning class used locally
+  matrix(const matrix&)            = delete;
+  matrix& operator=(const matrix&) = delete;
+  matrix(matrix&&)                 = delete;
+  matrix& operator=(matrix&&)      = delete;
+
+  void push(access_mode mode)
   {
     for (auto& h : handles)
     {
@@ -122,7 +142,7 @@ public:
     }
   }
 
-  int get_preferred_devid(int row, int col)
+  int get_preferred_devid(int row, int col) const
   {
     return (row % grid_p) + (col % grid_q) * grid_p;
   }
@@ -132,20 +152,25 @@ public:
     return handles[row + col * mt];
   }
 
-  size_t get_index(size_t row, size_t col)
+  auto& get_handle(int row, int col) const
+  {
+    return handles[row + col * mt];
+  }
+
+  size_t get_index(size_t row, size_t col) const
   {
 #ifdef TILED
     // Find which tile contains this element
-    int tile_row = row / mb;
-    int tile_col = col / nb;
+    const int tile_row = static_cast<int>(row / mb);
+    const int tile_col = static_cast<int>(col / nb);
 
-    size_t tile_size = mb * nb;
+    const size_t tile_size = mb * nb;
 
     // Look for the index of the beginning of the tile
-    size_t tile_start = (tile_row + mt * tile_col) * tile_size;
+    const size_t tile_start = (tile_row + mt * tile_col) * tile_size;
 
     // Offset within the tile
-    size_t offset = (row % mb) + (col % nb) * mb;
+    const size_t offset = (row % mb) + (col % nb) * mb;
 
     return tile_start + offset;
 #else
@@ -155,7 +180,7 @@ public:
 
   T* get_block_h(int brow, int bcol)
   {
-    size_t index = get_index(brow * mb, bcol * nb);
+    const size_t index = get_index(brow * mb, bcol * nb);
     return &h_array[index];
   }
 
@@ -175,9 +200,9 @@ public:
 
         ctx.parallel_for(exec_place::device(devid), h.shape(), h.write()).set_symbol("INIT")->*
           [=] _CCCL_DEVICE(size_t lrow, size_t lcol, auto sA) {
-            size_t row     = lrow + rowb * sA.extent(0);
-            size_t col     = lcol + colb * sA.extent(1);
-            sA(lrow, lcol) = fun(row, col);
+            const size_t row = lrow + rowb * sA.extent(0);
+            const size_t col = lcol + colb * sA.extent(1);
+            sA(lrow, lcol)   = fun(row, col);
           };
       }
     }
@@ -209,10 +234,10 @@ void DGEMM(
   cublasOperation_t transa,
   cublasOperation_t transb,
   double alpha,
-  matrix<double>& A,
+  const matrix<double>& A,
   int A_row,
   int A_col,
-  matrix<double>& B,
+  const matrix<double>& B,
   int B_row,
   int B_col,
   double beta,
@@ -220,7 +245,7 @@ void DGEMM(
   int C_row,
   int C_col)
 {
-  auto dev = exec_place::device(C.get_preferred_devid(C_row, C_col));
+  const auto dev = exec_place::device(C.get_preferred_devid(C_row, C_col));
 
   auto t = ctx.task(
     dev, A.get_handle(A_row, A_col).read(), B.get_handle(B_row, B_col).read(), C.get_handle(C_row, C_col).rw());
@@ -251,8 +276,8 @@ void PDGEMM(stackable_ctx& ctx,
             cublasOperation_t transa,
             cublasOperation_t transb,
             double alpha,
-            matrix<double>& A,
-            matrix<double>& B,
+            const matrix<double>& A,
+            const matrix<double>& B,
             double beta,
             matrix<double>& C)
 {
@@ -263,10 +288,10 @@ void PDGEMM(stackable_ctx& ctx,
       //=========================================
       // alpha*A*B does not contribute; scale C
       //=========================================
-      int inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
+      const size_t inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
       if (alpha == 0.0 || inner_k == 0)
       {
-        DGEMM(ctx, transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, m, n);
+        DGEMM(ctx, transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, static_cast<int>(m), static_cast<int>(n));
       }
       else if (transa == CUBLAS_OP_N)
       {
@@ -278,8 +303,21 @@ void PDGEMM(stackable_ctx& ctx,
           assert(A.nt == B.mt);
           for (size_t k = 0; k < A.nt; k++)
           {
-            double zbeta = k == 0 ? beta : 1.0;
-            DGEMM(ctx, transa, transb, alpha, A, m, k, B, k, n, zbeta, C, m, n);
+            const double zbeta = k == 0 ? beta : 1.0;
+            DGEMM(ctx,
+                  transa,
+                  transb,
+                  alpha,
+                  A,
+                  static_cast<int>(m),
+                  static_cast<int>(k),
+                  B,
+                  static_cast<int>(k),
+                  static_cast<int>(n),
+                  zbeta,
+                  C,
+                  static_cast<int>(m),
+                  static_cast<int>(n));
           }
         }
         //=====================================
@@ -289,8 +327,21 @@ void PDGEMM(stackable_ctx& ctx,
         {
           for (size_t k = 0; k < A.nt; k++)
           {
-            double zbeta = k == 0 ? beta : 1.0;
-            DGEMM(ctx, transa, transb, alpha, A, m, k, B, n, k, zbeta, C, m, n);
+            const double zbeta = k == 0 ? beta : 1.0;
+            DGEMM(ctx,
+                  transa,
+                  transb,
+                  alpha,
+                  A,
+                  static_cast<int>(m),
+                  static_cast<int>(k),
+                  B,
+                  static_cast<int>(n),
+                  static_cast<int>(k),
+                  zbeta,
+                  C,
+                  static_cast<int>(m),
+                  static_cast<int>(n));
           }
         }
       }
@@ -303,8 +354,21 @@ void PDGEMM(stackable_ctx& ctx,
         {
           for (size_t k = 0; k < A.mt; k++)
           {
-            double zbeta = k == 0 ? beta : 1.0;
-            DGEMM(ctx, transa, transb, alpha, A, k, m, B, k, n, zbeta, C, m, n);
+            const double zbeta = k == 0 ? beta : 1.0;
+            DGEMM(ctx,
+                  transa,
+                  transb,
+                  alpha,
+                  A,
+                  static_cast<int>(k),
+                  static_cast<int>(m),
+                  B,
+                  static_cast<int>(k),
+                  static_cast<int>(n),
+                  zbeta,
+                  C,
+                  static_cast<int>(m),
+                  static_cast<int>(n));
           }
         }
         //==========================================
@@ -314,8 +378,21 @@ void PDGEMM(stackable_ctx& ctx,
         {
           for (size_t k = 0; k < A.mt; k++)
           {
-            double zbeta = k == 0 ? beta : 1.0;
-            DGEMM(ctx, transa, transb, alpha, A, k, m, B, n, k, zbeta, C, m, n);
+            const double zbeta = k == 0 ? beta : 1.0;
+            DGEMM(ctx,
+                  transa,
+                  transb,
+                  alpha,
+                  A,
+                  static_cast<int>(k),
+                  static_cast<int>(m),
+                  B,
+                  static_cast<int>(n),
+                  static_cast<int>(k),
+                  zbeta,
+                  C,
+                  static_cast<int>(m),
+                  static_cast<int>(n));
           }
         }
       }
@@ -380,8 +457,9 @@ void run(stackable_ctx& ctx, size_t N, size_t NB)
   float milliseconds;
   cuda_safe_call(cudaEventElapsedTime(&milliseconds, startEvent, stopEvent));
 
-  double gflops_pdgemm = 2.0 * ((double) N * (double) N * (double) N) / (1000000000.0);
-  std::cout
+  const double gflops_pdgemm =
+    2.0 * (static_cast<double>(N) * static_cast<double>(N) * static_cast<double>(N)) / 1000000000.0;
+  ::std::cout
     << "[PDDGEMM] ELAPSED: " << milliseconds << " ms, GFLOPS: " << gflops_pdgemm / (milliseconds / 1000.0) << '\n';
 }
 
@@ -392,12 +470,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    N = atoi(argv[1]);
+    N = static_cast<size_t>(::std::atoi(argv[1]));
   }
 
   if (argc > 2)
   {
-    NB = atoi(argv[2]);
+    NB = static_cast<size_t>(::std::atoi(argv[2]));
   }
 
   assert(N % NB == 0);

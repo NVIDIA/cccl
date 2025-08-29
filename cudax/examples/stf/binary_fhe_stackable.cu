@@ -32,11 +32,10 @@ public:
   plaintext(stackable_ctx& ctx, ::std::vector<char> v)
       : values(mv(v))
       , ctx(ctx)
-  {
-    ld = ctx.logical_data(values.data(), values.size());
-  }
+      , ld(ctx.logical_data(values.data(), values.size()))
+  {}
 
-  auto& set_symbol(std::string s)
+  auto& set_symbol(const std::string& s)
   {
     ld.set_symbol(s);
     symbol = s;
@@ -44,12 +43,10 @@ public:
     return *this;
   }
 
-  std::string get_symbol() const
+  const std::string& get_symbol() const
   {
     return symbol;
   }
-
-  ::std::string symbol;
 
   // This will asynchronously fill string s
   void convert_to_vector(std::vector<char>& v)
@@ -65,11 +62,13 @@ public:
 
   ciphertext encrypt() const;
 
-  mutable stackable_logical_data<slice<char>> ld;
-
 private:
   std::vector<char> values;
   mutable stackable_ctx ctx;
+  ::std::string symbol;
+
+public:
+  mutable stackable_logical_data<slice<char>> ld;
 };
 
 class ciphertext
@@ -80,6 +79,7 @@ public:
   // We need a deep-copy semantic
   ciphertext(const ciphertext& other)
       : ctx(other.ctx)
+      , symbol(other.symbol)
   {
     copy_content(ctx, other, *this);
   }
@@ -93,7 +93,7 @@ public:
 
   static void copy_content(stackable_ctx& ctx, const ciphertext& src, ciphertext& dst)
   {
-    dst.ld = stackable_logical_data<slice<uint64_t>>(ctx.logical_data(src.ld.shape()));
+    dst.ld = ctx.logical_data(src.ld.shape());
     ctx.parallel_for(src.ld.shape(), src.ld.read(), dst.ld.write()).set_symbol("copy")->*
       [] __device__(size_t i, auto src, auto dst) {
         dst(i) = src(i);
@@ -103,9 +103,14 @@ public:
   auto& set_symbol(std::string s)
   {
     ld.set_symbol(s);
-    symbol = s;
+    symbol = mv(s);
 
     return *this;
+  }
+
+  const std::string& get_symbol() const
+  {
+    return symbol;
   }
 
   plaintext decrypt() const
@@ -113,8 +118,8 @@ public:
     plaintext p(ctx);
     p.ld = ctx.logical_data(shape_of<slice<char>>(ld.shape().size()));
     ctx.parallel_for(ld.shape(), ld.read(), p.ld.write()).set_symbol("decrypt")->*
-      [] __device__(size_t i, auto dctxt, auto dptxt) {
-        dptxt(i) = char((dctxt(i) >> 32));
+      [] __device__(size_t i, auto cipher_data, auto plain_data) {
+        plain_data(i) = static_cast<char>(cipher_data(i) >> 32);
       };
     return p;
   }
@@ -126,7 +131,8 @@ public:
     if (this != &other)
     {
       fprintf(stderr, "CTX copy assignment (src = %s)\n", other.symbol.c_str());
-      ctx = other.ctx;
+      ctx    = other.ctx;
+      symbol = other.symbol;
       copy_content(ctx, other, *this);
     }
     return *this;
@@ -195,19 +201,19 @@ ciphertext plaintext::encrypt() const
 template <typename T>
 T circuit(const T& a, const T& b)
 {
-  return (~((a | ~b) & (~a | b)));
+  return ~((a | ~b) & (~a | b));
 }
 
 int main()
 {
   stackable_ctx ctx;
 
-  std::vector<char> vA{3, 3, 2, 2, 17};
-  plaintext pA(ctx, vA);
+  const std::vector<char> vA{3, 3, 2, 2, 17};
+  plaintext pA(ctx, std::vector<char>(vA));
   pA.set_symbol("A");
 
-  std::vector<char> vB{1, 7, 7, 7, 49};
-  plaintext pB(ctx, vB);
+  const std::vector<char> vB{1, 7, 7, 7, 49};
+  plaintext pB(ctx, std::vector<char>(vB));
   pB.set_symbol("B");
 
   auto s_encrypt = ctx.dot_section("encrypt");

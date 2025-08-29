@@ -952,18 +952,18 @@ public:
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<args_t*>(untyped_args);
-      SCOPE(exit)
+      // Delete the heap allocation with the argument if we are not building
+      // a CUDA graph. If this is a CUDA graph, that argument will be
+      // retained until the graph can be destroyed so that we can safely call
+      // this graph multiple times without erasing the arguments on the first
+      // call
+      if constexpr (!::std::is_same_v<context, graph_ctx>)
       {
-        // Delete the heap allocation with the argument if we are not building
-        // a CUDA graph. If this is a CUDA graph, that argument will be
-        // retained until the graph can be destroyed so that we can safely call
-        // this graph multiple times without erasing the arguments on the first
-        // call
-        if constexpr (!::std::is_same_v<context, graph_ctx>)
+        SCOPE(exit)
         {
           delete p;
-        }
-      };
+        };
+      }
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
