@@ -22,7 +22,7 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER()
-#include <cub/device/device_transform.cuh>
+#  include <cub/device/device_transform.cuh>
 #endif
 
 #include <cuda/__memory_resource/get_memory_resource.h>
@@ -555,7 +555,7 @@ void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFro
     __stream.get());
 }
 
-_LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <typename _Tp>
 struct __fill_value_generator
@@ -607,7 +607,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
   }
 }
 
-_LIBCUDACXX_DETAIL_MAGIC_NS_END
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
