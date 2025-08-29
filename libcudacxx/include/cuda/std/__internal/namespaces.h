@@ -87,22 +87,22 @@
 #  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
 #endif // !_CCCL_COMPILER(CLANG, ==, 16)
 
-#if defined(LIBCUDACXX_DISABLE_NAMESPACE_MAGIC)
-#  define _LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN
-#  define _LIBCUDACXX_DETAIL_MAGIC_NS_END
-#else // not defined(LIBCUDACXX_DISABLE_NAMESPACE_MAGIC)
+#if defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
+#  define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+#  define _CCCL_END_NAMESPACE_ARCH_DEPENDENT
+#else // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
 #  if defined(_NVHPC_CUDA)
-#    define _LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, LIBCUDACXX, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
+#    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
       {
-#    define _LIBCUDACXX_DETAIL_MAGIC_NS_END }
+#    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
 #  else // not defined(_NVHPC_CUDA)
-#    define _LIBCUDACXX_DETAIL_MAGIC_NS_BEGIN                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, LIBCUDACXX, SM, __CUDA_ARCH_LIST__)               \
+#    define _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT                                                    \
+      inline namespace _CCCL_PP_SPLICE_WITH(_, CCCL, SM, __CUDA_ARCH_LIST__)                \
       {
-#    define _LIBCUDACXX_DETAIL_MAGIC_NS_END }
+#    define _CCCL_END_NAMESPACE_ARCH_DEPENDENT }
 #  endif // not defined(_NVHPC_CUDA)
-#endif // not defined(LIBCUDACXX_DISABLE_NAMESPACE_MAGIC)
+#endif // not defined(CCCL_DISABLE_ARCH_DEPENDENT_NAMESPACE)
 
 // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
