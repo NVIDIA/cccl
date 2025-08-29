@@ -69,8 +69,6 @@ def test_pytorch():
             tX = torch_from_cai(dX)
             # same as tX =t.get_arg_as_tensor(0) 
             tX = tX*2
-            pass
-        pass
 
     with ctx.task(lX.read(), lY.write()) as t:
         sptr = t.stream_ptr()
@@ -79,8 +77,6 @@ def test_pytorch():
             tX =t.get_arg_as_tensor(0) 
             tY =t.get_arg_as_tensor(1) 
             tY = tX*2
-            pass
-        pass
 
     with ctx.task(lX.read(), lZ.write()) as t:
         sptr = t.stream_ptr()
@@ -89,8 +85,6 @@ def test_pytorch():
             tX =t.get_arg_as_tensor(0) 
             tZ =t.get_arg_as_tensor(1) 
             tZ = tX*4 + 1
-            pass
-        pass
 
     with ctx.task(lY.read(), lZ.rw()) as t:
         sptr = t.stream_ptr()
@@ -99,8 +93,6 @@ def test_pytorch():
             tY =t.get_arg_as_tensor(0) 
             tZ =t.get_arg_as_tensor(1) 
             tZ = tY*2 - 3
-            pass
-        pass
 
     ctx.finalize()
 
