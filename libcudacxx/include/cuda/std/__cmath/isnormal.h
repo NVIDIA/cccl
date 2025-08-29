@@ -40,6 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if !_CCCL_COMPILER(GCC)
+#if !_CCCL_COMPILER(GCC)
 [[nodiscard]]
 #elif __cplusplus >= 201703L && _CCCL_COMPILER(GCC)
 __attribute__((__warn_unused_result__))
@@ -82,6 +83,7 @@ _CCCL_API constexpr bool isnormal(long double __x) noexcept
 #  endif // !_CCCL_BUILTIN_ISNORMAL
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
+#endif
 
 #if _CCCL_HAS_NVFP16()
 #if !_CCCL_COMPILER(GCC)
@@ -179,6 +181,7 @@ _CCCL_API constexpr bool isnormal(__nv_fp4_e2m1 __x) noexcept
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
+#if !_CCCL_COMPILER(GCC)
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
 #if !_CCCL_COMPILER(GCC)
@@ -190,6 +193,7 @@ _CCCL_API constexpr bool isnormal(_Tp __x) noexcept
 {
   return __x != 0;
 }
+#endif
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
