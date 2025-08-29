@@ -137,7 +137,7 @@ def create_test_functions():
         # Create the test function
         def make_test_func(mod_name, disp_name):
             def test_func():
-                run_example_module(mod_name, disp_name)
+                assert run_example_module(mod_name, disp_name)
 
             return test_func
 

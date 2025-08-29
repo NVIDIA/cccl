@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Union
-
 import numpy as np
 
 from .. import _bindings
@@ -178,9 +176,9 @@ def make_histogram_even(
 def histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
     d_histogram: DeviceArrayLike,
-    num_output_levels: int,
-    lower_level: Union[np.floating, np.integer],
-    upper_level: Union[np.floating, np.integer],
+    num_output_levels: np.integer | np.ndarray,
+    lower_level: np.floating | np.integer | np.ndarray,
+    upper_level: np.floating | np.integer | np.ndarray,
     num_samples: int,
     stream=None,
 ):
@@ -192,9 +190,15 @@ def histogram_even(
     Args:
         d_samples: Device array or iterator containing the input sequence of data samples
         d_histogram: Device array to store the computed histogram
-        num_output_levels: Number of histogram bin levels (num_bins = num_output_levels - 1)
-        lower_level: Lower sample value bound (inclusive)
-        upper_level: Upper sample value bound (exclusive)
+        num_output_levels
+            The number of histogram bin levels (num_bins = num_output_levels - 1).
+            Can be a scalar integer or a numpy array of size 1.
+        lower_level
+            Lower sample value bound (inclusive).
+            Can be a scalar or a numpy array of size 1.
+        upper_level
+            Upper sample value bound (exclusive).
+            Can be a scalar or a numpy array of size 1.
         num_samples: Number of input samples
         stream: CUDA stream for the operation (optional)
     """
@@ -202,9 +206,9 @@ def histogram_even(
     # each of these parameters. The API only supports one channel for now but we
     # pass arrays to make_histogram_even to support multiple channels in the
     # future.
-    h_num_output_levels = np.array([num_output_levels], dtype=np.int32)
-    h_lower_level = np.array([lower_level], dtype=type(lower_level))
-    h_upper_level = np.array([upper_level], dtype=type(upper_level))
+    h_num_output_levels = np.atleast_1d(num_output_levels).astype(np.int32)
+    h_lower_level = np.atleast_1d(lower_level)
+    h_upper_level = np.atleast_1d(upper_level)
 
     histogram = make_histogram_even(
         d_samples,
