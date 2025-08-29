@@ -28,7 +28,7 @@ struct bbox
   // construct an empty box
   __host__ __device__ bbox() {}
 
-  // construct a box from a single point
+  // construct a box from a single pointgit branch -a
   __host__ __device__ bbox(const point2d& point)
       : lower_left(point)
       , upper_right(point)
