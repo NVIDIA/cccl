@@ -9,19 +9,19 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX_NVRTC_FORCE_INCLUDE_H
-#define _LIBCUDACXX_NVRTC_FORCE_INCLUDE_H
+#  define _LIBCUDACXX_NVRTC_FORCE_INCLUDE_H
 
-#if defined(__CUDACC_RTC__)
-#  define TEST_NVRTC
-#  define TEST_NVRTC_VER_MAJOR __CUDACC_VER_MAJOR__
-#  define TEST_NVRTC_VER_MINOR __CUDACC_VER_MINOR__
-#endif
+#  if defined(__CUDACC_RTC__)
+#    define TEST_NVRTC
+#    define TEST_NVRTC_VER_MAJOR __CUDACC_VER_MAJOR__
+#    define TEST_NVRTC_VER_MINOR __CUDACC_VER_MINOR__
+#  endif
 
 // Disable once this bug is fixed
-#if defined(TEST_NVRTC) && (TEST_NVRTC_VER_MAJOR >= 13)
-#  define TEST_NVRTC_DISABLE_VIRTUAL_DEFAULT_DTOR_STRUCT
-#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION __host__ __device__
-#else
-#  define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
+#  if defined(TEST_NVRTC) && (TEST_NVRTC_VER_MAJOR >= 13)
+#    define TEST_NVRTC_DISABLE_VIRTUAL_DEFAULT_DTOR_STRUCT
+#    define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION __host__ __device__
+#  else
+#    define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 
-#endif // _LIBCUDACXX_NVRTC_FORCE_INCLUDE_H
+#  endif // _LIBCUDACXX_NVRTC_FORCE_INCLUDE_H
