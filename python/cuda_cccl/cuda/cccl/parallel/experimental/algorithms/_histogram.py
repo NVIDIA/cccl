@@ -146,13 +146,11 @@ def make_histogram_even(
     """Implements a device-wide histogram that places ``d_samples`` into evenly-spaced bins.
 
     Example:
-        Below, ``histogram`` is used to bin a sequence of samples.
+        Below, ``make_histogram_even`` is used to create a histogram object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_histogram_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/histogram/histogram_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin histogram-even
-          :end-before: example-end histogram-even
+          :start-after: # example-begin
 
     Args:
         d_samples: Device array or iterator containing the input samples to be histogrammed
@@ -188,6 +186,14 @@ def histogram_even(
     Performs device-wide histogram computation with evenly-spaced bins.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``histogram_even`` is used to compute a histogram with evenly-spaced bins.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/histogram/histogram_even_basic.py
+            :language: python
+            :start-after: # example-begin
+            :caption: Basic histogram example.
 
     Args:
         d_samples: Device array or iterator containing the input sequence of data samples

@@ -128,13 +128,12 @@ def make_reduce_into(
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``reduce_into`` is used to compute the minimum value of a sequence of integers.
+        Below, ``make_reduce_into`` is used to create a reduction object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/reduce_object.py
             :language: python
-            :dedent:
-            :start-after: example-begin reduce-min
-            :end-before: example-end reduce-min
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -160,6 +159,14 @@ def reduce_into(
     Performs device-wide reduction.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``reduce_into`` is used to compute the sum of a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/sum_reduction.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items

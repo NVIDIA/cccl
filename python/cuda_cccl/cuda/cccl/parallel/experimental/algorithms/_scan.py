@@ -141,13 +141,12 @@ def make_exclusive_scan(
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``scan`` is used to compute an exclusive scan of a sequence of integers.
+        Below, ``make_exclusive_scan`` is used to create an exclusive scan object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin exclusive-scan-max
-          :end-before: example-end exclusive-scan-max
+          :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -173,6 +172,14 @@ def exclusive_scan(
     Performs device-wide exclusive scan.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``exclusive_scan`` is used to compute an exclusive scan with max operation.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -200,13 +207,12 @@ def make_inclusive_scan(
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``scan`` is used to compute an inclusive scan of a sequence of integers.
+        Below, ``make_inclusive_scan`` is used to create an inclusive scan object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin inclusive-scan-add
-          :end-before: example-end inclusive-scan-add
+          :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -232,6 +238,14 @@ def inclusive_scan(
     Performs device-wide inclusive scan.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``inclusive_scan`` is used to compute an inclusive scan (prefix sum).
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items

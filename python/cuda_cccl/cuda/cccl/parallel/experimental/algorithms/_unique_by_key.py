@@ -169,13 +169,12 @@ def make_unique_by_key(
     """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
 
     Example:
-        Below, ``unique_by_key`` is used to populate the arrays of output keys and items with the first key and its corresponding item from each sequence of equal keys. It also outputs the number of items selected.
+        Below, ``make_unique_by_key`` is used to create a unique by key object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_unique_by_key_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/unique/unique_by_key_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin unique-by-key
-          :end-before: example-end unique-by-key
+          :start-after: # example-begin
+
 
     Args:
         d_in_keys: Device array or iterator containing the input sequence of keys
@@ -208,6 +207,14 @@ def unique_by_key(
     Performs device-wide unique by key operation using the single-phase API.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``unique_by_key`` is used to populate the arrays of output keys and items with the first key and its corresponding item from each sequence of equal keys. It also outputs the number of items selected.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/unique/unique_by_key_basic.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in_keys: Device array or iterator containing the input sequence of keys

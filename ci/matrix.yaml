@@ -57,8 +57,8 @@ workflows:
     # TODO Just need this line once cccl.parallel tests pass on 12.5 and 12.6:
     # - {jobs: ['test'], project: 'python', ctk: ['12.5', 'curr'], py_version: ['3.10', '3.13'], gpu: 'l4'}
     # These two can be removed once the above is working:
-    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4'}
-    - {jobs: ['test_py_par'],                                         ctk: ['12.8', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4'}
+    - {jobs: ['test_py_headers', 'test_py_coop'], ctk: ['12.5', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4'}
+    - {jobs: ['test_py_par', 'test_py_examples'], ctk: ['12.8', 'curr'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4'}
     - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100'}
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
@@ -117,8 +117,8 @@ workflows:
     # TODO Just need this line once cccl.parallel tests pass on 12.5 and 12.6:
     # - {jobs: ['test'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
     # These two can be removed once the above is working.
-    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
-    - {jobs: ['test_py_par'],                                         ctk: [                '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
+    - {jobs: ['test_py_headers', 'test_py_coop'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
+    - {jobs: ['test_py_par', 'test_py_examples'], ctk: [                '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
     - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100'}
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
@@ -133,8 +133,8 @@ workflows:
     # TODO Just need this line once cccl.parallel tests pass on 12.5 and 12.6:
     # - {jobs: ['test'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4'}
     # These two can be removed once the above is working.
-    - {jobs: ['test_py_headers', 'test_py_coop', 'test_py_examples'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
-    - {jobs: ['test_py_par'],                                         ctk: ['12.8', '12.9'],                 py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
+    - {jobs: ['test_py_headers', 'test_py_coop'], ctk: ['12.5', '12.6', '12.8', '12.9'], py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
+    - {jobs: ['test_py_par', 'test_py_examples'], ctk: ['12.8', '12.9'],                 py_version: ['3.10', '3.11', '3.12', '3.13'], project: 'python', gpu: 'l4'}
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:

@@ -192,11 +192,10 @@ def make_unary_transform(
     storage allocation. For simpler usage, consider using :func:`unary_transform`.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/unary_transform_object.py
            :language: python
-           :dedent:
-           :start-after: example-begin transform-unary
-           :end-before: example-end transform-unary
+           :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items.
@@ -224,11 +223,10 @@ def make_binary_transform(
     storage allocation. For simpler usage, consider using :func:`binary_transform`.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/binary_transform_object.py
            :language: python
-           :dedent:
-           :start-after: example-begin transform-binary
-           :end-before: example-end transform-binary
+           :start-after: # example-begin
+
 
     Args:
         d_in1: Device array or iterator containing the first input sequence of data items.
@@ -250,17 +248,17 @@ def unary_transform(
     stream=None,
 ):
     """
-    Create a unary transform object that can be called to apply a transformation
-    to each element of the input according to the unary operation ``op``.
+    Performs device-wide unary transform.
 
-    This is the two-phase API that returns a transform object for execution.
+    This function automatically handles temporary storage allocation and execution.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
+        Below, ``unary_transform`` is used to apply a transformation to each element of the input.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/unary_transform_basic.py
            :language: python
-           :dedent:
-           :start-after: example-begin transform-unary
-           :end-before: example-end transform-unary
+           :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items.
@@ -282,17 +280,17 @@ def binary_transform(
     stream=None,
 ):
     """
-    Create a binary transform object that can be called to apply a transformation
-    to the given pair of input sequences according to the binary operation ``op``.
+    Performs device-wide binary transform.
 
-    This is the two-phase API that returns a transform object for execution.
+    This function automatically handles temporary storage allocation and execution.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_transform.py
+        Below, ``binary_transform`` is used to apply a transformation to pairs of elements from two input sequences.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/transform/binary_transform_basic.py
            :language: python
-           :dedent:
-           :start-after: example-begin transform-binary
-           :end-before: example-end transform-binary
+           :start-after: # example-begin
+
 
     Args:
         d_in1: Device array or iterator containing the first input sequence of data items.

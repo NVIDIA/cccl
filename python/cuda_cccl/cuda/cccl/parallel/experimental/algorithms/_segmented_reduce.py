@@ -175,13 +175,12 @@ def make_segmented_reduce(
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``segmented_reduce`` is used to compute the minimum value of a sequence of integers.
+        Below, ``make_segmented_reduce`` is used to create a segmented reduction object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_segmented_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/segmented/segmented_reduce_object.py
             :language: python
-            :dedent:
-            :start-after: example-begin segmented-reduce-min
-            :end-before: example-end segmented-reduce-min
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -211,6 +210,14 @@ def segmented_reduce(
     Performs device-wide segmented reduction.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``segmented_reduce`` is used to compute the minimum value of segments in a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/segmented/segmented_reduce_basic.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items

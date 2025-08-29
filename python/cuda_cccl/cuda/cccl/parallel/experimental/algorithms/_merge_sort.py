@@ -164,13 +164,12 @@ def make_merge_sort(
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
 
     Example:
-        Below, ``merge_sort`` is used to sort a sequence of keys inplace. It also rearranges the items according to the keys' order.
+        Below, ``make_merge_sort`` is used to create a merge sort object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_merge_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/merge_sort_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin merge-sort
-          :end-before: example-end merge-sort
+          :start-after: # example-begin
+
 
     Args:
         d_in_keys: Device array or iterator containing the input keys to be sorted
@@ -198,6 +197,14 @@ def merge_sort(
     Performs device-wide merge sort.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``merge_sort`` is used to sort a sequence of keys inplace. It also rearranges the items according to the keys' order.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/merge_sort_basic.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in_keys: Device array or iterator containing the input sequence of keys
