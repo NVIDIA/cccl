@@ -41,6 +41,7 @@ cdef extern from "cccl/c/types.h":
         UINT16 "CCCL_UINT16"
         UINT32 "CCCL_UINT32"
         UINT64 "CCCL_UINT64"
+        FLOAT16 "CCCL_FLOAT16"
         FLOAT32 "CCCL_FLOAT32"
         FLOAT64 "CCCL_FLOAT64"
         STORAGE "CCCL_STORAGE"

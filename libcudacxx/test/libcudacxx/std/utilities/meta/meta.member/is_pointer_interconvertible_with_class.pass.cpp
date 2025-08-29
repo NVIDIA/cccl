@@ -37,7 +37,7 @@ struct NonStandard
     : A
     , B
 {
-  __host__ __device__ virtual ~NonStandard() = default;
+  TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION virtual ~NonStandard() = default;
 
   int mns1;
 };
