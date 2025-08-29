@@ -100,7 +100,8 @@ build_doxygen() {
         else
             cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-                -Duse_libclang=NO \
+                -Duse_libclang=ON \
+                -Duse_libc++=ON \
                 -DBISON_EXECUTABLE="$(brew --prefix bison)/bin/bison" \
                 "${DOXYGEN_SRC_DIR}"
         fi
@@ -109,7 +110,8 @@ build_doxygen() {
         echo "Configuring for Linux/Ubuntu..."
         cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-            -Duse_libclang=NO \
+            -Duse_libclang=ON \
+            -Duse_libc++=ON \
             "${DOXYGEN_SRC_DIR}"
     fi
 
@@ -166,6 +168,12 @@ if ! python -c "import sphinx" 2>/dev/null; then
         exit 1
     }
 fi
+
+echo "Setting compile_commands.json"
+cmake --preset docs ..
+cmake --build --preset docs ..
+CCCL_COMPILE_COMMANDS_PATH=$(cd ..; pwd -P)
+export CCCL_COMPILE_COMMANDS_PATH
 
 # Generate Doxygen XML in parallel (if doxygen is available)
 if which ${DOXYGEN} > /dev/null 2>&1; then
