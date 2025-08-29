@@ -43,7 +43,6 @@ class stf_kernel_decorator:
         if ctx is not None and not isinstance(ctx, context):
             raise TypeError("4th item must be an STF context (or None to infer)")
 
-
         self._launch_cfg = (grid_dim, block_dim, ctx, exec_pl)
 
         return self
@@ -58,7 +57,7 @@ class stf_kernel_decorator:
 
         dep_items = []
         for i, a in enumerate(args):
-            # print(f"got one arg {a} is dep ? {isinstance(a, dep)}")
+            # print(f"got one arg {a} is dep ? {isinstance(a, dep)}")
             if isinstance(a, dep):
                 if ctx == None:
                     ld = a.get_ld()
@@ -72,13 +71,13 @@ class stf_kernel_decorator:
 
         with ctx.task(*task_args) as t:
             dev_args = list(args)
-            # print(dev_args)
+            # print(dev_args)
             for dep_index, (pos, _) in enumerate(dep_items):
-                # print(f"set arg {dep_index} at position {pos}")
+                # print(f"set arg {dep_index} at position {pos}")
                 dev_args[pos] = t.get_arg_numba(dep_index)
 
             if self._compiled_kernel is None:
-                # print("compile kernel")
+                # print("compile kernel")
                 self._compiled_kernel = cuda.jit(*self._jit_args, **self._jit_kwargs)(
                     self._pyfunc
                 )

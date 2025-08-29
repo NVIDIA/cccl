@@ -12,6 +12,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 import cuda.cccl.experimental.stf as cudastf
 
+
 class Plaintext:
     # Initialize from actual values, or from a logical data
     def __init__(self, ctx, values=None, ld=None):
@@ -32,7 +33,9 @@ class Plaintext:
         return Ciphertext(self.ctx, values=encrypted)
 
     def print_values(self):
-        with ctx.task(cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())) as t:
+        with ctx.task(
+            cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
+        ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             hvalues = t.get_arg_numba(0)
             print([v for v in hvalues])
@@ -139,6 +142,7 @@ class Ciphertext:
 
     def like_empty(self):
         return Ciphertext(self.ctx, ld=self.l.like_empty())
+
 
 def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
     return ~((eA | ~eB) & (~eA | eB))

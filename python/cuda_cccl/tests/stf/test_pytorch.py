@@ -5,7 +5,6 @@
 
 import numba
 import numpy as np
-import pytest
 import torch
 from numba import cuda
 
@@ -13,15 +12,10 @@ numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 from cuda.cccl.experimental.stf._stf_bindings import (
-    context, 
-    data_place,
-    exec_place,
-    read,
+    context,
     rw,
-    write,
 )
 
-import torch
 
 def torch_from_cai(obj):
     """
@@ -64,29 +58,37 @@ def test_pytorch():
     with ctx.task(rw(lX)) as t:
         torch_stream = torch.cuda.ExternalStream(t.stream_ptr())
         with torch.cuda.stream(torch_stream):
-            dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
+            dX = cuda.from_cuda_array_interface(
+                t.get_arg_cai(0), owner=None, sync=False
+            )
             tX = torch_from_cai(dX)
-            # same as tX =t.get_arg_as_tensor(0) 
-            tX = tX*2
+            # same as tX =t.get_arg_as_tensor(0)
+            tX = tX * 2
 
     with ctx.task(lX.read(), lY.write()) as t:
         torch_stream = torch.cuda.ExternalStream(t.stream_ptr())
         with torch.cuda.stream(torch_stream):
-            tX =t.get_arg_as_tensor(0) 
-            tY =t.get_arg_as_tensor(1) 
-            tY = tX*2
+            tX = t.get_arg_as_tensor(0)
+            tY = t.get_arg_as_tensor(1)
+            tY = tX * 2
 
-    with ctx.task(lX.read(), lZ.write()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+    with (
+        ctx.task(lX.read(), lZ.write()) as t,
+        torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
+    ):
         tX, tY = t.tensor_arguments()
-        tZ = tX*4 + 1
+        tZ = tX * 4 + 1
 
-    with ctx.task(lY.read(), lZ.rw()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+    with (
+        ctx.task(lY.read(), lZ.rw()) as t,
+        torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
+    ):
         tX, tZ = t.tensor_arguments()
-        tZ = tY*2 - 3
+        tZ = tY * 2 - 3
 
     ctx.finalize()
+
 
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
     test_pytorch()
-
