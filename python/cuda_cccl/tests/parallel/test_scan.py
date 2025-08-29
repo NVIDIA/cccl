@@ -77,9 +77,13 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
 
-    np.testing.assert_allclose(
-        expected, got, rtol=0.08 if dtype == np.float16 else 1e-5
-    )
+    if np.isdtype(dtype, ("real floating", "complex floating")):
+        real_dt = np.finfo(dtype).dtype
+        eps = np.finfo(real_dt).eps
+        rtol = 82 * eps
+        np.testing.assert_allclose(expected, got, rtol=rtol)
+    else:
+        np.testing.assert_array_equal(expected, got)
 
 
 @pytest.mark.parametrize(

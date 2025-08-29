@@ -31,7 +31,7 @@ def test_unary_transform(input_array):
     import numpy as np
 
     if input_array.dtype == np.float16:
-        pytest.xfail("float16 is not supported with custom operators")
+        pytest.skip("float16 is not supported with custom operators")
 
     # example-begin transform-unary
     import numpy as np
@@ -55,7 +55,7 @@ def test_binary_transform(input_array):
     import numpy as np
 
     if input_array.dtype == np.float16:
-        pytest.xfail("float16 is not supported with custom operators")
+        pytest.skip("float16 is not supported with custom operators")
 
     # example-begin transform-binary
     import numpy as np
