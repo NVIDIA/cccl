@@ -40,7 +40,7 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
 
   // compute max-scan over the output indices, filling in the holes
   thrust::inclusive_scan(
-    output_indices.begin(), output_indices.end(), output_indices.begin(), thrust::maximum<difference_type>());
+    output_indices.begin(), output_indices.end(), output_indices.begin(), cuda::maximum<difference_type>());
 
   // gather input values according to index array (output = first2[output_indices])
   thrust::gather(output_indices.begin(), output_indices.end(), first2, output);
