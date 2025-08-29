@@ -468,6 +468,10 @@ cdef class task:
         cai = self.get_arg_cai(index)
         return torch_from_cai(cai)
 
+    def tensor_arguments(self):
+        arg_cnt=len(self._lds_args)
+        return tuple(self.get_arg_as_tensor(i) for i in range(arg_cnt))
+
     # ---- context‑manager helpers -------------------------------
     def __enter__(self):
         self.start()

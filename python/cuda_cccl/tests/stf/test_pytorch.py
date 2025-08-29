@@ -82,16 +82,14 @@ def test_pytorch():
         sptr = t.stream_ptr()
         torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
         with torch.cuda.stream(torch_stream):
-            tX =t.get_arg_as_tensor(0) 
-            tZ =t.get_arg_as_tensor(1) 
+            tX, tY = t.tensor_arguments()
             tZ = tX*4 + 1
 
     with ctx.task(lY.read(), lZ.rw()) as t:
         sptr = t.stream_ptr()
         torch_stream = torch.cuda.ExternalStream(sptr, device=torch.device("cuda:0"))
         with torch.cuda.stream(torch_stream):
-            tY =t.get_arg_as_tensor(0) 
-            tZ =t.get_arg_as_tensor(1) 
+            tX, tZ = t.tensor_arguments()
             tZ = tY*2 - 3
 
     ctx.finalize()
