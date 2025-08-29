@@ -86,7 +86,7 @@ class Ciphertext:
     def __invert__(self):
         result = Ciphertext(ctx, values=None, ld=self.l.like_empty())
 
-        not_kernel[32, 16, ctx](self.l.read(), result.l.write())
+        not_kernel[32, 16](self.l.read(), result.l.write())
 
         return result
 
@@ -96,7 +96,7 @@ class Ciphertext:
             return NotImplemented
 
         result = Ciphertext(ctx, ld=self.l.like_empty())
-        or_kernel[32, 16, ctx](self.l.read(), other.l.read(), result.l.write())
+        or_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
 
         return result
 
@@ -106,7 +106,7 @@ class Ciphertext:
             return NotImplemented
 
         result = Ciphertext(ctx, ld=self.l.like_empty())
-        and_kernel[32, 16, ctx](self.l.read(), other.l.read(), result.l.write())
+        and_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
 
         return result
 
@@ -116,7 +116,7 @@ class Ciphertext:
 
     def decrypt(self):
         result = Ciphertext(ctx, ld=self.l.like_empty())
-        xor_kernel[32, 16, ctx](self.l.read(), result.l.write(), 0x42)
+        xor_kernel[32, 16](self.l.read(), result.l.write(), 0x42)
 
         return Plaintext(self.ctx, ld=result.l)
 
