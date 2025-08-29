@@ -94,7 +94,7 @@ int main()
   thrust::generate(points.begin(), points.end(), random_point_generator());
 
   // initial bounding box contains first point
-  bbox init = bbox(points[0], points[0]);
+  bbox init(points[0], points[0]);
 
   // compute the bounding box for the point set
   bbox result = thrust::reduce(points.begin(), points.end(), init, bbox_union{});
