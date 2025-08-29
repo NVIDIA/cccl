@@ -178,10 +178,6 @@ runs:
 
         # Configure the sccache client to use the build cluster
         if test -n "${SCCACHE_DIST_TOKEN+x}"; then
-          extra_launch_args+=(
-            --ulimit "nofile=$(ulimit -Hn):$(ulimit -Hn)"
-          )
-
           if grep -q '"./ci/build_' <<< "$COMMAND"; then
             extra_launch_args+=(
               # Repopulate the cache
