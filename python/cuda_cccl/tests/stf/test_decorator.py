@@ -34,7 +34,7 @@ def test_decorator(use_graph):
 
     scale[32, 64](2.0, lX.rw())
     axpy[32, 64](2.0, lX.read(), lY.rw())
-    axpy[32, 64, ctx, cudastf.exec_place.device(0)](
+    axpy[32, 64, cudastf.exec_place.device(0)](
         2.0, lX.read(), lZ.rw()
     )  # explicit exec place
     axpy[32, 64](

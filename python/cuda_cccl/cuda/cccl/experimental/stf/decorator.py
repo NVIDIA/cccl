@@ -12,17 +12,17 @@ class stf_kernel_decorator:
         self._jit_args = jit_args
         self._jit_kwargs = jit_kwargs
         self._compiled_kernel = None
-        # (grid_dim, block_dim, ctx_or_none, exec_place_or_none)
+        # (grid_dim, block_dim, exec_place_or_none, ctx_or_none)
         self._launch_cfg = None
 
     def __getitem__(self, cfg):
-        # Normalize cfg into (grid_dim, block_dim, ctx, exec_pl)
+        # Normalize cfg into (grid_dim, block_dim, exec_pl, ctx)
         if not (isinstance(cfg, tuple) or isinstance(cfg, list)):
-            raise TypeError("use kernel[grid, block (, ctx [, exec_place])]")
+            raise TypeError("use kernel[grid, block ([, exec_place, ctx])]")
         n = len(cfg)
         if n not in (2, 3, 4):
             raise TypeError(
-                "use kernel[grid, block], kernel[grid, block, ctx], or kernel[grid, block, ctx, exec_place]"
+                "use kernel[grid, block], kernel[grid, block, exec_place], or kernel[grid, block, exec_place, ctx]"
             )
 
         grid_dim = cfg[0]
@@ -31,17 +31,18 @@ class stf_kernel_decorator:
         exec_pl = None
 
         if n >= 3:
-            ctx = cfg[2]
+            exec_pl = cfg[2]
 
         if n == 4:
-            exec_pl = cfg[3]
+            ctx = cfg[3]
+
+        if exec_pl is not None and not isinstance(exec_pl, exec_place):
+            raise TypeError("3rd item must be an exec_place")
 
         # Type checks (ctx can be None; exec_pl can be None)
         if ctx is not None and not isinstance(ctx, context):
-            raise TypeError("3rd item must be an STF context (or None to infer)")
+            raise TypeError("4th item must be an STF context (or None to infer)")
 
-        if exec_pl is not None and not isinstance(exec_pl, exec_place):
-            raise TypeError("4th item must be an exec_place")
 
         self._launch_cfg = (grid_dim, block_dim, ctx, exec_pl)
 
