@@ -9,6 +9,9 @@ GENERATE_XML           = YES
 XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
+CLANG_ASSISTED_PARSING = YES
+CLANG_DATABASE_PATH    = $(CCCL_COMPILE_COMMANDS_PATH)
+
 INPUT                  = ../../thrust/thrust \
                          ../../thrust/thrust/iterator \
                          ../../thrust/thrust/mr \

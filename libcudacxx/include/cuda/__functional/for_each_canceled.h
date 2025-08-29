@@ -44,21 +44,21 @@ template <int _Index>
   {
     asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, %1;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 : "r"(__result)
                  : "memory");
   }
   else if constexpr (_Index == 1)
   {
     asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, %1;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 : "r"(__result)
                  : "memory");
   }
   else if constexpr (_Index == 2)
   {
     asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, %1;"
                  : "=r"(__r)
-                 : "q"(__result)
+                 : "r"(__result)
                  : "memory");
   }
   else
@@ -138,7 +138,7 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
         "selp.b32 %0, 1, 0, p;\n\t"
         "}\n\t"
         : "=r"(__success)
-        : "q"(__result));
+        : "r"(__result));
       if (__success != 1)
       {
         // Invalidating mbarrier and synchronizing before exiting not
