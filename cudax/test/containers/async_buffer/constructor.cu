@@ -214,6 +214,16 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(equal_range(buf));
     }
   }
+
+  // TODO add more tests for larger types
+  SECTION("Larger type")
+  {
+    using T = unsigned long long;
+    const auto buf = cudax::make_async_buffer(stream, Resource{}, 1, T{42});
+    CUDAX_CHECK(buf.size() == 1);
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(equal_size_value(buf, 1, T(42)));
+  }
   stream.sync();
 
 #if 0 // Implement exception handling

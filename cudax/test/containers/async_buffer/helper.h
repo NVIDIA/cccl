@@ -96,7 +96,7 @@ struct equal_to_value
   int value_;
 
   template <class T>
-  __host__ __device__ bool operator()(const T lhs, const T) const noexcept
+  __host__ __device__ bool operator()(const T lhs, const int) const noexcept
   {
     return lhs == static_cast<T>(value_);
   }
