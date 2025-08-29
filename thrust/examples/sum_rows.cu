@@ -5,7 +5,6 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
-#include <algorithm>
 #include <iostream>
 
 // convert a linear index to a row index

@@ -3,8 +3,6 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
-#include <algorithm>
-
 #include <assert.h>
 
 #include "include/timer.h"

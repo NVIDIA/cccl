@@ -3,7 +3,6 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
-#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
