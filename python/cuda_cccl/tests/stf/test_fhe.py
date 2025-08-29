@@ -83,7 +83,7 @@ class Ciphertext:
 
     # ~ operator
     def __invert__(self):
-        result = Ciphertext(ctx, values=None, ld=self.l.like_empty())
+        result = self.like_empty()
 
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -98,7 +98,7 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
 
-        result = Ciphertext(ctx, ld=self.l.like_empty())
+        result = self.like_empty()
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -114,7 +114,7 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
 
-        result = Ciphertext(ctx, ld=self.l.like_empty())
+        result = self.like_empty()
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -131,7 +131,8 @@ class Ciphertext:
         self.symbol = symbol
 
     def decrypt(self):
-        result = Ciphertext(ctx, ld=self.l.like_empty())
+        result = self.like_empty()
+
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da = t.get_arg_numba(0)
@@ -141,6 +142,8 @@ class Ciphertext:
 
         return Plaintext(self.ctx, ld=result.l)
 
+    def like_empty(self):
+        return Ciphertext(self.ctx, ld=self.l.like_empty())
 
 def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
     return ~((eA | ~eB) & (~eA | eB))
