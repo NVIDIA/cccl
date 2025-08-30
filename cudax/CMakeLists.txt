@@ -9,6 +9,22 @@ endif()
 
 project(cudax LANGUAGES CXX)
 
+# Fail configuration if the current git history contains a known-bad commit.
+# Only performs the check when building from a git repository with git available.
+find_package(Git QUIET)
+if (GIT_FOUND)
+  # Returns 0 if cabe10884df is an ancestor of HEAD (i.e., present in history).
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" merge-base --is-ancestor cabe10884df HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE _cudax_git_check_result
+    OUTPUT_QUIET
+    ERROR_QUIET)
+  if (_cudax_git_check_result EQUAL 0)
+    message(FATAL_ERROR "Configuration aborted: commit 'cabe10884df' is present in the current git history.")
+  endif()
+endif()
+
 if (NOT CCCL_ENABLE_CUDAX)
   include(cmake/cudaxAddSubdir.cmake)
   return()
