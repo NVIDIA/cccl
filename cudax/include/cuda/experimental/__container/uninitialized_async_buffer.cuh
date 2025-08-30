@@ -249,18 +249,30 @@ public:
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
-  //! was used to create the buffer and destroys the memory resource.
+  //! is stored in the buffer and destroys the memory resource.
+  //! @param __stream The stream to deallocate the buffer on.
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy(::cuda::stream_ref __stream)
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_));
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+    // TODO should we make sure we move the mr only once by moving it to the if above?
+    // It won't work for 0 count buffers, so we would probably need a separate bool to track it
+    auto __tmp_mr = ::cuda::std::move(__mr_);
+  }
+
+  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
+  //! is stored in the buffer and destroys the memory resource.
   //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
-    if (__buf_)
-    {
-      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
-      __buf_   = nullptr;
-      __count_ = 0;
-    }
-    auto __tmp_mr = ::cuda::std::move(__mr_);
+    destroy(__stream_);
   }
 
   //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream
@@ -331,6 +343,7 @@ public:
   }
 
   //! @brief Returns the stored stream
+  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
   {
     return __stream_;
