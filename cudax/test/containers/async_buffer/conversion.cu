@@ -50,7 +50,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
   SECTION("cudax::async_buffer construction with matching async_buffer")
   {
     { // can be copy constructed from empty input
-      const MatchingBuffer input{matching_env, 0};
+      const MatchingBuffer input{matching_env, 0, cudax::no_init};
       Buffer buf(input);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(input.empty());
@@ -65,7 +65,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", t
     }
 
     { // can be move constructed with empty input
-      MatchingBuffer input{matching_env, 0};
+      MatchingBuffer input{matching_env, 0, cudax::no_init};
       Buffer buf(cuda::std::move(input));
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(input.empty());

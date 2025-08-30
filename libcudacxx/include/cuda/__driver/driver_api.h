@@ -25,6 +25,7 @@
 
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__internal/namespaces.h>
+#  include <cuda/std/__type_traits/always_false.h>
 
 #  include <cuda.h>
 
@@ -174,11 +175,31 @@ _CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t 
     __stream);
 }
 
-_CCCL_HOST_API inline void __memsetAsync(void* __dst, ::uint8_t __value, size_t __count, ::CUstream __stream)
+template <typename _Tp>
+_CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CUstream __stream)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
-  ::cuda::__driver::__call_driver_fn(
-    __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+  if constexpr (sizeof(_Tp) == 1)
+  {
+    static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD8Async);
+    ::cuda::__driver::__call_driver_fn(
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+  }
+  else if constexpr (sizeof(_Tp) == 2)
+  {
+    static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD16Async);
+    ::cuda::__driver::__call_driver_fn(
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+  }
+  else if constexpr (sizeof(_Tp) == 4)
+  {
+    static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemsetD32Async);
+    ::cuda::__driver::__call_driver_fn(
+      __driver_fn, "Failed to perform a memset", reinterpret_cast<::CUdeviceptr>(__dst), __value, __count, __stream);
+  }
+  else
+  {
+    static_assert(::cuda::std::__always_false_v<_Tp>, "Unsupported type for memset");
+  }
 }
 
 // Stream management

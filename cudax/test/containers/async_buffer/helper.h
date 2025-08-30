@@ -32,7 +32,7 @@ constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 template <class Buffer>
 bool equal_range(const Buffer& buf)
 {
-  if constexpr (Buffer::__is_host_only)
+  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
     buf.stream().sync();
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
@@ -46,10 +46,10 @@ bool equal_range(const Buffer& buf)
   }
 }
 
-template <bool HostOnly, class T>
+template <class Buffer, class T>
 bool compare_value(const T& value, const T& expected)
 {
-  if constexpr (HostOnly)
+  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
     return value == expected;
   }
@@ -69,10 +69,10 @@ bool compare_value(const T& value, const T& expected)
   }
 }
 
-template <bool HostOnly, class T>
+template <class Buffer, class T>
 void assign_value(T& value, const T& input)
 {
-  if constexpr (HostOnly)
+  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
     value = input;
   }
@@ -96,7 +96,7 @@ struct equal_to_value
   int value_;
 
   template <class T>
-  __host__ __device__ bool operator()(const T lhs, const T) const noexcept
+  __host__ __device__ bool operator()(const T lhs, const int) const noexcept
   {
     return lhs == static_cast<T>(value_);
   }
@@ -105,7 +105,7 @@ struct equal_to_value
 template <class Buffer>
 bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
-  if constexpr (Buffer::__is_host_only)
+  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
   {
     buf.stream().sync();
     return buf.size() == size
@@ -127,7 +127,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 template <class Range1, class Range2>
 bool equal_range(const Range1& range1, const Range2& range2)
 {
-  if constexpr (Range1::__is_host_only)
+  if constexpr (!Range1::properties_list::has_property(cuda::mr::device_accessible{}))
   {
     range1.stream().sync();
     return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
