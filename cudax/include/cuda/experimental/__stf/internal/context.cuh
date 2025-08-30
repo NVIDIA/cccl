@@ -471,6 +471,14 @@ public:
     };
   }
 
+  auto epoch()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.epoch();
+    };
+  }
+
   template <typename T>
   frozen_logical_data<T>
   freeze(::cuda::experimental::stf::logical_data<T> d,
