@@ -1,0 +1,192 @@
+name: "Workflow/Bisect"
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner label"
+        required: false
+        default: linux-amd64-cpu16
+        type: string
+      good_ref:
+        description: "Good ref/sha/tag/branch. Defaults to latest release tag."
+        required: false
+        type: string
+      bad_ref:
+        description: "Bad ref/sha/tag/branch. Defaults to main."
+        required: false
+        type: string
+      launch_args:
+        description: "Arguments for .devcontainer/launch.sh -d"
+        required: false
+        default: ""
+        type: string
+      preset:
+        description: "CMake preset"
+        required: true
+        type: string
+      build_targets:
+        description: "Space separated ninja build targets"
+        required: false
+        default: ""
+        type: string
+      ctest_targets:
+        description: "Space separated CTest targets"
+        required: false
+        default: ""
+        type: string
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner label"
+        required: false
+        default: linux-amd64-cpu16
+        type: string
+      good_ref:
+        description: "Good ref/sha/tag/branch. Defaults to latest release tag."
+        required: false
+        type: string
+      bad_ref:
+        description: "Bad ref/sha/tag/branch. Defaults to main."
+        required: false
+        type: string
+      launch_args:
+        description: "Arguments for .devcontainer/launch.sh -d"
+        required: false
+        default: ""
+        type: string
+      preset:
+        description: "CMake preset"
+        required: true
+        type: string
+      build_targets:
+        description: "Space separated ninja build targets"
+        required: false
+        default: ""
+        type: string
+      ctest_targets:
+        description: "Space separated CTest targets"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  bisect:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Resolve good and bad refs
+        id: refs
+        run: |
+          set -x
+          git remote update origin
+          git pull --tags
+          good_ref="${{ inputs.good_ref }}"
+          bad_ref="${{ inputs.bad_ref }}"
+          if [[ -z "$good_ref" ]]; then
+            good_ref=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          fi
+          if [[ -z "$good_ref" ]]; then
+            echo "::error::Unable to determine good ref" >&2
+            exit 1
+          fi
+          if [[ -z "$bad_ref" ]]; then
+            bad_ref="origin/main"
+          fi
+          good_sha=$(git rev-parse "$good_ref")
+          bad_sha=$(git rev-parse "$bad_ref")
+          echo "good_sha=$good_sha" >> "$GITHUB_OUTPUT"
+          echo "bad_sha=$bad_sha" >> "$GITHUB_OUTPUT"
+          echo "Good ref $good_ref resolved to $good_sha"
+          echo "Bad ref $bad_ref resolved to $bad_sha"
+
+      - name: Run git bisect
+        env:
+          GOOD_SHA: ${{ steps.refs.outputs.good_sha }}
+          BAD_SHA: ${{ steps.refs.outputs.bad_sha }}
+          PRESET: ${{ inputs.preset }}
+          BUILD_TARGETS: ${{ inputs.build_targets }}
+          CTEST_TARGETS: ${{ inputs.ctest_targets }}
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          cat <<'BASH' > bisect.sh
+          #!/usr/bin/env bash
+          set -euo pipefail
+          set -x
+          echo "Starting bisect with GOOD_SHA=$GOOD_SHA and BAD_SHA=$BAD_SHA"
+          git bisect start "$BAD_SHA" "$GOOD_SHA"
+
+          cat <<'RUN' > run-once.sh
+          #!/usr/bin/env bash
+          set -euo pipefail
+          BUILD_DIR="build/latest/${PRESET}"
+          rm -rf build
+          if ! cmake --preset "${PRESET}"; then
+            exit 1
+          fi
+          if [[ -n "${BUILD_TARGETS}" ]]; then
+            if ! ninja -C "${BUILD_DIR}" ${BUILD_TARGETS}; then
+              exit 1
+            fi
+          fi
+          if [[ -n "${CTEST_TARGETS}" ]]; then
+            for t in ${CTEST_TARGETS}; do
+              if ! ctest --test-dir "${BUILD_DIR}" -R "$t" -V --output-on-failure; then
+                exit 1
+              fi
+            done
+          fi
+          exit 0
+          RUN
+          chmod +x run-once.sh
+
+            if git bisect run ./run-once.sh; then
+              bad_commit=$(git rev-parse --verify HEAD)
+              commit_info=$(git --no-pager show "$bad_commit")
+              pr_ref=$(printf '%s\n' "$commit_info" | grep -oE '#[0-9]+' | head -n1 || true)
+              {
+                echo "### Bisect Result"
+                echo "<pre>"
+                echo "$commit_info"
+                echo "</pre>"
+                if [[ -n "$pr_ref" ]]; then
+                  pr_num=${pr_ref#\#}
+                  echo "PR: https://github.com/${GITHUB_REPOSITORY}/pull/$pr_num"
+                fi
+              } >> "$GITHUB_STEP_SUMMARY"
+            else
+              status=$(git bisect status || true)
+              log=$(git bisect log || true)
+              {
+                echo "### Bisect Failed"
+                echo "<pre>"
+                echo "$status"
+                echo "$log"
+                echo "</pre>"
+                echo "git bisect did not resolve to a single commit."
+              } >> "$GITHUB_STEP_SUMMARY"
+              git bisect reset
+              exit 1
+            fi
+
+            git bisect reset
+          BASH
+
+            chmod +x bisect.sh
+            .devcontainer/launch.sh -d ${LAUNCH_ARGS} \
+              --env "GOOD_SHA=$GOOD_SHA" \
+              --env "BAD_SHA=$BAD_SHA" \
+              --env "PRESET=$PRESET" \
+              --env "BUILD_TARGETS=$BUILD_TARGETS" \
+              --env "CTEST_TARGETS=$CTEST_TARGETS" \
+              --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+              --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" -- ./bisect.sh
