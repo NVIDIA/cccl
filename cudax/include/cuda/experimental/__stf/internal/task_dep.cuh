@@ -74,6 +74,12 @@ public:
 
   logical_data_untyped get_data() const;
 
+  // We may modify the logical data of the task dependency
+  void update_data(const logical_data_untyped& d) const
+  {
+    data = pack_state(d);
+  }
+
   instance_id_t get_instance_id() const
   {
     return instance_id;
@@ -161,7 +167,7 @@ public:
   }
 
 private:
-  ::std::shared_ptr<void> data;
+  mutable ::std::shared_ptr<void> data;
   access_mode m             = access_mode::none;
   instance_id_t instance_id = instance_id_t::invalid;
 
@@ -192,7 +198,14 @@ template <typename T>
 class task_dep<T, void, false> : public task_dep_untyped
 {
 public:
-  using data_t = T;
+  using data_t      = T;
+  using dep_type    = T;
+  using op_and_init = ::std::pair<::std::monostate, ::std::bool_constant<false>>;
+  using op_type     = ::std::monostate;
+  enum : bool
+  {
+    does_work = false
+  };
 
   // Copy constructor
   task_dep(const task_dep&) = default;

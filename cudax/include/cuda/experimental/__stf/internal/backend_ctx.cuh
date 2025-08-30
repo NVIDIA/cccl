@@ -813,7 +813,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return reserved::dot::section::guard(mv(symbol));
+    return reserved::dot_section::guard(get_dot(), mv(symbol));
   }
 
   auto get_phase() const
@@ -841,10 +841,12 @@ public:
   {
     async_resources().push_affinity(mv(p));
   }
+
   void push_affinity(::std::shared_ptr<exec_place> p) const
   {
     async_resources().push_affinity(mv(p));
   }
+
   void pop_affinity() const
   {
     async_resources().pop_affinity();

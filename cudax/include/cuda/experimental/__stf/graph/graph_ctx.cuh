@@ -250,6 +250,12 @@ class graph_ctx : public backend_ctx<graph_ctx>
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
     bool blocking_finalize = true;
+
+    // This makes it possible to retain references to shared_ptr to the
+    // arguments of CUDA callbacks. This is necessary because we may launch the
+    // same CUDA graph multiple times, and we can only erase the arguments of
+    // the callbacks when we are sure the CUDA graph cannot be used anymore.
+    ::std::vector<::std::shared_ptr<void>> retained_callback_arguments;
   };
 
 public:
@@ -377,12 +383,6 @@ public:
     state._graph = shared_cuda_graph();
 
     state.graph_stage++;
-
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_stage();
-    }
     // fprintf(stderr, "Starting stage %ld : previous graph %p new graph %p\n", state.graph_stage, prev_graph,
     //         new_graph);
   }
@@ -492,6 +492,11 @@ public:
     stats->nedges += nedges;
 
     return state.exec_graph;
+  }
+
+  void callback_retain_arguments(::std::shared_ptr<void> cb_args)
+  {
+    state().retained_callback_arguments.push_back(mv(cb_args));
   }
 
   void display_graph_info(cudaGraph_t g)
