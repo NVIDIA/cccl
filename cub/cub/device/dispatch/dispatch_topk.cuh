@@ -371,36 +371,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
  *
  * @tparam SelectMin
  *   Determine whether to select the smallest (SelectMin=true) or largest (SelectMin=false) K elements.
- *
- * @param[in] d_temp_storage
- *   Device-accessible allocation of temporary storage. When `nullptr`, the
- *   required allocation size is written to `temp_storage_bytes` and no work is done.
- *
- * @param[in,out] temp_storage_bytes
- *   Reference to size in bytes of `d_temp_storage` allocation
- *
- * @param[in] d_keys_in
- *   Pointer to the input data of key data to find top K
- *
- * @param[out] d_keys_out
- *   Pointer to the K output sequence of key data
- *
- * @param[in] d_values_in
- *   Pointer to the input sequence of associated value items
- *
- * @param[out] d_values_out
- *   Pointer to the output sequence of associated value items
- *
- * @param[in] num_items
- *   Number of items to be processed
- *
- * @param[in] k
- *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
- *
- * @param[in] stream
- *   @rst
- *   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
- *   @endrst
  */
 template <typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -412,9 +382,18 @@ template <typename KeyInputIteratorT,
           typename SelectedPolicy = detail::topk::device_topk_policy_hub<detail::it_value_t<KeyInputIteratorT>, OffsetT>>
 struct DispatchTopK : SelectedPolicy
 {
+  // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
+  static_assert(::cuda::std::is_same_v<OffsetT, ::cuda::std::uint32_t>
+                  || ::cuda::std::is_same_v<OffsetT, unsigned long long>,
+                "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
+
+  // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
+  static_assert(::cuda::std::is_same_v<OutOffsetT, ::cuda::std::uint32_t>
+                  || ::cuda::std::is_same_v<OutOffsetT, unsigned long long>,
+                "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
+
   /// Device-accessible allocation of temporary storage.
-  /// When `nullptr`, the required allocation size is written to `temp_storage_bytes`
-  /// and no work is done.
+  /// When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
   void* d_temp_storage;
 
   /// Reference to size in bytes of `d_temp_storage` allocation
@@ -470,7 +449,7 @@ struct DispatchTopK : SelectedPolicy
    *   Number of items to be processed
    *
    * @param[in] k
-   *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of `num_items`.
    *
    * @param[in] stream
    *   @rst
@@ -536,11 +515,10 @@ struct DispatchTopK : SelectedPolicy
     constexpr int num_passes       = calc_num_passes<key_in_t, policy_t::BITS_PER_PASS>();
     constexpr int num_buckets      = 1 << policy_t::BITS_PER_PASS;
 
-    if (static_cast<OffsetT>(k) >= num_items)
-    {
-      // We only support the case where the variable K is smaller than the variable N.
-      return cudaErrorInvalidValue;
-    }
+    // We are capping k at a maximum of num_items
+    using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
+    k                     = static_cast<OutOffsetT>(
+      ::cuda::std::clamp(static_cast<common_offset_t>(k), common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
     size_t size_counter   = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
@@ -793,7 +771,7 @@ struct DispatchTopK : SelectedPolicy
    *   Number of items to be processed
    *
    * @param[in] k
-   *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of `num_items`.
    *
    * @param[in] stream
    *   @rst

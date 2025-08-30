@@ -100,7 +100,8 @@ struct DeviceTopK
   //!   Number of items to be processed
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] stream
   //!   @rst
@@ -191,7 +192,8 @@ struct DeviceTopK
   //!   Number of items to be processed
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] stream
   //!   @rst
@@ -269,7 +271,8 @@ struct DeviceTopK
   //!   Number of items to be processed
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] stream
   //!   @rst
@@ -335,7 +338,8 @@ struct DeviceTopK
   //!   Number of items to be processed
   //!
   //! @param[in] k
-  //!   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
+  //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+  //!   `num_items`.
   //!
   //! @param[in] stream
   //!   @rst
