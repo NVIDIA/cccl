@@ -43,9 +43,7 @@
  *
  * Key concepts:
  * - **Context Stack**: Nested contexts form a stack where each level can have its own task graph
- * - **Data Movement**: Logical data can be "pushed" between context levels automatically
- * - **Token Handling**: Tokens (`void_interface`) are automatically filtered from lambda parameters
- * - **Resource Management**: Contexts manage CUDA streams and memory allocation adapters
+ * - **Data Movement**: Logical data can be imported ("pushed") between context levels automatically
  *
  * Usage pattern:
  * ```
@@ -83,7 +81,6 @@ struct is_stackable_task_dep<stackable_task_dep<T, ReduceOp, Init>> : ::std::tru
 // have a stackable_logical_data A, A.read() is indeed a stackable_task_dep,
 // which we can pass to stream_ctx/graph_ctx constructs by extracting the
 // underlying task_dep.
-//
 template <typename U>
 decltype(auto) to_task_dep(U&& u)
 {
@@ -103,7 +100,8 @@ decltype(auto) to_task_dep(U&& u)
  * @brief Base class with a virtual pop method to enable type erasure
  *
  * This is used to implement the automatic call to pop() on logical data when a
- * context node is popped.
+ * context node is popped, as we need to keep a vector of logical data that
+ * were imported without knowing their type.
  */
 class stackable_logical_data_impl_state_base
 {
@@ -140,7 +138,9 @@ public:
       ctx_node(ctx_node&&) noexcept            = default;
       ctx_node& operator=(ctx_node&&) noexcept = default;
 
-      // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
+      // To avoid prematurely destroying data created in a nested context, we
+      // need to hold a reference to them. Since we do not store types the
+      // reference are kept in a type-erased manner.
       //
       // This happens for example in this case where we want to defer the release
       // of the resources of "a" until we call pop() because this is when we would
@@ -159,6 +159,7 @@ public:
         retained_data.push_back(mv(data_impl));
       }
 
+      // Ensure we know this data has been imported in the local context
       void track_pushed_data(::std::shared_ptr<stackable_logical_data_impl_state_base> data_impl)
       {
         _CCCL_ASSERT(data_impl, "invalid value");
@@ -176,10 +177,10 @@ public:
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
 
-      // When we call ctx.push() in a nested way, we do not actually create
-      // nested CUDA graphs, so the nested push/pop are no-ops, but we keep
-      // track of the number of users of a context node to properly implement
-      // the push/pop semantic
+      // When we call ctx.push() in a nested way, we might not actually create
+      // nested CUDA graphs and implement nested push/pop as no-ops. We thus
+      // keep track of the number of users of a context node to properly
+      // implement the push/pop semantic in this scenario.
       int refcnt;
 
       // The async resource handle used in this context
@@ -190,16 +191,16 @@ public:
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
     };
 
-    /* To describe the hierarchy of contexts, and the hierarchy of stackable
-     * logical data which should match the structure of the context hierarchy, this
-     * class describes a tree using a vector of offsets. Every node has an offset,
-     * and we keep track of the parent offset of each node, as well as its
-     * children. */
     // Configuration constants
     static constexpr int initial_node_pool_size       = 16;
     static constexpr size_t growth_factor_numerator   = 3;
     static constexpr size_t growth_factor_denominator = 2;
 
+    /* To describe the hierarchy of contexts, and the hierarchy of stackable
+     * logical data which should match the structure of the context hierarchy,
+     * this class describes a tree using a vector of offsets. Every node has an
+     * offset, and we keep track of the parent offset of each node, as well as
+     * its children. */
     class node_hierarchy
     {
     public:
@@ -1148,6 +1149,9 @@ public:
   ::std::shared_ptr<impl> pimpl;
 };
 
+// This is the logical data type used in a stackable_ctx context type. It
+// should behaves exactly like a logical_data with additional API to import it
+// across nested contexts.
 template <typename T>
 class stackable_logical_data
 {
