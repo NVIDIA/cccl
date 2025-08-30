@@ -101,7 +101,7 @@ struct alignas(128) Counter
 
   // For a row inside a batch, we may launch multiple thread blocks. This counter is
   // used to determine if the current block is the last running block. If so, this block
-  // will execute Scan() and choose_bucket().
+  // will execute compute_bin_offsets() and choose_bucket().
   alignas(128) unsigned int finished_block_cnt;
 
   // Record how many elements have been written to the front of `out`. Elements less (if
@@ -369,10 +369,10 @@ struct AgentTopK
   // Utility methods for device topK
   //---------------------------------------------------------------------
   /**
-   * Try to perform vectorized data loading.
+   * Process a range of input data in tiles, calling f(key, index) for each element
    */
-  template <typename Func, typename T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(T in, const OffsetT num_items, Func f)
+  template <typename InputItT, typename FuncT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
   {
     key_in_t thread_data[ITEMS_PER_THREAD];
 
@@ -416,6 +416,7 @@ struct AgentTopK
       }
     }
   }
+
   /**
    * Fused filtering of the current pass and building histogram for the next pass
    */
@@ -439,9 +440,9 @@ struct AgentTopK
       // row). Later, the histograms are merged using atomicAdd.
       auto f = [this, histogram_smem](key_in_t key, OffsetT index) {
         int bucket = extract_bin_op(key);
-        atomicAdd(histogram_smem + bucket, static_cast<OffsetT>(1));
+        atomicAdd(histogram_smem + bucket, OffsetT{1});
       };
-      ConsumeRange(d_keys_in, previous_len, f);
+      process_range(d_keys_in, previous_len, f);
     }
     else
     {
@@ -469,7 +470,7 @@ struct AgentTopK
             OffsetT index;
             if (early_stop)
             {
-              OutOffsetT pos  = atomicAdd(p_out_cnt, static_cast<OutOffsetT>(1));
+              OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
               d_keys_out[pos] = key;
               if constexpr (!KEYS_ONLY)
               {
@@ -481,7 +482,7 @@ struct AgentTopK
             {
               if (out_buf)
               {
-                OffsetT pos  = atomicAdd(p_filter_cnt, static_cast<OffsetT>(1));
+                OffsetT pos  = atomicAdd(p_filter_cnt, OffsetT{1});
                 out_buf[pos] = key;
                 if constexpr (!KEYS_ONLY)
                 {
@@ -491,7 +492,7 @@ struct AgentTopK
               }
 
               int bucket = extract_bin_op(key);
-              atomicAdd(histogram_smem + bucket, static_cast<OffsetT>(1));
+              atomicAdd(histogram_smem + bucket, OffsetT{1});
             }
           }
           // the condition `(out_buf || early_stop)` is a little tricky:
@@ -502,7 +503,7 @@ struct AgentTopK
           // true, we need to write to `out` since it's the last chance.
           else if ((out_buf || early_stop) && (pre_res < 0))
           {
-            OutOffsetT pos  = atomicAdd(p_out_cnt, static_cast<OutOffsetT>(1));
+            OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
             d_keys_out[pos] = key;
             if constexpr (!KEYS_ONLY)
             {
@@ -513,11 +514,11 @@ struct AgentTopK
         };
       if (load_from_original_input)
       {
-        ConsumeRange(d_keys_in, previous_len, f);
+        process_range(d_keys_in, previous_len, f);
       }
       else
       {
-        ConsumeRange(in_buf, previous_len, f);
+        process_range(in_buf, previous_len, f);
       }
     }
 
@@ -540,7 +541,7 @@ struct AgentTopK
   /**
    * Replace histogram with its own prefix sum
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scan(volatile OffsetT* histogram, OffsetT* histogram_smem)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram, OffsetT* histogram_smem)
   {
     OffsetT thread_data[items_per_thread_for_scan];
 
@@ -554,7 +555,7 @@ struct AgentTopK
   }
 
   /**
-   * Calculate in which bucket the k-th value will fall
+   * Identify the bucket that the k-th value falls into
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void choose_bucket(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OffsetT* histogram, const OutOffsetT k, const int pass)
@@ -564,13 +565,15 @@ struct AgentTopK
       OffsetT prev = (i == 0) ? 0 : histogram[i - 1];
       OffsetT cur  = histogram[i];
 
-      // one and only one thread will satisfy this condition, so counter is written by
-      // only one thread
+      // One and only one thread will satisfy this condition, so counter is written by only one thread
       if (prev < k && cur >= k)
       {
-        counter->k                                     = k - prev; // how many values still are there to find
-        counter->len                                   = cur - prev; // number of values in next pass
+        // The number of items that are yet to be identified
+        counter->k                                     = k - prev; 
+        // The number of candidates in the next pass
+        counter->len                                   = cur - prev; 
         typename Traits<key_in_t>::UnsignedBits bucket = i;
+        // 
         int start_bit                                  = calc_start_bit<key_in_t, BITS_PER_PASS>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
@@ -598,7 +601,7 @@ struct AgentTopK
    * @param pass
    *   Indicate which pass are processed currently
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InvokeLastFilter(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
@@ -606,7 +609,7 @@ struct AgentTopK
     OutOffsetT k,
     int pass)
   {
-    const OffsetT buf_len    = ::cuda::std::max((OffsetT) 1, num_items / COEFFICIENT_FOR_BUFFER);
+    const OffsetT buf_len    = ::cuda::std::max(OffsetT{1}, num_items / COEFFICIENT_FOR_BUFFER);
     load_from_original_input = counter->previous_len > buf_len;
     OffsetT current_len      = load_from_original_input ? num_items : counter->previous_len;
     in_idx_buf               = load_from_original_input ? nullptr : in_idx_buf; // ? out_idx_buf : in_idx_buf;
@@ -626,7 +629,7 @@ struct AgentTopK
       int res = identify_candidates_op(key);
       if (res < 0)
       {
-        OutOffsetT pos  = atomicAdd(p_out_cnt, static_cast<OutOffsetT>(1));
+        OutOffsetT pos  = atomicAdd(p_out_cnt, OffsetT{1});
         d_keys_out[pos] = key;
         if constexpr (!KEYS_ONLY)
         {
@@ -641,7 +644,7 @@ struct AgentTopK
       else if (res == 0)
       {
         OffsetT new_idx     = in_idx_buf ? in_idx_buf[i] : i;
-        OutOffsetT back_pos = atomicAdd(p_out_back_cnt, static_cast<OutOffsetT>(1));
+        OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
 
         if (back_pos < num_of_kth_needed)
         {
@@ -657,11 +660,11 @@ struct AgentTopK
 
     if (load_from_original_input)
     {
-      ConsumeRange(d_keys_in, current_len, f);
+      process_range(d_keys_in, current_len, f);
     }
     else
     {
-      ConsumeRange(in_buf, current_len, f);
+      process_range(in_buf, current_len, f);
     }
   }
 
@@ -691,7 +694,7 @@ struct AgentTopK
    *   Indicate which pass are processed currently
    */
   template <bool IsFirstPass>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InvokeOneSweep(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_filter_and_histogram(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
     key_in_t* out_buf,
@@ -722,8 +725,8 @@ struct AgentTopK
       return;
     }
 
-    const bool early_stop = (current_len == (OffsetT) current_k);
-    const OffsetT buf_len = ::cuda::std::max((OffsetT) 1, num_items / COEFFICIENT_FOR_BUFFER);
+    const bool early_stop = (current_len == static_cast<OffsetT>(current_k));
+    const OffsetT buf_len = ::cuda::std::max(OffsetT{1}, num_items / COEFFICIENT_FOR_BUFFER);
     if (previous_len > buf_len)
     {
       load_from_original_input = true;
@@ -752,9 +755,8 @@ struct AgentTopK
     filter_and_histogram<IsFirstPass>(
       in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, histogram_smem, pass, early_stop);
 
+      // We need this `__threadfence()` because the global array `histogram` will be accessed by other threads with non-atomic operations.
     __threadfence();
-    // We need this `__threadfence()` because the global array `histogram` will be accessed by other threads with
-    // non-atomic operations.
 
     bool is_last_block = false;
     if (threadIdx.x == 0)
@@ -782,7 +784,7 @@ struct AgentTopK
       }
 
       constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
-      Scan(histogram, histogram_smem);
+      compute_bin_offsets(histogram, histogram_smem);
       __syncthreads();
       choose_bucket(counter, histogram_smem, current_k, pass);
 

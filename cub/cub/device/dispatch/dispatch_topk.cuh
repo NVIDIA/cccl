@@ -226,7 +226,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
   __shared__ typename agent_topk_t::TempStorage temp_storage;
   agent_topk_t(
     temp_storage, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, extract_bin_op, identify_candidates_op)
-    .InvokeOneSweep<IsFirstPass>(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
+    .invoke_filter_and_histogram<IsFirstPass>(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
 }
 
 /**
@@ -347,7 +347,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     k,
     extract_bin_op_t{},
     identify_candidates_op)
-    .InvokeLastFilter(in_buf, in_idx_buf, counter, histogram, k, pass);
+    .invoke_last_filter(in_buf, in_idx_buf, counter, histogram, k, pass);
 }
 
 /*
