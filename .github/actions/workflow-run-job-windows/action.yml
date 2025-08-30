@@ -15,6 +15,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Install GPU driver
+      # if: ${{ contains(inputs.runner, '-gpu-') }}
+      shell: powershell
+      run: ./.github/actions/workflow-run-job-windows/install_gpu_driver.ps1
+
     - name: Configure env
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
