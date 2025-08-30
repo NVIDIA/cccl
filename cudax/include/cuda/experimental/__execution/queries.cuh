@@ -195,7 +195,7 @@ private:
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Self = __recurse_query_t, class _Sch, class... _Env>
     [[nodiscard]]
-    _CCCL_API constexpr auto operator()(_Sch __sch, const _Env&... __env) const noexcept
+    _CCCL_API constexpr auto operator()([[maybe_unused]] _Sch __sch, const _Env&... __env) const noexcept
     {
       // When determining where the scheduler's operations will complete, we query
       // for the completion scheduler of the value channel:

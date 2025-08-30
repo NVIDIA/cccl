@@ -207,7 +207,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4913)
 
 #define _CUDAX_GET_COMPLSIGS(...) \
-  ::cuda::std::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
+  ::cuda::std::remove_reference_t<_CCCL_PP_FIRST(__VA_ARGS__)>::template get_completion_signatures<__VA_ARGS__>()
 
 #define _CUDAX_CHECKED_COMPLSIGS(...) \
   (static_cast<void>(__VA_ARGS__), void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
@@ -234,6 +234,9 @@ _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __checked_complsigs()
 }
 
 template <class _Sndr, class... _Env>
+using __get_complsigs_t = decltype(_CUDAX_GET_COMPLSIGS(_Sndr, _Env...));
+
+template <class _Sndr, class... _Env>
 inline constexpr bool __has_get_completion_signatures = false;
 
 // clang-format off
@@ -241,14 +244,14 @@ template <class _Sndr>
 inline constexpr bool __has_get_completion_signatures<_Sndr> =
   _CCCL_REQUIRES_EXPR((_Sndr))
   (
-    (_CUDAX_GET_COMPLSIGS(_Sndr))
+    typename(__get_complsigs_t<_Sndr>)
   );
 
 template <class _Sndr, class _Env>
 inline constexpr bool __has_get_completion_signatures<_Sndr, _Env> =
   _CCCL_REQUIRES_EXPR((_Sndr, _Env))
   (
-    (_CUDAX_GET_COMPLSIGS(_Sndr, _Env))
+    typename(__get_complsigs_t<_Sndr, _Env>)
   );
 // clang-format on
 

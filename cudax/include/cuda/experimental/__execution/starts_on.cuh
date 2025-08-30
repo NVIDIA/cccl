@@ -132,17 +132,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     // is the sender's if it has one.
     template <class _SetTag, class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env...>>
+      -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
     {
       return get_completion_scheduler<_SetTag>(
-        execution::get_env(__self_->__sndr_), __mk_env2(__self_->__sch_, static_cast<_Env&&>(__env)...));
+        execution::get_env(__self_->__sndr_), __mk_env2(__self_->__sch_, static_cast<_Env&&>(__env))...);
     }
 
     // If the sender does not have a _SetTag completion (and _SetTag is not set_value_t),
     // then the completion scheduler for _SetTag is the scheduler sender's if it has one.
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
     _CCCL_REQUIRES((!__same_as<_SetTag, set_value_t>) _CCCL_AND(
-      execution::get_completion_signatures<_Sndr, __env2_t<_Sch, _Env...>>().count(_SetTag{}) == 0))
+      execution::get_completion_signatures<_Sndr, __env2_t<_Sch, _Env>...>().count(_SetTag{}) == 0))
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
     {
@@ -153,7 +153,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     // is the sender's if it has one.
     template <class _SetTag, class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env...>>
+      -> __call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
     {
       return {};
     }
@@ -162,7 +162,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     // then the completion scheduler for _SetTag is the scheduler sender's if it has one.
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
     _CCCL_REQUIRES((!__same_as<_SetTag, set_value_t>) _CCCL_AND(
-      execution::get_completion_signatures<_Sndr, __env2_t<_Sch, _Env...>>().count(_SetTag{}) == 0))
+      execution::get_completion_signatures<_Sndr, __env2_t<_Sch, _Env>...>().count(_SetTag{}) == 0))
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&...) const noexcept
       -> __call_result_t<get_completion_domain_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
     {
@@ -173,7 +173,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, _Env&&...) const noexcept
     {
       return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
-                               execution::get_completion_behavior<_Sndr, __env2_t<_Sch, _Env...>>());
+                               execution::get_completion_behavior<_Sndr, __env2_t<_Sch, _Env>...>());
     }
 
     _CCCL_EXEC_CHECK_DISABLE
@@ -192,8 +192,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    using __sndr2_t = __transform_sender_result_t<starts_on_t, _Self, __join_env_t<_Env..., env<>>>;
-    return execution::get_completion_signatures<__sndr2_t, _Env...>();
+    _CUDAX_LET_COMPLETIONS(
+      auto(__child_completions) = execution::get_child_completion_signatures<_Self, _Sndr, __env2_t<_Sch, _Env>...>())
+    {
+      _CUDAX_LET_COMPLETIONS(
+        auto(__sch_completions) = execution::get_completion_signatures<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>())
+      {
+        // The scheduler contributes error and stopped completions.
+        auto __sch_err_stop_completions = transform_completion_signatures(__sch_completions, __swallow_transform{});
+        return __child_completions + __sch_err_stop_completions;
+      }
+    }
+
+    _CCCL_UNREACHABLE();
   }
 
   [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
