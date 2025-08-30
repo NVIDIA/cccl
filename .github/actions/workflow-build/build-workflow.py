@@ -432,9 +432,13 @@ def generate_dispatch_job_name(matrix_job, job_type):
     ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])
     std_str = (" C++" + str(matrix_job["std"])) if "std" in matrix_job else ""
-    py_str = (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
+    py_str = (
+        (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
+    )
 
-    config_tag = f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}"
+    config_tag = (
+        f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}"
+    )
 
     extra_info = (
         f":{cuda_compile_arch}{cmake_options}"
@@ -442,9 +446,7 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return (
-        f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
-    )
+    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
