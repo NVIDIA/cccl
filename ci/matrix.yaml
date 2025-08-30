@@ -9,9 +9,6 @@ workflows:
   #
   override:
     # TODO:
-    # - Fix regression (__host__ __device__ annotations on default dtor) in libcudacxx, #5704
-    # - Figure out why sccache is failing to find objects in libcudacxx 13.0 tests and timing
-    #   out during build.
     # - Pare down nightly matrix to a more reasonable set of runners. Some of this can be moved to
     #   weekly. Currently nightly runner usage:
     #     |  #   | Runner
@@ -30,15 +27,9 @@ workflows:
     # Add a 12.9 job in to see if this is a new regression in the 13.0 images.
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '12.9',  std: '20',  cxx: ['clang19', 'gcc14']}
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '13.0',  std: '20',  cxx: ['clang19', 'gcc14']}
-    - {jobs: ['nvrtc'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: 'gcc12', gpu: 'rtx2080', sm: 'gpu'}
-    - {jobs: ['build'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12', 'clang14']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: ['msvc14.29', 'msvc14.39']}
-    - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X',  std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12', 'gcc13', 'gcc14', 'clang14', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19']}
-    - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X',  std: 'all', cxx: ['msvc14.29', 'msvc14.43']}
-    - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X',  std: 'all', cxx: ['gcc14', 'clang19'], cpu: 'arm64'}
+    - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X',  std: 'all', cxx: ['msvc14.29']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '13.0',  std: '17',  cxx: ['msvc14.43']}
-    - {jobs: ['build'], project: 'libcudacxx', ctk: 'nvhpc', std: 'all', cxx: 'nvhpc'}
-    - {jobs: ['build'], project: 'libcudacxx', ctk: 'nvhpc-prev', std: 'all', cxx: 'nvhpc-prev'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
