@@ -54,10 +54,21 @@ def unary_transform_struct(inp, out, build_only):
 def binary_transform_pointer(inp1, inp2, out, build_only):
     size = len(inp1)
 
+    transform = parallel.make_binary_transform(inp1, inp2, out, parallel.OpKind.PLUS)
+    if not build_only:
+        transform(inp1, inp2, out, size)
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
+def binary_transform_pointer_custom_op(inp1, inp2, out, build_only):
+    size = len(inp1)
+
     def op(a, b):
         return a + b
 
     transform = parallel.make_binary_transform(inp1, inp2, out, op)
+
     if not build_only:
         transform(inp1, inp2, out, size)
 
@@ -68,10 +79,7 @@ def binary_transform_iterator(size, out, build_only):
     d_in1 = parallel.CountingIterator(np.int32(0))
     d_in2 = parallel.CountingIterator(np.int32(1))
 
-    def op(a, b):
-        return a + b
-
-    transform = parallel.make_binary_transform(d_in1, d_in2, out, op)
+    transform = parallel.make_binary_transform(d_in1, d_in2, out, parallel.OpKind.PLUS)
     if not build_only:
         transform(d_in1, d_in2, out, size)
 
@@ -195,6 +203,25 @@ def bench_binary_transform_struct(bench_fixture, request, size):
 
     def run():
         binary_transform_struct(
+            inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark")
+        )
+
+    fixture = request.getfixturevalue(bench_fixture)
+    if bench_fixture == "compile_benchmark":
+        fixture(parallel.make_binary_transform, run)
+    else:
+        fixture(run)
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_binary_transform_pointer_custom_op(bench_fixture, request, size):
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    inp1 = cp.random.randint(0, 10, actual_size)
+    inp2 = cp.random.randint(0, 10, actual_size)
+    out = cp.empty_like(inp1)
+
+    def run():
+        binary_transform_pointer_custom_op(
             inp1, inp2, out, build_only=(bench_fixture == "compile_benchmark")
         )
 

@@ -300,11 +300,8 @@ public:
   template <typename... Deps>
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
-    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto result =
-      graph_task<Deps...>(*this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
-    result.add_post_submission_hook(dump_hooks);
-    return result;
+    return graph_task<Deps...>(
+      *this, get_graph(), this->state().graph_mutex, get_graph_stage(), mv(e_place), mv(deps)...);
   }
 
   // submit a new stage : this will submit a graph in a stream that we return

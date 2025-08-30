@@ -367,21 +367,6 @@ public:
     enable_write_back = flag;
   }
 
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    enable_auto_dump = flag;
-  }
-
-  bool get_auto_dump() const
-  {
-    return enable_auto_dump;
-  }
-
-  bool enable_auto_dump = true;
-
   bool was_erased = false;
 
   // Get the index of the first available instance_id
@@ -1650,19 +1635,6 @@ public:
     pimpl->set_write_back(flag);
   }
 
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    pimpl->set_auto_dump(flag);
-  }
-
-  bool get_auto_dump() const
-  {
-    return pimpl->get_auto_dump();
-  }
-
   reserved::logical_data_state& get_state()
   {
     return pimpl->get_state();
@@ -1989,18 +1961,25 @@ inline event_list enforce_stf_deps_before(
       // writer
       assert(ctx_.current_writer.has_value());
       ctx_.previous_writer = mv(ctx_.current_writer);
-      const auto& pw       = ctx_.previous_writer;
 
-      result.merge(pw->get_done_prereqs());
-
-      const int pw_id = pw->get_unique_id();
-
-      if (dot_is_tracing)
+      if (ctx_.previous_writer.has_value())
       {
-        dot.add_edge(pw_id, task.get_unique_id());
-      }
+        const auto& pw = ctx_.previous_writer.value();
+        result.merge(pw.get_done_prereqs());
 
-      ctx_st.leaves.remove(pw_id);
+        const int pw_id = pw.get_unique_id();
+
+        if (dot_is_tracing)
+        {
+          dot.add_edge(pw_id, task.get_unique_id());
+        }
+
+        ctx_st.leaves.remove(pw_id);
+      }
+      else
+      {
+        EXPECT(false, "Internal error: previous_writer must be set");
+      }
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
