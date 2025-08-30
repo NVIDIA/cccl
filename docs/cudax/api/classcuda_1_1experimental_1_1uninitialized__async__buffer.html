@@ -1674,9 +1674,24 @@ the buffer.</p>
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental26uninitialized_async_buffer7destroyEN4cuda10stream_refE">
+<span class="target" id="classcuda_1_1experimental_1_1uninitialized__async__buffer_1a67d900fdfeedcc3e141ade740fc58396"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">destroy</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_ref</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental26uninitialized_async_buffer7destroyEN4cuda10stream_refE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Destroys an <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1uninitialized__async__buffer"><span class="std std-ref"><span class="pre">uninitialized_async_buffer</span></span></a></code>, deallocates the buffer in stream order on the stream that is stored in the buffer and destroys the memory resource. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>destroy does not destroy any objects that may or may not reside within the buffer. It is the user’s responsibility to ensure that all objects within the buffer have been properly destroyed. </p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>__stream</strong> – The stream to deallocate the buffer on. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental26uninitialized_async_buffer7destroyEv">
 <span class="target" id="classcuda_1_1experimental_1_1uninitialized__async__buffer_1aa60adf36ada76acba7a67b9bc0cd7964"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">destroy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental26uninitialized_async_buffer7destroyEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Destroys an <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1uninitialized__async__buffer"><span class="std std-ref"><span class="pre">uninitialized_async_buffer</span></span></a></code>, deallocates the buffer in stream order on the stream that was used to create the buffer and destroys the memory resource. </p>
+<dd><p>Destroys an <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1uninitialized__async__buffer"><span class="std std-ref"><span class="pre">uninitialized_async_buffer</span></span></a></code>, deallocates the buffer in stream order on the stream that is stored in the buffer and destroys the memory resource. </p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>destroy does not destroy any objects that may or may not reside within the buffer. It is the user’s responsibility to ensure that all objects within the buffer have been properly destroyed. </p>
@@ -1753,6 +1768,10 @@ that holds the memory resource used to allocate the buffer</p>
 <dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental26uninitialized_async_buffer6streamEv">
 <span class="target" id="classcuda_1_1experimental_1_1uninitialized__async__buffer_1a3a2b16380538ba16c40a0c48cb16623a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stream_ref</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stream</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental26uninitialized_async_buffer6streamEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Returns the stored stream. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Stream used to allocate the buffer is initially stored in the buffer, but can be changed with <code class="docutils literal notranslate"><span class="pre">set_stream</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1874,6 +1893,7 @@ that holds the memory resource used to allocate the buffer</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental26uninitialized_async_buffer26uninitialized_async_bufferERR26uninitialized_async_buffer"><code class="docutils literal notranslate"><span class="pre">uninitialized_async_buffer()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDp_N4cudaSt11enable_if_tI18__properties_matchIDp16_OtherPropertiesEiEEEN4cuda12experimental26uninitialized_async_buffer26uninitialized_async_bufferERR26uninitialized_async_bufferI3_TpDp16_OtherPropertiesE"><code class="docutils literal notranslate"><span class="pre">uninitialized_async_buffer()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental26uninitialized_async_bufferaSERR26uninitialized_async_buffer"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental26uninitialized_async_buffer7destroyEN4cuda10stream_refE"><code class="docutils literal notranslate"><span class="pre">destroy()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental26uninitialized_async_buffer7destroyEv"><code class="docutils literal notranslate"><span class="pre">destroy()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental26uninitialized_async_bufferD0Ev"><code class="docutils literal notranslate"><span class="pre">~uninitialized_async_buffer()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental26uninitialized_async_buffer5beginEv"><code class="docutils literal notranslate"><span class="pre">begin()</span></code></a></li>
