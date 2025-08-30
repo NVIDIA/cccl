@@ -144,25 +144,37 @@ void block_scan_container(c2h::device_vector<T>& in, c2h::device_vector<T>& out,
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-template <scan_mode Mode>
-struct min_op_t
+template <typename InT, typename OutT>
+struct custom_mixed_min
+{
+  __host__ __device__ OutT operator()(InT left, InT right) const
+  {
+    return cuda::std::min<OutT>(left, right);
+  }
+
+  // Make sure that we are always accumulating to InT
+  __host__ __device__ OutT operator()(OutT, InT) const = delete;
+};
+
+template <typename T, scan_mode Mode, typename OpValT>
+struct min_mixed_op_t
 {
   template <typename Container, class BlockScanT>
   __device__ void operator()(BlockScanT& scan, Container& thread_data, int valid_items) const
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartialTile(thread_data, thread_data, ::cuda::minimum<>{}, valid_items);
+      scan.ExclusiveScanPartialTile(thread_data, thread_data, custom_mixed_min<T, OpValT>{}, valid_items);
     }
     else
     {
-      scan.InclusiveScanPartialTile(thread_data, thread_data, ::cuda::minimum<>{}, valid_items);
+      scan.InclusiveScanPartialTile(thread_data, thread_data, custom_mixed_min<T, OpValT>{}, valid_items);
     }
   }
 };
 
-template <class T, scan_mode Mode>
-struct min_init_value_op_t
+template <class T, scan_mode Mode, typename OpValT>
+struct min_mixed_init_value_op_t
 {
   T initial_value;
   template <typename Container, class BlockScanT>
@@ -170,17 +182,17 @@ struct min_init_value_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartialTile(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items);
+      scan.ExclusiveScanPartialTile(thread_data, thread_data, initial_value, custom_mixed_min<T, OpValT>{}, valid_items);
     }
     else
     {
-      scan.InclusiveScanPartialTile(thread_data, thread_data, initial_value, cuda::minimum<>{}, valid_items);
+      scan.InclusiveScanPartialTile(thread_data, thread_data, initial_value, custom_mixed_min<T, OpValT>{}, valid_items);
     }
   }
 };
 
-template <class T, scan_mode Mode>
-struct min_init_value_aggregate_op_t
+template <class T, scan_mode Mode, typename OpValT>
+struct min_mixed_init_value_aggregate_op_t
 {
   int m_target_thread_id;
   T initial_value;
@@ -194,12 +206,12 @@ struct min_init_value_aggregate_op_t
     if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScanPartialTile(
-        thread_data, thread_data, initial_value, ::cuda::minimum<>{}, valid_items, block_aggregate);
+        thread_data, thread_data, initial_value, ::custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
     }
     else
     {
       scan.InclusiveScanPartialTile(
-        thread_data, thread_data, initial_value, ::cuda::minimum<>{}, valid_items, block_aggregate);
+        thread_data, thread_data, initial_value, ::custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -211,8 +223,8 @@ struct min_init_value_aggregate_op_t
   }
 };
 
-template <class T, scan_mode Mode>
-struct min_aggregate_op_t
+template <class T, scan_mode Mode, typename OpValT>
+struct min_mixed_aggregate_op_t
 {
   int m_target_thread_id;
   T* m_d_block_aggregate;
@@ -224,11 +236,13 @@ struct min_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartialTile(thread_data, thread_data, cuda::minimum<>{}, valid_items, block_aggregate);
+      scan.ExclusiveScanPartialTile(
+        thread_data, thread_data, custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
     }
     else
     {
-      scan.InclusiveScanPartialTile(thread_data, thread_data, cuda::minimum<>{}, valid_items, block_aggregate);
+      scan.InclusiveScanPartialTile(
+        thread_data, thread_data, custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
     }
 
     const int tid = static_cast<int>(cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z));
@@ -240,11 +254,11 @@ struct min_aggregate_op_t
   }
 };
 
-template <class T, scan_mode Mode>
-struct min_prefix_op_t
+template <class T, scan_mode Mode, typename OpValT>
+struct min_mixed_prefix_op_t
 {
   T m_prefix;
-  static constexpr T min_identity = ::cuda::std::numeric_limits<T>::max();
+  static constexpr T min_identity = cuda::std::numeric_limits<T>::max();
 
   struct block_prefix_op_t
   {
@@ -259,7 +273,7 @@ struct min_prefix_op_t
     __device__ T operator()(T block_aggregate)
     {
       T retval = (linear_tid == 0) ? prefix : min_identity;
-      prefix   = ::cuda::minimum<>{}(prefix, block_aggregate);
+      prefix   = custom_mixed_min<T, OpValT>{}(prefix, block_aggregate);
       return retval;
     }
   };
@@ -272,11 +286,11 @@ struct min_prefix_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScanPartialTile(thread_data, thread_data, ::cuda::minimum<>{}, valid_items, prefix_op);
+      scan.ExclusiveScanPartialTile(thread_data, thread_data, custom_mixed_min<T, OpValT>{}, valid_items, prefix_op);
     }
     else
     {
-      scan.InclusiveScanPartialTile(thread_data, thread_data, ::cuda::minimum<>{}, valid_items, prefix_op);
+      scan.InclusiveScanPartialTile(thread_data, thread_data, custom_mixed_min<T, OpValT>{}, valid_items, prefix_op);
     }
   }
 };
@@ -302,7 +316,8 @@ using containers =
 template <class TestType>
 struct mode_params_t
 {
-  using type = int;
+  using type          = cuda::std::int32_t;
+  using op_value_type = cuda::std::int64_t;
 
   static constexpr int threads_in_block = 256;
   static constexpr int items_per_thread = 3;
@@ -316,6 +331,7 @@ C2H_TEST("Partial block scan supports containers", "[scan][block]", modes, conta
 {
   using params          = mode_params_t<TestType>;
   using type            = typename params::type;
+  using op_value_type   = typename params::op_value_type;
   using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(valid_items_gen::rand_inside());
@@ -324,14 +340,14 @@ C2H_TEST("Partial block scan supports containers", "[scan][block]", modes, conta
   c2h::gen(C2H_SEED(1), d_in);
 
   block_scan_container<params::cont, params::items_per_thread, params::threads_in_block>(
-    d_in, d_out, min_op_t<params::mode>{}, valid_items);
+    d_in, d_out, min_mixed_op_t<type, params::mode, op_value_type>{}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
     params::mode,
     h_out,
     [](type l, type r) {
-      return std::min(l, r);
+      return std::min(static_cast<op_value_type>(l), static_cast<op_value_type>(r));
     },
     valid_items,
     INT_MAX);
@@ -350,6 +366,7 @@ C2H_TEST("Partial block scan supports containers and returns valid block aggrega
 {
   using params          = mode_params_t<TestType>;
   using type            = typename params::type;
+  using op_value_type   = typename params::op_value_type;
   using valid_items_gen = valid_items_generators_t<params>;
 
   const int target_thread_id = GENERATE_COPY(take(1, random(0, params::threads_in_block - 1)));
@@ -363,7 +380,8 @@ C2H_TEST("Partial block scan supports containers and returns valid block aggrega
   block_scan_container<params::cont, params::items_per_thread, params::threads_in_block>(
     d_in,
     d_out,
-    min_aggregate_op_t<type, params::mode>{target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())},
+    min_mixed_aggregate_op_t<type, params::mode, op_value_type>{
+      target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())},
     valid_items);
 
   c2h::host_vector<type> h_out = d_in;
@@ -371,7 +389,7 @@ C2H_TEST("Partial block scan supports containers and returns valid block aggrega
     params::mode,
     h_out,
     [](type l, type r) {
-      return std::min(l, r);
+      return std::min(static_cast<op_value_type>(l), static_cast<op_value_type>(r));
     },
     valid_items,
     INT_MAX);
@@ -392,6 +410,7 @@ C2H_TEST("Partial block scan supports containers and works with initial value", 
 {
   using params          = mode_params_t<TestType>;
   using type            = typename params::type;
+  using op_value_type   = typename params::op_value_type;
   using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(valid_items_gen::rand_inside());
@@ -402,14 +421,14 @@ C2H_TEST("Partial block scan supports containers and works with initial value", 
   const auto initial_value = static_cast<type>(GENERATE_COPY(take(1, random(0, params::tile_size))));
 
   block_scan_container<params::cont, params::items_per_thread, params::threads_in_block>(
-    d_in, d_out, min_init_value_op_t<type, params::mode>{initial_value}, valid_items);
+    d_in, d_out, min_mixed_init_value_op_t<type, params::mode, op_value_type>{initial_value}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
     params::mode,
     h_out,
     [](type l, type r) {
-      return std::min(l, r);
+      return std::min(static_cast<op_value_type>(l), static_cast<op_value_type>(r));
     },
     valid_items,
     initial_value);
@@ -424,6 +443,7 @@ C2H_TEST("Partial block scan with initial value supports containers and returns 
 {
   using params          = mode_params_t<TestType>;
   using type            = typename params::type;
+  using op_value_type   = typename params::op_value_type;
   using valid_items_gen = valid_items_generators_t<params>;
 
   const int valid_items = GENERATE_COPY(valid_items_gen::rand_above());
@@ -441,7 +461,7 @@ C2H_TEST("Partial block scan with initial value supports containers and returns 
   block_scan_container<params::cont, params::items_per_thread, params::threads_in_block>(
     d_in,
     d_out,
-    min_init_value_aggregate_op_t<type, params::mode>{
+    min_mixed_init_value_aggregate_op_t<type, params::mode, op_value_type>{
       target_thread_id, initial_value, thrust::raw_pointer_cast(d_block_aggregate.data())},
     valid_items);
 
@@ -450,7 +470,7 @@ C2H_TEST("Partial block scan with initial value supports containers and returns 
     params::mode,
     h_out,
     [](type l, type r) {
-      return std::min(l, r);
+      return std::min(static_cast<op_value_type>(l), static_cast<op_value_type>(r));
     },
     valid_items,
     initial_value);
@@ -466,6 +486,7 @@ C2H_TEST("Partial block scan supports prefix op and containers", "[scan][block]"
 {
   using params          = mode_params_t<TestType>;
   using type            = typename params::type;
+  using op_value_type   = typename params::op_value_type;
   using valid_items_gen = valid_items_generators_t<params>;
 
   const type prefix = GENERATE_COPY(take(1, random(0, params::tile_size)));
@@ -476,14 +497,14 @@ C2H_TEST("Partial block scan supports prefix op and containers", "[scan][block]"
   c2h::gen(C2H_SEED(1), d_in);
 
   block_scan_container<params::cont, params::items_per_thread, params::threads_in_block>(
-    d_in, d_out, min_prefix_op_t<type, params::mode>{prefix}, valid_items);
+    d_in, d_out, min_mixed_prefix_op_t<type, params::mode, op_value_type>{prefix}, valid_items);
 
   c2h::host_vector<type> h_out = d_in;
   host_scan(
     params::mode,
     h_out,
-    [](type a, type b) {
-      return std::min(a, b);
+    [](type l, type r) {
+      return std::min(static_cast<op_value_type>(l), static_cast<op_value_type>(r));
     },
     valid_items,
     prefix);
