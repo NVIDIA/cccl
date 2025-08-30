@@ -813,7 +813,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return reserved::dot::section::guard(mv(symbol));
+    return reserved::dot_section::guard(get_dot(), mv(symbol));
   }
 
   auto get_phase() const
