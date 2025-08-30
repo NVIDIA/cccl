@@ -48,7 +48,7 @@ int main()
   // force to move to a different place, and probably to allocate another copy
   // on the host. This tests if the write-back mechanism works from the host to
   // the device when destroying the alias logical data glA.
-  gctx.host_launch(glA.rw())->*[] __device__(auto a) {
+  gctx.host_launch(glA.rw())->*[](auto a) {
     for (size_t i = 0; i < 1024; i++)
     {
       a(i) *= 2;
