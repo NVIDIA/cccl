@@ -123,7 +123,10 @@ def build_summary(jobs, job_times=None):
         update_summary_entry(projects[project], job, job_times)
 
         for tag in matrix_job.keys():
-            if tag == "project":
+            # These are excluded from the summary table:
+            # - Project is already the top-level grouping.
+            # - Human-readable 'job_name' is used in place of 'jobs'.
+            if tag in ["project", "jobs"]:
                 continue
 
             if tag not in tags:

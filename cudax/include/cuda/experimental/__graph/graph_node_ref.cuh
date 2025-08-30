@@ -251,7 +251,7 @@ struct graph_node_ref
         __graph_,
         __deps.data(), // dependencies
         __src_arr.get(), // dependant nodes
-        __nullptr, // no edge data
+        nullptr, // no edge data
         __deps.size()); // number of dependencies
 #else
       _CCCL_TRY_CUDA_API(
