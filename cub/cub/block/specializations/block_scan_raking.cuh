@@ -264,7 +264,8 @@ struct BlockScanRaking
       cached_segment[iteration] = smem_raking_ptr[iteration];
     }
 
-    return cub::detail::ThreadReducePartial(cached_segment, scan_op, segment_valid_items);
+    return cub::detail::ThreadReducePartial<T[SEGMENT_LENGTH], ScanOp, T, T>(
+      cached_segment, scan_op, segment_valid_items);
   }
 
   /// Performs exclusive downsweep raking scan
@@ -284,7 +285,7 @@ struct BlockScanRaking
       }
     }
 
-    cub::detail::ThreadScanExclusivePartial(
+    cub::detail::ThreadScanExclusivePartial<T[SEGMENT_LENGTH], T[SEGMENT_LENGTH], ScanOp, T, T, T>(
       cached_segment, cached_segment, scan_op, segment_valid_items, raking_partial, apply_prefix);
 
     // Write data back to smem
