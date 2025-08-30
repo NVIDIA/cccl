@@ -8,6 +8,13 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16']}
   #
   override:
+    # Reusable list of new Windows GPU runners
+    # Define the anchor on first use and reuse below
+    - {jobs: ['test_nobuild'], project: 'packaging',  ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: &win_gpus ['a100', 'h100', 'l4', 'rtx2080', 'rtx4090', 'rtxa6000']}
+    - {jobs: ['test_nobuild'], project: 'thrust',     ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
+    - {jobs: ['test_nobuild'], project: 'libcudacxx', ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
+    - {jobs: ['test_nobuild'], project: 'cub',        ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
+    - {jobs: ['test_nobuild'], project: 'cudax',      ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -244,8 +251,8 @@ workflows:
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
-    # GPU runners are not available on Windows.
-    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
+  #  # GPU runners are not available on Windows.
+  #  - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
 
 
 #############################################################################################
@@ -457,6 +464,7 @@ gpus:
   v100:     { sm: 70 } # 32 GB,  40 runners
   t4:       { sm: 75 } # 16 GB,  10 runners
   rtx2080:  { sm: 75 } #  8 GB,  12 runners
+  a100:     { sm: 80 }
   rtxa6000: { sm: 86 } # 48 GB,  12 runners
   l4:       { sm: 89 } # 24 GB,  48 runners
   rtx4090:  { sm: 89 } # 24 GB,  10 runners

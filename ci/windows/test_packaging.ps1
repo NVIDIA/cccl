@@ -2,12 +2,14 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(20)]
-    [int]$CXX_STANDARD = 20,
+    [ValidateSet(17, 20)]
+    [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
     [string]$CUDA_ARCH = ""
 )
+
+$ErrorActionPreference = "Stop"
 
 $CURRENT_PATH = Split-Path $pwd -leaf
 If($CURRENT_PATH -ne "ci") {
@@ -15,13 +17,17 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Remove-Module -Name build_common -ErrorAction SilentlyContinue
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, "$CUDA_ARCH"
 
-$PRESET = "cudax-cpp$CXX_STANDARD"
+$PRESET = "packaging"
 $CMAKE_OPTIONS = ""
 
-configure_and_build_preset "CUDA Experimental" "$PRESET" "$CMAKE_OPTIONS"
+if ($env:GITHUB_SHA) {
+    $CMAKE_OPTIONS += "-DCCCL_EXAMPLE_CPM_TAG=$env:GITHUB_SHA "
+}
+
+configure_preset "Packaging" $PRESET "$CMAKE_OPTIONS"
+test_preset "Packaging" $PRESET
 
 If($CURRENT_PATH -ne "ci") {
     popd

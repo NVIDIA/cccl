@@ -32,6 +32,11 @@ set(cmake_cpm_opts
   -D "CCCL_TAG=${CCCL_EXAMPLE_CPM_TAG}"
 )
 
+if (MSVC)
+  message(STATUS "Skipping example build-and-test CTests on MSVC")
+  return()
+endif()
+
 cccl_add_compile_test(test_name
   cccl.example
   basic
