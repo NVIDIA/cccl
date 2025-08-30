@@ -73,7 +73,7 @@ int main()
   // force to move to a different place, and probably to allocate another copy on the host
   // XXX (it seems that this write is not written back to the copy of array4 on the device when popping before we write
   // back ?)
-  sctx.host_launch(lA4.rw())->*[] __device__(auto a4) {
+  sctx.host_launch(lA4.rw())->*[](auto a4) {
     for (size_t i = 0; i < 1024; i++)
     {
       a4(i) *= 2;
