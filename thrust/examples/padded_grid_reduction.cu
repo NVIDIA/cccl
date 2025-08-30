@@ -12,8 +12,6 @@
 
 #include <float.h>
 
-#include "include/host_device.h"
-
 // This example computes the minimum and maximum values
 // over a padded grid.  The padded values are not considered
 // during the reduction operation.
@@ -82,9 +80,9 @@ int main()
   thrust::device_vector<float> data(M * N, -1);
 
   // initialize valid values in grid
-  for (int i = 0; i < M; i++)
+  for (size_t i = 0; i < static_cast<size_t>(M); i++)
   {
-    for (int j = 0; j < n; j++)
+    for (size_t j = 0; j < static_cast<size_t>(n); j++)
     {
       data[i * N + j] = dist(rng);
     }
@@ -93,10 +91,10 @@ int main()
   // print full grid
   std::cout << "padded grid" << std::endl;
   std::cout << std::fixed << std::setprecision(4);
-  for (int i = 0; i < M; i++)
+  for (size_t i = 0; i < static_cast<size_t>(M); i++)
   {
     std::cout << " ";
-    for (int j = 0; j < N; j++)
+    for (size_t j = 0; j < static_cast<size_t>(N); j++)
     {
       std::cout << data[i * N + j] << " ";
     }
