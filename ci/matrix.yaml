@@ -27,6 +27,7 @@ workflows:
     # Add a 12.9 job in to see if this is a new regression in the 13.0 images.
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '12.9',  std: '20',  cxx: ['clang19', 'gcc14']}
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '13.0',  std: '20',  cxx: ['clang19', 'gcc14']}
+    - {jobs: ['nvrtc'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: 'gcc12', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: ['msvc14.29', 'msvc14.39']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X',  std: 'all', cxx: ['msvc14.29']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '13.0',  std: '17',  cxx: ['msvc14.43']}
