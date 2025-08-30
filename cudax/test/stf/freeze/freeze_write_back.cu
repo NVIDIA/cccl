@@ -37,9 +37,9 @@ int main()
 
   // Create an alias for lA in the graph by freezing it and creating a new
   // local logical data in the graph.
-  auto fa =  ctx.freeze(lA, access_mode::rw, data_place::current_device());
+  auto fa   = ctx.freeze(lA, access_mode::rw, data_place::current_device());
   auto inst = fa.get(data_place::current_device(), stream);
-  auto glA = gctx.logical_data(inst, data_place::current_device());
+  auto glA  = gctx.logical_data(inst, data_place::current_device());
 
   gctx.parallel_for(glA.shape(), glA.rw())->*[] __device__(size_t i, auto a) {
     a(i) += 4 * i;
