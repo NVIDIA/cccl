@@ -203,6 +203,12 @@ public:
       insert_dependencies(stream_grid);
     }
 
+    auto& dot = ctx.get_dot();
+    if (dot->is_tracing())
+    {
+      dot->template add_vertex<task, logical_data_untyped>(*this);
+    }
+
     return *this;
   }
 
@@ -307,11 +313,6 @@ public:
 
       clear();
     };
-
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
@@ -574,11 +575,6 @@ public:
 
       clear();
     };
-
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
