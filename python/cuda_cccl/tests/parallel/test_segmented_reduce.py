@@ -41,9 +41,14 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
+    if input_array.dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = binary_op
+
     # Call single-phase API directly with num_segments parameter
     parallel.segmented_reduce(
-        d_in, d_out, start_offsets, end_offsets, binary_op, h_init, n_segments
+        d_in, d_out, start_offsets, end_offsets, reduce_op, h_init, n_segments
     )
 
     d_expected = cp.empty_like(d_out)

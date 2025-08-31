@@ -54,6 +54,7 @@ _TYPE_TO_ENUM = {
     types.uint16: TypeEnum.UINT16,
     types.uint32: TypeEnum.UINT32,
     types.uint64: TypeEnum.UINT64,
+    types.float16: TypeEnum.FLOAT16,
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
 }

@@ -550,6 +550,7 @@ public:
   }
 
   //! @brief Returns the stored stream
+  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref stream() const noexcept
   {
     return __buf_.stream();
@@ -559,15 +560,6 @@ public:
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
   _CCCL_HIDE_FROM_ABI constexpr void set_stream(stream_ref __new_stream)
-  {
-    __buf_.set_stream(__new_stream);
-  }
-
-  //! @brief Replaces the stored stream
-  //! @param __new_stream the new stream
-  //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
-  //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(stream_ref __new_stream) noexcept
   {
     __buf_.set_stream_unsynchronized(__new_stream);
   }
@@ -596,6 +588,15 @@ public:
   }
 
   //! @brief Destroys the async_buffer, deallocates the buffer and destroys the memory resource
+  //! @param __stream The stream to deallocate the buffer on.
+  //! @warning After this explicit destroy call, the buffer can only be assigned to or destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy(::cuda::stream_ref __stream)
+  {
+    __buf_.destroy(__stream);
+  }
+
+  //! @brief Destroys the async_buffer, deallocates the buffer and destroys the memory resource
+  //! @note Uses the stored stream to deallocate the buffer, equivalent to calling buffer.destroy(buffer.stream())
   //! @warning After this explicit destroy call, the buffer can only be assigned to or destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
