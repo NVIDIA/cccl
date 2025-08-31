@@ -87,7 +87,6 @@ int main()
     // Multi-device async resource (manages allocations per device/stream)
     thrust::mr::multi_device_async_resource<thrust::device_ptr<void>> multi_res(&cuda_res);
 
-    // ----- Host-style examples (original idea) -----
     thrust::mr::new_delete_resource host_res;
 
     {
