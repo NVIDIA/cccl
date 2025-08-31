@@ -387,6 +387,9 @@ struct AgentTopK
 
     for (int i_block = blockIdx.x; i_block < total_num_blocks - 1; i_block += gridDim.x)
     {
+      // Ensure that the temporary storage from previous iteration can be reused
+      __syncthreads();
+
       block_load_input_t(temp_storage.load_input).Load(in + tile_base, thread_data);
       for (int j = 0; j < ITEMS_PER_THREAD; ++j)
       {
@@ -396,8 +399,12 @@ struct AgentTopK
       offset += ITEMS_PER_PASS;
     }
 
+    // Last tile specialized code-path
     if (blockIdx.x == last_block_id)
     {
+      // Ensure that the temporary storage from the previous loop can be reused
+      __syncthreads();
+
       if (num_remaining_elements == 0)
       {
         block_load_input_t(temp_storage.load_input).Load(in + tile_base, thread_data);
@@ -522,10 +529,13 @@ struct AgentTopK
       }
     }
 
+    // Early stop means that subsequent passes are not needed.
     if (early_stop)
     {
       return;
     }
+
+    // Ensure all threads have contributed to the histogram before accumulating in the global memory
     __syncthreads();
 
     // merge histograms produced by individual blocks
@@ -560,7 +570,7 @@ struct AgentTopK
   _CCCL_DEVICE _CCCL_FORCEINLINE void choose_bucket(
     Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OffsetT* histogram, const OutOffsetT k, const int pass)
   {
-    for (int i = threadIdx.x; i < num_buckets; i += blockDim.x)
+    for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
     {
       OffsetT prev = (i == 0) ? 0 : histogram[i - 1];
       OffsetT cur  = histogram[i];
@@ -765,6 +775,7 @@ struct AgentTopK
       is_last_block         = (finished == (gridDim.x - 1));
     }
 
+    // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage
     if (__syncthreads_or(is_last_block))
     {
       if (threadIdx.x == 0)
