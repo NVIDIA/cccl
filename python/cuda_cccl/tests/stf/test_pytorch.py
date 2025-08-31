@@ -5,7 +5,8 @@
 
 import numba
 import numpy as np
-import torch
+import pytest
+torch = pytest.importorskip("torch")
 from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
@@ -15,33 +16,6 @@ from cuda.cccl.experimental.stf._stf_bindings import (
     context,
     rw,
 )
-
-
-def torch_from_cai(obj):
-    """
-    Convert an object exposing the CUDA Array Interface (__cuda_array_interface__)
-    into a torch.Tensor (on GPU). Zero-copy if possible.
-
-    Strategy:
-      1. If obj has .to_dlpack(), use it directly.
-      2. Otherwise, try to wrap with CuPy (which understands CAI) and then use DLPack.
-    """
-    # Path 1: direct DLPack (Numba >=0.53, some other libs)
-    if hasattr(obj, "to_dlpack"):
-        return torch.utils.dlpack.from_dlpack(obj.to_dlpack())
-
-    # Path 2: via CuPy bridge
-    try:
-        import cupy as cp
-    except ImportError as e:
-        raise RuntimeError(
-            "Object does not support .to_dlpack and CuPy is not installed. "
-            "Cannot convert __cuda_array_interface__ to torch.Tensor."
-        ) from e
-
-    # CuPy knows how to wrap CAI
-    cupy_arr = cp.asarray(obj)
-    return torch.utils.dlpack.from_dlpack(cupy_arr.toDlpack())
 
 
 def test_pytorch():
@@ -58,11 +32,7 @@ def test_pytorch():
     with ctx.task(rw(lX)) as t:
         torch_stream = torch.cuda.ExternalStream(t.stream_ptr())
         with torch.cuda.stream(torch_stream):
-            dX = cuda.from_cuda_array_interface(
-                t.get_arg_cai(0), owner=None, sync=False
-            )
-            tX = torch_from_cai(dX)
-            # same as tX =t.get_arg_as_tensor(0)
+            tX = t.tensor_arguments()
             tX = tX * 2
 
     with ctx.task(lX.read(), lY.write()) as t:
