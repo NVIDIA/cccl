@@ -108,7 +108,7 @@ public:
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
     }
 
-    auto& dot = ctx.get_dot();
+    auto& dot = *ctx.get_dot();
     if (dot.is_tracing())
     {
       dot.template add_vertex<task, logical_data_untyped>(*this);
