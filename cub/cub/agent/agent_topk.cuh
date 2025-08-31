@@ -53,19 +53,18 @@ CUB_NAMESPACE_BEGIN
 template <int BlockThreads,
           int ItemsPerThread,
           int BitsPerPass,
-          int CoefficientForBuffer,
           BlockLoadAlgorithm LoadAlgorithm,
           BlockScanAlgorithm ScanAlgorithm>
 struct AgentTopKPolicy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = BlockThreads;
+  
   /// Items per thread (per tile of input)
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  
   /// Number of bits processed per pass
   static constexpr int BITS_PER_PASS = BitsPerPass;
-  /// Coefficient for reducing buffer size
-  static constexpr int COEFFICIENT_FOR_BUFFER = CoefficientForBuffer;
 
   /// The BlockLoad algorithm to use
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
@@ -263,7 +262,6 @@ struct AgentTopK
   static constexpr int BLOCK_THREADS          = AgentTopKPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD       = AgentTopKPolicyT::ITEMS_PER_THREAD;
   static constexpr int BITS_PER_PASS          = AgentTopKPolicyT::BITS_PER_PASS;
-  static constexpr int COEFFICIENT_FOR_BUFFER = AgentTopKPolicyT::COEFFICIENT_FOR_BUFFER;
   static constexpr int TILE_ITEMS             = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int num_buckets            = 1 << BITS_PER_PASS;
 
@@ -296,16 +294,17 @@ struct AgentTopK
   //---------------------------------------------------------------------
   // Per-thread fields
   //---------------------------------------------------------------------
-  _TempStorage& temp_storage; ///< Reference to temp_storage
-  KeyInputIteratorT d_keys_in; ///< Input keys
-  KeyOutputIteratorT d_keys_out; ///< Output keys
-  ValueInputIteratorT d_values_in; ///< Input values
-  ValueOutputIteratorT d_values_out; ///< Output values
-  OffsetT num_items; ///< Total number of input items
-  OutOffsetT k; ///< Total number of output items
-  ExtractBinOpT extract_bin_op; /// The operation for bin
-  IdentifyCandidatesOpT identify_candidates_op; /// The operation for filtering
-  bool load_from_original_input; /// Set if loading data from original input
+  _TempStorage& temp_storage; // Reference to temp_storage
+  KeyInputIteratorT d_keys_in; // Input keys
+  KeyOutputIteratorT d_keys_out; // Output keys
+  ValueInputIteratorT d_values_in; // Input values
+  ValueOutputIteratorT d_values_out; // Output values
+  OffsetT num_items; // Total number of input items
+  OutOffsetT k; // Total number of output items
+  OffsetT buffer_length; // Size of the buffer for storing intermediate candidates
+  ExtractBinOpT extract_bin_op; // The operation for bin
+  IdentifyCandidatesOpT identify_candidates_op; // The operation for filtering
+  bool load_from_original_input; // Set if loading data from original input
 
   //---------------------------------------------------------------------
   // Constructor
@@ -332,6 +331,9 @@ struct AgentTopK
    * @param k
    *   The K value. Will find K elements from num_items elements
    *
+   * @param buffer_length
+   *   The size of the buffer for storing intermediate candidates
+   *
    * @param extract_bin_op
    *   Extract bin operator
    *
@@ -347,6 +349,7 @@ struct AgentTopK
     ValueOutputIteratorT d_values_out,
     OffsetT num_items,
     OutOffsetT k,
+    OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op)
       : temp_storage(temp_storage.Alias())
@@ -356,6 +359,7 @@ struct AgentTopK
       , d_values_out(d_values_out)
       , num_items(num_items)
       , k(k)
+      , buffer_length(buffer_length)
       , extract_bin_op(extract_bin_op)
       , identify_candidates_op(identify_candidates_op)
   {}
@@ -614,8 +618,7 @@ struct AgentTopK
     OutOffsetT k,
     int pass)
   {
-    const OffsetT buf_len    = ::cuda::std::max(OffsetT{1}, num_items / COEFFICIENT_FOR_BUFFER);
-    load_from_original_input = counter->previous_len > buf_len;
+    load_from_original_input = counter->previous_len > buffer_length;
     OffsetT current_len      = load_from_original_input ? num_items : counter->previous_len;
     in_idx_buf               = load_from_original_input ? nullptr : in_idx_buf; // ? out_idx_buf : in_idx_buf;
 
@@ -736,8 +739,7 @@ struct AgentTopK
     // stop the process right here.
     const bool early_stop = (current_len == static_cast<OffsetT>(current_k));
 
-    const OffsetT buf_len = ::cuda::std::max(OffsetT{1}, num_items / COEFFICIENT_FOR_BUFFER);
-    if (previous_len > buf_len)
+    if (previous_len > buffer_length)
     {
       load_from_original_input = true;
       in_idx_buf               = nullptr;
@@ -748,8 +750,8 @@ struct AgentTopK
       load_from_original_input = false;
     }
 
-    // "current_len > buf_len" means current pass will skip writing buffer
-    if (current_len > buf_len)
+    // "current_len > buffer_length" means current pass will skip writing buffer
+    if (current_len > buffer_length)
     {
       out_buf     = nullptr;
       out_idx_buf = nullptr;

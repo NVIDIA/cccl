@@ -49,8 +49,7 @@ struct sm90_tuning
   static constexpr int items = ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / (int) sizeof(KeyInT)));
   // Try to load 16 Bytes per thread. (int64(items=2);int32(items=4);int16(items=8)).
 
-  static constexpr int BITS_PER_PASS          = detail::topk::calc_bits_per_pass<KeyInT>();
-  static constexpr int COEFFICIENT_FOR_BUFFER = 128;
+  static constexpr int BITS_PER_PASS = detail::topk::calc_bits_per_pass<KeyInT>();
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_VECTORIZE;
 };
@@ -64,16 +63,10 @@ struct device_topk_policy_hub
     static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
       NOMINAL_4B_ITEMS_PER_THREAD, ::cuda::std::max(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / (int) sizeof(KeyInT))));
 
-    static constexpr int BITS_PER_PASS          = detail::topk::calc_bits_per_pass<KeyInT>();
-    static constexpr int COEFFICIENT_FOR_BUFFER = 128;
+    static constexpr int BITS_PER_PASS = detail::topk::calc_bits_per_pass<KeyInT>();
 
     using topk_policy_t =
-      AgentTopKPolicy<512,
-                      ITEMS_PER_THREAD,
-                      BITS_PER_PASS,
-                      COEFFICIENT_FOR_BUFFER,
-                      BLOCK_LOAD_VECTORIZE,
-                      BLOCK_SCAN_WARP_SCANS>;
+      AgentTopKPolicy<512, ITEMS_PER_THREAD, BITS_PER_PASS, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct Policy350
@@ -85,12 +78,7 @@ struct device_topk_policy_hub
   {
     using tuning = detail::topk::sm90_tuning<KeyInT>;
     using topk_policy_t =
-      AgentTopKPolicy<tuning::threads,
-                      tuning::items,
-                      tuning::BITS_PER_PASS,
-                      tuning::COEFFICIENT_FOR_BUFFER,
-                      tuning::load_algorithm,
-                      BLOCK_SCAN_WARP_SCANS>;
+      AgentTopKPolicy<tuning::threads, tuning::items, tuning::BITS_PER_PASS, tuning::load_algorithm, BLOCK_SCAN_WARP_SCANS>;
   };
 
   using max_policy = Policy900;
@@ -170,6 +158,9 @@ struct device_topk_policy_hub
  * @param[in] k
  *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
  *
+ * @param[in] buffer_length
+ *   The size of the buffer for storing intermediate candidates
+ *
  * @param[in] extract_bin_op
  *   Extract the bin operator
  *
@@ -205,6 +196,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
+    OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op,
     int pass)
@@ -224,7 +216,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
   // Shared memory storage
   __shared__ typename agent_topk_t::TempStorage temp_storage;
   agent_topk_t(
-    temp_storage, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, extract_bin_op, identify_candidates_op)
+    temp_storage,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    num_items,
+    k,
+    buffer_length,
+    extract_bin_op,
+    identify_candidates_op)
     .invoke_filter_and_histogram<IsFirstPass>(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
 }
 
@@ -289,6 +290,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
  * @param[in] k
  *   The K value. Will find K elements from num_items elements. The variable K should be smaller than the variable N.
  *
+ * @param[in] buffer_length
+ *   The size of the buffer for storing intermediate candidates
+ *
  * @param[in] identify_candidates_op
  *   Extract element filter operator
  *
@@ -317,6 +321,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
+    OffsetT buffer_length,
     IdentifyCandidatesOpT identify_candidates_op,
     int pass)
 {
@@ -343,6 +348,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     d_values_out,
     num_items,
     k,
+    buffer_length,
     extract_bin_op_t{},
     identify_candidates_op)
     .invoke_last_filter(in_buf, in_idx_buf, counter, histogram, k, pass);
@@ -389,6 +395,10 @@ struct DispatchTopK : SelectedPolicy
   static_assert(::cuda::std::is_same_v<OutOffsetT, ::cuda::std::uint32_t>
                   || ::cuda::std::is_same_v<OutOffsetT, unsigned long long>,
                 "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
+
+  // TODO (elstehle): consider making this part of the env-based API
+  // The algorithm allocates a double-buffer for intermediate results of size num_items/coefficient_for_candidate_buffer
+  static constexpr OffsetT coefficient_for_candidate_buffer = 128;
 
   /// Device-accessible allocation of temporary storage.
   /// When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -520,17 +530,17 @@ struct DispatchTopK : SelectedPolicy
       ::cuda::std::clamp(static_cast<common_offset_t>(k), common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
-    size_t size_counter   = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
-    size_t size_histogram = num_buckets * sizeof(OffsetT);
-    size_t num_candidates = ::cuda::std::max((size_t) 256, (size_t) num_items / policy_t::COEFFICIENT_FOR_BUFFER);
+    size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
+    size_t size_histogram           = num_buckets * sizeof(OffsetT);
+    OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
     size_t allocation_sizes[6] = {
       size_counter,
       size_histogram,
-      num_candidates * sizeof(key_in_t),
-      num_candidates * sizeof(key_in_t),
-      keys_only ? 0 : num_candidates * sizeof(OffsetT),
-      keys_only ? 0 : num_candidates * sizeof(OffsetT)};
+      candidate_buffer_length * sizeof(key_in_t),
+      candidate_buffer_length * sizeof(key_in_t),
+      keys_only ? 0 : candidate_buffer_length * sizeof(OffsetT),
+      keys_only ? 0 : candidate_buffer_length * sizeof(OffsetT)};
 
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[6] = {};
@@ -650,6 +660,7 @@ struct DispatchTopK : SelectedPolicy
             histogram,
             num_items,
             k,
+            candidate_buffer_length,
             extract_bin_op,
             identify_candidates_op,
             pass);
@@ -671,6 +682,7 @@ struct DispatchTopK : SelectedPolicy
             histogram,
             num_items,
             k,
+            candidate_buffer_length,
             extract_bin_op,
             identify_candidates_op,
             pass);
@@ -694,6 +706,7 @@ struct DispatchTopK : SelectedPolicy
             histogram,
             num_items,
             k,
+            candidate_buffer_length,
             identify_candidates_op,
             pass);
     // pass==num_passes to align with the usage of identify_candidates_op in previous passes.
