@@ -42,6 +42,10 @@ int main()
 
   auto lX = ctx.logical_data(X);
 
+  ctx.parallel_for(lX.shape(), lX.rw())->*[] __device__(size_t i, auto x) {
+    x(i) *= 3;
+  };
+
   auto fX = ctx.freeze(lX, access_mode::rw, data_place::current_device());
 
   // Create a graph that will later be inserted as a child graph once all input
@@ -55,14 +59,15 @@ int main()
   auto [frozen_X, fX_get_events] = fX.get(data_place::current_device());
 
   auto lX_alias = sub_ctx.logical_data(frozen_X, data_place::current_device());
-  auto lY = sub_ctx.logical_data(lX.shape());
 
-  sub_ctx.parallel_for(lX.shape(), lX_alias.read(), lY.write())->*[] __device__(size_t i, auto x, auto y) {
-    y(i) = x(i);
-  };
+// XXX we need an adapter to allocate data from the upper context
+//  auto lY = sub_ctx.logical_data(lX.shape());
+//  sub_ctx.parallel_for(lX.shape(), lX_alias.read(), lY.write())->*[] __device__(size_t i, auto x, auto y) {
+//    y(i) = x(i);
+//  };
 
-  sub_ctx.parallel_for(lX.shape(), lX_alias.write(), lY.read())->*[] __device__(size_t i, auto x, auto y) {
-    x(i) = y(i) + 2;
+  sub_ctx.parallel_for(lX.shape(), lX_alias.rw())->*[] __device__(size_t i, auto x) {
+    x(i) = x(i) + 2;
   };
 
   sub_ctx.finalize_as_graph();
@@ -79,7 +84,7 @@ int main()
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
-      EXPECT(x(i) == X0(i) + 2);
+      EXPECT(x(i) == 3*X0(i) + 2);
     }
   };
 
