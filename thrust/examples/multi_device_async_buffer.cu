@@ -1,3 +1,4 @@
+#include <cuda_runtime.h>
 #include <thrust/device_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/disjoint_pool.h>
@@ -5,19 +6,20 @@
 #include <thrust/mr/new.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/pool.h>
-#include <cuda_runtime.h>
+
 #include <cassert>
 #include <iostream>
 
 // Simple CUDA error checker
-#define CHECK_CUDA(call)                                                                    \
-  {                                                                                         \
-    cudaError_t err = call;                                                                 \
-    if (err != cudaSuccess) {                                                               \
-      std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " code=" << err << " \"" \
-                << cudaGetErrorString(err) << "\"" << std::endl;                            \
-      exit(EXIT_FAILURE);                                                                   \
-    }                                                                                       \
+#define CHECK_CUDA(call)                                                       \
+  {                                                                            \
+    cudaError_t err = call;                                                    \
+    if (err != cudaSuccess) {                                                  \
+      std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__             \
+                << " code=" << err << " \"" << cudaGetErrorString(err) << "\"" \
+                << std::endl;                                                  \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
   }
 
 // Kernel for simple computation
@@ -28,8 +30,7 @@ __global__ void add_kernel(int *data, int n, int value) {
 }
 
 // Generic vector test
-template <typename Vec>
-void test_vector(typename Vec::allocator_type alloc) {
+template <typename Vec> void test_vector(typename Vec::allocator_type alloc) {
   Vec v1(alloc);
   v1.push_back(1);
   assert(v1.back() == 1);
@@ -46,12 +47,15 @@ void test_vector(typename Vec::allocator_type alloc) {
 // Multi-device test for a GPU vector
 void test_multi_device_vector(
     int device_id,
-    thrust::mr::multi_device_async_resource<thrust::device_ptr<void>> *multi_res) {
+    thrust::mr::multi_device_async_resource<thrust::device_ptr<void>>
+        *multi_res) {
   CHECK_CUDA(cudaSetDevice(device_id));
 
   // Polymorphic allocator per device
-  thrust::mr::polymorphic_adaptor_resource<thrust::device_ptr<void>> adaptor(multi_res);
-  using Alloc = thrust::mr::polymorphic_allocator<int, thrust::device_ptr<void>>;
+  thrust::mr::polymorphic_adaptor_resource<thrust::device_ptr<void>> adaptor(
+      multi_res);
+  using Alloc =
+      thrust::mr::polymorphic_allocator<int, thrust::device_ptr<void>>;
   Alloc alloc(&adaptor);
 
   thrust::device_vector<int, Alloc> vec(10, 1, alloc);
@@ -82,7 +86,8 @@ int main() {
   thrust::mr::cuda_memory_resource cuda_res;
 
   // Multi-device async resource (manages allocations per device/stream)
-  thrust::mr::multi_device_async_resource<thrust::device_ptr<void>> multi_res(&cuda_res);
+  thrust::mr::multi_device_async_resource<thrust::device_ptr<void>> multi_res(
+      &cuda_res);
 
   thrust::mr::new_delete_resource host_res;
 
@@ -100,7 +105,8 @@ int main() {
   }
 
   {
-    using Pool = thrust::mr::unsynchronized_pool_resource<thrust::mr::new_delete_resource>;
+    using Pool = thrust::mr::unsynchronized_pool_resource<
+        thrust::mr::new_delete_resource>;
     Pool pool(&host_res);
     using Alloc = thrust::mr::allocator<int, Pool>;
     Alloc alloc(&pool);
@@ -108,9 +114,8 @@ int main() {
   }
 
   {
-    using DisjointPool =
-        thrust::mr::disjoint_unsynchronized_pool_resource<thrust::mr::new_delete_resource,
-                                                          thrust::mr::new_delete_resource>;
+    using DisjointPool = thrust::mr::disjoint_unsynchronized_pool_resource<
+        thrust::mr::new_delete_resource, thrust::mr::new_delete_resource>;
     DisjointPool disjoint_pool(&host_res, &host_res);
     using Alloc = thrust::mr::allocator<int, DisjointPool>;
     Alloc alloc(&disjoint_pool);
@@ -123,6 +128,7 @@ int main() {
     test_multi_device_vector(dev, &multi_res);
   }
 
-  std::cout << "Multi-device async buffer + host vector demo completed successfully.\n";
+  std::cout << "Multi-device async buffer + host vector demo completed "
+               "successfully.\n";
   return 0;
 }
