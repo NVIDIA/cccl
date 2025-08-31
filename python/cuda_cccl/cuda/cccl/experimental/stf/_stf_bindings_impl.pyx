@@ -13,9 +13,8 @@ from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset, memcpy
 
+# TODO remove that dependency
 import numpy as np
-from numba import cuda
-
 
 from cpython.buffer cimport (
     Py_buffer, PyBUF_SIMPLE, PyBUF_ANY_CONTIGUOUS,
@@ -420,7 +419,11 @@ cdef class task:
 
     def get_arg_numba(self, index):
         cai = self.get_arg_cai(index)
-        return cuda.from_cuda_array_interface(cai, owner=None, sync=False)
+        try:
+            from cuda.cccl.experimental.stf._adapters.numba_bridge import cai_to_numba
+        except Exception as e:
+            raise RuntimeError("numba support is not available") from e
+        return cai_to_numba(cai)
 
     def get_arg_as_tensor(self, index):
         cai = self.get_arg_cai(index)
