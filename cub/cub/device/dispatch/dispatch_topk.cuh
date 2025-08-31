@@ -219,8 +219,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
               ExtractBinOpT,
               IdentifyCandidatesOpT,
               OffsetT,
-              OutOffsetT,
-              SelectMin>;
+              OutOffsetT>;
 
   // Shared memory storage
   __shared__ typename agent_topk_t::TempStorage temp_storage;
@@ -332,8 +331,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
               extract_bin_op_t, // ExtractBinOp operator (not used)
               IdentifyCandidatesOpT,
               OffsetT,
-              OutOffsetT,
-              SelectMin>;
+              OutOffsetT>;
 
   // Shared memory storage
   __shared__ typename agent_topk_t::TempStorage temp_storage;
@@ -449,7 +447,8 @@ struct DispatchTopK : SelectedPolicy
    *   Number of items to be processed
    *
    * @param[in] k
-   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of `num_items`.
+   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+   * `num_items`.
    *
    * @param[in] stream
    *   @rst
@@ -771,7 +770,8 @@ struct DispatchTopK : SelectedPolicy
    *   Number of items to be processed
    *
    * @param[in] k
-   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of `num_items`.
+   *   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
+   * `num_items`.
    *
    * @param[in] stream
    *   @rst

@@ -242,10 +242,6 @@ struct IdentifyCandidatesOp
  *
  * @tparam OutOffsetT
  *   Type of variable k
- *
- * @tparam SelectMin
- *   Determine whether to select the smallest (SelectMin=true) or largest (SelectMin=false) K elements.
- *
  */
 template <typename AgentTopKPolicyT,
           typename KeyInputIteratorT,
@@ -255,8 +251,7 @@ template <typename AgentTopKPolicyT,
           typename ExtractBinOpT,
           typename IdentifyCandidatesOpT,
           typename OffsetT,
-          typename OutOffsetT,
-          bool SelectMin>
+          typename OutOffsetT>
 struct AgentTopK
 {
   //---------------------------------------------------------------------
@@ -442,9 +437,8 @@ struct AgentTopK
   {
     if constexpr (IsFirstPass)
     {
-      // Passed to vectorized loading, this function executes in all blocks in parallel,
-      // i.e. the work is split along the input (both, in batches and chunks of a single
-      // row). Later, the histograms are merged using atomicAdd.
+      // During the first pass, compute per-thread block histograms over the full input. The per-thread block histograms
+      // are being added to the global histogram further down below.
       auto f = [this, histogram_smem](key_in_t key, OffsetT index) {
         int bucket = extract_bin_op(key);
         atomicAdd(histogram_smem + bucket, OffsetT{1});
@@ -519,6 +513,7 @@ struct AgentTopK
             }
           }
         };
+
       if (load_from_original_input)
       {
         process_range(d_keys_in, previous_len, f);
@@ -538,8 +533,8 @@ struct AgentTopK
     // Ensure all threads have contributed to the histogram before accumulating in the global memory
     __syncthreads();
 
-    // merge histograms produced by individual blocks
-    for (int i = threadIdx.x; i < num_buckets; i += blockDim.x)
+    // Merge histograms produced by individual blocks
+    for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
     {
       if (histogram_smem[i] != 0)
       {
@@ -555,7 +550,7 @@ struct AgentTopK
   {
     OffsetT thread_data[items_per_thread_for_scan];
 
-    block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets, 0);
+    block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets, OffsetT{0});
     __syncthreads();
 
     block_scan_t(temp_storage.scan).InclusiveSum(thread_data, thread_data);
@@ -579,12 +574,12 @@ struct AgentTopK
       if (prev < k && cur >= k)
       {
         // The number of items that are yet to be identified
-        counter->k                                     = k - prev; 
+        counter->k = k - prev;
         // The number of candidates in the next pass
-        counter->len                                   = cur - prev; 
+        counter->len                                   = cur - prev;
         typename Traits<key_in_t>::UnsignedBits bucket = i;
-        // 
-        int start_bit                                  = calc_start_bit<key_in_t, BITS_PER_PASS>(pass);
+        //
+        int start_bit = calc_start_bit<key_in_t, BITS_PER_PASS>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
     }
@@ -730,12 +725,17 @@ struct AgentTopK
       previous_len = counter->previous_len;
     }
 
+    // If current_len is 0, it means all the candidates have been found in previous passes.
     if (current_len == 0)
     {
       return;
     }
 
+    // Early stop means that the bin containing the k-th element has been identified, and all
+    // the elements in this bin are exactly the remaining k items we need to find. So we can
+    // stop the process right here.
     const bool early_stop = (current_len == static_cast<OffsetT>(current_k));
+
     const OffsetT buf_len = ::cuda::std::max(OffsetT{1}, num_items / COEFFICIENT_FOR_BUFFER);
     if (previous_len > buf_len)
     {
@@ -756,7 +756,7 @@ struct AgentTopK
     }
 
     __shared__ OffsetT histogram_smem[num_buckets];
-    for (OffsetT i = threadIdx.x; i < num_buckets; i += blockDim.x)
+    for (OffsetT i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
     {
       histogram_smem[i] = 0;
     }
@@ -765,9 +765,11 @@ struct AgentTopK
     filter_and_histogram<IsFirstPass>(
       in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, histogram_smem, pass, early_stop);
 
-      // We need this `__threadfence()` because the global array `histogram` will be accessed by other threads with non-atomic operations.
+    // We need this `__threadfence()` because the global array `histogram` will be accessed by other threads with
+    // non-atomic operations.
     __threadfence();
 
+    // Identify the last block in the grid to perform the prefix sum over the histogram and choose_bucket
     bool is_last_block = false;
     if (threadIdx.x == 0)
     {
@@ -799,10 +801,10 @@ struct AgentTopK
       __syncthreads();
       choose_bucket(counter, histogram_smem, current_k, pass);
 
-      // reset for next pass
+      // Reset histogram for the next pass
       if (pass != num_passes - 1)
       {
-        for (int i = threadIdx.x; i < num_buckets; i += blockDim.x)
+        for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
         {
           histogram[i] = 0;
         }
