@@ -14,10 +14,14 @@ __all__ = [
     "jit",
 ]
 
+
 def has_torch() -> bool:
     import importlib.util
+
     return importlib.util.find_spec("torch") is not None
+
 
 def has_numba() -> bool:
     import importlib.util
+
     return importlib.util.find_spec("numba") is not None

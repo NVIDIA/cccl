@@ -6,8 +6,8 @@
 import numba
 import numpy as np
 import pytest
+
 torch = pytest.importorskip("torch")
-from numba import cuda
 
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0

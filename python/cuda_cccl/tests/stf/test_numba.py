@@ -239,6 +239,7 @@ def test_numba_places():
         dZ = t.get_arg_numba(1)
         axpy[32, 64, nb_stream](2.0, dY, dZ)
 
+
 if __name__ == "__main__":
     print("Running CUDASTF examples...")
     test_numba_graph()
