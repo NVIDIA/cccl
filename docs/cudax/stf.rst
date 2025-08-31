@@ -1890,9 +1890,9 @@ may however already manage coherency or enforce dependencies by other means.
 CUDASTF offers several facilities that facilitate incremental adoption
 in existing code.
 
-- The `logical data freezing`` mechanism ensures data availability while letting
+- The ``logical data freezing`` mechanism ensures data availability while letting
   the application take care of synchronization.
-- `Tokens`` make it possible to enforce concurrent execution while
+- ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
@@ -1902,9 +1902,9 @@ When a piece of data is used very often, it can be beneficial to avoid enforcing
 data dependencies every time it is accessed. A common example would be data that
 is written once and then read many times.
 
-CUDASTF provides a mechanism called `logical data freeze` that allows a
+CUDASTF provides a mechanism called ``logical data freeze`` that allows a
 logical data to be accessed outside of tasks—or within tasks—without
-enforcing data dependencies for every access, which reduces minimizes overhead.
+enforcing data dependencies for every access, which minimizes overhead.
 
 By default, calling the ``freeze`` method returns a frozen logical data object
 that can be accessed in read-only mode without additional synchronization. The

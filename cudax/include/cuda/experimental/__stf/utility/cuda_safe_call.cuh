@@ -90,7 +90,6 @@ inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 /**
  * @brief Exception type across CUDA, CUBLAS, and CUSOLVER.
  *
- * @paragraph example Example
  * @snippet this cuda_exception
  */
 class cuda_exception : public ::std::exception

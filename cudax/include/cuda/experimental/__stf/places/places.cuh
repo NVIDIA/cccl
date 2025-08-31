@@ -53,7 +53,7 @@ class exec_place_cuda_stream;
 class exec_place_green_ctx;
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-/// @brief Type of executor function
+/// @brief Function type for computing executor placement from data coordinates
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
 /**
@@ -822,7 +822,7 @@ UNITTEST("exec_place copyable")
 };
 #endif // UNITTESTED_FILE
 
-/// @brief A grid of execution places
+/// @brief A multidimensional grid of execution places for structured parallel computation
 class exec_place_grid : public exec_place
 {
 public:
@@ -1122,13 +1122,13 @@ public:
   {}
 };
 
-/// @brief Create a grid of a given dimensionality
+/// @brief Creates a grid of execution places with specified dimensions
 inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
   return exec_place_grid(mv(places), dims);
 }
 
-/// @brief Create a grid over the specified places
+/// @brief Creates a linear grid from a vector of execution places
 inline exec_place_grid make_grid(::std::vector<exec_place> places)
 {
   assert(!places.empty());
@@ -1147,7 +1147,7 @@ inline exec_place exec_place::iterator::operator*()
   return exec_place(it_impl);
 }
 
-/// @brief Create a grid over the specified places
+/// @brief Creates a grid by replicating an execution place multiple times
 inline exec_place_grid exec_place::repeat(const exec_place& e, size_t cnt)
 {
   return make_grid(::std::vector<exec_place>(cnt, e));
@@ -1201,7 +1201,7 @@ inline exec_place_grid exec_place::all_devices()
   return n_devices(cuda_try<cudaGetDeviceCount>());
 }
 
-/// @brief Cyclic partition
+/// @brief Creates a cyclic partition of an execution place grid with specified strides
 inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 strides, pos4 tile_id)
 {
   const auto& g = e_place.as_grid();
@@ -1253,7 +1253,7 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 
 // example :
 // auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
-/// @brief Tiled partition
+/// @brief Creates a tiled partition of an execution place grid with specified tile sizes
 inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_sizes, pos4 tile_id)
 {
   const auto& g = e_place.as_grid();

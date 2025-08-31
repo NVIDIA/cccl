@@ -169,6 +169,6 @@ inline void loop_dispatch(context_t ctx, size_t start, size_t end, ::std::functi
       mv(ctx), exec_place::all_devices(), scope, start, end, mv(func));
   }
 }
-/// \endcond
+/// @endcond
 
 } // end namespace cuda::experimental::stf
