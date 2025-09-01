@@ -59,10 +59,10 @@ struct AgentTopKPolicy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = BlockThreads;
-  
+
   /// Items per thread (per tile of input)
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  
+
   /// Number of bits processed per pass
   static constexpr int BITS_PER_PASS = BitsPerPass;
 
@@ -259,11 +259,11 @@ struct AgentTopK
   // The key and value type
   using key_in_t = detail::it_value_t<KeyInputIteratorT>;
 
-  static constexpr int BLOCK_THREADS          = AgentTopKPolicyT::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD       = AgentTopKPolicyT::ITEMS_PER_THREAD;
-  static constexpr int BITS_PER_PASS          = AgentTopKPolicyT::BITS_PER_PASS;
-  static constexpr int TILE_ITEMS             = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int num_buckets            = 1 << BITS_PER_PASS;
+  static constexpr int BLOCK_THREADS    = AgentTopKPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentTopKPolicyT::ITEMS_PER_THREAD;
+  static constexpr int BITS_PER_PASS    = AgentTopKPolicyT::BITS_PER_PASS;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int num_buckets      = 1 << BITS_PER_PASS;
 
   static constexpr bool KEYS_ONLY                = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
   static constexpr int items_per_thread_for_scan = (num_buckets - 1) / BLOCK_THREADS + 1;
@@ -737,7 +737,7 @@ struct AgentTopK
     // Early stop means that the bin containing the k-th element has been identified, and all
     // the elements in this bin are exactly the remaining k items we need to find. So we can
     // stop the process right here.
-    const bool early_stop = (current_len == static_cast<OffsetT>(current_k));
+    const bool early_stop = (pass >= 1 && current_len == static_cast<OffsetT>(current_k));
 
     if (previous_len > buffer_length)
     {
