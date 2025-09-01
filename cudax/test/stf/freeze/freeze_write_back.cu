@@ -8,12 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Ensure write-back is working on logical data alias made by freezing another one
- *
- */
+//! \file
+//!
+//! \brief Ensure write-back is working on logical data alias made by freezing another one
 
 #include <cuda/experimental/stf.cuh>
 
