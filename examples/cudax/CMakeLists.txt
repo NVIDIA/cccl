@@ -54,8 +54,7 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # mdspan on windows only works in C++20 mode
   target_compile_features(cudax_samples_interface INTERFACE cxx_std_20)
 
-  # cudax requires dim3 to be usable from a constexpr context, and the CUDART
-  # headers require __cplusplus to be defined for this to work:
+  # Require the conforming preprocessor
   target_compile_options(cudax_samples_interface INTERFACE
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus /Zc:preprocessor>
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus -Xcompiler=/Zc:preprocessor>

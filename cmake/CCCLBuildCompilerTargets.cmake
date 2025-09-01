@@ -146,7 +146,7 @@ function(cccl_build_compiler_targets)
     # See https://github.com/microsoft/STL/issues/696
     append_option_if_available("/wd4494" cxx_compile_options)
 
-    # We require the new preprocessor
+    # Require the conforming preprocessor
     append_option_if_available("/Zc:preprocessor" cxx_compile_options)
     if (MSVC_TOOLSET_VERSION LESS 143)
       # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior

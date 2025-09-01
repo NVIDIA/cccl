@@ -35,12 +35,18 @@ function(libcudacxx_add_std_header_test header)
     CCCL_IGNORE_DEPRECATED_CPP_DIALECT
     CCCL_ENABLE_OPTIONAL_REF)
 
-  # Use the conforming preprocessor
+  # Require the conforming preprocessor
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    target_compile_options(headertest_std_${header_name} PRIVATE "/Zc:preprocessor")
+    target_compile_options(headertest_std_${header_name} PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:preprocessor>
+    )
     if (MSVC_TOOLSET_VERSION LESS 143)
       # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
-      target_compile_options(headertest_${header_name} PRIVATE "/wd5105")
+      target_compile_options(headertest_std_${header_name} PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:/wd5105>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd5105>
+      )
     endif()
   endif()
 
