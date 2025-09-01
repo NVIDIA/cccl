@@ -8,19 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Implements the generation of a DOT file to visualize the task graph
- *
- * CUDASTF_DOT_FILE
- * CUDASTF_DOT_IGNORE_PREREQS
- * CUDASTF_DOT_COLOR_BY_DEVICE
- * CUDASTF_DOT_REMOVE_DATA_DEPS
- * CUDASTF_DOT_TIMING
- * CUDASTF_DOT_MAX_DEPTH
- * CUDASTF_DOT_SHOW_FENCE
- */
+//! \file
+//!
+//! \brief Implements the generation of a DOT file to visualize the task graph
+//!
+//! Environment variables:
+//! - CUDASTF_DOT_FILE
+//! - CUDASTF_DOT_IGNORE_PREREQS
+//! - CUDASTF_DOT_COLOR_BY_DEVICE
+//! - CUDASTF_DOT_REMOVE_DATA_DEPS
+//! - CUDASTF_DOT_TIMING
+//! - CUDASTF_DOT_MAX_DEPTH
+//! - CUDASTF_DOT_SHOW_FENCE
 
 #pragma once
 
@@ -51,27 +50,26 @@
 #include <stack>
 #include <unordered_set>
 
-/**
- * @file
- * @brief Generation of the DOT file to visualize task DAGs
- */
+//! \file
+//!
+//! \brief Generation of the DOT file to visualize task DAGs
 
 namespace cuda::experimental::stf::reserved
 {
 
 int get_next_prereq_unique_id();
 
-/**
- * @brief Some helper type
- */
+//! Sets of integer pairs used to represent edges
 using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimental::stf::hash<::std::pair<int, int>>>;
 
 class dot;
 
-// edge represent dependencies, but we sometimes want to visualize differently
-// dependencies which are related to actual task dependencies, and "internal"
-// dependencies between asynchronous operations (eg. a task depends on an
-// allocation) which are not necessarily useful to visualize.
+//! Type of the edge
+//!
+//! Edges represent dependencies, but we sometimes want to visualize
+//! differently dependencies which are related to actual task dependencies,
+//! and "internal" dependencies between asynchronous operations (eg. a task
+//! depends on an allocation) which are not necessarily useful to visualize.
 enum edge_type
 {
   plain   = 0,
@@ -90,7 +88,10 @@ enum vertex_type
   cluster_proxy_vertex // start or end of clusters (invisible nodes)
 };
 
-// Information for every vertex (task, prereq, ...), so that we can eventually generate a node for the DAG
+//! Vertex metadata
+//!
+//! Store information for every vertex (task, prereq, ...), so that we can
+//! eventually generate a node for the DAG
 struct per_vertex_info
 {
   // This color can for example be computed according to the duration of the task, if measured
@@ -117,11 +118,9 @@ inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id);
 
 class per_ctx_dot;
 
-/**
- * @brief A named section in the DOT output to potentially collapse multiple
- * nodes in the same section, this can also be created automatically when there
- * are nested contexts.
- */
+//! A named section in the DOT output to potentially collapse multiple
+//! nodes in the same section, this can also be created automatically when
+//! there are nested contexts.
 class dot_section
 {
 public:
@@ -133,12 +132,10 @@ public:
     static_assert(::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
   }
 
-  /**
-   * @brief RAII guard class for managing DOT section lifecycle
-   *
-   * This guard automatically manages the push/pop operations for DOT sections,
-   * ensuring proper nesting and cleanup even in the presence of exceptions.
-   */
+  //! RAII guard class for managing DOT section lifecycle
+  //!
+  //! This guard automatically manages the push/pop operations for DOT sections,
+  //! ensuring proper nesting and cleanup even in the presence of exceptions.
   class guard
   {
   public:
@@ -214,39 +211,34 @@ public:
   static void push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string symbol);
   static void pop(::std::shared_ptr<per_ctx_dot>& pc);
 
-  /**
-   * @brief Get the unique ID of the section
-   *
-   * Note that returned values start at 1, not 0, we use 0 to designate the
-   * lack of a section.
-   */
+  //! Get the unique ID of the section
+  //!
+  //! Note that returned values start at 1, not 0, we use 0 to designate the
+  //! lack of a section.
   int get_id() const
   {
     return 1 + int(id);
   }
 
-  /**
-   * @brief Get the symbol/name of this section for DOT output
-   * @return The section's symbol string
-   */
+  //! Get the symbol/name of this section for DOT output
+  //!
+  //! \return The section's symbol string
   const ::std::string& get_symbol() const
   {
     return symbol;
   }
 
-  /**
-   * @brief Get the nesting depth of this section
-   * @return The depth level (higher values = more deeply nested)
-   */
+  //! Get the nesting depth of this section
+  //!
+  //! \return The depth level (higher values = more deeply nested)
   int get_depth() const
   {
     return depth;
   }
 
-  /**
-   * @brief Set the nesting depth of this section
-   * @param d The depth level to set
-   */
+  //! Set the nesting depth of this section
+  //!
+  //! \param d The depth level to set
   void set_depth(int d)
   {
     depth = d;
@@ -268,12 +260,10 @@ private:
   unique_id<dot_section> id;
 };
 
-/**
- * @brief Store dot-related information per STF context.
- *
- * If multiple contexts are created, the specific state of each context is
- * saved here, and common state is stored in the dot singleton class
- */
+//! Store dot-related information per STF context.
+//!
+//! If multiple contexts are created, the specific state of each context is
+//! saved here, and common state is stored in the dot singleton class
 class per_ctx_dot
 {
 public:
@@ -967,11 +957,9 @@ private:
     }
   }
 
-  /**
-   * @brief Combine two nodes identified by "src_id" and "dst_id" into a single
-   * updated one ("dst_id"), redirecting edges and combining timing if
-   * necessary
-   */
+  //! Combine two nodes identified by "src_id" and "dst_id" into a single
+  //! updated one ("dst_id"), redirecting edges and combining timing if
+  //! necessary
   void merge_nodes(int dst_id, int src_id)
   {
     // If there was some timing associated to either src or dst, update timing
@@ -1051,10 +1039,8 @@ private:
     }
   }
 
-  /**
-   * @brief Collapse nodes which are parts of sections deeper than the value
-   *        specified in CUDASTF_DOT_MAX_DEPTH
-   */
+  //! Collapse nodes which are parts of sections deeper than the value
+  //! specified in CUDASTF_DOT_MAX_DEPTH
   void collapse_sections()
   {
     const char* env_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
