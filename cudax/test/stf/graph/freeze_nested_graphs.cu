@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 //! \file
 //!
 //! \brief Freeze a logical data in a graph to use it in a child graph
