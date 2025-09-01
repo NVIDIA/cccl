@@ -581,7 +581,8 @@ struct DispatchTopK : SelectedPolicy
     }
 
     const auto main_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
-    const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
+    const auto main_kernel_max_occupancy =
+      static_cast<unsigned int>(subscription_factor * main_kernel_blocks_per_sm * num_sms);
     const auto topk_grid_size =
       ::cuda::std::min(main_kernel_max_occupancy, static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)));
 
@@ -596,9 +597,7 @@ struct DispatchTopK : SelectedPolicy
 
       _CubLog("Invoking topk_kernel<<<{%d,%d,%d}, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              topk_grid_size.x,
-              topk_grid_size.y,
-              topk_grid_size.z,
+              topk_grid_size,
               block_threads,
               (long long) stream,
               items_per_thread,
@@ -638,7 +637,7 @@ struct DispatchTopK : SelectedPolicy
         // Compute grid size for the histogram kernel of the first pass
         const auto first_pass_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_first_pass_kernel, block_threads);
         const auto first_pass_kernel_max_occupancy =
-          static_cast<unsigned int>(first_pass_kernel_blocks_per_sm * num_sms);
+          static_cast<unsigned int>(subscription_factor * first_pass_kernel_blocks_per_sm * num_sms);
         const auto topk_first_pass_grid_size = ::cuda::std::min(
           first_pass_kernel_max_occupancy, static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)));
 
@@ -690,8 +689,9 @@ struct DispatchTopK : SelectedPolicy
     IdentifyCandidatesOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> identify_candidates_op(
       &counter->kth_key_bits, pass);
     const auto last_filter_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
-    const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
-    const auto last_filter_grid_size            = ::cuda::std::min(
+    const auto last_filter_kernel_max_occupancy =
+      static_cast<unsigned int>(subscription_factor * last_filter_kernel_blocks_per_sm * num_sms);
+    const auto last_filter_grid_size = ::cuda::std::min(
       last_filter_kernel_max_occupancy, static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)));
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(last_filter_grid_size, block_threads, 0, stream)
       .doit(topk_last_filter_kernel,
