@@ -99,8 +99,6 @@ set(stf_test_codegen_sources
   freeze/task_fence.cu
   freeze/token.cu
   graph/epoch.cu
-  # graph/for_each_batched.cu
-  # graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
   graph/freeze_nested_graphs.cu
   # graph/graph_composition.cu
