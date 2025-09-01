@@ -55,8 +55,7 @@ include(cmake/LibcudacxxPublicHeaderTestingHost.cmake)
 find_package (Python COMPONENTS Interpreter)
 if (NOT Python_Interpreter_FOUND)
   message(FATAL_ERROR
-    "Failed to find python interpreter, which is required for running tests and "
-    "building a libcu++ static library.")
+    "Failed to find python interpreter, which is required for running tests and building a libcu++ static library.")
 endif ()
 
 # Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
@@ -78,20 +77,4 @@ set(LIT_EXTRA_ARGS "" CACHE STRING "Use for additional options (e.g. -j12)")
 find_program(LLVM_DEFAULT_EXTERNAL_LIT lit)
 set(LLVM_LIT_ARGS "-sv ${LIT_EXTRA_ARGS}")
 
-set(LIBCUDACXX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(test)
-
-include(AddLLVM)
-get_property(LLVM_LIT_TESTSUITES          GLOBAL PROPERTY LLVM_LIT_TESTSUITES)
-get_property(LLVM_LIT_PARAMS              GLOBAL PROPERTY LLVM_LIT_PARAMS)
-get_property(LLVM_LIT_DEPENDS             GLOBAL PROPERTY LLVM_LIT_DEPENDS)
-get_property(LLVM_LIT_EXTRA_ARGS          GLOBAL PROPERTY LLVM_LIT_EXTRA_ARGS)
-get_property(LLVM_ADDITIONAL_TEST_TARGETS GLOBAL PROPERTY LLVM_ADDITIONAL_TEST_TARGETS)
-get_property(LLVM_ADDITIONAL_TEST_DEPENDS GLOBAL PROPERTY LLVM_ADDITIONAL_TEST_DEPENDS)
-add_lit_target(check-all
-  "Running all regression tests"
-  ${LLVM_LIT_TESTSUITES}
-  PARAMS ${LLVM_LIT_PARAMS}
-  DEPENDS ${LLVM_LIT_DEPENDS} ${LLVM_ADDITIONAL_TEST_TARGETS}
-  ARGS ${LLVM_LIT_EXTRA_ARGS}
-)
