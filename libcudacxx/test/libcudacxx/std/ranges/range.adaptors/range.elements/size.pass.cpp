@@ -17,16 +17,9 @@
 
 #include "types.h"
 
-#if TEST_STD_VER >= 2020
-template <class T>
-concept HasSize = requires(T t) { t.size(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-constexpr bool HasSize = false;
+template <class View>
+_CCCL_CONCEPT HasSize = _CCCL_REQUIRES_EXPR((View), View v)((v.size()));
 
-template <class T>
-constexpr bool HasSize<T, cuda::std::void_t<decltype(cuda::std::declval<T>().size())>> = true;
-#endif // TEST_STD_VER <= 2017
 static_assert(HasSize<cuda::std::ranges::elements_view<SimpleCommon, 0>>);
 static_assert(HasSize<const cuda::std::ranges::elements_view<SimpleCommon, 0>>);
 

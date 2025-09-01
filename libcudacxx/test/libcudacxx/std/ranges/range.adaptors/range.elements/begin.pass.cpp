@@ -19,53 +19,24 @@
 #include "test_macros.h"
 #include "types.h"
 
-#if TEST_STD_VER >= 2020
-template <class T>
-concept HasConstBegin = requires(const T ct) { ct.begin(); };
+template <class View>
+_CCCL_CONCEPT HasConstBegin = _CCCL_REQUIRES_EXPR((View), const View cv)((cv.begin()));
 
-template <class T>
-concept HasBegin = requires(T t) { t.begin(); };
+template <class View>
+_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((View), View v)((v.begin()));
 
-template <class T>
-concept HasConstAndNonConstBegin =
-  HasConstBegin<T> &&
-  // because const begin and non-const begin returns different types (iterator<true>, iterator<false>)
-  requires(T t, const T ct) { requires !cuda::std::same_as<decltype(t.begin()), decltype(ct.begin())>; };
+// because const begin and non-const begin returns different types (iterator<true>, iterator<false>)
+template <class View>
+_CCCL_CONCEPT HasConstAndNonConstBegin = _CCCL_REQUIRES_EXPR((View), View v, const View cv)(
+  requires(HasConstBegin<View>), requires(!cuda::std::same_as<decltype(v.begin()), decltype(cv.begin())>));
 
-template <class T>
-concept HasOnlyNonConstBegin = HasBegin<T> && !HasConstBegin<T>;
+template <class View>
+_CCCL_CONCEPT HasOnlyNonConstBegin =
+  _CCCL_REQUIRES_EXPR((View))(requires(HasBegin<View>), requires(!HasConstBegin<View>));
 
-template <class T>
-concept HasOnlyConstBegin = HasConstBegin<T> && !HasConstAndNonConstBegin<T>;
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-inline constexpr bool HasConstBegin = false;
+template <class View>
+_CCCL_CONCEPT HasOnlyConstBegin = _CCCL_REQUIRES_EXPR((View))(requires(!HasBegin<View>), requires(HasConstBegin<View>));
 
-template <class T>
-inline constexpr bool HasConstBegin<T, cuda::std::void_t<decltype(cuda::std::declval<const T&>().begin())>> = true;
-
-template <class T, class = void>
-inline constexpr bool HasBegin = false;
-
-template <class T>
-inline constexpr bool HasBegin<T, cuda::std::void_t<decltype(cuda::std::declval<T&>().begin())>> = true;
-
-template <class T, class = void>
-inline constexpr bool HasConstAndNonConstBegin = false;
-
-template <class T>
-inline constexpr bool HasConstAndNonConstBegin<
-  T,
-  cuda::std::void_t<cuda::std::enable_if_t<
-    !cuda::std::same_as<decltype(cuda::std::declval<T&>().begin()), decltype(cuda::std::declval<const T&>().begin())>>>> =
-  true;
-
-template <class T>
-inline constexpr bool HasOnlyNonConstBegin = HasBegin<T> && !HasConstBegin<T>;
-
-template <class T>
-inline constexpr bool HasOnlyConstBegin = HasConstBegin<T> && !HasConstAndNonConstBegin<T>;
-#endif // TEST_STD_VER <= 2017
 struct NoConstBeginView : TupleBufferView
 {
   DELEGATE_TUPLEBUFFERVIEW(NoConstBeginView)

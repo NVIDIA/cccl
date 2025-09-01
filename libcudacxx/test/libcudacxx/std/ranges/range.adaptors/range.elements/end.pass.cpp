@@ -30,25 +30,12 @@
 // |   N    |   N    |  sentinel<false> | sentinel<true>
 
 // !range<const V>
-#if TEST_STD_VER >= 2020
-template <class T>
-concept HasEnd = requires(T t) { t.end(); };
+template <class View>
+_CCCL_CONCEPT HasConstEnd = _CCCL_REQUIRES_EXPR((View), const View cv)((cv.end()));
 
-template <class T>
-concept HasConstEnd = requires(const T ct) { ct.end(); };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class T, class = void>
-inline constexpr bool HasEnd = false;
+template <class View>
+_CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((View), View v)((v.end()));
 
-template <class T>
-inline constexpr bool HasEnd<T, cuda::std::void_t<decltype(cuda::std::declval<T>().end())>> = true;
-
-template <class T, class = void>
-inline constexpr bool HasConstEnd = false;
-
-template <class T>
-inline constexpr bool HasConstEnd<T, cuda::std::void_t<decltype(cuda::std::declval<const T>().end())>> = true;
-#endif // TEST_STD_VER <= 2017
 struct NoConstEndView : TupleBufferView
 {
   DELEGATE_TUPLEBUFFERVIEW(NoConstEndView)

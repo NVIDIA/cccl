@@ -141,19 +141,9 @@ struct RandomAccessRange
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<RandomAccessRange> = true;
 
-#if TEST_STD_VER >= 2020
 template <class View, class T>
-concept CanBePiped = requires(View&& view, T&& t) {
-  { cuda::std::forward<View>(view) | cuda::std::forward<T>(t) };
-};
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class View, class T, class = void>
-inline constexpr bool CanBePiped = false;
-
-template <class View, class T>
-inline constexpr bool
-  CanBePiped<View, T, cuda::std::void_t<decltype(cuda::std::declval<View>() | cuda::std::declval<T>())>> = true;
-#endif // TEST_STD_VER <= 2017
+_CCCL_CONCEPT CanBePiped =
+  _CCCL_REQUIRES_EXPR((View, T), View&& view, T&& t)((cuda::std::forward<View>(view) | cuda::std::forward<T>(t)));
 
 __host__ __device__ constexpr bool test()
 {

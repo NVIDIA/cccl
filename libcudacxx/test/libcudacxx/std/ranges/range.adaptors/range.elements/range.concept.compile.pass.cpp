@@ -34,17 +34,9 @@
 template <class It>
 using Range = cuda::std::ranges::subrange<It, sentinel_wrapper<It>>;
 
-#if TEST_STD_VER >= 2020
-template <class V, size_t N>
-concept HasElementsView = requires { typename cuda::std::ranges::elements_view<V, N>; };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class V, size_t N, class = void>
-inline constexpr bool HasElementsView = false;
+template <class View, size_t N>
+_CCCL_CONCEPT CanBePiped = _CCCL_REQUIRES_EXPR((View, N))(typename(typename cuda::std::ranges::elements_view<V, N>));
 
-template <class V, size_t N>
-inline constexpr bool HasElementsView<V, N, cuda::std::void_t<decltype(cuda::std::ranges::elements_view<V, N>())>> =
-  true;
-#endif // TEST_STD_VER <= 2017
 static_assert(HasElementsView<Range<cuda::std::ranges::subrange<int*>*>, 0>);
 static_assert(HasElementsView<Range<cuda::std::pair<int, int>*>, 1>);
 static_assert(HasElementsView<Range<cuda::std::tuple<int, int, int>*>, 2>);
