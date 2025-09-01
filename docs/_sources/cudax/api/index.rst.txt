@@ -54,7 +54,6 @@ Classes
 * :doc:`cuda::experimental::stf::executable_graph_cache <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache>`
 * :doc:`cuda::experimental::stf::executable_graph_cache_stat <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat>`
 * :doc:`cuda::experimental::stf::fixed_size_allocator <classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator>`
-* :doc:`cuda::experimental::stf::for_each_batched <classcuda_1_1experimental_1_1stf_1_1for__each__batched>`
 * :doc:`cuda::experimental::stf::frozen_logical_data <classcuda_1_1experimental_1_1stf_1_1frozen__logical__data>`
 * :doc:`cuda::experimental::stf::graph_ctx <classcuda_1_1experimental_1_1stf_1_1graph__ctx>`
 * :doc:`cuda::experimental::stf::graph_data_interface <classcuda_1_1experimental_1_1stf_1_1graph__data__interface>`
@@ -372,7 +371,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1executable__graph__cache
    classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat
    classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator
-   classcuda_1_1experimental_1_1stf_1_1for__each__batched
    classcuda_1_1experimental_1_1stf_1_1frozen__logical__data
    classcuda_1_1experimental_1_1stf_1_1graph__ctx
    classcuda_1_1experimental_1_1stf_1_1graph__data__interface
