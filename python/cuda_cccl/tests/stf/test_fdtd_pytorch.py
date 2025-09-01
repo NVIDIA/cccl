@@ -38,8 +38,8 @@ def fdtd_3d_pytorch(
     ley = ctx.logical_data_by_shape(shape, np.float64)
     lez = ctx.logical_data_by_shape(shape, np.float64)
 
-    # epsilon_ = torch.full(shape, float(epsilon0), np.float64=np.float64, device=device)
-    # mu_ = torch.full(shape, float(mu0), np.float64=np.float64, device=device)
+    # epsilon_ = torch.full(shape, float(epsilon0), dtype=np.float64, device=device)
+    # mu_ = torch.full(shape, float(mu0), dtype=np.float64, device=device)
 
     lhx = ctx.logical_data_by_shape(shape, np.float64)
     lhy = ctx.logical_data_by_shape(shape, np.float64)
@@ -59,7 +59,7 @@ def fdtd_3d_pytorch(
     init_field(ctx, lhz, float(0.0))
     init_field(ctx, lepsilon, float(epsilon0))
     init_field(ctx, lmu, float(mu0))
- 
+
     # CFL (same formula as example)
     dt = 0.25 * min(dx, dy, dz) * math.sqrt(epsilon0 * mu0)
 
