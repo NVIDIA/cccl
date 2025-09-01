@@ -36,6 +36,12 @@ if (LIBCUDACXX_ENABLE_CUDA)
   enable_language(CUDA)
 endif ()
 
+option(LIBCUDACXX_ENABLE_HEADER_TESTING "Test that libcu++ headers compile." ON)
+
+if (LIBCUDACXX_ENABLE_HEADER_TESTING)
+  include(cmake/libcudacxxHeaderTesting.cmake)
+endif()
+
 option(LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS "Enable libcu++ tests." ON)
 if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
   enable_testing()

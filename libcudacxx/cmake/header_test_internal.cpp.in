@@ -12,18 +12,17 @@
 # define NOMINMAX
 #endif
 
+// We need to include at least some header so that __cuda_std__ is defined
+#include <cuda/std/version>
+
 // ignore deprecation warnings
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wdeprecated"
-#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning (disable: 4996)
-#else
-#  pragma GCC diagnostic ignored "-Wdeprecated"
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // This file tests that the respective header is includable on its own with a cuda compiler
-#include <${header}>
+#include <@header@>
+
+#if defined(_CCCL_PROLOGUE_INCLUDED)
+#  error "missing <cuda/std/__cccl/epilogue.h> after inclusion of <cuda/std/__cccl/prologue.h>"
+#endif
 
 int main(int, char**) { return 0; }

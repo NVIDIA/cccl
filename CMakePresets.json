@@ -65,6 +65,7 @@
         "CCCL_ENABLE_C": true,
         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
+        "LIBCUDACXX_ENABLE_HEADER_TESTING": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
         "CUB_ENABLE_DIALECT_CPP17": true,
@@ -110,7 +111,8 @@
         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
         "libcudacxx_ENABLE_CODEGEN": true,
-        "LIBCUDACXX_ENABLE_CUDA": false
+        "LIBCUDACXX_ENABLE_CUDA": false,
+        "LIBCUDACXX_ENABLE_HEADER_TESTING": false
       }
     },
     {
@@ -119,7 +121,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
-        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true
+        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
+        "LIBCUDACXX_ENABLE_HEADER_TESTING": true
       }
     },
     {
@@ -360,9 +363,7 @@
       "name": "libcudacxx-base",
       "hidden": true,
       "targets": [
-        "libcudacxx.test.internal_headers",
-        "libcudacxx.test.public_headers",
-        "libcudacxx.test.public_headers_host_only",
+        "libcudacxx.all.headers",
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.atomics.ptx",
         "libcudacxx.test.c2h_all"
