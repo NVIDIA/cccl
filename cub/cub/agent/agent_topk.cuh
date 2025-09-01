@@ -185,10 +185,10 @@ struct ExtractBinOp
 template <typename T, bool FlipBits, int BitsPerPass>
 struct IdentifyCandidatesOp
 {
-  typename Traits<T>::UnsignedBits& kth_key_bits;
+  typename Traits<T>::UnsignedBits* kth_key_bits;
   int pass;
   int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IdentifyCandidatesOp(typename Traits<T>::UnsignedBits& kth_key_bits, int pass)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IdentifyCandidatesOp(typename Traits<T>::UnsignedBits* kth_key_bits, int pass)
       : kth_key_bits(kth_key_bits)
       , pass(pass - 1)
   {
@@ -207,7 +207,7 @@ struct IdentifyCandidatesOp
 
     bits = (bits >> start_bit) << start_bit;
 
-    return (bits < kth_key_bits) ? -1 : (bits == kth_key_bits) ? 0 : 1;
+    return (bits < *kth_key_bits) ? -1 : (bits == *kth_key_bits) ? 0 : 1;
   }
 };
 

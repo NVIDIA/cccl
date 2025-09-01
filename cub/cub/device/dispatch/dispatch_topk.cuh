@@ -624,7 +624,7 @@ struct DispatchTopK : SelectedPolicy
       // Set operator
       ExtractBinOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> extract_bin_op(pass);
       IdentifyCandidatesOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> identify_candidates_op(
-        counter->kth_key_bits, pass);
+        &counter->kth_key_bits, pass);
 
       // Initialize address variables
       in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
@@ -690,7 +690,7 @@ struct DispatchTopK : SelectedPolicy
     }
     // Set operator
     IdentifyCandidatesOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> identify_candidates_op(
-      counter->kth_key_bits, pass);
+      &counter->kth_key_bits, pass);
     topk_blocks_per_sm = calculate_blocks_per_sm(topk_last_filter_kernel, block_threads);
     topk_grid_size.x   = ::cuda::std::min((unsigned int) topk_blocks_per_sm * num_sms,
                                         (unsigned int) (num_items - 1) / (items_per_thread * block_threads) + 1);
