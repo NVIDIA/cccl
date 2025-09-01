@@ -1,6 +1,11 @@
 import math
 from typing import Tuple, Optional
 
+from cuda.cccl.experimental.stf._stf_bindings import (
+    context,
+    rw,
+)
+
 import torch
 
 def fdtd_3d_pytorch(
@@ -17,21 +22,32 @@ def fdtd_3d_pytorch(
     device: Optional[torch.device] = None,
     dtype: torch.dtype = torch.float64,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    ctx = context()
 
     # allocate fields
     shape = (size_x, size_y, size_z)
-    ex = torch.zeros(shape, dtype=dtype, device=device)
-    ey = torch.zeros_like(ex)
-    ez = torch.zeros_like(ex)
+    ex_ = torch.zeros(shape, dtype=dtype, device=device)
+    ey_ = torch.zeros_like(ex_)
+    ez_ = torch.zeros_like(ex_)
 
-    hx = torch.zeros_like(ex)
-    hy = torch.zeros_like(ex)
-    hz = torch.zeros_like(ex)
+    hx_ = torch.zeros_like(ex_)
+    hy_ = torch.zeros_like(ex_)
+    hz_ = torch.zeros_like(ex_)
 
-    epsilon = torch.full(shape, float(epsilon0), dtype=dtype, device=device)
-    mu = torch.full(shape, float(mu0), dtype=dtype, device=device)
+    epsilon_ = torch.full(shape, float(epsilon0), dtype=dtype, device=device)
+    mu_ = torch.full(shape, float(mu0), dtype=dtype, device=device)
+
+    lex = ctx.logical_data(ex_)
+    ley = ctx.logical_data(ey_)
+    lez = ctx.logical_data(ez_)
+
+    lhx = ctx.logical_data(hx_)
+    lhy = ctx.logical_data(hy_)
+    lhz = ctx.logical_data(hz_)
+
+    lepsilon = ctx.logical_data(epsilon_)
+    lmu = ctx.logical_data(mu_)
 
     # CFL (same formula as example)
     dt = 0.25 * min(dx, dy, dz) * math.sqrt(epsilon0 * mu0)
@@ -60,48 +76,64 @@ def fdtd_3d_pytorch(
         # -------------------------
         # update electric fields (Es)
         # Ex(i,j,k) += (dt/(ε*dx)) * [(Hz(i,j,k)-Hz(i,j-1,k)) - (Hy(i,j,k)-Hy(i,j,k-1))]
-        ex[i_es, j_es, k_es] = ex[i_es, j_es, k_es] + (dt / (epsilon[i_es, j_es, k_es] * dx)) * (
-            (hz[i_es, j_es, k_es] - hz[i_es, j_es_m, k_es])
-            - (hy[i_es, j_es, k_es] - hy[i_es, j_es, k_es_m])
-        )
+        with ctx.task(lex.rw(), lhy.read(), lhz.read(), lepsilon.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            ex, hy, hz, epsilon = t.tensor_arguments()
+            ex[i_es, j_es, k_es] = ex[i_es, j_es, k_es] + (dt / (epsilon[i_es, j_es, k_es] * dx)) * (
+                (hz[i_es, j_es, k_es] - hz[i_es, j_es_m, k_es])
+                - (hy[i_es, j_es, k_es] - hy[i_es, j_es, k_es_m])
+            )
 
         # Ey(i,j,k) += (dt/(ε*dy)) * [(Hx(i,j,k)-Hx(i,j,k-1)) - (Hz(i,j,k)-Hz(i-1,j,k))]
-        ey[i_es, j_es, k_es] = ey[i_es, j_es, k_es] + (dt / (epsilon[i_es, j_es, k_es] * dy)) * (
-            (hx[i_es, j_es, k_es] - hx[i_es, j_es, k_es_m])
-            - (hz[i_es, j_es, k_es] - hz[i_es_m, j_es, k_es])
-        )
+        with ctx.task(ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            ey, hx, hz, epsilon = t.tensor_arguments()
+            ey[i_es, j_es, k_es] = ey[i_es, j_es, k_es] + (dt / (epsilon[i_es, j_es, k_es] * dy)) * (
+                (hx[i_es, j_es, k_es] - hx[i_es, j_es, k_es_m])
+                - (hz[i_es, j_es, k_es] - hz[i_es_m, j_es, k_es])
+            )
 
         # Ez(i,j,k) += (dt/(ε*dz)) * [(Hy(i,j,k)-Hy(i-1,j,k)) - (Hx(i,j,k)-Hx(i,j-1,k))]
-        ez[i_es, j_es, k_es] = ez[i_es, j_es, k_es] + (dt / (epsilon[i_es, j_es, k_es] * dz)) * (
-            (hy[i_es, j_es, k_es] - hy[i_es_m, j_es, k_es])
-            - (hx[i_es, j_es, k_es] - hx[i_es, j_es_m, k_es])
-        )
+        with ctx.task(lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            ez, hx, hy, epsilon = t.tensor_arguments()
+            ez[i_es, j_es, k_es] = ez[i_es, j_es, k_es] + (dt / (epsilon[i_es, j_es, k_es] * dz)) * (
+                (hy[i_es, j_es, k_es] - hy[i_es_m, j_es, k_es])
+                - (hx[i_es, j_es, k_es] - hx[i_es, j_es_m, k_es])
+            )
 
         # source at center cell
-        ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
+        with ctx.task(lez.rw()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            ez = t.tensor_arguments()
+            ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
 
         # -------------------------
         # update magnetic fields (Hs)
         # Hx(i,j,k) -= (dt/(μ*dy)) * [(Ez(i,j+1,k)-Ez(i,j,k)) - (Ey(i,j,k+1)-Ey(i,j,k))]
-        hx[i_hs, j_hs, k_hs] = hx[i_hs, j_hs, k_hs] - (dt / (mu[i_hs, j_hs, k_hs] * dy)) * (
-            (ez[i_hs, j_hs_p, k_hs] - ez[i_hs, j_hs, k_hs])
-            - (ey[i_hs, j_hs, k_hs_p] - ey[i_hs, j_hs, k_hs])
-        )
+        with ctx.task(lhx.rw(), ley.read(), lez.read(), lmu.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            hx, ey, ez, mu = t.tensor_arguments()
+            hx[i_hs, j_hs, k_hs] = hx[i_hs, j_hs, k_hs] - (dt / (mu[i_hs, j_hs, k_hs] * dy)) * (
+                (ez[i_hs, j_hs_p, k_hs] - ez[i_hs, j_hs, k_hs])
+                - (ey[i_hs, j_hs, k_hs_p] - ey[i_hs, j_hs, k_hs])
+            )
 
         # Hy(i,j,k) -= (dt/(μ*dz)) * [(Ex(i,j,k+1)-Ex(i,j,k)) - (Ez(i+1,j,k)-Ez(i,j,k))]
-        hy[i_hs, j_hs, k_hs] = hy[i_hs, j_hs, k_hs] - (dt / (mu[i_hs, j_hs, k_hs] * dz)) * (
-            (ex[i_hs, j_hs, k_hs_p] - ex[i_hs, j_hs, k_hs])
-            - (ez[i_hs_p, j_hs, k_hs] - ez[i_hs, j_hs, k_hs])
-        )
+        with ctx.task(lhy.rw(), lex.read(), lez.read(), lmu.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            hy, ex, ez, mu = t.tensor_arguments()
+            hy[i_hs, j_hs, k_hs] = hy[i_hs, j_hs, k_hs] - (dt / (mu[i_hs, j_hs, k_hs] * dz)) * (
+                (ex[i_hs, j_hs, k_hs_p] - ex[i_hs, j_hs, k_hs])
+                - (ez[i_hs_p, j_hs, k_hs] - ez[i_hs, j_hs, k_hs])
+            )
 
         # Hz(i,j,k) -= (dt/(μ*dx)) * [(Ey(i+1,j,k)-Ey(i,j,k)) - (Ex(i,j+1,k)-Ex(i,j,k))]
-        hz[i_hs, j_hs, k_hs] = hz[i_hs, j_hs, k_hs] - (dt / (mu[i_hs, j_hs, k_hs] * dx)) * (
-            (ey[i_hs_p, j_hs, k_hs] - ey[i_hs, j_hs, k_hs])
-            - (ex[i_hs, j_hs_p, k_hs] - ex[i_hs, j_hs, k_hs])
-        )
+        with ctx.task(lhz.rw(), lex.read(), ley.read(), lmu.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            hz, ex, ey, mu = t.tensor_arguments()
+            hz[i_hs, j_hs, k_hs] = hz[i_hs, j_hs, k_hs] - (dt / (mu[i_hs, j_hs, k_hs] * dx)) * (
+                (ey[i_hs_p, j_hs, k_hs] - ey[i_hs, j_hs, k_hs])
+                - (ex[i_hs, j_hs_p, k_hs] - ex[i_hs, j_hs, k_hs])
+            )
 
-        if output_freq > 0 and (n % output_freq) == 0:
-            print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
+#         if output_freq > 0 and (n % output_freq) == 0:
+#             print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
+
+    ctx.finalize()
 
     return ex, ey, ez, hx, hy, hz
 
