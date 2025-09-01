@@ -47,6 +47,11 @@ function(libcudacxx_add_public_header_test header)
     CCCL_IGNORE_DEPRECATED_CPP_DIALECT
     CCCL_ENABLE_OPTIONAL_REF)
 
+  # Use the conforming preprocessor
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    target_compile_options(headertest_${header_name} PRIVATE "/Zc:preprocessor")
+  endif()
+
   # Ensure that if this is an atomic header, we only include the right architectures
   string(REGEX MATCH "atomic|barrier|latch|semaphore|annotated_ptr|pipeline" match "${header}")
   if(match)

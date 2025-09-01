@@ -55,6 +55,11 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     target_link_libraries(headertest_${header_name} CUDA::cudart)
   endif()
 
+  # Use the conforming preprocessor
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    target_compile_options(headertest_${header_name} PRIVATE "/Zc:preprocessor")
+  endif()
+
   if(fallback)
     target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")
   endif()

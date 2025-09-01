@@ -35,6 +35,11 @@ function(libcudacxx_add_std_header_test header)
     CCCL_IGNORE_DEPRECATED_CPP_DIALECT
     CCCL_ENABLE_OPTIONAL_REF)
 
+  # Use the conforming preprocessor
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    target_compile_options(headertest_std_${header_name} PRIVATE "/Zc:preprocessor")
+  endif()
+
   # We want to ensure that we can build headers within <cuda/> with a host compiler but we need cuda_runtime_api.h
   if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     target_link_libraries(headertest_std_${header_name} NVHPC::CUDART)
