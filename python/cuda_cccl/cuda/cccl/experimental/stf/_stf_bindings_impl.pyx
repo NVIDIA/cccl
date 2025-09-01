@@ -12,6 +12,7 @@ from cpython.bytes cimport PyBytes_FromStringAndSize
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
 from libc.stdint cimport uintptr_t
 from libc.string cimport memset, memcpy
+import math # for math.prod
 
 # TODO remove that dependency
 import numpy as np
@@ -168,7 +169,7 @@ cdef class logical_data:
     cdef int    _ndim
     cdef size_t _len
 
-    def __cinit__(self, context ctx=None, object buf=None):
+    def __cinit__(self, context ctx=None, object buf=None, shape=None, dtype=None):
         if ctx is None or buf is None:
             # allow creation via __new__ (eg. in like_empty)
             self._ld = NULL
@@ -239,6 +240,21 @@ cdef class logical_data:
         out._shape = self._shape
         out._ndim  = self._ndim
         out._len   = self._len
+
+        return out
+
+    @staticmethod
+    def init_by_shape(context ctx, shape, dtype):
+        """
+        Create a new logical_data from a  shape and a dtype
+        """
+        cdef logical_data out = logical_data.__new__(logical_data)
+        out._ctx   = ctx._ctx
+        out._dtype = np.dtype(dtype)
+        out._shape = shape
+        out._ndim  = len(shape)
+        out._len   = math.prod(shape) * out._dtype.itemsize
+        stf_logical_data_empty(ctx._ctx, out._len, &out._ld)
 
         return out
 
@@ -498,6 +514,9 @@ cdef class context:
               (NumPy array, bytes, bytearray, memoryview, …)
         """
         return logical_data(self, buf)
+
+    def logical_data_by_shape(self, shape, dtype):
+        return logical_data.init_by_shape(self, shape, dtype)
 
     def task(self, *args):
         """

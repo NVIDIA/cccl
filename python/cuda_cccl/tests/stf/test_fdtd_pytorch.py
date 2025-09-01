@@ -1,5 +1,6 @@
 import math
 from typing import Tuple, Optional
+import numpy as np
 
 from cuda.cccl.experimental.stf._stf_bindings import (
     context,
@@ -7,6 +8,11 @@ from cuda.cccl.experimental.stf._stf_bindings import (
 )
 
 import torch
+
+def init_field(ctx, ld, value):
+    with ctx.task(ld.write()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+        field = t.get_arg_as_tensor(0)
+        field[:,:,:] = value
 
 def fdtd_3d_pytorch(
     size_x: int = 100,
@@ -27,28 +33,33 @@ def fdtd_3d_pytorch(
 
     # allocate fields
     shape = (size_x, size_y, size_z)
-    ex_ = torch.zeros(shape, dtype=dtype, device=device)
-    ey_ = torch.zeros_like(ex_)
-    ez_ = torch.zeros_like(ex_)
+#    ex_ = torch.zeros(shape, dtype=dtype, device=device)
+    lex = ctx.logical_data_by_shape(shape, np.float64)
+    ley = ctx.logical_data_by_shape(shape, np.float64)
+    lez = ctx.logical_data_by_shape(shape, np.float64)
 
-    hx_ = torch.zeros_like(ex_)
-    hy_ = torch.zeros_like(ex_)
-    hz_ = torch.zeros_like(ex_)
+    # epsilon_ = torch.full(shape, float(epsilon0), np.float64=np.float64, device=device)
+    # mu_ = torch.full(shape, float(mu0), np.float64=np.float64, device=device)
 
-    epsilon_ = torch.full(shape, float(epsilon0), dtype=dtype, device=device)
-    mu_ = torch.full(shape, float(mu0), dtype=dtype, device=device)
+    lhx = ctx.logical_data_by_shape(shape, np.float64)
+    lhy = ctx.logical_data_by_shape(shape, np.float64)
+    lhz = ctx.logical_data_by_shape(shape, np.float64)
 
-    lex = ctx.logical_data(ex_)
-    ley = ctx.logical_data(ey_)
-    lez = ctx.logical_data(ez_)
+    # lepsilon = ctx.logical_data()
+    # lmu = ctx.logical_data(mu_)
+    lepsilon = ctx.logical_data_by_shape(shape, np.float64)
+    lmu = ctx.logical_data_by_shape(shape, np.float64)
 
-    lhx = ctx.logical_data(hx_)
-    lhy = ctx.logical_data(hy_)
-    lhz = ctx.logical_data(hz_)
-
-    lepsilon = ctx.logical_data(epsilon_)
-    lmu = ctx.logical_data(mu_)
-
+    # TODO ctx.full(...)
+    init_field(ctx, lex, float(0.0))
+    init_field(ctx, ley, float(0.0))
+    init_field(ctx, lez, float(0.0))
+    init_field(ctx, lhx, float(0.0))
+    init_field(ctx, lhy, float(0.0))
+    init_field(ctx, lhz, float(0.0))
+    init_field(ctx, lepsilon, float(epsilon0))
+    init_field(ctx, lmu, float(mu0))
+ 
     # CFL (same formula as example)
     dt = 0.25 * min(dx, dy, dz) * math.sqrt(epsilon0 * mu0)
 
@@ -99,10 +110,10 @@ def fdtd_3d_pytorch(
                 - (hx[i_es, j_es, k_es] - hx[i_es, j_es_m, k_es])
             )
 
-        # source at center cell
-        with ctx.task(lez.rw()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
-            ez = t.tensor_arguments()
-            ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
+         # source at center cell
+         with ctx.task(lez.rw()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+             ez = t.get_arg_as_tensor(0)
+             ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
 
         # -------------------------
         # update magnetic fields (Hs)
@@ -140,5 +151,5 @@ def fdtd_3d_pytorch(
 
 if __name__ == "__main__":
     # quick check
-    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=1000, output_freq=5)
-    print("done; Ez(center) =", ez[50, 50, 50].item())
+    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=20, output_freq=5)
+   #  print("done; Ez(center) =", ez[50, 50, 50].item())
