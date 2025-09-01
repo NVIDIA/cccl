@@ -120,7 +120,6 @@ inline void loop_dispatch(
     }
   }
 }
-#endif // _CCCL_DOXYGEN_INVOKED
 
 /*
  * Overload of loop_dispatch which automatically selects the partitioning scope
@@ -169,6 +168,6 @@ inline void loop_dispatch(context_t ctx, size_t start, size_t end, ::std::functi
       mv(ctx), exec_place::all_devices(), scope, start, end, mv(func));
   }
 }
-/// @endcond
+#endif // _CCCL_DOXYGEN_INVOKED
 
 } // end namespace cuda::experimental::stf
