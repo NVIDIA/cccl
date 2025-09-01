@@ -179,6 +179,16 @@ struct ExtractBinOp
   }
 };
 
+enum class candidate_class
+{
+  // The given candidate is definitely amongst the top-k items
+  selected,
+  // The given candidate may or may not be amongst the top-k items
+  candidate,
+  // The given candidate is definitely not amongst the top-k items
+  rejected
+};
+
 /**
  * Check if the input element is still a candidate for the target pass.
  */
@@ -195,7 +205,7 @@ struct IdentifyCandidatesOp
     start_bit = calc_start_bit<T, BitsPerPass>(this->pass);
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
     bits      = Traits<T>::TwiddleIn(bits);
@@ -207,7 +217,10 @@ struct IdentifyCandidatesOp
 
     bits = (bits >> start_bit) << start_bit;
 
-    return (bits < *kth_key_bits) ? -1 : (bits == *kth_key_bits) ? 0 : 1;
+    return (bits < *kth_key_bits) ? candidate_class::selected
+         : (bits == *kth_key_bits)
+           ? candidate_class::candidate
+           : candidate_class::rejected;
   }
 };
 
@@ -463,8 +476,8 @@ struct AgentTopK
       auto f =
         [in_idx_buf, out_buf, out_idx_buf, kth_key_bits, counter, p_filter_cnt, p_out_cnt, this, early_stop, pass](
           key_in_t key, OffsetT i) {
-          int pre_res = identify_candidates_op(key);
-          if (pre_res == 0)
+          candidate_class pre_res = identify_candidates_op(key);
+          if (pre_res == candidate_class::candidate)
           {
             OffsetT index;
             if (early_stop)
@@ -500,7 +513,7 @@ struct AgentTopK
           // times in different passes. And if we keep skipping the writing, keys will
           // be written in `LastFilter_kernel()` at last. But when `early_stop` is
           // true, we need to write to `out` since it's the last chance.
-          else if ((out_buf || early_stop) && (pre_res < 0))
+          else if ((out_buf || early_stop) && (pre_res == candidate_class::selected))
           {
             OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
             d_keys_out[pos] = key;
@@ -628,8 +641,8 @@ struct AgentTopK
 
     auto f = [this, pass, p_out_cnt, counter, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, current_len](
                key_in_t key, OffsetT i) {
-      int res = identify_candidates_op(key);
-      if (res < 0)
+      candidate_class res = identify_candidates_op(key);
+      if (res == candidate_class::selected)
       {
         OutOffsetT pos  = atomicAdd(p_out_cnt, OffsetT{1});
         d_keys_out[pos] = key;
@@ -643,7 +656,7 @@ struct AgentTopK
           d_values_out[pos] = d_values_in[index];
         }
       }
-      else if (res == 0)
+      else if (res == candidate_class::candidate)
       {
         OffsetT new_idx     = in_idx_buf ? in_idx_buf[i] : i;
         OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
