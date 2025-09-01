@@ -279,7 +279,7 @@ struct AgentTopK
   static constexpr int num_buckets      = 1 << BITS_PER_PASS;
 
   static constexpr bool KEYS_ONLY                = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
-  static constexpr int items_per_thread_for_scan = (num_buckets - 1) / BLOCK_THREADS + 1;
+  static constexpr int items_per_thread_for_scan = ::cuda::ceil_div(num_buckets, BLOCK_THREADS);
 
   // Parameterized BlockLoad type for input data
   using block_load_input_t = BlockLoad<key_in_t, BLOCK_THREADS, ITEMS_PER_THREAD, AgentTopKPolicyT::LOAD_ALGORITHM>;
@@ -393,7 +393,7 @@ struct AgentTopK
     key_in_t thread_data[ITEMS_PER_THREAD];
 
     const OffsetT ITEMS_PER_PASS   = TILE_ITEMS * gridDim.x;
-    const OffsetT total_num_blocks = (num_items - 1) / TILE_ITEMS + 1;
+    const OffsetT total_num_blocks = ::cuda::ceil_div(num_items, TILE_ITEMS);
 
     const OffsetT num_remaining_elements = num_items % TILE_ITEMS;
     const OffsetT last_block_id          = (total_num_blocks - 1) % gridDim.x;
@@ -561,7 +561,8 @@ struct AgentTopK
   {
     OffsetT thread_data[items_per_thread_for_scan];
 
-    block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets, OffsetT{0});
+    // Load global histogram (we can skip initializing oob-items to zero because they won't be stored back)
+    block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets);
     __syncthreads();
 
     block_scan_t(temp_storage.scan).InclusiveSum(thread_data, thread_data);
@@ -581,11 +582,13 @@ struct AgentTopK
       OffsetT prev = (i == 0) ? 0 : temp_storage.histogram[i - 1];
       OffsetT cur  = temp_storage.histogram[i];
 
-      // One and only one thread will satisfy this condition, so counter is written by only one thread
+      // Identify the bin that the k-th item falls into. One and only one thread will satisfy this condition, so counter
+      // is written by only one thread
       if (prev < k && cur >= k)
       {
         // The number of items that are yet to be identified
         counter->k = k - prev;
+
         // The number of candidates in the next pass
         counter->len                                   = cur - prev;
         typename Traits<key_in_t>::UnsignedBits bucket = i;
@@ -768,6 +771,8 @@ struct AgentTopK
     {
       temp_storage.histogram[i] = 0;
     }
+
+    // Make sure the histogram was initialized
     __syncthreads();
 
     filter_and_histogram<IsFirstPass>(
@@ -804,12 +809,15 @@ struct AgentTopK
         }
       }
 
-      constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
       compute_bin_offsets(histogram);
+      
+      // Make sure the prefix sum has been written to shared memory before running choose_bucket()
       __syncthreads();
+      
       choose_bucket(counter, current_k, pass);
-
+      
       // Reset histogram for the next pass
+      constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
       if (pass != num_passes - 1)
       {
         for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
