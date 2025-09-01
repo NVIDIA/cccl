@@ -277,15 +277,19 @@ struct AgentTopK
   using block_store_trans_t = BlockStore<OffsetT, BLOCK_THREADS, items_per_thread_for_scan, BLOCK_STORE_TRANSPOSE>;
 
   // Shared memory
-  union _TempStorage
+  struct _TempStorage
   {
-    // Smem needed for loading
-    typename block_load_input_t::TempStorage load_input;
-    typename block_load_trans_t::TempStorage load_trans;
-    // Smem needed for scan
-    typename block_scan_t::TempStorage scan;
-    // Smem needed for storing
-    typename block_store_trans_t::TempStorage store_trans;
+    union
+    {
+      // Smem needed for loading
+      typename block_load_input_t::TempStorage load_input;
+      typename block_load_trans_t::TempStorage load_trans;
+      // Smem needed for scan
+      typename block_scan_t::TempStorage scan;
+      // Smem needed for storing
+      typename block_store_trans_t::TempStorage store_trans;
+    };
+    OffsetT histogram[num_buckets];
   };
   /// Alias wrapper allowing storage to be unioned
   struct TempStorage : Uninitialized<_TempStorage>
@@ -435,7 +439,6 @@ struct AgentTopK
     OffsetT previous_len,
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
-    OffsetT* histogram_smem,
     int pass,
     bool early_stop)
   {
@@ -443,9 +446,9 @@ struct AgentTopK
     {
       // During the first pass, compute per-thread block histograms over the full input. The per-thread block histograms
       // are being added to the global histogram further down below.
-      auto f = [this, histogram_smem](key_in_t key, OffsetT index) {
+      auto f = [this](key_in_t key, OffsetT index) {
         int bucket = extract_bin_op(key);
-        atomicAdd(histogram_smem + bucket, OffsetT{1});
+        atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
       };
       process_range(d_keys_in, previous_len, f);
     }
@@ -458,17 +461,8 @@ struct AgentTopK
       // See the remark above on the distributed execution of `f` using
       // vectorized loading.
       auto f =
-        [in_idx_buf,
-         out_buf,
-         out_idx_buf,
-         kth_key_bits,
-         counter,
-         p_filter_cnt,
-         p_out_cnt,
-         this,
-         histogram_smem,
-         early_stop,
-         pass](key_in_t key, OffsetT i) {
+        [in_idx_buf, out_buf, out_idx_buf, kth_key_bits, counter, p_filter_cnt, p_out_cnt, this, early_stop, pass](
+          key_in_t key, OffsetT i) {
           int pre_res = identify_candidates_op(key);
           if (pre_res == 0)
           {
@@ -497,7 +491,7 @@ struct AgentTopK
               }
 
               int bucket = extract_bin_op(key);
-              atomicAdd(histogram_smem + bucket, OffsetT{1});
+              atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
             }
           }
           // the condition `(out_buf || early_stop)` is a little tricky:
@@ -540,9 +534,9 @@ struct AgentTopK
     // Merge histograms produced by individual blocks
     for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
     {
-      if (histogram_smem[i] != 0)
+      if (temp_storage.histogram[i] != 0)
       {
-        atomicAdd(histogram + i, histogram_smem[i]);
+        atomicAdd(histogram + i, temp_storage.histogram[i]);
       }
     }
   }
@@ -550,7 +544,7 @@ struct AgentTopK
   /**
    * Replace histogram with its own prefix sum
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram, OffsetT* histogram_smem)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
     OffsetT thread_data[items_per_thread_for_scan];
 
@@ -560,19 +554,19 @@ struct AgentTopK
     block_scan_t(temp_storage.scan).InclusiveSum(thread_data, thread_data);
     __syncthreads();
 
-    block_store_trans_t(temp_storage.store_trans).Store(histogram_smem, thread_data, num_buckets);
+    block_store_trans_t(temp_storage.store_trans).Store(temp_storage.histogram, thread_data, num_buckets);
   }
 
   /**
    * Identify the bucket that the k-th value falls into
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void choose_bucket(
-    Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OffsetT* histogram, const OutOffsetT k, const int pass)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OutOffsetT k, const int pass)
   {
     for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
     {
-      OffsetT prev = (i == 0) ? 0 : histogram[i - 1];
-      OffsetT cur  = histogram[i];
+      OffsetT prev = (i == 0) ? 0 : temp_storage.histogram[i - 1];
+      OffsetT cur  = temp_storage.histogram[i];
 
       // One and only one thread will satisfy this condition, so counter is written by only one thread
       if (prev < k && cur >= k)
@@ -757,15 +751,14 @@ struct AgentTopK
       out_idx_buf = nullptr;
     }
 
-    __shared__ OffsetT histogram_smem[num_buckets];
     for (OffsetT i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
     {
-      histogram_smem[i] = 0;
+      temp_storage.histogram[i] = 0;
     }
     __syncthreads();
 
     filter_and_histogram<IsFirstPass>(
-      in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, histogram_smem, pass, early_stop);
+      in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, pass, early_stop);
 
     // We need this `__threadfence()` because the global array `histogram` will be accessed by other threads with
     // non-atomic operations.
@@ -799,9 +792,9 @@ struct AgentTopK
       }
 
       constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
-      compute_bin_offsets(histogram, histogram_smem);
+      compute_bin_offsets(histogram);
       __syncthreads();
-      choose_bucket(counter, histogram_smem, current_k, pass);
+      choose_bucket(counter, current_k, pass);
 
       // Reset histogram for the next pass
       if (pass != num_passes - 1)
