@@ -27,7 +27,6 @@ workflows:
     # Add a 12.9 job in to see if this is a new regression in the 13.0 images.
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '12.9',  std: '20',  cxx: ['clang19', 'gcc14']}
     - {jobs: ['test'],  project: 'libcudacxx', ctk: '13.0',  std: '20',  cxx: ['clang19', 'gcc14']}
-    - {jobs: ['nvrtc'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: 'gcc12', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '12.0',  std: 'all', cxx: ['msvc14.29', 'msvc14.39']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X',  std: 'all', cxx: ['msvc14.29']}
     - {jobs: ['build'], project: 'libcudacxx', ctk: '13.0',  std: '17',  cxx: ['msvc14.43']}
@@ -138,7 +137,8 @@ workflows:
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
-    - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
+    # NVRTC tests don't currently support 12.0:
+    - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
