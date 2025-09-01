@@ -1,6 +1,9 @@
 import math
 from typing import Tuple, Optional
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import SymLogNorm, LogNorm
+from typing import Literal, Optional
 
 from cuda.cccl.experimental.stf._stf_bindings import (
     context,
@@ -8,6 +11,38 @@ from cuda.cccl.experimental.stf._stf_bindings import (
 )
 
 import torch
+
+Plane = Literal["xy", "xz", "yz"]
+
+def show_slice(t3d, plane="xy", index=None):
+    # grab a 2D view
+    if plane == "xy":
+        idx = t3d.shape[2] // 2 if index is None else index
+        slice2d = t3d[:, :, idx]
+    elif plane == "xz":
+        idx = t3d.shape[1] // 2 if index is None else index
+        slice2d = t3d[:, idx, :]
+    elif plane == "yz":
+        idx = t3d.shape[0] // 2 if index is None else index
+        slice2d = t3d[idx, :, :]
+    else:
+        raise ValueError("plane must be 'xy', 'xz' or 'yz'")
+
+    # move to cpu numpy array
+    arr = slice2d.detach().cpu().numpy()
+
+    # imshow = "imshow" not "imread"
+    plt.imshow(
+        arr,
+        origin="lower",
+        cmap="seismic",
+        vmin=-1e-2, vmax=1e-2
+#        norm=SymLogNorm(linthresh=1e-8, vmin=-1e-0, vmax=1e-0)
+#         norm=LogNorm(vmin=1e-12, vmax=1e-6)
+    )
+    # plt.colorbar()
+    plt.show(block=False)
+    plt.pause(0.01)
 
 def init_field(ctx, ld, value):
     with ctx.task(ld.write()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
@@ -18,9 +53,9 @@ def init_field(ctx, ld, value):
             field.fill_(value)
 
 def fdtd_3d_pytorch(
-    size_x: int = 100,
-    size_y: int = 100,
-    size_z: int = 100,
+    size_x: int = 150,
+    size_y: int = 150,
+    size_z: int = 150,
     timesteps: int = 10,
     output_freq: int = 0,
     dx: float = 0.01,
@@ -75,7 +110,7 @@ def fdtd_3d_pytorch(
     i_hs_p, j_hs_p, k_hs_p = slice(1, None), slice(1, None), slice(1, None)
 
     # source location (single cell at center)
-    cx, cy, cz = size_x // 2, size_y // 2, size_z // 2
+    cx, cy, cz = size_x // 2, size_y // 10, size_z // 2
 
     def source(t: float, x: float, y: float, z: float) -> float:
         # sin(k*x - omega*t) with f = 1e9 Hz
@@ -148,6 +183,7 @@ def fdtd_3d_pytorch(
             with ctx.task(lez.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
                 ez = t.get_arg_as_tensor(0)
                 print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
+                show_slice(ez, plane="xy")
             pass
 
     ctx.finalize()
@@ -157,5 +193,5 @@ def fdtd_3d_pytorch(
 
 if __name__ == "__main__":
     # quick check
-    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=200, output_freq=5)
+    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=1000, output_freq=5)
    #  print("done; Ez(center) =", ez[50, 50, 50].item())
