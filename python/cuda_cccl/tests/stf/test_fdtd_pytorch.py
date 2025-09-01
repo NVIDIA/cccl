@@ -144,8 +144,11 @@ def fdtd_3d_pytorch(
                 - (ex[i_hs, j_hs_p, k_hs] - ex[i_hs, j_hs, k_hs])
             )
 
-#         if output_freq > 0 and (n % output_freq) == 0:
-#             print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
+        if output_freq > 0 and (n % output_freq) == 0:
+            with ctx.task(lez.read()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+                ez = t.get_arg_as_tensor(0)
+                print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
+            pass
 
     ctx.finalize()
 
@@ -154,5 +157,5 @@ def fdtd_3d_pytorch(
 
 if __name__ == "__main__":
     # quick check
-    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=20, output_freq=5)
+    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=200, output_freq=5)
    #  print("done; Ez(center) =", ez[50, 50, 50].item())
