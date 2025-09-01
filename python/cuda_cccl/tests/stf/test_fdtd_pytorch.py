@@ -12,7 +12,7 @@ import torch
 def init_field(ctx, ld, value):
     with ctx.task(ld.write()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
         field = t.get_arg_as_tensor(0)
-        field[:,:,:] = value
+        field.fill_(value)
 
 def fdtd_3d_pytorch(
     size_x: int = 100,
