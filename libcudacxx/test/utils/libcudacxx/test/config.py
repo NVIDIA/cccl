@@ -222,7 +222,7 @@ class Configuration(object):
             )
 
         # Build the same list used by --arch=all-major:
-        # Handle special case for eg. 13.0: First arch is 75, not 70.
+        # Handle cases where the first architecture is not a round decade (e.g., first arch is 75, not 70).
         oldest = int(archs[0])
         archs = sorted(set([(int(arch) // 10 * 10) for arch in archs]))
         archs[0] = oldest
