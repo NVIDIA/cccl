@@ -110,10 +110,10 @@ def fdtd_3d_pytorch(
                 - (hx[i_es, j_es, k_es] - hx[i_es, j_es_m, k_es])
             )
 
-         # source at center cell
-         with ctx.task(lez.rw()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
-             ez = t.get_arg_as_tensor(0)
-             ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
+        # source at center cell
+        with ctx.task(lez.rw()) as t, torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())):
+            ez = t.get_arg_as_tensor(0)
+            ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
 
         # -------------------------
         # update magnetic fields (Hs)
