@@ -8,15 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Freeze a logical data in a graph to use it in a child graph
- *
- */
 
-#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
-#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+//! \file
+//!
+//! \brief Freeze a logical data in a graph to use it in a child graph
+
+#include <cuda/experimental/stf.cuh>
+
+#include <vector>
 
 using namespace cuda::experimental::stf;
 
