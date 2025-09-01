@@ -230,8 +230,8 @@ class Configuration(object):
             return ""
 
         # Build the same list used by --arch=all-major:
+
         # Handle special case where the first architecture is not a round decade (e.g., first arch is 75, not 70).
-        oldest = archs[0]
         oldest = archs[0]
         archs = sorted(set((arch // 10 * 10) for arch in archs))
         archs[0] = oldest
