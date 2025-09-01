@@ -39,8 +39,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @addtogroup iterators
 //! @{
 
-//! @brief Adaptor that transforms a N-ary function into one accepting a @c tuple of size N
-//! @tparam _Fn The function to wrap
+//! @brief Adaptor that transforms a N-ary functor into one accepting a @c tuple of size N
+//! @tparam _Fn The functor to wrap
 //! @relates zip_iterator
 template <class _Fn>
 class zip_function
@@ -74,6 +74,7 @@ public:
     noexcept(::cuda::std::apply(::cuda::std::declval<_Fn2>(), ::cuda::std::declval<_Tuple>()));
 
   //! @brief Applies a tuple to the stored functor
+  //! @param __tuple The tuple of arguments to be passed
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tuple>
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Tuple&& __tuple) const

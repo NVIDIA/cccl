@@ -77,7 +77,7 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
 //! @code
 //! #include <cuda/iterator>
 //! ...
-//! // create a @c shuffle_iterator
+//! // create a shuffle_iterator
 //! cuda::shuffle_iterator iterator{cuda::random_bijection{4, cuda::std::minstd_rand(0xDEADBEEF)}};
 //! // iterator[0] returns 1
 //! // iterator[1] returns 3
@@ -113,7 +113,7 @@ public:
 
   //! @brief Constructs a @c shuffle_iterator by constructing the bijection function in place and an optional start
   //! position
-  //! @param __num_elements The size bijection sequence
+  //! @param __num_elements The size of the bijection sequence
   //! @param __gen The random number generator to initialize the bijection
   //! @param __start The optional stating index of the @c shuffle_iterator in the bijection sequence
   template <class _RNG> // constraining here breaks CTAD
@@ -246,7 +246,7 @@ public:
     return static_cast<difference_type>(__x.__current_ - __y.__current_);
   }
 
-  //! @brief Compares two @c shuffle_iterator for equality, by comparing their index
+  //! @brief Compares two @c shuffle_iterator for equality by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {
@@ -254,7 +254,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c shuffle_iterator for inequality, by comparing their index
+  //! @brief Compares two @c shuffle_iterator for inequality by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {
@@ -263,7 +263,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way compares two @c shuffle_iterator for less equal, by comparing their index
+  //! @brief Three-way compares two @c shuffle_iterator for less equal by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr ::cuda::std::strong_ordering
   operator<=>(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {
@@ -271,28 +271,28 @@ public:
   }
 #else // ^^^ _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
 
-  //! @brief Compares two @c shuffle_iterator for less than, by comparing their index
+  //! @brief Compares two @c shuffle_iterator for less than by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {
     return __x.__current_ < __y.__current_;
   }
 
-  //! @brief Compares two @c shuffle_iterator for greater than, by comparing their index
+  //! @brief Compares two @c shuffle_iterator for greater than by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {
     return __x.__current_ > __y.__current_;
   }
 
-  //! @brief Compares two @c shuffle_iterator for less equal, by comparing their index
+  //! @brief Compares two @c shuffle_iterator for less equal by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {
     return __x.__current_ <= __y.__current_;
   }
 
-  //! @brief Compares two @c shuffle_iterator for greater equal, by comparing their index
+  //! @brief Compares two @c shuffle_iterator for greater equal by comparing their index
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const shuffle_iterator& __x, const shuffle_iterator& __y) noexcept
   {

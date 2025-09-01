@@ -326,7 +326,7 @@ _CCCL_HOST_DEVICE tabulate_output_iterator(_Fn, _Index) -> tabulate_output_itera
 //! @brief Creates a @c tabulate_output_iterator from an output function and an optional index.
 //! @param __func The output function
 //! @param __index The index of the @c tabulate_output_iterator within a range. The default index is @c 0.
-//! @return A new @c tabulate_output_iterator with @c __index as the couner.
+//! @return A new @c tabulate_output_iterator with @c __index as the counter.
 //! @relates tabulate_output_iterator
 _CCCL_TEMPLATE(class _Fn, class _Integer = ::cuda::std::ptrdiff_t)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)

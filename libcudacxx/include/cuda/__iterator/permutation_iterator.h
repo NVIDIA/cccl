@@ -179,7 +179,7 @@ public:
     return static_cast<difference_type>(*__index_);
   }
 
-  //! @brief Dereferences the stored iterator offset by index()
+  //! @brief Dereferences the stored iterator advanced by the current index
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator*() noexcept(noexcept(__iter_[static_cast<__iter_difference_t>(*__index_)]))
@@ -187,7 +187,7 @@ public:
     return __iter_[static_cast<__iter_difference_t>(*__index_)];
   }
 
-  //! @brief Dereferences the stored iterator offset by index()
+  //! @brief Dereferences the stored iterator advanced by the current index
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
@@ -197,7 +197,7 @@ public:
     return __iter_[static_cast<__iter_difference_t>(*__index_)];
   }
 
-  //! @brief Subscripts the stored iterator offset by index(__n)
+  //! @brief Subscripts the stored iterator advanced by the index at offset __n
   //! @param __n The additional offset
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
@@ -206,7 +206,7 @@ public:
     return __iter_[static_cast<__iter_difference_t>(__index_[__n])];
   }
 
-  //! @brief Subscripts the stored iterator offset by index(__n)
+  //! @brief Subscripts the stored iterator advanced by the index at offset __n
   //! @param __n The additional offset
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
@@ -313,7 +313,7 @@ public:
     return __lhs.__index_ - __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for equality, compares the indices
+  //! @brief Compares two @c permutation_iterator for equality by comparing the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
@@ -325,7 +325,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c permutation_iterator for inequality, compares the indices
+  //! @brief Compares two @c permutation_iterator for inequality by comparing the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
@@ -342,7 +342,7 @@ public:
   static constexpr bool __nothrow_three_way =
     noexcept(::cuda::std::declval<_Iter1>() <=> ::cuda::std::declval<_Iter2>());
 
-  //! @brief Three-way-compares two @c permutation_iterator for inequality, compares the indices
+  //! @brief Three-way-compares two @c permutation_iterator for inequality by comparing the indices
   //! they point at
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
@@ -354,7 +354,7 @@ public:
     return __lhs.__index_ <=> __rhs.__index();
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  //! @brief Compares two @c permutation_iterator for less than, compares the indices
+  //! @brief Compares two @c permutation_iterator for less than by comparing the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -365,7 +365,7 @@ public:
     return __lhs.__index_ < __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for less equal, compares the indices
+  //! @brief Compares two @c permutation_iterator for less equal by comparing the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -376,7 +376,7 @@ public:
     return __lhs.__index_ <= __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for greater than, compares the indices
+  //! @brief Compares two @c permutation_iterator for greater than by comparing the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -387,7 +387,7 @@ public:
     return __lhs.__index_ > __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for greater equal, compares the indices
+  //! @brief Compares two @c permutation_iterator for greater equal by comparing the indices
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)

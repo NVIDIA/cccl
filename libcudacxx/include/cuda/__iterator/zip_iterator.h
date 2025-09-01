@@ -182,9 +182,9 @@ _CCCL_API constexpr auto __get_zip_view_iterator_tag()
 //!   thrust::device_vector<int> int_in{0, 1, 2}, int_out(3);
 //!   thrust::device_vector<float> float_in{0.0f, 10.0f, 20.0f}, float_out(3);
 //!
-//!   thrust::copy(cuda::make_zip_iterator(int_in.begin(), float_in.begin()),
-//!                cuda::make_zip_iterator(int_in.end(),   float_in.end()),
-//!                cuda::make_zip_iterator(int_out.begin(),float_out.begin()));
+//!   thrust::copy(cuda::zip_iterator{int_in.begin(), float_in.begin()},
+//!                cuda::zip_iterator{int_in.end(),   float_in.end()},
+//!                cuda::zip_iterator{int_out.begin(),float_out.begin()});
 //!
 //!   // int_out is now [0, 1, 2]
 //!   // float_out is now [0.0f, 10.0f, 20.0f]
@@ -279,7 +279,7 @@ public:
     }
   };
 
-  //! @brief Subscripts the @c zip_iterator with an additional offset
+  //! @brief Subscripts the @c zip_iterator with an offset
   //! @param __n The additional offset
   //! @returns A tuple of references obtained by subscripting every stored iterator
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
@@ -303,6 +303,7 @@ public:
   }
 
   //! @brief Increments all stored iterators
+  //! @returns A copy of the original @c zip_iterator if possible
   _CCCL_API constexpr auto operator++(int)
   {
     if constexpr (__zip_iter_constraints<_Iterators...>::__all_forward)
@@ -483,7 +484,7 @@ public:
     }
   };
 
-  //! @brief Compares two @c zip_iterator for equality. Compares the tuple of stored iterators
+  //! @brief Compares two @c zip_iterator for equality by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator==(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
@@ -500,7 +501,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c zip_iterator for inequality. Compares the tuple of stored iterators
+  //! @brief Compares two @c zip_iterator for inequality by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator!=(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
@@ -518,7 +519,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way compares two @c zip_iterator. Compares the tuple of stored iterators
+  //! @brief Three-way compares two @c zip_iterator by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator<=>(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access&& _Constraints::__all_three_way_comparable)
@@ -528,7 +529,7 @@ public:
 
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
 
-  //! @brief Compares two @c zip_iterator for less than. Compares the tuple of stored iterators
+  //! @brief Compares two @c zip_iterator for less than by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator<(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
@@ -536,7 +537,7 @@ public:
     return __n.__current_ < __y.__current_;
   }
 
-  //! @brief Compares two @c zip_iterator for greater than. Compares the tuple of stored iterators
+  //! @brief Compares two @c zip_iterator for greater than by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator>(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
@@ -544,7 +545,7 @@ public:
     return __y < __n;
   }
 
-  //! @brief Compares two @c zip_iterator for less equal. Compares the tuple of stored iterators
+  //! @brief Compares two @c zip_iterator for less equal by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator<=(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
@@ -552,7 +553,7 @@ public:
     return !(__y < __n);
   }
 
-  //! @brief Compares two @c zip_iterator for greater equal. Compares the tuple of stored iterators
+  //! @brief Compares two @c zip_iterator for greater equal by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator>=(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)

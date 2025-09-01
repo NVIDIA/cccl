@@ -131,8 +131,7 @@ struct __counting_iterator_category<_Tp, ::cuda::std::enable_if_t<::cuda::std::i
 //! This iterator is useful for creating a range filled with a sequence without explicitly storing it in memory. Using
 //! @c counting_iterator saves memory capacity and bandwidth.
 //!
-//! The following code snippet demonstrates how to create a @c counting_iterator whose @c value_type is @c int and which
-//! sequentially increments by @c 1.
+//! The following code snippet demonstrates how to create a @c counting_iterator whose @c value_type is @c int
 //!
 //! @code{.cpp}
 //! #include <cuda/iterator>
@@ -264,11 +263,9 @@ public:
     return __tmp;
   }
 
-  //! @brief Advances a @c counting_iterator by a given number of elements
-  //! @param __n The amount of elements to advance
-  _CCCL_TEMPLATE(class _Start2 = _Start)
-  _CCCL_REQUIRES(__advanceable<_Start2>)
-  _CCCL_API constexpr counting_iterator& operator+=(difference_type __n) noexcept(::cuda::std::__integer_like<_Start2>)
+  //! @brief Increments the stored value by a given number of elements
+  //! @param __n The number of elements to increment
+  _CCCL_API constexpr counting_iterator& operator+=(difference_type __n) noexcept(::cuda::std::__integer_like<_Start>)
   {
     if constexpr (::cuda::std::__integer_like<_Start> && !::cuda::std::__signed_integer_like<_Start>)
     {
@@ -315,7 +312,7 @@ public:
     return __iter + __n;
   }
 
-  //! @brief Decrements a @c counting_iterator by a given number of elements
+  //! @brief Decrements the stored value by a given number of elements
   //! @param __n The amount of elements to decrement
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)

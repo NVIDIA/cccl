@@ -201,10 +201,10 @@ public:
   {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-  //! @brief Constructs a @c transform_input_output_iterator with base iterator, input function and output function
+  //! @brief Constructs a @c transform_input_output_iterator with base iterator, input functor and output functor
   //! @param __iter The iterator to transform
-  //! @param __input_func The input function to apply to the iterator when reading
-  //! @param __output_func The output function to apply to the iterator when writing
+  //! @param __input_func The input functor to apply to the iterator when reading
+  //! @param __output_func The output functor to apply to the iterator when writing
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr transform_input_output_iterator(_Iter __iter, _InputFn __input_func, _OutputFn __output_func) //
     noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>
@@ -229,7 +229,7 @@ public:
   }
 
   //! @brief Dereferences the @c transform_input_output_iterator. Returns a proxy that transforms values read from the
-  //! stored iterator via the stored input function and transforms assigned values via the output function
+  //! stored iterator via the stored input functor and transforms assigned values via the output functor
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr auto operator*() const noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter>)
   {
@@ -238,16 +238,16 @@ public:
   }
 
   //! @brief Dereferences the @c transform_input_output_iterator. Returns a proxy that transforms values read from the
-  //! stored iterator via the stored input function and transforms assigned values via the output function
+  //! stored iterator via the stored input functor and transforms assigned values via the output functor
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr auto operator*() noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Iter>)
   {
     return __transform_input_output_proxy{__current_, *__input_func_, *__output_func_};
   }
 
-  //! @brief Dereferences the @c transform_input_output_iterator. Returns a proxy that transforms values read from the
-  //! stored iterator adbanvd by a given number of elements via the stored input function and transforms assigned values
-  //! via the output function
+  //! @brief Subscripts the @c transform_input_output_iterator. Returns a proxy that transforms values read from the
+  //! stored iterator adbanvd by a given number of elements via the stored input functor and transforms assigned values
+  //! via the output functor
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
@@ -259,9 +259,9 @@ public:
       __current_ + __n, const_cast<_InputFn&>(*__input_func_), const_cast<_OutputFn&>(*__output_func_)};
   }
 
-  //! @brief Dereferences the @c transform_input_output_iterator. Returns a proxy that transforms values read from the
-  //! stored iterator adbanvd by a given number of elements via the stored input function and transforms assigned values
-  //! via the output function
+  //! @brief Subscripts the @c transform_input_output_iterator. Returns a proxy that transforms values read from the
+  //! stored iterator adbanvd by a given number of elements via the stored input functor and transforms assigned values
+  //! via the output functor
   //! @param __n The number of elements to advance
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
@@ -391,7 +391,7 @@ public:
     return __lhs.__current_ - __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_input_output_iterator for equality, directly comparing the stored iterators
+  //! @brief Compares two @c transform_input_output_iterator for equality by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -403,7 +403,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c transform_input_output_iterator for inequality, directly comparing the stored iterators
+  //! @brief Compares two @c transform_input_output_iterator for inequality by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -415,7 +415,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Compares two @c transform_input_output_iterator for less than, directly comparing the stored iterators
+  //! @brief Compares two @c transform_input_output_iterator for less than by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -426,7 +426,7 @@ public:
     return __lhs.__current_ < __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_input_output_iterator for greater than, directly comparing the stored iterators
+  //! @brief Compares two @c transform_input_output_iterator for greater than by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -437,7 +437,7 @@ public:
     return __lhs.__current_ > __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_input_output_iterator for less equal, directly comparing the stored iterators
+  //! @brief Compares two @c transform_input_output_iterator for less equal by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -448,7 +448,7 @@ public:
     return __lhs.__current_ <= __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_input_output_iterator for greater equal, directly comparing the stored iterators
+  //! @brief Compares two @c transform_input_output_iterator for greater equal by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -475,11 +475,11 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 };
 
-//! @brief make_transform_output_iterator creates a @c transform_output_iterator from an iterator, an input function
-//! and an output function
+//! @brief make_transform_output_iterator creates a @c transform_output_iterator from an iterator, an input functor
+//! and an output functor
 //! @param __iter The iterator pointing to the input range of the newly created @c transform_output_iterator.
-//! @param __input_fun The input function used to transform the range when read
-//! @param __output_fun The output function used to transform the range when written
+//! @param __input_fun The input functor used to transform the range when read
+//! @param __output_fun The output functor used to transform the range when written
 //! @relates transform_output_iterator
 template <class _Iter, class _InputFn, class _OutputFn>
 [[nodiscard]] _CCCL_API constexpr auto

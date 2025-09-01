@@ -216,7 +216,7 @@ public:
     return *this;
   }
 
-  //! @brief Compares two @c discard_iterator for equality, compares the indices
+  //! @brief Compares two @c discard_iterator for equality by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -224,7 +224,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c discard_iterator for inequality, compares the indices
+  //! @brief Compares two @c discard_iterator for inequality by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -267,35 +267,35 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two @c discard_iterator, compares the indices
+  //! @brief Three-way-compares two @c discard_iterator by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr strong_ordering
   operator<=>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <=> __rhs.__index_;
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  //! @brief Compares two @c discard_iterator for less than, compares the indices
+  //! @brief Compares two @c discard_iterator for less than by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
 
-  //! @brief Compares two @c discard_iterator for less equal, compares the indices
+  //! @brief Compares two @c discard_iterator for less equal by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
 
-  //! @brief Compares two @c discard_iterator for greater than, compares the indices
+  //! @brief Compares two @c discard_iterator for greater than by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
 
-  //! @brief Compares two @c discard_iterator for greater equal, compares the indices
+  //! @brief Compares two @c discard_iterator for greater equal by comparing the indices
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {

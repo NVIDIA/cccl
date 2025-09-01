@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief The @c constant_iterator class represents an iterator in an infinite sequence of repeated values.
 //! @tparam _Tp the value type of the @c constant_iterator.
-//! @tparam _Index The index type of the @c constant_iterator. Can be optionally be specified, but must satisfy
+//! @tparam _Index The index type of the @c constant_iterator. It can optionally be specified, but must satisfy
 //! __integer-like__
 //!
 //! This iterator is useful for creating a range filled with the same value without explicitly storing it in memory.
@@ -218,7 +218,7 @@ public:
     return static_cast<difference_type>(__lhs.__index_) - static_cast<difference_type>(__rhs.__index_);
   }
 
-  //! @brief Compares two @c constant_iterator for equality. Comparess the index in the sequence
+  //! @brief Compares two @c constant_iterator for equality by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
@@ -226,7 +226,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c constant_iterator for inequality. Comparess the index in the sequence
+  //! @brief Compares two @c constant_iterator for inequality by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
@@ -235,32 +235,32 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two @c constant_iterator. Comparess the index in the sequence
+  //! @brief Three-way-compares two @c constant_iterator by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <=> __rhs.__index_;
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  //! @brief Compares two @c constant_iterator for less than. Comparess the index in the sequence
+  //! @brief Compares two @c constant_iterator for less than by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
-  //! @brief Compares two @c constant_iterator for less equal. Comparess the index in the sequence
+  //! @brief Compares two @c constant_iterator for less equal by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
-  //! @brief Compares two @c constant_iterator for greater than. Comparess the index in the sequence
+  //! @brief Compares two @c constant_iterator for greater than by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
-  //! @brief Compares two @c constant_iterator for greater equal. Comparess the index in the sequence
+  //! @brief Compares two @c constant_iterator for greater equal by comparing the index in the sequence
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const constant_iterator& __lhs, const constant_iterator& __rhs) noexcept
   {

@@ -101,8 +101,8 @@ public:
 //! @brief @c transform_output_iterator is a special kind of output iterator which transforms a value written upon
 //! dereference. This iterator is useful for transforming an output from algorithms without explicitly storing the
 //! intermediate result in the memory and applying subsequent transformation, thereby avoiding wasting memory capacity
-//! and bandwidth. Using @c transform_iterator facilitates kernel fusion by deferring execution of transformation until
-//! the value is written while saving both memory capacity and bandwidth.
+//! and bandwidth. Using @c transform_iterator facilitates kernel fusion by expediting execution of transformation to
+//! before the value is written while saving both memory capacity and bandwidth.
 //!
 //! The following code snippet demonstrated how to create a @c transform_output_iterator which applies @c sqrtf to the
 //! assigning value.
@@ -207,9 +207,9 @@ public:
     return __transform_output_proxy{__current_, *__func_};
   }
 
-  //! @brief Returns a proxy that transforms the input upon assignment storing the current iterator advanced by a given
-  //! number of elements
-  //! @param __n The additional offset
+  //! @brief Subscripts the @c transform_output_iterator
+  //! @returns A proxy that transforms the input upon assignment storing the current iterator advanced by a given
+  //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__iter_can_subscript<_Iter2>)
@@ -219,9 +219,9 @@ public:
     return __transform_output_proxy{__current_ + __n, const_cast<_Fn&>(*__func_)};
   }
 
-  //! @brief Returns a proxy that transforms the input upon assignment storing the current iterator advanced by a given
-  //! number of elements
-  //! @param __n The additional offset
+  //! @brief Subscripts the @c transform_output_iterator
+  //! @returns A proxy that transforms the input upon assignment storing the current iterator advanced by a given
+  //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__iter_can_subscript<_Iter2>)
@@ -352,7 +352,7 @@ public:
     return __lhs.__current_ - __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_output_iterator for equality, comparing the stored iterators
+  //! @brief Compares two @c transform_output_iterator for equality by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -364,7 +364,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c transform_output_iterator for inequality, comparing the stored iterators
+  //! @brief Compares two @c transform_output_iterator for inequality by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -377,7 +377,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two @c transform_output_iterator, directly three-way-comparing the stored iterators
+  //! @brief Three-way-compares two @c transform_output_iterator by three-way-comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -389,7 +389,7 @@ public:
     return __lhs.__current_ <=> __rhs.__current_;
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  //! @brief Compares two @c transform_output_iterator for less than, comparing the stored iterators
+  //! @brief Compares two @c transform_output_iterator for less than by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -400,7 +400,7 @@ public:
     return __lhs.__current_ < __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_output_iterator for greater than, comparing the stored iterators
+  //! @brief Compares two @c transform_output_iterator for greater than by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -411,7 +411,7 @@ public:
     return __lhs.__current_ > __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_output_iterator for less equal, comparing the stored iterators
+  //! @brief Compares two @c transform_output_iterator for less equal by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -422,7 +422,7 @@ public:
     return __lhs.__current_ <= __rhs.__current_;
   }
 
-  //! @brief Compares two @c transform_output_iterator for greater equal, comparing the stored iterators
+  //! @brief Compares two @c transform_output_iterator for greater equal by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
