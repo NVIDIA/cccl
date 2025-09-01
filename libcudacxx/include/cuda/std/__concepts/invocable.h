@@ -35,8 +35,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Fn, class... _Args>
 concept invocable = requires(_Fn&& __fn, _Args&&... __args) {
-  ::cuda::std::invoke(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...); // not required to be
-                                                                                                // equality preserving
+  // not required to be equality preserving
+  ::cuda::std::invoke(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...);
 };
 
 // [concept.regular.invocable]
