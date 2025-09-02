@@ -320,7 +320,7 @@ struct DispatchReduceDeterministic
     deterministic_accum_t* d_block_reductions = (deterministic_accum_t*) allocations[0];
 
     if (num_chunks > 1
-        && !detail::all_iterators_support_add_assign_operator(::cuda::std::int32_t{}, d_in, d_block_reductions))
+        && !detail::all_iterators_support_add_assign_operator(::cuda::std::int32_t{}, d_in))
     {
       return cudaErrorInvalidValue;
     }
@@ -365,7 +365,7 @@ struct DispatchReduceDeterministic
       if (chunk_index + 1 < num_chunks)
       {
         detail::advance_iterators_inplace_if_supported(d_in, num_current_items);
-        detail::advance_iterators_inplace_if_supported(d_chunk_block_reductions, current_grid_size);
+        d_chunk_block_reductions += current_grid_size;
       }
 
       // Sync the stream if specified to flush runtime errors
