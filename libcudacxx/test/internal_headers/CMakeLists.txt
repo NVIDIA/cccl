@@ -18,13 +18,10 @@ file(GLOB_RECURSE internal_headers
   ${libcudacxx_SOURCE_DIR}/include/cuda/std/__*/*.h
 )
 
-# Exclude <cuda/std/__cccl/(prologue|epilogue).h> from the test
-list(FILTER internal_headers EXCLUDE REGEX "__cccl/(prologue|epilogue)\.h")
+# Exclude <cuda/std/__cccl/(prologue|epilogue|visibility).h> from the test
+list(FILTER internal_headers EXCLUDE REGEX "__cccl/(prologue|epilogue|visibility)\.h")
 
-# headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
-list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
-
-# generated cuda::ptx headers are not standalone
+# Exclude generated cuda::ptx headers
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
 function(libcudacxx_create_internal_header_test header_name, headertest_src, fallback)
@@ -53,6 +50,21 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     target_link_libraries(headertest_${header_name} NVHPC::CUDART)
   else()
     target_link_libraries(headertest_${header_name} CUDA::cudart)
+  endif()
+
+  # Require the conforming preprocessor
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    target_compile_options(headertest_${header_name} PRIVATE
+      $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:preprocessor>
+    )
+    if (MSVC_TOOLSET_VERSION LESS 143)
+      # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
+      target_compile_options(headertest_${header_name} PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:/wd5105>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd5105>
+      )
+    endif()
   endif()
 
   if(fallback)
