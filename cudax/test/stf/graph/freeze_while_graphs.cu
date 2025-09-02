@@ -18,12 +18,12 @@
 
 using namespace cuda::experimental::stf;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
 int X0(int i)
 {
   return 17 * i + 45;
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void setHandle(cudaGraphConditionalHandle handle)
 {
   static int count = 5;
@@ -33,6 +33,9 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
 
 int main()
 {
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+#else
   const int N = 16;
   int X[N];
 
@@ -93,11 +96,11 @@ int main()
   cParams.conditional.size    = 1;
 
   cudaGraphNode_t conditionalNode;
-#if _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), nullptr, fX_ready_nodes.size(), &cParams);
-#else
+#  else
   cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), fX_ready_nodes.size(), &cParams);
-#endif
+#  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
 
@@ -120,4 +123,5 @@ int main()
   };
 
   ctx.finalize();
+#endif // !_CCCL_CTK_BELOW(12, 4)
 }
