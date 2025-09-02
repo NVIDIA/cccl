@@ -207,9 +207,9 @@ void stf_cuda_kernel_start(stf_cuda_kernel_handle k);
 void stf_cuda_kernel_add_desc_cufunc(
   stf_cuda_kernel_handle k,
   CUfunction cufunc,
-  dim3 gridDim_,
-  dim3 blockDim_,
-  size_t sharedMem_,
+  dim3 grid_dim_,
+  dim3 block_dim_,
+  size_t shared_mem_,
   int arg_cnt,
   const void** args);
 
@@ -218,9 +218,9 @@ void stf_cuda_kernel_add_desc_cufunc(
 static inline void stf_cuda_kernel_add_desc(
   stf_cuda_kernel_handle k,
   const void* func,
-  dim3 gridDim_,
-  dim3 blockDim_,
-  size_t sharedMem_,
+  dim3 grid_dim_,
+  dim3 block_dim_,
+  size_t shared_mem_,
   int arg_cnt,
   const void** args)
 {
@@ -228,7 +228,7 @@ static inline void stf_cuda_kernel_add_desc(
   [[maybe_unused]] cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
   assert(res == cudaSuccess);
 
-  stf_cuda_kernel_add_desc_cufunc(k, cufunc, gridDim_, blockDim_, sharedMem_, arg_cnt, args);
+  stf_cuda_kernel_add_desc_cufunc(k, cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args);
 }
 
 void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index);

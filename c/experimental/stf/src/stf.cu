@@ -274,14 +274,14 @@ void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
 void stf_cuda_kernel_add_desc_cufunc(
   stf_cuda_kernel_handle k,
   CUfunction cufunc,
-  dim3 gridDim_,
-  dim3 blockDim_,
-  size_t sharedMem_,
+  dim3 grid_dim_,
+  dim3 block_dim_,
+  size_t shared_mem_,
   int arg_cnt,
   const void** args)
 {
   cuda_kernel_desc desc;
-  desc.configure_raw(cufunc, gridDim_, blockDim_, sharedMem_, arg_cnt, args);
+  desc.configure_raw(cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args);
 
   k->k.add_kernel_desc(mv(desc));
 }
