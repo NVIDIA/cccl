@@ -1546,6 +1546,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 <ul class="simple">
 <li><p>The functionality is only supported on <code class="docutils literal notranslate"><span class="pre">SM</span> <span class="pre">&gt;=</span> <span class="pre">70</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">lane_mask</span></code> must be non-zero.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code> shall have no padding bits, that is, <code class="docutils literal notranslate"><span class="pre">T</span></code>’s value representation shall be identical to its object representation.</p></li>
 </ul>
 <p><strong>Undefined Behavior</strong></p>
 <ul class="simple">
@@ -1569,14 +1570,14 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/warp&gt;</span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">MyStruct</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
-<span class="w">    </span><span class="kt">int</span><span class="w">    </span><span class="n">y</span><span class="p">;</span>
-<span class="p">};</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="c1">// 8 bytes</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">    </span><span class="n">y</span><span class="p">;</span><span class="w"> </span><span class="c1">// 4 bytes</span>
+<span class="p">};</span><span class="w">            </span><span class="c1">// 4 bytes of padding</span>
 
 <span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">warp_match_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">warp_match_all</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">warp_match_all</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">lane_mask</span><span class="o">::</span><span class="n">all</span><span class="p">()));</span>
-<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">warp_match_all</span><span class="p">(</span><span class="n">MyStruct</span><span class="p">{</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">}));</span>
+<span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">warp_match_all</span><span class="p">(</span><span class="n">MyStruct</span><span class="p">{</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">}));</span><span class="w"> </span><span class="c1">// Undefined Behavior</span>
 <span class="w">    </span><span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">cuda</span><span class="o">::</span><span class="n">device</span><span class="o">::</span><span class="n">warp_match_all</span><span class="p">(</span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">));</span>
 <span class="p">}</span>
 

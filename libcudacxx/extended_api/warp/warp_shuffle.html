@@ -1630,7 +1630,7 @@ The functions allow to exchange data of any data size, including raw arrays, poi
 <p><strong>Constrains</strong></p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Width</span></code> must be a power of two in the range [1, 32]</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: only <code class="docutils literal notranslate"><span class="pre">void</span></code> pointers are allowed to avoid bug-prone code</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: all <code class="docutils literal notranslate"><span class="pre">T</span></code> are allowed except if <code class="docutils literal notranslate"><span class="pre">T</span></code> is a pointer, in which case it must be a <code class="docutils literal notranslate"><span class="pre">void</span></code> pointer to avoid bug-prone code</p></li>
 </ul>
 <p><strong>Preconditions</strong></p>
 <ul class="simple">
