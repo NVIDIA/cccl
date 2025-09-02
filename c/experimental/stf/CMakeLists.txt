@@ -46,7 +46,3 @@ target_include_directories(cccl.c.experimental.stf PRIVATE "src")
 if (CCCL_C_Parallel_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
-
-# if (CCCL_C_Parallel_ENABLE_HEADER_TESTING)
-#   include(cmake/CParallelHeaderTesting.cmake)
-# endif()
