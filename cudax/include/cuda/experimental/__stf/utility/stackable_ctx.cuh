@@ -8,10 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- * @brief Stackable context and logical data to nest contexts
- */
+//! \file
+//! \brief Stackable context and logical data to nest contexts
 
 #pragma once
 
@@ -35,27 +33,30 @@
 #include "cuda/experimental/__stf/utility/source_location.cuh"
 #include "cuda/experimental/stf.cuh"
 
-/**
- * @brief Stackable Context Design Overview
- *
- * The stackable context allows nesting CUDA STF contexts to create hierarchical task graphs.
- * This enables complex workflows where tasks can be organized in a tree-like structure.
- *
- * Key concepts:
- * - **Context Stack**: Nested contexts form a stack where each level can have its own task graph
- * - **Data Movement**: Logical data can be imported ("pushed") between context levels automatically
- *
- * Usage pattern:
- * ```
- * stackable_ctx sctx;
- * auto data = sctx.logical_data(...);
- *
- * sctx.push();  // Enter nested context
- * data.push(access_mode::rw);  // Import data into nested context
- * // ... work with data in nested context ...
- * sctx.pop();   // Exit nested context, execute graph
- * ```
- */
+//! @brief Stackable Context Design Overview
+//!
+//! The stackable context allows nesting CUDA STF contexts to create hierarchical task graphs.
+//! This enables complex workflows where tasks can be organized in a tree-like structure.
+//!
+//! Key concepts:
+//! - **Context Stack**: Nested contexts form a stack where each level can have its own task graph
+//! - **Data Movement**: Logical data can be imported ("pushed") between context levels automatically
+//!
+//! Usage pattern:
+//! ```
+//! stackable_ctx sctx;
+//! auto data = sctx.logical_data(...);
+//!
+//! sctx.push();  // Enter nested context
+//! data.push(access_mode::rw);  // Import data into nested context
+//! // ... work with data in nested context ...
+//! sctx.pop();   // Exit nested context, execute graph
+//! ```
+//!
+//! By default, a task using a logical data in a nested context will
+//! automatically issue a `push` in a `rw` mode. Advanced users can still push in
+//! read-only mode to ensure data can be used concurrently from different nested
+//! contexts.
 
 namespace cuda::experimental::stf
 {
@@ -96,13 +97,12 @@ decltype(auto) to_task_dep(U&& u)
 
 } // end namespace reserved
 
-/**
- * @brief Base class with a virtual pop method to enable type erasure
- *
- * This is used to implement the automatic call to pop() on logical data when a
- * context node is popped, as we need to keep a vector of logical data that
- * were imported without knowing their type.
- */
+//! \brief Base class with a virtual pop method to enable type erasure
+//!
+//! This is used to implement the automatic call to pop() on logical data when
+//! a context node is popped, as we need to keep a vector of logical data that
+//! were imported without knowing their type.
+//!
 class stackable_logical_data_impl_state_base
 {
 public:
@@ -111,10 +111,8 @@ public:
   virtual void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) const = 0;
 };
 
-/**
- * @brief This class defines a context that behaves as a context which can have nested subcontexts (implemented as local
- * CUDA graphs)
- */
+//! \brief This class defines a context that behaves as a context which can have nested subcontexts (implemented as
+//! local CUDA graphs)
 class stackable_ctx
 {
 public:
@@ -1149,9 +1147,10 @@ public:
   ::std::shared_ptr<impl> pimpl;
 };
 
-// This is the logical data type used in a stackable_ctx context type. It
-// should behaves exactly like a logical_data with additional API to import it
-// across nested contexts.
+//! Logical data type used in a stackable_ctx context type.
+//!
+//! It should behaves exactly like a logical_data with additional API to import
+//! it across nested contexts.
 template <typename T>
 class stackable_logical_data
 {
@@ -1891,9 +1890,7 @@ inline stackable_logical_data<void_interface> stackable_ctx::token()
   return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().token(), true);
 }
 
-/**
- * @brief Task dependency for a stackable logical data
- */
+//! Task dependency for a stackable logical data
 template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep
 {
