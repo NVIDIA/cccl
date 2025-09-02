@@ -43,6 +43,11 @@ update_devcontainer() {
         toolkit_name=""
     fi
 
+    local rewrite_includes_only='${localEnv:SCCACHE_DIST_REWRITE_INCLUDES_ONLY:false}'
+    if [ $compiler_name == "llvm" ]; then
+        rewrite_includes_only='${localEnv:SCCACHE_DIST_REWRITE_INCLUDES_ONLY:true}'
+    fi
+
     local IMAGE_ROOT="rapidsai/devcontainers:${devcontainer_version}-cpp-"
     local INTERNAL_ROOT="gitlab-master.nvidia.com:5005/cccl/cccl-devcontainers:cpp-"
 
@@ -61,6 +66,7 @@ update_devcontainer() {
        --arg compiler_exe "$compiler_exe" \
        --arg compiler_version "$compiler_version" \
        --arg container_name "\${localEnv:USER:anon}-\${localWorkspaceFolderBasename}-${name}" \
+       --arg rewrite_includes_only "$rewrite_includes_only" \
        '.image = $image |
         .name = $name |
         .runArgs = ["--init", "--name", $container_name, "--ulimit", "nofile=500000"] |
@@ -69,7 +75,8 @@ update_devcontainer() {
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version |
         .containerEnv.CCCL_CUDA_EXTENDED = $cuda_ext |
         .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
-        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version '\
+        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version |
+        .containerEnv.SCCACHE_DIST_REWRITE_INCLUDES_ONLY = $rewrite_includes_only' \
        "$input_file" > "$output_file"
 }
 
