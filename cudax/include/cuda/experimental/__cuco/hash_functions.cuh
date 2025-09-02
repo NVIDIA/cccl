@@ -73,6 +73,7 @@ public:
 };
 
 #if _CCCL_HAS_INT128()
+
 template <typename _Key>
 class hash<_Key, hash_algorithm::murmurhash3_x86_128> : private __detail::_MurmurHash3_x86_128<_Key>
 {
@@ -88,6 +89,7 @@ public:
   using __detail::_MurmurHash3_x64_128<_Key>::_MurmurHash3_x64_128;
   using __detail::_MurmurHash3_x64_128<_Key>::operator();
 };
+
 #endif // _CCCL_HAS_INT128()
 
 } // namespace cuda::experimental::cuco

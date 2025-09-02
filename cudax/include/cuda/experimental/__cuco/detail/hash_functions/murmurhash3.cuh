@@ -52,7 +52,7 @@ template <typename _Key>
 {
   static_assert(sizeof(_Key) == 4, "Key type must be 4 bytes in size.");
 
-  ::cuda::std::uint32_t __h = ::cuda::std::bit_cast<::cuda::std::uint32_t>(__key) ^ __seed;
+  auto __h = ::cuda::std::bit_cast<::cuda::std::uint32_t>(__key) ^ __seed;
   __h ^= __h >> 16;
   __h *= 0x85ebca6b;
   __h ^= __h >> 13;
@@ -67,7 +67,7 @@ template <typename _Key>
 {
   static_assert(sizeof(_Key) == 8, "Key type must be 8 bytes in size.");
 
-  ::cuda::std::uint64_t __h = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__key) ^ __seed;
+  auto __h = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__key) ^ __seed;
   __h ^= __h >> 33;
   __h *= 0xff51afd7ed558ccdULL;
   __h ^= __h >> 33;
@@ -143,7 +143,7 @@ private:
           __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes[1]) << 8;
           [[fallthrough]];
         case 1:
-          __k1 ^= cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes[0]);
+          __k1 ^= ::cuda::std::to_integer<::cuda::std::uint32_t>(__holder.__bytes[0]);
           __k1 *= __c1;
           __k1 = ::cuda::std::rotl(__k1, 15);
           __k1 *= __c2;
@@ -394,7 +394,7 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    return cuda::std::bit_cast<__uint128_t>(__h);
+    return ::cuda::std::bit_cast<__uint128_t>(__h);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t
@@ -696,8 +696,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = __fmix64(__h[0]);
-    __h[1] = __fmix64(__h[1]);
+    __h[0] = ::cuda::experimental::cuco::__detail::__fmix64(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__detail::__fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];
@@ -811,8 +811,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = __fmix64(__h[0]);
-    __h[1] = __fmix64(__h[1]);
+    __h[0] = ::cuda::experimental::cuco::__detail::__fmix64(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__detail::__fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];

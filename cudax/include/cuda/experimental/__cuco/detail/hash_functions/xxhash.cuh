@@ -167,7 +167,7 @@ private:
     {
       for (::cuda::std::uint32_t __i = 0; __i < _Holder::__tail_size; ++__i)
       {
-        __h32 += (static_cast<::cuda::std::uint32_t>(__holder.__bytes[__i]) & 255) * __prime5;
+        __h32 += (static_cast<::cuda::std::uint32_t>(__holder.__bytes[__i])) * __prime5;
         __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
       }
     }
@@ -373,8 +373,7 @@ private:
     {
       for (; __offset <= __size - 4; __offset += 4)
       {
-        __h64 ^= (::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)
-                  & 0xffffffffull)
+        __h64 ^= (::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4))
                * __prime1;
         __h64 = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
       }
@@ -386,7 +385,7 @@ private:
     {
       while (__offset < __size)
       {
-        __h64 ^= (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset]) & 0xff) * __prime5;
+        __h64 ^= (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset])) * __prime5;
         __h64 = ::cuda::std::rotl(__h64, 11) * __prime1;
         ++__offset;
       }
