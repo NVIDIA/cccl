@@ -272,7 +272,7 @@
         "CCCL_ENABLE_C": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
-        "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
+        "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": false
       }
     },
     {
@@ -281,6 +281,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_C": true,
+        "CCCL_C_Parallel_ENABLE_TESTING": false,
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": false,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
       }
     },
