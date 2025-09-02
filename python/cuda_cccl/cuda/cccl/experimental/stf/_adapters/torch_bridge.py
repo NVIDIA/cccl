@@ -17,7 +17,7 @@ def cai_to_torch(cai: dict):
     try:
         from numba import cuda as _cuda
 
-        dev_array = _cuda.from_cuda_array_interface(cai)
+        dev_array = _cuda.from_cuda_array_interface(cai, owner=None, sync=False)
         return torch.utils.dlpack.from_dlpack(dev_array.to_dlpack())
     except Exception:
         pass
