@@ -455,6 +455,15 @@ struct AgentTopK
     int pass,
     bool early_stop)
   {
+    // Initialize shared memory histogram
+    for (OffsetT i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
+    {
+      temp_storage.histogram[i] = 0;
+    }
+
+    // Make sure the histogram was initialized
+    __syncthreads();
+
     if constexpr (IsFirstPass)
     {
       // During the first pass, compute per-thread block histograms over the full input. The per-thread block histograms
@@ -474,6 +483,7 @@ struct AgentTopK
       // Lambda for early_stop = true (i.e., we have identified the exact "splitter" key):
       // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into
       // bins preceding the k-th item bin (i.e., 'selected' items), write them to output.
+      // We can skip histogram computation because we don't need to further passes to refine the candidates.
       auto f_early_stop = [in_idx_buf, kth_key_bits, counter, p_out_cnt, this](key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
@@ -488,8 +498,8 @@ struct AgentTopK
         }
       };
 
-      // Lambda for early_stop = false, out_buf != nullptr (i.e., we need further passes
-      //
+      // Lambda for early_stop = false, out_buf != nullptr (i.e., we need to further refine the candidates in the next
+      // pass): Write out selected items to output, write candidates to out_buf, and build histogram for candidates.
       auto f_with_out_buf =
         [in_idx_buf, out_buf, out_idx_buf, kth_key_bits, counter, p_filter_cnt, p_out_cnt, this, pass](
           key_in_t key, OffsetT i) {
@@ -519,7 +529,12 @@ struct AgentTopK
           }
         };
 
-      // Lambda for early_stop = false, out_buf = nullptr
+      // Lambda for early_stop = false, out_buf = nullptr (i.e., we need to further refine the candidates in the next
+      // pass, but we skip writing candidates to out_buf):
+      // Just build histogram for candidates.
+      // Note: We will only begin writing to d_keys_out starting from the pass in which the number of output-candidates
+      // is small enough to fit into the output buffer (otherwise, we would be writing the same items to d_keys_out
+      // multiple times).
       auto f_no_out_buf = [in_idx_buf, kth_key_bits, counter, p_filter_cnt, this, pass](key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate)
@@ -527,8 +542,6 @@ struct AgentTopK
           int bucket = extract_bin_op(key);
           atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
         }
-        // Note: when out_buf is nullptr and early_stop is false,
-        // we don't write selected items to output
       };
 
       // Choose and invoke the appropriate lambda with the correct input source
@@ -654,8 +667,7 @@ struct AgentTopK
     OffsetT* in_idx_buf,
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
-    OutOffsetT k,
-    int pass)
+    OutOffsetT k)
   {
     load_from_original_input = counter->previous_len > buffer_length;
     OffsetT current_len      = load_from_original_input ? num_items : counter->previous_len;
@@ -671,7 +683,7 @@ struct AgentTopK
     OutOffsetT* p_out_cnt      = &counter->out_cnt;
     OutOffsetT* p_out_back_cnt = &counter->out_back_cnt;
 
-    auto f = [this, pass, p_out_cnt, counter, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, current_len](
+    auto f = [this, p_out_cnt, counter, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, current_len](
                key_in_t key, OffsetT i) {
       candidate_class res = identify_candidates_op(key);
       if (res == candidate_class::selected)
@@ -680,11 +692,8 @@ struct AgentTopK
         d_keys_out[pos] = key;
         if constexpr (!KEYS_ONLY)
         {
-          OffsetT index = in_idx_buf ? in_idx_buf[i] : i;
-
-          // For one-block version, `in_idx_buf` could be nullptr at pass 0.
-          // For non one-block version, if writing has been skipped, `in_idx_buf` could
-          // be nullptr if `in_buf` is `in`
+          // If writing has been skipped up to this point, `in_idx_buf` is nullptr
+          OffsetT index     = in_idx_buf ? in_idx_buf[i] : i;
           d_values_out[pos] = d_values_in[index];
         }
       }
@@ -796,22 +805,16 @@ struct AgentTopK
       out_idx_buf = nullptr;
     }
 
-    for (OffsetT i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
-    {
-      temp_storage.histogram[i] = 0;
-    }
-
-    // Make sure the histogram was initialized
-    __syncthreads();
-
+    // Fused filtering of candidates and histogram computation over the output-candidates
     filter_and_histogram<IsFirstPass>(
       in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, pass, early_stop);
 
-    // We need this `__threadfence()` because the global array `histogram` will be accessed by other threads with
-    // non-atomic operations.
+    // We need this `__threadfence()` to make sure all writes to the global memory-histogram are visible to all
+    // threads before we proceed to compute the prefix sum over the histogram.
     __threadfence();
 
-    // Identify the last block in the grid to perform the prefix sum over the histogram and choose_bucket
+    // Identify the last block in the grid to perform the prefix sum over the histogram identify the bin that the
+    // k-th item falls into
     bool is_last_block = false;
     if (threadIdx.x == 0)
     {
@@ -824,25 +827,31 @@ struct AgentTopK
     {
       if (threadIdx.x == 0)
       {
+        // If we have found the top-k items already, we can short-circuit subsequent passes
         if (early_stop)
         {
-          // `LastFilter_kernel()` requires setting previous_len
+          // Signal subsequent passes to skip processing
           counter->previous_len = 0;
           counter->len          = 0;
         }
         else
         {
+          // The number of output-candidates of the current pass become the input size of the next pass
           counter->previous_len = current_len;
-          // not necessary for the last pass, but put it here anyway
+
+          // Reset the counter used to coordinate writes to the output buffer
+          // TODO (elstehle): This part can be skipped during the last pass.
           counter->filter_cnt = 0;
         }
       }
 
+      // Compute prefix sum over the histogram's bin counts
       compute_bin_offsets(histogram);
 
-      // Make sure the prefix sum has been written to shared memory before running choose_bucket()
+      // Make sure the prefix sum has been written to shared memory before choose_bucket()
       __syncthreads();
 
+      // Identify the bucket that the bin that the k-th item falls into
       choose_bucket(counter, current_k, pass);
 
       // Reset histogram for the next pass

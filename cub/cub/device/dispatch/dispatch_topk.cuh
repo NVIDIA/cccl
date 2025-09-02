@@ -351,7 +351,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     buffer_length,
     extract_bin_op_t{},
     identify_candidates_op)
-    .invoke_last_filter(in_buf, in_idx_buf, counter, histogram, k, pass);
+    .invoke_last_filter(in_buf, in_idx_buf, counter, histogram, k);
 }
 
 /*
