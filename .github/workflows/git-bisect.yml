@@ -13,19 +13,19 @@ on:
         default: linux-amd64-cpu16
         type: string
       launch_args:
-        description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--ctk 12.9 --host gcc13'"
+        description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--cuda 12.9 --host gcc13'"
         required: false
-        default: ""
+        default: "--cuda 13.0 --host gcc14"
         type: string
       preset:
         description: "CMake preset. Ex: cub-cpp20"
         required: true
-        default: ""
+        default: "cub-cpp20"
         type: string
       cmake_options:
         description: "Additional options passed to CMake preset configure (e.g. -DVAR=ON)"
         required: false
-        default: ""
+        default: "-DCMAKE_CUDA_ARCHITECTURES=80;90;100;120"
         type: string
       build_targets:
         description: "Space separated ninja build targets to build."
@@ -208,7 +208,7 @@ jobs:
   bisect:
     needs: [generate-job-name]
     name: ${{ needs.generate-job-name.outputs.job-name }}
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && inputs.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -221,6 +221,7 @@ jobs:
           fetch-tags: true        # Ensure tags are present
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ github.repository == 'NVIDIA/cccl' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -239,12 +240,19 @@ jobs:
           EOF
           cat > "${aws_dir}/credentials" <<EOF
           [default]
-          aws_access_key_id=${AWS_ACCESS_KEY_ID}
-          aws_session_token=${AWS_SESSION_TOKEN}
-          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
           EOF
           chmod 0600 "${aws_dir}/credentials"
           chmod 0664 "${aws_dir}/config"
+
+      - name: Fetch full history
+        run: |
+          # Add the NVIDIA/cccl repo in case we're running on a fork without tags:
+          git remote add upstream https://github.com/NVIDIA/cccl.git || :
+          git fetch upstream || :
+
       - name: Run git bisect
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -299,6 +307,7 @@ jobs:
             --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
             --env "STEP_SUMMARY_URL=${STEP_SUMMARY_URL}" \
             --env "GHA_LOG_URL=${GHA_LOG_URL}" \
+            --env "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}" \
             --volume "/tmp/shared:/tmp/shared" \
             -- ./ci/util/git_bisect.sh \
               --summary-file "/tmp/shared/summary.md" \
