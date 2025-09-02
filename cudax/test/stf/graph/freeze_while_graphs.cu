@@ -23,8 +23,6 @@ int X0(int i)
   return 17 * i + 45;
 }
 
-__global__ void dummy() {}
-
 #if _CCCL_CTK_AT_LEAST(12, 4)
 __global__ void setHandle(cudaGraphConditionalHandle handle)
 {
@@ -68,12 +66,6 @@ int main()
   auto [frozen_X, fX_get_events] = fX.get(data_place::current_device());
 
   auto lX_alias = sub_ctx.logical_data(frozen_X, data_place::current_device());
-
-  // XXX we need an adapter to allocate data from the upper context
-  //  auto lY = sub_ctx.logical_data(lX.shape());
-  //  sub_ctx.parallel_for(lX.shape(), lX_alias.read(), lY.write())->*[] __device__(size_t i, auto x, auto y) {
-  //    y(i) = x(i);
-  //  };
 
   sub_ctx.parallel_for(lX.shape(), lX_alias.rw())->*[] __device__(size_t i, auto x) {
     x(i) = x(i) + 2;
