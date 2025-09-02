@@ -305,3 +305,37 @@ def test_segmented_reduce_well_known_maximum():
     # Check the result is correct
     expected = np.array([9, 4, 8])  # max of each segment
     np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_transform_output_iterator(floating_array):
+    """Test segmented reduce with TransformOutputIterator."""
+    dtype = floating_array.dtype
+    h_init = np.array([0], dtype=dtype)
+
+    # Use the floating_array fixture which provides random floating-point data of size 1000
+    d_input = floating_array
+
+    # Create 2 segments of roughly equal size
+    segment_size = d_input.size // 2
+    d_output = cp.empty(2, dtype=dtype)
+    start_offsets = cp.array([0, segment_size], dtype=np.int32)
+    end_offsets = cp.array([segment_size, d_input.size], dtype=np.int32)
+
+    def sqrt(x):
+        return x**0.5
+
+    d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
+
+    parallel.segmented_reduce(
+        d_input, d_out_it, start_offsets, end_offsets, parallel.OpKind.PLUS, h_init, 2
+    )
+
+    expected = cp.sqrt(
+        cp.array(
+            [
+                cp.sum(d_input[0:segment_size]),
+                cp.sum(d_input[segment_size : d_input.size]),
+            ]
+        )
+    )
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)

@@ -171,6 +171,30 @@ def TransformIterator(it, op):
     return make_transform_iterator(it, op)
 
 
+def TransformOutputIterator(it, op):
+    """Returns an Iterator representing a transformed sequence of output values.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html
+
+    Example:
+        The code snippet below demonstrates the usage of ``TransformOutputIterator``.
+        Before the result of the reduction is written to the output iterator,
+        it is transformed by the function ``op``. Thus, the reduction operation
+        computes the square root of the sum of of the input values.
+
+    .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+        :language: python
+
+    Args:
+        it: The iterator object to be transformed
+        op: The transform operation
+
+    Returns:
+        A ``TransformOutputIterator`` object to transform the items in ``it`` using ``op``
+    """
+    return make_transform_iterator(it, op, IteratorIOKind.OUTPUT)
+
+
 def ZipIterator(*iterators):
     """Returns an Iterator representing a zipped sequence of values from N iterators.
 

@@ -25,8 +25,8 @@ from ..typing import DeviceArrayLike
 def make_cache_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
-    d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | IteratorBase,
+    d_out_items: DeviceArrayLike | IteratorBase | None,
     op: Callable | OpKind,
 ):
     d_in_keys_key = (
@@ -42,7 +42,11 @@ def make_cache_key(
             if isinstance(d_in_items, IteratorBase)
             else protocols.get_dtype(d_in_items)
         )
-    d_out_keys_key = protocols.get_dtype(d_out_keys)
+    d_out_keys_key = (
+        d_out_keys.kind
+        if isinstance(d_out_keys, IteratorBase)
+        else protocols.get_dtype(d_out_keys)
+    )
     if d_out_items is None:
         d_out_items_key = None
     else:
@@ -76,8 +80,8 @@ class _MergeSort:
         self,
         d_in_keys: DeviceArrayLike | IteratorBase,
         d_in_items: DeviceArrayLike | IteratorBase | None,
-        d_out_keys: DeviceArrayLike,
-        d_out_items: DeviceArrayLike | None,
+        d_out_keys: DeviceArrayLike | IteratorBase,
+        d_out_items: DeviceArrayLike | IteratorBase | None,
         op: Callable | OpKind,
     ):
         present_in_values = d_in_items is not None
@@ -112,8 +116,8 @@ class _MergeSort:
         temp_storage,
         d_in_keys: DeviceArrayLike | IteratorBase,
         d_in_items: DeviceArrayLike | IteratorBase | None,
-        d_out_keys: DeviceArrayLike,
-        d_out_items: DeviceArrayLike | None,
+        d_out_keys: DeviceArrayLike | IteratorBase,
+        d_out_items: DeviceArrayLike | IteratorBase | None,
         num_items: int,
         stream=None,
     ):
@@ -157,8 +161,8 @@ class _MergeSort:
 def make_merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
-    d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | IteratorBase,
+    d_out_items: DeviceArrayLike | IteratorBase | None,
     op: Callable | OpKind,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
@@ -188,8 +192,8 @@ def make_merge_sort(
 def merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
-    d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
+    d_out_keys: DeviceArrayLike | IteratorBase,
+    d_out_items: DeviceArrayLike | IteratorBase | None,
     op: Callable | OpKind,
     num_items: int,
     stream=None,
