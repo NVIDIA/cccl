@@ -321,7 +321,6 @@ struct AgentTopK
   OffsetT buffer_length; // Size of the buffer for storing intermediate candidates
   ExtractBinOpT extract_bin_op; // The operation for bin
   IdentifyCandidatesOpT identify_candidates_op; // The operation for filtering
-  bool load_from_original_input; // Set if loading data from original input
 
   //---------------------------------------------------------------------
   // Constructor
@@ -542,7 +541,9 @@ struct AgentTopK
       };
 
       // Choose and invoke the appropriate lambda with the correct input source
-      if (load_from_original_input)
+      // If the input size exceeds the allocated buffer size, we know for sure we haven't started writing candidates to
+      // the output buffer yet
+      if (previous_len > buffer_length)
       {
         if (early_stop)
         {
@@ -645,9 +646,9 @@ struct AgentTopK
     OffsetT* histogram,
     OutOffsetT k)
   {
-    load_from_original_input = counter->previous_len > buffer_length;
-    OffsetT current_len      = load_from_original_input ? num_items : counter->previous_len;
-    in_idx_buf               = load_from_original_input ? nullptr : in_idx_buf; // ? out_idx_buf : in_idx_buf;
+    const bool load_from_original_input = counter->previous_len > buffer_length;
+    OffsetT current_len                 = load_from_original_input ? num_items : counter->previous_len;
+    in_idx_buf = load_from_original_input ? nullptr : in_idx_buf; // ? out_idx_buf : in_idx_buf;
 
     if (current_len == 0)
     {
@@ -740,13 +741,8 @@ struct AgentTopK
 
     if (previous_len > buffer_length)
     {
-      load_from_original_input = true;
-      in_idx_buf               = nullptr;
-      previous_len             = num_items;
-    }
-    else
-    {
-      load_from_original_input = false;
+      in_idx_buf   = nullptr;
+      previous_len = num_items;
     }
 
     // "current_len > buffer_length" means current pass will skip writing buffer
