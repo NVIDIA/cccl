@@ -638,27 +638,6 @@ struct AgentTopK
     }
   }
 
-  /**
-   * @brief Perform the filter operation for the lass pass.
-   *
-   * @param in_buf
-   *   Buffer address for input data
-   *
-   * @param in_idx_buf
-   *   Buffer address for index of the input data
-   *
-   * @param counter
-   *   Record the meta data for different passes
-   *
-   * @param histogram
-   *   Record the element number of each bucket
-   *
-   * @param k
-   *   The original K value. Will find K elements from num_items elements
-   *
-   * @param pass
-   *   Indicate which pass are processed currently
-   */
   _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
     key_in_t* in_buf,
     OffsetT* in_idx_buf,
@@ -721,31 +700,6 @@ struct AgentTopK
     }
   }
 
-  /**
-   * @brief Perform the histogram collection, prefix sum calculation and candidates filter (except the filtering in the
-   * last pas)
-   *
-   * @param in_buf
-   *   Buffer address for input data
-   *
-   * @param in_idx_buf
-   *   Buffer address for index of the input data
-   *
-   * @param out_buf
-   *   Buffer address for output data
-   *
-   * @param out_idx_buf
-   *   Buffer address for index of the output data
-   *
-   * @param counter
-   *   Record the meta data for different passes
-   *
-   * @param histogram
-   *   Record the element number of each bucket
-   *
-   * @param pass
-   *   Indicate which pass are processed currently
-   */
   template <bool IsFirstPass>
   _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_filter_and_histogram(
     key_in_t* in_buf,
