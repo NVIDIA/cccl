@@ -36,12 +36,6 @@ target_link_libraries(cccl.c.experimental.stf PRIVATE
   CUDA::cuda_driver
   CCCL::cudax
 )
-# target_compile_definitions(cccl.c.experimental.stf PUBLIC CCCL_C_EXPERIMENTAL=1)
-# target_compile_definitions(cccl.c.experimental.stf PRIVATE
-#   NVRTC_GET_TYPE_NAME=1
-#   CUB_DISABLE_CDP=1
-#   CUB_DEFINE_RUNTIME_POLICIES
-# )
 
 target_compile_options(cccl.c.experimental.stf PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
 target_compile_options(cccl.c.experimental.stf PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
