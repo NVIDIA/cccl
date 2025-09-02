@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/__type_traits/type_set.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
+#include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh> // IWYU pragma: export
 #include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
@@ -206,7 +207,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4913)
 
 #define _CUDAX_GET_COMPLSIGS(...) \
-  ::cuda::std::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
+  ::cuda::std::remove_reference_t<_CCCL_PP_FIRST(__VA_ARGS__)>::template get_completion_signatures<__VA_ARGS__>()
 
 #define _CUDAX_CHECKED_COMPLSIGS(...) \
   (static_cast<void>(__VA_ARGS__), void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
@@ -233,6 +234,9 @@ _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto __checked_complsigs()
 }
 
 template <class _Sndr, class... _Env>
+using __get_complsigs_t = decltype(_CUDAX_GET_COMPLSIGS(_Sndr, _Env...));
+
+template <class _Sndr, class... _Env>
 inline constexpr bool __has_get_completion_signatures = false;
 
 // clang-format off
@@ -240,14 +244,14 @@ template <class _Sndr>
 inline constexpr bool __has_get_completion_signatures<_Sndr> =
   _CCCL_REQUIRES_EXPR((_Sndr))
   (
-    (_CUDAX_GET_COMPLSIGS(_Sndr))
+    typename(__get_complsigs_t<_Sndr>)
   );
 
 template <class _Sndr, class _Env>
 inline constexpr bool __has_get_completion_signatures<_Sndr, _Env> =
   _CCCL_REQUIRES_EXPR((_Sndr, _Env))
   (
-    (_CUDAX_GET_COMPLSIGS(_Sndr, _Env))
+    typename(__get_complsigs_t<_Sndr, _Env>)
   );
 // clang-format on
 
@@ -298,9 +302,8 @@ template <class _Sndr, class... _Env>
   else
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
-    using _NewSndr _CCCL_NODEBUG_ALIAS =
-      __call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
-    return execution::__get_completion_signatures_helper<_NewSndr, _Env...>();
+    using __new_sndr_t = __call_result_t<transform_sender_t, __domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
+    return execution::__get_completion_signatures_helper<__new_sndr_t, _Env...>();
   }
 }
 
@@ -340,6 +343,13 @@ template <class _Sndr>
   return ::cuda::std::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif // ^^^ no constexpr exceptions ^^^
+
+template <class _SetTag, class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_completions_for = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
+  ( //
+    typename(completion_signatures_of_t<_Sndr, _Env...>),
+    requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) != 0) //
+  );
 
 } // namespace cuda::experimental::execution
 

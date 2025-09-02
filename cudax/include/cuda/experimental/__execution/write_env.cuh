@@ -50,8 +50,35 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
   };
 
   template <class _Env, class... _RcvrEnv>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t : env<__env_ref_t<_Env const&>, __fwd_env_t<_RcvrEnv>...>
-  {};
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ : env<__env_ref_t<_Env const&>, __fwd_env_t<_RcvrEnv>...>
+  {
+    using __base_t = env<__env_ref_t<_Env const&>, __fwd_env_t<_RcvrEnv>...>;
+
+    _CCCL_API explicit constexpr __env_(_Env const& env, _RcvrEnv&&... __rcvr_env) noexcept
+        : __base_t{__env_ref(env), __fwd_env(static_cast<_RcvrEnv&&>(__rcvr_env))...}
+    {}
+
+    using __base_t::query;
+
+    // If _Env has a value for the get_scheduler_t query, then make sure we are not
+    // delegating the get_domain_t query to the receiver's environment.
+    _CCCL_TEMPLATE(class _Env2 = _Env)
+    _CCCL_REQUIRES((!__queryable_with<_Env2, get_domain_t>) )
+    [[nodiscard]] _CCCL_API constexpr auto query(get_domain_t) const noexcept
+      -> __scheduler_domain_t<__scheduler_of_t<_Env2>, __fwd_env_t<_RcvrEnv>...>
+    {
+      return {};
+    }
+  };
+
+  template <class _Env, class... _RcvrEnv>
+  [[nodiscard]] _CCCL_API static constexpr auto __mk_env(const _Env& __env, _RcvrEnv&&... __rcvr_env) noexcept
+  {
+    return __env_{__env, static_cast<_RcvrEnv&&>(__rcvr_env)...};
+  }
+
+  template <class _Env, class... _RcvrEnv>
+  using __env_t = decltype(__mk_env(::cuda::std::declval<_Env>(), ::cuda::std::declval<_RcvrEnv>()...));
 
   template <class _Rcvr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -77,7 +104,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
 
     [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __env_t<_Env, env_of_t<_Rcvr>>
     {
-      return {{__env_ref(__state_->__env_), __fwd_env(execution::get_env(__state_->__rcvr_))}};
+      return __mk_env(__state_->__env_, execution::get_env(__state_->__rcvr_));
     }
 
     __state_t<_Rcvr, _Env>* __state_;

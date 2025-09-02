@@ -30,7 +30,6 @@ from cuda.cccl import get_include_paths  # type: ignore
 
 from ._bindings import (
     CommonData,
-    IntEnumerationMember,
     Iterator,
     IteratorKind,
     IteratorState,
@@ -55,6 +54,7 @@ _TYPE_TO_ENUM = {
     types.uint16: TypeEnum.UINT16,
     types.uint32: TypeEnum.UINT32,
     types.uint64: TypeEnum.UINT64,
+    types.float16: TypeEnum.FLOAT16,
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
 }
@@ -64,7 +64,7 @@ if TYPE_CHECKING:
     from numba.core.typing import Signature
 
 
-def _type_to_enum(numba_type: types.Type) -> IntEnumerationMember:
+def _type_to_enum(numba_type: types.Type) -> TypeEnum:
     if numba_type in _TYPE_TO_ENUM:
         return _TYPE_TO_ENUM[numba_type]
     return TypeEnum.STORAGE
