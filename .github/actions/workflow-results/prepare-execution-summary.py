@@ -215,7 +215,7 @@ def format_seconds(seconds):
         return f"{minutes}m {seconds:02}s"
 
 
-def get_summary_stats(summary):
+def get_summary_stats(summary, skip_avg=False):
     passed = summary["passed"]
     failed = summary["failed"]
     total = passed + failed
@@ -231,7 +231,10 @@ def get_summary_stats(summary):
         total_job_duration = format_seconds(job_time)
         avg_job_duration = format_seconds(job_time / total)
         max_job_duration = format_seconds(max_job_time)
-        stats += f" | Total: {total_job_duration:>7} | Avg: {avg_job_duration:>7} | Max: {max_job_duration:>7}"
+        if not skip_avg:
+            stats += f" | Total: {total_job_duration:>7} | Avg: {avg_job_duration:>7} | Max: {max_job_duration:>7}"
+        else:
+            stats += f" | Total: {total_job_duration:>7} | Max: {max_job_duration:>7}"
 
     if "sccache" in summary:
         sccache = summary["sccache"]
@@ -245,14 +248,12 @@ def get_summary_stats(summary):
 
 
 def get_summary_heading(summary, walltime):
-    if summary["passed"] == 0:
+    if summary["failed"] > 0:
         flag = "🟥"
-    elif summary["failed"] > 0:
-        flag = "🟨"
     else:
         flag = "🟩"
 
-    return f"{flag} CI finished in {walltime}: {get_summary_stats(summary)}"
+    return f"{flag} Finished in {walltime}: {get_summary_stats(summary, skip_avg=True)}"
 
 
 def get_project_heading(project, project_summary):

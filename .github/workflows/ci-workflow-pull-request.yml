@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
     outputs:
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
@@ -61,6 +61,8 @@ jobs:
           pr_worflow: ${{ !contains(github.event.head_commit.message, '[workflow:!pull_request]') && 'pull_request' || '' }}
           nightly_workflow: ${{ contains(github.event.head_commit.message, '[workflow:nightly]') && 'nightly' || '' }}
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
           allow_override: "true"
           inspect_changes_script: ${{ toJSON(!contains(github.event.head_commit.message, '[all-projects]') && 'ci/inspect_changes.sh' || '') }}
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}

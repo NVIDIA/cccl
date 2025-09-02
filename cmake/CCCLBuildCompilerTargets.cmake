@@ -196,6 +196,12 @@ function(cccl_build_compiler_targets)
     "${cxx_compile_definitions}"
   )
 
+  # Clang-cuda only:
+  target_compile_options(cccl.compiler_interface INTERFACE
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
+  )
+
   # These targets are used for dialect-specific options:
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
