@@ -28,6 +28,9 @@ set(stf_test_sources
   fhe/parse_arctyrex.cu
   gnu/include_only.cpp
   graph/concurrency_test.cu
+  graph/explicit_graph.cu
+  graph/explicit_graph_while.cu
+  graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
   graph/graph_ctx_low_level.cu
@@ -96,9 +99,8 @@ set(stf_test_codegen_sources
   freeze/task_fence.cu
   freeze/token.cu
   graph/epoch.cu
-  # graph/for_each_batched.cu
-  # graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
+  graph/freeze_nested_graphs.cu
   # graph/graph_composition.cu
   graph/graph_tmp_data.cu
   graph/many.cu

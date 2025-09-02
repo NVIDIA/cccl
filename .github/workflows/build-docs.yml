@@ -106,6 +106,7 @@ jobs:
       - name: Ensure Jekyll is disabled for GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_nojekyll
           publish_branch: gh-pages
           destination_dir: docs
@@ -115,6 +116,7 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
           publish_branch: gh-pages
           destination_dir: ${{ inputs.destination_dir }}
@@ -125,6 +127,7 @@ jobs:
         if: ${{ inputs.pr_number && !inputs.remove_pr_preview }}
         uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
         with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: pr-preview
           number: ${{ inputs.pr_number }}
           skip_unchanged: true
@@ -139,6 +142,7 @@ jobs:
         if: ${{ inputs.pr_number && inputs.remove_pr_preview }}
         uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
         with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: pr-preview
           number: ${{ inputs.pr_number }}
           hide_and_recreate: true

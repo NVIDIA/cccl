@@ -297,6 +297,12 @@ public:
   // move-constructible
   cuda_kernel_scope(cuda_kernel_scope&&) = default;
 
+  auto& set_exec_place(exec_place e_place_)
+  {
+    e_place = mv(e_place_);
+    return *this;
+  }
+
   /// Add a set of dependencies
   template <typename... Pack>
   void add_deps(task_dep_untyped first, Pack&&... pack)

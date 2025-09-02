@@ -244,6 +244,16 @@ struct graph_node_ref
       ::cuda::std::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
 
       // Add the dependencies using __src_arr array and the span of dependencies.
+#if _CCCL_CTK_AT_LEAST(13, 0)
+      _CCCL_TRY_CUDA_API(
+        cudaGraphAddDependencies,
+        "cudaGraphAddDependencies failed",
+        __graph_,
+        __deps.data(), // dependencies
+        __src_arr.get(), // dependant nodes
+        nullptr, // no edge data
+        __deps.size()); // number of dependencies
+#else
       _CCCL_TRY_CUDA_API(
         cudaGraphAddDependencies,
         "cudaGraphAddDependencies failed",
@@ -251,6 +261,7 @@ struct graph_node_ref
         __deps.data(), // dependencies
         __src_arr.get(), // dependant nodes
         __deps.size()); // number of dependencies
+#endif
     }
   }
 
