@@ -175,22 +175,18 @@ jobs:
     with:
       base_sha: ${{ needs.build-workflow.outputs.base_sha }}
 
-  verify-docs:
-    name: Build and Verify Docs
-    if: ${{ !contains(github.event.head_commit.message, '[skip-docs]') }}
+  docs-build:
+    name: Build and deploy documentation preview
+    if: ${{ needs.build-workflow.outputs.pr_number && !contains(github.event.head_commit.message, '[skip-docs]') }}
+    needs: build-workflow
     permissions:
-      contents: read
-    runs-on: linux-amd64-cpu32
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Build and upload docs
-        uses: ./.github/actions/docs-build
-        with:
-          upload_workflow_artifact: "true"
-          upload_pages_artifact: "false"
+      contents: write
+      pull-requests: write
+      pages: write
+    uses: ./.github/workflows/build-docs.yml
+    with:
+      destination_dir: docs/pr-preview/pr-${{ needs.build-workflow.outputs.pr_number }}
+      pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   build-rapids:
     name: Build RAPIDS (optional)
@@ -224,7 +220,7 @@ jobs:
     needs:
       - verify-workflow
       - verify-devcontainers
-      - verify-docs
+      - docs-build
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -246,7 +242,7 @@ jobs:
 
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
-          check_result "verify-docs"          "success" "${{needs.verify-docs.result}}"
+          check_result "docs-build"           "success" "${{needs.docs-build.result}}"
 
           if [[ "$status" != "success" ]]; then
             exit 1
