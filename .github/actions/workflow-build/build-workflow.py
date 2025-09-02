@@ -140,7 +140,19 @@ def get_ctk(ctk_string):
 @memoize_result
 def parse_cxx_string(cxx_string):
     "Returns (id, version) tuple. Version may be None if not present."
-    return re.match(r"^([^\d]+)-?([\d\.]+)?$", cxx_string).groups()
+    # Captures three groups:
+    # 0: The compiler ID (e.g. 'nvhpc' in ['nvhpc', 'nvhpc25.7', 'nvhpc-25.7', 'nvhpc-prev'])
+    # 1: A maybe-hyphenated numeric version suffix (e.g. '10' in ['gcc10', 'gcc-10'])
+    # 2: A hyphenated string alias (e.g. 'prev' in 'nvhpc-prev')
+    #
+    # Either 1, 2, or both may be None.
+    match = re.match(r"^([^\d-]+)(?:(-?[\d\.]+)|-(.+))?$", cxx_string).groups()
+    # Clean up to (id, version):
+    if match[2] is None:
+        return (match[0], match[1])
+    else:
+        return (match[0], match[2])
+    return match
 
 
 @memoize_result
@@ -408,13 +420,8 @@ def generate_dispatch_group_name(matrix_job):
 
 def generate_dispatch_job_name(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
-    ctk = matrix_job["ctk"]
-    std_str = ("C++" + str(matrix_job["std"]) + " ") if "std" in matrix_job else ""
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
-    py_version = (
-        (", py" + matrix_job["py_version"]) if "py_version" in matrix_job else ""
-    )
     cuda_compile_arch = (
         (" sm{" + str(matrix_job["sm"]) + "}") if "sm" in matrix_job else ""
     )
@@ -422,9 +429,16 @@ def generate_dispatch_job_name(matrix_job, job_type):
         (" " + matrix_job["cmake_options"]) if "cmake_options" in matrix_job else ""
     )
 
+    ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])
+    std_str = (" C++" + str(matrix_job["std"])) if "std" in matrix_job else ""
+    py_str = (
+        (" py" + str(matrix_job["py_version"])) if "py_version" in matrix_job else ""
+    )
 
-    config_tag = f"CTK{ctk} {std_str}{host_compiler['name']}{host_compiler['version']}"
+    config_tag = (
+        f"CTK{ctk} {host_compiler['name']}{host_compiler['version']}{std_str}{py_str}"
+    )
 
     extra_info = (
         f":{cuda_compile_arch}{cmake_options}"
@@ -432,9 +446,7 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return (
-        f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}{py_version}){extra_info}"
-    )
+    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
@@ -538,6 +550,9 @@ def generate_dispatch_job_origin(matrix_job, job_type):
     # The origin tags are used to build the execution summary for the CI PR comment.
     # Use the human readable job label for the execution summary:
     origin_job["job_name"] = job_info["name"]
+
+    if not job_info["gpu"]:
+        del origin_job["gpu"]
 
     # Replace some of the clunkier tags with a summary-friendly version:
     if "cxx" in origin_job:

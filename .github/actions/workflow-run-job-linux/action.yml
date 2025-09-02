@@ -84,7 +84,7 @@ runs:
         matrix_job=$(ci/util/workflow/get_job_def.sh | jq -c '.origin.matrix_job')
 
         # Delete the cxx_family and cudacxx_family fields
-        matrix_job=$(echo "$matrix_job" | jq 'del(.cxx_family, .cudacxx_family)')
+        matrix_job=$(echo "$matrix_job" | jq 'del(.cxx_family, .cudacxx_family, .job_name)')
 
         # Convert to a single line of YAML, with unquoted keys:
         matrix_job=$(
@@ -95,9 +95,7 @@ runs:
         )
 
         echo -e "\e[1;34mOverride matrix entry:\e[0m"
-        echo -e ""
         echo -e "\e[1;34m    $matrix_job\e[0m"
-        echo -e ""
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}

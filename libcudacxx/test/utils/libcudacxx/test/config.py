@@ -195,12 +195,12 @@ class Configuration(object):
         )
         return deduced_comput_archs_str
 
-    def get_all_major_compute_capabilities(self):
+    def _get_nvcc_archs(self):
         if self.cxx.type != "nvcc":
             self.lit_config.fatal(
-                "get_all_major_compute_capabilities is only supported for nvcc compiler type"
+                "Retrieving compute capabilities is only supported for nvcc compiler type"
             )
-            return ""
+            return []
 
         cmd = (
             f"{self.cxx.path} --help | grep -oE 'compute_[0-9]+' | "
@@ -220,11 +220,20 @@ class Configuration(object):
             self.lit_config.fatal(
                 "Failed to retrieve compute capabilities or no capabilities found."
             )
+            return []
+
+        return sorted(set(int(arch) for arch in archs))
+
+    def get_all_major_compute_capabilities(self):
+        archs = self._get_nvcc_archs()
+        if not archs:
+            return ""
 
         # Build the same list used by --arch=all-major:
-        # Handle special case for eg. 13.0: First arch is 75, not 70.
-        oldest = int(archs[0])
-        archs = sorted(set([(int(arch) // 10 * 10) for arch in archs]))
+
+        # Handle special case where the first architecture is not a round decade (e.g., first arch is 75, not 70).
+        oldest = archs[0]
+        archs = sorted(set((arch // 10 * 10) for arch in archs))
         archs[0] = oldest
         last_arch = archs[-1]
         archs = [f"{arch}-real" for arch in archs]
@@ -237,33 +246,9 @@ class Configuration(object):
         return archs
 
     def get_all_compute_capabilities(self):
-        if self.cxx.type != "nvcc":
-            self.lit_config.fatal(
-                "get_all_compute_capabilities is only supported for nvcc compiler type"
-            )
-            return ""
-
-        cmd = (
-            f"{self.cxx.path} --help | grep -oE 'compute_[0-9]+' | "
-            "sed -E 's/compute_//g' | sort -ug"
-        )
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        archs = result.stdout.strip().splitlines()
-
+        archs = self._get_nvcc_archs()
         if not archs:
-            self.lit_config.fatal(
-                "Failed to retrieve compute capabilities or no capabilities found."
-            )
             return ""
-
-        archs = sorted(set([int(arch) for arch in archs]))
         last_arch = archs[-1]
         archs = [f"{arch}-real" for arch in archs]
         archs.append(f"{last_arch}-virtual")
@@ -838,8 +823,12 @@ class Configuration(object):
             elif compute_archs == "all-major":
                 compute_archs = self.get_all_major_compute_capabilities()
 
+<<<<<<< HEAD
             compute_archs = set(sorted(re.split("\\s|;|,", compute_archs)))
             arch_flags = []
+=======
+            compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
+>>>>>>> 4ce1925acbce0032602047f8a12ffb906c8206fa
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
