@@ -8,15 +8,16 @@ Math
    :maxdepth: 1
 
    math/ceil_div
-   math/round_up
-   math/round_down
+   math/fast_mod_div
    math/ilog
    math/ipow
-   math/pow2
    math/isqrt
    math/neg
+   math/pow2
+   math/round_down
+   math/round_up
+   math/rsqrt
    math/uabs
-   math/fast_mod_div
 
 .. list-table::
    :widths: 25 45 30 30
@@ -91,3 +92,8 @@ Math
      - Fast Modulo/Division
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`rsqrt <libcudacxx-extended-api-math-rsqrt>`
+     - Reciprocal Square Root
+     - CCCL 3.2.0
+     - CUDA 13.2
