@@ -47,6 +47,7 @@ subprojects=(
   stdpar
   python
   cccl_c_parallel
+  cccl_c_stf
   c2h
   nvbench_helper
 )
@@ -92,6 +93,7 @@ declare -A project_names=(
 declare -A project_dirs=(
   [packaging]='("examples" "test/cmake")'
   [cccl_c_parallel]='("c/parallel")'
+  [cccl_c_stf]='("c/experimental/stf")'
   [stdpar]='("test/stdpar")'
 )
 
