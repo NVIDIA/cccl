@@ -219,7 +219,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
   SECTION("Larger type")
   {
     using larger_type = unsigned long long;
-    const auto buf = cudax::make_async_buffer(stream, Resource{}, 1, larger_type{42});
+    const auto buf    = cudax::make_async_buffer(stream, Resource{}, 1, larger_type{42});
     CUDAX_CHECK(buf.size() == 1);
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(equal_size_value(buf, 1, larger_type(42)));
