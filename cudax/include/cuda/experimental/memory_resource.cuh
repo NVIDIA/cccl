@@ -27,10 +27,13 @@
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/legacy_managed_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/legacy_pinned_memory_resource.cuh>
+#include <cuda/experimental/__memory_resource/multi_device_async_buffer.cuh> 
+#include <cuda/experimental/__memory_resource/multi_device_async_resource.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 #include <cuda/experimental/__memory_resource/resource.cuh>
 #include <cuda/experimental/__memory_resource/shared_resource.cuh>
+
 
 #endif // __CUDAX_MEMORY_RESOURCE___
