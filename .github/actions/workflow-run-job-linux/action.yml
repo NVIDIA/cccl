@@ -179,7 +179,7 @@ runs:
           if grep -q '"./ci/build_' <<< "$COMMAND"; then
             extra_launch_args+=(
               # Repopulate the cache
-              # --env "SCCACHE_RECACHE=1"
+              --env "SCCACHE_RECACHE=1"
               # Do not cache build products
               # --env "SCCACHE_NO_CACHE=1"
             )
