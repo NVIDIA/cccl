@@ -29,6 +29,7 @@ endif()
 
 find_package(CUDAToolkit REQUIRED)
 set_target_properties(cccl.c.experimental.stf PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
+target_compile_definitions(cccl.c.experimental.stf PUBLIC CCCL_C_EXPERIMENTAL=1)
 target_link_libraries(cccl.c.experimental.stf PRIVATE
   CUDA::cudart_static
   CUDA::nvrtc
