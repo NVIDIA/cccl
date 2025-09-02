@@ -31,7 +31,6 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-
 int main()
 {
   const int N = 16;
@@ -60,7 +59,7 @@ int main()
   cudaGraph_t sub_graph;
   cuda_safe_call(cudaGraphCreate(&sub_graph, 0));
 
-  // Create a context based on this child graph which is the body of the 
+  // Create a context based on this child graph which is the body of the
   graph_ctx sub_ctx(sub_graph);
 
   auto [frozen_X, fX_get_events] = fX.get(data_place::current_device());
@@ -94,11 +93,11 @@ int main()
   cParams.conditional.size    = 1;
 
   cudaGraphNode_t conditionalNode;
-#  if _CCCL_CTK_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0)
   cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), nullptr, fX_ready_nodes.size(), &cParams);
-#  else
+#else
   cudaGraphAddNode(&conditionalNode, ctx.get_graph(), fX_ready_nodes.data(), fX_ready_nodes.size(), &cParams);
-#  endif
+#endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];
 
@@ -109,13 +108,14 @@ int main()
   // Create an event that depends on the conditional node, so that we unfreeze
   // after the completion of the while loop
   event_list child_graph_event;
-  reserved::fork_from_graph_node(ctx, conditionalNode, ctx.get_graph(), ctx.stage(), child_graph_event, "child graph done");
+  reserved::fork_from_graph_node(
+    ctx, conditionalNode, ctx.get_graph(), ctx.stage(), child_graph_event, "child graph done");
   fX.unfreeze(child_graph_event);
 
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
-      EXPECT(x(i) == 3 * X0(i) + 2*5);
+      EXPECT(x(i) == 3 * X0(i) + 2 * 5);
     }
   };
 
