@@ -823,12 +823,8 @@ class Configuration(object):
             elif compute_archs == "all-major":
                 compute_archs = self.get_all_major_compute_capabilities()
 
-<<<<<<< HEAD
-            compute_archs = set(sorted(re.split("\\s|;|,", compute_archs)))
-            arch_flags = []
-=======
             compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
->>>>>>> 4ce1925acbce0032602047f8a12ffb906c8206fa
+            arch_flags = []
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
