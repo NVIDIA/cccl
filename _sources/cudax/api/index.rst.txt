@@ -15,9 +15,9 @@ Classes
 * :doc:`cuda::experimental::device_memory_pool <classcuda_1_1experimental_1_1device__memory__pool>`
 * :doc:`cuda::experimental::device_memory_resource <classcuda_1_1experimental_1_1device__memory__resource>`
 * :doc:`cuda::experimental::heterogeneous_iterator <classcuda_1_1experimental_1_1heterogeneous__iterator>`
+* :doc:`cuda::experimental::legacy_managed_memory_resource <classcuda_1_1experimental_1_1legacy__managed__memory__resource>`
 * :doc:`cuda::experimental::legacy_pinned_memory_resource <classcuda_1_1experimental_1_1legacy__pinned__memory__resource>`
 * :doc:`cuda::experimental::logical_device <classcuda_1_1experimental_1_1logical__device>`
-* :doc:`cuda::experimental::managed_memory_resource <classcuda_1_1experimental_1_1managed__memory__resource>`
 * :doc:`cuda::experimental::pinned_memory_pool <classcuda_1_1experimental_1_1pinned__memory__pool>`
 * :doc:`cuda::experimental::pinned_memory_resource <classcuda_1_1experimental_1_1pinned__memory__resource>`
 * :doc:`cuda::experimental::stf::algorithm <classcuda_1_1experimental_1_1stf_1_1algorithm>`
@@ -54,7 +54,6 @@ Classes
 * :doc:`cuda::experimental::stf::executable_graph_cache <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache>`
 * :doc:`cuda::experimental::stf::executable_graph_cache_stat <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat>`
 * :doc:`cuda::experimental::stf::fixed_size_allocator <classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator>`
-* :doc:`cuda::experimental::stf::for_each_batched <classcuda_1_1experimental_1_1stf_1_1for__each__batched>`
 * :doc:`cuda::experimental::stf::frozen_logical_data <classcuda_1_1experimental_1_1stf_1_1frozen__logical__data>`
 * :doc:`cuda::experimental::stf::graph_ctx <classcuda_1_1experimental_1_1stf_1_1graph__ctx>`
 * :doc:`cuda::experimental::stf::graph_data_interface <classcuda_1_1experimental_1_1stf_1_1graph__data__interface>`
@@ -222,8 +221,8 @@ Functions
 * :doc:`cuda::experimental::stf::contiguous_dims <namespacecuda_1_1experimental_1_1stf_1a6c8a14c350bd50f902ca929a7ed3964b>`
 * :doc:`cuda::experimental::stf::cuda_safe_call <namespacecuda_1_1experimental_1_1stf_1a3b748eb8701e49789909ec3a701ed086>`
 * :doc:`cuda::experimental::stf::cuda_try <namespacecuda_1_1experimental_1_1stf_1a9f55878ff1354f7abba9ae349e787ef3>`
-* :doc:`cuda::experimental::stf::data_dump <namespacecuda_1_1experimental_1_1stf_1aa31e5e28fd145cb7a7c71dc1304105b3>`
-* :doc:`cuda::experimental::stf::data_hash <namespacecuda_1_1experimental_1_1stf_1af2283cf984d37d11d45ce28943328427>`
+* :doc:`cuda::experimental::stf::data_dump <namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529>`
+* :doc:`cuda::experimental::stf::data_hash <namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3>`
 * :doc:`cuda::experimental::stf::deallocateHostMemory <namespacecuda_1_1experimental_1_1stf_1a8a90dcad9432215dcb20ea3fede19d96>`
 * :doc:`cuda::experimental::stf::deallocateManagedMemory <namespacecuda_1_1experimental_1_1stf_1ac287e13157b48c4083218505d8834962>`
 * :doc:`cuda::experimental::stf::each <namespacecuda_1_1experimental_1_1stf_1a876bcb63dc7fa6ecb0495604ea381b9d>`
@@ -372,7 +371,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1executable__graph__cache
    classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat
    classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator
-   classcuda_1_1experimental_1_1stf_1_1for__each__batched
    classcuda_1_1experimental_1_1stf_1_1frozen__logical__data
    classcuda_1_1experimental_1_1stf_1_1graph__ctx
    classcuda_1_1experimental_1_1stf_1_1graph__data__interface
@@ -384,13 +382,13 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface
    classcuda_1_1experimental_1_1heterogeneous__iterator
    classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy
+   classcuda_1_1experimental_1_1legacy__managed__memory__resource
    classcuda_1_1experimental_1_1legacy__pinned__memory__resource
    classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and
    classcuda_1_1experimental_1_1stf_1_1logical__data
    classcuda_1_1experimental_1_1stf_1_1logical__data__untyped
    classcuda_1_1experimental_1_1logical__device
    classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or
-   classcuda_1_1experimental_1_1managed__memory__resource
    classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval
    classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval
    classcuda_1_1experimental_1_1stf_1_1no__init
@@ -536,14 +534,14 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1a8825b7779e8e063b6f02254bf89fe9ae
    namespacecuda_1_1experimental_1_1stf_1ab2c0a36d560b5d94af5eea4073fa7d95
    namespacecuda_1_1experimental_1_1stf_1a60ecf9bfc15107583bff32163672d8c1
-   namespacecuda_1_1experimental_1_1stf_1aa31e5e28fd145cb7a7c71dc1304105b3
-   namespacecuda_1_1experimental_1_1stf_1af2283cf984d37d11d45ce28943328427
    namespacecuda_1_1experimental_1_1stf_1af3013a012be4ed020b2a4f5523b1b225
    namespacecuda_1_1experimental_1_1stf_1a2d806e586bfb0a9aaf002c498029a12f
    namespacecuda_1_1experimental_1_1stf_1a6c8a14c350bd50f902ca929a7ed3964b
    namespacecuda_1_1experimental_1_1stf_1a6e1e1d7e034f7e4b86eb9d22a3c01421
    namespacecuda_1_1experimental_1_1stf_1a1c139b69c2b9733394833312ef7c477f
    namespacecuda_1_1experimental_1_1stf_1a1a0a071a123dfa3c957c8797d49db909
+   namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3
+   namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529
    namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c
    namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005
    namespacecuda_1_1experimental_1_1stf_1a1f897184dc7f58de3c5f56c456defe2d

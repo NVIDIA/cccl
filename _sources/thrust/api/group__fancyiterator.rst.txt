@@ -16,7 +16,6 @@ Fancy Iterators
    classthrust_1_1iterator__core__access
    classthrust_1_1offset__iterator
    classthrust_1_1permutation__iterator
-   classthrust_1_1reverse__iterator
    classthrust_1_1shuffle__iterator
    structthrust_1_1runtime__value
    structthrust_1_1compile__time__value
