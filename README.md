@@ -140,18 +140,34 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 
 ##### Installation
 
-A minimal build that only generates installation rules can be configured using the `install` CMake preset:
+The default CMake options generate only installation rules, so the familiar
+`cmake . && make install` workflow just works:
+
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 cd cccl
-cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local/
-cd build/install
-ninja install
+cmake . -DCMAKE_INSTALL_PREFIX=/usr/local
+make install
 ```
 
-To include experimental libraries in the installation, use the `install-unstable` preset and build directory.
+A convenience script is also provided:
 
-To install **only** the experimental libraries, use the `install-unstable-only` preset and build directory.
+```bash
+ci/install_cccl.sh /usr/local
+```
+
+###### Advanced installation using presets
+
+CMake presets are also available with options for including experimental
+libraries:
+
+```bash
+cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build --preset install --target install
+```
+
+Use the `install-unstable` preset to include experimental libraries, or
+`install-unstable-only` to install only experimental libraries.
 
 #### Conda
 
