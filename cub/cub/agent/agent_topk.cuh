@@ -483,7 +483,7 @@ struct AgentTopK
       // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into
       // bins preceding the k-th item bin (i.e., 'selected' items), write them to output.
       // We can skip histogram computation because we don't need to further passes to refine the candidates.
-      auto f_early_stop = [in_idx_buf, kth_key_bits, counter, p_out_cnt, this](key_in_t key, OffsetT i) {
+      auto f_early_stop = [in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
         {
@@ -499,8 +499,7 @@ struct AgentTopK
 
       // Lambda for early_stop = false, out_buf != nullptr (i.e., we need to further refine the candidates in the next
       // pass): Write out selected items to output, write candidates to out_buf, and build histogram for candidates.
-      auto f_with_out_buf = [in_idx_buf, out_buf, out_idx_buf, kth_key_bits, counter, p_filter_cnt, p_out_cnt, this](
-                              key_in_t key, OffsetT i) {
+      auto f_with_out_buf = [in_idx_buf, out_buf, out_idx_buf, p_filter_cnt, p_out_cnt, this](key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate)
         {
@@ -533,7 +532,7 @@ struct AgentTopK
       // Note: We will only begin writing to d_keys_out starting from the pass in which the number of output-candidates
       // is small enough to fit into the output buffer (otherwise, we would be writing the same items to d_keys_out
       // multiple times).
-      auto f_no_out_buf = [in_idx_buf, kth_key_bits, counter, p_filter_cnt, this](key_in_t key, OffsetT i) {
+      auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate)
         {
