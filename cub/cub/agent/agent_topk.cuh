@@ -471,49 +471,43 @@ struct AgentTopK
       OutOffsetT* p_out_cnt   = &counter->out_cnt;
       const auto kth_key_bits = counter->kth_key_bits;
 
-      // See the remark above on the distributed execution of `f` using
-      // vectorized loading.
-      auto f =
-        [in_idx_buf, out_buf, out_idx_buf, kth_key_bits, counter, p_filter_cnt, p_out_cnt, this, early_stop, pass](
+      // Lambda for early_stop = true (i.e., we have identified the exact "splitter" key):
+      // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into
+      // bins preceding the k-th item bin (i.e., 'selected' items), write them to output.
+      auto f_early_stop = [in_idx_buf, kth_key_bits, counter, p_out_cnt, this](key_in_t key, OffsetT i) {
+        candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
+        {
+          OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
+          d_keys_out[pos] = key;
+          if constexpr (!KEYS_ONLY)
+          {
+            OffsetT index     = in_idx_buf ? in_idx_buf[i] : i;
+            d_values_out[pos] = d_values_in[index];
+          }
+        }
+      };
+
+      // Lambda for early_stop = false, out_buf != nullptr (i.e., we need further passes
+      //
+      auto f_with_out_buf =
+        [in_idx_buf, out_buf, out_idx_buf, kth_key_bits, counter, p_filter_cnt, p_out_cnt, this, pass](
           key_in_t key, OffsetT i) {
           candidate_class pre_res = identify_candidates_op(key);
           if (pre_res == candidate_class::candidate)
           {
-            OffsetT index;
-            if (early_stop)
+            OffsetT pos  = atomicAdd(p_filter_cnt, OffsetT{1});
+            out_buf[pos] = key;
+            if constexpr (!KEYS_ONLY)
             {
-              OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
-              d_keys_out[pos] = key;
-              if constexpr (!KEYS_ONLY)
-              {
-                index             = in_idx_buf ? in_idx_buf[i] : i;
-                d_values_out[pos] = d_values_in[index];
-              }
+              OffsetT index    = in_idx_buf ? in_idx_buf[i] : i;
+              out_idx_buf[pos] = index;
             }
-            else
-            {
-              if (out_buf)
-              {
-                OffsetT pos  = atomicAdd(p_filter_cnt, OffsetT{1});
-                out_buf[pos] = key;
-                if constexpr (!KEYS_ONLY)
-                {
-                  index            = in_idx_buf ? in_idx_buf[i] : i;
-                  out_idx_buf[pos] = index;
-                }
-              }
 
-              int bucket = extract_bin_op(key);
-              atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
-            }
+            int bucket = extract_bin_op(key);
+            atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
           }
-          // the condition `(out_buf || early_stop)` is a little tricky:
-          // If we skip writing to `out_buf` (when `out_buf` is nullptr), we should skip
-          // writing to `out` too. So we won't write the same key to `out` multiple
-          // times in different passes. And if we keep skipping the writing, keys will
-          // be written in `LastFilter_kernel()` at last. But when `early_stop` is
-          // true, we need to write to `out` since it's the last chance.
-          else if ((out_buf || early_stop) && (pre_res == candidate_class::selected))
+          else if (pre_res == candidate_class::selected)
           {
             OutOffsetT pos  = atomicAdd(p_out_cnt, OutOffsetT{1});
             d_keys_out[pos] = key;
@@ -525,13 +519,48 @@ struct AgentTopK
           }
         };
 
+      // Lambda for early_stop = false, out_buf = nullptr
+      auto f_no_out_buf = [in_idx_buf, kth_key_bits, counter, p_filter_cnt, this, pass](key_in_t key, OffsetT i) {
+        candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate)
+        {
+          int bucket = extract_bin_op(key);
+          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+        }
+        // Note: when out_buf is nullptr and early_stop is false,
+        // we don't write selected items to output
+      };
+
+      // Choose and invoke the appropriate lambda with the correct input source
       if (load_from_original_input)
       {
-        process_range(d_keys_in, previous_len, f);
+        if (early_stop)
+        {
+          process_range(d_keys_in, previous_len, f_early_stop);
+        }
+        else if (out_buf)
+        {
+          process_range(d_keys_in, previous_len, f_with_out_buf);
+        }
+        else
+        {
+          process_range(d_keys_in, previous_len, f_no_out_buf);
+        }
       }
       else
       {
-        process_range(in_buf, previous_len, f);
+        if (early_stop)
+        {
+          process_range(in_buf, previous_len, f_early_stop);
+        }
+        else if (out_buf)
+        {
+          process_range(in_buf, previous_len, f_with_out_buf);
+        }
+        else
+        {
+          process_range(in_buf, previous_len, f_no_out_buf);
+        }
       }
     }
 
@@ -810,12 +839,12 @@ struct AgentTopK
       }
 
       compute_bin_offsets(histogram);
-      
+
       // Make sure the prefix sum has been written to shared memory before running choose_bucket()
       __syncthreads();
-      
+
       choose_bucket(counter, current_k, pass);
-      
+
       // Reset histogram for the next pass
       constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
       if (pass != num_passes - 1)
