@@ -64,7 +64,9 @@ function(cub_detail_ptx_json_add_test target_name_var source)
     )
     set_target_properties(${target_name} PROPERTIES
       CUDA_PTX_COMPILATION ON
-      CUDA_ARCHITECTURES 90
+      # Use compute_80 -- CTK 13.0 started running ptxas on 90+, even when just producing PTX.
+      # This breaks the ptx-json stuff, which produces intentionally invalid PTX.
+      CUDA_ARCHITECTURES "80-virtual"
     )
 
     add_test(NAME ${target_name}
