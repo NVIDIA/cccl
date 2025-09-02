@@ -440,6 +440,10 @@
       "configurePreset": "cccl-c-parallel"
     },
     {
+      "name": "cccl-c-stf",
+      "configurePreset": "cccl-c-stf"
+    },
+    {
       "name": "packaging",
       "configurePreset": "packaging"
     }
@@ -730,6 +734,11 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
+    },
+    {
+      "name": "cccl-c-stf",
+      "configurePreset": "cccl-c-stf",
       "inherits": "base"
     },
     {
