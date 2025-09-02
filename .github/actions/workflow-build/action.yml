@@ -113,8 +113,8 @@ runs:
         echo "::endgroup::"
 
         echo "::group::Runners"
-        heading=$(jq -r '.heading' workflow/runner_summary.json)
-        body=$(jq -r '.body' workflow/runner_summary.json)
+        heading=$(jq -r '.heading' workflow/runner_summary.json || :)
+        body=$(jq -r '.body' workflow/runner_summary.json || :)
         (
           echo "<details><summary><h3>${heading}</h3></summary>"
           echo
@@ -125,11 +125,11 @@ runs:
         echo "::endgroup::"
 
         echo "::group::Job List"
-        cat workflow/job_list.txt
+        cat workflow/job_list.txt || :
         (
           echo "<details><summary><h3>🗒️ Job List</h3></summary>"
           echo "<pre>"
-          cat workflow/job_list.txt
+          cat workflow/job_list.txt || :
           echo
           echo "</pre>"
           echo "</details>"
@@ -140,12 +140,17 @@ runs:
         num_jobs=($(jq -r '. | length' workflow/job_ids.json))
 
         (
-          if [[ -f workflow/override.md ]]; then
-            cat workflow/override.md
-          fi
-          cat workflow/changes.md
-          cat workflow/job_list.md
-          cat workflow/runner_summary.md
+          declare -a files=(
+            workflow/override.md
+            workflow/changes.md
+            workflow/job_list.md
+            workflow/runner_summary.md
+          )
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              cat "$file"
+            fi
+          done
         ) > workflow/job_matrix_details.md
 
         echo -n "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}" > workflow/summary_url.txt
