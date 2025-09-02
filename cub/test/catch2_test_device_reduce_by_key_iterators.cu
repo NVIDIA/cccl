@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -87,10 +86,10 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   init_default_constant(default_constant);
   auto value_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t = ::cuda::std::plus<>;
+  using op_t = cuda::std::plus<>;
 
   // Prepare verification data
-  using accum_t = ::cuda::std::__accumulator_t<op_t, value_t, output_t>;
+  using accum_t = cuda::std::__accumulator_t<op_t, value_t, output_t>;
   c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(value_it, segment_offsets, op_t{}, accum_t{}, expected_result.begin());
   c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);

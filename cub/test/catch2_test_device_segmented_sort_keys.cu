@@ -26,7 +26,7 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
+
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/util_type.cuh>
 
@@ -126,45 +126,55 @@ C2H_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
   REQUIRE(values_buffer.selector == 1);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys", "[keys][segmented][sort][device]", key_types)
+C2H_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys",
+         "[keys][segmented][sort][device][skip-cs-racecheck]",
+         key_types)
 {
   using KeyT = c2h::get<0, TestType>;
 
+  // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
   const int segment_size = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)), //
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)));
 
-  const int segments = GENERATE_COPY(take(2, random(1 << 0, 1 << 5)), //
-                                     take(2, random(1 << 5, 1 << 10)));
+  const int segments = GENERATE_COPY( //
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)));
 
   test_same_size_segments_derived<KeyT>(segment_size, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys", "[keys][segmented][sort][device]", key_types)
+C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys",
+         "[keys][segmented][sort][device][skip-cs-racecheck]",
+         key_types)
 {
   using KeyT = c2h::get<0, TestType>;
 
   const int max_items   = 1 << 22;
   const int max_segment = 6000;
 
+  // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
   const int segments = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)), //
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)),
-    take(2, random(1 << 15, 1 << 20)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
+    take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   test_random_size_segments_derived<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys", "[keys][segmented][sort][device]", key_types)
+C2H_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys",
+         "[keys][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
+         key_types)
 {
   using KeyT = c2h::get<0, TestType>;
 
   const int max_items   = 1 << 22;
   const int max_segment = 6000;
 
-  const int segments = GENERATE_COPY(take(2, random(1 << 15, 1 << 20)));
+  // Use adjust_seed_count to limit the number of passes run during sanitizer tests.
+  const int segments = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   test_random_size_segments_random<KeyT>(C2H_SEED(1), max_items, max_segment, segments);
 }
@@ -181,7 +191,9 @@ C2H_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][s
   test_unspecified_segments_random<KeyT>(C2H_SEED(4));
 }
 
-C2H_TEST("DeviceSegmentedSortKeys: very large number of segments", "[keys][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSortKeys: very large number of segments",
+         "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         all_offset_types)
 try
 {
   using key_t                        = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
@@ -189,11 +201,11 @@ try
   using offset_t                     = c2h::get<0, TestType>;
   using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
   constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_empty_segments = uint32_max;
-  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   c2h::device_vector<key_t> in_keys(num_items);
@@ -224,16 +236,18 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
-C2H_TEST("DeviceSegmentedSort::SortKeys: very large segments", "[keys][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSort::SortKeys: very large segments",
+         "[keys][segmented][sort][device][skip-cs-memcheck][skip-cs-racecheck][skip-cs-initcheck]",
+         all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   const segment_offset_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 

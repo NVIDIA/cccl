@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_SWAP_H
-#define _LIBCUDACXX___UTILITY_SWAP_H
+#ifndef _CUDA_STD___UTILITY_SWAP_H
+#define _CUDA_STD___UTILITY_SWAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,25 +29,26 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // we use type_identity_t<_Tp> as second parameter, to avoid ambiguity with std::swap, which will thus be preferred by
 // overload resolution (which is ok since std::swap is only considered when explicitly called, or found by ADL for types
 // from std::)
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
-  _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
+_CCCL_API constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
+  is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
 {
-  _Tp __t(_CUDA_VSTD::move(__x));
-  __x = _CUDA_VSTD::move(__y);
-  __y = _CUDA_VSTD::move(__t);
+  _Tp __t(::cuda::std::move(__x));
+  __x = ::cuda::std::move(__y);
+  __y = ::cuda::std::move(__t);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value
-                                                && __is_swappable<_Tp>::value>
+_CCCL_API constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
 swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value)
 {
   for (size_t __i = 0; __i != _Np; ++__i)
@@ -56,6 +57,8 @@ swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::val
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___UTILITY_SWAP_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___UTILITY_SWAP_H

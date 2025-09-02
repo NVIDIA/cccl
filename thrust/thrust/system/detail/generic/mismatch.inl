@@ -59,11 +59,11 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
   using IteratorTuple = thrust::tuple<InputIterator1, InputIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(thrust::make_tuple(first1, first2));
-  ZipIterator zipped_last  = thrust::make_zip_iterator(thrust::make_tuple(last1, first2));
+  ZipIterator zipped_first = thrust::make_zip_iterator(first1, first2);
+  ZipIterator zipped_last  = thrust::make_zip_iterator(last1, first2);
 
   ZipIterator result =
-    thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>(pred));
+    thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>{pred});
 
   return thrust::make_pair(thrust::get<0>(result.get_iterator_tuple()), thrust::get<1>(result.get_iterator_tuple()));
 } // end mismatch()

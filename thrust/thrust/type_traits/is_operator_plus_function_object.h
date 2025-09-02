@@ -96,7 +96,7 @@ template <typename T>
 struct is_operator_plus_function_object_impl : false_type
 {};
 template <typename T>
-struct is_operator_plus_function_object_impl<thrust::plus<T>> : true_type
+struct is_operator_plus_function_object_impl<::cuda::std::plus<T>> : true_type
 {};
 template <typename T>
 struct is_operator_plus_function_object_impl<std::plus<T>> : true_type

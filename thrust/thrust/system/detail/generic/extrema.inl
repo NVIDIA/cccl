@@ -161,7 +161,7 @@ min_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::min_element(exec, first, last, thrust::less<value_type>());
+  return thrust::min_element(exec, first, last, ::cuda::std::less<value_type>());
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -178,8 +178,8 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
 
   thrust::tuple<InputType, IndexType> result = thrust::reduce(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))),
-    thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))) + (last - first),
+    thrust::make_zip_iterator(first, thrust::counting_iterator<IndexType>(0)),
+    thrust::make_zip_iterator(first, thrust::counting_iterator<IndexType>(0)) + (last - first),
     thrust::tuple<InputType, IndexType>(thrust::detail::get_iterator_value(derived_cast(exec), first), 0),
     detail::min_element_reduction<InputType, IndexType, BinaryPredicate>(comp));
 
@@ -192,7 +192,7 @@ max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::max_element(exec, first, last, thrust::less<value_type>());
+  return thrust::max_element(exec, first, last, ::cuda::std::less<value_type>());
 } // end max_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -209,8 +209,8 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
 
   thrust::tuple<InputType, IndexType> result = thrust::reduce(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))),
-    thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))) + (last - first),
+    thrust::make_zip_iterator(first, thrust::counting_iterator<IndexType>(0)),
+    thrust::make_zip_iterator(first, thrust::counting_iterator<IndexType>(0)) + (last - first),
     thrust::tuple<InputType, IndexType>(thrust::detail::get_iterator_value(derived_cast(exec), first), 0),
     detail::max_element_reduction<InputType, IndexType, BinaryPredicate>(comp));
 
@@ -223,7 +223,7 @@ minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator fi
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::minmax_element(exec, first, last, thrust::less<value_type>());
+  return thrust::minmax_element(exec, first, last, ::cuda::std::less<value_type>());
 } // end minmax_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -241,8 +241,8 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
   thrust::tuple<thrust::tuple<InputType, IndexType>, thrust::tuple<InputType, IndexType>> result =
     thrust::transform_reduce(
       exec,
-      thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))),
-      thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))) + (last - first),
+      thrust::make_zip_iterator(first, thrust::counting_iterator<IndexType>(0)),
+      thrust::make_zip_iterator(first, thrust::counting_iterator<IndexType>(0)) + (last - first),
       detail::duplicate_tuple<InputType, IndexType>(),
       detail::duplicate_tuple<InputType, IndexType>()(
         thrust::tuple<InputType, IndexType>(thrust::detail::get_iterator_value(derived_cast(exec), first), 0)),

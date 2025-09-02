@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT
-#define _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT
+#ifndef _CUDA_STD___FUNCTIONAL_IS_TRANSPARENT_H
+#define _CUDA_STD___FUNCTIONAL_IS_TRANSPARENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,9 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class, class = void>
 struct __is_transparent : false_type
@@ -34,6 +36,8 @@ template <class _Tp, class _Up>
 struct __is_transparent<_Tp, _Up, void_t<typename _Tp::is_transparent>> : true_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FUNCTIONAL_IS_TRANSPARENT_H

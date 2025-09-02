@@ -13,6 +13,7 @@
 #include <cub/device/device_merge_sort.cuh>
 
 #include <format>
+#include <vector>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
@@ -23,6 +24,7 @@
 #include <cccl/c/merge_sort.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 struct op_wrapper;
 struct device_merge_sort_policy;
@@ -127,7 +129,7 @@ merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
   // types test as well. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  items_per_thread = 2;
+  items_per_thread = 1;
 
   return {block_size, items_per_thread, block_size * items_per_thread};
 }
@@ -274,7 +276,7 @@ private:
 };
 } // namespace merge_sort
 
-CUresult cccl_device_merge_sort_build(
+CUresult cccl_device_merge_sort_build_ex(
   cccl_device_merge_sort_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_items_it,
@@ -286,7 +288,8 @@ CUresult cccl_device_merge_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
   try
@@ -408,36 +411,37 @@ struct device_merge_sort_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    std::vector<const char*> args = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender list_appender{linkable_list};
 
-    nvrtc_ltoir_list_appender list_appender{ltoir_list};
-
-    list_appender.append({op.ltoir, op.ltoir_size});
+    list_appender.append_operation(op);
     list_appender.add_iterator_definition(input_keys_it);
     list_appender.add_iterator_definition(input_items_it);
     list_appender.add_iterator_definition(output_keys_it);
     list_appender.add_iterator_definition(output_items_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({block_sort_kernel_name})
-        .add_expression({partition_kernel_name})
-        .add_expression({merge_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
-        .get_name({partition_kernel_name, partition_kernel_lowered_name})
-        .get_name({merge_kernel_name, merge_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_expression({block_sort_kernel_name})
+        ->add_expression({partition_kernel_name})
+        ->add_expression({merge_kernel_name})
+        ->compile_program({args.data(), args.size()})
+        ->get_name({block_sort_kernel_name, block_sort_kernel_lowered_name})
+        ->get_name({partition_kernel_name, partition_kernel_lowered_name})
+        ->get_name({merge_kernel_name, merge_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(linkable_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(
@@ -492,7 +496,7 @@ CUresult cccl_device_merge_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchMergeSort<
+    auto exec_status = cub::DispatchMergeSort<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -516,6 +520,8 @@ CUresult cccl_device_merge_sort(
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_out_keys.value_type.size});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {
@@ -532,6 +538,36 @@ CUresult cccl_device_merge_sort(
   }
 
   return error;
+}
+
+CUresult cccl_device_merge_sort_build(
+  cccl_device_merge_sort_build_result_t* build,
+  cccl_iterator_t d_in_keys,
+  cccl_iterator_t d_in_items,
+  cccl_iterator_t d_out_keys,
+  cccl_iterator_t d_out_items,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_merge_sort_build_ex(
+    build,
+    d_in_keys,
+    d_in_items,
+    d_out_keys,
+    d_out_items,
+    op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_merge_sort_cleanup(cccl_device_merge_sort_build_result_t* build_ptr)

@@ -13,10 +13,10 @@ static_assert(thrust::is_operator_plus_function_object<std::plus<>>::value);
 template <typename T>
 _CCCL_HOST void test_is_operator_less_function_object()
 {
-  static_assert(thrust::is_operator_less_function_object<thrust::less<T>>::value);
-  static_assert(!thrust::is_operator_less_function_object<thrust::greater<T>>::value);
-  static_assert(!thrust::is_operator_less_function_object<thrust::less_equal<T>>::value);
-  static_assert(!thrust::is_operator_less_function_object<thrust::greater_equal<T>>::value);
+  static_assert(thrust::is_operator_less_function_object<::cuda::std::less<T>>::value);
+  static_assert(!thrust::is_operator_less_function_object<::cuda::std::greater<T>>::value);
+  static_assert(!thrust::is_operator_less_function_object<::cuda::std::less_equal<T>>::value);
+  static_assert(!thrust::is_operator_less_function_object<::cuda::std::greater_equal<T>>::value);
   static_assert(thrust::is_operator_less_function_object<std::less<T>>::value);
   static_assert(!thrust::is_operator_less_function_object<std::greater<T>>::value);
   static_assert(!thrust::is_operator_less_function_object<std::less_equal<T>>::value);
@@ -28,10 +28,10 @@ DECLARE_GENERIC_UNITTEST(test_is_operator_less_function_object);
 template <typename T>
 _CCCL_HOST void test_is_operator_greater_function_object()
 {
-  static_assert(!thrust::is_operator_greater_function_object<thrust::less<T>>::value);
-  static_assert(thrust::is_operator_greater_function_object<thrust::greater<T>>::value);
-  static_assert(!thrust::is_operator_greater_function_object<thrust::less_equal<T>>::value);
-  static_assert(!thrust::is_operator_greater_function_object<thrust::greater_equal<T>>::value);
+  static_assert(!thrust::is_operator_greater_function_object<::cuda::std::less<T>>::value);
+  static_assert(thrust::is_operator_greater_function_object<::cuda::std::greater<T>>::value);
+  static_assert(!thrust::is_operator_greater_function_object<::cuda::std::less_equal<T>>::value);
+  static_assert(!thrust::is_operator_greater_function_object<::cuda::std::greater_equal<T>>::value);
   static_assert(!thrust::is_operator_greater_function_object<std::less<T>>::value);
   static_assert(thrust::is_operator_greater_function_object<std::greater<T>>::value);
   static_assert(!thrust::is_operator_greater_function_object<std::less_equal<T>>::value);
@@ -43,10 +43,10 @@ DECLARE_GENERIC_UNITTEST(test_is_operator_greater_function_object);
 template <typename T>
 _CCCL_HOST void test_is_operator_less_or_greater_function_object()
 {
-  static_assert(thrust::is_operator_less_or_greater_function_object<thrust::less<T>>::value);
-  static_assert(thrust::is_operator_less_or_greater_function_object<thrust::greater<T>>::value);
-  static_assert(!thrust::is_operator_less_or_greater_function_object<thrust::less_equal<T>>::value);
-  static_assert(!thrust::is_operator_less_or_greater_function_object<thrust::greater_equal<T>>::value);
+  static_assert(thrust::is_operator_less_or_greater_function_object<::cuda::std::less<T>>::value);
+  static_assert(thrust::is_operator_less_or_greater_function_object<::cuda::std::greater<T>>::value);
+  static_assert(!thrust::is_operator_less_or_greater_function_object<::cuda::std::less_equal<T>>::value);
+  static_assert(!thrust::is_operator_less_or_greater_function_object<::cuda::std::greater_equal<T>>::value);
   static_assert(thrust::is_operator_less_or_greater_function_object<std::less<T>>::value);
   static_assert(thrust::is_operator_less_or_greater_function_object<std::greater<T>>::value);
   static_assert(!thrust::is_operator_less_or_greater_function_object<std::less_equal<T>>::value);
@@ -58,10 +58,10 @@ DECLARE_GENERIC_UNITTEST(test_is_operator_less_or_greater_function_object);
 template <typename T>
 _CCCL_HOST void test_is_operator_plus_function_object()
 {
-  static_assert(thrust::is_operator_plus_function_object<thrust::plus<T>>::value);
-  static_assert(!thrust::is_operator_plus_function_object<thrust::minus<T>>::value);
-  static_assert(!thrust::is_operator_plus_function_object<thrust::less<T>>::value);
-  static_assert(!thrust::is_operator_plus_function_object<thrust::greater<T>>::value);
+  static_assert(thrust::is_operator_plus_function_object<::cuda::std::plus<T>>::value);
+  static_assert(!thrust::is_operator_plus_function_object<::cuda::std::minus<T>>::value);
+  static_assert(!thrust::is_operator_plus_function_object<::cuda::std::less<T>>::value);
+  static_assert(!thrust::is_operator_plus_function_object<::cuda::std::greater<T>>::value);
   static_assert(thrust::is_operator_plus_function_object<std::plus<T>>::value);
   static_assert(!thrust::is_operator_plus_function_object<std::minus<T>>::value);
   static_assert(!thrust::is_operator_plus_function_object<std::less<T>>::value);

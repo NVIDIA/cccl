@@ -45,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -124,7 +124,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -192,7 +192,7 @@ OutputIterator set_difference(
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -240,7 +240,7 @@ OutputIterator set_difference(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_difference(thrust::host, A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_difference(thrust::host, A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result is now {6, 4, 0}
  *  \endcode
  *
@@ -272,7 +272,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *
  *  In the simplest case, \p set_difference performs the "difference" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last1)</tt>. The general case
+ *  <tt>[first1, last1)</tt> and not contained in <tt>[first2, last2)</tt>. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -314,7 +314,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_difference(A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_difference(A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result is now {6, 4, 0}
  *  \endcode
  *
@@ -561,7 +561,8 @@ OutputIterator set_intersection(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_intersection(thrust::host, A1, A1 + 6, A2, A2 + 7, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_intersection(thrust::host, A1, A1 + 6, A2, A2 + 7, result,
+ * ::cuda::std::greater<int>());
  *  // result is now {5, 3, 1}
  *  \endcode
  *
@@ -646,7 +647,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_intersection(A1, A1 + 6, A2, A2 + 7, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_intersection(A1, A1 + 6, A2, A2 + 7, result, ::cuda::std::greater<int>());
  *  // result is now {5, 3, 1}
  *  \endcode
  *
@@ -674,11 +675,11 @@ OutputIterator set_intersection(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -757,11 +758,11 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -829,11 +830,11 @@ OutputIterator set_symmetric_difference(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -918,11 +919,11 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  In the simplest case, \p set_symmetric_difference performs a set theoretic calculation:
  *  it constructs the union of the two sets A - B and B - A, where A and B are the two
  *  input ranges. That is, the output range contains a copy of every element that is
- *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last1)</tt>, and a copy of
+ *  contained in <tt>[first1, last1)</tt> but not <tt>[first2, last2)</tt>, and a copy of
  *  every element that is contained in <tt>[first2, last2)</tt> but not <tt>[first1, last1)</tt>.
  *  The general case is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements that are
- *  equivalent to each other and <tt>[first2, last1)</tt> contains \c n elements that are
+ *  equivalent to each other and <tt>[first2, last2)</tt> contains \c n elements that are
  *  equivalent to them, then <tt>|m - n|</tt> of those elements shall be copied to the output
  *  range: the last <tt>m - n</tt> elements from <tt>[first1, last1)</tt> if <tt>m > n</tt>, and
  *  the last <tt>n - m</tt> of these elements from <tt>[first2, last2)</tt> if <tt>m < n</tt>.
@@ -995,7 +996,7 @@ OutputIterator set_symmetric_difference(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1076,7 +1077,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1146,7 +1147,7 @@ OutputIterator set_union(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1195,7 +1196,7 @@ OutputIterator set_union(
  *
  *  int result[11];
  *
- *  int *result_end = thrust::set_union(thrust::host, A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_union(thrust::host, A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result = {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  \endcode
  *
@@ -1228,7 +1229,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *
  *  In the simplest case, \p set_union performs the "union" operation from set
  *  theory: the output range contains a copy of every element that is contained in
- *  <tt>[first1, last1)</tt>, <tt>[first2, last1)</tt>, or both. The general case
+ *  <tt>[first1, last1)</tt>, <tt>[first2, last2)</tt>, or both. The general case
  *  is more complicated, because the input ranges may contain duplicate elements.
  *  The generalization is that if <tt>[first1, last1)</tt> contains \c m elements
  *  that are equivalent to each other and if <tt>[first2, last2)</tt> contains \c n
@@ -1271,7 +1272,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *
  *  int result[11];
  *
- *  int *result_end = thrust::set_union(A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_union(A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result = {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  \endcode
  *
@@ -1584,7 +1585,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
  *  int vals_result[3];
  *
  *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 5,
- * A_vals, B_vals, keys_result, vals_result, thrust::greater<int>());
+ * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1692,7 +1693,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
  *  int vals_result[3];
  *
  *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals, B_vals,
- * keys_result, vals_result, thrust::greater<int>());
+ * keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -2010,7 +2011,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
  *  int vals_result[7];
  *
  *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 7,
- * A_vals, keys_result, vals_result, thrust::greater<int>());
+ * A_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
  *  // vals_result is now {0, 0, 0}
@@ -2117,7 +2118,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
  *  int vals_result[7];
  *
  *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
- * keys_result, vals_result, thrust::greater<int>());
+ * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
  *  // vals_result is now {0, 0, 0}
@@ -2879,7 +2880,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
  *  int vals_result[11];
  *
  *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys,
- * B_keys + 5, A_vals, B_vals, keys_result, vals_result, thrust::greater<int>());
+ * B_keys + 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
  *  \endcode
@@ -2988,7 +2989,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
  *  int vals_result[11];
  *
  *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
- * A_vals, B_vals, keys_result, vals_result, thrust::greater<int>());
+ * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
  *  \endcode

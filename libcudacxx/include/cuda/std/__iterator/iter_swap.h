@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___ITERATOR_ITER_SWAP_H
-#define _LIBCUDACXX___ITERATOR_ITER_SWAP_H
+#ifndef _CUDA_STD___ITERATOR_ITER_SWAP_H
+#define _CUDA_STD___ITERATOR_ITER_SWAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,18 +30,20 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 // [iter.cust.swap]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
+_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__iter_swap)
 template <class _I1, class _I2>
 void iter_swap(_I1, _I2) = delete;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _T1, class _T2>
 concept __unqualified_iter_swap =
   (__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>)
-  && requires(_T1&& __x, _T2&& __y) { iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y)); };
+  && requires(_T1&& __x, _T2&& __y) { iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y)); };
 
 template <class _T1, class _T2>
 concept __readable_swappable = !__unqualified_iter_swap<_T1, _T2> && indirectly_readable<_T1>
@@ -50,12 +52,12 @@ concept __readable_swappable = !__unqualified_iter_swap<_T1, _T2> && indirectly_
 template <class _T1, class _T2>
 concept __moveable_storable = !__unqualified_iter_swap<_T1, _T2> && !__readable_swappable<_T1, _T2>
                            && indirectly_movable_storable<_T1, _T2> && indirectly_movable_storable<_T2, _T1>;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _T1, class _T2>
 _CCCL_CONCEPT_FRAGMENT(
   __unqualified_iter_swap_,
   requires(_T1&& __x, _T2&& __y)(requires(__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>),
-                                 ((void) iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y)))));
+                                 ((void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y)))));
 
 template <class _T1, class _T2>
 _CCCL_CONCEPT __unqualified_iter_swap = _CCCL_FRAGMENT(__unqualified_iter_swap_, _T1, _T2);
@@ -81,79 +83,81 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _T1, class _T2>
 _CCCL_CONCEPT __moveable_storable = _CCCL_FRAGMENT(__moveable_storable_, _T1, _T2);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 struct __fn
 {
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__unqualified_iter_swap<_T1, _T2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
-    noexcept(noexcept(iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y))))
+  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const
+    noexcept(noexcept(iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y))))
   {
-    (void) iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y));
+    (void) iter_swap(::cuda::std::forward<_T1>(__x), ::cuda::std::forward<_T2>(__y));
   }
 
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__readable_swappable<_T1, _T2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
-    noexcept(noexcept(_CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y))))
+  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const
+    noexcept(noexcept(::cuda::std::ranges::swap(*::cuda::std::forward<_T1>(__x), *::cuda::std::forward<_T2>(__y))))
   {
-    _CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y));
+    ::cuda::std::ranges::swap(*::cuda::std::forward<_T1>(__x), *::cuda::std::forward<_T2>(__y));
   }
 
   _CCCL_TEMPLATE(class _T1, class _T2)
   _CCCL_REQUIRES(__moveable_storable<_T2, _T1>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
-    noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y)))
-             && noexcept(*__y = _CUDA_VRANGES::iter_move(__x))
-             && noexcept(*_CUDA_VSTD::forward<_T1>(__x) = declval<iter_value_t<_T2>>()))
+  _CCCL_API constexpr void operator()(_T1&& __x, _T2&& __y) const
+    noexcept(noexcept(iter_value_t<_T2>(::cuda::std::ranges::iter_move(__y)))
+             && noexcept(*__y = ::cuda::std::ranges::iter_move(__x))
+             && noexcept(*::cuda::std::forward<_T1>(__x) = declval<iter_value_t<_T2>>()))
   {
-    iter_value_t<_T2> __old(_CUDA_VRANGES::iter_move(__y));
-    *__y                           = _CUDA_VRANGES::iter_move(__x);
-    *_CUDA_VSTD::forward<_T1>(__x) = _CUDA_VSTD::move(__old);
+    iter_value_t<_T2> __old(::cuda::std::ranges::iter_move(__y));
+    *__y                            = ::cuda::std::ranges::iter_move(__x);
+    *::cuda::std::forward<_T1>(__x) = ::cuda::std::move(__old);
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+#if _CCCL_HAS_CONCEPTS()
 template <class _I1, class _I2 = _I1>
 concept indirectly_swappable =
   indirectly_readable<_I1> && indirectly_readable<_I2> && requires(const _I1 __i1, const _I2 __i2) {
-    _CUDA_VRANGES::iter_swap(__i1, __i1);
-    _CUDA_VRANGES::iter_swap(__i2, __i2);
-    _CUDA_VRANGES::iter_swap(__i1, __i2);
-    _CUDA_VRANGES::iter_swap(__i2, __i1);
+    ::cuda::std::ranges::iter_swap(__i1, __i1);
+    ::cuda::std::ranges::iter_swap(__i2, __i2);
+    ::cuda::std::ranges::iter_swap(__i1, __i2);
+    ::cuda::std::ranges::iter_swap(__i2, __i1);
   };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv !_CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv _CCCL_HAS_CONCEPTS() vvv
 template <class _I1, class _I2>
 _CCCL_CONCEPT_FRAGMENT(
   __indirectly_swappable_,
   requires(const _I1 __i1, const _I2 __i2)(
     requires(indirectly_readable<_I1>),
     requires(indirectly_readable<_I2>),
-    (_CUDA_VRANGES::iter_swap(__i1, __i1)),
-    (_CUDA_VRANGES::iter_swap(__i2, __i2)),
-    (_CUDA_VRANGES::iter_swap(__i1, __i2)),
-    (_CUDA_VRANGES::iter_swap(__i2, __i1))));
+    (::cuda::std::ranges::iter_swap(__i1, __i1)),
+    (::cuda::std::ranges::iter_swap(__i2, __i2)),
+    (::cuda::std::ranges::iter_swap(__i1, __i2)),
+    (::cuda::std::ranges::iter_swap(__i2, __i1))));
 
 template <class _I1, class _I2 = _I1>
 _CCCL_CONCEPT indirectly_swappable = _CCCL_FRAGMENT(__indirectly_swappable_, _I1, _I2);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 template <class _I1, class _I2 = _I1, class = void>
 inline constexpr bool __noexcept_swappable = false;
 
 template <class _I1, class _I2>
 inline constexpr bool __noexcept_swappable<_I1, _I2, enable_if_t<indirectly_swappable<_I1, _I2>>> =
-  noexcept(_CUDA_VRANGES::iter_swap(_CUDA_VSTD::declval<_I1&>(), _CUDA_VSTD::declval<_I2&>()));
+  noexcept(::cuda::std::ranges::iter_swap(::cuda::std::declval<_I1&>(), ::cuda::std::declval<_I2&>()));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_ITER_SWAP_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_ITER_SWAP_H

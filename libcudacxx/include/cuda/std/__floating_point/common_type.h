@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
-#define _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
+#ifndef _CUDA_STD___FLOATING_POINT_COMMON_TYPE_H
+#define _CUDA_STD___FLOATING_POINT_COMMON_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,18 +27,22 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Lhs, class _Rhs>
 using __fp_common_type_t =
-  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered,
+  enable_if_t<__fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__unordered
+                && __fp_conv_rank_order_v<_Lhs, _Rhs> != __fp_conv_rank_order::__invalid,
               conditional_t<__fp_conv_rank_order_v<_Lhs, _Rhs> == __fp_conv_rank_order::__greater, _Lhs, _Rhs>>;
 
 template <class _Lhs, class _Rhs>
 using __fp_int_ext_common_type_t =
-  __fp_common_type_t<conditional_t<_CCCL_TRAIT(is_integral, _Lhs), double, _Lhs>,
-                     conditional_t<_CCCL_TRAIT(is_integral, _Rhs), double, _Rhs>>;
+  __fp_common_type_t<conditional_t<is_integral_v<_Lhs>, double, _Lhs>, conditional_t<is_integral_v<_Rhs>, double, _Rhs>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___FLOATING_POINT_COMMON_TYPE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FLOATING_POINT_COMMON_TYPE_H

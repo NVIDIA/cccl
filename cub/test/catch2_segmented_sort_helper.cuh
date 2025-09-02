@@ -44,6 +44,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <nv/target>
+
 #include <cstdio>
 
 #include "catch2_test_launch_helper.h"
@@ -51,7 +53,6 @@
 #include <c2h/cpu_timer.h>
 #include <c2h/extended_types.h>
 #include <c2h/utility.h>
-#include <nv/target>
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
   inline c2h::seed_t make_##name##_seed(const c2h::seed_t seed) \
@@ -80,7 +81,7 @@ struct segment_index_to_offset_op
   OffsetT segment_size;
   OffsetT num_items;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
+  __host__ __device__ _CCCL_FORCEINLINE OffsetT operator()(SegmentIndexT i)
   {
     if (i < num_empty_segments)
     {
@@ -103,7 +104,7 @@ struct mod_n
   std::size_t mod;
 
   template <typename IndexT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(IndexT x)
+  __host__ __device__ _CCCL_FORCEINLINE T operator()(IndexT x)
   {
     return static_cast<T>(x % mod);
   }
@@ -133,7 +134,8 @@ public:
   void verify_sorted(const c2h::device_vector<key_t>& out_keys) const
   {
     // Verify keys are sorted next to each other
-    auto count = thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>());
+    auto count =
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), cuda::std::equal_to<int>());
     REQUIRE(count <= max_histo_size);
 
     // Verify keys are sorted using prior histogram computation
@@ -215,7 +217,7 @@ public:
 
     // Verify keys are sorted next to each other
     const auto count = static_cast<std::size_t>(
-      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>()));
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), cuda::std::equal_to<int>()));
     REQUIRE(count <= sequence_length * num_segments);
 
     // // Verify keys are sorted using prior histogram computation
@@ -288,19 +290,19 @@ using unwrap_value_t = typename unwrap_value_t_impl<T>::type;
 // Derived element gen/validation
 
 template <typename T>
-_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int segment_size, T)
+__host__ __device__ __forceinline__ double compute_conversion_factor(int segment_size, T)
 {
   const double max_value = static_cast<double>(::cuda::std::numeric_limits<T>::max());
   return (max_value + 1) / segment_size;
 }
 
-_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int segment_size, double)
+__host__ __device__ __forceinline__ double compute_conversion_factor(int segment_size, double)
 {
   const double max_value = ::cuda::std::numeric_limits<double>::max();
   return max_value / segment_size;
 }
 
-_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int, cub::NullType)
+__host__ __device__ __forceinline__ double compute_conversion_factor(int, cub::NullType)
 {
   return 1.0;
 }
@@ -318,7 +320,7 @@ struct segment_filler
       , descending(descending)
   {}
 
-  _CCCL_DEVICE void operator()(int segment_id) const
+  __device__ void operator()(int segment_id) const
   {
     const int segment_begin = d_offsets[segment_id];
     const int segment_end   = d_offsets[segment_id + 1];
@@ -364,7 +366,7 @@ struct segment_checker
       , sort_descending(sort_descending)
   {}
 
-  _CCCL_DEVICE bool operator()(int segment_id)
+  __device__ bool operator()(int segment_id)
   {
     const int segment_begin = d_offsets[segment_id];
     const int segment_end   = d_offsets[segment_id + 1];
@@ -384,7 +386,7 @@ struct segment_checker
 
 private:
   // Keys only:
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool check_results(
+  __device__ _CCCL_FORCEINLINE bool check_results(
     int segment_begin, //
     int segment_size,
     cub::NullType)
@@ -405,7 +407,7 @@ private:
 
   // Pairs:
   template <typename DispatchValueT> // Same as ValueT if not cub::NullType
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  __device__ _CCCL_FORCEINLINE bool
   check_results(int segment_begin, //
                 int segment_size,
                 DispatchValueT)
@@ -501,7 +503,7 @@ private:
     return true;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyT compute_key(int seg_idx, int segment_size, double conversion)
+  __device__ _CCCL_FORCEINLINE KeyT compute_key(int seg_idx, int segment_size, double conversion)
   {
     int conv_idx = sort_descending ? (segment_size - 1 - seg_idx) : seg_idx;
     return static_cast<KeyT>(conv_idx * conversion);
@@ -624,7 +626,7 @@ void host_sort_random_inputs(
           h_unsorted_keys.begin() + segment_begin,
           h_unsorted_keys.begin() + segment_end,
           h_unsorted_values.begin() + segment_begin,
-          thrust::greater<KeyT>{});
+          cuda::std::greater<KeyT>{});
       }
       else
       {
@@ -639,7 +641,7 @@ void host_sort_random_inputs(
       {
         thrust::stable_sort(h_unsorted_keys.begin() + segment_begin, //
                             h_unsorted_keys.begin() + segment_end,
-                            thrust::greater<KeyT>{});
+                            cuda::std::greater<KeyT>{});
       }
       else
       {
@@ -672,7 +674,7 @@ struct unstable_segmented_value_checker
       , offsets_end(offsets_end)
   {}
 
-  _CCCL_DEVICE bool operator()(int segment_id) const
+  __device__ bool operator()(int segment_id) const
   {
     const int segment_begin = offsets_begin[segment_id];
     const int segment_end   = offsets_end[segment_id];
@@ -1520,10 +1522,10 @@ struct offset_scan_op_t
 {
   int max_items;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE int operator()(int a, int b) const
+  __device__ _CCCL_FORCEINLINE int operator()(int a, int b) const
   {
     const int sum = a + b;
-    return _CUDA_VSTD::min(sum, max_items);
+    return ::cuda::std::min(sum, max_items);
   }
 };
 

@@ -32,6 +32,8 @@
  * items by key from sequences of data items residing within device-accessible memory.
  */
 
+#pragma once
+
 #include <cub/config.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -139,7 +141,7 @@ template <
     ScanTileState<OffsetT>,
     EqualityOpT,
     OffsetT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename VSMemHelperT          = detail::unique_by_key::VSMemHelper,
   typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
   typename ValueT                = detail::it_value_t<ValueInputIteratorT>>
@@ -335,7 +337,7 @@ struct DispatchUniqueByKey
       }
 
       // Log init_kernel configuration
-      num_tiles          = _CUDA_VSTD::max(1, num_tiles);
+      num_tiles          = ::cuda::std::max(1, num_tiles);
       int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
 #ifdef CUB_DEBUG_LOG
@@ -378,16 +380,17 @@ struct DispatchUniqueByKey
       dim3 scan_grid_size;
       scan_grid_size.z = 1;
       scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-      scan_grid_size.x = _CUDA_VSTD::min(num_tiles, max_dim_x);
+      scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
       // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
       {
         // Get SM occupancy for unique_by_key_kernel
         int sweep_sm_occupancy;
-        error = CubDebug(MaxSmOccupancy(sweep_sm_occupancy, // out
-                                        sweep_kernel,
-                                        block_threads));
+        error = CubDebug(launcher_factory.MaxSmOccupancy(
+          sweep_sm_occupancy, // out
+          sweep_kernel,
+          block_threads));
         if (cudaSuccess != error)
         {
           break;

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ACCESS_H
-#define _LIBCUDACXX___ITERATOR_ACCESS_H
+#ifndef _CUDA_STD___ITERATOR_ACCESS_H
+#define _CUDA_STD___ITERATOR_ACCESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,28 +23,28 @@
 
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __begin
 {
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
   {
     return __array;
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin()))
-    -> decltype(__c.begin())
+  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.begin()))
-    -> decltype(__c.begin())
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.begin())) -> decltype(__c.begin())
   {
     return __c.begin();
   }
@@ -61,21 +61,19 @@ namespace __end
 struct __fn
 {
   template <class _Tp, size_t _Np>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
+  _CCCL_API constexpr _Tp* operator()(_Tp (&__array)[_Np]) const noexcept
   {
     return __array + _Np;
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.end()))
-    -> decltype(__c.end())
+  _CCCL_API constexpr auto operator()(_Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
 
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.end()))
-    -> decltype(__c.end())
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(__c.end())) -> decltype(__c.end())
   {
     return __c.end();
   }
@@ -92,10 +90,10 @@ namespace __cbegin
 struct __fn
 {
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::begin(__c)))
-    -> decltype(_CUDA_VSTD::begin(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::begin(__c)))
+    -> decltype(::cuda::std::begin(__c))
   {
-    return _CUDA_VSTD::begin(__c);
+    return ::cuda::std::begin(__c);
   }
 };
 } // namespace __cbegin
@@ -110,10 +108,10 @@ namespace __cend
 struct __fn
 {
   template <class _Cp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(_CUDA_VSTD::end(__c)))
-    -> decltype(_CUDA_VSTD::end(__c))
+  _CCCL_API constexpr auto operator()(const _Cp& __c) const noexcept(noexcept(::cuda::std::end(__c)))
+    -> decltype(::cuda::std::end(__c))
   {
-    return _CUDA_VSTD::end(__c);
+    return ::cuda::std::end(__c);
   }
 };
 } // namespace __cend
@@ -123,6 +121,8 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_ACCESS_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_ACCESS_H

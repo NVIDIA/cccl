@@ -15,7 +15,7 @@ auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(arg
   else
   {
     // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, thrust::less<T>, CompareOp>;
+    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
     return thrust::merge(std::forward<Args>(args)..., C{});
   }
   _CCCL_UNREACHABLE();
@@ -47,7 +47,7 @@ void TestMergeKeyValue(size_t n)
   else
   {
     // TODO(bgruber): remove next line in C++17 and pass CompareOp{} directly to stable_sort
-    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, thrust::less<T>, CompareOp>;
+    using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, ::cuda::std::less<T>, CompareOp>;
     thrust::stable_sort(h_a.begin(), h_a.end(), C{});
     thrust::stable_sort(h_b.begin(), h_b.end(), C{});
   }
@@ -70,6 +70,6 @@ DECLARE_VARIABLE_UNITTEST(TestMergeKeyValue);
 template <typename U>
 void TestMergeKeyValueDescending(size_t n)
 {
-  TestMergeKeyValue<U, thrust::greater<key_value<U, U>>>(n);
+  TestMergeKeyValue<U, ::cuda::std::greater<key_value<U, U>>>(n);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeKeyValueDescending);

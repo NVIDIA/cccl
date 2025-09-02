@@ -48,6 +48,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   UnaryFunction unary_op,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_inclusive_scan");
   using thrust::system::detail::generic::transform_inclusive_scan;
   return transform_inclusive_scan(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, unary_op, binary_op);
@@ -69,6 +70,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   T init,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_inclusive_scan");
   using thrust::system::detail::generic::transform_inclusive_scan;
   return transform_inclusive_scan(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, unary_op, init, binary_op);
@@ -90,6 +92,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   T init,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_exclusive_scan");
   using thrust::system::detail::generic::transform_exclusive_scan;
   return transform_exclusive_scan(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, unary_op, init, binary_op);
@@ -99,6 +102,7 @@ template <typename InputIterator, typename OutputIterator, typename UnaryFunctio
 OutputIterator transform_inclusive_scan(
   InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, BinaryFunction binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_inclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -119,6 +123,7 @@ OutputIterator transform_inclusive_scan(
   T init,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_inclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -140,6 +145,7 @@ OutputIterator transform_exclusive_scan(
   T init,
   AssociativeOperator binary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_exclusive_scan");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;

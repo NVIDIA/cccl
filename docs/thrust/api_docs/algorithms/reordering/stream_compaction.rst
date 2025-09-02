@@ -7,4 +7,4 @@ Stream Compactation
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__stream__compaction*
+   ../../../api/group__stream__compaction*

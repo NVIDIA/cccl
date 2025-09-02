@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-asynchronous-operations-memcpy-async:
 
-cuda::memcpy_async
+``cuda::memcpy_async``
 ======================
 
 Defined in header ``<cuda/barrier>``:
@@ -91,7 +91,7 @@ namely:
      the behavior is undefined.
    - If the objects are not of `TriviallyCopyable <https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable>`_
      type the program is ill-formed, no diagnostic required.
-   - If *Shape* is :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-access-shapes-aligned-size>`, ``source``
+   - If *Shape* is :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-aligned-size>`, ``source``
      and ``destination`` are both required to be aligned on ``cuda::aligned_size_t::align``, else the behavior is
      undefined.
    - If ``cuda::pipeline`` is in a *quitted state*
@@ -111,7 +111,7 @@ Template Parameters
      - A type satisfying the [*Group*] concept.
    * - ``Shape``
      - Either `cuda::std::size_t <https://en.cppreference.com/w/c/types/size_t>`_
-       or :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-access-shapes-aligned-size>`.
+       or :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-aligned-size>`.
 
 Parameters
 ----------

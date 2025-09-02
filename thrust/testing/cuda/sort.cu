@@ -3,10 +3,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/limits>
 
 #include <algorithm>
@@ -71,7 +71,7 @@ VariableUnitTest<TestComparisonSortDeviceDevice, unittest::type_list<unittest::i
 template <typename T, typename ExecutionPolicy>
 void TestSortDevice(ExecutionPolicy exec, const size_t n)
 {
-  TestComparisonSortDevice<T>(exec, n, thrust::less<T>());
+  TestComparisonSortDevice<T>(exec, n, ::cuda::std::less<T>());
 };
 
 template <typename T>
@@ -131,13 +131,13 @@ DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 template <typename T>
 struct TestRadixSortDispatch
 {
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<T>>::value, "");
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
 
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<>>::value, "");
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
 
@@ -237,7 +237,7 @@ void TestSortWithMagnitude(int magnitude)
     thrust::device_vector<std::uint8_t> vec(num_items);
     auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
     auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<std::uint8_t>{});
-    auto rev_sorted_it = thrust::make_reverse_iterator(key_value_it + num_items);
+    auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
     thrust::copy(rev_sorted_it, rev_sorted_it + num_items, vec.begin());
     thrust::sort(vec.begin(), vec.end());
     auto expected_result_it = thrust::make_transform_iterator(
@@ -272,8 +272,8 @@ struct TestSortAscendingKey
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    std::sort(h_data.begin(), h_data.end(), thrust::less<T>{});
-    thrust::sort(d_data.begin(), d_data.end(), thrust::less<T>{});
+    std::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>{});
+    thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>{});
 
     ASSERT_EQUAL_QUIET(h_data, d_data);
   }
@@ -286,7 +286,7 @@ SimpleUnitTest<TestSortAscendingKey,
                                 unittest::type_list<__int128_t, __uint128_t>
 #endif // _CCCL_HAS_INT128()
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
-#if _CCCL_CUDACC_AT_LEAST(12, 2)
+#if _CCCL_CTK_AT_LEAST(12, 2)
 #  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
                                 ,
                                 unittest::type_list<__half>
@@ -295,6 +295,6 @@ SimpleUnitTest<TestSortAscendingKey,
                                 ,
                                 unittest::type_list<__nv_bfloat16>
 #  endif
-#endif // _CCCL_CUDACC_AT_LEAST(12, 2)
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
                                 >>
   TestSortAscendingKeyMoreTypes;

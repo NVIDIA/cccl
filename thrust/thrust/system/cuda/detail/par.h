@@ -39,8 +39,6 @@
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 
-#include <cuda/stream_ref>
-
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -56,10 +54,10 @@ public:
       : stream(stream_)
   {}
 
-  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
+  _CCCL_HOST_DEVICE Derived on(::cudaStream_t s) const
   {
     Derived result = derived_cast(*this);
-    result.stream  = s.get();
+    result.stream  = s;
     return result;
   }
 
@@ -81,10 +79,10 @@ public:
       : stream(stream_)
   {}
 
-  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
+  _CCCL_HOST_DEVICE Derived on(::cudaStream_t s) const
   {
     Derived result = derived_cast(*this);
-    result.stream  = s.get();
+    result.stream  = s;
     return result;
   }
 
@@ -132,9 +130,9 @@ struct par_t
 
   using stream_attachment_type = execute_on_stream;
 
-  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
   {
-    return execute_on_stream(s.get());
+    return execute_on_stream(s);
   }
 };
 
@@ -150,9 +148,9 @@ struct par_nosync_t
 
   using stream_attachment_type = execute_on_stream_nosync;
 
-  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
   {
-    return execute_on_stream_nosync(s.get());
+    return execute_on_stream_nosync(s);
   }
 
 private:

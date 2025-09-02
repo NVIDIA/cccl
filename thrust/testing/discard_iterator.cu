@@ -121,7 +121,7 @@ void TestZippedDiscardIterator()
   using IteratorTuple2 = tuple<int*, discard_iterator<>>;
   using ZipIterator2   = zip_iterator<IteratorTuple2>;
 
-  ZipIterator2 z_iter_first = thrust::make_zip_iterator(thrust::make_tuple((int*) 0, thrust::make_discard_iterator()));
+  ZipIterator2 z_iter_first = thrust::make_zip_iterator((int*) 0, thrust::make_discard_iterator());
   ZipIterator2 z_iter_last  = z_iter_first + 10;
 
   for (; z_iter_first != z_iter_last; ++z_iter_first)

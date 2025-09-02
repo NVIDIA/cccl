@@ -146,12 +146,11 @@ void lib_call_generic(async_resources_handle& handle, cudaStream_t stream, doubl
 }
 
 template <typename Ctx_t>
-void lib_call_logical_token(
-  async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
+void lib_call_token(async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
 {
   Ctx_t ctx(stream, handle);
-  auto lA = ctx.logical_token();
-  auto lB = ctx.logical_token();
+  auto lA = ctx.token();
+  auto lB = ctx.token();
   ctx.task(lA.write())->*[=](cudaStream_t s) {
     initA<<<128, 32, 0, s>>>(d_ptrA, N);
   };
@@ -244,7 +243,7 @@ int main()
   nvtx_range r_token("logical token");
   for (size_t i = 0; i < NITER; i++)
   {
-    lib_call_logical_token<context>(handle, stream, d_ptrA, d_ptrB, N);
+    lib_call_token<context>(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
   r_token.end();

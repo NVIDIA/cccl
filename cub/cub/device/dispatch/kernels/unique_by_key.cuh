@@ -5,8 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include "cub/util_namespace.cuh"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)

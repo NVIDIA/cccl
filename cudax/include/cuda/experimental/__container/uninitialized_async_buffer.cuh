@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +34,8 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
@@ -73,14 +75,14 @@ template <class _Tp, class... _Properties>
 class uninitialized_async_buffer
 {
 private:
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
+  using __async_resource = ::cuda::experimental::any_resource<_Properties...>;
 
   __async_resource __mr_;
-  ::cuda::stream_ref __stream_ = {};
+  ::cuda::stream_ref __stream_ = {::cudaStream_t{}};
   size_t __count_              = 0;
   void* __buf_                 = nullptr;
 
@@ -90,10 +92,9 @@ private:
   //! @brief Helper to check whether a different buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    !_CCCL_TRAIT(_CUDA_VSTD::is_same,
-                 _CUDA_VSTD::__make_type_set<_Properties...>,
-                 _CUDA_VSTD::__make_type_set<_OtherProperties...>)
-    && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+    !::cuda::std::is_same_v<::cuda::std::__make_type_set<_Properties...>,
+                            ::cuda::std::__make_type_set<_OtherProperties...>>
+    && ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Determines the allocation size given the alignment and size of `T`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr size_t __get_allocation_size(const size_t __count) noexcept
@@ -108,17 +109,17 @@ private:
     constexpr size_t __alignment = alignof(_Tp);
     size_t __space               = __get_allocation_size(__count_);
     void* __ptr                  = __buf_;
-    return _CUDA_VSTD::launder(
-      static_cast<_Tp*>(_CUDA_VSTD::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
+    return ::cuda::std::launder(
+      static_cast<_Tp*>(::cuda::std::align(__alignment, __count_ * sizeof(_Tp), __ptr, __space)));
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
-  __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
+  transform_device_argument(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
+    _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -127,10 +128,10 @@ private:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
-  __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
-    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
+  transform_device_argument(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
+    _CCCL_TRAILING_REQUIRES(::cuda::std::span<const _Tp>)(
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -142,24 +143,24 @@ private:
   {
     __async_resource* __resource_;
 
-    void* allocate(std::size_t __size, std::size_t __alignment)
+    void* allocate_sync(std::size_t __size, std::size_t __alignment)
     {
-      return __resource_->allocate(__size, __alignment);
+      return __resource_->allocate_sync(__size, __alignment);
     }
 
-    void deallocate(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
+    void deallocate_sync(void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
-      __resource_->deallocate(__ptr, __size, __alignment);
+      __resource_->deallocate_sync(__ptr, __size, __alignment);
     }
 
-    void* allocate_async(std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream)
+    void* allocate(::cuda::stream_ref __stream, std::size_t __size, std::size_t __alignment)
     {
-      return __resource_->allocate_async(__size, __alignment, __stream);
+      return __resource_->allocate(__stream, __size, __alignment);
     }
 
-    void deallocate_async(void* __ptr, std::size_t __size, std::size_t __alignment, ::cuda::stream_ref __stream) noexcept
+    void deallocate(::cuda::stream_ref __stream, void* __ptr, std::size_t __size, std::size_t __alignment) noexcept
     {
-      __resource_->deallocate_async(__ptr, __size, __alignment, __stream);
+      __resource_->deallocate(__stream, __ptr, __size, __alignment);
     }
 
     friend bool operator==(const __fake_resource_ref& __lhs, const __fake_resource_ref& __rhs) noexcept
@@ -173,7 +174,7 @@ private:
 
     //! @brief Forwards the passed properties
     _CCCL_TEMPLATE(class _Property)
-    _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
+    _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Property, _Properties...>)
     _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const __fake_resource_ref&, _Property) noexcept {}
   };
 #  endif // _CCCL_DOXYGEN_INVOKED
@@ -195,10 +196,10 @@ public:
   //! than `count * sizeof(T)`. Only allocates memory when \p __count > 0
   _CCCL_HIDE_FROM_ABI
   uninitialized_async_buffer(__async_resource __mr, const ::cuda::stream_ref __stream, const size_t __count)
-      : __mr_(_CUDA_VSTD::move(__mr))
+      : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate_async(__get_allocation_size(__count_), __stream_))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_)))
   {}
 
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(const uninitialized_async_buffer&)            = delete;
@@ -208,10 +209,10 @@ public:
   //! @param __other Another \c uninitialized_async_buffer
   //! Takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer&& __other) noexcept
-      : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
-      , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
-      , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
+      : __mr_(::cuda::std::move(__other.__mr_))
+      , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
+      , __count_(::cuda::std::exchange(__other.__count_, 0))
+      , __buf_(::cuda::std::exchange(__other.__buf_, nullptr))
   {}
 
   //! @brief Move-constructs a \c uninitialized_async_buffer from \p __other
@@ -220,10 +221,10 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
-      : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
-      , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
-      , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
+      : __mr_(::cuda::std::move(__other.__mr_))
+      , __stream_(::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}}))
+      , __count_(::cuda::std::exchange(__other.__count_, 0))
+      , __buf_(::cuda::std::exchange(__other.__buf_, nullptr))
   {}
 
   //! @brief Move-assigns a \c uninitialized_async_buffer from \p __other
@@ -231,32 +232,56 @@ public:
   //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer& operator=(uninitialized_async_buffer&& __other) noexcept
   {
-    if (this == _CUDA_VSTD::addressof(__other))
+    if (this == ::cuda::std::addressof(__other))
     {
       return *this;
     }
 
     if (__buf_)
     {
-      __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
     }
-    __mr_     = _CUDA_VSTD::move(__other.__mr_);
-    __stream_ = _CUDA_VSTD::exchange(__other.__stream_, {});
-    __count_  = _CUDA_VSTD::exchange(__other.__count_, 0);
-    __buf_    = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
+    __mr_     = ::cuda::std::move(__other.__mr_);
+    __stream_ = ::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
+    __count_  = ::cuda::std::exchange(__other.__count_, 0);
+    __buf_    = ::cuda::std::exchange(__other.__buf_, nullptr);
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream that was
-  //! used to create the buffer.
+  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
+  //! is stored in the buffer and destroys the memory resource.
+  //! @param __stream The stream to deallocate the buffer on.
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy(::cuda::stream_ref __stream)
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_));
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+    // TODO should we make sure we move the mr only once by moving it to the if above?
+    // It won't work for 0 count buffers, so we would probably need a separate bool to track it
+    auto __tmp_mr = ::cuda::std::move(__mr_);
+  }
+
+  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that
+  //! is stored in the buffer and destroys the memory resource.
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy()
+  {
+    destroy(__stream_);
+  }
+
+  //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream
+  //! that was used to create the buffer.
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI ~uninitialized_async_buffer()
   {
-    if (__buf_)
-    {
-      __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
-    }
+    destroy();
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
@@ -309,16 +334,17 @@ public:
   }
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
+  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& memory_resource() const noexcept
   {
     return __mr_;
   }
 
   //! @brief Returns the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
+  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref stream() const noexcept
   {
     return __stream_;
   }
@@ -326,7 +352,7 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(::cuda::stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream(::cuda::stream_ref __new_stream)
   {
     if (__new_stream != __stream_)
     {
@@ -339,17 +365,15 @@ public:
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void set_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
   {
     __stream_ = __new_stream;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
   //! @brief Forwards the passed properties
   _CCCL_TEMPLATE(class _Property)
-  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const uninitialized_async_buffer&, _Property) noexcept {}
-#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Internal method to grow the allocation to a new size \p __count.
   //! @param __count The new size of the allocation.
@@ -358,9 +382,9 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer __replace_allocation(const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and swap allocation information
-    uninitialized_async_buffer __ret{__fake_resource_ref{_CUDA_VSTD::addressof(__mr_)}, __stream_, __count};
-    _CUDA_VSTD::swap(__count_, __ret.__count_);
-    _CUDA_VSTD::swap(__buf_, __ret.__buf_);
+    uninitialized_async_buffer __ret{__fake_resource_ref{::cuda::std::addressof(__mr_)}, __stream_, __count};
+    ::cuda::std::swap(__count_, __ret.__count_);
+    ::cuda::std::swap(__buf_, __ret.__buf_);
     return __ret;
   }
 };
@@ -371,5 +395,7 @@ using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, device
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_ASYNC_BUFFER_H

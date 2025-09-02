@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_TRANSFORM_INCLUSIVE_SCAN_H
-#define _LIBCUDACXX___NUMERIC_TRANSFORM_INCLUSIVE_SCAN_H
+#ifndef _CUDA_STD___NUMERIC_TRANSFORM_INCLUSIVE_SCAN_H
+#define _CUDA_STD___NUMERIC_TRANSFORM_INCLUSIVE_SCAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,10 +24,12 @@
 
 #include <cuda/std/__iterator/iterator_traits.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
+_CCCL_API constexpr _OutputIterator transform_inclusive_scan(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _UnaryOp __u, _Tp __init)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -40,7 +42,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOp, class _UnaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
+_CCCL_API constexpr _OutputIterator transform_inclusive_scan(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _UnaryOp __u)
 {
   if (__first != __last)
@@ -49,13 +51,15 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator transform_inclusive_scan(
     *__result++                                                 = __init;
     if (++__first != __last)
     {
-      return _CUDA_VSTD::transform_inclusive_scan(__first, __last, __result, __b, __u, __init);
+      return ::cuda::std::transform_inclusive_scan(__first, __last, __result, __b, __u, __init);
     }
   }
 
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___NUMERIC_TRANSFORM_INCLUSIVE_SCAN_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___NUMERIC_TRANSFORM_INCLUSIVE_SCAN_H

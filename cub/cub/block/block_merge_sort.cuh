@@ -60,7 +60,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
-  OffsetT keys1_end   = (::cuda::std::min)(diag, keys1_count);
+  OffsetT keys1_end   = (::cuda::std::min) (diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
@@ -89,13 +89,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int keys2_count,
   KeyT (&output)[ITEMS_PER_THREAD],
   int (&indices)[ITEMS_PER_THREAD],
-  CompareOp compare_op)
+  CompareOp compare_op,
+  KeyT oob_default)
 {
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
 
-  KeyT key1 = keys_shared[keys1_beg];
-  KeyT key2 = keys_shared[keys2_beg];
+  KeyT key1 = keys1_count != 0 ? keys_shared[keys1_beg] : oob_default;
+  KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
   _CCCL_SORT_MAYBE_UNROLL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
@@ -112,6 +113,20 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
       key1 = keys_shared[keys1_beg];
     }
   }
+}
+
+template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+_CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
+  KeyIt keys_shared,
+  int keys1_beg,
+  int keys2_beg,
+  int keys1_count,
+  int keys2_count,
+  KeyT (&output)[ITEMS_PER_THREAD],
+  int (&indices)[ITEMS_PER_THREAD],
+  CompareOp compare_op)
+{
+  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 
 /**
@@ -427,12 +442,12 @@ public:
 
       int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag = (::cuda::std::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      int keys1_beg = (::cuda::std::min)(valid_items, start);
-      int keys1_end = (::cuda::std::min)(valid_items, keys1_beg + size);
+      int keys1_beg = (::cuda::std::min) (valid_items, start);
+      int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
       int keys2_beg = keys1_end;
-      int keys2_end = (::cuda::std::min)(valid_items, keys2_beg + size);
+      int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
 
       int keys1_count = keys1_end - keys1_beg;
       int keys2_count = keys2_end - keys2_beg;
@@ -459,7 +474,8 @@ public:
         keys2_count_loc,
         keys,
         indices,
-        compare_op);
+        compare_op,
+        oob_default);
 
       if (!KEYS_ONLY)
       {

@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp>
 struct overflow_result
@@ -28,12 +30,14 @@ struct overflow_result
   _Tp value;
   bool overflow;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return overflow;
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___NUMERIC_OVERFLOW_RESULT_H

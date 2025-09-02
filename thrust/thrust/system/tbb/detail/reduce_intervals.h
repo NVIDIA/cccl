@@ -76,7 +76,7 @@ struct body
     Size interval_idx = r.begin();
 
     Size offset_to_first = interval_size * interval_idx;
-    Size offset_to_last  = (::cuda::std::min)(n, offset_to_first + interval_size);
+    Size offset_to_last  = (::cuda::std::min) (n, offset_to_first + interval_size);
 
     RandomAccessIterator1 my_first = first + offset_to_first;
     RandomAccessIterator1 my_last  = first + offset_to_last;
@@ -131,7 +131,7 @@ void reduce_intervals(
   using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   return thrust::system::tbb::detail::reduce_intervals(
-    exec, first, last, interval_size, result, thrust::plus<value_type>());
+    exec, first, last, interval_size, result, ::cuda::std::plus<value_type>());
 }
 
 } // namespace detail

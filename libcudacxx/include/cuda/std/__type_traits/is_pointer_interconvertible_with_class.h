@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H
+#define _CUDA_STD___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,19 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
 
 template <class _Sp, class _Mp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-is_pointer_interconvertible_with_class(_Mp _Sp::* __m_ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr bool is_pointer_interconvertible_with_class(_Mp _Sp::* __m_ptr) noexcept
 {
   return _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_Sp, __m_ptr);
 }
 
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H

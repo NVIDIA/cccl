@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_INDIRECTLY_COMPARABLE_H
-#define _LIBCUDACXX___ITERATOR_INDIRECTLY_COMPARABLE_H
+#ifndef _CUDA_STD___ITERATOR_INDIRECTLY_COMPARABLE_H
+#define _CUDA_STD___ITERATOR_INDIRECTLY_COMPARABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,15 +25,17 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/projected.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Iter1, class _Iter2, class _BinaryPred, class _Proj1 = identity, class _Proj2 = identity>
 concept indirectly_comparable =
   indirect_binary_predicate<_BinaryPred, projected<_Iter1, _Proj1>, projected<_Iter2, _Proj2>>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Iter1, class _Iter2, class _BinaryPred, class _Proj1, class _Proj2>
 _CCCL_CONCEPT_FRAGMENT(
@@ -44,8 +46,10 @@ template <class _Iter1, class _Iter2, class _BinaryPred, class _Proj1 = identity
 _CCCL_CONCEPT indirectly_comparable =
   _CCCL_FRAGMENT(__indirectly_comparable_, _Iter1, _Iter2, _BinaryPred, _Proj1, _Proj2);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_INDIRECTLY_COMPARABLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_INDIRECTLY_COMPARABLE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_ENABLE_VIEW_H
-#define _LIBCUDACXX___RANGES_ENABLE_VIEW_H
+#ifndef _CUDA_STD___RANGES_ENABLE_VIEW_H
+#define _CUDA_STD___RANGES_ENABLE_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,46 +28,51 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/void_t.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 struct view_base
 {};
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Derived>
   requires is_class_v<_Derived> && same_as<_Derived, remove_cv_t<_Derived>>
 class view_interface;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Derived, enable_if_t<is_class_v<_Derived> && same_as<_Derived, remove_cv_t<_Derived>>, int> = 0>
 class view_interface;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _CCCL_TEMPLATE(class _Op, class _Yp)
 _CCCL_REQUIRES(is_convertible_v<_Op*, view_interface<_Yp>*>)
-_LIBCUDACXX_HIDE_FROM_ABI void __is_derived_from_view_interface(const _Op*, const view_interface<_Yp>*);
+_CCCL_API inline void __is_derived_from_view_interface(const _Op*, const view_interface<_Yp>*);
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Tp>
 inline constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
-  _CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
+  ::cuda::std::ranges::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
 };
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp, class = void>
 inline constexpr bool enable_view = derived_from<_Tp, view_base>;
 
 template <class _Tp>
 inline constexpr bool
-  enable_view<_Tp, void_t<decltype(_CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
+  enable_view<_Tp,
+              void_t<decltype(::cuda::std::ranges::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
     true;
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX___RANGES_ENABLE_VIEW_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___RANGES_ENABLE_VIEW_H

@@ -26,19 +26,19 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <limits>
 #include <numeric>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
@@ -56,19 +56,54 @@ using all_types =
 
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
-#if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs with one or less elements
-      // https://github.com/NVIDIA/cccl/issues/426
+// List of offset types to be used for testing large number of items
+using offset_types = c2h::type_list<std::int64_t, std::uint32_t, std::int32_t>;
+
+// generates for [0, 1, 2, ...] the sequence [0, 1, 1, 2, 3, 3, 4, 5, 5, ...]
+struct index_to_item_op
+{
+  template <typename OffsetT>
+  __host__ __device__ OffsetT operator()(const OffsetT index) const
+  {
+    // Calculate the number at the given index
+    // The pattern repeats: odd, odd, even
+    // For every 3 indices: [odd, odd, even]
+    OffsetT group = index / OffsetT{3};
+    OffsetT pos   = index % OffsetT{3};
+    if (pos == OffsetT{0})
+    {
+      // Even number (once)
+      return (OffsetT{2} * group);
+    }
+    else
+    {
+      // Odd number (repeated twice)
+      return OffsetT{2} * group + OffsetT{1};
+    }
+  }
+};
+
+struct run_index_to_offset_op
+{
+  template <typename OffsetT>
+  __host__ __device__ OffsetT operator()(OffsetT run_index)
+  {
+    return OffsetT{1} + OffsetT{3} * run_index;
+  }
+};
+
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   REQUIRE(out_num_runs.front() == 0);
 }
@@ -79,32 +114,15 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   REQUIRE(out_num_runs.front() == 0);
 }
-#endif
-
-#if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs larger than INT32_MAX
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
-{
-  constexpr cuda::std::size_t num_items = 1ull << 33;
-  c2h::device_vector<cuda::std::size_t> out_num_runs(1, -1);
-
-  // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(thrust::make_counting_iterator(cuda::std::size_t{0}),
-                    static_cast<cuda::std::size_t*>(nullptr),
-                    static_cast<cuda::std::size_t*>(nullptr),
-                    out_num_runs.begin(),
-                    num_items);
-
-  REQUIRE(out_num_runs.front() == 0);
-}
-#endif
 
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types", "[device][run_length_encode]")
 {
@@ -132,7 +150,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device
   c2h::device_vector<int> out_num_runs(1, -1);
 
   run_length_encode(
-    thrust::make_counting_iterator(type{}),
+    cuda::make_counting_iterator(type{}),
     static_cast<int*>(nullptr),
     static_cast<int*>(nullptr),
     out_num_runs.begin(),
@@ -214,7 +232,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device]
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
@@ -232,7 +250,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
@@ -285,7 +303,7 @@ struct CustomDeviceRunLengthEncode
     cudaStream_t stream = 0)
   {
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
+    using EqualityOp = cuda::std::equal_to<>; // Default == operator
 
     return cub::DeviceRleDispatch<InputIteratorT,
                                   OffsetsOutputIteratorT,
@@ -369,4 +387,101 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[d
   REQUIRE(out_num_runs.front() == expected_non_trivial_runs);
   REQUIRE(out_lengths.front() == magic_number);
   REQUIRE(out_offsets.front() == magic_number);
+}
+
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns works for a large number of items",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         offset_types)
+try
+{
+  using offset_type     = typename c2h::get<0, TestType>;
+  using run_length_type = offset_type;
+
+  cuda::std::size_t extra_items = GENERATE(take(1, random((1 << 20), (1 << 22))));
+  const auto num_items          = detail::make_large_offset<offset_type>(extra_items);
+  CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
+
+  auto counting_it = cuda::make_counting_iterator(offset_type{0});
+
+  // Input iterator: repeat odd numbers once and even numbers twice
+  auto input_item_it = cuda::make_transform_iterator(counting_it, index_to_item_op{});
+  // Number of non-trivial runs is number of full(!) three-item (i.e., even, odd, odd) groups
+  const auto num_uniques = num_items / 3;
+
+  // Prepare helper to check the unique items being written: we expect the i-th item corresponding to value i
+  auto check_offset_out_helper = detail::large_problem_test_helper(num_uniques);
+  auto expected_offsets_it     = cuda::make_transform_iterator(counting_it, run_index_to_offset_op{});
+  auto check_offset_out_it     = check_offset_out_helper.get_flagging_output_iterator(expected_offsets_it);
+
+  // Prepare helper to check the run-lengths being written: i-th item corresponding to value i
+  auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
+  auto expected_run_lengths_it     = cuda::make_constant_iterator(run_length_type{2});
+  auto check_run_length_out_it     = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
+
+  // Allocate memory for the number of expected unique items
+  c2h::device_vector<offset_type> out_num_runs(1);
+
+  // Run algorithm under test
+  run_length_encode(input_item_it, check_offset_out_it, check_run_length_out_it, out_num_runs.begin(), num_items);
+
+  // Verify result
+  CHECK(out_num_runs[0] == num_uniques);
+  check_offset_out_helper.check_all_results_correct();
+  check_run_length_out_helper.check_all_results_correct();
+}
+catch (const std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+}
+
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         offset_types)
+try
+{
+  using offset_type     = typename c2h::get<0, TestType>;
+  using run_length_type = offset_type;
+  using item_t          = char;
+
+  CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), c2h::type_name<item_t>());
+
+  const auto num_items = detail::make_large_offset<offset_type>();
+
+  constexpr auto num_uniques               = offset_type{2};
+  constexpr run_length_type first_run_size = 200;
+  const run_length_type second_run_size    = static_cast<run_length_type>(num_items) - first_run_size;
+
+  // First run is a small run of equal items
+  auto small_segment_it = cuda::make_constant_iterator(item_t{3});
+  // Second run is a very large run of equal items
+  auto large_segment_it = cuda::make_constant_iterator(item_t{42});
+  auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
+
+  // Allocate some memory for the results
+  c2h::device_vector<offset_type> offsets_out(num_uniques, thrust::no_init);
+  c2h::device_vector<run_length_type> run_lengths_out(num_uniques, thrust::no_init);
+
+  // Allocate memory for the number of expected unique items
+  c2h::device_vector<offset_type> out_num_runs(1);
+
+  // Run algorithm under test
+  run_length_encode(
+    input_item_it,
+    offsets_out.begin(),
+    run_lengths_out.begin(),
+    out_num_runs.begin(),
+    static_cast<offset_type>(num_items));
+
+  // Expected results
+  c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
+  c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
+
+  // Verify result
+  CHECK(out_num_runs[0] == num_uniques);
+  CHECK(expected_uniques == offsets_out);
+  CHECK(expected_run_lengths == run_lengths_out);
+}
+catch (const std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }

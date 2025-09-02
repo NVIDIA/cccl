@@ -13,6 +13,8 @@
 
 #include "test_macros.h"
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <class VType, class BaseType, size_t Index>
 using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index, VType>::type, BaseType>;
 
@@ -59,30 +61,36 @@ __host__ __device__ constexpr bool test()
   EXPAND_VECTOR_TYPE(float, float);
   EXPAND_VECTOR_TYPE(double, double);
 
-  return true;
-}
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test<long4_16a, long, 4>();
+  test<long4_32a, long, 4>();
+  test<ulong4_16a, unsigned long, 4>();
+  test<ulong4_32a, unsigned long, 4>();
+  test<longlong4_16a, long long, 4>();
+  test<longlong4_32a, long long, 4>();
+  test<ulonglong4_16a, unsigned long long, 4>();
+  test<ulonglong4_32a, unsigned long long, 4>();
+  test<double4_16a, double, 4>();
+  test<double4_32a, double, 4>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-__host__ __device__
-#if !TEST_COMPILER(MSVC)
-  constexpr
-#endif // !TEST_COMPILER(MSVC)
-  bool
-  test_dim3()
-{
+#if _CCCL_HAS_NVFP16()
+  test<__half2, __half, 2>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat162, __nv_bfloat16, 2>();
+#endif // _CCCL_HAS_NVBF16()
+
   test<dim3, unsigned int, 3, 0>();
   test<dim3, unsigned int, 3, 1>();
   test<dim3, unsigned int, 3, 2>();
+
   return true;
 }
 
 int main(int arg, char** argv)
 {
   test();
-  test_dim3();
-  static_assert(test(), "");
-#if !TEST_COMPILER(MSVC)
-  static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER(MSVC)
-
+  static_assert(test());
   return 0;
 }

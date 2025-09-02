@@ -80,7 +80,7 @@ struct functor
     // select the smallest index among true results
     if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
     {
-      return TupleType(true, (::cuda::std::min)(thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      return TupleType(true, (::cuda::std::min) (thrust::get<1>(lhs), thrust::get<1>(rhs)));
     }
     else if (thrust::get<0>(lhs))
     {
@@ -210,7 +210,7 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
 
   // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
   const Size interval_threshold = 1 << 20;
-  const Size interval_size      = (::cuda::std::min)(interval_threshold, num_items);
+  const Size interval_size      = (::cuda::std::min) (interval_threshold, num_items);
 
   // FIXME(bgruber): we should also be able to use transform_iterator here, but it makes nvc++ hang. See:
   // https://github.com/NVIDIA/cccl/issues/3594. The problem does not occur with nvcc, so we could not add a test :/
@@ -249,14 +249,14 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
 template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
-  return cuda_cub::find_if_n(policy, first, thrust::distance(first, last), predicate);
+  return cuda_cub::find_if_n(policy, first, ::cuda::std::distance(first, last), predicate);
 }
 
 template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 find_if_not(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
 {
-  return cuda_cub::find_if(policy, first, last, thrust::not_fn(predicate));
+  return cuda_cub::find_if(policy, first, last, ::cuda::std::not_fn(predicate));
 }
 
 template <class Derived, class InputIt, class T>

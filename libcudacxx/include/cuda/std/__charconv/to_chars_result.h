@@ -1,15 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CHARCONV_TO_CHARS_RESULT_H
-#define _LIBCUDACXX___CHARCONV_TO_CHARS_RESULT_H
+#ifndef _CUDA_STD___CHARCONV_TO_CHARS_RESULT_H
+#define _CUDA_STD___CHARCONV_TO_CHARS_RESULT_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,31 +22,35 @@
 
 #include <cuda/std/__system_error/errc.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT to_chars_result
 {
   char* ptr;
   errc ec;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return ec == errc{};
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const to_chars_result& __lhs, const to_chars_result& __rhs) noexcept
   {
     return __lhs.ptr == __rhs.ptr && __lhs.ec == __rhs.ec;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const to_chars_result& __lhs, const to_chars_result& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CHARCONV_TO_CHARS_RESULT_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CHARCONV_TO_CHARS_RESULT_H

@@ -96,12 +96,12 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   using IteratorTuple = thrust::tuple<InputIterator, Pointer>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(first, result));
+  ZipIterator begin = thrust::make_zip_iterator(first, result);
   ZipIterator end   = begin;
 
   // get a zip_iterator pointing to the end
-  const thrust::detail::it_difference_t<InputIterator> n = thrust::distance(first, last);
-  thrust::advance(end, n);
+  const thrust::detail::it_difference_t<InputIterator> n = ::cuda::std::distance(first, last);
+  ::cuda::std::advance(end, n);
 
   // create a functor
   using InputType  = it_value_t<InputIterator>;
@@ -132,7 +132,7 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
   using IteratorTuple = thrust::tuple<InputIterator, Pointer>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator begin = thrust::make_zip_iterator(thrust::make_tuple(first, result));
+  ZipIterator begin = thrust::make_zip_iterator(first, result);
 
   // create a functor
   using InputType  = it_value_t<InputIterator>;

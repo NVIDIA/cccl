@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FIND_H
-#define _LIBCUDACXX___ALGORITHM_FIND_H
+#ifndef _CUDA_STD___ALGORITHM_FIND_H
+#define _CUDA_STD___ALGORITHM_FIND_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,16 +22,18 @@
 
 #include <cuda/std/__functional/invoke.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 // generic implementation
 template <class _Iter, class _Sent, class _Tp, class _Proj>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter
-__find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
+[[nodiscard]] _CCCL_API constexpr _Iter __find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
 {
   for (; __first != __last; ++__first)
   {
-    if (_CUDA_VSTD::__invoke(__proj, *__first) == __value)
+    if (::cuda::std::__invoke(__proj, *__first) == __value)
     {
       break;
     }
@@ -39,9 +41,9 @@ __find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
   return __first;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _InputIterator
-find(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
+[[nodiscard]] _CCCL_API constexpr _InputIterator find(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
 {
   for (; __first != __last; ++__first)
   {
@@ -53,6 +55,8 @@ find(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
   return __first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_FIND_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_FIND_H

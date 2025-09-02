@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_SIZE_H
-#define _LIBCUDACXX___RANGES_SIZE_H
+#ifndef _CUDA_STD___RANGES_SIZE_H
+#define _CUDA_STD___RANGES_SIZE_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,14 +34,16 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class>
 inline constexpr bool disable_sized_range = false;
 
 // [range.prim.size]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__size)
+_CCCL_BEGIN_NAMESPACE_CPO(__size)
 template <class _Tp>
 void size(_Tp&) = delete;
 template <class _Tp>
@@ -50,7 +52,7 @@ void size(const _Tp&) = delete;
 template <class _Tp>
 _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_size = __size_enabled<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   { _LIBCUDACXX_AUTO_CAST(__t.size()) } -> __integer_like;
@@ -65,10 +67,12 @@ concept __unqualified_size =
 template <class _Tp>
 concept __difference =
   !__member_size<_Tp> && !__unqualified_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
-    { _CUDA_VRANGES::end(__t) } -> sized_sentinel_for<decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>;
+    { ::cuda::std::ranges::begin(__t) } -> forward_iterator;
+    {
+      ::cuda::std::ranges::end(__t)
+    } -> sized_sentinel_for<decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp>()))>;
   };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__member_size_,
                        requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
@@ -95,26 +99,26 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(!__member_size<_Tp>),
                       requires(!__unqualified_size<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
-                      requires(forward_iterator<decltype(_CUDA_VRANGES::begin(__t))>),
-                      requires(sized_sentinel_for<decltype(_CUDA_VRANGES::end(__t)),
-                                                  decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>)));
+                      requires(forward_iterator<decltype(::cuda::std::ranges::begin(__t))>),
+                      requires(sized_sentinel_for<decltype(::cuda::std::ranges::end(__t)),
+                                                  decltype(::cuda::std::ranges::begin(::cuda::std::declval<_Tp>()))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __difference = _CCCL_FRAGMENT(__difference_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 struct __fn
 {
   // `[range.prim.size]`: the array case (for rvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t operator()(_Tp (&&)[_Sz]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t operator()(_Tp (&&)[_Sz]) const noexcept
   {
     return _Sz;
   }
 
   // `[range.prim.size]`: the array case (for lvalues).
   template <class _Tp, size_t _Sz>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t operator()(_Tp (&)[_Sz]) const noexcept
+  [[nodiscard]] _CCCL_API constexpr size_t operator()(_Tp (&)[_Sz]) const noexcept
   {
     return _Sz;
   }
@@ -123,7 +127,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_size<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.size());
@@ -133,7 +137,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_size<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(size(__t));
@@ -143,14 +147,14 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__difference<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__t) - _CUDA_VRANGES::begin(__t))))
-      -> decltype(_CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__t) - _CUDA_VRANGES::begin(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
+    noexcept(noexcept(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t))))
+      -> decltype(::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t)))
   {
-    return _CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__t) - _CUDA_VRANGES::begin(__t));
+    return ::cuda::std::__to_unsigned_like(::cuda::std::ranges::end(__t) - ::cuda::std::ranges::begin(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -159,38 +163,39 @@ _CCCL_GLOBAL_CONSTANT auto size = __size::__fn{};
 
 // [range.prim.ssize]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__ssize)
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CPO(__ssize)
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
-concept __can_ssize = requires(_Tp&& __t) { _CUDA_VRANGES::size(__t); };
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+concept __can_ssize = requires(_Tp&& __t) { ::cuda::std::ranges::size(__t); };
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__can_ssize_,
-                       requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
+_CCCL_CONCEPT_FRAGMENT(
+  __can_ssize_, requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) ::cuda::std::ranges::size(__t))));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_ssize = _CCCL_FRAGMENT(__can_ssize_, _Tp);
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_ssize<_Tp>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::size(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::size(__t)))
   {
-    using _Signed = make_signed_t<decltype(_CUDA_VRANGES::size(__t))>;
+    using _Signed = make_signed_t<decltype(::cuda::std::ranges::size(__t))>;
     using _Result = conditional_t<(sizeof(ptrdiff_t) > sizeof(_Signed)), ptrdiff_t, _Signed>;
-    return static_cast<_Result>(_CUDA_VRANGES::size(__t));
+    return static_cast<_Result>(::cuda::std::ranges::size(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX___RANGES_SIZE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___RANGES_SIZE_H

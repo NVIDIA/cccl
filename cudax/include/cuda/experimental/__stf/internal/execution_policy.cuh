@@ -101,6 +101,17 @@ inline hw_scope operator&(const hw_scope& lhs, const hw_scope& rhs)
   return hw_scope(as_underlying(lhs) & as_underlying(rhs));
 }
 
+//! @brief Bitwise NOT operator for inverting a `hw_scope` value.
+//!
+//! This function performs a bitwise NOT operation on the underlying type of a `hw_scope` value.
+//! It is useful for computing the complement of a given scope, ensuring that only valid bits
+//! within the range of `hw_scope::all` are set in the result.
+//!
+//! @param s The hw_scope value to invert.
+//! @return A new hw_scope representing the bitwise complement of s, masked to valid bits.
+//!
+//! @note The function includes an assertion to ensure that s is within the allowed range.
+//!       Any bits beyond those represented by `hw_scope::all` are cleared in the result.
 inline hw_scope operator~(const hw_scope& s)
 {
   assert(as_underlying(s) <= as_underlying(hw_scope::all));
@@ -185,10 +196,10 @@ public:
    */
   template <typename... P>
   explicit thread_hierarchy_spec(const P&... p)
-      : inner(only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
-      , dynamic_width(only_convertible_or(decltype(dynamic_width)(), p...))
-      , sync_scope(only_convertible_or(hw_scope::all, p...))
-      , mem_bytes(only_convertible_or(mem(0), p...))
+      : inner(reserved::only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
+      , dynamic_width(reserved::only_convertible_or(decltype(dynamic_width)(), p...))
+      , sync_scope(reserved::only_convertible_or(hw_scope::all, p...))
+      , mem_bytes(reserved::only_convertible_or(mem(0), p...))
   {
     shuffled_args_check<P...>(inner, dynamic_width, sync_scope, mem_bytes);
     if constexpr (sizeof...(lower_levels) > 0)
@@ -633,6 +644,8 @@ UNITTEST("con") {
 };
 // clang-format on
 
+// These trigger a segfault in nvcc 12.9. Temporarily disabling until they can be investigated.
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
 // unittest for core.h that can't be there
 UNITTEST("optionally_static")
 {
@@ -649,7 +662,7 @@ UNITTEST("optionally_static")
   v3 = 44;
   EXPECT(v3.get() == 44UL);
 
-#  if 0
+#    if 0
   // TODO clarify these tests !
 
   // Make sure the size is optimized properly
@@ -665,7 +678,7 @@ UNITTEST("optionally_static")
     [[no_unique_address]] optionally_static<size_t(42)> x;
   };
   static_assert(sizeof(S1) == sizeof(int));
-#  endif
+#    endif
 
   // Multiplication
   static_assert(v1 * v1 == 42UL * 42UL);
@@ -681,7 +694,7 @@ UNITTEST("optionally_static")
   static_assert(v4 * v5 == (optionally_static<18, 18>(18)));
 
 // TODO solve these there are some ambiguities !
-#  if 0
+#    if 0
   // Mutating operators
   optionally_static<1, 1> v6;
   v6 += v6;
@@ -697,8 +710,9 @@ UNITTEST("optionally_static")
   v6--;
   EXPECT(v6 == 1);
   EXPECT(-v6 == -1);
-#  endif
+#    endif
 };
+#  endif
 
 UNITTEST("thread hierarchy spec equality")
 {

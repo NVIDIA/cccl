@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_PRIORITY_TAG_H
-#define _LIBCUDACXX___UTILITY_PRIORITY_TAG_H
+#ifndef _CUDA_STD___UTILITY_PRIORITY_TAG_H
+#define _CUDA_STD___UTILITY_PRIORITY_TAG_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,9 @@
 
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _Ip>
 struct __priority_tag : __priority_tag<_Ip - 1>
@@ -31,6 +33,8 @@ template <>
 struct __priority_tag<0>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___UTILITY_PRIORITY_TAG_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___UTILITY_PRIORITY_TAG_H

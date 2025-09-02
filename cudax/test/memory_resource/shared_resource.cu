@@ -11,20 +11,21 @@
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
-#include "test_resource.cuh"
 #include <testing.cuh>
+
+#include "test_resource.cuh"
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;
-  static_assert(cuda::mr::async_resource<cudax::shared_resource<TestResource>>);
+  static_assert(cuda::mr::resource<cudax::shared_resource<TestResource>>);
 
   SECTION("construct and destruct")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::shared_resource<TestResource> mr{42, this};
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
     }
@@ -41,7 +42,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::shared_resource<TestResource> mr{42, this};
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
 
@@ -50,15 +51,20 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       CHECK(mr == mr2); // pointers compare equal, no call to TestResource::operator==
       CHECK(this->counts == expected);
 
-      auto mr3 = std::move(mr);
+      cudax::shared_resource mr3{mr};
       CHECK(this->counts == expected);
-      CHECK(mr2 == mr3); // pointers compare equal, no call to TestResource::operator==
+      CHECK(mr == mr3); // pointers compare equal, no call to TestResource::operator==
       CHECK(this->counts == expected);
 
-      cudax::shared_resource<TestResource> mr4{TestResource{42, this}};
+      auto mr4 = std::move(mr);
+      CHECK(this->counts == expected);
+      CHECK(mr2 == mr4); // pointers compare equal, no call to TestResource::operator==
+      CHECK(this->counts == expected);
+
+      cudax::shared_resource mr5{cuda::std::in_place_type<TestResource>, TestResource{42, this}};
       ++expected.object_count;
       ++expected.move_count;
-      CHECK(mr3 == mr4); // pointers are not equal, calls TestResource::operator==
+      CHECK(mr4 == mr5); // pointers are not equal, calls TestResource::operator==
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
@@ -70,21 +76,21 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate and deallocate")
+  SECTION("allocate_sync and deallocate_sync")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::shared_resource<TestResource> mr{42, this};
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, bytes(50), align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -96,22 +102,22 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion to resource_ref")
+  SECTION("conversion to synchronous_resource_ref")
   {
     Counts expected{};
     {
-      cudax::shared_resource<TestResource> mr{42, this};
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      cudax::resource_ref<cudax::host_accessible> ref = mr;
+      cudax::synchronous_resource_ref<cudax::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -129,7 +135,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     {
       bytes(42 * sizeof(int));
       cudax::uninitialized_buffer<int, cudax::host_accessible> buffer{
-        cudax::shared_resource<TestResource>(42, this), 42};
+        cudax::shared_resource<TestResource>(cuda::std::in_place_type<TestResource>, 42, this), 42};
       ++expected.object_count;
       ++expected.allocate_count;
       CHECK(this->counts == expected);
@@ -138,7 +144,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       {
         // accounting for new storage
         bytes(1337 * sizeof(int));
-        cudax::uninitialized_buffer<int, cudax::host_accessible> other_buffer{buffer.get_memory_resource(), 1337};
+        cudax::uninitialized_buffer<int, cudax::host_accessible> other_buffer{buffer.memory_resource(), 1337};
         ++expected.allocate_count;
         CHECK(this->counts == expected);
       }

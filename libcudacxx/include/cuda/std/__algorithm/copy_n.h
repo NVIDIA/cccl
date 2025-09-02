@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_COPY_N_H
-#define _LIBCUDACXX___ALGORITHM_COPY_N_H
+#ifndef _CUDA_STD___ALGORITHM_COPY_N_H
+#define _CUDA_STD___ALGORITHM_COPY_N_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,14 +25,17 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
           enable_if_t<__is_cpp17_input_iterator<_InputIterator>::value, int>          = 0,
           enable_if_t<!__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _OutputIterator
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
@@ -51,18 +54,20 @@ copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
   return __result;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
           enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
-copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
+_CCCL_API constexpr _OutputIterator copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
   _IntegralSize __n   = static_cast<_IntegralSize>(__orig_n);
-  return _CUDA_VSTD::copy(__first, __first + __n, __result);
+  return ::cuda::std::copy(__first, __first + __n, __result);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_COPY_N_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_COPY_N_H

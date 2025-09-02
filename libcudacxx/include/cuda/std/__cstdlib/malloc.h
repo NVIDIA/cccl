@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDLIB_MALLOC_H
-#define _LIBCUDACXX___CSTDLIB_MALLOC_H
+#ifndef _CUDA_STD___CSTDLIB_MALLOC_H
+#define _CUDA_STD___CSTDLIB_MALLOC_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,13 +30,14 @@
 
 #include <nv/target>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::free;
 using ::malloc;
 
-// We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
@@ -45,22 +46,24 @@ using ::malloc;
 
   if (::__umul64hi(__n, __size) == 0)
   {
-    __ptr = _CUDA_VSTD::malloc(__nbytes);
+    __ptr = ::cuda::std::malloc(__nbytes);
     if (__ptr != nullptr)
     {
-      _CUDA_VSTD::memset(__ptr, 0, __nbytes);
+      ::cuda::std::memset(__ptr, 0, __nbytes);
     }
   }
 
   return __ptr;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_API inline void* calloc(size_t __n, size_t __size) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return ::cuda::std::__calloc_device(__n, __size);))
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CSTDLIB_MALLOC_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CSTDLIB_MALLOC_H

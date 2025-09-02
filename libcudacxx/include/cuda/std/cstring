@@ -21,322 +21,90 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__string/constexpr_c_functions.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstring>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::memcpy;
 using ::memset;
 using ::size_t;
 
-// strcpy
-
-_LIBCUDACXX_HIDE_FROM_ABI constexpr char*
-__cccl_constexpr_strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src) noexcept
+_CCCL_API constexpr char* strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src)
 {
-  char* __dst_it = __dst;
-  while ((*__dst_it++ = *__src++) != '\0')
-  {
-  }
-  return __dst;
+  return ::cuda::std::__cccl_strcpy(__dst, __src);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr char* strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src)
+_CCCL_API constexpr char* strncpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src, size_t __n)
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strcpy(__dst, __src);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strcpy(__dst, __src);
+  return ::cuda::std::__cccl_strncpy(__dst, __src, __n);
 }
 
-// strncpy
-
-_LIBCUDACXX_HIDE_FROM_ABI constexpr char*
-__cccl_constexpr_strncpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr size_t strlen(const char* __ptr)
 {
-  char* __dst_it = __dst;
-  while (__n--)
-  {
-    if ((*__dst_it++ = *__src++) == '\0')
-    {
-      while (__n--)
-      {
-        *__dst_it++ = '\0';
-      }
-      break;
-    }
-  }
-  return __dst;
+  return ::cuda::std::__cccl_strlen(__ptr);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr char*
-strncpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src, size_t __n)
+[[nodiscard]] _CCCL_API constexpr int strcmp(const char* __lhs, const char* __rhs)
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strncpy(__dst, __src, __n);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strncpy(__dst, __src, __n);
+  return ::cuda::std::__cccl_strcmp(__lhs, __rhs);
 }
 
-// strlen
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_constexpr_strlen(const char* __ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr int strncmp(const char* __lhs, const char* __rhs, size_t __n)
 {
-  size_t __len = 0;
-  while (*__ptr++ != '\0')
-  {
-    ++__len;
-  }
-  return __len;
+  return ::cuda::std::__cccl_strncmp(__lhs, __rhs, __n);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t strlen(const char* __ptr)
+[[nodiscard]] _CCCL_API constexpr const char* strchr(const char* __ptr, int __c)
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strlen(__ptr);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strlen(__ptr);
+  return ::cuda::std::__cccl_strchr<const char>(__ptr, static_cast<char>(__c));
 }
 
-// strcmp
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_constexpr_strcmp(const char* __lhs, const char* __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr char* strchr(char* __ptr, int __c)
 {
-  while (*__lhs == *__rhs)
-  {
-    if (*__lhs == '\0')
-    {
-      return 0;
-    }
-
-    ++__lhs;
-    ++__rhs;
-  }
-  return (static_cast<unsigned char>(*__lhs) < static_cast<unsigned char>(*__rhs)) ? -1 : 1;
+  return ::cuda::std::__cccl_strchr(__ptr, static_cast<char>(__c));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int strcmp(const char* __lhs, const char* __rhs)
+[[nodiscard]] _CCCL_API constexpr const char* strrchr(const char* __ptr, int __c)
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strcmp(__lhs, __rhs);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strcmp(__lhs, __rhs);
+  return ::cuda::std::__cccl_strrchr<const char>(__ptr, static_cast<char>(__c));
 }
 
-// strncmp
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_constexpr_strncmp(const char* __lhs, const char* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr char* strrchr(char* __ptr, int __c)
 {
-  while (__n--)
-  {
-    if (*__lhs != *__rhs)
-    {
-      return (static_cast<unsigned char>(*__lhs) < static_cast<unsigned char>(*__rhs)) ? -1 : 1;
-    }
-
-    if (*__lhs == '\0')
-    {
-      return 0;
-    }
-
-    ++__lhs;
-    ++__rhs;
-  }
-  return 0;
+  return ::cuda::std::__cccl_strrchr(__ptr, static_cast<char>(__c));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int strncmp(const char* __lhs, const char* __rhs, size_t __n)
+_CCCL_API inline const void* memchr(const void* __ptr, int __c, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strncmp(__lhs, __rhs, __n);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strncmp(__lhs, __rhs, __n);
+  return ::cuda::std::__cccl_memchr<const unsigned char>(
+    reinterpret_cast<const unsigned char*>(__ptr), static_cast<unsigned char>(__c), __n);
 }
 
-// strchr
-
-template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_constexpr_strchr(_Tp* __ptr, int __c) noexcept
+_CCCL_API inline void* memchr(void* __ptr, int __c, size_t __n) noexcept
 {
-  while (*__ptr != static_cast<char>(__c))
-  {
-    if (*__ptr == '\0')
-    {
-      return nullptr;
-    }
-    ++__ptr;
-  }
-  return __ptr;
+  return ::cuda::std::__cccl_memchr(reinterpret_cast<unsigned char*>(__ptr), static_cast<unsigned char>(__c), __n);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* strchr(const char* __ptr, int __c)
+_CCCL_API inline void* memmove(void* __dst, const void* __src, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strchr(__ptr, __c);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strchr(__ptr, __c);
+  return ::cuda::std::__cccl_memmove(
+    reinterpret_cast<unsigned char*>(__dst), reinterpret_cast<const unsigned char*>(__src), __n);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char* strchr(char* __ptr, int __c)
+[[nodiscard]] _CCCL_API inline int memcmp(const void* __lhs, const void* __rhs, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strchr(__ptr, __c);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strchr(__ptr, __c);
+  return ::cuda::std::__cccl_memcmp(
+    reinterpret_cast<const unsigned char*>(__lhs), reinterpret_cast<const unsigned char*>(__rhs), __n);
 }
 
-// strrchr
+_CCCL_END_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_constexpr_strrchr(_Tp* __ptr, int __c) noexcept
-{
-  if (static_cast<char>(__c) == '\0')
-  {
-    return __ptr + _CUDA_VSTD::strlen(__ptr);
-  }
-
-  _Tp* __last{};
-  while (*__ptr != '\0')
-  {
-    if (*__ptr == static_cast<char>(__c))
-    {
-      __last = __ptr;
-    }
-    ++__ptr;
-  }
-  return __last;
-}
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* strrchr(const char* __ptr, int __c)
-{
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strrchr(__ptr, __c);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strrchr(__ptr, __c);
-}
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char* strrchr(char* __ptr, int __c)
-{
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ::strrchr(__ptr, __c);))
-  }
-  return _CUDA_VSTD::__cccl_constexpr_strrchr(__ptr, __c);
-}
-
-// memchr
-
-#if _CCCL_HAS_CUDA_COMPILER()
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE const void* __memchr_device(const void* __ptr, int __c, size_t __n) noexcept
-{
-  auto __p = static_cast<const unsigned char*>(__ptr);
-
-  while (__n--)
-  {
-    if (*__p == static_cast<unsigned char>(__c))
-    {
-      return __p;
-    }
-    ++__p;
-  }
-
-  return nullptr;
-}
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-_LIBCUDACXX_HIDE_FROM_ABI const void* memchr(const void* __ptr, int __c, size_t __n) noexcept
-{
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (return ::memchr(__ptr, __c, __n);), (return _CUDA_VSTD::__memchr_device(__ptr, __c, __n);))
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI void* memchr(void* __ptr, int __c, size_t __n) noexcept
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return ::memchr(__ptr, __c, __n);),
-                    (return const_cast<void*>(_CUDA_VSTD::memchr(const_cast<const void*>(__ptr), __c, __n));))
-}
-
-// memmove
-
-#if _CCCL_HAS_CUDA_COMPILER()
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __memmove_device(void* __dst, const void* __src, size_t __n) noexcept
-{
-  auto __d = (__dst <= __src) ? static_cast<unsigned char*>(__dst) : (static_cast<unsigned char*>(__dst) + __n - 1);
-  auto __s =
-    (__dst <= __src) ? static_cast<const unsigned char*>(__src) : (static_cast<const unsigned char*>(__src) + __n - 1);
-  const auto __inc = (__dst <= __src) ? 1 : -1;
-
-  while (__n--)
-  {
-    *__d = *__s;
-    __d += __inc;
-    __s += __inc;
-  }
-
-  return __dst;
-}
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-_LIBCUDACXX_HIDE_FROM_ABI void* memmove(void* __dst, const void* __src, size_t __n) noexcept
-{
-#if defined(_CCCL_BUILTIN_MEMMOVE)
-  return _CCCL_BUILTIN_MEMMOVE(__dst, __src, __n);
-#else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (return ::memmove(__dst, __src, __n);), (return _CUDA_VSTD::__memmove_device(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
-}
-
-// memcmp
-
-#if _CCCL_HAS_CUDA_COMPILER()
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __memcmp_device(const void* __lhs, const void* __rhs, size_t __n) noexcept
-{
-  auto __l = static_cast<const unsigned char*>(__lhs);
-  auto __r = static_cast<const unsigned char*>(__rhs);
-
-  while (__n--)
-  {
-    if (*__l != *__r)
-    {
-      return *__l < *__r ? -1 : 1;
-    }
-    ++__l;
-    ++__r;
-  }
-  return 0;
-}
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-_LIBCUDACXX_HIDE_FROM_ABI int memcmp(const void* __lhs, const void* __rhs, size_t __n) noexcept
-{
-#if defined(_CCCL_BUILTIN_MEMCMP)
-  return _CCCL_BUILTIN_MEMCMP(__lhs, __rhs, __n);
-#else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (return ::memcmp(__lhs, __rhs, __n);), (return _CUDA_VSTD::__memcmp_device(__lhs, __rhs, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
-}
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_CSTRING

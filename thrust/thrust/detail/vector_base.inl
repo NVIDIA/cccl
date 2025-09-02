@@ -72,6 +72,38 @@ vector_base<T, Alloc>::vector_base(size_type n)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
+vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+
+    if constexpr (!::cuda::std::is_trivially_constructible_v<T>)
+    {
+      m_storage.value_initialize_n(begin(), size());
+    }
+  }
+}
+
+template <typename T, typename Alloc>
+template <typename T2>
+vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
+                "The vector's element type must be trivially constructible to skip initialization.");
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+  }
+}
+
+template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
@@ -209,13 +241,6 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-template <typename IteratorOrIntegralType>
-void vector_base<T, Alloc>::init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type)
-{
-  fill_init(n, value);
-} // end vector_base::init_dispatch()
-
-template <typename T, typename Alloc>
 void vector_base<T, Alloc>::value_init(size_type n)
 {
   if (n > 0)
@@ -241,19 +266,12 @@ void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::init_dispatch(InputIterator first, InputIterator last, false_type)
-{
-  range_init(first, last);
-} // end vector_base::init_dispatch()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
 void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 {
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    size_type new_size = thrust::distance(first, last);
+    size_type new_size = ::cuda::std::distance(first, last);
 
     allocate_and_copy(new_size, first, last, m_storage);
     m_size = new_size;
@@ -274,11 +292,8 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
 {
-  // check the type of InputIterator: if it's an integral type,
-  // we need to interpret this call as (size_type, value_type)
-  using Integer = ::cuda::std::is_integral<InputIterator>;
-
-  init_dispatch(first, last, Integer());
+  static_assert(!::cuda::std::is_integral_v<InputIterator>); // TODO(bgruber): remove, just for testing
+  range_init(first, last);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -288,11 +303,8 @@ vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, cons
     : m_storage(alloc)
     , m_size(0)
 {
-  // check the type of InputIterator: if it's an integral type,
-  // we need to interpret this call as (size_type, value_type)
-  using Integer = ::cuda::std::is_integral<InputIterator>;
-
-  init_dispatch(first, last, Integer());
+  static_assert(!::cuda::std::is_integral_v<InputIterator>); // TODO(bgruber): remove, just for testing
+  range_init(first, last);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -301,7 +313,7 @@ void vector_base<T, Alloc>::resize(size_type new_size)
   if (new_size < size())
   {
     iterator new_end = begin();
-    thrust::advance(new_end, new_size);
+    ::cuda::std::advance(new_end, new_size);
     erase(new_end, end());
   } // end if
   else
@@ -311,12 +323,41 @@ void vector_base<T, Alloc>::resize(size_type new_size)
 } // end vector_base::resize()
 
 template <typename T, typename Alloc>
+void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
+{
+  if (new_size < size())
+  {
+    erase(::cuda::std::next(begin(), new_size), end());
+  }
+  else
+  {
+    append</* SkipInit = */ ::cuda::std::is_trivially_constructible_v<T>>(new_size - size());
+  }
+}
+
+template <typename T, typename Alloc>
+template <typename T2>
+void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
+{
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
+                "The vector's element type must be trivially constructible to skip initialization.");
+  if (new_size < size())
+  {
+    erase(::cuda::std::next(begin(), new_size), end());
+  }
+  else
+  {
+    append</* SkipInit = */ true>(new_size - size());
+  }
+}
+
+template <typename T, typename Alloc>
 void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
 {
   if (new_size < size())
   {
     iterator new_end = begin();
-    thrust::advance(new_end, new_size);
+    ::cuda::std::advance(new_end, new_size);
     erase(new_end, end());
   } // end if
   else
@@ -443,7 +484,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end()
 {
   iterator result = begin();
-  thrust::advance(result, size());
+  ::cuda::std::advance(result, size());
   return result;
 } // end vector_base::end()
 
@@ -451,7 +492,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end() const
 {
   const_iterator result = begin();
-  thrust::advance(result, size());
+  ::cuda::std::advance(result, size());
   return result;
 } // end vector_base::end()
 
@@ -593,11 +634,15 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
-  // we could have received assign(n, x), so disambiguate on the
-  // type of InputIterator
-  using integral = typename ::cuda::std::is_integral<InputIterator>;
-
-  assign_dispatch(first, last, integral());
+  // we could have received assign(n, x), so disambiguate on the type of InputIterator
+  if constexpr (::cuda::std::is_integral_v<InputIterator>)
+  {
+    fill_assign(first, last);
+  }
+  else
+  {
+    range_assign(first, last);
+  }
 } // end vector_base::assign()
 
 template <typename T, typename Alloc>
@@ -610,14 +655,14 @@ template <typename T, typename Alloc>
 typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator position, const T& x)
 {
   // find the index of the insertion
-  size_type index = thrust::distance(begin(), position);
+  size_type index = ::cuda::std::distance(begin(), position);
 
   // make the insertion
   insert(position, 1, x);
 
   // return an iterator pointing back to position
   iterator result = begin();
-  thrust::advance(result, index);
+  ::cuda::std::advance(result, index);
   return result;
 } // end vector_base::insert()
 
@@ -640,20 +685,6 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::assign_dispatch(InputIterator first, InputIterator last, false_type)
-{
-  range_assign(first, last);
-} // end vector_base::assign_dispatch()
-
-template <typename T, typename Alloc>
-template <typename Integral>
-void vector_base<T, Alloc>::assign_dispatch(Integral n, Integral x, true_type)
-{
-  fill_assign(n, x);
-} // end vector_base::assign_dispatch()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
 void vector_base<T, Alloc>::insert_dispatch(iterator position, InputIterator first, InputIterator last, false_type)
 {
   copy_insert(position, first, last);
@@ -673,7 +704,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
   if (first != last)
   {
     // how many new elements will we create?
-    const size_type num_new_elements = thrust::distance(first, last);
+    const size_type num_new_elements = ::cuda::std::distance(first, last);
     if (capacity() - size() >= num_new_elements)
     {
       // we've got room for all of them
@@ -701,7 +732,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
       else
       {
         ForwardIterator mid = first;
-        thrust::advance(mid, num_displaced_elements);
+        ::cuda::std::advance(mid, num_displaced_elements);
 
         // construct copy new elements at the end of the vector
         m_storage.uninitialized_copy(mid, last, end());
@@ -777,6 +808,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
 } // end vector_base::copy_insert()
 
 template <typename T, typename Alloc>
+template <bool SkipInit>
 void vector_base<T, Alloc>::append(size_type n)
 {
   if (n != 0)
@@ -785,8 +817,11 @@ void vector_base<T, Alloc>::append(size_type n)
     {
       // we've got room for all of them
 
-      // default construct new elements at the end of the vector
-      m_storage.value_initialize_n(end(), n);
+      if constexpr (!SkipInit)
+      {
+        // default construct new elements at the end of the vector
+        m_storage.value_initialize_n(end(), n);
+      }
 
       // extend the size
       m_size += n;
@@ -815,8 +850,12 @@ void vector_base<T, Alloc>::append(size_type n)
         // construct copy all elements into the newly allocated storage
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
-        // construct new elements to insert
-        new_storage.value_initialize_n(new_end, n);
+        if constexpr (!SkipInit)
+        {
+          // construct new elements to insert
+          new_storage.value_initialize_n(new_end, n);
+        }
+
         new_end += n;
       } // end try
       catch (...)
@@ -950,7 +989,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    const size_type n = thrust::distance(first, last);
+    const size_type n = ::cuda::std::distance(first, last);
     if (n > capacity())
     {
       storage_type new_storage(copy_allocator_t(), m_storage);
@@ -984,7 +1023,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
 
       // copy to elements which already exist
       InputIterator mid = first;
-      thrust::advance(mid, size());
+      ::cuda::std::advance(mid, size());
       thrust::copy(first, mid, begin());
 
       // uninitialize_copy to elements which must be constructed
@@ -1084,7 +1123,7 @@ void vector_base<T, Alloc>::allocate_and_copy(
     // something went wrong, so destroy & deallocate the new storage
     // XXX seems like this destroys too many elements -- should just be last - first instead of requested_size
     iterator new_storage_end = new_storage.begin();
-    thrust::advance(new_storage_end, requested_size);
+    ::cuda::std::advance(new_storage_end, requested_size);
     m_storage.destroy(new_storage.begin(), new_storage_end);
     new_storage.deallocate();
 
@@ -1104,7 +1143,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
 {
-  it_difference_t<InputIterator1> n = thrust::distance(first1, last1);
+  it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
 
   using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
   using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;

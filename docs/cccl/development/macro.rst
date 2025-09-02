@@ -49,30 +49,43 @@ the compiler's major version number. For example, when the compiler is ``gcc-9.1
 | ``_CCCL_CUDA_COMPILER(CLANG)`` | Clang                   |
 +--------------------------------+-------------------------+
 
-The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the version of a compiler.
+The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the version of a CUDA compiler.
 
 .. code:: cpp
 
    _CCCL_CUDA_COMPILER(NVCC, <, 12, 3)
    _CCCL_CUDA_COMPILER(CLANG, >=, 14)
 
+*Note*: ``_CCCL_CUDA_COMPILER(...)`` check may result in a ``true`` value even during the compilation of a C++ source
+file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA source file.
+
 **CUDA identification/version macros**:
 
-+----------------------------------+-----------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available  |
-+----------------------------------+-----------------------------+
-| ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7     |
-+----------------------------------+-----------------------------+
-| ``_CCCL_CUDACC_AT_LEAST(12, 7)`` | CUDA version at least 12.7  |
-+----------------------------------+-----------------------------+
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_DEVICE_COMPILATION()``   | Compiling device code, ``true`` when executing the CUDA device pass                            |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7 when compiling a CUDA source file                                      |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDACC_AT_LEAST(12, 7)`` | CUDA version at least 12.7 when compiling a CUDA source file                                   |
++----------------------------------+------------------------------------------------------------------------------------------------+
+
+*Note*: When compiling CUDA code with ``nvc++`` both ``_CCCL_HOST_COMPILATION()`` and ``_CCCL_DEVICE_COMPILATION()`` result in a ``true`` value.
 
 **PTX macros**:
 
-+--------------------+-------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_PTX_ARCH`` | Alias of ``__CUDA_ARCH__`` with value equal to 0 if cuda compiler is not available                                |
-+--------------------+-------------------------------------------------------------------------------------------------------------------+
-| ``__cccl_ptx_isa`` | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
-+--------------------+-------------------------------------------------------------------------------------------------------------------+
++----------------------+-------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_PTX_ARCH()`` | Alias of ``__CUDA_ARCH__`` with value equal to 0 if a CUDA compiler is not available                              |
++----------------------+-------------------------------------------------------------------------------------------------------------------+
+| ``__cccl_ptx_isa``   | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
++----------------------+-------------------------------------------------------------------------------------------------------------------+
+
+*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``0``.
 
 ----
 
@@ -172,6 +185,17 @@ CUDA attributes
 
 ----
 
+CUDA Toolkit macros
+-------------------
+
++-------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_HAS_CTK()``           | CUDA toolkit is available if ``_CCCL_CUDA_COMPILER()`` evaluates to a ``true`` value or if ``cuda_runtime_api.h`` was found |
++-------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CTK_BELOW``           | CUDA toolkit version below 12.7                                                                                             |
++-------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CTK_AT_LEAST(12, 7)`` | CUDA toolkit version at least 12.7                                                                                          |
++-------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+
 Non-standard Types Support
 --------------------------
 
@@ -229,8 +253,6 @@ The following macros are required only if the target C++ version does not suppor
 +------------------------+--------------------------------------------------------------------------------------------+
 | ``_CCCL_REQUIRES(X)``  | ``requires`` clause                                                                        |
 +------------------------+--------------------------------------------------------------------------------------------+
-| ``_CCCL_TRAIT(X)``     | Selects variable template ``is_meow_v<T>`` instead of ``is_meow<T>::value`` when available |
-+------------------------+--------------------------------------------------------------------------------------------+
 | ``_CCCL_AND``          | Traits conjunction only used with ``_CCCL_REQUIRES``                                       |
 +------------------------+--------------------------------------------------------------------------------------------+
 
@@ -239,12 +261,12 @@ Usage example:
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, T) _CCCL_AND(sizeof(T) > 1))
+    _CCCL_REQUIRES(is_integral_v<T> _CCCL_AND(sizeof(T) > 1))
 
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, T) _CCCL_AND (!_CCCL_TRAIT(is_integral, T)))
+    _CCCL_REQUIRES(is_arithmetic_v<T> _CCCL_AND (!is_integral_v<T>))
 
 
 **Portable feature testing**:
@@ -260,11 +282,9 @@ Usage example:
 **Portable attributes**:
 
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_ASSUME()``               | Portable ``[[assume]]`` attribute (before C++23)                             |
+| ``_CCCL_ASSUME(EXPR)``           | Portable ``[[assume]]`` attribute (before C++23)                             |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NO_UNIQUE_ADDRESS``      | Portable ``[[no_unique_address]]`` attribute                                 |
-+----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_NODISCARD_FRIEND``       | Portable ``[[nodiscard]]`` attribute for ``friend`` functions (before C++17) |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``CCCL_DEPRECATED``              | Portable ``[[deprecated]]`` attribute (before C++14)                         |
 +----------------------------------+------------------------------------------------------------------------------+
@@ -272,13 +292,16 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_FORCEINLINE``            | Portable "always inline" attribute                                           |
 +----------------------------------+------------------------------------------------------------------------------+
+| ``_CCCL_PURE``                   | Portable "pure" function attribute                                           |
++----------------------------------+------------------------------------------------------------------------------+
+| ``_CCCL_CONST``                  | Portable "constant" function attribute                                       |
++----------------------------------+------------------------------------------------------------------------------+
+
 
 **Portable Builtin Macros**:
 
 +---------------------------------------+--------------------------------------------+
 | ``_CCCL_UNREACHABLE()``               | Portable ``__builtin_unreachable()``       |
-+---------------------------------------+--------------------------------------------+
-| ``_CCCL_BUILTIN_ASSUME(X)``           | Portable ``__builtin_assume(X)``           |
 +---------------------------------------+--------------------------------------------+
 | ``_CCCL_BUILTIN_EXPECT(X)``           | Portable ``__builtin_expected(X)``         |
 +---------------------------------------+--------------------------------------------+
@@ -317,7 +340,7 @@ Visibility Macros
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 | ``_CCCL_HIDE_FROM_ABI``       | Hidden visibility (i.e. ``inline``, not exported, not instantiated)                                 |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
-| ``_LIBCUDACXX_HIDE_FROM_ABI`` | Host/device function with hidden visibility. Most libcu++ functions are hidden with this attribute  |
+| ``_CCCL_API``                 | Host/device function with hidden visibility. Most CCCL functions are hidden with this attribute     |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 
 ----
@@ -325,8 +348,6 @@ Visibility Macros
 Other Common Macros
 -------------------
 
-+-----------------------------+--------------------------------------------+
-| ``_CUDA_VSTD``              | ``cuda::std`` namespace. To use in libcu++ |
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_TO_STRING(X)``      | ``X`` to literal string                    |
 +-----------------------------+--------------------------------------------+
@@ -362,24 +383,22 @@ Warning Suppression Macros
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_DIAG_POP``          | Portable ``#pragma pop``                   |
 +-----------------------------+--------------------------------------------+
-| ``_CCCL_PUSH_MACROS``       | Push common msvc warning suppressions      |
-+-----------------------------+--------------------------------------------+
-| ``_CCCL_POP_MACROS``        | Pop common msvc warning suppressions       |
-+-----------------------------+--------------------------------------------+
 
 **Compiler-specific Suppression Macros**:
 
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``  | Suppress clang warning, e.g. ``"-Wattributes"``             |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_GCC(X)``    | Suppress gcc warning, e.g. ``"-Wattributes"``               |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``  | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``   | Suppress msvc warning, e.g. ``4127``                        |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_NV_DIAG_SUPPRESS(X)``     | Suppress nvcc warning, e.g. ``177``                         |
-+-----------------------------------+-------------------------------------------------------------+
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``    | Suppress clang warning, e.g. ``"-Wattributes"``             |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_GCC(X)``      | Suppress gcc warning, e.g. ``"-Wattributes"``               |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``    | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``     | Suppress msvc warning, e.g. ``4127``                        |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_BEGIN_NV_DIAG_SUPPRESS(X)`` | Start to suppress nvcc warning, e.g. ``177``                |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_END_NV_DIAG_SUPPRESS()``    | End to suppress nvcc warning                                |
++-------------------------------------+-------------------------------------------------------------+
 
 Usage example:
 

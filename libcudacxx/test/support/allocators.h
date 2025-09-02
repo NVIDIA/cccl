@@ -31,9 +31,9 @@ public:
     return id_;
   }
 
-  STATIC_MEMBER_VAR(copy_called, bool);
-  STATIC_MEMBER_VAR(move_called, bool);
-  STATIC_MEMBER_VAR(allocate_called, bool);
+  STATIC_MEMBER_VAR(copy_called, bool)
+  STATIC_MEMBER_VAR(move_called, bool)
+  STATIC_MEMBER_VAR(allocate_called, bool)
 
   __device__ __host__ static cuda::std::pair<T*, cuda::std::size_t>& deallocate_called()
   {
@@ -129,9 +129,9 @@ public:
     return id_;
   }
 
-  STATIC_MEMBER_VAR(copy_called, bool);
-  STATIC_MEMBER_VAR(move_called, bool);
-  STATIC_MEMBER_VAR(allocate_called, bool);
+  STATIC_MEMBER_VAR(copy_called, bool)
+  STATIC_MEMBER_VAR(move_called, bool)
+  STATIC_MEMBER_VAR(allocate_called, bool)
 
   __device__ __host__ A2(const A2& a) noexcept
       : id_(a.id())
@@ -195,10 +195,10 @@ public:
     return id_;
   }
 
-  STATIC_MEMBER_VAR(copy_called, bool);
-  STATIC_MEMBER_VAR(move_called, bool);
-  STATIC_MEMBER_VAR(constructed, bool);
-  STATIC_MEMBER_VAR(destroy_called, bool);
+  STATIC_MEMBER_VAR(copy_called, bool)
+  STATIC_MEMBER_VAR(move_called, bool)
+  STATIC_MEMBER_VAR(constructed, bool)
+  STATIC_MEMBER_VAR(destroy_called, bool)
 
   __device__ __host__ A3(const A3& a) noexcept
       : id_(a.id())

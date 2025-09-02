@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_IS_LOCAL_SMEM_BARRIER_H
-#define _CUDA___BARRIER_IS_LOCAL_SMEM_BARRIER_H
+#ifndef _CUDA___MEMCPY_ASYNC_IS_LOCAL_SMEM_BARRIER_H
+#define _CUDA___MEMCPY_ASYNC_IS_LOCAL_SMEM_BARRIER_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,24 +22,32 @@
 #endif // no system header
 
 #include <cuda/__barrier/barrier.h>
+#include <cuda/__memory/address_space.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __is_local_smem_barrier returns true if barrier is (1) block-scoped and (2) located in shared memory.
 template <thread_scope _Sco,
           typename _CompF,
           bool _Is_mbarrier = (_Sco == thread_scope_block)
-                           && _CCCL_TRAIT(_CUDA_VSTD::is_same, _CompF, _CUDA_VSTD::__empty_completion)>
-_LIBCUDACXX_HIDE_FROM_ABI bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
+                           && ::cuda::std::is_same_v<_CompF, ::cuda::std::__empty_completion>>
+_CCCL_API inline bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return _Is_mbarrier && __isShared(&__barrier);), (return false;));
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (return _Is_mbarrier && ::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared);),
+    (return false;));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-#endif // _CUDA___BARRIER_IS_LOCAL_SMEM_BARRIER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_IS_LOCAL_SMEM_BARRIER_H

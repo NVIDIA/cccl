@@ -12,27 +12,31 @@
 #define __COMMON_TESTING_H__
 
 #include <cuda/__cccl_config>
+#include <cuda/__driver/driver_api.h>
 
-#include <cuda/experimental/launch.cuh>
+#include <nv/target>
 
 #include <exception> // IWYU pragma: keep
 #include <iostream>
 #include <sstream>
 
 #include <c2h/catch2_test_helper.h>
-#include <nv/target>
 
-namespace cuda::experimental::__async
+namespace cuda::experimental::execution
 {
 }
 
 namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
-namespace cudax_async = cuda::experimental::__async; // NOLINT: misc-unused-alias-decls
+namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-alias-decls
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
 __device__ inline void cudax_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+  bool condition,
+  [[maybe_unused]] const char* condition_text,
+  [[maybe_unused]] const char* filename,
+  [[maybe_unused]] unsigned int linenum,
+  [[maybe_unused]] const char* funcname)
 {
   if (!condition)
   {
@@ -88,6 +92,63 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
+
 } // namespace Catch
+
+namespace
+{
+namespace test
+{
+inline int count_driver_stack()
+{
+  if (cuda::__driver::__ctxGetCurrent() != nullptr)
+  {
+    auto ctx    = cuda::__driver::__ctxPop();
+    auto result = 1 + count_driver_stack();
+    cuda::__driver::__ctxPush(ctx);
+    return result;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+inline void empty_driver_stack()
+{
+  while (cuda::__driver::__ctxGetCurrent() != nullptr)
+  {
+    cuda::__driver::__ctxPop();
+  }
+}
+
+inline int cuda_driver_version()
+{
+  return cuda::__driver::__getVersion();
+}
+
+// Needs to be a template because we use template catch2 macro
+template <typename Dummy = void>
+struct ccclrt_test_fixture
+{
+  ccclrt_test_fixture()
+  {
+    empty_driver_stack();
+  }
+  ~ccclrt_test_fixture()
+  {
+    CUDAX_CHECK(count_driver_stack() == 0);
+  }
+};
+
+} // namespace test
+} // namespace
+
+// Test macro that should be used in all cccl-rt tests
+// It first empties the driver stack in case some other test has left it non-empty
+// and then runs the test. At the end it checks if it remained empty, which ensures
+// we don't accidentally initialize device 0 through CUDART usage and makes sure
+// our APIs work with empty driver stack.
+#define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __COMMON_TESTING_H__

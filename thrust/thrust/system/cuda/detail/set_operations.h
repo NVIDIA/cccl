@@ -38,6 +38,8 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
+
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
@@ -289,10 +291,10 @@ struct SetOpAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt1   = typename core::detail::LoadIterator<PtxPlan, KeysIt1>::type;
-    using KeysLoadIt2   = typename core::detail::LoadIterator<PtxPlan, KeysIt2>::type;
-    using ValuesLoadIt1 = typename core::detail::LoadIterator<PtxPlan, ValuesIt1>::type;
-    using ValuesLoadIt2 = typename core::detail::LoadIterator<PtxPlan, ValuesIt2>::type;
+    using KeysLoadIt1   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt1>;
+    using KeysLoadIt2   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt2>;
+    using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt1>;
+    using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt2>;
 
     using BlockLoadKeys1   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt1>::type;
     using BlockLoadKeys2   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt2>::type;
@@ -657,10 +659,10 @@ struct SetOpAgent
          std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
-        , keys1_in(core::detail::make_load_iterator(ptx_plan(), keys1_))
-        , keys2_in(core::detail::make_load_iterator(ptx_plan(), keys2_))
-        , values1_in(core::detail::make_load_iterator(ptx_plan(), values1_))
-        , values2_in(core::detail::make_load_iterator(ptx_plan(), values2_))
+        , keys1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys1_))
+        , keys2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys2_))
+        , values1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values1_))
+        , values2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values2_))
         , keys1_count(keys1_count_)
         , keys2_count(keys2_count_)
         , keys_out(keys_out_)
@@ -1151,8 +1153,8 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 {
   using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-  size_type num_keys1 = static_cast<size_type>(thrust::distance(keys1_first, keys1_last));
-  size_type num_keys2 = static_cast<size_type>(thrust::distance(keys2_first, keys2_last));
+  size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
+  size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
 
   if (num_keys1 + num_keys2 == 0)
   {
@@ -1277,7 +1279,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1324,7 +1326,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_intersection(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1371,7 +1373,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_symmetric_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1417,7 +1419,8 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   OutputIt result)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
-  return cuda_cub::set_union(policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+  return cuda_cub::set_union(
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1500,7 +1503,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1573,7 +1576,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
     items1_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1650,7 +1653,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1727,7 +1730,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 } // namespace cuda_cub

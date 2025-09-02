@@ -19,20 +19,22 @@
 
 using namespace cuda::experimental::stf;
 
+__global__ void dummy_kernel() {}
+
 int main()
 {
   context ctx;
 
-  auto token = ctx.logical_data(shape_of<void_interface>());
-  ctx.task(token.write())->*[](cudaStream_t, auto) {
+  auto token = ctx.token();
+  ctx.task(token.write())->*[](cudaStream_t) {
 
   };
 
   void_interface sync;
   auto token2 = ctx.logical_data(sync);
 
-  auto token3 = ctx.logical_token();
-  ctx.task(token2.write(), token.read())->*[](cudaStream_t, auto, auto) {
+  auto token3 = ctx.token();
+  ctx.task(token2.write(), token.read())->*[](cudaStream_t) {
 
   };
 
@@ -41,6 +43,10 @@ int main()
   // or actual underlying data.
   ctx.task(token3.rw(), token.read())->*[](cudaStream_t) {
 
+  };
+
+  ctx.cuda_kernel(token3.rw())->*[]() {
+    return cuda_kernel_desc{dummy_kernel, 16, 128, 0};
   };
 
   ctx.finalize();

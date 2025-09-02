@@ -28,12 +28,16 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.3. Parallel Synchronization and Communication Instructions: barrier.cluster
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster
 #include <cuda/__ptx/instructions/generated/barrier_cluster.h>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_BARRIER_CLUSTER_H_

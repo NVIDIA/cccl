@@ -53,7 +53,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class KeysIt1, class KeysIt2, class ResultIt, class CompareOp = less<>>
+template <class Derived, class KeysIt1, class KeysIt2, class ResultIt, class CompareOp = ::cuda::std::less<>>
 ResultIt _CCCL_HOST_DEVICE
 merge(execution_policy<Derived>& policy,
       KeysIt1 keys1_begin,
@@ -65,8 +65,8 @@ merge(execution_policy<Derived>& policy,
 {
   THRUST_CDP_DISPATCH(
     (using size_type         = thrust::detail::it_difference_t<KeysIt1>;
-     const auto num_keys1    = static_cast<size_type>(thrust::distance(keys1_begin, keys1_end));
-     const auto num_keys2    = static_cast<size_type>(thrust::distance(keys2_begin, keys2_end));
+     const auto num_keys1    = static_cast<size_type>(::cuda::std::distance(keys1_begin, keys1_end));
+     const auto num_keys2    = static_cast<size_type>(::cuda::std::distance(keys2_begin, keys2_end));
      const auto num_keys_out = num_keys1 + num_keys2;
      if (num_keys_out == 0) { return result_begin; }
 
@@ -137,7 +137,7 @@ template <class Derived,
           class ItemsIt2,
           class KeysOutputIt,
           class ItemsOutputIt,
-          class CompareOp = less<>>
+          class CompareOp = ::cuda::std::less<>>
 pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_begin,
@@ -153,8 +153,8 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE merge_by_key(
   THRUST_CDP_DISPATCH(
     (using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-     const auto num_keys1    = static_cast<size_type>(thrust::distance(keys1_begin, keys1_end));
-     const auto num_keys2    = static_cast<size_type>(thrust::distance(keys2_begin, keys2_end));
+     const auto num_keys1    = static_cast<size_type>(::cuda::std::distance(keys1_begin, keys1_end));
+     const auto num_keys2    = static_cast<size_type>(::cuda::std::distance(keys2_begin, keys2_end));
      const auto num_keys_out = num_keys1 + num_keys2;
      if (num_keys_out == 0) { return {keys_out_begin, items_out_begin}; }
 

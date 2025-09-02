@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_API_REFERENCE_H
-#define __LIBCUDACXX___ATOMIC_API_REFERENCE_H
+#ifndef __CUDA_STD___ATOMIC_API_REFERENCE_H
+#define __CUDA_STD___ATOMIC_API_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,12 +29,14 @@
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__type_traits/conditional.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp, typename _Sco>
 struct __atomic_ref_common
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_ref_common(_Tp& __v)
+  _CCCL_API constexpr __atomic_ref_common(_Tp& __v)
       : __a(&__v)
   {}
 
@@ -50,7 +52,7 @@ struct __atomic_ref_common
 template <typename _Tp, typename _Sco>
 struct __atomic_ref_arithmetic
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_ref_arithmetic(_Tp& __v)
+  _CCCL_API constexpr __atomic_ref_arithmetic(_Tp& __v)
       : __a(&__v)
   {}
 
@@ -67,7 +69,7 @@ struct __atomic_ref_arithmetic
 template <typename _Tp, typename _Sco>
 struct __atomic_ref_bitwise
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_ref_bitwise(_Tp& __v)
+  _CCCL_API constexpr __atomic_ref_bitwise(_Tp& __v)
       : __a(&__v)
   {}
 
@@ -85,7 +87,7 @@ struct __atomic_ref_bitwise
 template <typename _Tp, typename _Sco>
 struct __atomic_ref_pointer
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_ref_pointer(_Tp& __v)
+  _CCCL_API constexpr __atomic_ref_pointer(_Tp& __v)
       : __a(&__v)
   {}
 
@@ -109,6 +111,8 @@ using __atomic_ref_impl =
               __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
               __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // __LIBCUDACXX___ATOMIC_API_REFERENCE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // __CUDA_STD___ATOMIC_API_REFERENCE_H

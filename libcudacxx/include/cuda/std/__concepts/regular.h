@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_REGULAR_H
-#define _LIBCUDACXX___CONCEPTS_REGULAR_H
+#ifndef _CUDA_STD___CONCEPTS_REGULAR_H
+#define _CUDA_STD___CONCEPTS_REGULAR_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,16 +24,18 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/semiregular.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.object]
 
 template <class _Tp>
 concept regular = semiregular<_Tp> && equality_comparable<_Tp>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [concept.object]
 
@@ -43,8 +45,10 @@ _CCCL_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requir
 template <class _Tp>
 _CCCL_CONCEPT regular = _CCCL_FRAGMENT(__regular_, _Tp);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_REGULAR_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CONCEPTS_REGULAR_H

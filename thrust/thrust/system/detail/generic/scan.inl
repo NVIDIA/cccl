@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   // assume plus as the associative operator
-  return thrust::inclusive_scan(exec, first, last, result, thrust::plus<>());
+  return thrust::inclusive_scan(exec, first, last, result, ::cuda::std::plus<>());
 } // end inclusive_scan()
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   T init)
 {
   // assume plus as the associative operator
-  return thrust::exclusive_scan(exec, first, last, result, init, thrust::plus<>());
+  return thrust::exclusive_scan(exec, first, last, result, init, ::cuda::std::plus<>());
 } // end exclusive_scan()
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>

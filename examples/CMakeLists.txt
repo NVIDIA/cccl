@@ -24,8 +24,8 @@ set(cmake_opts
   -D "CMAKE_CUDA_ARCHITECTURES=${arches_escaped}"
 )
 
-set(CCCL_EXAMPLE_CPM_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository used for CPM examples.")
-set(CCCL_EXAMPLE_CPM_TAG "main" CACHE STRING "Git tag/branch used for CPM examples.")
+set(CCCL_EXAMPLE_CPM_REPOSITORY "${CCCL_SOURCE_DIR}" CACHE STRING "Git repository used for CPM examples.")
+set(CCCL_EXAMPLE_CPM_TAG "HEAD" CACHE STRING "Git tag/branch used for CPM examples.")
 
 set(cmake_cpm_opts
   -D "CCCL_REPOSITORY=${CCCL_EXAMPLE_CPM_REPOSITORY}"
@@ -50,4 +50,23 @@ if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
     ${cmake_opts}
     ${cmake_cpm_opts}
   )
-endif()
+
+  cccl_add_compile_test(test_name
+    cccl.example
+    cudax_stf
+    "default"
+    ${cmake_opts}
+    ${cmake_cpm_opts}
+  )
+endif() # CTK > 12.0
+
+foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
+  cccl_add_compile_test(test_name
+    cccl.example
+    thrust_flexible_device_system
+    "${DEVICE_SYSTEM}"
+    -D "CCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
+    ${cmake_opts}
+    ${cmake_cpm_opts}
+  )
+endforeach()

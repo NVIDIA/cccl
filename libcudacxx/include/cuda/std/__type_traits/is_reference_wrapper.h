@@ -3,12 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCE_WRAPPER_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCE_WRAPPER_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_WRAPPER_H
+#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCE_WRAPPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,24 +20,31 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper;
+inline constexpr bool __cccl_is_reference_wrapper_v = false;
 
 template <class _Tp>
-struct __is_reference_wrapper_impl : public false_type
-{};
-template <class _Tp>
-struct __is_reference_wrapper_impl<reference_wrapper<_Tp>> : public true_type
-{};
-template <class _Tp>
-struct __is_reference_wrapper : public __is_reference_wrapper_impl<remove_cv_t<_Tp>>
-{};
+inline constexpr bool __cccl_is_reference_wrapper_v<reference_wrapper<_Tp>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp>
+inline constexpr bool __cccl_is_reference_wrapper_v<const reference_wrapper<_Tp>> = true;
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_ENABLE_IF_H
+template <class _Tp>
+inline constexpr bool __cccl_is_reference_wrapper_v<volatile reference_wrapper<_Tp>> = true;
+
+template <class _Tp>
+inline constexpr bool __cccl_is_reference_wrapper_v<const volatile reference_wrapper<_Tp>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_ENABLE_IF_H

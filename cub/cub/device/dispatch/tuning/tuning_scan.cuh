@@ -160,6 +160,29 @@ constexpr offset_size classify_offset_size()
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
+template <class ValueT,
+          class AccumT,
+          class OffsetT,
+          op_type OpTypeT,
+          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
+          offset_size OffsetSize               = classify_offset_size<OffsetT>(),
+          value_size ValueSize                 = classify_value_size<ValueT>()>
+struct sm75_tuning;
+
+template <class ValueT, class AccumT, class OffsetT>
+struct sm75_tuning<ValueT, AccumT, OffsetT, op_type::plus, primitive_accum::yes, offset_size::_8, value_size::_4>
+{
+  // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
+  static constexpr int threads                         = 128;
+  static constexpr int items                           = 7;
+  using delay_constructor                              = fixed_delay_constructor_t<628, 520>;
+  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr CacheLoadModifier load_modifier     = LOAD_DEFAULT;
+};
+
+// Add sm89 tuning and verify it
+
 template <class AccumT,
           primitive_op PrimitiveOp,
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
@@ -428,7 +451,7 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
+  CUB_RUNTIME_FUNCTION static constexpr auto Scan()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
@@ -501,7 +524,38 @@ struct policy_hub
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy600>
+  struct Policy750 : ChainedPolicy<750, Policy750, Policy600>
+  {
+    // Use values from tuning if a specialization exists that matches a benchmark, otherwise pick Policy600
+    template <typename Tuning,
+              typename IVT,
+              // In the tuning benchmarks the Initial-, Input- and OutputType are the same. Let's check that the
+              // accumulator type's size matches what we used during the benchmark since that has an impact (The
+              // tunings also check later that it's a primitive type, so arithmetic impact is also comparable to the
+              // benchmark). Input- and OutputType only impact loading and storing data (all arithmetic is done in the
+              // accumulator type), so let's check that they are the same size and dispatch the size in the tunings.
+              ::cuda::std::enable_if_t<sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, IVT, IVT>)
+                                         && sizeof(IVT) == sizeof(OutputValueT),
+                                       int> = 0>
+    static auto select_agent_policy750(int)
+      -> AgentScanPolicy<Tuning::threads,
+                         Tuning::items,
+                         AccumT,
+                         Tuning::load_algorithm,
+                         Tuning::load_modifier,
+                         Tuning::store_algorithm,
+                         BLOCK_SCAN_WARP_SCANS,
+                         MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                         typename Tuning::delay_constructor>;
+    template <typename Tuning, typename IVT>
+    static auto select_agent_policy750(long) -> typename Policy600::ScanPolicyT;
+
+    using ScanPolicyT =
+      decltype(select_agent_policy750<sm75_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>()>, InputValueT>(
+        0));
+  };
+
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy750>
   {
     using ScanPolicyT = decltype(select_agent_policy<sm80_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };

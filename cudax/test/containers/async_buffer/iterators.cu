@@ -24,11 +24,15 @@
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("cudax::async_buffer iterators",
-         "[container][async_buffer]",
-         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
-                        cuda::std::tuple<cuda::mr::device_accessible>,
-                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                                  cuda::std::tuple<cuda::mr::device_accessible>,
+                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+#endif
+
+C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", test_types)
 {
   using TestT     = c2h::get<0, TestType>;
   using Env       = typename extract_properties<TestT>::env;
@@ -43,7 +47,7 @@ C2H_TEST("cudax::async_buffer iterators",
   using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
-  cudax::stream stream{};
+  cudax::stream stream{cuda::device_ref{0}};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_buffer::begin/end properties")
@@ -65,8 +69,8 @@ C2H_TEST("cudax::async_buffer iterators",
 
   SECTION("cudax::async_buffer::begin/end thrust properties")
   {
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<iterator>::value);
-    STATIC_REQUIRE(thrust::is_contiguous_iterator<const_iterator>::value);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<iterator>);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator_v<const_iterator>);
 
     STATIC_REQUIRE(cuda::std::is_same_v<thrust::try_unwrap_contiguous_iterator_t<iterator>, int*>);
     STATIC_REQUIRE(
@@ -91,7 +95,7 @@ C2H_TEST("cudax::async_buffer iterators",
 
   SECTION("cudax::async_buffer::begin/end with allocation")
   {
-    Buffer buf{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Buffer buf{env, 42, cudax::no_init}; // Note we do not care about the elements just the sizes
     // begin points to the element at data()
     CUDAX_CHECK(buf.begin() == iterator{buf.data()});
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == const_iterator{buf.data()});
@@ -144,7 +148,7 @@ C2H_TEST("cudax::async_buffer iterators",
 
   SECTION("cudax::async_buffer::rbegin/rend with allocation")
   {
-    Buffer buf{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Buffer buf{env, 42, cudax::no_init}; // Note we do not care about the elements just the sizes
     // rbegin points to the element at data() + 42
     CUDAX_CHECK(buf.rbegin() == reverse_iterator{iterator{buf.data() + 42}});
     CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{buf.data() + 42}});

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_REPLACE_COPY_IF_H
-#define _LIBCUDACXX___ALGORITHM_REPLACE_COPY_IF_H
+#ifndef _CUDA_STD___ALGORITHM_REPLACE_COPY_IF_H
+#define _CUDA_STD___ALGORITHM_REPLACE_COPY_IF_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,10 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Predicate, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator replace_copy_if(
+_CCCL_API constexpr _OutputIterator replace_copy_if(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _Predicate __pred, const _Tp& __new_value)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -40,6 +43,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator replace_copy_if(
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_REPLACE_COPY_IF_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_REPLACE_COPY_IF_H

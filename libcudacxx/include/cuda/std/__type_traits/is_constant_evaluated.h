@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,28 +20,32 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_constant_evaluated() noexcept
+_CCCL_API constexpr bool is_constant_evaluated() noexcept
 {
   return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_default_is_constant_evaluated() noexcept
+_CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
 {
   return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
 #else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_constant_evaluated() noexcept
+_CCCL_API constexpr bool is_constant_evaluated() noexcept
 {
   return false;
 }
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_default_is_constant_evaluated() noexcept
+_CCCL_API constexpr bool __cccl_default_is_constant_evaluated() noexcept
 {
   return true;
 }
 #endif // !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CONSTANT_EVALUATED_H

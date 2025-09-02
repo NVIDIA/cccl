@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H
-#define _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_COMMON_TYPE_H
+#define _CUDA_STD___TYPE_TRAITS_COMMON_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,9 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type;
@@ -51,10 +53,10 @@ struct __common_type_extended_floating_point
 #if !defined(__CUDA_NO_HALF_CONVERSIONS__) && !defined(__CUDA_NO_HALF_OPERATORS__) \
   && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
 template <class _Tp, class _Up>
-struct __common_type_extended_floating_point<_Tp,
-                                             _Up,
-                                             enable_if_t<_CCCL_TRAIT(__is_extended_floating_point, remove_cvref_t<_Tp>)
-                                                         && _CCCL_TRAIT(is_arithmetic, remove_cvref_t<_Up>)>>
+struct __common_type_extended_floating_point<
+  _Tp,
+  _Up,
+  enable_if_t<__is_extended_floating_point_v<remove_cvref_t<_Tp>> && is_arithmetic_v<remove_cvref_t<_Up>>>>
 {
   using type = common_type_t<__copy_cvref_t<_Tp, float>, _Up>;
 };
@@ -63,8 +65,7 @@ template <class _Tp, class _Up>
 struct __common_type_extended_floating_point<
   _Tp,
   _Up,
-  enable_if_t<_CCCL_TRAIT(is_arithmetic, remove_cvref_t<_Tp>)
-              && _CCCL_TRAIT(__is_extended_floating_point, remove_cvref_t<_Up>)>>
+  enable_if_t<is_arithmetic_v<remove_cvref_t<_Tp>> && __is_extended_floating_point_v<remove_cvref_t<_Up>>>>
 {
   using type = common_type_t<_Tp, __copy_cvref_t<_Up, float>>;
 };
@@ -92,7 +93,7 @@ struct __common_type2_imp : __common_type3<_Tp, _Up>
 template <class _Tp, class _Up>
 using __msvc_declval_workaround =
 #if _CCCL_COMPILER(MSVC)
-  enable_if_t<_CCCL_TRAIT(is_same, __cond_type<_Tp, _Up>, __cond_type<_Up, _Tp>)>;
+  enable_if_t<is_same_v<__cond_type<_Tp, _Up>, __cond_type<_Up, _Tp>>>;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   void;
 #endif // !_CCCL_COMPILER(MSVC)
@@ -152,8 +153,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up> : __common_type2<_Tp,
 // bullet 4 - sizeof...(Tp) > 2
 
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up, _Vp, _Rest...>
-    : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+common_type<_Tp, _Up, _Vp, _Rest...> : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...>>
 {};
 
 template <class... _Tp>
@@ -165,6 +166,8 @@ inline constexpr bool __has_common_type = false;
 template <class _Tp, class _Up>
 inline constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_TYPE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_COMMON_TYPE_H

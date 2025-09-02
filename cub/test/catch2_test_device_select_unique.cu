@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 
@@ -56,11 +55,21 @@ inline ulonglong2 to_bound(const unsigned long long bound)
   return {bound, bound};
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
 inline ulonglong4 to_bound(const unsigned long long bound)
 {
   return {bound, bound, bound, bound};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline ulonglong4_16a to_bound(const unsigned long long bound)
+{
+  return {bound, bound, bound, bound};
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <>
 inline long2 to_bound(const unsigned long long bound)
@@ -96,7 +105,11 @@ using all_types =
                  std::uint32_t,
                  std::uint64_t,
                  ulonglong2,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
                  int,
                  long2,
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
@@ -271,14 +284,15 @@ C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]")
+C2H_TEST("DeviceSelect::Unique works for very large number of items",
+         "[device][select_unique][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::int64_t;
   using offset_t = std::int64_t;
 
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
-  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   offset_t num_items = GENERATE_COPY(
     values({

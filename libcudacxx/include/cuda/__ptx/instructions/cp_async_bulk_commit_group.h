@@ -28,12 +28,16 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.12. Data Movement and Conversion Instructions: cp.async.bulk.commit_group
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
 #include <cuda/__ptx/instructions/generated/cp_async_bulk_commit_group.h>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_CP_ASYNC_BULK_COMMIT_GROUP_H_

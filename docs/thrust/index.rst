@@ -1,18 +1,19 @@
 .. _thrust-module:
 
-Thrust: The C++ Parallel Algorithms Library
-==================================================
+Thrust
+======
 
 .. toctree::
    :hidden:
    :maxdepth: 2
 
-   :ref:`Overview <thrust-module>`
-   setup
+   Overview <self>
+   developer_cmake_options
    releases
    release_process
    api
-   ${repo_docs_api_path}/thrust_api
+   API documentation <api>
+   API reference <api/index>
 
 Thrust is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the
 C++ Standard Library. Thrust's **high-level** interface greatly enhances programmer **productivity** while
@@ -28,6 +29,17 @@ Examples
 --------
 
 Thrust is best learned through examples.
+
+-------------
+CMake Example
+-------------
+
+A complete, standalone example project showing how to write a CMake build system that uses Thrust with any supported
+device system is available in the CCCL repository `here <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`__.
+
+------------------
+Thrust API Example
+------------------
 
 The following example generates random numbers serially and then transfers them
   to a parallel device where they are sorted.

@@ -1,9 +1,9 @@
-/******************************************************************************
+/***********************************************************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -13,18 +13,15 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- ******************************************************************************/
+ **********************************************************************************************************************/
 
 /**
  * @file
@@ -51,7 +48,7 @@
 
 #include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/cstdint> // cuda::std::uint32_t
-#include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/type_traits> // is_same_v
 
 CUB_NAMESPACE_BEGIN
 
@@ -72,7 +69,7 @@ struct InequalityWrapper
   template <typename T, typename U>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u)
   {
-    return !op(_CUDA_VSTD::forward<T>(t), _CUDA_VSTD::forward<U>(u));
+    return !op(::cuda::std::forward<T>(t), ::cuda::std::forward<U>(u));
   }
 };
 
@@ -126,6 +123,45 @@ struct ArgMin
 
 namespace detail
 {
+
+/// @brief Arg max functor (keeps the value and offset of the first occurrence
+///        of the larger item)
+struct arg_max
+{
+  /// Boolean max operator, preferring the item having the smaller offset in
+  /// case of ties
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
+  operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
+  {
+    if ((b.second > a.second) || ((a.second == b.second) && (b.first < a.first)))
+    {
+      return b;
+    }
+
+    return a;
+  }
+};
+
+/// @brief Arg min functor (keeps the value and offset of the first occurrence
+///        of the smallest item)
+struct arg_min
+{
+  /// Boolean min operator, preferring the item having the smaller offset in
+  /// case of ties
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
+  operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
+  {
+    if ((b.second < a.second) || ((a.second == b.second) && (b.first < a.first)))
+    {
+      return b;
+    }
+
+    return a;
+  }
+};
+
 template <typename ScanOpT>
 struct ScanBySegmentOp
 {
@@ -191,7 +227,7 @@ struct basic_binary_op_t
 };
 
 template <typename T>
-struct basic_binary_op_t<_CUDA_VSTD::plus<T>>
+struct basic_binary_op_t<::cuda::std::plus<T>>
 {
   static constexpr bool value = true;
 };
@@ -363,42 +399,285 @@ struct ReduceByKeyOp
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
-namespace internal
+namespace detail
 {
 
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_min_max_v =
-  cub::detail::is_one_of_v<ReductionOp, //
-                           ::cuda::minimum<>,
-                           ::cuda::minimum<T>,
-                           ::cuda::maximum<>,
-                           ::cuda::maximum<T>>;
+//----------------------------------------------------------------------------------------------------------------------
+// Predefined operators
 
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_plus_mul_v =
-  cub::detail::is_one_of_v<ReductionOp, //
-                           _CUDA_VSTD::plus<>,
-                           _CUDA_VSTD::plus<T>,
-                           _CUDA_VSTD::multiplies<>,
-                           _CUDA_VSTD::multiplies<T>>;
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_plus_v = false;
 
-template <typename ReductionOp, typename T>
+template <typename T>
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_std_plus_v<::cuda::std::plus<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_mul_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_std_mul_v<::cuda::std::multiplies<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_maximum_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_maximum_v<::cuda::maximum<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_maximum_v<::cuda::maximum<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_maximum_v<::cuda::maximum<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_maximum_v<::cuda::maximum<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_minimum_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_minimum_v<::cuda::minimum<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_minimum_v<::cuda::minimum<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_minimum_v<::cuda::minimum<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_minimum_v<::cuda::minimum<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_bit_and_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_std_bit_and_v<::cuda::std::bit_and<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_bit_or_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_std_bit_or_v<::cuda::std::bit_or<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_bit_xor_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<T>, T> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, T> = true;
+
+template <>
+inline constexpr bool is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_logical_and_v = false;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<bool>, void> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<bool>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<::cuda::std::logical_and<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_logical_or_v = false;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<bool>, void> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<bool>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<::cuda::std::logical_or<>, void> = true;
+
+template <typename Op, typename T = void>
+inline constexpr bool is_cuda_minimum_maximum_v = is_cuda_maximum_v<Op, T> || is_cuda_minimum_v<Op, T>;
+
+template <typename Op, typename T = void>
+inline constexpr bool is_cuda_std_plus_mul_v = is_cuda_std_plus_v<Op, T> || is_cuda_std_mul_v<Op, T>;
+
+template <typename Op, typename T = void>
 inline constexpr bool is_cuda_std_bitwise_v =
-  cub::detail::is_one_of_v<ReductionOp,
-                           _CUDA_VSTD::bit_and<>,
-                           _CUDA_VSTD::bit_and<T>,
-                           _CUDA_VSTD::bit_or<>,
-                           _CUDA_VSTD::bit_or<T>,
-                           _CUDA_VSTD::bit_xor<>,
-                           _CUDA_VSTD::bit_xor<T>>;
+  is_cuda_std_bit_and_v<Op, T> || is_cuda_std_bit_or_v<Op, T> || is_cuda_std_bit_xor_v<Op, T>;
 
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_operator_v =
-  is_cuda_std_min_max_v<ReductionOp, T> || //
-  is_cuda_std_plus_mul_v<ReductionOp, T> || //
-  is_cuda_std_bitwise_v<ReductionOp, T>;
+template <typename Op, typename T = void>
+inline constexpr bool is_cuda_std_logical_v = is_cuda_std_logical_and_v<Op, T> || is_cuda_std_logical_or_v<Op, T>;
 
-} // namespace internal
+template <typename Op, typename T = void>
+inline constexpr bool is_simd_enabled_cuda_operator =
+  is_cuda_minimum_maximum_v<Op, T> || //
+  is_cuda_std_plus_mul_v<Op, T> || //
+  is_cuda_std_bitwise_v<Op, T>;
+
+template <typename Op, typename T = void>
+inline constexpr bool is_cuda_binary_operator =
+  is_cuda_minimum_maximum_v<Op, T> || //
+  is_cuda_std_plus_mul_v<Op, T> || //
+  is_cuda_std_bitwise_v<Op, T> || //
+  is_cuda_std_logical_v<Op, T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// Generalize Operator
+
+template <typename Operator>
+struct GeneralizeOperator
+{
+  using type = Operator;
+};
+
+template <template <typename = void> class Operator, typename T>
+struct GeneralizeOperator<Operator<T>>
+{
+  using type = Operator<>;
+};
+
+template <typename Op>
+using generalize_operator_t = typename GeneralizeOperator<Op>::type;
+
+template <typename Operator>
+[[nodiscard]] constexpr _CCCL_DEVICE _CCCL_FORCEINLINE auto generalize_operator(Operator op)
+{
+  if constexpr (is_cuda_std_logical_or_v<Operator> || is_cuda_std_logical_and_v<Operator>
+                || is_cuda_minimum_maximum_v<Operator> || is_cuda_std_plus_mul_v<Operator>
+                || is_cuda_std_bitwise_v<Operator>)
+  {
+    return generalize_operator_t<Operator>{};
+  }
+  else
+  {
+    return op;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Identity
+
+template <typename Op, typename T = void>
+inline constexpr T identity_v;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::minimum<>, T> = ::cuda::std::numeric_limits<T>::max();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::minimum<T>, T> = ::cuda::std::numeric_limits<T>::max();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::minimum<T>, void> = ::cuda::std::numeric_limits<T>::max();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<>, T> = ::cuda::std::numeric_limits<T>::lowest();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<T>, T> = ::cuda::std::numeric_limits<T>::lowest();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<T>, void> = ::cuda::std::numeric_limits<T>::lowest();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::plus<T>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::plus<>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::plus<T>, void> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_and<>, T> = static_cast<T>(~T{});
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_and<T>, T> = static_cast<T>(~T{});
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_and<T>, void> = static_cast<T>(~T{});
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_or<>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_or<T>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_or<T>, void> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_xor<>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_xor<T>, T> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::bit_xor<T>, void> = T{};
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::logical_and<>, T> = true;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::logical_and<T>, T> = true;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::logical_and<T>, void> = true;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::logical_or<>, T> = false;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::logical_or<T>, T> = false;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::std::logical_or<T>, void> = false;
+
+} // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 

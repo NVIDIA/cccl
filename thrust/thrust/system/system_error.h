@@ -146,7 +146,7 @@ public:
 
   /*! Destructor does not throw.
    */
-  inline virtual ~system_error() noexcept {};
+  inline virtual ~system_error() noexcept {}
 
   /*! Returns an object encoding the error.
    *  \return <tt>ec</tt> or <tt>error_code(ev, ecat)</tt>, from the
@@ -171,10 +171,11 @@ private:
    */
 }; // end system_error
 
-} // namespace system
-
-/*! \} // end system_diagnostics
+/*!
+ * \} end group system_diagnostics
  */
+
+} // namespace system
 
 // import names into thrust::
 using system::system_error;

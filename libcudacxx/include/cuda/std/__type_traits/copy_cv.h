@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_COPY_CV_H
-#define _LIBCUDACXX___TYPE_TRAITS_COPY_CV_H
+#ifndef _CUDA_STD___TYPE_TRAITS_COPY_CV_H
+#define _CUDA_STD___TYPE_TRAITS_COPY_CV_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,9 @@
 
 #include <cuda/std/__type_traits/copy_cvref.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Let COPYCV(FROM, TO) be an alias for type TO with the addition of FROM's
 // top-level cv-qualifiers.
@@ -41,6 +43,8 @@ using __apply_cv_fn = decltype(__apply_cv<_Tp>);
 template <class _From, class _To>
 using __copy_cv_t = typename __apply_cv_fn<_From>::template __call<_To>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_COPY_CV_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_COPY_CV_H

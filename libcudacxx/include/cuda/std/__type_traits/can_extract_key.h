@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_CAN_EXTRACT_KEY_H
-#define _LIBCUDACXX___TYPE_TRAITS_CAN_EXTRACT_KEY_H
+#ifndef _CUDA_STD___TYPE_TRAITS_CAN_EXTRACT_KEY_H
+#define _CUDA_STD___TYPE_TRAITS_CAN_EXTRACT_KEY_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,9 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_const_ref.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // These traits are used in __tree and __hash_table
 struct __extract_key_fail_tag
@@ -60,6 +62,8 @@ template <class _ValTy, class _Key, class _RawValTy>
 struct __can_extract_map_key<_ValTy, _Key, _Key, _RawValTy> : false_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_CAN_EXTRACT_KEY_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_CAN_EXTRACT_KEY_H

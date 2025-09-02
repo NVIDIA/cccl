@@ -46,7 +46,7 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
-#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -59,8 +59,7 @@
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 #include <cuda/std/functional>
-
-#include <stdio.h>
+#include <cuda/std/iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -138,7 +137,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
-          typename TransformOpT = ::cuda::std::__identity,
+          typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
             typename PolicyHub::MaxPolicy,
@@ -149,7 +148,7 @@ template <typename InputIteratorT,
             InitT,
             AccumT,
             TransformOpT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchReduce
 {
   //---------------------------------------------------------------------------
@@ -406,13 +405,8 @@ struct DispatchReduce
 
       // Invoke DeviceReduceSingleTileKernel
       launcher_factory(1, active_policy.SingleTile().BlockThreads(), 0, stream)
-        .doit(single_tile_kernel,
-              d_block_reductions,
-              d_out,
-              reduce_grid_size,
-              reduction_op,
-              init,
-              ::cuda::std::__identity{});
+        .doit(
+          single_tile_kernel, d_block_reductions, d_out, reduce_grid_size, reduction_op, init, ::cuda::std::identity{});
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -574,7 +568,7 @@ template <
   typename InitT,
   typename AccumT =
     ::cuda::std::__accumulator_t<ReductionOpT,
-                                 cub::detail::invoke_result_t<TransformOpT, cub::detail::it_value_t<InputIteratorT>>,
+                                 ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                  InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<
@@ -586,7 +580,7 @@ template <
     InitT,
     AccumT,
     TransformOpT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory>
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,
@@ -685,7 +679,7 @@ template <typename InputIteratorT,
             ReductionOpT,
             InitT,
             AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -823,7 +817,8 @@ struct DispatchSegmentedReduce
       // indirect_arg_t as the iterator type, which does not support the + operator.
       // TODO (elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
       if (num_invocations > 1
-          && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
+          && !detail::all_iterators_support_add_assign_operator(
+            ::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
       {
         return cudaErrorInvalidValue;
       }
@@ -848,19 +843,20 @@ struct DispatchSegmentedReduce
         // Invoke DeviceReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-          .doit(segmented_reduce_kernel,
-                d_in,
-                detail::advance_iterators_if_supported(d_out, current_seg_offset),
-                detail::advance_iterators_if_supported(d_begin_offsets, current_seg_offset),
-                detail::advance_iterators_if_supported(d_end_offsets, current_seg_offset),
-                reduction_op,
-                init);
+          .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
         if (cudaSuccess != error)
         {
           break;
+        }
+
+        if (invocation_index + 1 < num_invocations)
+        {
+          detail::advance_iterators_inplace_if_supported(d_out, num_current_segments);
+          detail::advance_iterators_inplace_if_supported(d_begin_offsets, num_current_segments);
+          detail::advance_iterators_inplace_if_supported(d_end_offsets, num_current_segments);
         }
 
         // Sync the stream if specified to flush runtime errors
@@ -995,6 +991,26 @@ struct DispatchSegmentedReduce
 namespace detail::reduce
 {
 
+// @brief Functor to generate a key-value pair from an index and value
+template <typename Iterator, typename OutputValueT>
+struct generate_idx_value
+{
+private:
+  Iterator it;
+  int segment_size;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+      : it(it)
+      , segment_size(segment_size)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  {
+    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+  }
+};
+
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -1008,7 +1024,7 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
     FixedSizeSegmentedReduceKernel,
     DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
   }
@@ -1029,7 +1045,7 @@ template <typename InputIteratorT,
             ReductionOpT,
             InitT,
             AccumT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchFixedSizeSegmentedReduce
 {
   //---------------------------------------------------------------------------
@@ -1051,7 +1067,7 @@ struct DispatchFixedSizeSegmentedReduce
   OutputIteratorT d_out;
 
   /// The number of segments that comprise the segmented reduction data
-  int num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// The fixed segment size for each segment
   OffsetT segment_size;
@@ -1081,7 +1097,7 @@ struct DispatchFixedSizeSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT init,
@@ -1138,27 +1154,65 @@ struct DispatchFixedSizeSegmentedReduce
       return cudaSuccess;
     }
 
-    int blocks = num_segments; // assume large segment size problem
-    if (segment_size <= small_items_per_tile)
-    {
-      blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
-    }
-    else if (segment_size <= medium_items_per_tile)
-    {
-      blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
-    }
+    // assume large segment size problem
+    int segments_per_block = 1;
 
-    launcher_factory(blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(fixed_size_segmented_reduce_kernel, d_in, d_out, segment_size, num_segments, reduction_op, init);
-
-    cudaError error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (segment_size <= small_items_per_tile) // small segment size problem
     {
-      return error;
+      segments_per_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
+    }
+    else if (segment_size <= medium_items_per_tile) // medium segment size problem
+    {
+      segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
     }
 
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
+    const auto num_segments_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+
+    // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
+    // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
+    // indirect_arg_t as the iterator type, which does not support the + operator.
+    // TODO (srinivas/elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
+    if (num_invocations > 1 && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_in, d_out))
+    {
+      return cudaErrorInvalidValue;
+    }
+
+    cudaError error = cudaSuccess;
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+
+      const auto num_current_segments =
+        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+
+      const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
+
+      launcher_factory(
+        static_cast<::cuda::std::int32_t>(num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+        .doit(fixed_size_segmented_reduce_kernel,
+              detail::advance_iterators_if_supported(d_in, current_seg_offset * segment_size),
+              detail::advance_iterators_if_supported(d_out, current_seg_offset),
+              segment_size,
+              static_cast<::cuda::std::int32_t>(num_current_segments),
+              reduction_op,
+              init);
+
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+    }
     return error;
   }
 
@@ -1212,7 +1266,7 @@ struct DispatchFixedSizeSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT init,

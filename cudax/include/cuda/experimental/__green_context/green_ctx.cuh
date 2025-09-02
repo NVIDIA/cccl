@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX
-#define _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
+#define _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
 
 #include <cuda/__cccl_config>
 
@@ -21,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/all_devices.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
 
-#include <cuda/experimental/__device/all_devices.cuh>
-#include <cuda/experimental/__utility/driver_api.cuh>
+#include <cuda/std/__cccl/prologue.h>
 
-#if CUDART_VERSION >= 12050
+#if _CCCL_CTK_AT_LEAST(12, 5)
 namespace cuda::experimental
 {
-struct device_ref;
 
 struct green_context
 {
@@ -38,13 +38,13 @@ struct green_context
   CUgreenCtx __green_ctx  = nullptr;
   CUcontext __transformed = nullptr;
 
-  explicit green_context(const device& __device)
+  explicit green_context(device_ref __device)
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
-    auto __dev_handle = detail::driver::deviceGet(__dev_id);
-    __green_ctx       = detail::driver::greenCtxCreate(__dev_handle);
-    __transformed     = detail::driver::ctxFromGreenCtx(__green_ctx);
+    auto __dev_handle = ::cuda::__driver::__deviceGet(__dev_id);
+    __green_ctx       = ::cuda::__driver::__greenCtxCreate(__dev_handle);
+    __transformed     = ::cuda::__driver::__ctxFromGreenCtx(__green_ctx);
   }
 
   green_context(const green_context&)            = delete;
@@ -54,10 +54,10 @@ struct green_context
   [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
     int __id;
-    CUcontext __transformed = detail::driver::ctxFromGreenCtx(__gctx);
-    detail::driver::ctxPush(__transformed);
+    CUcontext __transformed = ::cuda::__driver::__ctxFromGreenCtx(__gctx);
+    ::cuda::__driver::__ctxPush(__transformed);
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to get device ordinal from a green context", &__id);
-    detail::driver::ctxPop();
+    ::cuda::__driver::__ctxPop();
     return green_context(__id, __gctx, __transformed);
   }
 
@@ -65,14 +65,14 @@ struct green_context
   {
     __transformed = nullptr;
     __dev_id      = -1;
-    return _CUDA_VSTD::exchange(__green_ctx, nullptr);
+    return ::cuda::std::exchange(__green_ctx, nullptr);
   }
 
   ~green_context()
   {
     if (__green_ctx)
     {
-      [[maybe_unused]] cudaError_t __status = detail::driver::greenCtxDestroy(__green_ctx);
+      [[maybe_unused]] cudaError_t __status = ::cuda::__driver::__greenCtxDestroyNoThrow(__green_ctx);
     }
   }
 
@@ -83,6 +83,11 @@ private:
       , __transformed(__ctx)
   {}
 };
+
 } // namespace cuda::experimental
-#endif // CUDART_VERSION >= 12050
-#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX
+
+#endif // _CCCL_CTK_AT_LEAST(12, 5)
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH

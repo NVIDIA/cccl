@@ -78,8 +78,8 @@ int main()
   // clang-format on
 
   // apply the transformation
-  thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin(), D1.begin())),
-                   thrust::make_zip_iterator(thrust::make_tuple(A.end(), B.end(), C.end(), D1.end())),
+  thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D1.begin()),
+                   thrust::make_zip_iterator(A.end(), B.end(), C.end(), D1.end()),
                    arbitrary_functor1());
 
   // print the output
@@ -91,8 +91,8 @@ int main()
 
   // apply the transformation using zip_function
   thrust::device_vector<float> D2(5);
-  thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin(), D2.begin())),
-                   thrust::make_zip_iterator(thrust::make_tuple(A.end(), B.end(), C.end(), D2.end())),
+  thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D2.begin()),
+                   thrust::make_zip_iterator(A.end(), B.end(), C.end(), D2.end()),
                    thrust::make_zip_function(arbitrary_functor2()));
 
   // print the output

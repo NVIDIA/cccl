@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ABS_H
-#define _LIBCUDACXX___CMATH_ABS_H
+#ifndef _CUDA_STD___CMATH_ABS_H
+#define _CUDA_STD___CMATH_ABS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,216 +21,107 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#if _CCCL_CHECK_BUILTIN(builtin_fabs) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FABSF(...) __builtin_fabsf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FABS(...)  __builtin_fabs(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FABSL(...) __builtin_fabsl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fabs)
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // fabs
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float fabs(float __x) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr auto fabs(_Tp __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FABSF)
-  return _CCCL_BUILTIN_FABSF(__x);
-#else // ^^^ _CCCL_BUILTIN_FABSF ^^^ / vvv !_CCCL_BUILTIN_FABSF vvv
-  return ::fabsf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
+  if constexpr (!numeric_limits<_Tp>::is_signed)
+  {
+    if constexpr (is_integral_v<_Tp>)
+    {
+      return static_cast<double>(__x);
+    }
+    else
+    {
+      return __x;
+    }
+  }
+  else if constexpr (is_integral_v<_Tp>)
+  {
+    return __x < 0 ? -static_cast<double>(__x) : static_cast<double>(__x);
+  }
+  else
+  {
+#ifdef _CCCL_BUILTIN_FABSF
+    if constexpr (is_same_v<_Tp, float>)
+    {
+      return _CCCL_BUILTIN_FABSF(__x);
+    }
+    else if constexpr (is_same_v<_Tp, double>)
+    {
+      return _CCCL_BUILTIN_FABS(__x);
+    }
+#  if _CCCL_HAS_LONG_DOUBLE()
+    else if constexpr (is_same_v<_Tp, long double>)
+    {
+      return _CCCL_BUILTIN_FABSL(__x);
+    }
+#  endif // _CCCL_HAS_LONG_DOUBLE()
+#endif // _CCCL_BUILTIN_FABSF
+#if _LIBCUDACXX_HAS_NVFP16()
+    if constexpr (is_same_v<_Tp, __half>)
+    {
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      {
+        return ::__habs(__x);
+      }
+    }
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+    {
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      {
+        return ::__habs(__x);
+      }
+    }
+#endif // _LIBCUDACXX_HAS_NVBF16()
+    const auto __val = ::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>;
+    return ::cuda::std::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
+  }
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float fabsf(float __x) noexcept
+[[nodiscard]] _CCCL_API constexpr float fabsf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_FABSF)
-  return _CCCL_BUILTIN_FABSF(__x);
-#else // ^^^ _CCCL_BUILTIN_FABSF ^^^ / vvv !_CCCL_BUILTIN_FABSF vvv
-  return ::fabsf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_FABSF ^^^
-}
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double fabs(double __x) noexcept
-{
-#if defined(_CCCL_BUILTIN_FABS)
-  return _CCCL_BUILTIN_FABS(__x);
-#else // ^^^ _CCCL_BUILTIN_FABS ^^^ / vvv !_CCCL_BUILTIN_FABS vvv
-  return ::fabs(__x);
-#endif // ^^^ !_CCCL_BUILTIN_FABS ^^^
+  return ::cuda::std::fabs(__x);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double fabs(long double __x) noexcept
+[[nodiscard]] _CCCL_API constexpr long double fabsl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_FABSL)
-  return _CCCL_BUILTIN_FABSL(__x);
-#  else // ^^^ _CCCL_BUILTIN_FABSL ^^^ / vvv !_CCCL_BUILTIN_FABSL vvv
-  return ::fabsl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
-}
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double fabsl(long double __x) noexcept
-{
-#  if defined(_CCCL_BUILTIN_FABSL)
-  return _CCCL_BUILTIN_FABSL(__x);
-#  else // ^^^ _CCCL_BUILTIN_FABSL ^^^ / vvv !_CCCL_BUILTIN_FABSL vvv
-  return ::fabsl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_FABSL ^^^
+  return ::cuda::std::fabs(__x);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
-
-template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fabs_impl(_Tp __x) noexcept
-{
-  const auto __val = _CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>;
-  return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
-}
-
-#if _CCCL_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __half fabs(__half __x) noexcept
-{
-  // We cannot use `abs.f16` because it is not IEEE 754 compliant, see docs
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 fabs(__nv_bfloat16 __x) noexcept
-{
-  // We cannot use `abs.bf16` because it is not IEEE 754 compliant, see docs
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVBF16()
-
-#if _CCCL_HAS_NVFP8_E4M3()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 fabs(__nv_fp8_e4m3 __x) noexcept
-{
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVFP8_E4M#()
-
-#if _CCCL_HAS_NVFP8_E5M2()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 fabs(__nv_fp8_e5m2 __x) noexcept
-{
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVFP8_E5M2()
-
-#if _CCCL_HAS_NVFP8_E8M0()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 fabs(__nv_fp8_e8m0 __x) noexcept
-{
-  return __x;
-}
-#endif // _CCCL_HAS_NVFP8_E8M0()
-
-#if _CCCL_HAS_NVFP6_E2M3()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 fabs(__nv_fp6_e2m3 __x) noexcept
-{
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVFP6_E2M3()
-
-#if _CCCL_HAS_NVFP6_E3M2()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 fabs(__nv_fp6_e3m2 __x) noexcept
-{
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVFP6_E3M2()
-
-#if _CCCL_HAS_NVFP4_E2M1()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 fabs(__nv_fp4_e2m1 __x) noexcept
-{
-  return _CUDA_VSTD::__fabs_impl(__x);
-}
-#endif // _CCCL_HAS_NVFP4_E2M1()
-
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double fabs(_Tp __val) noexcept
-{
-  return _CUDA_VSTD::fabs(static_cast<double>(__val));
-}
 
 // abs
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float abs(float __val) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr auto abs(_Tp __x) noexcept
 {
-  return _CUDA_VSTD::fabsf(__val);
+  return ::cuda::std::fabs(__x);
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double abs(double __val) noexcept
-{
-  return _CUDA_VSTD::fabs(__val);
-}
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noexcept
-{
-  return _CUDA_VSTD::fabsl(__val);
-}
-#endif // _CCCL_HAS_LONG_DOUBLE()
+#include <cuda/std/__cccl/epilogue.h>
 
-#if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __half abs(__half __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _LIBCUDACXX_HAS_NVFP16()
-
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 abs(__nv_bfloat16 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
-#if _CCCL_HAS_NVFP8_E4M3()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 abs(__nv_fp8_e4m3 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _CCCL_HAS_NVFP8_E4M3()
-
-#if _CCCL_HAS_NVFP8_E5M2()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 abs(__nv_fp8_e5m2 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _CCCL_HAS_NVFP8_E5M2()
-
-#if _CCCL_HAS_NVFP8_E8M0()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 abs(__nv_fp8_e8m0 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _CCCL_HAS_NVFP8_E8M0()
-
-#if _CCCL_HAS_NVFP6_E2M3()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 abs(__nv_fp6_e2m3 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _CCCL_HAS_NVFP6_E2M3()
-
-#if _CCCL_HAS_NVFP6_E3M2()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 abs(__nv_fp6_e3m2 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _CCCL_HAS_NVFP6_E3M2()
-
-#if _CCCL_HAS_NVFP4_E2M1()
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 abs(__nv_fp4_e2m1 __x) noexcept
-{
-  return _CUDA_VSTD::fabs(__x);
-}
-#endif // _CCCL_HAS_NVFP4_E2M1()
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _LIBCUDACXX___CMATH_ABS_H
+#endif // _CUDA_STD___CMATH_ABS_H

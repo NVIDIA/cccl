@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDDEF_TYPES_H
-#define _LIBCUDACXX___CSTDDEF_TYPES_H
+#ifndef _CUDA_STD___CSTDDEF_TYPES_H
+#define _CUDA_STD___CSTDDEF_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,20 +30,23 @@
 #  endif // !offsetof
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if defined(__CLANG_MAX_ALIGN_T_DEFINED) || defined(_GCC_MAX_ALIGN_T) || defined(__DEFINED_max_align_t) \
-  || defined(__NetBS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_COMPILER(NVRTC)
+using max_align_t = long double;
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 // Re-use the compiler's <stddef.h> max_align_t where possible.
 using ::max_align_t;
-#else
-using max_align_t = long double;
-#endif
+#endif // _CCCL_COMPILER(NVRTC)
 
 using nullptr_t = decltype(nullptr);
 using ::ptrdiff_t;
 using ::size_t;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CSTDDEF_TYPES_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CSTDDEF_TYPES_H

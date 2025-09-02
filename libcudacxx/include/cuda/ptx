@@ -36,7 +36,7 @@
  * - They must convert state spaces correctly.
  * - They adhere to the libcu++ coding standards of using:
  *   - Reserved identifiers for all parameters, variables. E.g. `__meow` or `_Woof`
- *   - _CUDA_VSTD:: namespace for types
+ *   - ::cuda::std:: namespace for types
  *
  * The wrappers should not do the following:
  *
@@ -80,6 +80,7 @@
 #include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/exit.h>
 #include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -113,5 +114,15 @@
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
 #include <cuda/__ptx/instructions/tensormap_replace.h>
 #include <cuda/__ptx/instructions/trap.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+
+namespace ptx = ::cuda::ptx;
+
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX

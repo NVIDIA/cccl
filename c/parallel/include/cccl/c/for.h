@@ -15,10 +15,10 @@
 #endif // !CCCL_C_EXPERIMENTAL
 
 #include <cuda.h>
+#include <stdint.h>
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
-#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -41,6 +41,19 @@ CCCL_C_API CUresult cccl_device_for_build(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path);
+
+// Extended version with build configuration
+CCCL_C_API CUresult cccl_device_for_build_ex(
+  cccl_device_for_build_result_t* build,
+  cccl_iterator_t d_data,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
 
 CCCL_C_API CUresult cccl_device_for(
   cccl_device_for_build_result_t build, cccl_iterator_t d_data, uint64_t num_items, cccl_op_t op, CUstream stream);

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_TOTALLY_ORDERED_H
-#define _LIBCUDACXX___CONCEPTS_TOTALLY_ORDERED_H
+#ifndef _CUDA_STD___CONCEPTS_TOTALLY_ORDERED_H
+#define _CUDA_STD___CONCEPTS_TOTALLY_ORDERED_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,9 +26,11 @@
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.totallyordered]
 
@@ -53,7 +55,7 @@ concept totally_ordered_with =
   && totally_ordered<common_reference_t<__make_const_lvalue_ref<_Tp>, __make_const_lvalue_ref<_Up>>>
   && __partially_ordered_with<_Tp, _Up>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
@@ -89,10 +91,11 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT totally_ordered_with = _CCCL_FRAGMENT(__totally_ordered_with_, _Tp, _Up);
-;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_TOTALLY_ORDERED_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CONCEPTS_TOTALLY_ORDERED_H

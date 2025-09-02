@@ -14,20 +14,20 @@ how many threads participate,
 and on which thread(s) the result is valid.
 
 These layers naturally build on each other.
-For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::ThreadReduce>`,
-:cpp:struct:`BlockReduce <cub::BlockReduce>` uses :cpp:struct:`WarpReduce <cub::WarpReduce>`, etc.
+For example, :cpp:struct:`cub::WarpReduce` uses :cpp:func:`cub::ThreadReduce`,
+:cpp:struct:`cub::BlockReduce` uses :cpp:struct:`cub::WarpReduce`, etc.
 
-:cpp:func:`ThreadReduce <cub::ThreadReduce>`
+:cpp:func:`cub::ThreadReduce`
 
    - A normal function invoked and executed sequentially by a single thread that returns a valid result on that thread
    - Single thread functions are usually an implementation detail and not exposed in CUB's public API
 
-:cpp:struct:`WarpReduce <cub::WarpReduce>` and :cpp:struct:`BlockReduce <cub::BlockReduce>`
+:cpp:struct:`cub::WarpReduce` and :cpp:struct:`cub::BlockReduce`
 
    - A "cooperative" function where threads concurrently invoke the same function to execute parallel work
    - The function's return value is well-defined only on the "first" thread (lowest thread index)
 
-:cpp:struct:`DeviceReduce <cub::DeviceReduce>`
+:cpp:struct:`cub::DeviceReduce`
 
    - A normal function invoked by a single thread that spawns additional threads to execute parallel work
    - Result is stored in the pointer provided to the function
@@ -46,22 +46,22 @@ The table below provides a summary of these functions:
       - parallel execution
       - max threads
       - valid result in
-    * - :cpp:func:`ThreadReduce <cub::ThreadReduce>`
+    * - :cpp:func:`cub::ThreadReduce`
       - :math:`-`
       - :math:`-`
       - :math:`1`
       - invoking thread
-    * - :cpp:struct:`WarpReduce <cub::WarpReduce>`
+    * - :cpp:struct:`cub::WarpReduce`
       - :math:`+`
       - :math:`+`
       - :math:`32`
       - main thread
-    * - :cpp:struct:`BlockReduce <cub::BlockReduce>`
+    * - :cpp:struct:`cub::BlockReduce`
       - :math:`+`
       - :math:`+`
       - :math:`1024`
       - main thread
-    * - :cpp:struct:`DeviceReduce <cub::DeviceReduce>`
+    * - :cpp:struct:`cub::DeviceReduce`
       - :math:`-`
       - :math:`+`
       - :math:`\infty`
@@ -593,6 +593,151 @@ Usually, the functionality is extracted into the agent layer.
 All the kernel does is derive the proper policy type,
 unwrap the policy to initialize the agent and call one of its ``Consume`` / ``Process`` functions.
 Agents hold kernel bodies and are frequently reused by unrelated device-scope algorithms.
+
+To gain a better understanding of why we use ``MaxPolicy`` instead of
+``ActivePolicy`` to instantiate the kernel, consider the following example which
+minimally reproduces the CUB dispatch layer.
+
+.. code-block:: c++
+
+    #include <cuda/std/type_traits>
+    #include <cstdio>
+
+    /// In device code, CUB_PTX_ARCH expands to the PTX version for which we are
+    /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
+    #ifndef CUB_PTX_ARCH
+    #  if !defined(__CUDA_ARCH__)
+    #    define CUB_PTX_ARCH 0
+    #  else
+    #    define CUB_PTX_ARCH __CUDA_ARCH__
+    #  endif
+    #endif
+
+    template <int PTXVersion, typename Policy, typename PrevPolicy>
+    struct ChainedPolicy {
+      static constexpr int cc = PTXVersion;
+      using ActivePolicy      = ::cuda::std::conditional_t<CUB_PTX_ARCH<PTXVersion, PrevPolicy, Policy>;
+      using PrevPolicyT       = PrevPolicy;
+      using PolicyT           = Policy;
+    };
+
+    template <int PTXVersion, typename Policy>
+    struct ChainedPolicy<PTXVersion, Policy, Policy> {
+      static constexpr int cc = PTXVersion;
+      using ActivePolicy      = Policy;
+      using PrevPolicyT       = Policy;
+      using PolicyT           = Policy;
+    };
+
+    struct sm60 : ChainedPolicy<600, sm60, sm60> { static constexpr int BLOCK_THREADS = 256; };
+    struct sm70 : ChainedPolicy<700, sm70, sm60> { static constexpr int BLOCK_THREADS = 512; };
+    struct sm80 : ChainedPolicy<800, sm80, sm70> { static constexpr int BLOCK_THREADS = 768; };
+    struct sm90 : ChainedPolicy<900, sm90, sm80> { static constexpr int BLOCK_THREADS = 1024; };
+
+    using MaxPolicy = sm90;
+
+    // Kernel instantiated with ActivePolicy
+    template <typename ActivePolicy>
+    __launch_bounds__(ActivePolicy::BLOCK_THREADS) __global__ void bad_kernel() {
+      if (threadIdx.x == 0) {
+        std::printf("launch bounds %d; block threads %d\n", ActivePolicy::BLOCK_THREADS, blockDim.x);
+      }
+    }
+
+    // Kernel instantiated with MaxPolicy
+    template <typename MaxPolicy>
+    __launch_bounds__(MaxPolicy::ActivePolicy::BLOCK_THREADS) __global__ void good_kernel() {
+      if (threadIdx.x == 0) {
+        std::printf("launch bounds %d; block threads %d\n", MaxPolicy::ActivePolicy::BLOCK_THREADS, blockDim.x);
+      }
+    }
+
+    // Function to dispatch kernel with the correct ActivePolicy
+    template <typename T>
+    void invoke_with_best_policy_bad(int runtime_cc) {
+      if (runtime_cc < T::cc) {
+        invoke_with_best_policy_bad<typename T::PrevPolicyT>(runtime_cc);
+      } else {
+        bad_kernel<typename T::PolicyT><<<1, T::PolicyT::BLOCK_THREADS>>>();
+      }
+    }
+
+    // Function to dispatch kernel with the correct MaxPolicy
+    template <typename T>
+    void invoke_with_best_policy_good(int runtime_cc) {
+      if (runtime_cc < T::cc) {
+        invoke_with_best_policy_good<typename T::PrevPolicyT>(runtime_cc);
+      } else {
+        good_kernel<MaxPolicy><<<1, T::PolicyT::BLOCK_THREADS>>>();
+      }
+    }
+
+    void call_kernel() {
+      cudaDeviceProp deviceProp;
+      cudaGetDeviceProperties(&deviceProp, 0);
+      int runtime_cc = deviceProp.major * 100 + deviceProp.minor * 10;
+      std::printf("runtime cc %d\n", runtime_cc);
+
+      invoke_with_best_policy_bad<MaxPolicy>(runtime_cc);
+      invoke_with_best_policy_good<MaxPolicy>(runtime_cc);
+    }
+
+    int main() {
+      call_kernel();
+      cudaDeviceSynchronize();
+    }
+
+In this example, we define four execution policies for four GPU architectures,
+``sm60``, ``sm70``, ``sm80``, and ``sm90``, with each having a different value
+for ``BLOCK_THREADS``. Additionally, we define two kernels, ``bad_kernel`` and
+``good_kernel`` to illustrate the effect of instantiating with the
+``ActivePolicy`` and ``MaxPolicy`` respectively, as well a function to invoke
+each of the kernels by selecting the policy for the appropriate architecture.
+Finally, we call these two functions by specifying the current device's
+architecture, which we obtain at run-time from host code. We cannot use the
+``__CUDA_ARCH__`` macro here since it is not defined in host code, so it must be
+extracted at run-time.
+
+Compiling this file results in four template instantiations of ``bad_kernel``,
+one for each architecture's policy, but only one template instantiation of
+``good_kernel`` using ``MaxPolicy``. Assume we compiled the above file using
+``nvcc policies.cu -std=c++20 -gencode arch=compute_80,code=sm_80 -o policies``,
+we can inspect the generated binary to see these template instantiations using
+``cuobjdump --dump-elf-symbols policies``. The relevant output is shown below.
+
+.. code-block:: text
+
+    symbols:
+    STT_OBJECT       STB_LOCAL  STV_DEFAULT    $str
+    STT_FUNC         STB_GLOBAL STO_ENTRY      _Z11good_kernelI4sm90Evv
+    STT_FUNC         STB_GLOBAL STV_DEFAULT  U vprintf
+    STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm90Evv
+    STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm80Evv
+    STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm70Evv
+    STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm60Evv
+
+We can see that there are four symbols containing ``bad_kernel`` in their name,
+which correspond to the four execution policies, but only one symbol for
+``good_kernel``. This is due to the functions that invoke these kernels. For
+``bad_kernel``, the template instantiation we call depends on the ``T::PolicyT``
+(the ``ActivePolicy``), which depends on a run-time argument, so the compiler
+must instantiate ``bad_kernel`` for every policy. For ``good_kernel``, we always
+instantiate the kernel with ``MaxPolicy``. This results in only one template
+instantiation compared to four template instantiations per fat binary, which
+saves on compile time and binary size.
+
+To show that both kernels' invocation is equivalent, we can run the code using
+``./policies``. We obtain the following output.
+
+.. code-block:: text
+
+    runtime cc 890
+    launch bounds 768; block threads 768
+    launch bounds 768; block threads 768
+
+Our GPU's architecture is ``sm89``, so the nearest policy less than or equal to
+that, ``sm80`` in this case, is selected at run-time. Both kernels are invoked
+with the same launch bounds and number of threads per block.
 
 .. _cub-developer-policies:
 

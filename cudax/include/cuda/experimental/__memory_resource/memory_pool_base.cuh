@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE
-#define _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE
+#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE_CUH
+#define _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -32,6 +32,8 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__stream/internal_streams.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c __memory_pool_base class provides a wrapper around a `cudaMempool_t`.
@@ -65,10 +67,10 @@ inline void __verify_device_supports_stream_ordered_allocations(const int __devi
 
 //! @brief Enable access to this memory pool from the supplied devices
 //!
-//! Device on which this pool resides can be included in the vector.
+//! Device on which this pool resides can be included in the span.
 //!
 //! @param __pool The memory pool to set access for
-//! @param __devices A vector of `device_ref`s listing devices to enable access for
+//! @param __devices A span of `device_ref`s listing devices to enable access for
 //! @param __flags The access flags to set
 //! @throws cuda_error if ``cudaMemPoolSetAccess`` fails.
 inline void
@@ -145,11 +147,9 @@ private:
         case ::cudaSuccess:
           break;
         case ::cudaErrorInvalidValue:
-          ::cudaGetLastError(); // Clear CUDA error state
           ::cuda::__throw_cuda_error(
             ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on given device");
         default:
-          ::cudaGetLastError(); // Clear CUDA error state
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }
@@ -180,19 +180,19 @@ private:
         break;
       }
       case __memory_location_type::__host: {
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
         // Construct on NUMA node 0 only for now
         __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
         __pool_properties.location.id   = __id;
-#else // _CCCL_CUDACC_BELOW(12, 6)
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+#else // _CCCL_CTK_BELOW(12, 6)
+        ::cuda::std::__throw_invalid_argument(
           "Host pinned memory pools are unavailable in this CUDA "
           "version");
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
         break;
       }
       default:
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid memory pool location type");
+        ::cuda::std::__throw_invalid_argument("Invalid memory pool location type");
     }
 
     ::cudaMemPool_t __cuda_pool_handle{};
@@ -272,12 +272,13 @@ public:
   //! @brief Gets the value of an attribute of the pool.
   //! @param __attribute the attribute to be set.
   //! @return The value of the attribute. For boolean attributes any value not equal to 0 equates to true.
-  size_t get_attribute(::cudaMemPoolAttr __attr) const
+  // TODO rename to configuration
+  size_t attribute(::cudaMemPoolAttr __attr) const
   {
     size_t __value = 0;
     _CCCL_TRY_CUDA_API(
       ::cudaMemPoolGetAttribute,
-      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::get_attribute ",
+      "Failed to call cudaMemPoolSetAttribute in __memory_pool_base::attribute ",
       __pool_handle_,
       __attr,
       static_cast<void*>(&__value));
@@ -288,19 +289,20 @@ public:
   //! @param __attribute the attribute to be set.
   //! @param __value the new value of that attribute.
   //! @note For boolean attributes any non-zero value equates to true.
+  // TODO: rename to set_configuration
   void set_attribute(::cudaMemPoolAttr __attr, size_t __value)
   {
     switch (__attr)
     {
       case ::cudaMemPoolAttrReservedMemCurrent:
       case ::cudaMemPoolAttrUsedMemCurrent:
-        _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
+        ::cuda::std::__throw_invalid_argument("Invalid attribute passed to set_attribute.");
         break;
       case ::cudaMemPoolAttrReservedMemHigh:
       case ::cudaMemPoolAttrUsedMemHigh:
         if (__value != 0)
         {
-          _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+          ::cuda::std::__throw_invalid_argument(
             "set_attribute: It is illegal to set this "
             "attribute to a non-zero value.");
         }
@@ -319,10 +321,10 @@ public:
 
   //! @brief Enable access to this memory pool from the supplied devices
   //!
-  //! Device on which this pool resides can be included in the vector.
+  //! Device on which this pool resides can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to enable access for
+  void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -338,10 +340,10 @@ public:
 
   //! @brief Disable access to this memory pool from the supplied devices
   //!
-  //! Device on which this pool resides can be included in the vector.
+  //! Device on which this pool resides can be included in the span.
   //!
-  //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_access_from(const ::std::vector<device_ref>& __devices)
+  //! @param __devices A span of `device_ref`s listing devices to disable access for
+  void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::experimental::__mempool_set_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
@@ -382,26 +384,26 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
   }
@@ -416,4 +418,6 @@ public:
 
 } // namespace cuda::experimental
 
-#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE_CUH

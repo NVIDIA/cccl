@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_IDENTITY_H
-#define _LIBCUDACXX___FUNCTIONAL_IDENTITY_H
+#ifndef _CUDA_STD___FUNCTIONAL_IDENTITY_H
+#define _CUDA_STD___FUNCTIONAL_IDENTITY_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,35 +25,37 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/forward.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __is_identity : false_type
 {};
 
-struct __identity
+struct identity
 {
   template <class _Tp>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator()(_Tp&& __t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr _Tp&& operator()(_Tp&& __t) const noexcept
   {
-    return _CUDA_VSTD::forward<_Tp>(__t);
+    return ::cuda::std::forward<_Tp>(__t);
   }
 
   using is_transparent = void;
 };
 
 template <>
-struct __is_identity<__identity> : true_type
+struct __is_identity<identity> : true_type
 {};
 template <>
-struct __is_identity<reference_wrapper<__identity>> : true_type
+struct __is_identity<reference_wrapper<identity>> : true_type
 {};
 template <>
-struct __is_identity<reference_wrapper<const __identity>> : true_type
+struct __is_identity<reference_wrapper<const identity>> : true_type
 {};
 
-using identity = __identity;
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_END_NAMESPACE_STD
+#include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_IDENTITY_H
+#endif // _CUDA_STD___FUNCTIONAL_IDENTITY_H

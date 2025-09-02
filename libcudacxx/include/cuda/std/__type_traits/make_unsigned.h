@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H
-#define _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H
+#ifndef _CUDA_STD___TYPE_TRAITS_MAKE_UNSIGNED_H
+#define _CUDA_STD___TYPE_TRAITS_MAKE_UNSIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,9 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
@@ -134,14 +136,16 @@ struct make_unsigned
 };
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
+_CCCL_API constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 {
   return static_cast<make_unsigned_t<_Tp>>(__x);
 }
 
 template <class _Tp, class _Up>
-using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<_CCCL_TRAIT(is_unsigned, _Tp), make_unsigned_t<_Up>, _Up>;
+using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<is_unsigned_v<_Tp>, make_unsigned_t<_Up>, _Up>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_MAKE_UNSIGNED_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_MAKE_UNSIGNED_H

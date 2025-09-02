@@ -26,12 +26,12 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_scan.cuh>
 
 #include <cstdint>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
@@ -97,20 +97,15 @@ struct div_op
 C2H_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", offset_types)
 try
 {
-  using op_t     = ::cuda::std::plus<>;
+  using op_t     = cuda::std::plus<>;
   using item_t   = std::uint32_t;
   using key_t    = std::uint64_t;
   using index_t  = std::uint64_t;
   using offset_t = typename c2h::get<0, TestType>;
 
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
+  const offset_t num_items     = GENERATE_COPY(
     values(
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));
@@ -131,7 +126,7 @@ try
     constexpr bool is_exclusive = true;
     auto initial_value          = item_t{42};
     device_exclusive_scan_by_key(
-      keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, ::cuda::std::equal_to<>{});
+      keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
     auto expected_out_it = thrust::make_transform_iterator(
@@ -143,7 +138,7 @@ try
   {
     constexpr bool is_exclusive = false;
     auto initial_value          = item_t{0};
-    device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, ::cuda::std::equal_to<>{});
+    device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
     auto expected_out_it = thrust::make_transform_iterator(

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_COPY_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_COPY_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_COPY_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_COPY_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,9 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_assignable
@@ -34,6 +36,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_assignable
 template <class _Tp>
 inline constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_COPY_ASSIGNABLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_COPY_ASSIGNABLE_H

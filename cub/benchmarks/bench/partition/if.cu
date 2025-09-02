@@ -74,31 +74,6 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-struct less_then_t
-{
-  T m_val;
-
-  __device__ bool operator()(const T& val) const
-  {
-    return val < m_val;
-  }
-};
-
-template <typename T>
-T value_from_entropy(double percentage)
-{
-  if (percentage == 1)
-  {
-    return ::cuda::std::numeric_limits<T>::max();
-  }
-
-  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
-  const auto result  = min_val + percentage * max_val - percentage * min_val;
-  return static_cast<T>(result);
-}
-
 template <typename InItT, typename T, typename OffsetT, typename SelectOpT>
 void init_output_partition_buffer(
   InItT d_in,
@@ -149,7 +124,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  T val = value_from_entropy<T>(entropy_to_probability(entropy));
+  const T val = lerp_min_max<T>(entropy_to_probability(entropy));
   select_op_t select_op{val};
 
   thrust::device_vector<T> in = generate(elements);

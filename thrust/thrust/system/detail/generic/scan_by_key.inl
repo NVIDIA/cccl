@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   InputIterator2 first2,
   OutputIterator result)
 {
-  return thrust::inclusive_scan_by_key(exec, first1, last1, first2, result, thrust::equal_to<>());
+  return thrust::inclusive_scan_by_key(exec, first1, last1, first2, result, ::cuda::std::equal_to<>());
 }
 
 template <typename DerivedPolicy,
@@ -91,7 +91,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
   OutputIterator result,
   BinaryPredicate binary_pred)
 {
-  return thrust::inclusive_scan_by_key(exec, first1, last1, first2, result, binary_pred, thrust::plus<>());
+  return thrust::inclusive_scan_by_key(exec, first1, last1, first2, result, binary_pred, ::cuda::std::plus<>());
 }
 
 template <typename DerivedPolicy,
@@ -119,7 +119,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
     // compute head flags
     thrust::detail::temporary_array<HeadFlagType, DerivedPolicy> flags(exec, n);
     flags[0] = 1;
-    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, thrust::not_fn(binary_pred));
+    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, ::cuda::std::not_fn(binary_pred));
 
     // scan key-flag tuples,
     // For additional details refer to Section 2 of the following paper
@@ -128,9 +128,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
     //    http://mgarland.org/files/papers/nvr-2008-003.pdf
     thrust::inclusive_scan(
       exec,
-      thrust::make_zip_iterator(thrust::make_tuple(first2, flags.begin())),
-      thrust::make_zip_iterator(thrust::make_tuple(first2, flags.begin())) + n,
-      thrust::make_zip_iterator(thrust::make_tuple(result, flags.begin())),
+      thrust::make_zip_iterator(first2, flags.begin()),
+      thrust::make_zip_iterator(first2, flags.begin()) + n,
+      thrust::make_zip_iterator(result, flags.begin()),
       detail::segmented_scan_functor<OutputType, HeadFlagType, AssociativeOperator>(binary_op));
   }
 
@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   OutputIterator result,
   T init)
 {
-  return thrust::exclusive_scan_by_key(exec, first1, last1, first2, result, init, thrust::equal_to<>());
+  return thrust::exclusive_scan_by_key(exec, first1, last1, first2, result, init, ::cuda::std::equal_to<>());
 }
 
 template <typename DerivedPolicy,
@@ -176,7 +176,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
   T init,
   BinaryPredicate binary_pred)
 {
-  return thrust::exclusive_scan_by_key(exec, first1, last1, first2, result, init, binary_pred, thrust::plus<>());
+  return thrust::exclusive_scan_by_key(exec, first1, last1, first2, result, init, binary_pred, ::cuda::std::plus<>());
 }
 
 template <typename DerivedPolicy,
@@ -208,12 +208,12 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
     // compute head flags
     thrust::detail::temporary_array<HeadFlagType, DerivedPolicy> flags(exec, n);
     flags[0] = 1;
-    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, thrust::not_fn(binary_pred));
+    thrust::transform(exec, first1, last1 - 1, first1 + 1, flags.begin() + 1, ::cuda::std::not_fn(binary_pred));
 
     // shift input one to the right and initialize segments with init
     thrust::detail::temporary_array<OutputType, DerivedPolicy> temp(exec, n);
     thrust::replace_copy_if(
-      exec, first2, last2 - 1, flags.begin() + 1, temp.begin() + 1, thrust::negate<HeadFlagType>(), init);
+      exec, first2, last2 - 1, flags.begin() + 1, temp.begin() + 1, ::cuda::std::negate<HeadFlagType>(), init);
     temp[0] = init;
 
     // scan key-flag tuples,
@@ -223,9 +223,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
     //    http://mgarland.org/files/papers/nvr-2008-003.pdf
     thrust::inclusive_scan(
       exec,
-      thrust::make_zip_iterator(thrust::make_tuple(temp.begin(), flags.begin())),
-      thrust::make_zip_iterator(thrust::make_tuple(temp.begin(), flags.begin())) + n,
-      thrust::make_zip_iterator(thrust::make_tuple(result, flags.begin())),
+      thrust::make_zip_iterator(temp.begin(), flags.begin()),
+      thrust::make_zip_iterator(temp.begin(), flags.begin()) + n,
+      thrust::make_zip_iterator(result, flags.begin()),
       detail::segmented_scan_functor<OutputType, HeadFlagType, AssociativeOperator>(binary_op));
   }
 

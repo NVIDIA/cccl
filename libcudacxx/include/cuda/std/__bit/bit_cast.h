@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_BIT_CAST_H
-#define _LIBCUDACXX___BIT_BIT_CAST_H
+#ifndef _CUDA_STD___BIT_BIT_CAST_H
+#define _CUDA_STD___BIT_BIT_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,14 +27,16 @@
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/cstring>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_BIT_CAST)
-#  define _LIBCUDACXX_CONSTEXPR_BIT_CAST       constexpr
-#  define _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() 1
+#  define _CCCL_CONSTEXPR_BIT_CAST       constexpr
+#  define _CCCL_HAS_CONSTEXPR_BIT_CAST() 1
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
-#  define _LIBCUDACXX_CONSTEXPR_BIT_CAST
-#  define _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() 0
+#  define _CCCL_CONSTEXPR_BIT_CAST
+#  define _CCCL_HAS_CONSTEXPR_BIT_CAST() 0
 #  if _CCCL_COMPILER(GCC, >=, 8)
 // GCC starting with GCC8 warns about our extended floating point types having protected data members
 _CCCL_DIAG_PUSH
@@ -42,22 +44,21 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
-template <
-  class _To,
-  class _From,
-  enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                                                = 0,
-  enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To) || _CCCL_TRAIT(__is_extended_floating_point, _To), int>     = 0,
-  enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
+template <class _To,
+          class _From,
+          enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                          = 0,
+          enable_if_t<is_trivially_copyable_v<_To> || __is_extended_floating_point_v<_To>, int>     = 0,
+          enable_if_t<is_trivially_copyable_v<_From> || __is_extended_floating_point_v<_From>, int> = 0>
+[[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_CCCL_BUILTIN_BIT_CAST)
   return _CCCL_BUILTIN_BIT_CAST(_To, __from);
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
-  static_assert(_CCCL_TRAIT(is_trivially_default_constructible, _To),
+  static_assert(is_trivially_default_constructible_v<_To>,
                 "The compiler does not support __builtin_bit_cast, so bit_cast additionally requires the destination "
                 "type to be trivially constructible");
   _To __temp;
-  _CUDA_VSTD::memcpy(&__temp, &__from, sizeof(_To));
+  ::cuda::std::memcpy(&__temp, &__from, sizeof(_To));
   return __temp;
 #endif // !_CCCL_BUILTIN_BIT_CAST
 }
@@ -68,6 +69,8 @@ _CCCL_DIAG_POP
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___BIT_BIT_CAST_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___BIT_BIT_CAST_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
-#define _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
+#ifndef _CUDA_STD___TYPE_TRAITS_TYPE_SET_H
+#define _CUDA_STD___TYPE_TRAITS_TYPE_SET_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,13 +29,15 @@
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
 struct __type_list;
 
 template <class _Set, class... _Ty>
-struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, type_identity<_Ty>, _Set)...>
+struct __type_set_contains : __fold_and<is_base_of_v<type_identity<_Ty>, _Set>...>
 {};
 
 template <class _Set, class... _Ty>
@@ -52,7 +54,7 @@ struct __tupl<>
   template <class _Ty>
   using __maybe_insert _CCCL_NODEBUG_ALIAS = __tupl<_Ty>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  _CCCL_API static constexpr size_t __size() noexcept
   {
     return 0;
   }
@@ -64,10 +66,9 @@ struct __tupl<_Ty, _Ts...>
     , __tupl<_Ts...>
 {
   template <class _Uy>
-  using __maybe_insert _CCCL_NODEBUG_ALIAS =
-    _If<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
+  using __maybe_insert _CCCL_NODEBUG_ALIAS = _If<__type_set_contains_v<__tupl, _Uy>, __tupl, __tupl<_Uy, _Ty, _Ts...>>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  _CCCL_API static constexpr size_t __size() noexcept
   {
     return sizeof...(_Ts) + 1;
   }
@@ -85,7 +86,7 @@ struct __bulk_insert<false>
 {
 #if _CCCL_COMPILER(MSVC, <, 19, 20)
   template <class _Set, class _Ty, class... _Us>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
+  _CCCL_API inline static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
     typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
 
   template <class _Set, class... _Us>
@@ -117,12 +118,14 @@ template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
 template <class _Ty, class... _Ts>
-struct __is_included_in : __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>
+struct __is_included_in : __fold_or<is_same_v<_Ty, _Ts>...>
 {};
 
 template <class _Ty, class... _Ts>
 inline constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_TYPE_SET_H

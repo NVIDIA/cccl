@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H
-#define _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_REFERENCE_H
+#define _CUDA_STD___ATOMIC_TYPES_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,9 @@
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Reference is compatible with __atomic_base_tag and uses the default dispatch
 template <typename _Tp>
@@ -34,8 +36,7 @@ struct __atomic_ref_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
-  static_assert(_CCCL_TRAIT(is_trivially_copyable, _Tp),
-                "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
+  static_assert(is_trivially_copyable_v<_Tp>, "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
   _Tp* __a_value;
@@ -64,6 +65,8 @@ struct __atomic_ref_storage
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ATOMIC_TYPES_REFERENCE_H

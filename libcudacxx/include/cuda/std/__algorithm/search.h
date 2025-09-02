@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SEARCH_H
-#define _LIBCUDACXX___ALGORITHM_SEARCH_H
+#ifndef _CUDA_STD___ALGORITHM_SEARCH_H
+#define _CUDA_STD___ALGORITHM_SEARCH_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,10 +30,13 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/pair.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
+[[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -44,7 +47,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
 {
   if (__first2 == __last2)
   {
-    return _CUDA_VSTD::make_pair(__first1, __first1); // Everything matches an empty sequence
+    return ::cuda::std::make_pair(__first1, __first1); // Everything matches an empty sequence
   }
   while (true)
   {
@@ -53,7 +56,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
     {
       if (__first1 == __last1) // return __last1 if no element matches *__first2
       {
-        return _CUDA_VSTD::make_pair(__last1, __last1);
+        return ::cuda::std::make_pair(__last1, __last1);
       }
       if (__pred(*__first1, *__first2))
       {
@@ -68,11 +71,11 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
     {
       if (++__m2 == __last2) // If pattern exhausted, __first1 is the answer (works for 1 element pattern)
       {
-        return _CUDA_VSTD::make_pair(__first1, __m1);
+        return ::cuda::std::make_pair(__first1, __m1);
       }
       if (++__m1 == __last1) // Otherwise if source exhausted, pattern not found
       {
-        return _CUDA_VSTD::make_pair(__last1, __last1);
+        return ::cuda::std::make_pair(__last1, __last1);
       }
       if (!__pred(*__m1, *__m2)) // if there is a mismatch, restart with a new __first1
       {
@@ -83,8 +86,9 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
+[[nodiscard]] _CCCL_API constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -99,12 +103,12 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
   const _Diff2 __len2 = __last2 - __first2;
   if (__len2 == 0)
   {
-    return _CUDA_VSTD::make_pair(__first1, __first1);
+    return ::cuda::std::make_pair(__first1, __first1);
   }
   const _Diff1 __len1 = __last1 - __first1;
   if (__len1 < __len2)
   {
-    return _CUDA_VSTD::make_pair(__last1, __last1);
+    return ::cuda::std::make_pair(__last1, __last1);
   }
   const _RandomAccessIterator1 __s = __last1 - (__len2 - 1); // Start of pattern match can't go beyond here
 
@@ -114,7 +118,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
     {
       if (__first1 == __s)
       {
-        return _CUDA_VSTD::make_pair(__last1, __last1);
+        return ::cuda::std::make_pair(__last1, __last1);
       }
       if (__pred(*__first1, *__first2))
       {
@@ -129,7 +133,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
     {
       if (++__m2 == __last2)
       {
-        return _CUDA_VSTD::make_pair(__first1, __first1 + __len2);
+        return ::cuda::std::make_pair(__first1, __first1 + __len2);
       }
       ++__m1; // no need to check range on __m1 because __s guarantees we have enough source
       if (!__pred(*__m1, *__m2))
@@ -142,14 +146,14 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
 search(_ForwardIterator1 __first1,
        _ForwardIterator1 __last1,
        _ForwardIterator2 __first2,
        _ForwardIterator2 __last2,
        _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__search<add_lvalue_reference_t<_BinaryPredicate>>(
+  return ::cuda::std::__search<add_lvalue_reference_t<_BinaryPredicate>>(
            __first1,
            __last1,
            __first2,
@@ -161,19 +165,21 @@ search(_ForwardIterator1 __first1,
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
 search(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
-  return _CUDA_VSTD::search(__first1, __last1, __first2, __last2, __equal_to{});
+  return ::cuda::std::search(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
 template <class _ForwardIterator, class _Searcher>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 search(_ForwardIterator __f, _ForwardIterator __l, const _Searcher& __s)
 {
   return __s(__f, __l).first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_SEARCH_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_SEARCH_H

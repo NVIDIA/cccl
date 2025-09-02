@@ -284,12 +284,12 @@ void TestFindWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(1);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  cuda::std::intmax_t distance_low_value = thrust::distance(begin, thrust::find(thrust::device, begin, end, 17));
+  cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));
 
   cuda::std::intmax_t distance_high_value =
-    thrust::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
+    ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, (1ll << magnitude) - 17));
 
   ASSERT_EQUAL(distance_low_value, 16);
   ASSERT_EQUAL(distance_high_value, (1ll << magnitude) - 18);

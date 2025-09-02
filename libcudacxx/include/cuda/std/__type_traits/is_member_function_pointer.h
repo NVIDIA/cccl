@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H
+#define _CUDA_STD___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,9 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __cccl_is_member_pointer
@@ -51,8 +53,8 @@ struct __cccl_is_member_pointer<_Tp _Up::*>
 #if defined(_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_FUNCTION_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_function_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(_Tp)>
 {};
 
 template <class _Tp>
@@ -61,8 +63,8 @@ inline constexpr bool is_member_function_pointer_v = _CCCL_BUILTIN_IS_MEMBER_FUN
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
-    : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_func>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_function_pointer : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_func>
 {};
 
 template <class _Tp>
@@ -70,6 +72,8 @@ inline constexpr bool is_member_function_pointer_v = is_member_function_pointer<
 
 #endif // !_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_MEMBER_FUNCTION_POINTER_H

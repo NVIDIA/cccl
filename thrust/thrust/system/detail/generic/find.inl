@@ -62,7 +62,7 @@ struct find_if_functor
     // select the smallest index among true results
     if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
     {
-      return TupleType(true, (::cuda::std::min)(thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      return TupleType(true, (::cuda::std::min) (thrust::get<1>(lhs), thrust::get<1>(rhs)));
     }
     else if (thrust::get<0>(lhs))
     {
@@ -88,14 +88,14 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
     return last;
   }
 
-  const difference_type n = thrust::distance(first, last);
+  const difference_type n = ::cuda::std::distance(first, last);
 
   // this implementation breaks up the sequence into separate intervals
   // in an attempt to early-out as soon as a value is found
 
   // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
   const difference_type interval_threshold = 1 << 20;
-  const difference_type interval_size      = (::cuda::std::min)(interval_threshold, n);
+  const difference_type interval_size      = (::cuda::std::min) (interval_threshold, n);
 
   // force transform_iterator output to bool
   using XfrmIterator  = thrust::transform_iterator<Predicate, InputIterator, bool>;
@@ -134,7 +134,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator
 find_if_not(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
-  return thrust::find_if(exec, first, last, thrust::not_fn(pred));
+  return thrust::find_if(exec, first, last, ::cuda::std::not_fn(pred));
 } // end find()
 
 } // end namespace generic

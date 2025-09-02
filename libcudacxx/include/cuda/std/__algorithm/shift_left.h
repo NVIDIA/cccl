@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SHIFT_LEFT_H
-#define _LIBCUDACXX___ALGORITHM_SHIFT_LEFT_H
+#ifndef _CUDA_STD___ALGORITHM_SHIFT_LEFT_H
+#define _CUDA_STD___ALGORITHM_SHIFT_LEFT_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,10 +23,13 @@
 #include <cuda/std/__algorithm/move.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
+_CCCL_API constexpr _ForwardIterator __shift_left(
   _ForwardIterator __first,
   _ForwardIterator __last,
   typename iterator_traits<_ForwardIterator>::difference_type __n,
@@ -38,11 +41,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
     return __first;
   }
   __m += __n;
-  return _CUDA_VSTD::move(__m, __last, __first);
+  return ::cuda::std::move(__m, __last, __first);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
+_CCCL_API constexpr _ForwardIterator __shift_left(
   _ForwardIterator __first,
   _ForwardIterator __last,
   typename iterator_traits<_ForwardIterator>::difference_type __n,
@@ -57,11 +61,11 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_left(
     }
     ++__m;
   }
-  return _CUDA_VSTD::move(__m, __last, __first);
+  return ::cuda::std::move(__m, __last, __first);
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator shift_left(
+_CCCL_API constexpr _ForwardIterator shift_left(
   _ForwardIterator __first, _ForwardIterator __last, typename iterator_traits<_ForwardIterator>::difference_type __n)
 {
   if (__n == 0)
@@ -73,6 +77,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator shift_left(
   return __shift_left(__first, __last, __n, _IterCategory());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_SHIFT_LEFT_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_SHIFT_LEFT_H

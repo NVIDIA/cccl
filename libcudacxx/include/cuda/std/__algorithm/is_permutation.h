@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H
-#define _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H
+#ifndef _CUDA_STD___ALGORITHM_IS_PERMUTATION_H
+#define _CUDA_STD___ALGORITHM_IS_PERMUTATION_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,10 +26,13 @@
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _BinaryPredicate __pred)
 {
   //  shorten sequences as much as possible by lopping of any equal prefix
@@ -47,12 +50,12 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 
   //  __first1 != __last1 && *__first1 != *__first2
   using _Diff1 = __iter_diff_t<_ForwardIterator1>;
-  _Diff1 __l1  = _CUDA_VSTD::distance(__first1, __last1);
+  _Diff1 __l1  = ::cuda::std::distance(__first1, __last1);
   if (__l1 == _Diff1(1))
   {
     return false;
   }
-  _ForwardIterator2 __last2 = _CUDA_VSTD::next(__first2, __l1);
+  _ForwardIterator2 __last2 = ::cuda::std::next(__first2, __l1);
   // For each element in [f1, l1) see if there are the same number of
   //    equal elements in [f2, l2)
   for (_ForwardIterator1 __i = __first1; __i != __last1; ++__i)
@@ -83,7 +86,7 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
       }
       // Count number of *__i in [__i, l1) (we can start with 1)
       _Diff1 __c1 = 1;
-      for (_ForwardIterator1 __j = _CUDA_VSTD::next(__i); __j != __last1; ++__j)
+      for (_ForwardIterator1 __j = ::cuda::std::next(__i); __j != __last1; ++__j)
       {
         if (__pred(*__i, *__j))
         {
@@ -100,14 +103,15 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _CCCL_API constexpr bool
 is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
-  return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to{});
+  return ::cuda::std::is_permutation(__first1, __last1, __first2, __equal_to{});
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool __is_permutation(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -134,10 +138,10 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   }
 
   using _Diff1 = __iter_diff_t<_ForwardIterator1>;
-  _Diff1 __l1  = _CUDA_VSTD::distance(__first1, __last1);
+  _Diff1 __l1  = ::cuda::std::distance(__first1, __last1);
 
   using _Diff2 = __iter_diff_t<_ForwardIterator2>;
-  _Diff2 __l2  = _CUDA_VSTD::distance(__first2, __last2);
+  _Diff2 __l2  = ::cuda::std::distance(__first2, __last2);
   if (__l1 != __l2)
   {
     return false;
@@ -173,7 +177,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
       }
       // Count number of *__i in [__i, l1) (we can start with 1)
       _Diff1 __c1 = 1;
-      for (_ForwardIterator1 __j = _CUDA_VSTD::next(__i); __j != __last1; ++__j)
+      for (_ForwardIterator1 __j = ::cuda::std::next(__i); __j != __last1; ++__j)
       {
         if (__pred(*__i, *__j))
         {
@@ -189,8 +193,9 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   return true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool __is_permutation(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator2 __last1,
   _RandomAccessIterator1 __first2,
@@ -203,20 +208,20 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
   {
     return false;
   }
-  return _CUDA_VSTD::
+  return ::cuda::std::
     is_permutation<_RandomAccessIterator1, _RandomAccessIterator2, add_lvalue_reference_t<_BinaryPredicate>>(
       __first1, __last1, __first2, __pred);
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool is_permutation(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
   _ForwardIterator2 __last2,
   _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__is_permutation<add_lvalue_reference_t<_BinaryPredicate>>(
+  return ::cuda::std::__is_permutation<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,
@@ -227,10 +232,10 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
+[[nodiscard]] _CCCL_API constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
-  return _CUDA_VSTD::__is_permutation(
+  return ::cuda::std::__is_permutation(
     __first1,
     __last1,
     __first2,
@@ -240,6 +245,8 @@ template <class _ForwardIterator1, class _ForwardIterator2>
     __iterator_category_type<_ForwardIterator2>{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_IS_PERMUTATION_H

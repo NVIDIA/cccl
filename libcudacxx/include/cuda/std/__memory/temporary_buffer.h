@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H
-#define _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H
+#ifndef _CUDA_STD___MEMORY_TEMPORARY_BUFFER_H
+#define _CUDA_STD___MEMORY_TEMPORARY_BUFFER_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,11 +33,12 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_t>
-get_temporary_buffer(ptrdiff_t __n) noexcept
+[[nodiscard]] _CCCL_NO_CFI _CCCL_API inline pair<_Tp*, ptrdiff_t> get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
   const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
@@ -50,8 +51,8 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
     if (__is_overaligned_for_new(alignof(_Tp)))
     {
-      _CUDA_VSTD::align_val_t __al = _CUDA_VSTD::align_val_t(_CUDA_VSTD::alignment_of<_Tp>::value);
-      __r.first                    = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
+      ::cuda::std::align_val_t __al = ::cuda::std::align_val_t(::cuda::std::alignment_of<_Tp>::value);
+      __r.first                     = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
     }
     else
     {
@@ -79,11 +80,13 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
+_CCCL_API inline void return_temporary_buffer(_Tp* __p) noexcept
 {
-  _CUDA_VSTD::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
+  ::cuda::std::__cccl_deallocate_unsized((void*) __p, alignof(_Tp));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___MEMORY_TEMPORARY_BUFFER_H

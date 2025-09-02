@@ -205,6 +205,10 @@ __host__ __device__ void test_T_assignment_sfinae()
 
 __host__ __device__ void test_T_assignment_basic()
 {
+#if !TEST_COMPILER(NVHPC, <, 25, 5)
+  static_assert(cuda::std::is_assignable_v<cuda::std::variant<short, long>, int>);
+#endif // !TEST_COMPILER(NVHPC, <, 25, 5)
+
   {
     cuda::std::variant<int> v(43);
     v = 42;

@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_SUBRANGE_H
-#define _LIBCUDACXX___FWD_SUBRANGE_H
+#ifndef _CUDA_STD___FWD_SUBRANGE_H
+#define _CUDA_STD___FWD_SUBRANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,9 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
 {
@@ -30,7 +32,7 @@ enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
   sized
 };
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <input_or_output_iterator _Iter,
           sentinel_for<_Iter> _Sent = _Iter,
           subrange_kind _Kind       = sized_sentinel_for<_Sent, _Iter> ? subrange_kind::sized : subrange_kind::unsized>
@@ -44,8 +46,10 @@ template <class _Iter,
           enable_if_t<sentinel_for<_Sent, _Iter>, int>                                           = 0,
           enable_if_t<(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>), int> = 0>
 class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX___FWD_SUBRANGE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FWD_SUBRANGE_H

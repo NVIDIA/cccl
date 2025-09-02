@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ERASE_IF_CONTAINER_H
-#define _LIBCUDACXX___ITERATOR_ERASE_IF_CONTAINER_H
+#ifndef _CUDA_STD___ITERATOR_ERASE_IF_CONTAINER_H
+#define _CUDA_STD___ITERATOR_ERASE_IF_CONTAINER_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI typename _Container::size_type __cccl_erase_if_container(_Container& __c, _Predicate& __pred)
+_CCCL_API inline typename _Container::size_type __cccl_erase_if_container(_Container& __c, _Predicate& __pred)
 {
   typename _Container::size_type __old_size = __c.size();
 
@@ -44,6 +46,8 @@ _LIBCUDACXX_HIDE_FROM_ABI typename _Container::size_type __cccl_erase_if_contain
   return __old_size - __c.size();
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_ERASE_IF_CONTAINER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_ERASE_IF_CONTAINER_H

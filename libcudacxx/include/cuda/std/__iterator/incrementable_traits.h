@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_INCREMENTABLE_TRAITS_H
-#define _LIBCUDACXX___ITERATOR_INCREMENTABLE_TRAITS_H
+#ifndef _CUDA_STD___ITERATOR_INCREMENTABLE_TRAITS_H
+#define _CUDA_STD___ITERATOR_INCREMENTABLE_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/iterator_traits.h>
+#include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -36,9 +36,11 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 // [incrementable.traits]
 template <class>
@@ -84,7 +86,7 @@ template <class _Ip>
 using iter_difference_t =
   typename __select_traits<remove_cvref_t<_Ip>, incrementable_traits<remove_cvref_t<_Ip>>>::difference_type;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [incrementable.traits]
 template <class, class = void>
@@ -92,7 +94,7 @@ struct incrementable_traits
 {};
 
 template <class _Tp>
-struct incrementable_traits<_Tp*, enable_if_t<_CCCL_TRAIT(is_object, _Tp)>>
+struct incrementable_traits<_Tp*, enable_if_t<is_object_v<_Tp>>>
 {
   using difference_type = ptrdiff_t;
 };
@@ -115,21 +117,19 @@ template <class _Tp>
 inline constexpr bool
   __has_integral_minus<_Tp,
                        enable_if_t<!same_as<_Tp, void*>>,
-                       void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>> =
-    integral<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>;
+                       void_t<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>> =
+    integral<decltype(::cuda::std::declval<const _Tp&>() - ::cuda::std::declval<const _Tp&>())>;
 
 template <class _Tp>
-struct incrementable_traits<
-  _Tp,
-  enable_if_t<!_CCCL_TRAIT(is_pointer, _Tp) && !_CCCL_TRAIT(is_const, _Tp) && __has_member_difference_type<_Tp>>>
+struct incrementable_traits<_Tp, enable_if_t<!is_pointer_v<_Tp> && !is_const_v<_Tp> && __has_member_difference_type<_Tp>>>
 {
   using difference_type = typename _Tp::difference_type;
 };
 
 template <class _Tp>
-struct incrementable_traits<_Tp,
-                            enable_if_t<!_CCCL_TRAIT(is_pointer, _Tp) && !_CCCL_TRAIT(is_const, _Tp)
-                                        && !__has_member_difference_type<_Tp> && __has_integral_minus<_Tp>>>
+struct incrementable_traits<
+  _Tp,
+  enable_if_t<!is_pointer_v<_Tp> && !is_const_v<_Tp> && !__has_member_difference_type<_Tp> && __has_integral_minus<_Tp>>>
 {
   using difference_type = make_signed_t<decltype(declval<_Tp>() - declval<_Tp>())>;
 };
@@ -141,8 +141,10 @@ template <class _Ip>
 using iter_difference_t =
   typename __select_traits<remove_cvref_t<_Ip>, incrementable_traits<remove_cvref_t<_Ip>>>::difference_type;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_INCREMENTABLE_TRAITS_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_INCREMENTABLE_TRAITS_H

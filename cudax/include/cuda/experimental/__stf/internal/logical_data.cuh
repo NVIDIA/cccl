@@ -272,12 +272,12 @@ public:
 
   void unfreeze(task& fake_task, event_list prereqs);
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
     automatic_unfreeze = flag;
 
     // Save for future use when destroying data
-    frozen_fake_task = fake_task;
+    unfreeze_fake_task = unfreeze_fake_task_;
   }
 
   // This needs the full definition of logical_data_untyped so the implementation is deferred
@@ -304,7 +304,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> frozen_fake_task;
+  ::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -366,21 +366,6 @@ public:
 
     enable_write_back = flag;
   }
-
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    enable_auto_dump = flag;
-  }
-
-  bool get_auto_dump() const
-  {
-    return enable_auto_dump;
-  }
-
-  bool enable_auto_dump = true;
 
   bool was_erased = false;
 
@@ -1073,9 +1058,9 @@ public:
     pimpl->unfreeze(fake_task, mv(prereqs));
   }
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
-    pimpl->set_automatic_unfreeze(fake_task, flag);
+    pimpl->set_automatic_unfreeze(unfreeze_fake_task_, flag);
   }
 
   /**
@@ -1650,19 +1635,6 @@ public:
     pimpl->set_write_back(flag);
   }
 
-  // Explicitly enable or disable auto dump for this logical data
-  // If true, the logical data will be dumped with CUDASTF_AUTO_DUMP is set,
-  // if false, CUDASTF_AUTO_DUMP will be ignored for that logical data.
-  void set_auto_dump(bool flag)
-  {
-    pimpl->set_auto_dump(flag);
-  }
-
-  bool get_auto_dump() const
-  {
-    return pimpl->get_auto_dump();
-  }
-
   reserved::logical_data_state& get_state()
   {
     return pimpl->get_state();
@@ -1735,8 +1707,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Freeze data automatically : we assume all dependencies on that
     // frozen data are solved by other means (this is the requirement of
     // the set_automatic_unfreeze API)
-    assert(frozen_fake_task.has_value());
-    unfreeze(frozen_fake_task.value(), event_list());
+    assert(unfreeze_fake_task.has_value());
+    unfreeze(unfreeze_fake_task.value(), event_list());
   }
 
   auto& ctx_st = ctx.get_state();
@@ -1989,18 +1961,25 @@ inline event_list enforce_stf_deps_before(
       // writer
       assert(ctx_.current_writer.has_value());
       ctx_.previous_writer = mv(ctx_.current_writer);
-      const auto& pw       = ctx_.previous_writer;
 
-      result.merge(pw->get_done_prereqs());
-
-      const int pw_id = pw->get_unique_id();
-
-      if (dot_is_tracing)
+      if (ctx_.previous_writer.has_value())
       {
-        dot.add_edge(pw_id, task.get_unique_id());
-      }
+        const auto& pw = ctx_.previous_writer.value();
+        result.merge(pw.get_done_prereqs());
 
-      ctx_st.leaves.remove(pw_id);
+        const int pw_id = pw.get_unique_id();
+
+        if (dot_is_tracing)
+        {
+          dot.add_edge(pw_id, task.get_unique_id());
+        }
+
+        ctx_st.leaves.remove(pw_id);
+      }
+      else
+      {
+        EXPECT(false, "Internal error: previous_writer must be set");
+      }
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
@@ -2258,12 +2237,15 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 }
 
 // Defined here to avoid circular dependencies
+// (also, don't document this because Doxygen doesn't know `decltype`)
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <class T>
 inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 // Defined here to avoid circular dependencies
 inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) const
@@ -2284,6 +2266,8 @@ inline instance_id_t task::find_data_instance_id(const logical_data_untyped& d) 
   return instance_id_t::invalid;
 }
 
+// Don't document this because Doxygen doesn't know `decltype`
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename T, typename logical_data_untyped>
 inline decltype(auto) task::get(size_t submitted_index) const
 {
@@ -2298,6 +2282,7 @@ inline decltype(auto) task::get(size_t submitted_index) const
   logical_data_untyped d    = pimpl->deps[reordered_id].get_data();
   return d.template instance<T>(instance_id);
 }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Represents typed logical data.
@@ -2438,6 +2423,9 @@ public:
 
   ///@}
 };
+
+/// @brief Shortcut type for the logical data produced by ctx.token()
+using token = logical_data<void_interface>;
 
 /**
  * @brief Reclaims memory from allocated data instances.

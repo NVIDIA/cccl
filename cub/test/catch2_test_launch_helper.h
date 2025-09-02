@@ -71,7 +71,7 @@
 //! If the wrapped API contains default parameters before stream, you'd want to explicitly
 //! specify those at all invocations.
 //!
-//! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
+//! Consult with `test/catch2_test_launch_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
 #  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
@@ -125,7 +125,7 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
   cudaGraph_t graph{};
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
@@ -159,7 +159,7 @@ template <class ActionT, class... Args>
 void launch(ActionT action, Args... args)
 {
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
-  c2h::device_vector<std::size_t> d_temp_storage_bytes(1, 0);
+  c2h::device_vector<std::size_t> d_temp_storage_bytes(1, thrust::no_init);
   device_side_api_launch_kernel<<<1, 1>>>(
     nullptr,
     thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
@@ -170,7 +170,7 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == d_error[0]);
 
-  c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0]);
+  c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0], thrust::no_init);
 
   device_side_api_launch_kernel<<<1, 1>>>(
     thrust::raw_pointer_cast(temp_storage.data()),
@@ -196,7 +196,7 @@ void launch(ActionT action, Args... args)
 
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
   error = action(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, args...);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());

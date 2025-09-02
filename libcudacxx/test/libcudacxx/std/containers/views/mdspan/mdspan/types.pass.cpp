@@ -101,9 +101,9 @@ template <class L,
                                  int> = 0>
 __host__ __device__ constexpr void test_mdspan_no_unique_address()
 {
-#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS)
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
   static_assert(sizeof(MDS) == expected_size<MDS>(), "");
-#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 }
 
 template <class L,

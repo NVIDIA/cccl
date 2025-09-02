@@ -61,16 +61,15 @@ CUB_NAMESPACE_BEGIN
 /// In device code, CUB_PTX_ARCH expands to the PTX version for which we are
 /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
 #  ifndef CUB_PTX_ARCH
-#    if defined(_NVHPC_CUDA)
+// deprecated in 3.1
+#    if _CCCL_CUDA_COMPILER(NVHPC)
 // __NVCOMPILER_CUDA_ARCH__ is the target PTX version, and is defined
 // when compiling both host code and device code. Currently, only one
 // PTX version can be targeted.
 #      define CUB_PTX_ARCH __NVCOMPILER_CUDA_ARCH__
-#    elif !defined(__CUDA_ARCH__)
-#      define CUB_PTX_ARCH 0
-#    else
-#      define CUB_PTX_ARCH __CUDA_ARCH__
-#    endif
+#    else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#      define CUB_PTX_ARCH _CCCL_PTX_ARCH()
+#    endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 #  endif
 
 /// Maximum number of devices supported.
@@ -142,20 +141,24 @@ template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename
 struct RegBoundScaling
 {
   static constexpr int ITEMS_PER_THREAD =
-    (::cuda::std::max)(1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max)(4, int{sizeof(T)}));
-  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
-    Nominal4ByteBlockThreads,
-    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+    (::cuda::std::max) (1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max) (4, int{sizeof(T)}));
+  static constexpr int BLOCK_THREADS =
+    (::cuda::std::min) (Nominal4ByteBlockThreads,
+                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
+                          * 32);
 };
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
 struct MemBoundScaling
 {
-  static constexpr int ITEMS_PER_THREAD = (::cuda::std::max)(
-    1, (::cuda::std::min)(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
-  static constexpr int BLOCK_THREADS = (::cuda::std::min)(
-    Nominal4ByteBlockThreads,
-    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+  static constexpr int ITEMS_PER_THREAD =
+    (::cuda::std::max) (1,
+                        (::cuda::std::min) (Nominal4ByteItemsPerThread * 4 / int{sizeof(T)},
+                                            Nominal4ByteItemsPerThread * 2));
+  static constexpr int BLOCK_THREADS =
+    (::cuda::std::min) (Nominal4ByteBlockThreads,
+                        ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32)
+                          * 32);
 };
 
 } // namespace detail

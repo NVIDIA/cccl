@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_VOID_T_H
-#define _LIBCUDACXX___TYPE_TRAITS_VOID_T_H
+#ifndef _CUDA_STD___TYPE_TRAITS_VOID_T_H
+#define _CUDA_STD___TYPE_TRAITS_VOID_T_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,11 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
 using void_t = void;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_VOID_T_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_VOID_T_H

@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___EXPECTED_EXPECTED_H
-#define _LIBCUDACXX___EXPECTED_EXPECTED_H
+#ifndef _CUDA_STD___EXPECTED_EXPECTED_H
+#define _CUDA_STD___EXPECTED_EXPECTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -62,7 +62,9 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class _Err>
 class expected;
@@ -71,9 +73,9 @@ namespace __expected
 {
 template <class _Tp, class _Err>
 inline constexpr bool __valid_expected =
-  !_CCCL_TRAIT(is_reference, _Tp) && !_CCCL_TRAIT(is_function, _Tp)
-  && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, unexpect_t)
-  && !__unexpected::__is_unexpected<remove_cv_t<_Tp>> && __unexpected::__valid_unexpected<_Err>;
+  !is_reference_v<_Tp> && !is_function_v<_Tp> && !is_same_v<remove_cv_t<_Tp>, in_place_t>
+  && !is_same_v<remove_cv_t<_Tp>, unexpect_t> && !__unexpected::__is_unexpected<remove_cv_t<_Tp>>
+  && __unexpected::__valid_unexpected<_Err>;
 
 template <class _Tp>
 inline constexpr bool __is_expected = false;
@@ -89,13 +91,11 @@ inline constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
 
 template <class _Tp, class _Err>
 inline constexpr bool __can_swap =
-  _CCCL_TRAIT(is_swappable, _Tp) && _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Tp)
-  && _CCCL_TRAIT(is_move_constructible, _Err)
-  && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err));
+  is_swappable_v<_Tp> && is_swappable_v<_Err> && is_move_constructible_v<_Tp> && is_move_constructible_v<_Err>
+  && (is_nothrow_move_constructible_v<_Tp> || is_nothrow_move_constructible_v<_Err>);
 
 template <class _Err>
-inline constexpr bool __can_swap<void, _Err> =
-  _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Err);
+inline constexpr bool __can_swap<void, _Err> = is_swappable_v<_Err> && is_move_constructible_v<_Err>;
 } // namespace __expected
 
 template <class _Tp, class _Err>
@@ -123,8 +123,8 @@ public:
 
   // [expected.object.ctor], constructors
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_default_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Tp2))
+  _CCCL_REQUIRES(is_default_constructible_v<_Tp2>)
+  _CCCL_API constexpr expected() noexcept(is_nothrow_default_constructible_v<_Tp2>)
       : __base(true)
   {}
 
@@ -153,187 +153,172 @@ private:
 
 public:
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _CCCL_AND _CCCL_TRAIT(
-    is_convertible, const _Up&, _Tp) _CCCL_AND _CCCL_TRAIT(is_convertible, const _OtherErr&, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected(const expected<_Up, _OtherErr>& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, const _Up&)
-    && _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _CCCL_AND
+                   is_convertible_v<const _Up&, _Tp> _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected(const expected<_Up, _OtherErr>& __other) noexcept(
+    is_nothrow_constructible_v<_Tp, const _Up&> && is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__val_), __other.__union_.__val_);
     }
     else
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
   _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _CCCL_AND(
-    !_CCCL_TRAIT(is_convertible, const _Up&, _Tp) || !_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, const _Up&)
-    && _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+    !is_convertible_v<const _Up&, _Tp> || !is_convertible_v<const _OtherErr&, _Err>))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
+    is_nothrow_constructible_v<_Tp, const _Up&> && is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __other.__union_.__val_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__val_), __other.__union_.__val_);
     }
     else
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _CCCL_AND _CCCL_TRAIT(is_convertible, _Up, _Tp)
-                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherErr, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected(expected<_Up, _OtherErr>&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)
-    && _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _CCCL_AND is_convertible_v<_Up, _Tp> _CCCL_AND
+                   is_convertible_v<_OtherErr, _Err>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected(expected<_Up, _OtherErr>&& __other) noexcept(
+    is_nothrow_constructible_v<_Tp, _Up> && is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::move(__other.__union_.__val_));
     }
     else
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
   _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _CCCL_AND(
-    !_CCCL_TRAIT(is_convertible, _Up, _Tp) || !_CCCL_TRAIT(is_convertible, _OtherErr, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)
-    && _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
+    !is_convertible_v<_Up, _Tp> || !is_convertible_v<_OtherErr, _Err>))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
+    is_nothrow_constructible_v<_Tp, _Up> && is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
       : __base(__other.__has_val_)
   {
     if (__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::move(__other.__union_.__val_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::move(__other.__union_.__val_));
     }
     else
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
   _CCCL_TEMPLATE(class _Up = _Tp)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t)) _CCCL_AND(
-    !_CCCL_TRAIT(is_same, expected, remove_cvref_t<_Up>)) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp, _Up) _CCCL_AND _CCCL_TRAIT(is_convertible, _Up, _Tp))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(_Up&& __u) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)) // strengthened
-      : __base(in_place, _CUDA_VSTD::forward<_Up>(__u))
+  _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
+                   _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
+                     _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_convertible_v<_Up, _Tp>)
+  _CCCL_API constexpr expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
+      : __base(in_place, ::cuda::std::forward<_Up>(__u))
   {}
 
   _CCCL_TEMPLATE(class _Up = _Tp)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t)) _CCCL_AND(
-    !_CCCL_TRAIT(is_same, expected, remove_cvref_t<_Up>)) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp, _Up) _CCCL_AND(!_CCCL_TRAIT(is_convertible, _Up, _Tp)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(_Up&& __u) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)) // strengthened
-      : __base(in_place, _CUDA_VSTD::forward<_Up>(__u))
+  _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Up>, in_place_t>) _CCCL_AND(!is_same_v<expected, remove_cvref_t<_Up>>)
+                   _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
+                     _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND(!is_convertible_v<_Up, _Tp>))
+  _CCCL_API constexpr explicit expected(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>) // strengthened
+      : __base(in_place, ::cuda::std::forward<_Up>(__u))
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
-                   _CCCL_AND _CCCL_TRAIT(is_convertible, const _OtherErr&, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(const unexpected<_OtherErr>& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(is_constructible_v<_Err, const _OtherErr&> _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
+  _CCCL_API constexpr expected(const unexpected<_OtherErr>& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(is_constructible_v<_Err, const _OtherErr&> _CCCL_AND(!is_convertible_v<const _OtherErr&, _Err>))
+  _CCCL_API constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr) _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherErr, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(unexpected<_OtherErr>&& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+  _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND is_convertible_v<_OtherErr, _Err>)
+  _CCCL_API constexpr expected(unexpected<_OtherErr>&& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherErr, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(unexpected<_OtherErr>&& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+  _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
+  _CCCL_API constexpr explicit expected(unexpected<_OtherErr>&& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(in_place_t, _Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...)) // strengthened
-      : __base(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
+  _CCCL_API constexpr explicit expected(in_place_t, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Tp, _Args...>) // strengthened
+      : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(
-    in_place_t,
-    initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible,
-                                            _Tp,
-                                            initializer_list<_Up>&,
-                                            _Args...)) // strengthened
-      : __base(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>)
+  _CCCL_API constexpr explicit expected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Tp, initializer_list<_Up>&, _Args...>) // strengthened
+      : __base(in_place, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(unexpect_t, _Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...)) // strengthened
-      : __base(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Err, _Args...>)
+  _CCCL_API constexpr explicit expected(unexpect_t, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Err, _Args...>) // strengthened
+      : __base(unexpect, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(
-    unexpect_t,
-    initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible,
-                                            _Err,
-                                            initializer_list<_Up>&,
-                                            _Args...)) // strengthened
-      : __base(unexpect, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Err, initializer_list<_Up>&, _Args...>)
+  _CCCL_API constexpr explicit expected(unexpect_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Err, initializer_list<_Up>&, _Args...>) // strengthened
+      : __base(unexpect, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
 private:
   template <class _Fun, class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(
+  _CCCL_API constexpr expected(
     __expected_construct_from_invoke_tag,
     in_place_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Tp, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
                in_place,
-               _CUDA_VSTD::forward<_Fun>(__fun),
-               _CUDA_VSTD::forward<_Args>(__args)...)
+               ::cuda::std::forward<_Fun>(__fun),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class _Fun, class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(
+  _CCCL_API constexpr expected(
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
                unexpect,
-               _CUDA_VSTD::forward<_Fun>(__fun),
-               _CUDA_VSTD::forward<_Args>(__args)...)
+               ::cuda::std::forward<_Fun>(__fun),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
 public:
@@ -341,19 +326,19 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES(
-    (!_CCCL_TRAIT(is_same, expected, remove_cvref_t<_Up>)) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
-      _CCCL_AND _CCCL_TRAIT(is_constructible, _Tp, _Up) _CCCL_AND _CCCL_TRAIT(is_assignable, _Tp&, _Up)
-        _CCCL_AND(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up) || _CCCL_TRAIT(is_nothrow_move_constructible, _Tp)
-                  || _CCCL_TRAIT(is_nothrow_move_constructible, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(_Up&& __v)
+    (!is_same_v<expected, remove_cvref_t<_Up>>) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
+      _CCCL_AND is_constructible_v<_Tp, _Up> _CCCL_AND is_assignable_v<_Tp&, _Up> _CCCL_AND(
+        is_nothrow_constructible_v<_Tp, _Up> || is_nothrow_move_constructible_v<_Tp>
+        || is_nothrow_move_constructible_v<_Err>))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected& operator=(_Up&& __v)
   {
     if (this->__has_val_)
     {
-      this->__union_.__val_ = _CUDA_VSTD::forward<_Up>(__v);
+      this->__union_.__val_ = ::cuda::std::forward<_Up>(__v);
     }
     else
     {
-      this->__reinit_expected(this->__union_.__val_, this->__union_.__unex_, _CUDA_VSTD::forward<_Up>(__v));
+      this->__reinit_expected(this->__union_.__val_, this->__union_.__unex_, ::cuda::std::forward<_Up>(__v));
       this->__has_val_ = true;
     }
     return *this;
@@ -373,7 +358,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(__can_assign_from_unexpected<const _OtherErr&>)
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(const unexpected<_OtherErr>& __un)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected& operator=(const unexpected<_OtherErr>& __un)
   {
     if (this->__has_val_)
     {
@@ -390,65 +375,67 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(__can_assign_from_unexpected<_OtherErr>)
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un)
   {
     if (this->__has_val_)
     {
-      this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, _CUDA_VSTD::move(__un.error()));
+      this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, ::cuda::std::move(__un.error()));
       this->__has_val_ = false;
     }
     else
     {
-      this->__union_.__unex_ = _CUDA_VSTD::move(__un.error());
+      this->__union_.__unex_ = ::cuda::std::move(__un.error());
     }
     return *this;
   }
 
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Tp& emplace(_Args&&... __args) noexcept
+  _CCCL_REQUIRES(is_nothrow_constructible_v<_Tp, _Args...>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp& emplace(_Args&&... __args) noexcept
   {
     if (this->__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__val_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, _CUDA_VSTD::forward<_Args>(__args)...);
+    return *::cuda::std::__construct_at(
+      ::cuda::std::addressof(this->__union_.__val_), ::cuda::std::forward<_Args>(__args)...);
   }
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_nothrow_constructible, _Tp, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args) noexcept
+  _CCCL_REQUIRES(is_nothrow_constructible_v<_Tp, initializer_list<_Up>&, _Args...>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args) noexcept
   {
     if (this->__has_val_)
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__val_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__val_));
     }
     else
     {
-      _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__unex_));
+      ::cuda::std::__destroy_at(::cuda::std::addressof(this->__union_.__unex_));
       this->__has_val_ = true;
     }
-    return *_LIBCUDACXX_CONSTRUCT_AT(this->__union_.__val_, __il, _CUDA_VSTD::forward<_Args>(__args)...);
+    return *::cuda::std::__construct_at(
+      ::cuda::std::addressof(this->__union_.__val_), __il, ::cuda::std::forward<_Args>(__args)...);
   }
 
 public:
   // [expected.object.swap], swap
   _CCCL_TEMPLATE(class _Tp2 = _Tp, class _Err2 = _Err)
   _CCCL_REQUIRES(__expected::__can_swap<_Tp2, _Err2>)
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void swap(expected<_Tp2, _Err>& __rhs) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2) && _CCCL_TRAIT(is_nothrow_swappable, _Tp2)
-    && _CCCL_TRAIT(is_nothrow_move_constructible, _Err) && _CCCL_TRAIT(is_nothrow_swappable, _Err))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void swap(expected<_Tp2, _Err>& __rhs) noexcept(
+    is_nothrow_move_constructible_v<_Tp2> && is_nothrow_swappable_v<_Tp2> && is_nothrow_move_constructible_v<_Err>
+    && is_nothrow_swappable_v<_Err>)
   {
     if (this->__has_val_)
     {
       if (__rhs.__has_val_)
       {
-        using _CUDA_VSTD::swap;
+        using ::cuda::std::swap;
         swap(this->__union_.__val_, __rhs.__union_.__val_);
       }
       else
@@ -464,72 +451,70 @@ public:
       }
       else
       {
-        using _CUDA_VSTD::swap;
+        using ::cuda::std::swap;
         swap(this->__union_.__unex_, __rhs.__union_.__unex_);
       }
     }
   }
 
   template <class _Tp2 = _Tp, class _Err2 = _Err>
-  friend _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2) && _CCCL_TRAIT(is_nothrow_swappable, _Tp2)
-    && _CCCL_TRAIT(is_nothrow_move_constructible, _Err2) && _CCCL_TRAIT(is_nothrow_swappable, _Err2))
-    _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<_Tp2, _Err2>)
+  friend _CCCL_API inline _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
+    is_nothrow_move_constructible_v<_Tp2> && is_nothrow_swappable_v<_Tp2> && is_nothrow_move_constructible_v<_Err2>
+    && is_nothrow_swappable_v<_Err2>) _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<_Tp2, _Err2>)
   {
     return __x.swap(__y); // some compiler warn about non void function without return
   }
 
   // [expected.object.obs], observers
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* operator->() const noexcept
+  _CCCL_API constexpr const _Tp* operator->() const noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
-    return _CUDA_VSTD::addressof(this->__union_.__val_);
+    return ::cuda::std::addressof(this->__union_.__val_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator->() noexcept
+  _CCCL_API constexpr _Tp* operator->() noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
-    return _CUDA_VSTD::addressof(this->__union_.__val_);
+    return ::cuda::std::addressof(this->__union_.__val_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator*() const& noexcept
+  _CCCL_API constexpr const _Tp& operator*() const& noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
     return this->__union_.__val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator*() & noexcept
+  _CCCL_API constexpr _Tp& operator*() & noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
     return this->__union_.__val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& operator*() const&& noexcept
+  _CCCL_API constexpr const _Tp&& operator*() const&& noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator*() && noexcept
+  _CCCL_API constexpr _Tp&& operator*() && noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return this->__has_val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool has_value() const noexcept
+  _CCCL_API constexpr bool has_value() const noexcept
   {
     return this->__has_val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& value() const&
+  _CCCL_API constexpr const _Tp& value() const&
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Err),
-                  "expected::value() const& requires is_copy_constructible_v<E>");
+    static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(this->__union_.__unex_);
@@ -537,95 +522,95 @@ public:
     return this->__union_.__val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& value() &
+  _CCCL_API constexpr _Tp& value() &
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Err), "expected::value() & requires is_copy_constructible_v<E>");
+    static_assert(is_copy_constructible_v<_Err>, "expected::value() & requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::as_const(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::as_const(this->__union_.__unex_));
     }
     return this->__union_.__val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& value() const&&
+  _CCCL_API constexpr const _Tp&& value() const&&
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Err),
-                  "expected::value() const&& requires is_copy_constructible_v<E>");
-    static_assert(_CCCL_TRAIT(is_constructible, _Err, decltype(_CUDA_VSTD::move(error()))),
-                  "expected::value() const&& requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
+    static_assert(is_copy_constructible_v<_Err>, "expected::value() const&& requires is_copy_constructible_v<E>");
+    static_assert(is_constructible_v<_Err, decltype(::cuda::std::move(error()))>,
+                  "expected::value() const&& requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& value() &&
+  _CCCL_API constexpr _Tp&& value() &&
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Err), "expected::value() && requires is_copy_constructible_v<E>");
-    static_assert(_CCCL_TRAIT(is_constructible, _Err, decltype(_CUDA_VSTD::move(error()))),
-                  "expected::value() && requires is_constructible_v<E, decltype(_CUDA_VSTD::move(error()))>");
+    static_assert(is_copy_constructible_v<_Err>, "expected::value() && requires is_copy_constructible_v<E>");
+    static_assert(is_constructible_v<_Err, decltype(::cuda::std::move(error()))>,
+                  "expected::value() && requires is_constructible_v<E, decltype(::cuda::std::move(error()))>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
-    return _CUDA_VSTD::move(this->__union_.__val_);
+    return ::cuda::std::move(this->__union_.__val_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
+  _CCCL_API constexpr const _Err& error() const& noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
+  _CCCL_API constexpr _Err& error() & noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
+  _CCCL_API constexpr const _Err&& error() const&& noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
+  _CCCL_API constexpr _Err&& error() && noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp value_or(_Up&& __v) const&
+  _CCCL_API constexpr _Tp value_or(_Up&& __v) const&
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Tp), "value_type has to be copy constructible");
-    static_assert(_CCCL_TRAIT(is_convertible, _Up, _Tp), "argument has to be convertible to value_type");
-    return this->__has_val_ ? this->__union_.__val_ : static_cast<_Tp>(_CUDA_VSTD::forward<_Up>(__v));
+    static_assert(is_copy_constructible_v<_Tp>, "value_type has to be copy constructible");
+    static_assert(is_convertible_v<_Up, _Tp>, "argument has to be convertible to value_type");
+    return this->__has_val_ ? this->__union_.__val_ : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp value_or(_Up&& __v) &&
+  _CCCL_API constexpr _Tp value_or(_Up&& __v) &&
   {
-    static_assert(_CCCL_TRAIT(is_move_constructible, _Tp), "value_type has to be move constructible");
-    static_assert(_CCCL_TRAIT(is_convertible, _Up, _Tp), "argument has to be convertible to value_type");
-    return this->__has_val_ ? _CUDA_VSTD::move(this->__union_.__val_) : static_cast<_Tp>(_CUDA_VSTD::forward<_Up>(__v));
+    static_assert(is_move_constructible_v<_Tp>, "value_type has to be move constructible");
+    static_assert(is_convertible_v<_Up, _Tp>, "argument has to be convertible to value_type");
+    return this->__has_val_ ? ::cuda::std::move(this->__union_.__val_)
+                            : static_cast<_Tp>(::cuda::std::forward<_Up>(__v));
   }
 
   // [expected.object.monadic]
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) &
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Tp&>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
     else
     {
@@ -634,18 +619,18 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) const&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Tp&>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
     }
     else
     {
@@ -654,54 +639,54 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) &&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Tp>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) const&&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Tp>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp2, _Tp2&))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Tp2, _Tp2&>)
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) &
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, _Tp),
+    static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
@@ -710,19 +695,19 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&
+  _CCCL_REQUIRES(is_copy_constructible_v<_Tp2>)
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) const&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, _Tp),
+    static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
@@ -731,63 +716,62 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Tp2>)
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) &&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, _Tp),
+    static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _Res{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return _Res{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp2, const _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(is_constructible_v<_Tp2, const _Tp2>)
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) const&&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, _Tp),
+    static_assert(is_same_v<typename _Res::value_type, _Tp>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _Res{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return _Res{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Tp&>, "std::expected::transform requires that F must be invocable with T.");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp&>>;
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<void, _Err>{};
     }
     else
@@ -797,9 +781,9 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
+  _CCCL_REQUIRES(
+    is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Tp&>, "std::expected::transform requires that F must be invocable with T.");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp&>>;
@@ -814,7 +798,7 @@ public:
     if (this->__has_val_)
     {
       return expected<_Res, _Err>{
-        __expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_};
+        __expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
     else
     {
@@ -823,16 +807,16 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
+  _CCCL_REQUIRES(
+    is_copy_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Tp&>, "std::expected::transform requires that F must be invocable with T.");
     using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp&>>;
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_);
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__val_);
       return expected<_Res, _Err>{};
     }
     else
@@ -842,9 +826,9 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
+  _CCCL_REQUIRES(
+    is_copy_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Tp&>, "std::expected::transform requires that F must be invocable with T");
     using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp&>>;
@@ -859,7 +843,7 @@ public:
     if (this->__has_val_)
     {
       return expected<_Res, _Err>{
-        __expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__val_};
+        __expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun), this->__union_.__val_};
     }
     else
     {
@@ -868,27 +852,25 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Tp>, "std::expected::transform requires that F must be invocable with T.");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp>>;
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Tp>, "std::expected::transform requires that F must be invocable with T");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp>>;
@@ -905,38 +887,38 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{},
         in_place,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__val_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(
+    is_constructible_v<_Err2, const _Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Tp>, "std::expected::transform requires that F must be invocable with T.");
     using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp>>;
 
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__val_));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__val_));
       return expected<_Res, _Err>{};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(
+    is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Tp>, "std::expected::transform requires that F must be invocable with T");
     using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp>>;
@@ -953,18 +935,18 @@ public:
       return expected<_Res, _Err>{
         __expected_construct_from_invoke_tag{},
         in_place,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__val_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp2, _Tp2&))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Tp2, _Tp2&>)
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Err&>, "std::expected::transform_error requires that F must be invocable with E");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Err&>>;
@@ -983,13 +965,13 @@ public:
     else
     {
       return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) const&
+  _CCCL_REQUIRES(is_copy_constructible_v<_Tp2>)
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Err&>,
                   "std::expected::transform_error requires that F must be invocable with E");
@@ -1009,13 +991,13 @@ public:
     else
     {
       return expected<_Tp, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Tp2>)
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Err>, "std::expected::transform_error requires that F must be invocable with E");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Err>>;
@@ -1029,21 +1011,21 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return expected<_Tp, _Res>{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
       return expected<_Tp, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp2, const _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(is_constructible_v<_Tp2, const _Tp2>)
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Err>,
                   "std::expected::transform_error requires that F must be invocable with E");
@@ -1058,21 +1040,21 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Tp, _Res>{in_place, _CUDA_VSTD::move(this->__union_.__val_)};
+      return expected<_Tp, _Res>{in_place, ::cuda::std::move(this->__union_.__val_)};
     }
     else
     {
       return expected<_Tp, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   // [expected.object.eq], equality operators
   _CCCL_EXEC_CHECK_DISABLE
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const expected& __y)
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected& __y)
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1093,7 +1075,7 @@ public:
 
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected& __y)
+  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected& __y)
   {
     return !(__x == __y);
   }
@@ -1101,8 +1083,8 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_void, _T2)))
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const expected<_T2, _E2>& __y)
+  _CCCL_REQUIRES((!is_void_v<_T2>) )
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected<_T2, _E2>& __y)
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1124,8 +1106,8 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_void, _T2)))
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected<_T2, _E2>& __y)
+  _CCCL_REQUIRES((!is_void_v<_T2>) )
+  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected<_T2, _E2>& __y)
   {
     return !(__x == __y);
   }
@@ -1134,7 +1116,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const _T2& __v)
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const _T2& __v)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
@@ -1142,21 +1124,21 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const _T2& __v, const expected& __x)
+  friend _CCCL_API constexpr bool operator==(const _T2& __v, const expected& __x)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const _T2& __v)
+  friend _CCCL_API constexpr bool operator!=(const expected& __x, const _T2& __v)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__expected::__is_expected_nonvoid<_T2>) )
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const _T2& __v, const expected& __x)
+  friend _CCCL_API constexpr bool operator!=(const _T2& __v, const expected& __x)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
@@ -1164,26 +1146,26 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const unexpected<_E2>& __e)
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const unexpected<_E2>& __e)
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const unexpected<_E2>& __e, const expected& __x)
+  friend _CCCL_API constexpr bool operator==(const unexpected<_E2>& __e, const expected& __x)
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __e)
+  friend _CCCL_API constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __e)
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const unexpected<_E2>& __e, const expected& __x)
+  friend _CCCL_API constexpr bool operator!=(const unexpected<_E2>& __e, const expected& __x)
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
@@ -1226,121 +1208,114 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr expected& operator=(expected&&)      = default;
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _OtherErr&>::value _CCCL_AND _CCCL_TRAIT(
-    is_convertible, const _OtherErr&, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected(const expected<_Up, _OtherErr>& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(
+    __can_convert<_Up, _OtherErr, const _OtherErr&>::value _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected(const expected<_Up, _OtherErr>& __other) noexcept(
+    is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(__other.__has_val_)
   {
     if (!__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
-    }
-  }
-
-  _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, const _OtherErr&>::value _CCCL_AND(
-    !_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
-      : __base(__other.__has_val_)
-  {
-    if (!__other.__has_val_)
-    {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __other.__union_.__unex_);
-    }
-  }
-
-  _CCCL_TEMPLATE(class _Up, class _OtherErr)
-  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr>::value _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherErr, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected(expected<_Up, _OtherErr>&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
-      : __base(__other.__has_val_)
-  {
-    if (!__other.__has_val_)
-    {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
     }
   }
 
   _CCCL_TEMPLATE(class _Up, class _OtherErr)
   _CCCL_REQUIRES(
-    __can_convert<_Up, _OtherErr, _OtherErr>::value _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherErr, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
+    __can_convert<_Up, _OtherErr, const _OtherErr&>::value _CCCL_AND(!is_convertible_v<const _OtherErr&, _Err>))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(const expected<_Up, _OtherErr>& __other) noexcept(
+    is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(__other.__has_val_)
   {
     if (!__other.__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__other.__union_.__unex_));
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __other.__union_.__unex_);
+    }
+  }
+
+  _CCCL_TEMPLATE(class _Up, class _OtherErr)
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr>::value _CCCL_AND is_convertible_v<_OtherErr, _Err>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
+  expected(expected<_Up, _OtherErr>&& __other) noexcept(is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
+      : __base(__other.__has_val_)
+  {
+    if (!__other.__has_val_)
+    {
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
+    }
+  }
+
+  _CCCL_TEMPLATE(class _Up, class _OtherErr)
+  _CCCL_REQUIRES(__can_convert<_Up, _OtherErr, _OtherErr>::value _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit expected(expected<_Up, _OtherErr>&& __other) noexcept(
+    is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
+      : __base(__other.__has_val_)
+  {
+    if (!__other.__has_val_)
+    {
+      ::cuda::std::__construct_at(
+        ::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__other.__union_.__unex_));
     }
   }
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
-                   _CCCL_AND _CCCL_TRAIT(is_convertible, const _OtherErr&, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(const unexpected<_OtherErr>& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(is_constructible_v<_Err, const _OtherErr&> _CCCL_AND is_convertible_v<const _OtherErr&, _Err>)
+  _CCCL_API constexpr expected(const unexpected<_OtherErr>& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, const _OtherErr&, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(is_constructible_v<_Err, const _OtherErr&> _CCCL_AND(!is_convertible_v<const _OtherErr&, _Err>))
+  _CCCL_API constexpr explicit expected(const unexpected<_OtherErr>& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
       : __base(unexpect, __unex.error())
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr) _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherErr, _Err))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(unexpected<_OtherErr>&& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+  _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND is_convertible_v<_OtherErr, _Err>)
+  _CCCL_API constexpr expected(unexpected<_OtherErr>&& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr)
-                   _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherErr, _Err)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(unexpected<_OtherErr>&& __unex) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
-      : __base(unexpect, _CUDA_VSTD::move(__unex.error()))
+  _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND(!is_convertible_v<_OtherErr, _Err>))
+  _CCCL_API constexpr explicit expected(unexpected<_OtherErr>&& __unex) noexcept(
+    is_nothrow_constructible_v<_Err, _OtherErr>) // strengthened
+      : __base(unexpect, ::cuda::std::move(__unex.error()))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(in_place_t) noexcept
+  _CCCL_API constexpr explicit expected(in_place_t) noexcept
       : __base(true)
   {}
 
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(unexpect_t, _Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...)) // strengthened
-      : __base(unexpect, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Err, _Args...>)
+  _CCCL_API constexpr explicit expected(unexpect_t, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Err, _Args...>) // strengthened
+      : __base(unexpect, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_TEMPLATE(class _Up, class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(
-    unexpect_t,
-    initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible,
-                                            _Err,
-                                            initializer_list<_Up>,
-                                            _Args...)) // strengthened
-      : __base(unexpect, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Err, initializer_list<_Up>&, _Args...>)
+  _CCCL_API constexpr explicit expected(unexpect_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Err, initializer_list<_Up>, _Args...>) // strengthened
+      : __base(unexpect, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
 private:
   template <class _Fun, class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(
+  _CCCL_API constexpr expected(
     __expected_construct_from_invoke_tag,
     unexpect_t,
     _Fun&& __fun,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, invoke_result_t<_Fun, _Args...>))
+    _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, invoke_result_t<_Fun, _Args...>>)
       : __base(__expected_construct_from_invoke_tag{},
                unexpect,
-               _CUDA_VSTD::forward<_Fun>(__fun),
-               _CUDA_VSTD::forward<_Args>(__args)...)
+               ::cuda::std::forward<_Fun>(__fun),
+               ::cuda::std::forward<_Args>(__args)...)
   {}
 
 public:
@@ -1348,15 +1323,14 @@ public:
   // [expected.void.assign], assignment
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
-                   _CCCL_AND _CCCL_TRAIT(is_assignable, _Err&, const _OtherErr&))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(const unexpected<_OtherErr>& __un) noexcept(
-    _CCCL_TRAIT(is_nothrow_assignable, _Err&, const _OtherErr&)
-    && _CCCL_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
+  _CCCL_REQUIRES(is_constructible_v<_Err, const _OtherErr&> _CCCL_AND is_assignable_v<_Err&, const _OtherErr&>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected& operator=(const unexpected<_OtherErr>& __un) noexcept(
+    is_nothrow_assignable_v<_Err&, const _OtherErr&>
+    && is_nothrow_constructible_v<_Err, const _OtherErr&>) // strengthened
   {
     if (this->__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, __un.error());
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), __un.error());
       this->__has_val_ = false;
     }
     else
@@ -1368,23 +1342,23 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr) _CCCL_AND _CCCL_TRAIT(is_assignable, _Err&, _OtherErr))
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un) noexcept(
-    _CCCL_TRAIT(is_nothrow_assignable, _Err&, _OtherErr) && _CCCL_TRAIT(is_nothrow_constructible, _Err, _OtherErr))
+  _CCCL_REQUIRES(is_constructible_v<_Err, _OtherErr> _CCCL_AND is_assignable_v<_Err&, _OtherErr>)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un) noexcept(
+    is_nothrow_assignable_v<_Err&, _OtherErr> && is_nothrow_constructible_v<_Err, _OtherErr>)
   {
     if (this->__has_val_)
     {
-      _LIBCUDACXX_CONSTRUCT_AT(this->__union_.__unex_, _CUDA_VSTD::move(__un.error()));
+      ::cuda::std::__construct_at(::cuda::std::addressof(this->__union_.__unex_), ::cuda::std::move(__un.error()));
       this->__has_val_ = false;
     }
     else
     {
-      this->__union_.__unex_ = _CUDA_VSTD::move(__un.error());
+      this->__union_.__unex_ = ::cuda::std::move(__un.error());
     }
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void emplace() noexcept
+  _CCCL_API constexpr void emplace() noexcept
   {
     if (!this->__has_val_)
     {
@@ -1396,8 +1370,8 @@ public:
   // [expected.void.swap], swap
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(__expected::__can_swap<void, _Err2>)
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void swap(expected<void, _Err2>& __rhs) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Err2) && _CCCL_TRAIT(is_nothrow_swappable, _Err2))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
+  swap(expected<void, _Err2>& __rhs) noexcept(is_nothrow_move_constructible_v<_Err2> && is_nothrow_swappable_v<_Err2>)
   {
     if (this->__has_val_)
     {
@@ -1414,94 +1388,93 @@ public:
       }
       else
       {
-        using _CUDA_VSTD::swap;
+        using ::cuda::std::swap;
         swap(this->__union_.__unex_, __rhs.__union_.__unex_);
       }
     }
   }
 
   template <class _Err2 = _Err>
-  friend _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
-    _CCCL_TRAIT(is_nothrow_move_constructible, _Err2) && _CCCL_TRAIT(is_nothrow_swappable, _Err2))
+  friend _CCCL_API inline _CCCL_CONSTEXPR_CXX20 auto
+  swap(expected& __x, expected& __y) noexcept(is_nothrow_move_constructible_v<_Err2> && is_nothrow_swappable_v<_Err2>)
     _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<void, _Err2>)
   {
     return __x.swap(__y); // some compiler warn about non void function without return
   }
 
   // [expected.void.obs], observers
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return this->__has_val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool has_value() const noexcept
+  _CCCL_API constexpr bool has_value() const noexcept
   {
     return this->__has_val_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator*() const noexcept
+  _CCCL_API constexpr void operator*() const noexcept
   {
     _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void value() const&
+  _CCCL_API constexpr void value() const&
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Err),
-                  "expected::value() const& requires is_copy_constructible_v<E>");
+    static_assert(is_copy_constructible_v<_Err>, "expected::value() const& requires is_copy_constructible_v<E>");
     if (!this->__has_val_)
     {
       __throw_bad_expected_access<_Err>(this->__union_.__unex_);
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void value() &&
+  _CCCL_API constexpr void value() &&
   {
-    static_assert(_CCCL_TRAIT(is_copy_constructible, _Err), "expected::value() && requires is_copy_constructible_v<E>");
-    static_assert(_CCCL_TRAIT(is_move_constructible, _Err), "expected::value() && requires is_move_constructible_v<E>");
+    static_assert(is_copy_constructible_v<_Err>, "expected::value() && requires is_copy_constructible_v<E>");
+    static_assert(is_move_constructible_v<_Err>, "expected::value() && requires is_move_constructible_v<E>");
     if (!this->__has_val_)
     {
-      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(::cuda::std::move(this->__union_.__unex_));
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
+  _CCCL_API constexpr const _Err& error() const& noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
+  _CCCL_API constexpr _Err& error() & noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
+  _CCCL_API constexpr const _Err&& error() const&& noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
+  _CCCL_API constexpr _Err&& error() && noexcept
   {
     _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
-    return _CUDA_VSTD::move(this->__union_.__unex_);
+    return ::cuda::std::move(this->__union_.__unex_);
   }
 
   // [expected.void.monadic]
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) &
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
@@ -1510,18 +1483,18 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) const&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
@@ -1530,53 +1503,53 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) &&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2>)
+  _CCCL_API constexpr auto and_then(_Fun&& __fun) const&&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
+    static_assert(is_same_v<typename _Res::error_type, _Err>,
                   "The error type of the result of f(value()) must be the same as that of std::expected");
 
     if (this->__has_val_)
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
     }
     else
     {
-      return _Res{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return _Res{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) &
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, void),
+    static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
@@ -1585,18 +1558,18 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) const&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, void),
+    static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
@@ -1605,18 +1578,18 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_);
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &&
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) &&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, void),
+    static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
@@ -1625,18 +1598,18 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&&
+  _CCCL_API constexpr auto or_else(_Fun&& __fun) const&&
   {
     using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
-    static_assert(_CCCL_TRAIT(is_same, typename _Res::value_type, void),
+    static_assert(is_same_v<typename _Res::value_type, void>,
                   "The value type of the result of std::expected::or_else must be the same as that of std::expected");
 
     if (this->__has_val_)
@@ -1645,19 +1618,18 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::move(this->__union_.__unex_));
+      return ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::move(this->__union_.__unex_));
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
@@ -1667,9 +1639,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
+  _CCCL_REQUIRES(is_constructible_v<_Err2, _Err2&> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     using _Res = remove_cv_t<invoke_result_t<_Fun>>;
@@ -1683,7 +1654,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1692,14 +1663,13 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
@@ -1709,9 +1679,8 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
+  _CCCL_REQUIRES(is_copy_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
     using _Res = remove_cv_t<invoke_result_t<_Fun>>;
@@ -1725,7 +1694,7 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
@@ -1734,25 +1703,23 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
     {
-      return expected<void, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
+  _CCCL_REQUIRES(is_move_constructible_v<_Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
     using _Res = remove_cv_t<invoke_result_t<_Fun>>;
@@ -1766,35 +1733,33 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                   _CCCL_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>)
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
     if (this->__has_val_)
     {
-      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun));
+      ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun));
       return expected<void, _Err>{};
     }
     else
     {
-      return expected<void, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<void, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   _CCCL_TEMPLATE(class _Fun, class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                   _CCCL_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
+  _CCCL_REQUIRES(is_constructible_v<_Err2, const _Err2> _CCCL_AND(!is_same_v<remove_cv_t<invoke_result_t<_Fun>>, void>))
+  _CCCL_API constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
     using _Res = remove_cv_t<invoke_result_t<_Fun>>;
@@ -1808,16 +1773,16 @@ public:
 
     if (this->__has_val_)
     {
-      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, _CUDA_VSTD::forward<_Fun>(__fun)};
+      return expected<_Res, _Err>{__expected_construct_from_invoke_tag{}, in_place, ::cuda::std::forward<_Fun>(__fun)};
     }
     else
     {
-      return expected<_Res, _Err>{unexpect, _CUDA_VSTD::move(this->__union_.__unex_)};
+      return expected<_Res, _Err>{unexpect, ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Err&>, "std::expected::transform_error requires that F must be invocable with E");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Err&>>;
@@ -1836,12 +1801,12 @@ public:
     else
     {
       return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) const&
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Err&>,
                   "std::expected::transform_error requires that F must be invocable with E");
@@ -1861,12 +1826,12 @@ public:
     else
     {
       return expected<void, _Res>{
-        __expected_construct_from_invoke_tag{}, unexpect, _CUDA_VSTD::forward<_Fun>(__fun), this->__union_.__unex_};
+        __expected_construct_from_invoke_tag{}, unexpect, ::cuda::std::forward<_Fun>(__fun), this->__union_.__unex_};
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &&
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Err>, "std::expected::transform_error requires that F must be invocable with E");
     using _Res = remove_cv_t<invoke_result_t<_Fun, _Err>>;
@@ -1887,13 +1852,13 @@ public:
       return expected<void, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   template <class _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) const&&
+  _CCCL_API constexpr auto transform_error(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Err>,
                   "std::expected::transform_error requires that F must be invocable with E");
@@ -1915,14 +1880,14 @@ public:
       return expected<void, _Res>{
         __expected_construct_from_invoke_tag{},
         unexpect,
-        _CUDA_VSTD::forward<_Fun>(__fun),
-        _CUDA_VSTD::move(this->__union_.__unex_)};
+        ::cuda::std::forward<_Fun>(__fun),
+        ::cuda::std::move(this->__union_.__unex_)};
     }
   }
 
   // [expected.void.eq], equality operators
   _CCCL_EXEC_CHECK_DISABLE
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const expected& __y) noexcept
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected& __y) noexcept
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1935,7 +1900,7 @@ public:
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const expected& __x, const expected& __y) noexcept
+  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected& __y) noexcept
   {
     return !(__x == __y);
   }
@@ -1943,8 +1908,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator==(const expected& __x, const expected<void, _E2>& __y) noexcept
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected<void, _E2>& __y) noexcept
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1958,8 +1922,7 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator!=(const expected& __x, const expected<void, _E2>& __y) noexcept
+  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected<void, _E2>& __y) noexcept
   {
     return !(__x == __y);
   }
@@ -1967,32 +1930,34 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const expected& __x, const unexpected<_E2>& __y) noexcept
+  friend _CCCL_API constexpr bool operator==(const expected& __x, const unexpected<_E2>& __y) noexcept
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept
+  friend _CCCL_API constexpr bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __y) noexcept
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __y) noexcept
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __y.error());
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool operator!=(const unexpected<_E2>& __y, const expected& __x) noexcept
+  _CCCL_API friend constexpr bool operator!=(const unexpected<_E2>& __y, const expected& __x) noexcept
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __y.error());
   }
 #endif // _CCCL_STD_VER < 2020
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___EXPECTED_EXPECTED_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___EXPECTED_EXPECTED_H

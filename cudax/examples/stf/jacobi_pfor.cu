@@ -59,7 +59,7 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
 
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   auto lresidual = ctx.logical_data(shape_of<scalar_view<double>>());
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 
   } while (ctx.wait(lresidual) > tol && iter < iter_max);
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

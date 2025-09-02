@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_TUPLE_LIKE_EXT_H
-#define _LIBCUDACXX___TUPLE_TUPLE_LIKE_EXT_H
+#ifndef _CUDA_STD___TUPLE_TUPLE_LIKE_EXT_H
+#define _CUDA_STD___TUPLE_TUPLE_LIKE_EXT_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,9 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __tuple_like_ext : false_type
@@ -64,6 +66,8 @@ template <class... _Tp>
 struct __tuple_like_ext<__tuple_types<_Tp...>> : true_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TUPLE_TUPLE_LIKE_EXT_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TUPLE_TUPLE_LIKE_EXT_H

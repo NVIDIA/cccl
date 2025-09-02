@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_WEAK_RESULT_TYPE_H
-#define _LIBCUDACXX___FUNCTIONAL_WEAK_RESULT_TYPE_H
+#ifndef _CUDA_STD___FUNCTIONAL_WEAK_RESULT_TYPE_H
+#define _CUDA_STD___FUNCTIONAL_WEAK_RESULT_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,16 +27,18 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __has_result_type
 {
 private:
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
+  _CCCL_API inline static false_type __test(...);
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Up::result_type* = 0);
+  _CCCL_API inline static true_type __test(typename _Up::result_type* = 0);
 
 public:
   static const bool value = decltype(__test<_Tp>(0))::value;
@@ -53,9 +55,9 @@ private:
     char __lx;
     char __lxx;
   };
-  static _LIBCUDACXX_HIDE_FROM_ABI __two __test(...);
+  static _CCCL_API inline __two __test(...);
   template <class _Ap, class _Rp>
-  static _LIBCUDACXX_HIDE_FROM_ABI __unary_function<_Ap, _Rp> __test(const volatile __unary_function<_Ap, _Rp>*);
+  static _CCCL_API inline __unary_function<_Ap, _Rp> __test(const volatile __unary_function<_Ap, _Rp>*);
 
 public:
   static const bool value = !is_same<decltype(__test((_Tp*) 0)), __two>::value;
@@ -71,10 +73,9 @@ private:
     char __lx;
     char __lxx;
   };
-  static __two _LIBCUDACXX_HIDE_FROM_ABI __test(...);
+  static __two _CCCL_API inline __test(...);
   template <class _A1, class _A2, class _Rp>
-  static _LIBCUDACXX_HIDE_FROM_ABI __binary_function<_A1, _A2, _Rp>
-  __test(const volatile __binary_function<_A1, _A2, _Rp>*);
+  static _CCCL_API inline __binary_function<_A1, _A2, _Rp> __test(const volatile __binary_function<_A1, _A2, _Rp>*);
 
 public:
   static const bool value = !is_same<decltype(__test((_Tp*) 0)), __two>::value;
@@ -266,9 +267,11 @@ struct __weak_result_type<_Rp (_Cp::*)(_A1, _A2, _A3...) const volatile>
 template <class _Tp, class... _Args>
 struct __invoke_return
 {
-  using type = decltype(_CUDA_VSTD::__invoke(declval<_Tp>(), declval<_Args>()...));
+  using type = decltype(::cuda::std::__invoke(declval<_Tp>(), declval<_Args>()...));
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___FUNCTIONAL_WEAK_RESULT_TYPE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FUNCTIONAL_WEAK_RESULT_TYPE_H

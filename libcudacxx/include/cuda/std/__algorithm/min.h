@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MIN_H
-#define _LIBCUDACXX___ALGORITHM_MIN_H
+#ifndef _CUDA_STD___ALGORITHM_MIN_H
+#define _CUDA_STD___ALGORITHM_MIN_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,36 +25,38 @@
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/initializer_list>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__b, __a) ? __b : __a;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& min(const _Tp& __a, const _Tp& __b)
+[[nodiscard]] _CCCL_API constexpr const _Tp& min(const _Tp& __a, const _Tp& __b)
 {
   return __b < __a ? __b : __a;
 }
 
 template <class _Tp, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp min(initializer_list<_Tp> __t, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr _Tp min(initializer_list<_Tp> __t, _Compare __comp)
 {
-  return *_CUDA_VSTD::__min_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
+  return *::cuda::std::__min_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp min(initializer_list<_Tp> __t)
+[[nodiscard]] _CCCL_API constexpr _Tp min(initializer_list<_Tp> __t)
 {
-  return *_CUDA_VSTD::min_element(__t.begin(), __t.end(), __less{});
+  return *::cuda::std::min_element(__t.begin(), __t.end(), __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MIN_H
+#endif // _CUDA_STD___ALGORITHM_MIN_H

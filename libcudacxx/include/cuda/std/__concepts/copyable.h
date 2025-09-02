@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_COPYABLE_H
-#define _LIBCUDACXX___CONCEPTS_COPYABLE_H
+#ifndef _CUDA_STD___CONCEPTS_COPYABLE_H
+#define _CUDA_STD___CONCEPTS_COPYABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,9 +25,11 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/movable.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 // [concepts.object]
 
@@ -35,7 +37,7 @@ template <class _Tp>
 concept copyable = copy_constructible<_Tp> && movable<_Tp> && assignable_from<_Tp&, _Tp&>
                 && assignable_from<_Tp&, const _Tp&> && assignable_from<_Tp&, const _Tp>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
@@ -49,8 +51,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT copyable = _CCCL_FRAGMENT(__copyable_, _Tp);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_COPYABLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CONCEPTS_COPYABLE_H

@@ -31,14 +31,16 @@
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <nv/target>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 // This struct contains functions to defer the completion of a barrier phase
 // or pipeline stage until a specific memcpy_async operation *initiated by
@@ -50,16 +52,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 struct __memcpy_completion_impl
 {
   template <typename _Group>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment
+  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment
   __defer(__completion_mechanism __cm,
           _Group const& __group,
-          _CUDA_VSTD::size_t __size,
+          ::cuda::std::size_t __size,
           barrier<::cuda::thread_scope_block>& __barrier)
   {
     // In principle, this is the overload for shared memory barriers. However, a
     // block-scope barrier may also be located in global memory. Therefore, we
     // check if the barrier is a non-smem barrier and handle that separately.
-    if (!__is_local_smem_barrier(__barrier))
+    if (!::cuda::__is_local_smem_barrier(__barrier))
     {
       return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
     }
@@ -74,10 +76,10 @@ struct __memcpy_completion_impl
             // Non-Blocking: unbalance barrier by 1, barrier will be
             // rebalanced when all thread-local cp.async instructions
             // have completed writing to shared memory.
-            _CUDA_VSTD::uint64_t* __bh = __try_get_barrier_handle(__barrier);
+            ::cuda::std::uint64_t* __bh = ::cuda::__try_get_barrier_handle(__barrier);
 
             asm volatile("cp.async.mbarrier.arrive.shared.b64 [%0];" ::"r"(
-              static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh))) : "memory");));
+              static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__bh))) : "memory");));
         return async_contract_fulfillment::async;
       case __completion_mechanism::__async_bulk_group:
         // This completion mechanism should not be used with a shared
@@ -104,15 +106,15 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment __defer(
-    __completion_mechanism __cm, _Group const& __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF>& __barrier)
+  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment __defer(
+    __completion_mechanism __cm, _Group const& __group, ::cuda::std::size_t __size, barrier<_Sco, _CompF>& __barrier)
   {
     return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment __defer_non_smem_barrier(
-    __completion_mechanism __cm, _Group const& __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF>& __barrier)
+  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment __defer_non_smem_barrier(
+    __completion_mechanism __cm, _Group const& __group, ::cuda::std::size_t __size, barrier<_Sco, _CompF>& __barrier)
   {
     // Overload for non-smem barriers.
     switch (__cm)
@@ -141,8 +143,8 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment
-  __defer(__completion_mechanism __cm, _Group const&, _CUDA_VSTD::size_t, pipeline<_Sco>&)
+  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment
+  __defer(__completion_mechanism __cm, _Group const&, ::cuda::std::size_t, pipeline<_Sco>&)
   {
     switch (__cm)
     {
@@ -161,6 +163,8 @@ struct __memcpy_completion_impl
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MEMCPY_ASYNC_MEMCPY_COMPLETION_H

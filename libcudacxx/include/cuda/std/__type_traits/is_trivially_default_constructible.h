@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,13 +22,15 @@
 
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_default_constructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_default_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp>
@@ -46,6 +48,8 @@ inline constexpr bool is_trivially_default_constructible_v = is_trivially_defaul
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) &&
        // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE_H

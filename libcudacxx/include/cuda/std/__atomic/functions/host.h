@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
-#define _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#ifndef _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
+#define _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,9 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
@@ -202,6 +204,8 @@ inline remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_orde
 
 _CCCL_DIAG_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H

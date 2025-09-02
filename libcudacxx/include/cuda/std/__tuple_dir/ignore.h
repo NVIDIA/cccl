@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_IGNORE_H
-#define _LIBCUDACXX___TUPLE_IGNORE_H
+#ifndef _CUDA_STD___TUPLE_IGNORE_H
+#define _CUDA_STD___TUPLE_IGNORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,18 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __ignore_t
 {
   __ignore_t() = default;
 
   template <class _Tp, class... _Ts>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __ignore_t(const _Tp&, const _Ts&...) noexcept
+  _CCCL_API constexpr __ignore_t(const _Tp&, const _Ts&...) noexcept
   {}
 
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const __ignore_t& operator=(const _Tp&) const noexcept
+  _CCCL_API constexpr const __ignore_t& operator=(const _Tp&) const noexcept
   {
     return *this;
   }
@@ -39,9 +41,11 @@ struct __ignore_t
 
 namespace
 {
-_CCCL_GLOBAL_CONSTANT __ignore_t ignore{};
+_CCCL_GLOBAL_CONSTANT __ignore_t ignore = __ignore_t{};
 } // namespace
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TUPLE_IGNORE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TUPLE_IGNORE_H

@@ -48,7 +48,7 @@ public:
     m_what += w;
   } // end bad_alloc()
 
-  inline virtual ~bad_alloc() noexcept {};
+  inline virtual ~bad_alloc() noexcept {}
 
   inline virtual const char* what() const noexcept
   {

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_TRY_GET_BARRIER_HANDLE_H
-#define _CUDA___BARRIER_TRY_GET_BARRIER_HANDLE_H
+#ifndef _CUDA___MEMCPY_ASYNC_TRY_GET_BARRIER_HANDLE_H
+#define _CUDA___MEMCPY_ASYNC_TRY_GET_BARRIER_HANDLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,24 +31,29 @@
 
 #include <nv/target>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
 template <thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
+_CCCL_API inline ::cuda::std::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
 {
   return nullptr;
 }
 
 template <>
-_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t*
-__try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
+_CCCL_API inline ::cuda::std::uint64_t*
+__try_get_barrier_handle<::cuda::thread_scope_block, ::cuda::std::__empty_completion>(
   [[maybe_unused]] barrier<thread_scope_block>& __barrier)
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
+  _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-#endif // _CUDA___BARRIER_TRY_GET_BARRIER_HANDLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_TRY_GET_BARRIER_HANDLE_H

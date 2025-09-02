@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,9 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [conv.general]/3 says "E is convertible to T" whenever "T t=E;" is well-formed.
 // We can't test for that, but we can test implicit convertibility by passing it
@@ -38,6 +40,8 @@ struct __is_core_convertible<_Tp, _Up, decltype(static_cast<void (*)(_Up)>(0)(st
     : public true_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H

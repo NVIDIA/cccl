@@ -29,12 +29,14 @@
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/host_system_tag.h>
+#include <thrust/iterator/detail/iterator_category_to_system.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_categories.h>
 
 #include <cuda/std/iterator>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -189,7 +191,7 @@ struct iterator_facade_category
 {
   using type = typename ::cuda::std::_If<
     is_iterator_category<CategoryOrTraversal>,
-    identity_<CategoryOrTraversal>,
+    ::cuda::std::type_identity<CategoryOrTraversal>,
     iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal, ValueParam, Reference>>::type;
 }; // end iterator_facade_category
 

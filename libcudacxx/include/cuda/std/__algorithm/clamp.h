@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_CLAMP_H
-#define _LIBCUDACXX___ALGORITHM_CLAMP_H
+#ifndef _CUDA_STD___ALGORITHM_CLAMP_H
+#define _CUDA_STD___ALGORITHM_CLAMP_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,22 +22,27 @@
 
 #include <cuda/std/__algorithm/comp.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&
-clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr const _Tp& clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
 {
-  _CCCL_ASSERT(!__comp(__hi, __lo), "Bad bounds passed to std::clamp");
+  _CCCL_ASSERT(!__comp(__hi, __lo), "Bad bounds passed to cuda::std::clamp");
   return __comp(__v, __lo) ? __lo : __comp(__hi, __v) ? __hi : __v;
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
+[[nodiscard]] _CCCL_API constexpr const _Tp& clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
 {
-  return _CUDA_VSTD::clamp(__v, __lo, __hi, __less{});
+  _CCCL_ASSERT(!(__hi < __lo), "Bad bounds passed to cuda::std::clamp");
+  return __v < __lo ? __lo : __hi < __v ? __hi : __v;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_CLAMP_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_CLAMP_H

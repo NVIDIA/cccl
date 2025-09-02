@@ -59,6 +59,7 @@ class LibcxxTestFormat(object):
             IntegratedTestKeywordParser(
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
             ),
+            IntegratedTestKeywordParser("CONSTEXPR_STEPS:", ParserKind.INTEGER),
         ]
 
     @staticmethod
@@ -103,9 +104,9 @@ class LibcxxTestFormat(object):
         is_pass_test = name.endswith(".pass.cpp") or name.endswith(".pass.mm")
         is_fail_test = name.endswith(".fail.cpp") or name.endswith(".fail.mm")
         is_runfail_test = name.endswith(".runfail.cpp") or name.endswith(".runfail.mm")
-        assert (
-            is_sh_test or name_ext == ".cpp" or name_ext == ".mm"
-        ), "non-cpp file must be sh test"
+        assert is_sh_test or name_ext == ".cpp" or name_ext == ".mm", (
+            "non-cpp file must be sh test"
+        )
 
         if test.config.unsupported:
             return (lit.Test.UNSUPPORTED, "A lit.local.cfg marked this unsupported")
@@ -177,6 +178,28 @@ class LibcxxTestFormat(object):
                     contents = f.read()
                 if b"#define _CCCL_ASSERT" in contents:
                     test_cxx.useModules(False)
+
+        # Handle constexpr steps if specified
+        constexpr_steps = self._get_parser("CONSTEXPR_STEPS:", parsers).getValue()
+        if constexpr_steps is not None:
+            constexpr_steps = constexpr_steps[0]
+            cxx = test_cxx.host_cxx if test_cxx.type == "nvcc" else test_cxx
+            if cxx.type == "msvc":
+                constexpr_steps_opt = f"/constexpr:steps{constexpr_steps}"
+            elif cxx.type == "clang":
+                constexpr_steps_opt = f"-fconstexpr-steps={constexpr_steps}"
+            elif cxx.type == "gcc" and cxx.version[0] >= 9:
+                constexpr_steps_opt = f"-fconstexpr-ops-limit={constexpr_steps}"
+            elif cxx.type == "nvhpc":
+                constexpr_steps_opt = f"-Wc,--max_cost_constexpr_call={constexpr_steps}"
+            else:
+                constexpr_steps_opt = None
+
+            if constexpr_steps_opt is not None:
+                if test_cxx.type == "nvcc":
+                    test_cxx.compile_flags += ["-Xcompiler", f'"{constexpr_steps_opt}"']
+                else:
+                    test_cxx.compile_flags += [constexpr_steps_opt]
 
         # Dispatch the test based on its suffix.
         if is_sh_test:

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_WRAP_ITER_H
-#define _LIBCUDACXX___ITERATOR_WRAP_ITER_H
+#ifndef _CUDA_STD___ITERATOR_WRAP_ITER_H
+#define _CUDA_STD___ITERATOR_WRAP_ITER_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,9 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Iter>
 class __wrap_iter
@@ -47,78 +49,78 @@ private:
   iterator_type __i_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter() noexcept
+  _CCCL_API constexpr __wrap_iter() noexcept
       : __i_()
   {}
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter(
+  _CCCL_API constexpr __wrap_iter(
     const __wrap_iter<_Up>& __u,
     typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
       : __i_(__u.base())
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator*() const noexcept
+  _CCCL_API constexpr reference operator*() const noexcept
   {
     return *__i_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const noexcept
+  _CCCL_API constexpr pointer operator->() const noexcept
   {
-    return _CUDA_VSTD::__to_address(__i_);
+    return ::cuda::std::__to_address(__i_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator++() noexcept
+  _CCCL_API constexpr __wrap_iter& operator++() noexcept
   {
     ++__i_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator++(int) noexcept
+  _CCCL_API constexpr __wrap_iter operator++(int) noexcept
   {
     __wrap_iter __tmp(*this);
     ++(*this);
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator--() noexcept
+  _CCCL_API constexpr __wrap_iter& operator--() noexcept
   {
     --__i_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator--(int) noexcept
+  _CCCL_API constexpr __wrap_iter operator--(int) noexcept
   {
     __wrap_iter __tmp(*this);
     --(*this);
     return __tmp;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator+(difference_type __n) const noexcept
+  _CCCL_API constexpr __wrap_iter operator+(difference_type __n) const noexcept
   {
     __wrap_iter __w(*this);
     __w += __n;
     return __w;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator+=(difference_type __n) noexcept
+  _CCCL_API constexpr __wrap_iter& operator+=(difference_type __n) noexcept
   {
     __i_ += __n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter operator-(difference_type __n) const noexcept
+  _CCCL_API constexpr __wrap_iter operator-(difference_type __n) const noexcept
   {
     return *this + (-__n);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter& operator-=(difference_type __n) noexcept
+  _CCCL_API constexpr __wrap_iter& operator-=(difference_type __n) noexcept
   {
     *this += -__n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](difference_type __n) const noexcept
+  _CCCL_API constexpr reference operator[](difference_type __n) const noexcept
   {
     return __i_[__n];
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_type base() const noexcept
+  _CCCL_API constexpr iterator_type base() const noexcept
   {
     return __i_;
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter(iterator_type __x) noexcept
+  _CCCL_API constexpr __wrap_iter(iterator_type __x) noexcept
       : __i_(__x)
   {}
 
@@ -133,98 +135,86 @@ private:
 };
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
+_CCCL_API constexpr bool operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return __x.base() == __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+_CCCL_API constexpr bool operator==(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return __x.base() == __y.base();
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
+_CCCL_API constexpr bool operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return __x.base() < __y.base();
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+_CCCL_API constexpr bool operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return __x.base() < __y.base();
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
+_CCCL_API constexpr bool operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return !(__x == __y);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+_CCCL_API constexpr bool operator!=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return !(__x == __y);
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
+_CCCL_API constexpr bool operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return __y < __x;
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+_CCCL_API constexpr bool operator>(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return __y < __x;
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
+_CCCL_API constexpr bool operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return !(__x < __y);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+_CCCL_API constexpr bool operator>=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return !(__x < __y);
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
+_CCCL_API constexpr bool operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
   return !(__y < __x);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+_CCCL_API constexpr bool operator<=(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
   return !(__y < __x);
 }
 
 template <class _Iter1, class _Iter2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept -> decltype(__x.base() - __y.base())
+_CCCL_API constexpr auto operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
+  -> decltype(__x.base() - __y.base())
 {
   return __x.base() - __y.base();
 }
 
 template <class _Iter1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter<_Iter1>
+_CCCL_API constexpr __wrap_iter<_Iter1>
 operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1> __x) noexcept
 {
   __x += __n;
@@ -244,12 +234,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
   using element_type    = typename pointer_traits<_It>::element_type;
   using difference_type = typename pointer_traits<_It>::difference_type;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr static element_type* to_address(pointer __w) noexcept
+  _CCCL_API constexpr static element_type* to_address(pointer __w) noexcept
   {
-    return _CUDA_VSTD::__to_address(__w.base());
+    return ::cuda::std::__to_address(__w.base());
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_WRAP_ITER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_WRAP_ITER_H

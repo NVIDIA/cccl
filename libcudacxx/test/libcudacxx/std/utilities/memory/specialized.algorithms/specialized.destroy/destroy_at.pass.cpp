@@ -143,7 +143,8 @@ int main(int, char**)
   test_arrays();
 #if TEST_STD_VER > 2017
 #  if !TEST_COMPILER(NVRTC)
-#    if TEST_COMPILER(CLANG, >, 10) || TEST_COMPILER(GCC, >, 9) || TEST_COMPILER(MSVC2022) || TEST_COMPILER(NVHPC)
+#    if TEST_COMPILER(CLANG, >, 10) || (TEST_COMPILER(GCC, >, 9) && TEST_COMPILER(GCC, <, 14)) \
+      || TEST_COMPILER(MSVC2022) || TEST_COMPILER(NVHPC)
   static_assert(test());
   // TODO: Until cuda::std::__construct_at has support for arrays, it's impossible to test this
   //       in a constexpr context (see https://reviews.llvm.org/D114903).

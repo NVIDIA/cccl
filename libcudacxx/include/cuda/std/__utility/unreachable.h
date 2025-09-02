@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_UNREACHABLE_H
-#define _LIBCUDACXX___UTILITY_UNREACHABLE_H
+#ifndef _CUDA_STD___UTILITY_UNREACHABLE_H
+#define _CUDA_STD___UTILITY_UNREACHABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,13 +20,18 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+[[noreturn]] _CCCL_API inline void unreachable()
 {
+  _CCCL_ASSERT(false, "unreachable");
   _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___UTILITY_UNREACHABLE_H

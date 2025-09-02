@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_ALIGNMENT_OF_H
-#define _LIBCUDACXX___TYPE_TRAITS_ALIGNMENT_OF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_ALIGNMENT_OF_H
+#define _CUDA_STD___TYPE_TRAITS_ALIGNMENT_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,9 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT alignment_of : public integral_constant<size_t, alignof(_Tp)>
@@ -32,6 +34,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT alignment_of : public integral_constant<siz
 template <class _Tp>
 inline constexpr size_t alignment_of_v = alignof(_Tp);
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_ALIGNMENT_OF_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_ALIGNMENT_OF_H

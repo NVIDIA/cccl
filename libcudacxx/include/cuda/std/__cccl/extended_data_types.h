@@ -23,7 +23,9 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/architecture.h>
+#include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
@@ -36,21 +38,20 @@
 #define _CCCL_HAS_NVBF16()      0
 #define _CCCL_HAS_FLOAT128()    0
 
-#define _CCCL_HAS_FLOAT128_LITERAL() _CCCL_HAS_FLOAT128()
-
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))
 #  undef _CCCL_HAS_INT128
 #  define _CCCL_HAS_INT128() 1
 #endif
 
+// Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
 #if !_CCCL_HAS_CUDA_COMPILER()
 #  undef _CCCL_HAS_LONG_DOUBLE
 #  define _CCCL_HAS_LONG_DOUBLE() 1
 #endif // !_CCCL_HAS_CUDA_COMPILER()
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CTK() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1
@@ -82,32 +83,51 @@
 #define _CCCL_HAS_NVFP6_E3M2() _CCCL_HAS_NVFP6()
 #define _CCCL_HAS_NVFP8_E4M3() _CCCL_HAS_NVFP8()
 #define _CCCL_HAS_NVFP8_E5M2() _CCCL_HAS_NVFP8()
-#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CUDACC_AT_LEAST(12, 8))
+#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CTK_AT_LEAST(12, 8))
 
 /***********************************************************************************************************************
- * FLOAT128
+ * __float128
  **********************************************************************************************************************/
 
-#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
-#  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) /*HOST COMPILERS*/
-#    if _CCCL_CUDA_COMPILER(NVHPC) \
-      || ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && __CUDA_ARCH__ >= 1000) /*DEVICE CODE*/
+#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
+// Detect host compiler support
+#  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__))
+#    if _CCCL_DEVICE_COMPILATION()
+// Only NVCC and NVRTC 12.8+ on architectures at least SM100 supports __float128 on device
+#      if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 8) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 8)) && _CCCL_PTX_ARCH() >= 1000
+#        undef _CCCL_HAS_FLOAT128
+#        define _CCCL_HAS_FLOAT128() 1
+#      endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH() >= 1000
+#    else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 #      undef _CCCL_HAS_FLOAT128
 #      define _CCCL_HAS_FLOAT128() 1
-#    endif // CUDA compiler
+#    endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 #  endif // Host compiler support
-#endif // !CCCL_DISABLE_FLOAT128_SUPPORT && _CCCL_OS(LINUX)
+#endif // !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_HAS_INT128() && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
 
-// gcc does not allow to use 'operator""q' when __STRICT_ANSI__ is defined, it may be allowed by
-// -fext-numeric-literals, but we have no way to detect it. However, from gcc 13, we can use 'operator""f128' and cast
-// it to __float128.
-#if _CCCL_COMPILER(GCC, >=, 13)
-#  define _CCCL_FLOAT128_LITERAL(_X) __float128(_X##f128)
-#elif !(_CCCL_COMPILER(GCC) && defined(__STRICT_ANSI__))
-#  define _CCCL_FLOAT128_LITERAL(_X) __float128(_X##q)
-#else // ^^^ has __float128 literal ^^^ // vvv no __float128 literal vvv
-#  undef _CCCL_HAS_FLOAT128_LITERAL
-#  define _CCCL_HAS_FLOAT128_LITERAL() 0
-#endif // ^^^ no __float128 literal ^^^
+// gcc does not allow to use q/Q floating point literals when __STRICT_ANSI__ is defined. They may be allowed by
+// -fext-numeric-literals, but there is no way to detect it in the preprocessor. The user is required to define
+// CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS in this case. Otherwise, we disable the __float128 support.
+//
+// Note: since GCC 13, we could use f128/F128 literals, but for values > DBL_MAX, the compilation with nvcc fails due to
+//       "floating constant is out of range".
+#if _CCCL_HAS_FLOAT128() && _CCCL_COMPILER(GCC) && defined(__STRICT_ANSI__) \
+  && !defined(CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS)
+#  undef _CCCL_HAS_FLOAT128
+#  define _CCCL_HAS_FLOAT128() 0
+#endif // _CCCL_HAS_FLOAT128()
+
+/***********************************************************************************************************************
+ * char8_t
+ **********************************************************************************************************************/
+
+#if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#  define _CCCL_HAS_CHAR8_T() 0
+#else
+#  define _CCCL_HAS_CHAR8_T() 1
+#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+
+// We currently do not support any of the STL wchar facilities
+#define _CCCL_HAS_WCHAR_T() 0
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H

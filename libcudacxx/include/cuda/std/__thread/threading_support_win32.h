@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_WIN32_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_WIN32_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_WIN32_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_WIN32_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,16 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#if defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
 
 #  include <cuda/std/chrono>
 
 #  include <process.h>
 #  include <windows.h>
 
-_CCCL_PUSH_MACROS
+#  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Mutex
 using __cccl_mutex_t = void*;
@@ -65,12 +65,12 @@ using __cccl_tls_key = long;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC __stdcall
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield()
+_CCCL_API inline void __cccl_thread_yield()
 {
   SwitchToThread();
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
+_CCCL_API inline void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
 {
   using namespace chrono;
   // round-up to the nearest millisecond
@@ -78,10 +78,10 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(chrono::nanoseconds __ns)
   Sleep(static_cast<DWORD>(__ms.count()));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_POP_MACROS
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_LIBCUDACXX_HAS_NO_THREADS && _LIBCUDACXX_HAS_THREAD_API_WIN32
+#endif // _LIBCUDACXX_HAS_THREAD_API_WIN32
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_H

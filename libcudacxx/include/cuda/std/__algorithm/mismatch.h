@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MISMATCH_H
-#define _LIBCUDACXX___ALGORITHM_MISMATCH_H
+#ifndef _CUDA_STD___ALGORITHM_MISMATCH_H
+#define _CUDA_STD___ALGORITHM_MISMATCH_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,10 +24,13 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/pair.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator1, _InputIterator2>
+[[nodiscard]] _CCCL_API constexpr pair<_InputIterator1, _InputIterator2>
 mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _BinaryPredicate __pred)
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
@@ -41,14 +44,15 @@ mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __fi
 }
 
 template <class _InputIterator1, class _InputIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator1, _InputIterator2>
+[[nodiscard]] _CCCL_API constexpr pair<_InputIterator1, _InputIterator2>
 mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2)
 {
-  return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __equal_to{});
+  return ::cuda::std::mismatch(__first1, __last1, __first2, __equal_to{});
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator1, _InputIterator2> mismatch(
+[[nodiscard]] _CCCL_API constexpr pair<_InputIterator1, _InputIterator2> mismatch(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -66,12 +70,14 @@ template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
 }
 
 template <class _InputIterator1, class _InputIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator1, _InputIterator2>
+[[nodiscard]] _CCCL_API constexpr pair<_InputIterator1, _InputIterator2>
 mismatch(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
-  return _CUDA_VSTD::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
+  return ::cuda::std::mismatch(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_MISMATCH_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_MISMATCH_H

@@ -25,16 +25,22 @@ void TestIsContiguousIterator()
   using HostVector   = thrust::host_vector<int>;
   using DeviceVector = thrust::device_vector<int>;
 
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<int*>::value, true);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<thrust::device_ptr<int>>::value, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<int*>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>, true);
 
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<HostVector::iterator>::value, true);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<HostVector::const_iterator>::value, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<HostVector::iterator>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<HostVector::const_iterator>, true);
 
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<DeviceVector::iterator>::value, true);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<DeviceVector::const_iterator>::value, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<DeviceVector::iterator>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<DeviceVector::const_iterator>, true);
 
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<thrust::device_ptr<int>>::value, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>>, true);
+
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<thrust::device_ptr<int>&>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<const thrust::device_ptr<int>&>, true);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<volatile thrust::device_ptr<int>&>, true);
 
   using HostIteratorTuple = thrust::tuple<HostVector::iterator, HostVector::iterator>;
 
@@ -43,10 +49,10 @@ void TestIsContiguousIterator()
   using TransformIterator = thrust::transform_iterator<cuda::std::identity, HostVector::iterator>;
   using ZipIterator       = thrust::zip_iterator<HostIteratorTuple>;
 
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ConstantIterator>::value, false);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<CountingIterator>::value, false);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<TransformIterator>::value, false);
-  ASSERT_EQUAL((bool) thrust::is_contiguous_iterator<ZipIterator>::value, false);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<ConstantIterator>, false);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<CountingIterator>, false);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<TransformIterator>, false);
+  ASSERT_EQUAL(thrust::is_contiguous_iterator_v<ZipIterator>, false);
 }
 DECLARE_UNITTEST(TestIsContiguousIterator);
 
@@ -54,105 +60,105 @@ void TestIsCommutative()
 {
   {
     using T  = int;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::multiplies<T>;
+    using Op = ::cuda::std::multiplies<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::minimum<T>;
+    using Op = ::cuda::minimum<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::maximum<T>;
+    using Op = ::cuda::maximum<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::logical_or<T>;
+    using Op = ::cuda::std::logical_or<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::logical_and<T>;
+    using Op = ::cuda::std::logical_and<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::bit_or<T>;
+    using Op = ::cuda::std::bit_or<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::bit_and<T>;
+    using Op = ::cuda::std::bit_and<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = int;
-    using Op = thrust::bit_xor<T>;
+    using Op = ::cuda::std::bit_xor<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
 
   {
     using T  = char;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = short;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = long;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = long long;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = float;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
   {
     using T  = double;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, true);
   }
 
   {
     using T  = int;
-    using Op = thrust::minus<T>;
+    using Op = ::cuda::std::minus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, false);
   }
   {
     using T  = int;
-    using Op = thrust::divides<T>;
+    using Op = ::cuda::std::divides<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, false);
   }
   {
     using T  = float;
-    using Op = thrust::divides<T>;
+    using Op = ::cuda::std::divides<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, false);
   }
   {
     using T  = float;
-    using Op = thrust::minus<T>;
+    using Op = ::cuda::std::minus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, false);
   }
 
   {
     using T  = thrust::tuple<int, int>;
-    using Op = thrust::plus<T>;
+    using Op = ::cuda::std::plus<T>;
     ASSERT_EQUAL((bool) thrust::detail::is_commutative<Op>::value, false);
   }
 }

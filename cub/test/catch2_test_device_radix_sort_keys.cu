@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
@@ -193,8 +192,8 @@ C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   using bits_t = typename cub::Traits<key_t>::UnsignedBits;
 
   constexpr std::size_t num_bits = sizeof(key_t) * CHAR_BIT;
-  const key_t positive_zero      = ::cuda::std::bit_cast<key_t>(bits_t(0));
-  const key_t negative_zero      = ::cuda::std::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
+  const key_t positive_zero      = cuda::std::bit_cast<key_t>(bits_t(0));
+  const key_t negative_zero      = cuda::std::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
@@ -329,7 +328,12 @@ C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
     {
       c2h::gen(C2H_SEED(1), tmp);
       thrust::transform(
-        c2h::device_policy, in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
+        c2h::device_policy,
+        in_keys.cbegin(),
+        in_keys.cend(),
+        tmp.cbegin(),
+        in_keys.begin(),
+        cuda::std::bit_and<key_t>{});
     }
   }
 
@@ -503,14 +507,16 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
+         "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint32_t;
 
   // Test problem sizes near and at the maximum offset value to ensure that internal calculations
   // do not overflow.
-  constexpr std::size_t max_offset    = ::cuda::std::numeric_limits<num_items_t>::max();
+  constexpr std::size_t max_offset    = cuda::std::numeric_limits<num_items_t>::max();
   constexpr std::size_t min_num_items = max_offset - 5;
   constexpr std::size_t max_num_items = max_offset;
   const std::size_t num_items         = GENERATE_COPY(min_num_items, max_num_items);
@@ -518,7 +524,9 @@ C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radi
   do_large_offset_test<key_t, num_items_t>(num_items);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets",
+         "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint64_t;

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_COMMON_H
-#define _LIBCUDACXX___ATOMIC_TYPES_COMMON_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_COMMON_H
+#define _CUDA_STD___ATOMIC_TYPES_COMMON_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,9 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstring>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __atomic_tag
 {
@@ -53,14 +55,13 @@ using __atomic_underlying_remove_cv_t = remove_cv_t<typename _Tp::__underlying_t
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
 template <typename _Tp, typename _Tv>
-_CCCL_HOST_DEVICE enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
-__atomic_assign_volatile(_Tp* __a_value, _Tv const& __val)
+_CCCL_HOST_DEVICE enable_if_t<is_assignable_v<_Tp&, _Tv>> __atomic_assign_volatile(_Tp* __a_value, _Tv const& __val)
 {
   *__a_value = __val;
 }
 
 template <typename _Tp, typename _Tv>
-_CCCL_HOST_DEVICE enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
+_CCCL_HOST_DEVICE enable_if_t<is_assignable_v<_Tp&, _Tv>>
 __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
 {
   volatile char* __to         = reinterpret_cast<volatile char*>(__a_value);
@@ -92,9 +93,12 @@ _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rh
        }
      } return 0;),
     NV_IS_HOST,
-    (return _CUDA_VSTD::memcmp(__lhs, __rhs, __count);))
+    (return ::cuda::std::memcmp(__lhs, __rhs, __count);))
+  _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_COMMON_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ATOMIC_TYPES_COMMON_H

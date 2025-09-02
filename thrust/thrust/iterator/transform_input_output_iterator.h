@@ -105,8 +105,8 @@ public:
 // Register transform_input_output_iterator_proxy with 'is_proxy_reference' from type_traits to enable its use with
 // algorithms.
 template <typename InputFunction, typename OutputFunction, typename Iterator>
-struct is_proxy_reference<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> : true_type
-{};
+inline constexpr bool
+  is_proxy_reference_v<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> = true;
 
 } // namespace detail
 
@@ -140,7 +140,7 @@ struct is_proxy_reference<transform_input_output_iterator_proxy<InputFunction, O
 //!
 //!    // Iterator that returns negated values and writes squared values
 //!    auto iter = thrust::make_transform_input_output_iterator(v.begin(),
-//!        thrust::negate<float>{}, thrust::square<float>{});
+//!        ::cuda::std::negate<float>{}, thrust::square<float>{});
 //!
 //!    // Iterator negates values when reading
 //!    std::cout << iter[0] << " ";  // -1.0f;

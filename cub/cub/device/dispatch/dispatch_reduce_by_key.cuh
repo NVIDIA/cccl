@@ -50,13 +50,9 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
-#include <cstdio>
-#include <iterator>
-
-#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,6 +62,72 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
+
+template <typename PrecedingKeyItT, typename AccumT, typename GlobalOffsetT>
+struct streaming_context
+{
+  bool first_partition;
+  bool last_partition;
+  PrecedingKeyItT preceding_key_it;
+
+  // We use a double-buffer to track the aggregate of the last run of the previous partition
+  AccumT* preceding_prefix;
+  AccumT* prefix_out;
+
+  // We use a double-buffer to track the number of runs of previous partition
+  GlobalOffsetT* d_num_previous_uniques_in;
+  GlobalOffsetT* d_num_accumulated_uniques_out;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  {
+    return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
+  };
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  {
+    return first_partition;
+  }
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  {
+    return last_partition;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE auto predecessor_key() const
+  {
+    return *preceding_key_it;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  {
+    return *preceding_prefix;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(AccumT prefix) const
+  {
+    *prefix_out = prefix;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  {
+    return d_num_previous_uniques_in;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  {
+    return num_accumulated_uniques_out();
+  }
+
+  template <typename NumUniquesT>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  {
+    GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
+
+    // Otherwise, just write out the number of unique items in this partition
+    *d_num_accumulated_uniques_out = total_uniques;
+
+    return total_uniques;
+  }
+};
 
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
@@ -141,7 +203,8 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          typename StreamingContextT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     KeysInputIteratorT d_keys_in,
@@ -153,30 +216,49 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
+    vsmem_t vsmem)
 {
-  using AgentReduceByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT;
+  using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
+    typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT,
+    AgentReduceByKey,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>;
 
   // Thread block type for reducing tiles of value segments
-  using AgentReduceByKeyT =
-    AgentReduceByKey<AgentReduceByKeyPolicyT,
-                     KeysInputIteratorT,
-                     UniqueOutputIteratorT,
-                     ValuesInputIteratorT,
-                     AggregatesOutputIteratorT,
-                     NumRunsOutputIteratorT,
-                     EqualityOpT,
-                     ReductionOpT,
-                     OffsetT,
-                     AccumT>;
+  using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
 
-  // Shared memory for AgentReduceByKey
-  __shared__ typename AgentReduceByKeyT::TempStorage temp_storage;
+  // Static shared memory allocation
+  __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
+
+  // Get temporary storage
+  typename agent_reduce_by_key_t::TempStorage& temp_storage =
+    vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
 
   // Process tiles
-  AgentReduceByKeyT(
-    temp_storage, d_keys_in, d_unique_out, d_values_in, d_aggregates_out, d_num_runs_out, equality_op, reduction_op)
+  agent_reduce_by_key_t(
+    temp_storage,
+    d_keys_in,
+    d_unique_out,
+    d_values_in,
+    d_aggregates_out,
+    d_num_runs_out,
+    equality_op,
+    reduction_op,
+    streaming_context)
     .ConsumeRange(num_items, tile_state, start_tile);
+
+  // If applicable, hints to discard modified cache lines for vsmem
+  vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
 } // namespace detail::reduce
@@ -241,6 +323,9 @@ struct DispatchReduceByKey
   // The input values type
   using ValueInputT = cub::detail::it_value_t<ValuesInputIteratorT>;
 
+  // Type used to provide context for streaming invocations (this is currently not used by ReduceByKey yet)
+  using streaming_context_t = NullType;
+
   static constexpr int INIT_KERNEL_THREADS = 128;
 
   // Tile status descriptor interface type
@@ -291,9 +376,22 @@ struct DispatchReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Invoke(ScanInitKernelT init_kernel, ReduceByKeyKernelT reduce_by_key_kernel)
   {
-    using AgentReduceByKeyPolicyT  = typename ActivePolicyT::ReduceByKeyPolicyT;
-    constexpr int block_threads    = AgentReduceByKeyPolicyT::BLOCK_THREADS;
-    constexpr int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
+    using vsmem_helper_t = detail::vsmem_helper_default_fallback_policy_t<
+      typename ActivePolicyT::ReduceByKeyPolicyT,
+      detail::reduce::AgentReduceByKey,
+      KeysInputIteratorT,
+      UniqueOutputIteratorT,
+      ValuesInputIteratorT,
+      AggregatesOutputIteratorT,
+      NumRunsOutputIteratorT,
+      EqualityOpT,
+      ReductionOpT,
+      OffsetT,
+      AccumT,
+      streaming_context_t>;
+
+    constexpr int block_threads    = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
+    constexpr int items_per_thread = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
 
     cudaError error = cudaSuccess;
     do
@@ -310,17 +408,21 @@ struct DispatchReduceByKey
       int tile_size = block_threads * items_per_thread;
       int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
+      // The amount of virtual shared memory to allocate
+      const auto vsmem_size = num_tiles * vsmem_helper_t::vsmem_per_block;
+
       // Specify temporary storage allocation requirements
-      size_t allocation_sizes[1];
-      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+      size_t tile_descriptor_memory{};
+      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, tile_descriptor_memory));
       if (cudaSuccess != error)
       {
         break; // bytes needed for tile status descriptors
       }
+      size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
 
       // Compute allocation pointers into the single storage blob (or compute
       // the necessary size of the blob)
-      void* allocations[1] = {};
+      void* allocations[2] = {};
 
       error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
@@ -344,7 +446,7 @@ struct DispatchReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
@@ -368,7 +470,7 @@ struct DispatchReduceByKey
         break;
       }
 
-      // Return if empty problem
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in init_kernel above
       if (num_items == 0)
       {
         break;
@@ -392,7 +494,7 @@ struct DispatchReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
+      int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log reduce_by_key_kernel configuration
@@ -419,7 +521,9 @@ struct DispatchReduceByKey
                 start_tile,
                 equality_op,
                 reduction_op,
-                num_items);
+                num_items,
+                streaming_context_t{},
+                cub::detail::vsmem_t{allocations[1]});
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -456,7 +560,8 @@ struct DispatchReduceByKey
         EqualityOpT,
         ReductionOpT,
         OffsetT,
-        AccumT>);
+        AccumT,
+        streaming_context_t>);
   }
 
   /**

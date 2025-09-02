@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H
-#define _LIBCUDACXX___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H
+#ifndef _CUDA_STD___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H
+#define _CUDA_STD___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,9 @@
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
 
@@ -38,6 +40,8 @@ inline constexpr bool has_unique_object_representations_v = has_unique_object_re
 
 #endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_HAS_UNIQUE_OBJECT_REPRESENTATION_H

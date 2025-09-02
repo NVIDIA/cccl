@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,13 +29,15 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
 template <class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_convertible : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
 template <class _T1, class _T2>
@@ -78,12 +80,12 @@ namespace __is_convertible_imp
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
-_CCCL_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(volatile_func_param_deprecated)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __test_convert(_Tp);
+_CCCL_API inline void __test_convert(_Tp);
 
-_CCCL_NV_DIAG_DEFAULT(volatile_func_param_deprecated)
+_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 template <class _From, class _To, class = void>
@@ -94,7 +96,7 @@ template <class _From, class _To>
 struct __is_convertible_test<
   _From,
   _To,
-  decltype(_CUDA_VSTD::__is_convertible_imp::__test_convert<_To>(_CUDA_VSTD::declval<_From>()))> : public true_type
+  decltype(::cuda::std::__is_convertible_imp::__test_convert<_To>(::cuda::std::declval<_From>()))> : public true_type
 {};
 
 template <class _Tp,
@@ -205,6 +207,8 @@ inline constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
 
 #endif // !_CCCL_BUILTIN_IS_CONVERTIBLE_TO
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CONVERTIBLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CONVERTIBLE_H

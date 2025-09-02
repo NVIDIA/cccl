@@ -41,11 +41,7 @@
 #define THRUST_CPP_DIALECT _CCCL_STD_VER
 
 // Define THRUST_COMPILER_DEPRECATION macro:
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
-#else // clang / gcc:
-#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
-#endif
+#define THRUST_COMP_DEPR_IMPL(msg) _CCCL_WARNING(#msg)
 
 // Compiler checks:
 // clang-format off

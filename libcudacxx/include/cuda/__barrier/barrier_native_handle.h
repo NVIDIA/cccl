@@ -25,17 +25,21 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+#  include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+
+_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
 {
-  return reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__b.__barrier);
+  return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA___BARRIER_BARRIER_NATIVE_HANDLE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_COMPLETION_MECHANISM_H
-#define _CUDA___BARRIER_COMPLETION_MECHANISM_H
+#ifndef _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H
+#define _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __completion_mechanism allows memcpy_async to report back what completion
 //! mechanism it used. This is necessary to determine in which way to synchronize
@@ -38,6 +40,8 @@ enum class __completion_mechanism
   __async_bulk_group     = 1 << 2,
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-#endif // _CUDA___BARRIER_COMPLETION_MECHANISM_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_COMPLETION_MECHANISM_H

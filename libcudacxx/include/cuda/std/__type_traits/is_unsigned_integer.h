@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H
+#define _CUDA_STD___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,9 @@
 
 #include <cuda/std/__type_traits/remove_cv.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool __cccl_is_unsigned_integer_v = false;
@@ -50,6 +52,8 @@ inline constexpr bool __cccl_is_unsigned_integer_v<__uint128_t> = true;
 template <class _Tp>
 inline constexpr bool __cccl_is_cv_unsigned_integer_v = __cccl_is_unsigned_integer_v<remove_cv_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_UNSIGNED_INTEGER_H

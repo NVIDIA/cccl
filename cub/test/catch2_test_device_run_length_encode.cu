@@ -26,10 +26,10 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/sequence.h>
@@ -38,6 +38,7 @@
 #include <limits>
 #include <numeric>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
@@ -55,8 +56,9 @@ using all_types =
 
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
-#if 0 // DeviceRunLengthEncode::Encode cannot handle empty inputs
-      // https://github.com/NVIDIA/cccl/issues/426
+// List of offset types to be used for testing large number of items
+using offset_types = c2h::type_list<std::int64_t, std::int32_t>;
+
 C2H_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
@@ -64,15 +66,37 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_l
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(in.begin(),
-                    static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    in.begin(),
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   REQUIRE(out_num_runs.front() == num_items);
 }
-#endif
+
+template <typename OffsetT>
+struct repeat_item_gen_op
+{
+  OffsetT num_small_runs;
+
+  __host__ __device__ OffsetT operator()(OffsetT index) const
+  {
+    return (index < num_small_runs) ? index : (num_small_runs + (index - num_small_runs) / 2);
+  }
+};
+
+template <typename OffsetT, typename RunLengthT>
+struct run_to_run_length_op
+{
+  OffsetT num_small_runs;
+
+  __host__ __device__ RunLengthT operator()(OffsetT index) const
+  {
+    return (index < num_small_runs) ? RunLengthT{1} : RunLengthT{2};
+  }
+};
 
 C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
@@ -249,7 +273,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   c2h::device_vector<int> out_num_runs(1);
 
   c2h::device_vector<type> reference_unique = in;
-  in.front()                                = ::cuda::std::numeric_limits<type>::quiet_NaN();
+  in.front()                                = cuda::std::numeric_limits<type>::quiet_NaN();
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
@@ -263,4 +287,118 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   REQUIRE(out_unique == reference_unique);
   REQUIRE(out_counts == reference_counts);
   REQUIRE(out_num_runs == reference_num_runs);
+}
+
+C2H_TEST("DeviceRunLengthEncode::Encode works for a large number of items",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
+try
+{
+  using offset_type     = typename c2h::get<0, TestType>;
+  using run_length_type = offset_type;
+
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
+
+  std::size_t random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
+  random_range += (random_range % 2);
+  const std::size_t num_items =
+    (sizeof(offset_type) == 8) ? uint32_max + random_range : cuda::std::numeric_limits<offset_type>::max();
+
+  auto counting_it = thrust::make_counting_iterator(offset_type{0});
+
+  // We repeat each number once for the first <num_small_runs> number of items and all subsequent numbers twice
+  const std::size_t num_small_runs = cuda::std::min(uint32_max, num_items) - 4;
+  const auto num_uniques           = static_cast<offset_type>(num_small_runs + (num_items - num_small_runs + 1) / 2);
+  auto input_item_it               = thrust::make_transform_iterator(
+    counting_it, repeat_item_gen_op<offset_type>{static_cast<offset_type>(num_small_runs)});
+
+  // Prepare helper to check the unique items being written: we expect the i-th item corresponding to value i
+  auto check_unique_out_helper = detail::large_problem_test_helper(num_uniques);
+  auto check_unique_out_it     = check_unique_out_helper.get_flagging_output_iterator(counting_it);
+
+  // Prepare helper to check the run-lengths being written: i-th item corresponding to value i
+  // We repeat each number once for the first num_small_runs number of items and all subsequent numbers twice
+  auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
+  auto expected_run_lengths_it     = thrust::make_transform_iterator(
+    counting_it, run_to_run_length_op<offset_type, run_length_type>{static_cast<offset_type>(num_small_runs)});
+  auto check_run_length_out_it = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
+
+  // This is a requirement on the test to simplify test logic bit: if the last run is truncated and, hence, is not a
+  // "full" _long_ run of length 2, we'd otherwise need to account for the run-length of the very last run
+  REQUIRE((num_items - num_small_runs) % 2 == 0);
+
+  // Allocate memory for the number of expected unique items
+  c2h::device_vector<offset_type> out_num_runs(1);
+
+  // Run algorithm under test
+  run_length_encode(
+    input_item_it,
+    check_unique_out_it,
+    check_run_length_out_it,
+    out_num_runs.begin(),
+    static_cast<offset_type>(num_items));
+
+  // Verify result
+  REQUIRE(out_num_runs[0] == num_uniques);
+  check_unique_out_helper.check_all_results_correct();
+  check_run_length_out_helper.check_all_results_correct();
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+}
+
+C2H_TEST("DeviceRunLengthEncode::Encode works for large runs of equal items",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
+try
+{
+  using offset_type     = typename c2h::get<0, TestType>;
+  using run_length_type = offset_type;
+  using item_t          = char;
+
+  CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), c2h::type_name<item_t>());
+
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
+
+  constexpr std::size_t num_items =
+    (sizeof(offset_type) == 8) ? uint32_max + (1 << 22) : cuda::std::numeric_limits<offset_type>::max();
+
+  constexpr auto num_uniques                = offset_type{2};
+  constexpr run_length_type first_run_size  = 200;
+  constexpr run_length_type second_run_size = num_items - first_run_size;
+
+  // First run is a small run of equal items
+  auto small_segment_it = thrust::make_constant_iterator(item_t{3});
+  // Second run is a very large run of equal items
+  auto large_segment_it = thrust::make_constant_iterator(item_t{42});
+  auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
+
+  // Allocate some memory for the results
+  c2h::device_vector<item_t> uniques_out(num_uniques);
+  c2h::device_vector<run_length_type> run_lengths_out(num_uniques);
+
+  // Allocate memory for the number of expected unique items
+  c2h::device_vector<offset_type> out_num_runs(1);
+
+  // Run algorithm under test
+  run_length_encode(
+    input_item_it,
+    uniques_out.begin(),
+    run_lengths_out.begin(),
+    out_num_runs.begin(),
+    static_cast<offset_type>(num_items));
+
+  // Expected results
+  c2h::device_vector<item_t> expected_uniques{item_t{3}, item_t{42}};
+  c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
+
+  // Verify result
+  REQUIRE(out_num_runs[0] == num_uniques);
+  REQUIRE(expected_uniques == uniques_out);
+  REQUIRE(expected_run_lengths == run_lengths_out);
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_REMOVE_CONST_REF_H
-#define _LIBCUDACXX___TYPE_TRAITS_REMOVE_CONST_REF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_REMOVE_CONST_REF_H
+#define _CUDA_STD___TYPE_TRAITS_REMOVE_CONST_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,11 +23,15 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 using __remove_const_ref_t _CCCL_NODEBUG_ALIAS = remove_const_t<remove_reference_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_CONST_REF_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_REMOVE_CONST_REF_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_UNDERLYING_TYPE_H
-#define _LIBCUDACXX___TYPE_TRAITS_UNDERLYING_TYPE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_UNDERLYING_TYPE_H
+#define _CUDA_STD___TYPE_TRAITS_UNDERLYING_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,27 +20,27 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_enum.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
 
-template <class _Tp, bool = is_enum<_Tp>::value>
-struct __underlying_type_impl;
-
-template <class _Tp>
-struct __underlying_type_impl<_Tp, false>
-{};
-
-template <class _Tp>
-struct __underlying_type_impl<_Tp, true>
+template <class _Tp, bool = is_enum_v<_Tp>>
+struct __cccl_underlying_type_impl
 {
   using type = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
 };
 
 template <class _Tp>
-struct underlying_type : __underlying_type_impl<_Tp, is_enum<_Tp>::value>
+struct __cccl_underlying_type_impl<_Tp, false>
+{};
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT underlying_type : __cccl_underlying_type_impl<_Tp>
 {};
 
 template <class _Tp>
@@ -48,10 +48,10 @@ using underlying_type_t _CCCL_NODEBUG_ALIAS = typename underlying_type<_Tp>::typ
 
 #else // ^^^ _CCCL_BUILTIN_UNDERLYING_TYPE ^^^ / vvv !_CCCL_BUILTIN_UNDERLYING_TYPE vvv
 
-template <class _Tp, bool _Support = false>
-struct underlying_type
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT underlying_type
 {
-  static_assert(_Support,
+  static_assert(__always_false_v<_Tp>,
                 "The underyling_type trait requires compiler "
                 "support. Either no such support exists or "
                 "libcu++ does not know how to use it.");
@@ -59,6 +59,8 @@ struct underlying_type
 
 #endif // !_CCCL_BUILTIN_UNDERLYING_TYPE
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_UNDERLYING_TYPE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_UNDERLYING_TYPE_H

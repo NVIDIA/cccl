@@ -21,20 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
-#endif // __CUDA_ARCH__ < 700
-
-#ifdef _LIBCUDACXX_HAS_NO_THREADS
-#  error <cuda/std/barrier> is not supported on this single threaded system
-#endif // _LIBCUDACXX_HAS_NO_THREADS
+#endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
 
 //! TODO: Drop cuda only features
-#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_arrive_tx.h>
 #include <cuda/__barrier/barrier_block_scope.h>

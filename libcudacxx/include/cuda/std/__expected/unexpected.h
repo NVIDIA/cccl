@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___EXPECTED_UNEXPECTED_H
-#define _LIBCUDACXX___EXPECTED_UNEXPECTED_H
+#ifndef _CUDA_STD___EXPECTED_UNEXPECTED_H
+#define _CUDA_STD___EXPECTED_UNEXPECTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,9 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Err>
 class unexpected;
@@ -51,8 +53,7 @@ inline constexpr bool __is_unexpected<unexpected<_Err>> = true;
 
 template <class _Tp>
 inline constexpr bool __valid_unexpected =
-  _CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_array, _Tp) && !__is_unexpected<_Tp> && !_CCCL_TRAIT(is_const, _Tp)
-  && !_CCCL_TRAIT(is_volatile, _Tp);
+  is_object_v<_Tp> && !is_array_v<_Tp> && !__is_unexpected<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp>;
 } // namespace __unexpected
 
 // [expected.un.general]
@@ -73,70 +74,65 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Error = _Err)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, unexpected)
-                  && !_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t)
-                  && _CCCL_TRAIT(is_constructible, _Err, _Error)))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(_Error&& __error) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Error))
-      : __unex_(_CUDA_VSTD::forward<_Error>(__error))
+  _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Error>, unexpected> && !is_same_v<remove_cvref_t<_Error>, in_place_t>
+                  && is_constructible_v<_Err, _Error>) )
+  _CCCL_API constexpr explicit unexpected(_Error&& __error) noexcept(is_nothrow_constructible_v<_Err, _Error>)
+      : __unex_(::cuda::std::forward<_Error>(__error))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
-    _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
-      : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Err, _Args...>)
+  _CCCL_API constexpr explicit unexpected(in_place_t,
+                                          _Args&&... __args) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
+      : __unex_(::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up, class... _Args)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(
-    in_place_t,
-    initializer_list<_Up> __il,
-    _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
-      : __unex_(__il, _CUDA_VSTD::forward<_Args>(__args)...)
+  _CCCL_REQUIRES(is_constructible_v<_Err, initializer_list<_Up>&, _Args...>)
+  _CCCL_API constexpr explicit unexpected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
+    is_nothrow_constructible_v<_Err, initializer_list<_Up>&, _Args...>)
+      : __unex_(__il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(const unexpected&) = default;
   _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
+  [[nodiscard]] _CCCL_API constexpr _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Err&& error() const&& noexcept
   {
-    return _CUDA_VSTD::move(__unex_);
+    return ::cuda::std::move(__unex_);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
+  [[nodiscard]] _CCCL_API constexpr _Err&& error() && noexcept
   {
-    return _CUDA_VSTD::move(__unex_);
+    return ::cuda::std::move(__unex_);
   }
 
   // [expected.un.swap]
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(unexpected& __other) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err))
+  _CCCL_API constexpr void swap(unexpected& __other) noexcept(is_nothrow_swappable_v<_Err>)
   {
-    static_assert(_CCCL_TRAIT(is_swappable, _Err), "E must be swappable");
-    using _CUDA_VSTD::swap;
+    static_assert(is_swappable_v<_Err>, "E must be swappable");
+    using ::cuda::std::swap;
     swap(__unex_, __other.__unex_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void
-  swap(unexpected& __lhs, unexpected& __rhs) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err2))
+  _CCCL_REQUIRES(is_swappable_v<_Err2>)
+  friend _CCCL_API constexpr void swap(unexpected& __lhs, unexpected& __rhs) noexcept(is_nothrow_swappable_v<_Err2>)
   {
     __lhs.swap(__rhs);
     return;
@@ -145,7 +141,7 @@ public:
   // [expected.un.eq]
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() == __rhs.error())))
   {
@@ -154,7 +150,7 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() != __rhs.error())))
   {
@@ -169,6 +165,8 @@ private:
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___EXPECTED_UNEXPECTED_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___EXPECTED_UNEXPECTED_H

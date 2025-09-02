@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_for.cuh>
 
@@ -100,8 +99,8 @@ void test()
 
 C2H_TEST("Device for utils correctly detect value overloads", "[for][device]")
 {
-  test<int>();
-  test<double>();
+  ::test<int>();
+  ::test<double>();
 
   // conversions do not work ;(
   STATIC_REQUIRE(cub::detail::for_each::has_unique_value_overload<char, value_t<int>>::value);

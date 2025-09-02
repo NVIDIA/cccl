@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_TYPE_IDENTITY_H
-#define _LIBCUDACXX___TYPE_TRAITS_TYPE_IDENTITY_H
+#ifndef _CUDA_STD___TYPE_TRAITS_TYPE_IDENTITY_H
+#define _CUDA_STD___TYPE_TRAITS_TYPE_IDENTITY_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct type_identity
@@ -31,6 +33,8 @@ struct type_identity
 template <class _Tp>
 using type_identity_t _CCCL_NODEBUG_ALIAS = typename type_identity<_Tp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_IDENTITY_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_TYPE_IDENTITY_H

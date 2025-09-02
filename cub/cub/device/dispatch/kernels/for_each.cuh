@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
@@ -38,14 +14,18 @@
 #endif // no system header
 
 #include <cub/agent/agent_for.cuh>
+#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+#include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
+#include <cub/detail/type_traits.cuh> // implicit_prom_t
 
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/mdspan> // dynamic_extent
 #include <cuda/std/type_traits>
+#include <cuda/std/utility> // make_index_sequence
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace for_each
+namespace detail::for_each
 {
 
 template <class Fn>
@@ -148,7 +128,91 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
   }
 }
 
-} // namespace for_each
-} // namespace detail
+/***********************************************************************************************************************
+ * ForEachInExtents
+ **********************************************************************************************************************/
+
+// Returns the extent at the given rank. If the extents is static, returns it, otherwise returns the precomputed value
+template <int Rank, typename ExtentType, typename FastDivModType>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto extent_at(ExtentType extents, FastDivModType dynamic_extent)
+{
+  if constexpr (ExtentType::static_extent(Rank) != ::cuda::std::dynamic_extent)
+  {
+    using extent_index_type   = typename ExtentType::index_type;
+    using index_type          = implicit_prom_t<extent_index_type>;
+    using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
+    return static_cast<unsigned_index_type>(extents.static_extent(Rank));
+  }
+  else
+  {
+    return dynamic_extent;
+  }
+}
+
+// Returns the product of all extents from position Rank. If the result is static, returns it, otherwise returns the
+// precomputed value
+template <int Rank, typename ExtentType, typename FastDivModType>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, FastDivModType extent_sub_size)
+{
+  if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtentType>())
+  {
+    using extent_index_type   = typename ExtentType::index_type;
+    using index_type          = implicit_prom_t<extent_index_type>;
+    using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
+    return static_cast<unsigned_index_type>(cub::detail::sub_size<Rank + 1>(extents));
+  }
+  else
+  {
+    return extent_sub_size;
+  }
+}
+
+template <int Rank, typename IndexType, typename ExtentType, typename FastDivModType>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto
+coordinate_at(IndexType index, ExtentType extents, FastDivModType extent_sub_size, FastDivModType dynamic_extent)
+{
+  using cub::detail::for_each::extent_at;
+  using cub::detail::for_each::get_extents_sub_size;
+  using extent_index_type = typename ExtentType::index_type;
+  return static_cast<extent_index_type>(
+    (index / get_extents_sub_size<Rank>(extents, extent_sub_size)) % extent_at<Rank>(extents, dynamic_extent));
+}
+
+template <typename OpT, typename ExtentsT, typename FastDivModArrayT>
+struct op_wrapper_extents_t
+{
+  OpT op;
+  ExtentsT extents;
+  FastDivModArrayT sub_sizes_div_array;
+  FastDivModArrayT extents_mod_array;
+
+  template <typename OffsetT, size_t... Ranks>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, ::cuda::std::index_sequence<Ranks...>)
+  {
+    using cub::detail::for_each::coordinate_at;
+    op(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+  }
+
+  template <typename OffsetT, size_t... Ranks>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, ::cuda::std::index_sequence<Ranks...>) const
+  {
+    using cub::detail::for_each::coordinate_at;
+    op(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+  }
+
+  template <typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+  {
+    impl(i, ::cuda::std::make_index_sequence<ExtentsT::rank()>{});
+  }
+
+  template <typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i) const
+  {
+    impl(i, ::cuda::std::make_index_sequence<ExtentsT::rank()>{});
+  }
+};
+
+} // namespace detail::for_each
 
 CUB_NAMESPACE_END

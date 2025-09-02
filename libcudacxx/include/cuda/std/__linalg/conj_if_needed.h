@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_CONJUGATE_IF_NEEDED_HPP
-#define _LIBCUDACXX___LINALG_CONJUGATE_IF_NEEDED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_H
+#define _CUDA_STD___LINALG_CONJUGATE_IF_NEEDED_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,20 +33,22 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/complex>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__conj_if_needed)
+_CCCL_BEGIN_NAMESPACE_CPO(__conj_if_needed)
 
 template <class _Type>
-_CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(_CUDA_VSTD::conj(__a)));
+_CCCL_CONCEPT _HasConj = _CCCL_REQUIRES_EXPR((_Type), _Type __a)(static_cast<void>(::cuda::std::conj(__a)));
 
 struct __conj_if_needed
 {
   template <class _Type>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Type& __t) const
+  _CCCL_API constexpr auto operator()(const _Type& __t) const
   {
     if constexpr (is_arithmetic_v<_Type> || !_HasConj<_Type>)
     {
@@ -54,13 +56,13 @@ struct __conj_if_needed
     }
     else
     {
-      return _CUDA_VSTD::conj(__t);
+      return ::cuda::std::conj(__t);
     }
     _CCCL_UNREACHABLE();
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -69,6 +71,8 @@ _CCCL_GLOBAL_CONSTANT auto conj_if_needed = __conj_if_needed::__conj_if_needed{}
 } // namespace __cpo
 } // end namespace linalg
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___LINALG_CONJUGATED_HPP

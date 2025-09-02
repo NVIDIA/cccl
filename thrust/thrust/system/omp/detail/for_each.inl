@@ -78,7 +78,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator, typename UnaryF
 RandomAccessIterator
 for_each(execution_policy<DerivedPolicy>& s, RandomAccessIterator first, RandomAccessIterator last, UnaryFunction f)
 {
-  return omp::detail::for_each_n(s, first, thrust::distance(first, last), f);
+  return omp::detail::for_each_n(s, first, ::cuda::std::distance(first, last), f);
 } // end for_each()
 
 } // end namespace detail

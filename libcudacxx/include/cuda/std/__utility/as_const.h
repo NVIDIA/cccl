@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_AS_CONST_H
-#define _LIBCUDACXX___UTILITY_AS_CONST_H
+#ifndef _CUDA_STD___UTILITY_AS_CONST_H
+#define _CUDA_STD___UTILITY_AS_CONST_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,10 +22,20 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_BUILTIN_STD_AS_CONST()
+
+// The compiler treats ::std::as_const as a builtin function so it does not need to be
+// instantiated and will be compiled away even at -O0.
+using ::std::as_const;
+
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_AS_CONST() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_AS_CONST() vvv
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
 {
   return __t;
 }
@@ -33,6 +43,10 @@ template <class _Tp>
 template <class _Tp>
 void as_const(const _Tp&&) = delete;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+#endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
 
-#endif // _LIBCUDACXX___UTILITY_AS_CONST_H
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___UTILITY_AS_CONST_H

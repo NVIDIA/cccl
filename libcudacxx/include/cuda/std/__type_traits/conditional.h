@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_CONDITIONAL_H
-#define _LIBCUDACXX___TYPE_TRAITS_CONDITIONAL_H
+#ifndef _CUDA_STD___TYPE_TRAITS_CONDITIONAL_H
+#define _CUDA_STD___TYPE_TRAITS_CONDITIONAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool>
 struct _IfImpl;
@@ -56,6 +58,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
 template <bool _Bp, class _If, class _Then>
 using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_CONDITIONAL_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_CONDITIONAL_H

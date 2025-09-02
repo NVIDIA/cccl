@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SCOPED_ENUM_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SCOPED_ENUM_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_SCOPED_ENUM_H
+#define _CUDA_STD___TYPE_TRAITS_IS_SCOPED_ENUM_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,24 +25,25 @@
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-template <class _Tp, bool = _CCCL_TRAIT(is_enum, _Tp)>
-struct __is_scoped_enum_helper : false_type
-{};
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-struct __is_scoped_enum_helper<_Tp, true>
-    : public bool_constant<!_CCCL_TRAIT(is_convertible, _Tp, underlying_type_t<_Tp>)>
-{};
+template <class _Tp, bool = is_enum_v<_Tp>>
+inline constexpr bool __cccl_is_scoped_enum_helper_v = false;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : public __is_scoped_enum_helper<_Tp>
-{};
+inline constexpr bool __cccl_is_scoped_enum_helper_v<_Tp, true> = !is_convertible_v<_Tp, underlying_type_t<_Tp>>;
 
 template <class _Tp>
-inline constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
+inline constexpr bool is_scoped_enum_v = __cccl_is_scoped_enum_helper_v<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : public bool_constant<__cccl_is_scoped_enum_helper_v<_Tp>>
+{};
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SCOPED_ENUM_H
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_SCOPED_ENUM_H

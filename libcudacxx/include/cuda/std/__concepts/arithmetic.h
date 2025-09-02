@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_ARITHMETIC_H
-#define _LIBCUDACXX___CONCEPTS_ARITHMETIC_H
+#ifndef _CUDA_STD___CONCEPTS_ARITHMETIC_H
+#define _CUDA_STD___CONCEPTS_ARITHMETIC_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,25 +28,29 @@
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [concepts.arithmetic], arithmetic concepts
 
 template <class _Tp>
-_CCCL_CONCEPT integral = _CCCL_TRAIT(is_integral, _Tp);
+_CCCL_CONCEPT integral = is_integral_v<_Tp>;
 
 template <class _Tp>
-_CCCL_CONCEPT signed_integral = integral<_Tp> && _CCCL_TRAIT(is_signed, _Tp);
+_CCCL_CONCEPT signed_integral = integral<_Tp> && is_signed_v<_Tp>;
 
 template <class _Tp>
 _CCCL_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
 template <class _Tp>
-_CCCL_CONCEPT floating_point = _CCCL_TRAIT(is_floating_point, _Tp);
+_CCCL_CONCEPT floating_point = is_floating_point_v<_Tp>;
 
 template <class _Tp>
 _CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer_v<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_ARITHMETIC_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CONCEPTS_ARITHMETIC_H

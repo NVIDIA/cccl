@@ -94,7 +94,7 @@ struct RadixEncoder<short>
 template <>
 struct RadixEncoder<int>
 {
-  _CCCL_HOST_DEVICE unsigned long operator()(long x) const
+  _CCCL_HOST_DEVICE unsigned int operator()(int x) const
   {
     return x ^ static_cast<unsigned int>(1) << (8 * sizeof(unsigned int) - 1);
   }
@@ -225,10 +225,10 @@ _CCCL_HOST_DEVICE void radix_shuffle_n(
   // note that we are going to mutate the histogram during this sequential scatter
   thrust::scatter(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first + n, values_first + n)),
+    thrust::make_zip_iterator(keys_first, values_first),
+    thrust::make_zip_iterator(keys_first + n, values_first + n),
     thrust::make_transform_iterator(keys_first, bucket_functor<RadixBits, KeyType>(bit_shift, histogram)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_result, values_result)));
+    thrust::make_zip_iterator(keys_result, values_result));
 }
 
 template <unsigned int RadixBits,

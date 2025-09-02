@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_IS_ALLOCATOR_H
-#define _LIBCUDACXX___TYPE_IS_ALLOCATOR_H
+#ifndef _CUDA_STD___TYPE_IS_ALLOCATOR_H
+#define _CUDA_STD___TYPE_IS_ALLOCATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,9 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Alloc, typename = void, typename = void>
 struct __is_allocator : false_type
@@ -34,9 +36,11 @@ struct __is_allocator : false_type
 template <typename _Alloc>
 struct __is_allocator<_Alloc,
                       void_t<typename _Alloc::value_type>,
-                      void_t<decltype(_CUDA_VSTD::declval<_Alloc&>().allocate(size_t(0)))>> : true_type
+                      void_t<decltype(::cuda::std::declval<_Alloc&>().allocate(size_t(0)))>> : true_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_IS_ALLOCATOR_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_IS_ALLOCATOR_H

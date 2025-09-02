@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_ORDER_H
-#define __LIBCUDACXX___ATOMIC_ORDER_H
+#ifndef __CUDA_STD___ATOMIC_ORDER_H
+#define __CUDA_STD___ATOMIC_ORDER_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)                                              \
   _LIBCUDACXX_DIAGNOSE_WARNING(                                                                \
@@ -137,19 +139,21 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_orde
 static_assert((is_same<underlying_type<memory_order>::type, __memory_order_underlying_t>::value),
               "unexpected underlying type for std::memory_order");
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
-using memory_order = _CUDA_VSTD::memory_order;
+using memory_order = ::cuda::std::memory_order;
 
-inline constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
-inline constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
-inline constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
-inline constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
-inline constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
-inline constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
+inline constexpr memory_order memory_order_relaxed = ::cuda::std::memory_order_relaxed;
+inline constexpr memory_order memory_order_consume = ::cuda::std::memory_order_consume;
+inline constexpr memory_order memory_order_acquire = ::cuda::std::memory_order_acquire;
+inline constexpr memory_order memory_order_release = ::cuda::std::memory_order_release;
+inline constexpr memory_order memory_order_acq_rel = ::cuda::std::memory_order_acq_rel;
+inline constexpr memory_order memory_order_seq_cst = ::cuda::std::memory_order_seq_cst;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-#endif // __LIBCUDACXX___ATOMIC_ORDER_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // __CUDA_STD___ATOMIC_ORDER_H

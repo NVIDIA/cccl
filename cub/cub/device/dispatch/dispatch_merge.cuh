@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_merge.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
@@ -81,7 +82,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   const Offset partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (partition_idx < num_partitions)
   {
-    const Offset partition_at       = (::cuda::std::min)(partition_idx * items_per_tile, keys1_count + keys2_count);
+    const Offset partition_at       = (::cuda::std::min) (partition_idx * items_per_tile, keys1_count + keys2_count);
     merge_partitions[partition_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, partition_at, compare_op);
   }
 }
@@ -120,7 +121,7 @@ __launch_bounds__(
 {
   // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
   using key_t = it_value_t<KeyIt1>;
-  static_assert(::cuda::std::__invokable<CompareOp, key_t, key_t>::value,
+  static_assert(::cuda::std::__invocable<CompareOp, key_t, key_t>::value,
                 "Comparison operator cannot compare two keys");
   static_assert(::cuda::std::is_convertible_v<typename ::cuda::std::__invoke_of<CompareOp, key_t, key_t>::type, bool>,
                 "Comparison operator must be convertible to bool");
@@ -137,17 +138,16 @@ __launch_bounds__(
     CompareOp>::type;
   using MergePolicy = typename MergeAgent::policy;
 
-  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator;
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
   auto& temp_storage = vsmem_helper_t::get_temp_storage(shared_temp_storage, global_temp_storage);
   MergeAgent{
     temp_storage.Alias(),
-    make_load_iterator(MergePolicy{}, keys1),
-    make_load_iterator(MergePolicy{}, items1),
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys1),
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items1),
     num_keys1,
-    make_load_iterator(MergePolicy{}, keys2),
-    make_load_iterator(MergePolicy{}, items2),
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(keys2),
+    try_make_cache_modified_iterator<MergePolicy::LOAD_MODIFIER>(items2),
     num_keys2,
     keys_result,
     items_result,

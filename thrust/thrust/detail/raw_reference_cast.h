@@ -31,6 +31,8 @@
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/tuple.h>
 
+#include <cuda/std/type_traits>
+
 // the order of declarations and definitions in this file is totally goofy
 // this header defines raw_reference_cast, which has a few overloads towards the bottom of the file
 // raw_reference_cast depends on metafunctions such as is_unwrappable and raw_reference
@@ -74,7 +76,7 @@ struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cud
 {};
 
 template <typename T>
-struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference<::cuda::std::remove_cv_t<T>>::value>>
+struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference_v<::cuda::std::remove_cv_t<T>>>>
 {
   using type = T;
 };
@@ -84,6 +86,9 @@ struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_proxy_reference<::cuda:
 template <typename T>
 struct raw_reference : raw_reference_detail::raw_reference_impl<T>
 {};
+
+template <typename T>
+using raw_reference_t = typename raw_reference<T>::type;
 
 namespace raw_reference_detail
 {
@@ -102,7 +107,8 @@ namespace raw_reference_detail
 
 // wrapped references are unwrapped using raw_reference, otherwise, return T
 template <typename T>
-struct raw_reference_tuple_helper : eval_if<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, identity_<T>>
+struct raw_reference_tuple_helper
+    : eval_if<can_unwrap<::cuda::std::remove_cv_t<T>>, raw_reference<T>, ::cuda::std::type_identity<T>>
 {};
 
 // recurse on tuples
@@ -158,7 +164,7 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_ca
   return *thrust::raw_pointer_cast(&ref);
 }
 
-template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference<::cuda::std::remove_cv_t<T>>::value, int> = 0>
+template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference_v<::cuda::std::remove_cv_t<T>>, int> = 0>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
 {
   return t;

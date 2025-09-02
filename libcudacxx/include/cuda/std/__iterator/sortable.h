@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_SORTABLE_H
-#define _LIBCUDACXX___ITERATOR_SORTABLE_H
+#ifndef _CUDA_STD___ITERATOR_SORTABLE_H
+#define _CUDA_STD___ITERATOR_SORTABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,25 +27,29 @@
 #include <cuda/std/__iterator/permutable.h>
 #include <cuda/std/__iterator/projected.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
+#if _CCCL_HAS_CONCEPTS()
+
+template <class _Iter, class _Comp = ::cuda::std::ranges::less, class _Proj = identity>
 concept sortable = permutable<_Iter> && indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Iter, class _Comp, class _Proj>
 _CCCL_CONCEPT_FRAGMENT(
   __sortable_,
   requires()(requires(permutable<_Iter>), requires(indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>)));
 
-template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
+template <class _Iter, class _Comp = ::cuda::std::ranges::less, class _Proj = identity>
 _CCCL_CONCEPT sortable = _CCCL_FRAGMENT(__sortable_, _Iter, _Comp, _Proj);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ITERATOR_SORTABLE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ITERATOR_SORTABLE_H

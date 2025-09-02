@@ -158,7 +158,7 @@ void sort(RandomAccessIterator first, RandomAccessIterator last);
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(thrust::host, A, A + N, thrust::greater<int>());
+ *  thrust::sort(thrust::host, A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -203,7 +203,7 @@ sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(A, A + N, thrust::greater<int>());
+ *  thrust::sort(A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -346,7 +346,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(A, A + N, thrust::greater<int>());
+ *  thrust::sort(A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -395,7 +395,7 @@ _CCCL_HOST_DEVICE void stable_sort(
  *  ...
  *  const int N = 6;
  *  int A[N] = {1, 4, 2, 8, 5, 7};
- *  thrust::sort(A, A + N, thrust::greater<int>());
+ *  thrust::sort(A, A + N, ::cuda::std::greater<int>());
  *  // A is now {8, 7, 5, 4, 2, 1};
  *  \endcode
  *
@@ -574,7 +574,7 @@ void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_la
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::sort_by_key(thrust::host, keys, keys + N, values, thrust::greater<int>());
+ *  thrust::sort_by_key(thrust::host, keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -637,7 +637,7 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::sort_by_key(keys, keys + N, values, thrust::greater<int>());
+ *  thrust::sort_by_key(keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -823,7 +823,7 @@ void stable_sort_by_key(
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::stable_sort_by_key(thrust::host, keys, keys + N, values, thrust::greater<int>());
+ *  thrust::stable_sort_by_key(thrust::host, keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -889,7 +889,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  const int N = 6;
  *  int    keys[N] = {  1,   4,   2,   8,   5,   7};
  *  char values[N] = {'a', 'b', 'c', 'd', 'e', 'f'};
- *  thrust::stable_sort_by_key(keys, keys + N, values, thrust::greater<int>());
+ *  thrust::stable_sort_by_key(keys, keys + N, values, ::cuda::std::greater<int>());
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
@@ -1065,7 +1065,7 @@ bool is_sorted(ForwardIterator first, ForwardIterator last);
  *  v[4] = 5;
  *  v[5] = 7;
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  bool result = thrust::is_sorted(thrust::device, v.begin(), v.end(), comp);
  *
  *  // result == false
@@ -1121,7 +1121,7 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  v[4] = 5;
  *  v[5] = 7;
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  bool result = thrust::is_sorted(v.begin(), v.end(), comp);
  *
  *  // result == false
@@ -1251,7 +1251,7 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
  *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  int * B = thrust::is_sorted_until(thrust::host, A, A + 8, comp);
  *
  *  // B - A is 4
@@ -1295,7 +1295,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
  *
- *  thrust::greater<int> comp;
+ *  ::cuda::std::greater<int> comp;
  *  int * B = thrust::is_sorted_until(A, A + 8, comp);
  *
  *  // B - A is 4

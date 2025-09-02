@@ -23,7 +23,7 @@ int main()
 {
   context ctx;
 
-  auto ltoken = ctx.logical_token();
+  auto ltoken = ctx.token();
 
   auto ftoken = ctx.freeze(ltoken);
 

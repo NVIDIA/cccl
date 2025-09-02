@@ -115,7 +115,9 @@ jobs:
 
   notify-success:
     if: ${{ success() }}
-    needs: tag
+    needs:
+      - tag
+      - prepare
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
@@ -123,17 +125,18 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-          RC_TAG: ${{ needs.prepare.outputs.tag_name }}
         with:
           channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
           slack-message: |
-            A new release candidate `${{ env.RC_TAG }}` has been tagged.
+            A new release candidate `${{ needs.prepare.outputs.tag_name }}` has been tagged.
 
             Workflow summary: ${{ env.SUMMARY_URL }}
 
   notify-failure:
     if: ${{ failure() }}
-    needs: tag
+    needs:
+      - tag
+      - prepare
     runs-on: ubuntu-latest
     steps:
     - name: Notify Slack (failure)
@@ -142,10 +145,9 @@ jobs:
       env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
         SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-        RC_TAG: ${{ needs.prepare.outputs.tag_name }}
       with:
         channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
         slack-message: |
-          An error has occurred while creating release candidate `${{ env.RC_TAG }}`.
+          An error has occurred while creating release candidate `${{ needs.prepare.outputs.tag_name }}`.
 
           Details: ${{ env.SUMMARY_URL }}

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_BINARY_NEGATE_H
-#define _LIBCUDACXX___FUNCTIONAL_BINARY_NEGATE_H
+#ifndef _CUDA_STD___FUNCTIONAL_BINARY_NEGATE_H
+#define _CUDA_STD___FUNCTIONAL_BINARY_NEGATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,9 @@
 
 #include <cuda/std/__functional/binary_function.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
@@ -34,13 +36,13 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED binary_negate
   _Predicate __pred_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr binary_negate(const _Predicate& __pred)
+  _CCCL_API explicit constexpr binary_negate(const _Predicate& __pred)
       : __pred_(__pred)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI bool operator()(
-    const typename _Predicate::first_argument_type& __x, const typename _Predicate::second_argument_type& __y) const
+  constexpr _CCCL_API inline bool operator()(const typename _Predicate::first_argument_type& __x,
+                                             const typename _Predicate::second_argument_type& __y) const
   {
     return !__pred_(__x, __y);
   }
@@ -48,7 +50,7 @@ public:
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI constexpr binary_negate<_Predicate> not2(const _Predicate& __pred)
+_LIBCUDACXX_DEPRECATED _CCCL_API constexpr binary_negate<_Predicate> not2(const _Predicate& __pred)
 {
   return binary_negate<_Predicate>(__pred);
 }
@@ -56,6 +58,8 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___FUNCTIONAL_BINARY_NEGATE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FUNCTIONAL_BINARY_NEGATE_H

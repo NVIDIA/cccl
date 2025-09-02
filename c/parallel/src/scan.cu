@@ -13,6 +13,7 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
 
@@ -21,19 +22,21 @@
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <vector>
 
-#include "cub/util_device.cuh"
-#include "kernels/iterators.h"
-#include "kernels/operators.h"
-#include "util/context.h"
-#include "util/errors.h"
-#include "util/indirect_arg.h"
-#include "util/scan_tile_state.h"
-#include "util/types.h"
-#include <cccl/c/scan.h>
 #include <nvrtc.h>
+
+#include <cccl/c/scan.h>
+#include <kernels/iterators.h>
+#include <kernels/operators.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
+#include <util/context.h>
+#include <util/errors.h>
+#include <util/indirect_arg.h>
+#include <util/scan_tile_state.h>
+#include <util/types.h>
 
 struct op_wrapper;
 struct device_scan_policy;
@@ -209,7 +212,7 @@ struct scan_kernel_source
 };
 } // namespace scan
 
-CUresult cccl_device_scan_build(
+CUresult cccl_device_scan_build_ex(
   cccl_device_scan_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -221,7 +224,8 @@ CUresult cccl_device_scan_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -295,38 +299,40 @@ struct device_scan_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    std::vector<const char*> args = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     appender.add_iterator_definition(input_it);
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({init_kernel_name})
-        .add_expression({scan_kernel_name})
-        .compile_program({args, num_args})
-        .get_name({init_kernel_name, init_kernel_lowered_name})
-        .get_name({scan_kernel_name, scan_kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{src.c_str(), name})
+        ->add_expression({init_kernel_name})
+        ->add_expression({scan_kernel_name})
+        ->compile_program({args.data(), args.size()})
+        ->get_name({init_kernel_name, init_kernel_lowered_name})
+        ->get_name({scan_kernel_name, scan_kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(linkable_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
 
     auto [description_bytes_per_tile,
-          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args, num_args, arch);
+          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
 
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
@@ -367,7 +373,8 @@ CUresult cccl_device_scan(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = cub::DispatchScan<
+
+    auto exec_status = cub::DispatchScan<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -390,11 +397,8 @@ CUresult cccl_device_scan(
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {scan::get_accumulator_type(op, d_in, init)});
-    if (cuda_error != cudaSuccess)
-    {
-      const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
-      std::cerr << "CUDA error: " << errorString << std::endl;
-    }
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {
@@ -441,6 +445,36 @@ CUresult cccl_device_inclusive_scan(
   assert(build.force_inclusive);
   return cccl_device_scan<cub::ForceInclusive::Yes>(
     build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
+}
+
+CUresult cccl_device_scan_build(
+  cccl_device_scan_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_value_t init,
+  bool force_inclusive,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_scan_build_ex(
+    build_ptr,
+    d_in,
+    d_out,
+    op,
+    init,
+    force_inclusive,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
 
 CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)

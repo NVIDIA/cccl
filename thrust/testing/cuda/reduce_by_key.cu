@@ -196,8 +196,8 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
     values.begin(),
     output_keys.begin(),
     output_values.begin(),
-    thrust::equal_to<T>(),
-    thrust::plus<T>(),
+    ::cuda::std::equal_to<T>(),
+    ::cuda::std::plus<T>(),
     new_last_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
@@ -314,8 +314,8 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
     values.begin(),
     output_keys.begin(),
     output_values.begin(),
-    thrust::equal_to<T>(),
-    thrust::plus<T>());
+    ::cuda::std::equal_to<T>(),
+    ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
   ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
@@ -400,7 +400,7 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
 
   counting_it count_begin(0ll);
   counting_it count_end = count_begin + num_items;
-  ASSERT_EQUAL(static_cast<std::int64_t>(thrust::distance(count_begin, count_end)), num_items);
+  ASSERT_EQUAL(static_cast<std::int64_t>(::cuda::std::distance(count_begin, count_end)), num_items);
 
   transform_key_it keys_begin(count_begin, div_op{key_size});
   transform_key_it keys_end(count_end, div_op{key_size});

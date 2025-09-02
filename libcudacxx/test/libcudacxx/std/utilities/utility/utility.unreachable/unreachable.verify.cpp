@@ -9,8 +9,6 @@
 
 #include <cuda/std/utility>
 
-#include "test_macros.h"
-
 [[noreturn]] void unreachable()
 {
   cuda::std::unreachable();

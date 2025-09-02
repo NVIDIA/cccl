@@ -23,6 +23,7 @@
 
 #include <cuda/__bit/bit_reverse.h>
 #include <cuda/__bit/bitfield.h>
+#include <cuda/__bit/bitmask.h>
 #include <cuda/std/bit>
 
 #endif // _CUDA_BIT

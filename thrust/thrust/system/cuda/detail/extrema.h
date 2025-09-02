@@ -371,7 +371,7 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
   using InputType = thrust::detail::it_value_t<ItemsIt>;
   using IndexType = thrust::detail::it_difference_t<ItemsIt>;
 
-  IndexType num_items = static_cast<IndexType>(thrust::distance(first, last));
+  IndexType num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
   using iterator_tuple = tuple<ItemsIt, counting_iterator<IndexType>>;
   using zip_iterator   = zip_iterator<iterator_tuple>;
@@ -405,7 +405,7 @@ template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE min_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::min_element(policy, first, last, less<value_type>());
+  return cuda_cub::min_element(policy, first, last, ::cuda::std::less<value_type>());
 }
 
 /// max element
@@ -424,7 +424,7 @@ template <class Derived, class ItemsIt>
 ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::max_element(policy, first, last, less<value_type>());
+  return cuda_cub::max_element(policy, first, last, ::cuda::std::less<value_type>());
 }
 
 /// minmax element
@@ -443,7 +443,7 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
   THRUST_CDP_DISPATCH(
     (using InputType = thrust::detail::it_value_t<ItemsIt>; using IndexType = thrust::detail::it_difference_t<ItemsIt>;
 
-     const auto num_items = static_cast<IndexType>(thrust::distance(first, last));
+     const auto num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
      using iterator_tuple = tuple<ItemsIt, counting_iterator<IndexType>>;
      using zip_iterator   = zip_iterator<iterator_tuple>;
@@ -468,7 +468,7 @@ template <class Derived, class ItemsIt>
 pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt>;
-  return cuda_cub::minmax_element(policy, first, last, less<value_type>());
+  return cuda_cub::minmax_element(policy, first, last, ::cuda::std::less<value_type>());
 }
 
 } // namespace cuda_cub

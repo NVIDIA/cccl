@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,49 +20,47 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS)
+#include <cuda/std/chrono>
 
-#  include <cuda/std/chrono>
+#if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
+#  include <cuda/std/__thread/threading_support_external.h>
+#endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 
-#  if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
-#    include <cuda/std/__thread/threading_support_external.h>
-#  endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#  include <cuda/std/__thread/threading_support_cuda.h>
+#elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
+#  include <cuda/std/__thread/threading_support_pthread.h>
+#elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#  include <cuda/std/__thread/threading_support_win32.h>
+#else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
+#  error "Unknown Thread API"
+#endif // Unknown Thread API
 
-#  if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
-#    include <cuda/std/__thread/threading_support_cuda.h>
-#  elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
-#    include <cuda/std/__thread/threading_support_pthread.h>
-#  elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
-#    include <cuda/std/__thread/threading_support_win32.h>
-#  else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
-#    error "Unknown Thread API"
-#  endif // Unknown Thread API
+#include <cuda/std/__cccl/prologue.h>
 
-_CCCL_PUSH_MACROS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#define _LIBCUDACXX_POLLING_COUNT 16
 
-#  define _LIBCUDACXX_POLLING_COUNT 16
+#if _CCCL_ARCH(ARM64) && _CCCL_OS(LINUX)
+#  define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :: :);)
+#elif _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
+#  define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :: :);)
+#else // ^^^  _CCCL_ARCH(X86_64) ^^^ / vvv ! _CCCL_ARCH(X86_64) vvv
+#  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
+#endif // ! _CCCL_ARCH(X86_64)
 
-#  if _CCCL_ARCH(ARM64) && _CCCL_OS(LINUX)
-#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :: :);)
-#  elif _CCCL_ARCH(X86_64) && _CCCL_OS(LINUX)
-#    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :: :);)
-#  else // ^^^  _CCCL_ARCH(X86_64) ^^^ / vvv ! _CCCL_ARCH(X86_64) vvv
-#    define __LIBCUDACXX_ASM_THREAD_YIELD (;)
-#  endif // ! _CCCL_ARCH(X86_64)
-
-_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield_processor()
+_CCCL_API inline void __cccl_thread_yield_processor()
 {
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
 template <class _Fn>
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
-  _Fn&& __f, _CUDA_VSTD::chrono::nanoseconds __max = _CUDA_VSTD::chrono::nanoseconds::zero())
+_CCCL_API inline bool __cccl_thread_poll_with_backoff(
+  _Fn&& __f, ::cuda::std::chrono::nanoseconds __max = ::cuda::std::chrono::nanoseconds::zero())
 {
-  _CUDA_VSTD::chrono::high_resolution_clock::time_point const __start =
-    _CUDA_VSTD::chrono::high_resolution_clock::now();
+  ::cuda::std::chrono::high_resolution_clock::time_point const __start =
+    ::cuda::std::chrono::high_resolution_clock::now();
   for (int __count = 0;;)
   {
     if (__f())
@@ -73,37 +71,35 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
     {
       if (__count > (_LIBCUDACXX_POLLING_COUNT >> 1))
       {
-        _CUDA_VSTD::__cccl_thread_yield_processor();
+        ::cuda::std::__cccl_thread_yield_processor();
       }
       __count += 1;
       continue;
     }
-    _CUDA_VSTD::chrono::high_resolution_clock::duration const __elapsed =
-      _CUDA_VSTD::chrono::high_resolution_clock::now() - __start;
-    if (__max != _CUDA_VSTD::chrono::nanoseconds::zero() && __max < __elapsed)
+    ::cuda::std::chrono::high_resolution_clock::duration const __elapsed =
+      ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    if (__max != ::cuda::std::chrono::nanoseconds::zero() && __max < __elapsed)
     {
       return false;
     }
-    _CUDA_VSTD::chrono::nanoseconds const __step = __elapsed / 4;
-    if (__step >= _CUDA_VSTD::chrono::milliseconds(1))
+    ::cuda::std::chrono::nanoseconds const __step = __elapsed / 4;
+    if (__step >= ::cuda::std::chrono::milliseconds(1))
     {
-      _CUDA_VSTD::__cccl_thread_sleep_for(_CUDA_VSTD::chrono::milliseconds(1));
+      ::cuda::std::__cccl_thread_sleep_for(::cuda::std::chrono::milliseconds(1));
     }
-    else if (__step >= _CUDA_VSTD::chrono::microseconds(10))
+    else if (__step >= ::cuda::std::chrono::microseconds(10))
     {
-      _CUDA_VSTD::__cccl_thread_sleep_for(__step);
+      ::cuda::std::__cccl_thread_sleep_for(__step);
     }
     else
     {
-      _CUDA_VSTD::__cccl_thread_yield();
+      ::cuda::std::__cccl_thread_yield();
     }
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_LIBCUDACXX_HAS_NO_THREADS
-
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_H

@@ -117,9 +117,7 @@ __host__ __device__ constexpr bool test()
 #endif // TEST_STD_VER >= 2020
   test_num<char16_t>(0xABCD, 0xCDAB);
   test_num<char32_t>(0xABCDEF01, 0x01EFCDAB);
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test_implementation_defined_size<wchar_t>();
-#endif
 
   test_implementation_defined_size<short>();
   test_implementation_defined_size<unsigned short>();

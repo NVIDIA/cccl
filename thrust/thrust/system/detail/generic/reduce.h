@@ -52,6 +52,23 @@ _CCCL_HOST_DEVICE T reduce(
   T init,
   BinaryFunction binary_op);
 
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output, T init);
+
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE void reduce_into(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init,
+  BinaryFunction binary_op);
+
 } // end namespace generic
 } // end namespace detail
 } // end namespace system

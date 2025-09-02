@@ -152,7 +152,7 @@ template <typename T>
 struct is_operator_less_function_object_impl : false_type
 {};
 template <typename T>
-struct is_operator_less_function_object_impl<thrust::less<T>> : true_type
+struct is_operator_less_function_object_impl<::cuda::std::less<T>> : true_type
 {};
 template <typename T>
 struct is_operator_less_function_object_impl<std::less<T>> : true_type
@@ -162,7 +162,7 @@ template <typename T>
 struct is_operator_greater_function_object_impl : false_type
 {};
 template <typename T>
-struct is_operator_greater_function_object_impl<thrust::greater<T>> : true_type
+struct is_operator_greater_function_object_impl<::cuda::std::greater<T>> : true_type
 {};
 template <typename T>
 struct is_operator_greater_function_object_impl<std::greater<T>> : true_type

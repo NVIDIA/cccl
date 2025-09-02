@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H
-#define _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H
+#ifndef _CUDA_STD___FLOATING_POINT_ARITHMETIC_H
+#define _CUDA_STD___FLOATING_POINT_ARITHMETIC_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,16 +25,18 @@
 #include <cuda/std/__floating_point/native_type.h>
 #include <cuda/std/__floating_point/storage.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_neg(__fp_storage_t<_Fmt> __v) noexcept
+[[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_neg(__fp_storage_t<_Fmt> __v) noexcept
 {
   return static_cast<__fp_storage_t<_Fmt>>(__v ^ __fp_sign_mask_v<_Fmt>);
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_neg(const _Tp& __v) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __fp_neg(const _Tp& __v) noexcept
 {
   if constexpr (__fp_is_native_type_v<_Tp>)
   {
@@ -42,11 +44,13 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(
-      _CUDA_VSTD::__fp_neg<__fp_format_of_v<_Tp>>(_CUDA_VSTD::__fp_get_storage(__v)));
+    return ::cuda::std::__fp_from_storage<_Tp>(
+      ::cuda::std::__fp_neg<__fp_format_of_v<_Tp>>(::cuda::std::__fp_get_storage(__v)));
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FLOATING_POINT_ARITHMETIC_H

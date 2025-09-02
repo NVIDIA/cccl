@@ -79,8 +79,8 @@ static_assert(cuda::std::is_nothrow_move_assignable<optional<NoThrowMove>>::valu
 #if TEST_HAS_EXCEPTIONS()
 struct X
 {
-  STATIC_MEMBER_VAR(throw_now, bool);
-  STATIC_MEMBER_VAR(alive, int);
+  STATIC_MEMBER_VAR(throw_now, bool)
+  STATIC_MEMBER_VAR(alive, int)
 
   X()
   {

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_COPY_H
-#define _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_COPY_H
+#ifndef _CUDA_STD___ALGORITHM_PARTIAL_SORT_COPY_H
+#define _CUDA_STD___ALGORITHM_PARTIAL_SORT_COPY_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,8 +34,11 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Compare,
           class _InputIterator,
@@ -44,7 +47,7 @@ template <class _AlgPolicy,
           class _Sentinel2,
           class _Proj1,
           class _Proj2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _RandomAccessIterator> __partial_sort_copy(
+_CCCL_API constexpr pair<_InputIterator, _RandomAccessIterator> __partial_sort_copy(
   _InputIterator __first,
   _Sentinel1 __last,
   _RandomAccessIterator __result_first,
@@ -54,7 +57,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _RandomAccessIterator> 
   _Proj2&& __proj2)
 {
   _RandomAccessIterator __r = __result_first;
-  auto&& __projected_comp   = _CUDA_VSTD::__make_projected(__comp, __proj2);
+  auto&& __projected_comp   = ::cuda::std::__make_projected(__comp, __proj2);
 
   if (__r != __result_last)
   {
@@ -62,26 +65,26 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _RandomAccessIterator> 
     {
       *__r = *__first;
     }
-    _CUDA_VSTD::__make_heap<_AlgPolicy>(__result_first, __r, __projected_comp);
+    ::cuda::std::__make_heap<_AlgPolicy>(__result_first, __r, __projected_comp);
     typename iterator_traits<_RandomAccessIterator>::difference_type __len = __r - __result_first;
     for (; __first != __last; ++__first)
     {
-      if (_CUDA_VSTD::__invoke(
-            __comp, _CUDA_VSTD::__invoke(__proj1, *__first), _CUDA_VSTD::__invoke(__proj2, *__result_first)))
+      if (::cuda::std::__invoke(
+            __comp, ::cuda::std::__invoke(__proj1, *__first), ::cuda::std::__invoke(__proj2, *__result_first)))
       {
         *__result_first = *__first;
-        _CUDA_VSTD::__sift_down<_AlgPolicy>(__result_first, __projected_comp, __len, __result_first);
+        ::cuda::std::__sift_down<_AlgPolicy>(__result_first, __projected_comp, __len, __result_first);
       }
     }
-    _CUDA_VSTD::__sort_heap<_AlgPolicy>(__result_first, __r, __projected_comp);
+    ::cuda::std::__sort_heap<_AlgPolicy>(__result_first, __r, __projected_comp);
   }
 
   return pair<_InputIterator, _RandomAccessIterator>(
-    _IterOps<_AlgPolicy>::next(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last)), _CUDA_VSTD::move(__r));
+    _IterOps<_AlgPolicy>::next(::cuda::std::move(__first), ::cuda::std::move(__last)), ::cuda::std::move(__r));
 }
 
 template <class _InputIterator, class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
+_CCCL_API constexpr _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,
@@ -91,27 +94,29 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__result_first)>::value,
                 "Comparator has to be callable");
 
-  auto __result = _CUDA_VSTD::__partial_sort_copy<_ClassicAlgPolicy>(
+  auto __result = ::cuda::std::__partial_sort_copy<_ClassicAlgPolicy>(
     __first,
     __last,
     __result_first,
     __result_last,
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    __identity(),
-    __identity());
+    identity(),
+    identity());
   return __result.second;
 }
 
 template <class _InputIterator, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator partial_sort_copy(
+_CCCL_API constexpr _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,
   _RandomAccessIterator __result_last)
 {
-  return _CUDA_VSTD::partial_sort_copy(__first, __last, __result_first, __result_last, __less{});
+  return ::cuda::std::partial_sort_copy(__first, __last, __result_first, __result_last, __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_COPY_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_PARTIAL_SORT_COPY_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ADDRESSOF_H
-#define _LIBCUDACXX___MEMORY_ADDRESSOF_H
+#ifndef _CUDA_STD___MEMORY_ADDRESSOF_H
+#define _CUDA_STD___MEMORY_ADDRESSOF_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-// addressof
-// NVCXX has the builtin defined but did not mark it as supported
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
+
+// The compiler treats ::std::addressof as a builtin function so it does not need to be
+// instantiated and will be compiled away even at -O0.
+using ::std::addressof;
+
+#elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
@@ -36,7 +45,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) 
 #else
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
@@ -46,6 +55,10 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___MEMORY_ADDRESSOF_H
+_CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___MEMORY_ADDRESSOF_H

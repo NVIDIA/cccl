@@ -41,6 +41,7 @@
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
@@ -164,8 +165,8 @@ struct ReduceByKeyAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt   = typename core::detail::LoadIterator<PtxPlan, KeysInputIt>::type;
-    using ValuesLoadIt = typename core::detail::LoadIterator<PtxPlan, ValuesInputIt>::type;
+    using KeysLoadIt   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysInputIt>;
+    using ValuesLoadIt = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesInputIt>;
 
     using BlockLoadKeys   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt>::type;
     using BlockLoadValues = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt>::type;
@@ -211,8 +212,8 @@ struct ReduceByKeyAgent
 
     // Whether or not the scan operation has a zero-valued identity value
     // (true if we're performing addition on a primitive type)
-    HAS_IDENTITY_ZERO =
-      ::cuda::std::is_same<ReductionOp, plus<value_type>>::value && ::cuda::std::is_arithmetic<value_type>::value
+    HAS_IDENTITY_ZERO = ::cuda::std::is_same<ReductionOp, ::cuda::std::plus<value_type>>::value
+                     && ::cuda::std::is_arithmetic<value_type>::value
   };
 
   struct impl
@@ -628,8 +629,8 @@ struct ReduceByKeyAgent
       int /*num_tiles*/,
       ScanTileState& tile_state)
         : storage(storage_)
-        , keys_load_it(core::detail::make_load_iterator(ptx_plan(), keys_input_it_))
-        , values_load_it(core::detail::make_load_iterator(ptx_plan(), values_input_it_))
+        , keys_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys_input_it_))
+        , values_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values_input_it_))
         , keys_output_it(keys_output_it_)
         , values_output_it(values_output_it_)
         , num_runs_output_it(num_runs_output_it_)
@@ -894,7 +895,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 {
   using size_type = thrust::detail::it_difference_t<KeysInputIt>;
 
-  size_type num_items = thrust::distance(keys_first, keys_last);
+  size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
   pair<KeysOutputIt, ValuesOutputIt> result = thrust::make_pair(keys_output, values_output);
 
@@ -966,7 +967,14 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
                                       thrust::detail::it_value_t<ValInputIt>,
                                       thrust::detail::it_value_t<ValOutputIt>>;
   return cuda_cub::reduce_by_key(
-    policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, plus<value_type>());
+    policy,
+    keys_first,
+    keys_last,
+    values_first,
+    keys_output,
+    values_output,
+    binary_pred,
+    ::cuda::std::plus<value_type>());
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
@@ -980,7 +988,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 {
   using KeyT = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::reduce_by_key(
-    policy, keys_first, keys_last, values_first, keys_output, values_output, equal_to<KeyT>());
+    policy, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyT>());
 }
 
 } // namespace cuda_cub

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FIND_END_H
-#define _LIBCUDACXX___ALGORITHM_FIND_END_H
+#ifndef _CUDA_STD___ALGORITHM_FIND_END_H
+#define _CUDA_STD___ALGORITHM_FIND_END_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,10 +24,13 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 __find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
@@ -80,8 +83,9 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _BidirectionalIterator1, class _BidirectionalIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _BidirectionalIterator1 __find_end(
   _BidirectionalIterator1 __first1,
   _BidirectionalIterator1 __last1,
   _BidirectionalIterator2 __first2,
@@ -133,8 +137,9 @@ template <class _BinaryPredicate, class _BidirectionalIterator1, class _Bidirect
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator1 __find_end(
+[[nodiscard]] _CCCL_API constexpr _RandomAccessIterator1 __find_end(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -189,14 +194,14 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1 find_end(
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1 find_end(
   _ForwardIterator1 __first1,
   _ForwardIterator1 __last1,
   _ForwardIterator2 __first2,
   _ForwardIterator2 __last2,
   _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__find_end<add_lvalue_reference_t<_BinaryPredicate>>(
+  return ::cuda::std::__find_end<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,
@@ -207,12 +212,14 @@ template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredica
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator1
 find_end(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _ForwardIterator2 __last2)
 {
-  return _CUDA_VSTD::find_end(__first1, __last1, __first2, __last2, __equal_to{});
+  return ::cuda::std::find_end(__first1, __last1, __first2, __last2, __equal_to{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_FIND_END_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_FIND_END_H

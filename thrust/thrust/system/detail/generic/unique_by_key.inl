@@ -29,7 +29,6 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/range/head_flags.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
@@ -52,7 +51,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
   ForwardIterator2 values_first)
 {
   using KeyType = thrust::detail::it_value_t<ForwardIterator1>;
-  return thrust::unique_by_key(exec, keys_first, keys_last, values_first, thrust::equal_to<KeyType>());
+  return thrust::unique_by_key(exec, keys_first, keys_last, values_first, ::cuda::std::equal_to<KeyType>());
 } // end unique_by_key()
 
 template <typename ExecutionPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
@@ -89,7 +88,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
 {
   using KeyType = thrust::detail::it_value_t<InputIterator1>;
   return thrust::unique_by_key_copy(
-    exec, keys_first, keys_last, values_first, keys_output, values_output, thrust::equal_to<KeyType>());
+    exec, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyType>());
 } // end unique_by_key_copy()
 
 template <typename ExecutionPolicy,
@@ -109,20 +108,20 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator1>;
 
-  difference_type n = thrust::distance(keys_first, keys_last);
+  difference_type n = ::cuda::std::distance(keys_first, keys_last);
 
   thrust::detail::head_flags<InputIterator1, BinaryPredicate> stencil(keys_first, keys_last, binary_pred);
 
   using namespace thrust::placeholders;
   thrust::zip_iterator<thrust::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)) + n,
+    thrust::make_zip_iterator(keys_first, values_first),
+    thrust::make_zip_iterator(keys_first, values_first) + n,
     stencil.begin(),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_output, values_output)),
+    thrust::make_zip_iterator(keys_output, values_output),
     _1);
 
-  difference_type output_size = result - thrust::make_zip_iterator(thrust::make_tuple(keys_output, values_output));
+  difference_type output_size = result - thrust::make_zip_iterator(keys_output, values_output);
 
   return thrust::make_pair(keys_output + output_size, values_output + output_size);
 } // end unique_by_key_copy()

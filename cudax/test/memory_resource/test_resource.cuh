@@ -1,13 +1,12 @@
 #pragma once
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
 
 #include <cstddef>
 #include <cstdint>
 
+#include <cuda_runtime_api.h>
 #include <testing.cuh>
 
 using std::size_t;
@@ -32,10 +31,10 @@ struct Counts
         << "object: " << counts.object_count << ", " //
         << "move: " << counts.move_count << ", " //
         << "copy: " << counts.copy_count << ", " //
-        << "allocate: " << counts.allocate_count << ", " //
-        << "deallocate: " << counts.deallocate_count << ", " //
-        << "allocate_async: " << counts.allocate_async_count << ", " //
-        << "deallocate_async: " << counts.deallocate_async_count << ", " //
+        << "allocate_sync: " << counts.allocate_count << ", " //
+        << "deallocate_sync: " << counts.deallocate_count << ", " //
+        << "allocate: " << counts.allocate_async_count << ", " //
+        << "deallocate: " << counts.deallocate_async_count << ", " //
         << "equal_to: " << counts.equal_to_count << ", " //
         << "new: " << counts.new_count << ", " //
         << "delete: " << counts.delete_count;
@@ -143,7 +142,7 @@ struct test_resource
     return *this;
   }
 
-  void* allocate(std::size_t bytes, std::size_t align)
+  void* allocate_sync(std::size_t bytes, std::size_t align)
   {
     _assert_valid();
     CHECK(bytes == fixture->bytes_);
@@ -152,7 +151,7 @@ struct test_resource
     return fixture;
   }
 
-  void deallocate(void* ptr, std::size_t bytes, std::size_t align) noexcept
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t align) noexcept
   {
     _assert_valid();
     CHECK(ptr == fixture);
@@ -162,7 +161,7 @@ struct test_resource
     return;
   }
 
-  void* allocate_async(std::size_t bytes, std::size_t align, ::cuda::stream_ref)
+  void* allocate(::cuda::stream_ref, std::size_t bytes, std::size_t align)
   {
     _assert_valid();
     CHECK(bytes == fixture->bytes_);
@@ -171,7 +170,7 @@ struct test_resource
     return fixture;
   }
 
-  void deallocate_async(void* ptr, std::size_t bytes, std::size_t align, ::cuda::stream_ref) noexcept
+  void deallocate(::cuda::stream_ref, void* ptr, std::size_t bytes, std::size_t align) noexcept
   {
     _assert_valid();
     CHECK(ptr == fixture);
@@ -223,5 +222,5 @@ struct test_resource
 using big_resource   = test_resource<uintptr_t>;
 using small_resource = test_resource<unsigned int>;
 
-static_assert(sizeof(big_resource) > cuda::experimental::__default_buffer_size);
-static_assert(sizeof(small_resource) <= cuda::experimental::__default_buffer_size);
+static_assert(sizeof(big_resource) > cuda::__default_small_object_size);
+static_assert(sizeof(small_resource) <= cuda::__default_small_object_size);

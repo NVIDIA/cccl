@@ -22,11 +22,23 @@ macro(cccl_get_fmt)
   CPMAddPackage("gh:fmtlib/fmt#11.0.1")
 endmacro()
 
-set(CCCL_NVBENCH_SHA "beca2c0038b64916dc92bf9131d77eeb15016979" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
+macro(cccl_get_json)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage("gh:nlohmann/json@3.12.0")
+endmacro()
+
+set(CCCL_NVBENCH_SHA "0c24f0250bf4414ab5ad19709090c6396e76516b" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
 mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:NVIDIA/nvbench#${CCCL_NVBENCH_SHA}")
+endmacro()
+
+# CCCL-specific NVBench utilities
+macro(cccl_get_nvbench_helper)
+  if (NOT TARGET cccl.nvbench_helper)
+    add_subdirectory("${CCCL_SOURCE_DIR}/nvbench_helper" "${CCCL_BINARY_DIR}/nvbench_helper")
+  endif()
 endmacro()
 
 macro(cccl_get_nvtx)

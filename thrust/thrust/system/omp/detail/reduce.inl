@@ -49,7 +49,7 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator>;
 
-  const difference_type n = thrust::distance(first, last);
+  const difference_type n = ::cuda::std::distance(first, last);
 
   // determine first and second level decomposition
   thrust::system::detail::internal::uniform_decomposition<difference_type> decomp1 =

@@ -259,7 +259,7 @@ __host__ __device__ void test_with_type_multi()
 TEST_DIAG_SUPPRESS_NVHPC(code_is_unreachable)
 struct ThrowAssign
 {
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   ThrowAssign() = default;
   ThrowAssign(int)
   {

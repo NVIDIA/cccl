@@ -34,9 +34,9 @@ __host__ __device__ constexpr void test_format()
   test_int_constructor<Fmt, bool>();
 
   test_int_constructor<Fmt, char>();
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   test_int_constructor<Fmt, char8_t>();
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
   test_int_constructor<Fmt, char16_t>();
   test_int_constructor<Fmt, char32_t>();
   test_int_constructor<Fmt, wchar_t>();

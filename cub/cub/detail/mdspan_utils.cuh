@@ -43,7 +43,7 @@
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits> // make_unsigned_t
-#include <cuda/std/utility> // ::cuda::std::index_sequence
+#include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 
@@ -51,7 +51,7 @@ namespace detail
 {
 
 // Compute the submdspan size of a given rank
-template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t Extent0, ::cuda::std::size_t... Extents>
+template <size_t Rank, typename IndexType, size_t Extent0, size_t... Extents>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
 {
@@ -64,7 +64,7 @@ sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
 }
 
 // avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
-template <::cuda::std::size_t Rank, typename IndexType>
+template <size_t Rank, typename IndexType>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType>&)
 {
@@ -72,15 +72,15 @@ sub_size(const ::cuda::std::extents<IndexType>&)
 }
 
 // TODO: move to cuda::std
-template <typename IndexType, ::cuda::std::size_t... Extents>
+template <typename IndexType, size_t... Extents>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
-  return sub_size<0>(ext);
+  return cub::detail::sub_size<0>(ext);
 }
 
 // precompute modulo/division for each submdspan size (by rank)
-template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
+template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
@@ -90,7 +90,7 @@ sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda:
 }
 
 // precompute modulo/division for each mdspan extent
-template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
+template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {

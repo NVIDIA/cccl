@@ -7,10 +7,12 @@ CUDA Experimental
    :hidden:
    :maxdepth: 1
 
+   Overview <self>
    container
    memory_resource
+   graph
    stf
-   ${repo_docs_api_path}/cudax_api
+   API reference <api/index>
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
 However, any feature within this library has important use cases and we encourage users to experiment with them.
@@ -19,6 +21,7 @@ Specifically, ``cudax`` provides:
    - :ref:`uninitialized storage <cudax-containers-uninitialized-buffer>`
    - :ref:`an owning type erased memory resource <cudax-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <cudax-memory-resource-async>`
+   - :ref:`graph functionality <cudax-graph>`
    - dimensions description functionality
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
 

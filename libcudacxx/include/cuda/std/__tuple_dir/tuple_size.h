@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_TUPLE_SIZE_H
-#define _LIBCUDACXX___TUPLE_TUPLE_SIZE_H
+#ifndef _CUDA_STD___TUPLE_TUPLE_SIZE_H
+#define _CUDA_STD___TUPLE_TUPLE_SIZE_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,9 @@
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size;
@@ -63,13 +65,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : public integral
 {};
 
 template <class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<__tuple_types<_Tp...>>
-    : public integral_constant<size_t, sizeof...(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+tuple_size<__tuple_types<_Tp...>> : public integral_constant<size_t, sizeof...(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TUPLE_TUPLE_SIZE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TUPLE_TUPLE_SIZE_H

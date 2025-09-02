@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
@@ -195,19 +194,21 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check", "[large][pairs][radix][sort][device]")
+C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
+         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;
   using num_items_t = std::uint32_t;
 
   // Test problem size at the maximum offset value to ensure that internal calculations do not overflow.
-  const std::size_t num_items = ::cuda::std::numeric_limits<num_items_t>::max();
+  const std::size_t num_items = cuda::std::numeric_limits<num_items_t>::max();
 
   do_large_offset_test<key_t, value_t, num_items_t>(num_items);
 }
 
-C2H_TEST("DeviceRadixSort::SortPairs: Large Offsets", "[large][pairs][radix][sort][device]")
+C2H_TEST("DeviceRadixSort::SortPairs: Large Offsets",
+         "[large][pairs][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;

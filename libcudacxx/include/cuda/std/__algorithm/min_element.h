@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H
-#define _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H
+#ifndef _CUDA_STD___ALGORITHM_MIN_ELEMENT_H
+#define _CUDA_STD___ALGORITHM_MIN_ELEMENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,12 +28,13 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent, class _Proj>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
+_CCCL_API constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
 {
   if (__first == __last)
   {
@@ -43,7 +44,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __l
   _Iter __i = __first;
   while (++__i != __last)
   {
-    if (_CUDA_VSTD::__invoke(__comp, _CUDA_VSTD::__invoke(__proj, *__i), _CUDA_VSTD::__invoke(__proj, *__first)))
+    if (::cuda::std::__invoke(__comp, ::cuda::std::__invoke(__proj, *__i), ::cuda::std::__invoke(__proj, *__first)))
     {
       __first = __i;
     }
@@ -52,34 +53,35 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __l
   return __first;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
+_CCCL_API constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
 {
-  auto __proj = __identity();
-  return _CUDA_VSTD::__min_element<_Comp>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __proj);
+  auto __proj = identity();
+  return ::cuda::std::__min_element<_Comp>(::cuda::std::move(__first), ::cuda::std::move(__last), __comp, __proj);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Compare>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value, "std::min_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
 
-  return _CUDA_VSTD::__min_element<__comp_ref_type<_Compare>>(
-    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp);
+  return ::cuda::std::__min_element<__comp_ref_type<_Compare>>(
+    ::cuda::std::move(__first), ::cuda::std::move(__last), __comp);
 }
 
 template <class _ForwardIterator>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
-min_element(_ForwardIterator __first, _ForwardIterator __last)
+[[nodiscard]] _CCCL_API constexpr _ForwardIterator min_element(_ForwardIterator __first, _ForwardIterator __last)
 {
-  return _CUDA_VSTD::min_element(__first, __last, __less{});
+  return ::cuda::std::min_element(__first, __last, __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H
+#endif // _CUDA_STD___ALGORITHM_MIN_ELEMENT_H

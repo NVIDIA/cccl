@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_BASE_H
-#define _LIBCUDACXX___ATOMIC_TYPES_BASE_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_BASE_H
+#define _CUDA_STD___ATOMIC_TYPES_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,9 @@
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
 struct __atomic_storage
@@ -34,8 +36,7 @@ struct __atomic_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
-  static_assert(_CCCL_TRAIT(is_trivially_copyable, _Tp),
-                "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
+  static_assert(is_trivially_copyable_v<_Tp>, "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
   _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
@@ -106,6 +107,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_ord
     (return __atomic_load_n_cuda(__a->get(), static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_load_host(__a->get(), __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -117,6 +119,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value,
     (return __atomic_exchange_n_cuda(__a->get(), __value, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_exchange_host(__a->get(), __value, __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -168,6 +171,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta
     (return __atomic_fetch_add_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_fetch_add_host(__a->get(), __delta, __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -179,6 +183,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta
     (return __atomic_fetch_sub_cuda(__a->get(), __delta, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_fetch_sub_host(__a->get(), __delta, __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -190,6 +195,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __patte
     (return __atomic_fetch_and_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_fetch_and_host(__a->get(), __pattern, __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -201,6 +207,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __patter
     (return __atomic_fetch_or_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_fetch_or_host(__a->get(), __pattern, __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -212,6 +219,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __patte
     (return __atomic_fetch_xor_cuda(__a->get(), __pattern, static_cast<__memory_order_underlying_t>(__order), _Sco{});),
     NV_IS_HOST,
     (return __atomic_fetch_xor_host(__a->get(), __pattern, __order);))
+  _CCCL_UNREACHABLE();
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_base<_Sto> = 0>
@@ -234,6 +242,8 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, 
     (return __atomic_fetch_min_host(__a->get(), __val, __order);))
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_BASE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ATOMIC_TYPES_BASE_H

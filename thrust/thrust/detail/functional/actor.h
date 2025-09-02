@@ -150,7 +150,7 @@ private:
 template <typename Eval>
 struct actor;
 
-// Adapts a transparent unary functor from functional.h (e.g. thrust::negate<>) into the Eval interface.
+// Adapts a transparent unary functor from functional.h (e.g. ::cuda::std::negate<>) into the Eval interface.
 template <typename F>
 struct operator_adaptor : F
 {

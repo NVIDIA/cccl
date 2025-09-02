@@ -102,7 +102,7 @@ template <class System, class InputIterator, class Size, class OutputIterator>
 OutputIterator _CCCL_HOST_DEVICE
 copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIterator result)
 {
-  THRUST_CDP_DISPATCH((result = __copy::device_to_device(system, first, thrust::next(first, n), result);),
+  THRUST_CDP_DISPATCH((result = __copy::device_to_device(system, first, ::cuda::std::next(first, n), result);),
                       (result = thrust::copy_n(cvt_to_seq(derived_cast(system)), first, n, result);));
   return result;
 } // end copy_n()

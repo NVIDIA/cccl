@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_MAYBE_CONST_H
-#define _LIBCUDACXX___TYPE_TRAITS_MAYBE_CONST_H
+#ifndef _CUDA_STD___TYPE_TRAITS_MAYBE_CONST_H
+#define _CUDA_STD___TYPE_TRAITS_MAYBE_CONST_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,11 +22,15 @@
 
 #include <cuda/std/__type_traits/conditional.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool _Const, class _Tp>
 using __maybe_const = conditional_t<_Const, const _Tp, _Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_MAYBE_CONST_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_MAYBE_CONST_H

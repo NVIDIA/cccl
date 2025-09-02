@@ -7,14 +7,47 @@
 
 #include <thrust/equal.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/limits>
 
 #include <c2h/catch2_test_helper.h>
 
 namespace detail
 {
+
+// Helper that concatenates two iterators into a single iterator
+template <typename FirstSegmentItT, typename SecondSegmentItT>
+struct concat_iterators_op
+{
+  FirstSegmentItT first_it;
+  SecondSegmentItT second_it;
+  ::cuda::std::int64_t num_first_items;
+
+  __host__ __device__ _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t i)
+  {
+    if (i < num_first_items)
+    {
+      return first_it[i];
+    }
+    else
+    {
+      return second_it[i - num_first_items];
+    }
+  }
+};
+
+template <typename FirstSegmentItT, typename SecondSegmentItT>
+auto make_concat_iterators_op(FirstSegmentItT first_it, SecondSegmentItT second_it, ::cuda::std::int64_t num_first_items)
+{
+  return thrust::make_transform_iterator(
+    thrust::make_counting_iterator(::cuda::std::int64_t{0}),
+    concat_iterators_op<FirstSegmentItT, SecondSegmentItT>{first_it, second_it, num_first_items});
+}
 
 template <typename ExpectedValuesItT>
 struct flag_correct_writes_op
@@ -24,7 +57,7 @@ struct flag_correct_writes_op
 
   static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
   template <typename OffsetT, typename T>
-  _CCCL_HOST_DEVICE void operator()(OffsetT index, T val)
+  __host__ __device__ void operator()(OffsetT index, T val)
   {
     // Set bit-flag if the correct result has been written at the given index
     if (expected_it[index] == val)
@@ -74,15 +107,52 @@ struct large_problem_test_helper
   // Checks whether all results have been written correctly
   void check_all_results_correct()
   {
-    REQUIRE(thrust::equal(correctness_flags.cbegin(),
-                          correctness_flags.cbegin() + (num_elements / bits_per_element),
-                          thrust::make_constant_iterator(0xFFFFFFFFU)));
+    auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
+    const bool all_correct =
+      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, thrust::make_constant_iterator(0xFFFFFFFFU));
+
+    if (!all_correct)
+    {
+      using thrust::placeholders::_1;
+      auto mismatch_it = thrust::find_if_not(correctness_flags.cbegin(), correctness_flags_end, _1 == 0xFFFFFFFFU);
+      // Sanity check: if thrust::equals previously "failed", then mismatch_it must not be the end iterator
+      REQUIRE(mismatch_it != correctness_flags_end);
+      std::uint32_t mismatch_value = *mismatch_it;
+      auto bit_index               = 0;
+      // Find the first bit that is not set in the mismatch_value
+      for (std::uint32_t i = 0; i < bits_per_element; ++i)
+      {
+        if (((mismatch_value >> i) & 0x01u) == 0)
+        {
+          bit_index = i;
+          break;
+        }
+      }
+      const auto wrong_element_index = (mismatch_it - correctness_flags.cbegin()) * bits_per_element + bit_index;
+      FAIL("First wrong output index: " << wrong_element_index);
+    }
     if (num_elements % bits_per_element != 0)
     {
-      std::uint32_t last_element_flags = (0x00000001U << (num_elements % bits_per_element)) - 0x01U;
-      REQUIRE(correctness_flags[num_elements / bits_per_element] == last_element_flags);
+      auto const last_element_flags = correctness_flags[num_elements / bits_per_element];
+      for (std::uint32_t i = 0; i < (num_elements % bits_per_element); ++i)
+      {
+        const auto element_index = (num_elements / bits_per_element) * bits_per_element + i;
+        INFO("First wrong output index: " << element_index);
+        REQUIRE(((last_element_flags >> i) & 0x01u) == 0x01u);
+      }
     }
   }
 };
+
+template <typename Offset>
+auto make_large_offset(::cuda::std::size_t num_extra_items = 2000000ULL) -> Offset
+{
+  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
+  const auto num_items_max_ull = ::cuda::std::clamp(
+    static_cast<::cuda::std::size_t>(::cuda::std::numeric_limits<Offset>::max()),
+    ::cuda::std::size_t{0},
+    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + num_extra_items);
+  return static_cast<Offset>(num_items_max_ull);
+}
 
 } // namespace detail

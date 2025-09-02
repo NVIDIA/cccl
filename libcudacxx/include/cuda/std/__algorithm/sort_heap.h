@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SORT_HEAP_H
-#define _LIBCUDACXX___ALGORITHM_SORT_HEAP_H
+#ifndef _CUDA_STD___ALGORITHM_SORT_HEAP_H
+#define _CUDA_STD___ALGORITHM_SORT_HEAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,37 +29,42 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-__sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp)
+_CCCL_API constexpr void __sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp)
 {
   __comp_ref_type<_Compare> __comp_ref = __comp;
 
   using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
   for (difference_type __n = __last - __first; __n > 1; --__last, (void) --__n)
   {
-    _CUDA_VSTD::__pop_heap<_AlgPolicy>(__first, __last, __comp_ref, __n);
+    ::cuda::std::__pop_heap<_AlgPolicy>(__first, __last, __comp_ref, __n);
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
+_CCCL_API constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  static_assert(_CCCL_TRAIT(is_copy_constructible, _RandomAccessIterator), "Iterators must be copy constructible.");
-  static_assert(_CCCL_TRAIT(is_copy_assignable, _RandomAccessIterator), "Iterators must be copy assignable.");
+  static_assert(is_copy_constructible_v<_RandomAccessIterator>, "Iterators must be copy constructible.");
+  static_assert(is_copy_assignable_v<_RandomAccessIterator>, "Iterators must be copy assignable.");
 
-  _CUDA_VSTD::__sort_heap<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp);
+  ::cuda::std::__sort_heap<_ClassicAlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), __comp);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
+_CCCL_API constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::sort_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
+  ::cuda::std::sort_heap(::cuda::std::move(__first), ::cuda::std::move(__last), __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_SORT_HEAP_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_SORT_HEAP_H

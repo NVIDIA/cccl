@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 
@@ -53,11 +52,21 @@ inline ulonglong2 to_bound(const unsigned long long bound)
   return {bound, bound};
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <>
 inline ulonglong4 to_bound(const unsigned long long bound)
 {
   return {bound, bound, bound, bound};
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline ulonglong4_16a to_bound(const unsigned long long bound)
+{
+  return {bound, bound, bound, bound};
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <>
 inline long2 to_bound(const unsigned long long bound)
@@ -123,7 +132,11 @@ using all_types =
                  std::uint32_t,
                  std::uint64_t,
                  ulonglong2,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
                  int,
                  long2,
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
@@ -280,8 +293,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary =
-    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
+  const auto boundary = std::unique(zip_begin, zip_end, project_first<cuda::std::equal_to<>>{cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -322,8 +334,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_uniqu
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary =
-    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
+  const auto boundary = std::unique(zip_begin, zip_end, project_first<cuda::std::equal_to<>>{cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -379,8 +390,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary =
-    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
+  const auto boundary = std::unique(zip_begin, zip_end, project_first<cuda::std::equal_to<>>{cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -426,8 +436,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
 
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary =
-    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
+  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cuda::std::equal_to<>>{cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);

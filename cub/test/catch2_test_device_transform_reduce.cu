@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -58,7 +57,7 @@ C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   using item_t         = c2h::get<0, TestType>;
   using init_t         = item_t;
   using offset_t       = std::int32_t;
-  using reduction_op_t = ::cuda::std::plus<>;
+  using reduction_op_t = cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
 
   constexpr int max_items = 5000000;
@@ -105,7 +104,7 @@ C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", typ
   using item_t         = c2h::get<0, TestType>;
   using init_t         = item_t;
   using offset_t       = std::int32_t;
-  using reduction_op_t = ::cuda::std::plus<>;
+  using reduction_op_t = cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
 
   constexpr int max_items = 5000000;

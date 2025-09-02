@@ -27,12 +27,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <cstdio>
+
+#include <cuda_runtime_api.h>
 
 namespace cuda::experimental::stf::reserved
 {
@@ -114,7 +114,7 @@ public:
     cuda_safe_call(cudaSetDevice(current_dev));
 
     initialized_peer_accesses = true;
-  };
+  }
 
   // Naive solution
   int get_ith_closest_node(int node, int ith)

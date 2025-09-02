@@ -14,9 +14,10 @@
 #define _LIBCUDACXX_FORCE_INCLUDE_H
 
 #include <cuda_runtime.h>
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
 
 void list_devices()
 {

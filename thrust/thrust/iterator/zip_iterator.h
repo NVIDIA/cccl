@@ -55,9 +55,6 @@ class zip_iterator;
 
 namespace detail
 {
-template <typename... Ts>
-using minimum_category = minimum_type<Ts...>;
-
 template <typename IteratorTuple>
 struct make_zip_iterator_base
 {
@@ -67,8 +64,15 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
+  // We need this to make proxy iterators work because those have a void reference type
+  template <class Iter>
+  using zip_iterator_reference_t =
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<it_reference_t<Iter>, void>,
+                               decltype(*::cuda::std::declval<Iter>()),
+                               it_reference_t<Iter>>;
+
   // reference type is the type of the tuple obtained from the iterator's reference types.
-  using reference = tuple_of_iterator_references<it_reference_t<Its>...>;
+  using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
   using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
@@ -77,15 +81,10 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
 
   // Iterator system is the minimum system tag in the iterator tuple
-  using system = ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_system_t<Its>...>,
-                                               any_system_tag,
-                                               ::cuda::std::__type_quote_trait<minimum_system>>;
+  using system = minimum_system_t<iterator_system_t<Its>...>;
 
   // Traversal category is the minimum traversal category in the iterator tuple
-  using traversal_category =
-    ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_traversal_t<Its>...>,
-                                  random_access_traversal_tag,
-                                  ::cuda::std::__type_quote_trait<minimum_category>>;
+  using traversal_category = minimum_type<iterator_traversal_t<Its>...>;
 
   // The iterator facade type from which the zip iterator will be derived.
   using type =
@@ -195,6 +194,16 @@ public:
       : m_iterator_tuple(iterator_tuple)
   {}
 
+  //! This constructor creates a new \p zip_iterator from multiple iterators.
+  //!
+  //! \param iterators The iterators to zip.
+  template <class... Iterators,
+            ::cuda::std::enable_if_t<(sizeof...(Iterators) != 0), int>                                  = 0,
+            ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<IteratorTuple, Iterators...>, int> = 0>
+  inline _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
+      : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
+  {}
+
   //! This copy constructor creates a new \p zip_iterator from another \p zip_iterator.
   //!
   //! \param other The \p zip_iterator to copy.
@@ -247,7 +256,7 @@ private:
   template <size_t... Is>
   inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
   {
-    (..., thrust::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
+    (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
   }
 
   // Advancing a zip_iterator means to advance all iterators in the tuple
@@ -296,16 +305,21 @@ private:
   //! \endcond
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
+template <class... Iterators>
+_CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+#endif // _CCCL_DOXYGEN_INVOKED
+
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!
 //! \param t The \p tuple of iterators to copy.
 //! \return A newly created \p zip_iterator which zips the iterators encapsulated in \p t.
 //! \see zip_iterator
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>>
-make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
+inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>>
+make_zip_iterator(::cuda::std::tuple<Iterators...> t)
 {
-  return zip_iterator<_CUDA_VSTD::tuple<Iterators...>>(t);
+  return zip_iterator<::cuda::std::tuple<Iterators...>>{t};
 }
 
 //! \p make_zip_iterator creates a \p zip_iterator from
@@ -316,9 +330,9 @@ make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
 //!
 //! \see zip_iterator
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(Iterators... its)
+inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip_iterator(Iterators... its)
 {
-  return make_zip_iterator(_CUDA_VSTD::make_tuple(its...));
+  return zip_iterator<::cuda::std::tuple<Iterators...>>{its...};
 }
 
 //! \} // end fancyiterators
@@ -330,7 +344,7 @@ THRUST_NAMESPACE_END
 // The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
 // language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
 #if _CCCL_STD_VER < 2020
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename IteratorTuple>
 struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
 {
@@ -341,5 +355,5 @@ struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
   using iterator_category = typename It::iterator_category;
   using difference_type   = typename It::difference_type;
 };
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 #endif // _CCCL_STD_VER < 2020

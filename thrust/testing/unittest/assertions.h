@@ -414,10 +414,10 @@ void assert_equal(
 
   bool failure = false;
 
-  difference_type length1 = THRUST_NS_QUALIFIER::distance(first1, last1);
-  difference_type length2 = THRUST_NS_QUALIFIER::distance(first2, last2);
+  difference_type length1 = ::cuda::std::distance(first1, last1);
+  difference_type length2 = ::cuda::std::distance(first2, last2);
 
-  difference_type min_length = THRUST_NS_QUALIFIER::min(length1, length2);
+  difference_type min_length = ::cuda::std::min(length1, length2);
 
   unittest::UnitTestFailure f;
   f << "[" << filename << ":" << lineno << "] ";
@@ -487,7 +487,7 @@ void assert_equal(
   int lineno                  = -1)
 {
   using InputType = typename ::cuda::std::iterator_traits<ForwardIterator1>::value_type;
-  assert_equal(first1, last1, first2, last2, THRUST_NS_QUALIFIER::equal_to<InputType>(), filename, lineno);
+  assert_equal(first1, last1, first2, last2, cuda::std::equal_to<InputType>(), filename, lineno);
 }
 
 template <typename ForwardIterator1, typename ForwardIterator2>

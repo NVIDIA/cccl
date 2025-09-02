@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDLIB_ALIGNED_ALLOC_H
-#define _LIBCUDACXX___CSTDLIB_ALIGNED_ALLOC_H
+#ifndef _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H
+#define _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,11 +31,13 @@
 
 #include <nv/target>
 
-#if _CCCL_HAS_CUDA_COMPILER()
-extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#if _CCCL_CUDA_COMPILATION()
+extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
+#endif // _CCCL_CUDA_COMPILATION()
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !_CCCL_COMPILER(NVRTC)
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
@@ -50,13 +52,15 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
+[[nodiscard]] _CCCL_API inline void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),
+                    (return ::cuda::std::__aligned_alloc_host(__nbytes, __align);),
                     (return ::__cuda_syscall_aligned_malloc(__nbytes, __align);))
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CSTDLIB_ALIGNED_ALLOC_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CSTDLIB_ALIGNED_ALLOC_H

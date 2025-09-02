@@ -306,7 +306,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 template <class LengthT, class KeyT>
 struct policy_hub
 {
-  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(KeyT), sizeof(LengthT)));
+  static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max) (sizeof(KeyT), sizeof(LengthT)));
   static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
 
   template <CacheLoadModifier LoadModifier>
@@ -603,7 +603,7 @@ struct policy_hub
     static constexpr int nominal_4B_items_per_thread = 15;
     // TODO(bgruber): use clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
-      _CUDA_VSTD::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
     using RleSweepPolicyT =
       AgentRlePolicy<96,
                      ITEMS_PER_THREAD,

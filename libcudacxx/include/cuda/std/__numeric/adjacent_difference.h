@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_ADJACENT_DIFFERENCE_H
-#define _LIBCUDACXX___NUMERIC_ADJACENT_DIFFERENCE_H
+#ifndef _CUDA_STD___NUMERIC_ADJACENT_DIFFERENCE_H
+#define _CUDA_STD___NUMERIC_ADJACENT_DIFFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,10 +25,12 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   if (__first != __last)
@@ -38,15 +40,15 @@ adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterat
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
       typename iterator_traits<_InputIterator>::value_type __val(*__first);
-      *__result = __val - _CUDA_VSTD::move(__acc);
-      __acc     = _CUDA_VSTD::move(__val);
+      *__result = __val - ::cuda::std::move(__acc);
+      __acc     = ::cuda::std::move(__val);
     }
   }
   return __result;
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator adjacent_difference(
+_CCCL_API constexpr _OutputIterator adjacent_difference(
   _InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOperation __binary_op)
 {
   if (__first != __last)
@@ -56,13 +58,15 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator adjacent_difference(
     for (++__first, (void) ++__result; __first != __last; ++__first, (void) ++__result)
     {
       typename iterator_traits<_InputIterator>::value_type __val(*__first);
-      *__result = __binary_op(__val, _CUDA_VSTD::move(__acc));
-      __acc     = _CUDA_VSTD::move(__val);
+      *__result = __binary_op(__val, ::cuda::std::move(__acc));
+      __acc     = ::cuda::std::move(__val);
     }
   }
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___NUMERIC_ADJACENT_DIFFERENCE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___NUMERIC_ADJACENT_DIFFERENCE_H

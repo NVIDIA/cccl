@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,11 +24,15 @@
 #include <cuda/std/__type_traits/is_standard_layout.h>
 #include <cuda/std/__type_traits/is_trivial.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-template <class _CharT>
-using _IsCharLikeType = _And<is_standard_layout<_CharT>, is_trivial<_CharT>>;
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp>
+inline constexpr bool __cccl_is_char_like_type_v = is_standard_layout_v<_Tp> && is_trivial_v<_Tp>;
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H

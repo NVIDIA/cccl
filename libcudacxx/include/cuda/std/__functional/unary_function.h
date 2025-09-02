@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_UNARY_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_UNARY_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -19,7 +19,9 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
@@ -53,6 +55,8 @@ template <class _Arg, class _Result>
 using __unary_function = __unary_function_keep_layout_base<_Arg, _Result>;
 #endif // !_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___FUNCTIONAL_UNARY_FUNCTION_H

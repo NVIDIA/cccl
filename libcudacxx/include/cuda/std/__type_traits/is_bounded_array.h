@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_BOUNDED_ARRAY_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_BOUNDED_ARRAY_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_BOUNDED_ARRAY_H
+#define _CUDA_STD___TYPE_TRAITS_IS_BOUNDED_ARRAY_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,28 +20,25 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/cstddef>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_bounded_array : false_type
-{};
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_bounded_array<_Tp[_Np]> : true_type
-{};
-
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : false_type
-{};
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array<_Tp[_Np]> : true_type
-{};
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-inline constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
+inline constexpr bool is_bounded_array_v = false;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp, size_t _Np>
+inline constexpr bool is_bounded_array_v<_Tp[_Np]> = true;
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_BOUNDED_ARRAY_H
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : public bool_constant<is_bounded_array_v<_Tp>>
+{};
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_BOUNDED_ARRAY_H

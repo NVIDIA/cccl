@@ -70,8 +70,8 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
 
   ZipIterator result = thrust::for_each(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(first1, first2)),
-    thrust::make_zip_iterator(thrust::make_tuple(last1, first2)),
+    thrust::make_zip_iterator(first1, first2),
+    thrust::make_zip_iterator(last1, first2),
     detail::swap_pair_elements());
   return thrust::get<1>(result.get_iterator_tuple());
 } // end swap_ranges()

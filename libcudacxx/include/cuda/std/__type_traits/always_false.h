@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_ALWAYS_FALSE_H
-#define _LIBCUDACXX___TYPE_TRAITS_ALWAYS_FALSE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_ALWAYS_FALSE_H
+#define _CUDA_STD___TYPE_TRAITS_ALWAYS_FALSE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,11 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
 inline constexpr bool __always_false_v = false;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_ALWAYS_FALSE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_ALWAYS_FALSE_H

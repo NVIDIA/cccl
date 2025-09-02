@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   using InputType = thrust::detail::it_value_t<InputIterator>;
-  thrust::minus<InputType> binary_op;
+  ::cuda::std::minus<InputType> binary_op;
 
   return thrust::adjacent_difference(exec, first, last, result, binary_op);
 } // end adjacent_difference()

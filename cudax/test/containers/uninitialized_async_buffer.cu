@@ -55,8 +55,8 @@ C2H_TEST_LIST(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
 
-  cuda::experimental::device_memory_resource resource{};
-  cuda::experimental::stream stream{};
+  cuda::experimental::device_memory_resource resource{cuda::device_ref{0}};
+  cuda::experimental::stream stream{cuda::device_ref{0}};
 
   SECTION("construction")
   {
@@ -73,12 +73,12 @@ C2H_TEST_LIST(
       uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
       CUDAX_CHECK(from_rvalue.data() == ptr);
       CUDAX_CHECK(from_rvalue.size() == 42);
-      CUDAX_CHECK(from_rvalue.get_stream() == stream);
+      CUDAX_CHECK(from_rvalue.stream() == stream);
 
       // Ensure that we properly reset the input buffer
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
-      CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
+      CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
   }
 
@@ -91,12 +91,12 @@ C2H_TEST_LIST(
     uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
     CUDAX_CHECK(from_rvalue.data() == ptr);
     CUDAX_CHECK(from_rvalue.size() == 42);
-    CUDAX_CHECK(from_rvalue.get_stream() == stream);
+    CUDAX_CHECK(from_rvalue.stream() == stream);
 
     // Ensure that we properly reset the input buffer
     CUDAX_CHECK(input.data() == nullptr);
     CUDAX_CHECK(input.size() == 0);
-    CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
+    CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
   }
 
   SECTION("assignment")
@@ -104,7 +104,7 @@ C2H_TEST_LIST(
     static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
 
     {
-      cuda::experimental::stream other_stream{};
+      cuda::experimental::stream other_stream{cuda::device_ref{0}};
       uninitialized_async_buffer input{resource, other_stream, 42};
       const TestType* ptr = input.data();
 
@@ -113,13 +113,13 @@ C2H_TEST_LIST(
       CUDAX_CHECK(assign_rvalue.data() == ptr);
       CUDAX_CHECK(assign_rvalue.size() == 42);
       CUDAX_CHECK(assign_rvalue.size_bytes() == 42 * sizeof(TestType));
-      CUDAX_CHECK(assign_rvalue.get_stream() == other_stream);
+      CUDAX_CHECK(assign_rvalue.stream() == other_stream);
 
       // Ensure that we properly reset the input buffer
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
       CUDAX_CHECK(input.size_bytes() == 0);
-      CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
+      CUDAX_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
 
     { // Ensure self move assignment does not do anything
@@ -128,7 +128,7 @@ C2H_TEST_LIST(
 
       buf = cuda::std::move(buf);
       CUDAX_CHECK(buf.data() == old_ptr);
-      CUDAX_CHECK(buf.get_stream() == stream);
+      CUDAX_CHECK(buf.stream() == stream);
       CUDAX_CHECK(buf.size() == 42);
       CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     }
@@ -145,8 +145,8 @@ C2H_TEST_LIST(
     CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(buf.begin() == buf.data());
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
-    CUDAX_CHECK(buf.get_stream() == stream);
-    CUDAX_CHECK(buf.get_memory_resource() == resource);
+    CUDAX_CHECK(buf.stream() == stream);
+    CUDAX_CHECK(buf.memory_resource() == resource);
 
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value, "");
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value, "");
@@ -156,8 +156,8 @@ C2H_TEST_LIST(
     CUDAX_CHECK(cuda::std::as_const(buf).size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
     CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CUDAX_CHECK(cuda::std::as_const(buf).get_stream() == stream);
-    CUDAX_CHECK(cuda::std::as_const(buf).get_memory_resource() == resource);
+    CUDAX_CHECK(cuda::std::as_const(buf).stream() == stream);
+    CUDAX_CHECK(cuda::std::as_const(buf).memory_resource() == resource);
   }
 
   SECTION("properties")
@@ -186,7 +186,7 @@ C2H_TEST_LIST(
       uninitialized_async_buffer buf{resource, stream, 42};
       stream.sync();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
-      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
+      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
   }
@@ -205,8 +205,22 @@ C2H_TEST_LIST(
       CUDAX_CHECK(old_buf.data() == old_ptr);
       CUDAX_CHECK(old_buf.size() == old_size);
 
-      CUDAX_CHECK(buf.get_stream() == old_buf.get_stream());
+      CUDAX_CHECK(buf.stream() == old_buf.stream());
     }
+  }
+
+  SECTION("destroy")
+  {
+    uninitialized_async_buffer buf{resource, stream, 42};
+    buf.destroy();
+    CUDAX_CHECK(buf.data() == nullptr);
+    CUDAX_CHECK(buf.size() == 0);
+    CUDAX_CHECK(buf.stream() == stream);
+
+    buf = uninitialized_async_buffer{resource, stream, 42};
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(buf.size() == 42);
+    CUDAX_CHECK(buf.stream() == stream);
   }
 }
 
@@ -217,6 +231,7 @@ struct test_async_device_memory_resource : cudax::device_memory_resource
   static int count;
 
   test_async_device_memory_resource()
+      : cudax::device_memory_resource{cuda::device_ref{0}}
   {
     ++count;
   }
@@ -237,9 +252,9 @@ int test_async_device_memory_resource::count = 0;
 
 C2H_TEST("uninitialized_async_buffer's memory resource does not dangle", "[container]")
 {
-  cuda::experimental::stream stream{};
+  cuda::experimental::stream stream{cuda::device_ref{0}};
   cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
-    cudax::device_memory_resource{}, stream, 0};
+    cudax::device_memory_resource{cuda::device_ref{0}}, stream, 0};
 
   {
     CHECK(test_async_device_memory_resource::count == 0);
@@ -250,7 +265,7 @@ C2H_TEST("uninitialized_async_buffer's memory resource does not dangle", "[conta
     CHECK(test_async_device_memory_resource::count == 1);
 
     cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> dst_buffer{
-      src_buffer.get_memory_resource(), stream, 1024};
+      src_buffer.memory_resource(), stream, 1024};
 
     CHECK(test_async_device_memory_resource::count == 2);
 

@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -97,14 +96,14 @@ C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = ::cuda::std::plus<>;
+  using op_t   = cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t            = ::cuda::std::__accumulator_t<op_t, item_t, init_t>;
+  using accum_t            = cuda::std::__accumulator_t<op_t, item_t, init_t>;
   output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test
@@ -136,7 +135,7 @@ C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = ::cuda::std::plus<>;
+  using op_t   = cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator

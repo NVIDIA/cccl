@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_COMMON_WITH_H
-#define _LIBCUDACXX___CONCEPTS_COMMON_WITH_H
+#ifndef _CUDA_STD___CONCEPTS_COMMON_WITH_H
+#define _CUDA_STD___CONCEPTS_COMMON_WITH_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,19 +27,21 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__utility/declval.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.common]
 
 template <class _Tp, class _Up>
 concept common_with = same_as<common_type_t<_Tp, _Up>, common_type_t<_Up, _Tp>> && requires {
-  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>());
-  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>());
+  static_cast<common_type_t<_Tp, _Up>>(::cuda::std::declval<_Tp>());
+  static_cast<common_type_t<_Tp, _Up>>(::cuda::std::declval<_Up>());
 } && common_reference_with<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>> && common_reference_with<add_lvalue_reference_t<common_type_t<_Tp, _Up>>, common_reference_t<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>>>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(__common_type_exists_,
@@ -51,8 +53,8 @@ _CCCL_CONCEPT _Common_type_exists = _CCCL_FRAGMENT(__common_type_exists_, _Tp, _
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(__common_type_constructible_,
                        requires()(requires(_Common_type_exists<_Tp, _Up>),
-                                  (static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>())),
-                                  (static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>()))));
+                                  (static_cast<common_type_t<_Tp, _Up>>(::cuda::std::declval<_Tp>())),
+                                  (static_cast<common_type_t<_Tp, _Up>>(::cuda::std::declval<_Up>()))));
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT _Common_type_constructible = _CCCL_FRAGMENT(__common_type_constructible_, _Tp, _Up);
@@ -71,8 +73,10 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp, class _Up>
 _CCCL_CONCEPT common_with = _CCCL_FRAGMENT(__common_with_, _Tp, _Up);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_COMMON_WITH_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CONCEPTS_COMMON_WITH_H

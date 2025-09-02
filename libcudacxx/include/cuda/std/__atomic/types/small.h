@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
-#define _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_SMALL_H
+#define _CUDA_STD___ATOMIC_TYPES_SMALL_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,39 +30,41 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstring>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // manipulated by PTX without any performance overhead
 template <typename _Tp>
-using __atomic_small_proxy_t = _If<_CCCL_TRAIT(is_signed, _Tp), int32_t, uint32_t>;
+using __atomic_small_proxy_t = _If<is_signed_v<_Tp>, int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
-template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   return static_cast<__atomic_small_proxy_t<_Tp>>(__val);
 }
 
-template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
-_CCCL_HOST_DEVICE constexpr inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
+template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>
+_CCCL_HOST_DEVICE constexpr _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   return static_cast<_Tp>(__val);
 }
 
 // Non-arithmetic conversion to/from proxy types
-template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
-  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
+  ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
-template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _Tp __temp{};
-  _CUDA_VSTD::memcpy(&__temp, &__val, sizeof(_Tp));
+  ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
 }
 
@@ -73,10 +75,11 @@ struct __atomic_small_storage
   using __proxy_t                     = __atomic_small_proxy_t<_Tp>;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
-  _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage() noexcept
-      : __a_value{__proxy_t{}} {};
+  _CCCL_HOST_DEVICE constexpr explicit __atomic_small_storage() noexcept
+      : __a_value{__proxy_t{}}
+  {}
 
-  _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage(_Tp __value) noexcept
+  _CCCL_HOST_DEVICE constexpr explicit __atomic_small_storage(_Tp __value) noexcept
       : __a_value{__atomic_small_to_32(__value)}
   {}
 
@@ -218,6 +221,8 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, 
     __atomic_fetch_min_dispatch(&__a->__a_value, __atomic_small_to_32(__val), __order, _Sco{}));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_SMALL_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ATOMIC_TYPES_SMALL_H

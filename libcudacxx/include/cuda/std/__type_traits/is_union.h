@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_UNION_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_UNION_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_UNION_H
+#define _CUDA_STD___TYPE_TRAITS_IS_UNION_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,15 +20,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public integral_constant<bool, _CCCL_BUILTIN_IS_UNION(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public bool_constant<_CCCL_BUILTIN_IS_UNION(_Tp)>
 {};
 
 template <class _Tp>
@@ -37,17 +40,18 @@ inline constexpr bool is_union_v = _CCCL_BUILTIN_IS_UNION(_Tp);
 #else
 
 template <class _Tp>
-struct __cccl_union : public false_type
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public __cccl_union<remove_cv_t<_Tp>>
-{};
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public bool_constant<false>
+{
+  static_assert(__always_false_v<_Tp>, "is_union requires compiler support");
+};
 
 template <class _Tp>
 inline constexpr bool is_union_v = is_union<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNION_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_IS_UNION_H

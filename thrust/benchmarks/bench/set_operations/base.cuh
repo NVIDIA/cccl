@@ -58,7 +58,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>, OpT op)
        input.cbegin() + elements_in_A,
        input.cend(),
        output.begin());
-  const std::size_t elements_in_AB = thrust::distance(output.begin(), result_ends);
+  const std::size_t elements_in_AB = ::cuda::std::distance(output.begin(), result_ends);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);

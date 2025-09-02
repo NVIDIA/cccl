@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_type.cuh>
@@ -101,8 +100,11 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
 
   constexpr std::size_t min_num_items = 1 << 5;
   constexpr std::size_t max_num_items = 1 << 20;
-  const std::size_t num_items         = GENERATE_COPY(take(3, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = GENERATE_COPY(take(2, random(std::size_t{2}, num_items / 2)));
+
+  // Use c2h::adjust_seed_count() to reduce cost when running sanitizers:
+  const std::size_t num_items = GENERATE_COPY(take(c2h::adjust_seed_count(3), random(min_num_items, max_num_items)));
+  const std::size_t num_segments =
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(std::size_t{2}, num_items / 2)));
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
@@ -218,8 +220,9 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
 
   constexpr std::size_t min_num_items = 1 << 5;
   constexpr std::size_t max_num_items = 1 << 20;
-  const std::size_t num_items         = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = GENERATE_COPY(take(1, random(std::size_t{2}, num_items / 2)));
+
+  const std::size_t num_items    = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(min_num_items, max_num_items)));
+  const std::size_t num_segments = GENERATE_COPY(take(1, random(std::size_t{2}, num_items / 2)));
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
@@ -287,8 +290,10 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented
 
   constexpr std::size_t min_num_items = 1 << 19;
   constexpr std::size_t max_num_items = 1 << 20;
-  const std::size_t num_items         = GENERATE_COPY(take(2, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = 2;
+
+  // Use c2h::adjust_seed_count to reduce cost when running sanitizers:
+  const std::size_t num_items    = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(min_num_items, max_num_items)));
+  const std::size_t num_segments = 2;
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
@@ -463,7 +468,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
 }
 
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
-         "[keys][segmented][radix][sort][device]",
+         "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {
@@ -472,11 +477,11 @@ try
   using offset_t                     = c2h::get<0, TestType>;
   using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
   constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 22) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 22) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_empty_segments = uint32_max - 5U;
-  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   c2h::device_vector<key_t> in_keys(num_items);
@@ -512,17 +517,17 @@ catch (std::bad_alloc& e)
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
 #  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
-         "[keys][segmented][radix][sort][device]",
+         "[keys][segmented][radix][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   const segment_offset_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_REMOVE_CV_H
-#define _LIBCUDACXX___TYPE_TRAITS_REMOVE_CV_H
+#ifndef _CUDA_STD___TYPE_TRAITS_REMOVE_CV_H
+#define _CUDA_STD___TYPE_TRAITS_REMOVE_CV_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,9 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_volatile.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
 template <class _Tp>
@@ -48,6 +50,8 @@ using remove_cv_t _CCCL_NODEBUG_ALIAS = remove_volatile_t<remove_const_t<_Tp>>;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_CV_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_REMOVE_CV_H

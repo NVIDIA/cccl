@@ -11,6 +11,7 @@ PTX Instructions
    instructions/shr
    instructions/shl
    instructions/bmsk
+   instructions/elect_sync
    instructions/prmt
    instructions/barrier_cluster
    instructions/bfind
@@ -414,7 +415,7 @@ Instructions by section
    * - `griddepcontrol <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol>`__
      - No
    * - `elect.sync <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync>`__
-     - No
+     - CCCL 3.1.0 / CUDA 13.1
 
 .. list-table:: `Parallel Synchronization and Communication Instructions: mbarrier <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier>`__
    :widths: 50 50
@@ -425,8 +426,6 @@ Instructions by section
    * - :ref:`mbarrier.init <libcudacxx-ptx-instructions-mbarrier-init>`
      - CCCL 2.5.0 / CUDA Future
    * - `mbarrier.inval <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval>`__
-     - No
-   * - `mbarrier.expect_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx>`__
      - No
    * - `mbarrier.complete_tx <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx>`__
      - No

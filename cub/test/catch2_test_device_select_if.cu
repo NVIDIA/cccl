@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
@@ -87,7 +86,11 @@ using all_types =
                  ulonglong2,
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  int,
                  long2,
@@ -98,7 +101,11 @@ using types =
                  std::uint32_t,
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
@@ -327,14 +334,15 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::int64_t;
   using offset_t = std::int64_t;
 
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
-  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   offset_t num_items = GENERATE_COPY(
     values({
@@ -372,14 +380,15 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of output items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::uint8_t;
   using offset_t = std::int64_t;
 
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
-  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   offset_t num_items = GENERATE_COPY(
     values({

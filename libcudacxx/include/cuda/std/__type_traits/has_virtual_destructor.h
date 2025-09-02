@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
-#define _LIBCUDACXX___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
+#ifndef _CUDA_STD___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
+#define _CUDA_STD___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,13 +22,15 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT has_virtual_destructor
-    : public integral_constant<bool, _CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+has_virtual_destructor : public integral_constant<bool, _CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
 {};
 
 #else
@@ -42,6 +44,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT has_virtual_destructor : public false_type
 template <class _Tp>
 inline constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H

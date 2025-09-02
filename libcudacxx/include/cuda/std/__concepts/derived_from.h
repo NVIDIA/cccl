@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_DERIVED_FROM_H
-#define _LIBCUDACXX___CONCEPTS_DERIVED_FROM_H
+#ifndef _CUDA_STD___CONCEPTS_DERIVED_FROM_H
+#define _CUDA_STD___CONCEPTS_DERIVED_FROM_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,29 +25,32 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
-#if !defined(_CCCL_NO_CONCEPTS)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.derived]
 
 template <class _Dp, class _Bp>
 concept derived_from = is_base_of_v<_Bp, _Dp> && is_convertible_v<const volatile _Dp*, const volatile _Bp*>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Dp, class _Bp>
 _CCCL_CONCEPT_FRAGMENT(
   __derived_from_,
-  requires()(
-    requires(_CCCL_TRAIT(is_base_of, _Bp, _Dp)),
-    requires(_CCCL_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))));
+  requires()(requires(is_base_of_v<_Bp, _Dp>),
+             requires(is_convertible_v<add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>>)));
 
 template <class _Dp, class _Bp>
 _CCCL_CONCEPT derived_from = _CCCL_FRAGMENT(__derived_from_, _Dp, _Bp);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_DERIVED_FROM_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___CONCEPTS_DERIVED_FROM_H

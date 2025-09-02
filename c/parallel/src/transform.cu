@@ -10,7 +10,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#include <cub/device/dispatch/tuning/tuning_transform.cuh> // cub::detail::transform::Algorithm
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
@@ -18,18 +18,22 @@
 #include <format>
 #include <string>
 #include <type_traits>
+#include <vector>
 
-#include "kernels/iterators.h"
-#include "kernels/operators.h"
-#include "util/context.h"
-#include "util/errors.h"
-#include "util/indirect_arg.h"
-#include "util/types.h"
+#include <stdio.h> // printf
+
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h> // cccl_type_info
+#include <kernels/iterators.h>
+#include <kernels/operators.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
-#include <stdio.h> // printf
+#include <util/build_utils.h>
+#include <util/context.h>
+#include <util/errors.h>
+#include <util/indirect_arg.h>
+#include <util/runtime_policy.h>
+#include <util/types.h>
 
 struct op_wrapper;
 struct device_transform_policy;
@@ -50,48 +54,6 @@ constexpr auto input_iterator_name  = "input_iterator_t";
 constexpr auto input1_iterator_name = "input1_iterator_t";
 constexpr auto input2_iterator_name = "input2_iterator_t";
 constexpr auto output_iterator_name = "output_iterator_t";
-
-struct transform_runtime_tuning_policy
-{
-  int block_threads;
-  int items_per_thread_no_input;
-  int min_items_per_thread;
-  int max_items_per_thread;
-
-  // Note: when we extend transform to support UBLKCP, we may no longer
-  // be able to keep this constexpr:
-  static constexpr cub::detail::transform::Algorithm GetAlgorithm()
-  {
-    return cub::detail::transform::Algorithm::prefetch;
-  }
-
-  int BlockThreads()
-  {
-    return block_threads;
-  }
-
-  int ItemsPerThreadNoInput()
-  {
-    return items_per_thread_no_input;
-  }
-
-  int MinItemsPerThread()
-  {
-    return min_items_per_thread;
-  }
-
-  int MaxItemsPerThread()
-  {
-    return max_items_per_thread;
-  }
-  static constexpr int min_bif = 1024 * 12;
-};
-
-transform_runtime_tuning_policy get_policy()
-{
-  // return prefetch policy defaults:
-  return {256, 2, 1, 32};
-}
 
 template <typename StorageT>
 const std::string get_iterator_name(cccl_iterator_t iterator, const std::string& name)
@@ -118,7 +80,7 @@ std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it,
   check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -143,7 +105,8 @@ get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_itera
   check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}, "
+    "{5}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -152,42 +115,105 @@ get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_itera
     input2_iterator_t); // 5
 }
 
-template <auto* GetPolicy>
-struct dynamic_transform_policy_t
+namespace cdt = cub::detail::transform;
+
+template <typename AgentPolicy>
+struct runtime_tuning_policy_variant
 {
-  using max_policy = dynamic_transform_policy_t;
+  using max_policy = runtime_tuning_policy_variant;
+
+  cdt::Algorithm algorithm;
+  int min_bif;
+  AgentPolicy algo_policy;
+
+  cdt::Algorithm Algorithm() const
+  {
+    return algorithm;
+  }
+
+  int MinBif() const
+  {
+    return min_bif;
+  }
+
+  AgentPolicy AlgorithmPolicy() const
+  {
+    return algo_policy;
+  }
 
   template <typename F>
-  cudaError_t Invoke(int /*device_ptx_version*/, F& op)
+  cudaError_t Invoke([[maybe_unused]] int device_ptx_version, F& op)
   {
-    return op.template Invoke<transform_runtime_tuning_policy>(GetPolicy());
+    return op.template Invoke<runtime_tuning_policy_variant>(*this);
   }
 };
 
+using runtime_tuning_policy =
+  std::variant<runtime_tuning_policy_variant<cdt::RuntimeTransformAgentPrefetchPolicy>,
+               runtime_tuning_policy_variant<cdt::RuntimeTransformAgentVectorizedPolicy>,
+               runtime_tuning_policy_variant<cdt::RuntimeTransformAgentAsyncPolicy>>;
+
+runtime_tuning_policy* make_runtime_tuning_policy(
+  cdt::Algorithm algorithm,
+  int min_bif,
+  std::variant<cdt::RuntimeTransformAgentPrefetchPolicy,
+               cdt::RuntimeTransformAgentVectorizedPolicy,
+               cdt::RuntimeTransformAgentAsyncPolicy> algo_policy)
+{
+  return new auto(std::visit(
+    [&](auto policy) -> runtime_tuning_policy {
+      return runtime_tuning_policy_variant{algorithm, min_bif, policy};
+    },
+    algo_policy));
+}
+
+template <int NumInputs>
 struct transform_kernel_source
 {
   cccl_device_transform_build_result_t& build;
+  std::array<cuda::std::pair<cuda::std::size_t, cuda::std::size_t>, NumInputs> it_value_sizes_alignments;
+
+  static constexpr bool CanCacheConfiguration()
+  {
+    return false;
+  }
 
   CUkernel TransformKernel() const
   {
     return build.transform_kernel;
   }
 
-  int LoadedBytesPerIteration()
+  int LoadedBytesPerIteration() const
   {
     return build.loaded_bytes_per_iteration;
   }
 
+  auto ItValueSizesAlignments() const
+  {
+    return cuda::std::span(it_value_sizes_alignments);
+  }
+
   template <typename It>
-  constexpr It MakeIteratorKernelArg(It it)
+  static constexpr It MakeIteratorKernelArg(It it)
   {
     return it;
+  }
+
+  static cdt::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_iterator_t it, int align)
+  {
+    _CCCL_ASSERT(it.value_size != 0, "a non-pointer iterator passed into MakeALignedBasePtrKernelArg");
+    return cdt::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(it.ptr), align);
+  }
+
+  static auto IsPointerAligned(indirect_iterator_t it, int alignment)
+  {
+    return it.value_size != 0 && ::cuda::is_aligned(*static_cast<char**>(it.ptr), alignment);
   }
 };
 
 } // namespace transform
 
-CUresult cccl_device_unary_transform_build(
+CUresult cccl_device_unary_transform_build_ex(
   cccl_device_transform_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -197,7 +223,8 @@ CUresult cccl_device_unary_transform_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -206,7 +233,6 @@ CUresult cccl_device_unary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy();
     const auto input_it_value_t  = cccl_type_enum_to_name<input_storage_t>(input_it.value_type.type);
     const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
@@ -216,49 +242,83 @@ CUresult cccl_device_unary_transform_build(
       make_kernel_output_iterator(offset_t, transform::output_iterator_name, output_it_value_t, output_it);
     const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
 
-    constexpr std::string_view src_template = R"XXX(
-#define _CUB_HAS_TRANSFORM_UBLKCP 0
-#include <cub/device/dispatch/kernels/transform.cuh>
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
+
+    std::string src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
 struct __align__({1}) input_storage_t {{
   char data[{0}];
 }};
 struct __align__({3}) output_storage_t {{
   char data[{2}];
 }};
-{8}
-{9}
-struct prefetch_policy_t {{
-  static constexpr int block_threads = {4};
-  static constexpr int items_per_thread_no_input = {5};
-  static constexpr int min_items_per_thread      = {6};
-  static constexpr int max_items_per_thread      = {7};
-}};
-struct device_transform_policy {{
-  struct ActivePolicy {{
-    static constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    using algo_policy = prefetch_policy_t;
-  }};
-}};
-{10}
-)XXX";
-
-    const std::string& src = std::format(
-      src_template,
+{4}
+{5}
+{6}
+)XXX",
       input_it.value_type.size, // 0
       input_it.value_type.alignment, // 1
       output_it.value_type.size, // 2
       output_it.value_type.alignment, // 3
-      policy.block_threads, // 4
-      policy.items_per_thread_no_input, // 5
-      policy.min_items_per_thread, // 6
-      policy.max_items_per_thread, // 7
-      input_iterator_src, // 8
-      output_iterator_src, // 9
-      op_src); // 10
+      input_iterator_src, // 4
+      output_iterator_src, // 5
+      op_src); // 6
+
+    nlohmann::json runtime_policy = get_policy(
+      std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, true, "
+                  "::cuda::std::tuple<{0}>, {1}>::max_policy::ActivePolicy{{}})",
+                  transform::get_iterator_name<input_storage_t>(input_it, transform::input_iterator_name),
+                  transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name)),
+      "#include <cub/device/dispatch/tuning/tuning_transform.cuh>\n" + src,
+      ptx_args);
+
+    auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
+    auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
+
+    auto [transform_policy, transform_policy_src] =
+      [&]() -> std::tuple<std::variant<transform::cdt::RuntimeTransformAgentPrefetchPolicy,
+                                       transform::cdt::RuntimeTransformAgentVectorizedPolicy,
+                                       transform::cdt::RuntimeTransformAgentAsyncPolicy>,
+                          std::string> {
+      switch (algorithm)
+      {
+        case transform::cdt::Algorithm::prefetch:
+          return transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "algo_policy");
+        case transform::cdt::Algorithm::vectorized:
+          return transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "algo_policy");
+        case transform::cdt::Algorithm::memcpy_async:
+          [[fallthrough]];
+        case transform::cdt::Algorithm::ublkcp:
+          return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
+      }
+      _CCCL_UNREACHABLE();
+    }();
+
+    std::string final_src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/kernels/transform.cuh>
+{0}
+struct device_transform_policy {{
+  struct ActivePolicy {{
+    static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>({1});
+    static constexpr int min_bif = {2};
+    {3}
+  }};
+}};
+)XXX",
+      src,
+      static_cast<int>(algorithm),
+      min_bif,
+      transform_policy_src);
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 
@@ -270,30 +330,39 @@ struct device_transform_policy {{
     // Note: `-default-device` is needed because of the use of lambdas
     // in the transform kernel code. Qualifying those explicitly with
     // `__device__` seems not to be supported by NVRTC.
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device"};
+    std::vector<const char*> args = {
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-default-device",
+      "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     appender.add_iterator_definition(input_it);
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({kernel_name})
-        .compile_program({args, num_args})
-        .get_name({kernel_name, kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+        ->add_expression({kernel_name})
+        ->compile_program({args.data(), args.size()})
+        ->get_name({kernel_name, kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(linkable_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
@@ -302,6 +371,7 @@ struct device_transform_policy {{
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
+    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
   }
   catch (const std::exception& exc)
   {
@@ -330,21 +400,29 @@ CUresult cccl_device_unary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = cub::detail::transform::dispatch_t<
-      cub::detail::transform::requires_stable_address::no, // TODO implement yes
-      OffsetT,
-      ::cuda::std::tuple<indirect_arg_t>,
-      indirect_arg_t,
-      indirect_arg_t,
-      transform::dynamic_transform_policy_t<&transform::get_policy>,
-      transform::transform_kernel_source,
-      cub::detail::CudaDriverLauncherFactory>::
-      dispatch(d_in, d_out, num_items, op, stream, {build}, cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-    if (cuda_error != cudaSuccess)
-    {
-      const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
-      std::cerr << "CUDA error: " << errorString << std::endl;
-    }
+    error = static_cast<CUresult>(std::visit(
+      [&]<typename Policy>(Policy policy) {
+        return transform::cdt::dispatch_t<
+          transform::cdt::requires_stable_address::no, // TODO implement yes
+          OffsetT,
+          ::cuda::std::tuple<indirect_iterator_t>,
+          indirect_iterator_t,
+          transform::cdt::always_true_predicate,
+          indirect_arg_t,
+          Policy,
+          transform::transform_kernel_source<1>,
+          cub::detail::CudaDriverLauncherFactory>::
+          dispatch(d_in,
+                   d_out,
+                   num_items,
+                   {},
+                   op,
+                   stream,
+                   {build, {{{d_in.value_type.size, d_in.value_type.alignment}}}},
+                   cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+                   policy);
+      },
+      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
   }
   catch (const std::exception& exc)
   {
@@ -361,7 +439,7 @@ CUresult cccl_device_unary_transform(
   return error;
 }
 
-CUresult cccl_device_binary_transform_build(
+CUresult cccl_device_binary_transform_build_ex(
   cccl_device_transform_build_result_t* build_ptr,
   cccl_iterator_t input1_it,
   cccl_iterator_t input2_it,
@@ -372,7 +450,8 @@ CUresult cccl_device_binary_transform_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -381,7 +460,6 @@ CUresult cccl_device_binary_transform_build(
     const char* name = "test";
 
     const int cc                 = cc_major * 10 + cc_minor;
-    const auto policy            = transform::get_policy();
     const auto input1_it_value_t = cccl_type_enum_to_name<input1_storage_t>(input1_it.value_type.type);
     const auto input2_it_value_t = cccl_type_enum_to_name<input2_storage_t>(input2_it.value_type.type);
 
@@ -397,8 +475,14 @@ CUresult cccl_device_binary_transform_build(
     const std::string op_src =
       make_kernel_user_binary_operator(input1_it_value_t, input2_it_value_t, output_it_value_t, op);
 
-    constexpr std::string_view src_template = R"XXX(
-#define _CUB_HAS_TRANSFORM_UBLKCP 0
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
+
+    std::string src = std::format(
+      R"XXX(
 #include <cub/device/dispatch/kernels/transform.cuh>
 struct __align__({1}) input1_storage_t {{
   char data[{0}];
@@ -410,47 +494,73 @@ struct __align__({3}) input2_storage_t {{
 struct __align__({5}) output_storage_t {{
   char data[{4}];
 }};
-
-{10}
-{11}
-{12}
-
-struct prefetch_policy_t {{
-  static constexpr int block_threads = {6};
-  static constexpr int items_per_thread_no_input = {7};
-  static constexpr int min_items_per_thread      = {8};
-  static constexpr int max_items_per_thread      = {9};
-}};
-
-struct device_transform_policy {{
-  struct ActivePolicy {{
-    static constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    using algo_policy = prefetch_policy_t;
-  }};
-}};
-
-{13}
-)XXX";
-    const std::string& src                  = std::format(
-      src_template,
+{6}
+{7}
+{8}
+{9}
+)XXX",
       input1_it.value_type.size, // 0
       input1_it.value_type.alignment, // 1
       input2_it.value_type.size, // 2
       input2_it.value_type.alignment, // 3
       output_it.value_type.size, // 4
       output_it.value_type.alignment, // 5
-      policy.block_threads, // 6
-      policy.items_per_thread_no_input, // 7
-      policy.min_items_per_thread, // 8
-      policy.max_items_per_thread, // 9
-      input1_iterator_src, // 10
-      input2_iterator_src, // 11
-      output_iterator_src, // 12
-      op_src); // 13
+      input1_iterator_src, // 6
+      input2_iterator_src, // 7
+      output_iterator_src, // 8
+      op_src); // 9
+
+    nlohmann::json runtime_policy = get_policy(
+      std::format("cub::detail::transform::MakeTransformPolicyWrapper(cub::detail::transform::policy_hub<false, true, "
+                  "::cuda::std::tuple<{0}, {1}>, {2}>::max_policy::ActivePolicy{{}})",
+                  transform::get_iterator_name<input1_storage_t>(input1_it, transform::input1_iterator_name),
+                  transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name),
+                  transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name)),
+      "#include <cub/device/dispatch/tuning/tuning_transform.cuh>\n" + src,
+      ptx_args);
+
+    auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
+    auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
+
+    auto [transform_policy, transform_policy_src] =
+      [&]() -> std::tuple<std::variant<transform::cdt::RuntimeTransformAgentPrefetchPolicy,
+                                       transform::cdt::RuntimeTransformAgentVectorizedPolicy,
+                                       transform::cdt::RuntimeTransformAgentAsyncPolicy>,
+                          std::string> {
+      switch (algorithm)
+      {
+        case transform::cdt::Algorithm::prefetch:
+          return transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "algo_policy");
+        case transform::cdt::Algorithm::vectorized:
+          return transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "algo_policy");
+        case transform::cdt::Algorithm::memcpy_async:
+          [[fallthrough]];
+        case transform::cdt::Algorithm::ublkcp:
+          return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
+      }
+      _CCCL_UNREACHABLE();
+    }();
+
+    std::string final_src = std::format(
+      R"XXX(
+#include <cub/device/dispatch/kernels/transform.cuh>
+{0}
+struct device_transform_policy {{
+  struct ActivePolicy {{
+    static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>({1});
+    static constexpr int min_bif = {2};
+    {3}
+  }};
+}};
+)XXX",
+      src,
+      static_cast<int>(algorithm),
+      min_bif,
+      transform_policy_src);
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 
@@ -459,31 +569,40 @@ struct device_transform_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
-    const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device"};
+    std::vector<const char*> args = {
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-default-device",
+      "-DCUB_DISABLE_CDP"};
+
+    cccl::detail::extend_args_with_build_config(args, config);
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     appender.add_iterator_definition(input1_it);
     appender.add_iterator_definition(input2_it);
     appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
-        .add_expression({kernel_name})
-        .compile_program({args, num_args})
-        .get_name({kernel_name, kernel_lowered_name})
-        .cleanup_program()
-        .add_link_list(ltoir_list)
-        .finalize_program(num_lto_args, lopts);
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+        ->add_expression({kernel_name})
+        ->compile_program({args.data(), args.size()})
+        ->get_name({kernel_name, kernel_lowered_name})
+        ->link_program()
+        ->add_link_list(linkable_list)
+        ->finalize_program();
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
@@ -492,6 +611,7 @@ struct device_transform_policy {{
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
+    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
   }
   catch (const std::exception& exc)
   {
@@ -521,27 +641,33 @@ CUresult cccl_device_binary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = cub::detail::transform::dispatch_t<
-      cub::detail::transform::requires_stable_address::no, // TODO implement yes
-      OffsetT,
-      ::cuda::std::tuple<indirect_arg_t, indirect_arg_t>,
-      indirect_arg_t,
-      indirect_arg_t,
-      transform::dynamic_transform_policy_t<&transform::get_policy>,
-      transform::transform_kernel_source,
-      cub::detail::CudaDriverLauncherFactory>::
-      dispatch(::cuda::std::make_tuple<indirect_arg_t, indirect_arg_t>(d_in1, d_in2),
-               d_out,
-               num_items,
-               op,
-               stream,
-               {build},
-               cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-    if (cuda_error != cudaSuccess)
-    {
-      const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
-      std::cerr << "CUDA error: " << errorString << std::endl;
-    }
+
+    error = static_cast<CUresult>(std::visit(
+      [&]<typename Policy>(Policy policy) {
+        return transform::cdt::dispatch_t<
+          transform::cdt::requires_stable_address::no, // TODO implement yes
+          OffsetT,
+          ::cuda::std::tuple<indirect_iterator_t, indirect_iterator_t>,
+          indirect_iterator_t,
+          transform::cdt::always_true_predicate,
+          indirect_arg_t,
+          Policy,
+          transform::transform_kernel_source<2>,
+          cub::detail::CudaDriverLauncherFactory>::
+          dispatch(
+            ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
+            d_out,
+            num_items,
+            {},
+            op,
+            stream,
+            {build,
+             {{{d_in1.value_type.size, d_in1.value_type.alignment},
+               {d_in2.value_type.size, d_in2.value_type.alignment}}}},
+            cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+            policy);
+      },
+      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
   }
   catch (const std::exception& exc)
   {
@@ -558,6 +684,39 @@ CUresult cccl_device_binary_transform(
   return error;
 }
 
+CUresult cccl_device_unary_transform_build(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_unary_transform_build_ex(
+    build_ptr, d_in, d_out, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, nullptr);
+}
+
+CUresult cccl_device_binary_transform_build(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t d_in1,
+  cccl_iterator_t d_in2,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_binary_transform_build_ex(
+    build_ptr, d_in1, d_in2, d_out, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, nullptr);
+}
+
 CUresult cccl_device_transform_cleanup(cccl_device_transform_build_result_t* build_ptr)
 {
   try
@@ -567,6 +726,8 @@ CUresult cccl_device_transform_cleanup(cccl_device_transform_build_result_t* bui
       return CUDA_ERROR_INVALID_VALUE;
     }
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<transform::runtime_tuning_policy> rtp(
+      reinterpret_cast<transform::runtime_tuning_policy*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

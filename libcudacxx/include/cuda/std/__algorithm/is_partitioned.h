@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_IS_PARTITIONED_H
-#define _LIBCUDACXX___ALGORITHM_IS_PARTITIONED_H
+#ifndef _CUDA_STD___ALGORITHM_IS_PARTITIONED_H
+#define _CUDA_STD___ALGORITHM_IS_PARTITIONED_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,11 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
 
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
+[[nodiscard]] _CCCL_API constexpr bool is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
   {
@@ -48,6 +50,8 @@ is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
   return true;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___ALGORITHM_CLAMP_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___ALGORITHM_CLAMP_H

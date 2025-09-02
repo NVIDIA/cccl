@@ -25,8 +25,6 @@
  *
  ******************************************************************************/
 #include "catch2_radix_sort_helper.cuh"
-// above header needs to be included first
-
 #include "catch2_segmented_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>
 
@@ -123,26 +121,28 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
   using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
   const int segment_size = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)), //
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)));
 
-  const int segments = GENERATE_COPY(take(2, random(1 << 0, 1 << 5)), //
-                                     take(2, random(1 << 5, 1 << 10)));
+  const int segments = GENERATE_COPY( //
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)));
 
   test_same_size_segments_derived<KeyT, ValueT>(segment_size, segments);
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -152,17 +152,18 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values
   const int max_items   = 1 << 22;
   const int max_segment = 6000;
 
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
   const int segments = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)), //
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)),
-    take(2, random(1 << 15, 1 << 20)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
+    take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   test_random_size_segments_derived<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -172,7 +173,8 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values"
   const int max_items   = 1 << 22;
   const int max_segment = 6000;
 
-  const int segments = GENERATE_COPY(take(2, random(1 << 15, 1 << 20)));
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
+  const int segments = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   test_random_size_segments_random<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
@@ -200,7 +202,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {
@@ -210,11 +212,11 @@ try
   using offset_t                     = c2h::get<0, TestType>;
   using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
   constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_empty_segments = uint32_max;
-  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   // Generate input
@@ -255,17 +257,19 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments",
+         "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using value_t                    = cuda::std::uint8_t;
   using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 

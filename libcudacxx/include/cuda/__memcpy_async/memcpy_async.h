@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_H_
+#ifndef _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_H_
+#define _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_H_
 
 #include <cuda/std/detail/__config>
 
@@ -24,17 +24,21 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
-#  include <cuda/__barrier/aligned_size.h>
 #  include <cuda/__barrier/async_contract_fulfillment.h>
 #  include <cuda/__barrier/barrier.h>
 #  include <cuda/__barrier/barrier_block_scope.h>
 #  include <cuda/__barrier/barrier_thread_scope.h>
+#  include <cuda/__memcpy_async/check_preconditions.h>
 #  include <cuda/__memcpy_async/memcpy_async_barrier.h>
+#  include <cuda/__memory/aligned_size.h>
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/cstdint>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************
  * memcpy_async code:
@@ -94,64 +98,71 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
 
-template <typename _Group, class _Tp, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+template <typename _Group, class _Tp, ::cuda::std::size_t _Alignment, thread_scope _Sco, typename _CompF>
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Tp* __destination,
   _Tp const* __source,
   aligned_size_t<_Alignment> __size,
   barrier<_Sco, _CompF>& __barrier)
 {
-  return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
+  static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
+  return ::cuda::__memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template <class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
+_CCCL_API inline async_contract_fulfillment
 memcpy_async(_Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
-  return __memcpy_async_barrier(__single_thread_group{}, __destination, __source, __size, __barrier);
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
+  return ::cuda::__memcpy_async_barrier(__single_thread_group{}, __destination, __source, __size, __barrier);
 }
 
 template <typename _Group, class _Tp, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Tp* __destination,
   _Tp const* __source,
-  _CUDA_VSTD::size_t __size,
+  ::cuda::std::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
-  return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
+  return ::cuda::__memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
 template <typename _Group, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
   void const* __source,
-  _CUDA_VSTD::size_t __size,
+  ::cuda::std::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
-  return __memcpy_async_barrier(
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
+  return ::cuda::__memcpy_async_barrier(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
 
-template <typename _Group, _CUDA_VSTD::size_t _Alignment, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
+template <typename _Group, ::cuda::std::size_t _Alignment, thread_scope _Sco, typename _CompF>
+_CCCL_API inline async_contract_fulfillment memcpy_async(
   _Group const& __group,
   void* __destination,
   void const* __source,
   aligned_size_t<_Alignment> __size,
   barrier<_Sco, _CompF>& __barrier)
 {
-  return __memcpy_async_barrier(
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
+  return ::cuda::__memcpy_async_barrier(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
 
 template <typename _Size, thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
+_CCCL_API inline async_contract_fulfillment
 memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
-  return __memcpy_async_barrier(
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
+  return ::cuda::__memcpy_async_barrier(
     __single_thread_group{},
     reinterpret_cast<char*>(__destination),
     reinterpret_cast<char const*>(__source),
@@ -159,8 +170,10 @@ memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_S
     __barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-#endif // _CCCL_CUDA_COMPILER
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_H_
+#endif // _CCCL_HAS_CUDA_COMPILER()
+
+#endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_H_

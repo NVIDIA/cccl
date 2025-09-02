@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
-#ifdef __CUDACC__
+#if _CCCL_CUDA_COMPILATION()
 #  include <cooperative_groups.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()
 
 namespace cuda::experimental::stf::reserved
 {
@@ -54,7 +54,7 @@ public:
   }
   ///@}
 
-#ifdef __CUDACC__
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE void sync(size_t devid, size_t ndevs) const
   {
     auto grid = cooperative_groups::this_grid();
@@ -95,35 +95,30 @@ public:
 
     grid.sync();
   }
-#endif // __CUDACC__
+#endif // _CCCL_CUDA_COMPILATION()
 
 private:
   unsigned char* hostMemoryArrivedList = nullptr; ///< Pointer to the host memory synchronization list.
 
-#ifdef __CUDACC__
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE unsigned char load_arrived(unsigned char* arrived) const
   {
-#  if __CUDA_ARCH__ < 700
-    return *(volatile unsigned char*) arrived;
-#  else
-    unsigned int result;
-    asm volatile("ld.acquire.sys.global.u8 %0, [%1];" : "=r"(result) : "l"(arrived) : "memory");
-    return result;
-#  endif
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_70,
+      (unsigned int result; asm volatile("ld.acquire.sys.global.u8 %0, [%1];" : "=r"(result) : "l"(arrived) : "memory");
+       return result;),
+      (return *(volatile unsigned char*) arrived;))
+    _CCCL_UNREACHABLE();
   }
 
   _CCCL_DEVICE void store_arrived(unsigned char* arrived, unsigned char val) const
   {
-#  if __CUDA_ARCH__ < 700
-    *(volatile unsigned char*) arrived = val;
-#  else
-    unsigned int reg_val = val;
-    asm volatile("st.release.sys.global.u8 [%1], %0;" ::"r"(reg_val) "l"(arrived) : "memory");
-    // Avoids compiler warnings from unused variable val.
-    (void) (reg_val = reg_val);
-#  endif
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
+                      ([[maybe_unused]] unsigned int reg_val = val;
+                       asm volatile("st.release.sys.global.u8 [%1], %0;" ::"r"(reg_val) "l"(arrived) : "memory");),
+                      (*(volatile unsigned char*) arrived = val;))
   }
-#endif // __CUDACC__
+#endif // _CCCL_CUDA_COMPILATION()
 };
 
 } // end namespace cuda::experimental::stf::reserved

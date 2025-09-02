@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_REFERENCE
-#define _LIBCUDACXX___BIT_REFERENCE
+#ifndef _CUDA_STD___BIT_REFERENCE_H
+#define _CUDA_STD___BIT_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,9 +31,9 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Cp>
 class __bit_const_reference;
@@ -60,16 +60,16 @@ public:
 
   _CCCL_HIDE_FROM_ABI constexpr __bit_reference(const __bit_reference&) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator bool() const noexcept
+  _CCCL_API constexpr operator bool() const noexcept
   {
     return static_cast<bool>(*__seg_ & __mask_);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator~() const noexcept
+  _CCCL_API constexpr bool operator~() const noexcept
   {
     return !static_cast<bool>(*this);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_reference& operator=(bool __x) noexcept
+  _CCCL_API constexpr __bit_reference& operator=(bool __x) noexcept
   {
     if (__x)
     {
@@ -83,7 +83,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const __bit_reference& operator=(bool __x) const noexcept
+  _CCCL_API constexpr const __bit_reference& operator=(bool __x) const noexcept
   {
     if (__x)
     {
@@ -97,21 +97,21 @@ public:
   }
 #endif // C++23+
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_reference& operator=(const __bit_reference& __x) noexcept
+  _CCCL_API constexpr __bit_reference& operator=(const __bit_reference& __x) noexcept
   {
     return operator=(static_cast<bool>(__x));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void flip() noexcept
+  _CCCL_API constexpr void flip() noexcept
   {
     *__seg_ ^= __mask_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> operator&() const noexcept
+  _CCCL_API constexpr __bit_iterator<_Cp, false> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
+    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(::cuda::std::countr_zero(__mask_)));
   }
 
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
+  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -119,21 +119,21 @@ public:
   }
 
   template <class _Dp>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
+  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
+  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
+  friend _CCCL_API constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -141,7 +141,7 @@ public:
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __bit_reference(__storage_pointer __s, __storage_type __m) noexcept
+  _CCCL_API constexpr explicit __bit_reference(__storage_pointer __s, __storage_type __m) noexcept
       : __seg_(__s)
       , __mask_(__m)
   {}
@@ -164,23 +164,23 @@ public:
 
   _CCCL_HIDE_FROM_ABI __bit_const_reference(const __bit_const_reference&) = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_const_reference(const __bit_reference<_Cp>& __x) noexcept
+  _CCCL_API constexpr __bit_const_reference(const __bit_reference<_Cp>& __x) noexcept
       : __seg_(__x.__seg_)
       , __mask_(__x.__mask_)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator bool() const noexcept
+  _CCCL_API constexpr operator bool() const noexcept
   {
     return static_cast<bool>(*__seg_ & __mask_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, true> operator&() const noexcept
+  _CCCL_API constexpr __bit_iterator<_Cp, true> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
+    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(::cuda::std::countr_zero(__mask_)));
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __bit_const_reference(__storage_pointer __s, __storage_type __m) noexcept
+  _CCCL_API constexpr explicit __bit_const_reference(__storage_pointer __s, __storage_type __m) noexcept
       : __seg_(__s)
       , __mask_(__m)
   {}
@@ -191,7 +191,7 @@ private:
 // fill_n
 
 template <bool _FillVal, class _Cp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __fill_n_impl(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n)
+_CCCL_API constexpr void __fill_n_impl(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n)
 {
   using _It            = __bit_iterator<_Cp, false>;
   using __storage_type = typename _It::__storage_type;
@@ -201,7 +201,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __fill_n_impl(__bit_iterator<_Cp, false
   if (__first.__ctz_ != 0)
   {
     __storage_type __clz_f = static_cast<__storage_type>(__bits_per_word - __first.__ctz_);
-    __storage_type __dn    = (_CUDA_VSTD::min)(__clz_f, static_cast<__storage_type>(__n));
+    __storage_type __dn    = (::cuda::std::min) (__clz_f, static_cast<__storage_type>(__n));
     __storage_type __m     = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
     if (_FillVal)
     {
@@ -216,7 +216,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __fill_n_impl(__bit_iterator<_Cp, false
   }
   // do middle whole words
   __storage_type __nw = __n / __bits_per_word;
-  _CUDA_VSTD::fill_n(_CUDA_VSTD::__to_address(__first.__seg_), __nw, _FillVal ? ~static_cast<__storage_type>(0) : 0);
+  ::cuda::std::fill_n(::cuda::std::__to_address(__first.__seg_), __nw, _FillVal ? ~static_cast<__storage_type>(0) : 0);
   __n -= (__nw * __bits_per_word).__data;
   // do last partial word
   if (__n > 0)
@@ -235,18 +235,17 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __fill_n_impl(__bit_iterator<_Cp, false
 }
 
 template <class _Cp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n, bool __value)
+_CCCL_API constexpr void fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n, bool __value)
 {
   if (__n > 0)
   {
     if (__value)
     {
-      _CUDA_VSTD::__fill_n_impl<true>(__first, __n);
+      ::cuda::std::__fill_n_impl<true>(__first, __n);
     }
     else
     {
-      _CUDA_VSTD::__fill_n_impl<false>(__first, __n);
+      ::cuda::std::__fill_n_impl<false>(__first, __n);
     }
   }
 }
@@ -254,16 +253,15 @@ fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n, bool __v
 // fill
 
 template <class _Cp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-fill(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __last, bool __value)
+_CCCL_API constexpr void fill(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __last, bool __value)
 {
-  _CUDA_VSTD::fill_n(__first, static_cast<typename _Cp::size_type>(__last - __first), __value);
+  ::cuda::std::fill_n(__first, static_cast<typename _Cp::size_type>(__last - __first), __value);
 }
 
 // copy
 
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_aligned(
+_CCCL_API constexpr __bit_iterator<_Cp, false> __copy_aligned(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
   using _In             = __bit_iterator<_Cp, _IsConst>;
@@ -278,7 +276,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_aligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz       = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
       __n -= __dn;
       __storage_type __m = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
       __storage_type __b = *__first.__seg_ & __m;
@@ -292,7 +290,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_aligned(
     // __first.__ctz_ == 0;
     // do middle words
     __storage_type __nw = __n / __bits_per_word;
-    _CUDA_VSTD::copy_n(_CUDA_VSTD::__to_address(__first.__seg_), __nw.__data, _CUDA_VSTD::__to_address(__result.__seg_));
+    ::cuda::std::copy_n(
+      ::cuda::std::__to_address(__first.__seg_), __nw.__data, ::cuda::std::__to_address(__result.__seg_));
     __result.__seg_ += __nw.__data;
     __n -= (__nw * __bits_per_word).__data;
     // do last word
@@ -310,7 +309,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_aligned(
 }
 
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_unaligned(
+_CCCL_API constexpr __bit_iterator<_Cp, false> __copy_unaligned(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
   using _In             = __bit_iterator<_Cp, _IsConst>;
@@ -325,12 +324,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_unaligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz_f     = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz_f), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
       __storage_type __m   = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b   = *__first.__seg_ & __m;
       unsigned __clz_r     = __bits_per_word - __result.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min<__storage_type>(__dn, __clz_r);
+      __storage_type __ddn = ::cuda::std::min<__storage_type>(__dn, __clz_r);
       __m                  = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __ddn));
       *__result.__seg_ &= ~__m;
       if (__result.__ctz_ > __first.__ctz_)
@@ -372,7 +371,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_unaligned(
     {
       __m                 = ~__storage_type(0) >> (__bits_per_word - __n);
       __storage_type __b  = *__first.__seg_ & __m;
-      __storage_type __dn = _CUDA_VSTD::min(__n, static_cast<difference_type>(__clz_r));
+      __storage_type __dn = ::cuda::std::min(__n, static_cast<difference_type>(__clz_r));
       __m                 = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __dn));
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b << __result.__ctz_;
@@ -392,20 +391,20 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_unaligned(
 }
 
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false>
+_CCCL_API constexpr __bit_iterator<_Cp, false>
 copy(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
   if (__first.__ctz_ == __result.__ctz_)
   {
-    return _CUDA_VSTD::__copy_aligned(__first, __last, __result);
+    return ::cuda::std::__copy_aligned(__first, __last, __result);
   }
-  return _CUDA_VSTD::__copy_unaligned(__first, __last, __result);
+  return ::cuda::std::__copy_unaligned(__first, __last, __result);
 }
 
 // copy_backward
 
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
+_CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
   using _In             = __bit_iterator<_Cp, _IsConst>;
@@ -419,7 +418,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_a
     // do first word
     if (__last.__ctz_ != 0)
     {
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__last.__ctz_), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__last.__ctz_), __n);
       __n -= __dn;
       unsigned __clz     = __bits_per_word - __last.__ctz_;
       __storage_type __m = (~__storage_type(0) << (__last.__ctz_ - __dn)) & (~__storage_type(0) >> __clz);
@@ -435,7 +434,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_a
     __storage_type __nw = __n / __bits_per_word;
     __result.__seg_ -= __nw.__data;
     __last.__seg_ -= __nw.__data;
-    _CUDA_VSTD::copy_n(_CUDA_VSTD::__to_address(__last.__seg_), __nw.__data, _CUDA_VSTD::__to_address(__result.__seg_));
+    ::cuda::std::copy_n(
+      ::cuda::std::__to_address(__last.__seg_), __nw.__data, ::cuda::std::__to_address(__result.__seg_));
     __n -= (__nw * __bits_per_word).__data;
     // do last word
     if (__n > 0)
@@ -478,8 +478,11 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_a
   return __result;
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
+
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
+_CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
   using _In             = __bit_iterator<_Cp, _IsConst>;
@@ -493,13 +496,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
     // do first word
     if (__last.__ctz_ != 0)
     {
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__last.__ctz_), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__last.__ctz_), __n);
       __n -= __dn;
       unsigned __clz_l     = __bits_per_word - __last.__ctz_;
       __storage_type __m   = (~__storage_type(0) << (__last.__ctz_ - __dn)) & (~__storage_type(0) >> __clz_l);
       __storage_type __b   = *__last.__seg_ & __m;
       unsigned __clz_r     = __bits_per_word - __result.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min(__dn, static_cast<difference_type>(__result.__ctz_));
+      __storage_type __ddn = ::cuda::std::min(__dn, static_cast<difference_type>(__result.__ctz_));
       if (__ddn > 0)
       {
         __m = (~__storage_type(0) << (__result.__ctz_ - __ddn)) & (~__storage_type(0) >> __clz_r);
@@ -512,11 +515,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
         {
           *__result.__seg_ |= __b >> (__last.__ctz_ - __result.__ctz_);
         }
-        _CCCL_DIAG_PUSH
-        _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
         __result.__ctz_ =
           static_cast<unsigned>((((-__ddn & (__bits_per_word - 1)) + __result.__ctz_) % __bits_per_word).__data);
-        _CCCL_DIAG_POP
         __dn -= __ddn.__data;
       }
       if (__dn > 0)
@@ -566,15 +566,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
       __m                 = ~__storage_type(0) << (__bits_per_word - __n);
       __storage_type __b  = *--__last.__seg_ & __m;
       __clz_r             = __bits_per_word - __result.__ctz_;
-      __storage_type __dn = _CUDA_VSTD::min(__n, static_cast<difference_type>(__result.__ctz_));
+      __storage_type __dn = ::cuda::std::min(__n, static_cast<difference_type>(__result.__ctz_));
       __m                 = (~__storage_type(0) << (__result.__ctz_ - __dn)) & (~__storage_type(0) >> __clz_r);
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b >> (__bits_per_word - __result.__ctz_);
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
       __result.__ctz_ =
         static_cast<unsigned>((((-__dn & (__bits_per_word - 1)) + __result.__ctz_) % __bits_per_word).__data);
-      _CCCL_DIAG_POP
       __n -= __dn.__data;
       if (__n > 0)
       {
@@ -590,39 +587,41 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
   return __result;
 }
 
+_CCCL_DIAG_POP
+
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> copy_backward(
+_CCCL_API constexpr __bit_iterator<_Cp, false> copy_backward(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
   if (__last.__ctz_ == __result.__ctz_)
   {
-    return _CUDA_VSTD::__copy_backward_aligned(__first, __last, __result);
+    return ::cuda::std::__copy_backward_aligned(__first, __last, __result);
   }
-  return _CUDA_VSTD::__copy_backward_unaligned(__first, __last, __result);
+  return ::cuda::std::__copy_backward_unaligned(__first, __last, __result);
 }
 
 // move
 
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cp, false>
+_CCCL_API inline __bit_iterator<_Cp, false>
 move(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
-  return _CUDA_VSTD::copy(__first, __last, __result);
+  return ::cuda::std::copy(__first, __last, __result);
 }
 
 // move_backward
 
 template <class _Cp, bool _IsConst>
-_LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cp, false> move_backward(
+_CCCL_API inline __bit_iterator<_Cp, false> move_backward(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
-  return _CUDA_VSTD::copy_backward(__first, __last, __result);
+  return ::cuda::std::copy_backward(__first, __last, __result);
 }
 
 // swap_ranges
 
 template <class _Cl, class _Cr>
-_LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_aligned(
+_CCCL_API inline __bit_iterator<_Cr, false> __swap_ranges_aligned(
   __bit_iterator<_Cl, false> __first, __bit_iterator<_Cl, false> __last, __bit_iterator<_Cr, false> __result)
 {
   using _I1             = __bit_iterator<_Cl, false>;
@@ -637,7 +636,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_aligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz       = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
       __n -= __dn;
       __storage_type __m  = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
       __storage_type __b1 = *__first.__seg_ & __m;
@@ -674,7 +673,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_aligned(
 }
 
 template <class _Cl, class _Cr>
-_LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_unaligned(
+_CCCL_API inline __bit_iterator<_Cr, false> __swap_ranges_unaligned(
   __bit_iterator<_Cl, false> __first, __bit_iterator<_Cl, false> __last, __bit_iterator<_Cr, false> __result)
 {
   using _I1             = __bit_iterator<_Cl, false>;
@@ -689,13 +688,13 @@ _LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_unaligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz_f     = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz_f), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
       __storage_type __m  = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b1 = *__first.__seg_ & __m;
       *__first.__seg_ &= ~__m;
       unsigned __clz_r     = __bits_per_word - __result.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min<__storage_type>(__dn, __clz_r);
+      __storage_type __ddn = ::cuda::std::min<__storage_type>(__dn, __clz_r);
       __m                  = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __ddn));
       __storage_type __b2  = *__result.__seg_ & __m;
       *__result.__seg_ &= ~__m;
@@ -750,7 +749,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_unaligned(
       __m                 = ~__storage_type(0) >> (__bits_per_word - __n);
       __storage_type __b1 = *__first.__seg_ & __m;
       *__first.__seg_ &= ~__m;
-      __storage_type __dn = _CUDA_VSTD::min<__storage_type>(__n, __clz_r);
+      __storage_type __dn = ::cuda::std::min<__storage_type>(__n, __clz_r);
       __m                 = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __dn));
       __storage_type __b2 = *__result.__seg_ & __m;
       *__result.__seg_ &= ~__m;
@@ -774,14 +773,14 @@ _LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_unaligned(
 }
 
 template <class _Cl, class _Cr>
-_LIBCUDACXX_HIDE_FROM_ABI __bit_iterator<_Cr, false> swap_ranges(
+_CCCL_API inline __bit_iterator<_Cr, false> swap_ranges(
   __bit_iterator<_Cl, false> __first1, __bit_iterator<_Cl, false> __last1, __bit_iterator<_Cr, false> __first2)
 {
   if (__first1.__ctz_ == __first2.__ctz_)
   {
-    return _CUDA_VSTD::__swap_ranges_aligned(__first1, __last1, __first2);
+    return ::cuda::std::__swap_ranges_aligned(__first1, __last1, __first2);
   }
-  return _CUDA_VSTD::__swap_ranges_unaligned(__first1, __last1, __first2);
+  return ::cuda::std::__swap_ranges_unaligned(__first1, __last1, __first2);
 }
 
 // rotate
@@ -800,26 +799,26 @@ struct __bit_array
   difference_type __size_;
   __storage_type __word_[_Np];
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr static difference_type capacity()
+  _CCCL_API constexpr static difference_type capacity()
   {
     return static_cast<difference_type>(_Np * __bits_per_word);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __bit_array(difference_type __s)
+  _CCCL_API constexpr explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {
-        _CUDA_VSTD::__construct_at(__word_ + __i, 0);
+        ::cuda::std::__construct_at(__word_ + __i, 0);
       }
     }
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin()
+  _CCCL_API constexpr iterator begin()
   {
     return iterator(pointer_traits<__storage_pointer>::pointer_to(__word_[0]), 0);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end()
+  _CCCL_API constexpr iterator end()
   {
     return iterator(pointer_traits<__storage_pointer>::pointer_to(__word_[0]) + __size_ / __bits_per_word,
                     static_cast<unsigned>(__size_ % __bits_per_word));
@@ -827,7 +826,7 @@ struct __bit_array
 };
 
 template <class _Cp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false>
+_CCCL_API constexpr __bit_iterator<_Cp, false>
 rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, __bit_iterator<_Cp, false> __last)
 {
   using _I1             = __bit_iterator<_Cp, false>;
@@ -843,13 +842,13 @@ rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, 
       if (__d1 <= __bit_array<_Cp>::capacity())
       {
         __bit_array<_Cp> __b(__d1);
-        _CUDA_VSTD::copy(__first, __middle, __b.begin());
-        _CUDA_VSTD::copy(__b.begin(), __b.end(), _CUDA_VSTD::copy(__middle, __last, __first));
+        ::cuda::std::copy(__first, __middle, __b.begin());
+        ::cuda::std::copy(__b.begin(), __b.end(), ::cuda::std::copy(__middle, __last, __first));
         break;
       }
       else
       {
-        __bit_iterator<_Cp, false> __mp = _CUDA_VSTD::swap_ranges(__first, __middle, __middle);
+        __bit_iterator<_Cp, false> __mp = ::cuda::std::swap_ranges(__first, __middle, __middle);
         __first                         = __middle;
         __middle                        = __mp;
         __d2 -= __d1;
@@ -860,14 +859,14 @@ rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, 
       if (__d2 <= __bit_array<_Cp>::capacity())
       {
         __bit_array<_Cp> __b(__d2);
-        _CUDA_VSTD::copy(__middle, __last, __b.begin());
-        _CUDA_VSTD::copy_backward(__b.begin(), __b.end(), _CUDA_VSTD::copy_backward(__first, __middle, __last));
+        ::cuda::std::copy(__middle, __last, __b.begin());
+        ::cuda::std::copy_backward(__b.begin(), __b.end(), ::cuda::std::copy_backward(__first, __middle, __last));
         break;
       }
       else
       {
         __bit_iterator<_Cp, false> __mp = __first + __d2;
-        _CUDA_VSTD::swap_ranges(__first, __mp, __middle);
+        ::cuda::std::swap_ranges(__first, __mp, __middle);
         __first = __mp;
         __d1 -= __d2;
       }
@@ -879,7 +878,7 @@ rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, 
 // equal
 
 template <class _Cp, bool _IC1, bool _IC2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_unaligned(
+_CCCL_API constexpr bool __equal_unaligned(
   __bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __bit_iterator<_Cp, _IC2> __first2)
 {
   using _It             = __bit_iterator<_Cp, _IC1>;
@@ -894,12 +893,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_unaligned(
     if (__first1.__ctz_ != 0)
     {
       unsigned __clz_f     = __bits_per_word - __first1.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz_f), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
       __storage_type __m   = (~__storage_type(0) << __first1.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b   = *__first1.__seg_ & __m;
       unsigned __clz_r     = __bits_per_word - __first2.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min<__storage_type>(__dn, __clz_r);
+      __storage_type __ddn = ::cuda::std::min<__storage_type>(__dn, __clz_r);
       __m                  = (~__storage_type(0) << __first2.__ctz_) & (~__storage_type(0) >> (__clz_r - __ddn));
       if (__first2.__ctz_ > __first1.__ctz_)
       {
@@ -952,7 +951,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_unaligned(
     {
       __m                 = ~__storage_type(0) >> (__bits_per_word - __n);
       __storage_type __b  = *__first1.__seg_ & __m;
-      __storage_type __dn = _CUDA_VSTD::min(__n, static_cast<difference_type>(__clz_r));
+      __storage_type __dn = ::cuda::std::min(__n, static_cast<difference_type>(__clz_r));
       __m                 = (~__storage_type(0) << __first2.__ctz_) & (~__storage_type(0) >> (__clz_r - __dn));
       if ((*__first2.__seg_ & __m) != (__b << __first2.__ctz_))
       {
@@ -975,7 +974,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_unaligned(
 }
 
 template <class _Cp, bool _IC1, bool _IC2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_aligned(
+_CCCL_API constexpr bool __equal_aligned(
   __bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __bit_iterator<_Cp, _IC2> __first2)
 {
   using _It             = __bit_iterator<_Cp, _IC1>;
@@ -990,7 +989,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_aligned(
     if (__first1.__ctz_ != 0)
     {
       unsigned __clz       = __bits_per_word - __first1.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
       __n -= __dn;
       __storage_type __m = (~__storage_type(0) << __first1.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
       if ((*__first2.__seg_ & __m) != (*__first1.__seg_ & __m))
@@ -1026,14 +1025,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __equal_aligned(
 }
 
 template <class _Cp, bool _IC1, bool _IC2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+_CCCL_API constexpr bool
 equal(__bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __bit_iterator<_Cp, _IC2> __first2)
 {
   if (__first1.__ctz_ == __first2.__ctz_)
   {
-    return _CUDA_VSTD::__equal_aligned(__first1, __last1, __first2);
+    return ::cuda::std::__equal_aligned(__first1, __last1, __first2);
   }
-  return _CUDA_VSTD::__equal_unaligned(__first1, __last1, __first2);
+  return ::cuda::std::__equal_unaligned(__first1, __last1, __first2);
 }
 
 template <class _Cp, bool _IsConst>
@@ -1057,7 +1056,7 @@ private:
   unsigned __ctz_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator() noexcept
+  _CCCL_API constexpr __bit_iterator() noexcept
       : __seg_(nullptr)
       , __ctz_(0)
   {}
@@ -1065,17 +1064,17 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr __bit_iterator(const __bit_iterator<_Cp, _IsConst>& __it) = default;
 
   template <bool _OtherIsConst, class = enable_if_t<_IsConst == true && _OtherIsConst == false>>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator(const __bit_iterator<_Cp, _OtherIsConst>& __it) noexcept
+  _CCCL_API constexpr __bit_iterator(const __bit_iterator<_Cp, _OtherIsConst>& __it) noexcept
       : __seg_(__it.__seg_)
       , __ctz_(__it.__ctz_)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator*() const noexcept
+  _CCCL_API constexpr reference operator*() const noexcept
   {
     return reference(__seg_, __storage_type(1) << __ctz_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator& operator++()
+  _CCCL_API constexpr __bit_iterator& operator++()
   {
     if (__ctz_ != __bits_per_word - 1)
     {
@@ -1089,14 +1088,14 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator operator++(int)
+  _CCCL_API constexpr __bit_iterator operator++(int)
   {
     __bit_iterator __tmp = *this;
     ++(*this);
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator& operator--()
+  _CCCL_API constexpr __bit_iterator& operator--()
   {
     if (__ctz_ != 0)
     {
@@ -1110,14 +1109,14 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator operator--(int)
+  _CCCL_API constexpr __bit_iterator operator--(int)
   {
     __bit_iterator __tmp = *this;
     --(*this);
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator& operator+=(difference_type __n)
+  _CCCL_API constexpr __bit_iterator& operator+=(difference_type __n)
   {
     if (__n >= 0)
     {
@@ -1133,32 +1132,31 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator& operator-=(difference_type __n)
+  _CCCL_API constexpr __bit_iterator& operator-=(difference_type __n)
   {
     return *this += -__n;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator operator+(difference_type __n) const
+  _CCCL_API constexpr __bit_iterator operator+(difference_type __n) const
   {
     __bit_iterator __t(*this);
     __t += __n;
     return __t;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator operator-(difference_type __n) const
+  _CCCL_API constexpr __bit_iterator operator-(difference_type __n) const
   {
     __bit_iterator __t(*this);
     __t -= __n;
     return __t;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend __bit_iterator operator+(difference_type __n, const __bit_iterator& __it)
+  _CCCL_API constexpr friend __bit_iterator operator+(difference_type __n, const __bit_iterator& __it)
   {
     return __it + __n;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend difference_type
-  operator-(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend difference_type operator-(const __bit_iterator& __x, const __bit_iterator& __y)
   {
 #if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 9)
     if (__y.__seg_ && __y.__seg_ != __x.__seg_)
@@ -1169,43 +1167,43 @@ public:
     return (__x.__seg_ - __y.__seg_) * __bits_per_word + __x.__ctz_ - __y.__ctz_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](difference_type __n) const
+  _CCCL_API constexpr reference operator[](difference_type __n) const
   {
     return *(*this + __n);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool operator==(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend bool operator==(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return __x.__seg_ == __y.__seg_ && __x.__ctz_ == __y.__ctz_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool operator!=(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend bool operator!=(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return !(__x == __y);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool operator<(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend bool operator<(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return __x.__seg_ < __y.__seg_ || (__x.__seg_ == __y.__seg_ && __x.__ctz_ < __y.__ctz_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool operator>(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend bool operator>(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return __y < __x;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool operator<=(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend bool operator<=(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return !(__y < __x);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool operator>=(const __bit_iterator& __x, const __bit_iterator& __y)
+  _CCCL_API constexpr friend bool operator>=(const __bit_iterator& __x, const __bit_iterator& __y)
   {
     return !(__x < __y);
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __bit_iterator(__storage_pointer __s, unsigned __ctz) noexcept
+  _CCCL_API constexpr explicit __bit_iterator(__storage_pointer __s, unsigned __ctz) noexcept
       : __seg_(__s)
       , __ctz_(__ctz)
   {}
@@ -1218,58 +1216,57 @@ private:
   template <class _Dp>
   friend struct __bit_array;
   template <bool _FillVal, class _Dp>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend void
-  __fill_n_impl(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
+  constexpr _CCCL_API inline friend void __fill_n_impl(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
 
   template <class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false> __copy_aligned(
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_aligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false> __copy_unaligned(
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_unaligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false>
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false>
   copy(__bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false> __copy_backward_aligned(
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_backward_aligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false> __copy_backward_unaligned(
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false> __copy_backward_unaligned(
     __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false>
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false>
   copy_backward(__bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Cl, class _Cr>
-  _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Cr, false>
+  _CCCL_API inline friend __bit_iterator<_Cr, false>
     __swap_ranges_aligned(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Cl, class _Cr>
-  _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Cr, false>
+  _CCCL_API inline friend __bit_iterator<_Cr, false>
     __swap_ranges_unaligned(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Cl, class _Cr>
-  _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Cr, false>
+  _CCCL_API inline friend __bit_iterator<_Cr, false>
     swap_ranges(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Dp>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, false>
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, false>
     rotate(__bit_iterator<_Dp, false>, __bit_iterator<_Dp, false>, __bit_iterator<_Dp, false>);
   template <class _Dp, bool _IC1, bool _IC2>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend bool
+  constexpr _CCCL_API inline friend bool
     __equal_aligned(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <class _Dp, bool _IC1, bool _IC2>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend bool
+  constexpr _CCCL_API inline friend bool
     __equal_unaligned(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <class _Dp, bool _IC1, bool _IC2>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend bool
-    equal(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
+  constexpr
+    _CCCL_API inline friend bool equal(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <bool _ToFind, class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend __bit_iterator<_Dp, _IC>
+  constexpr _CCCL_API inline friend __bit_iterator<_Dp, _IC>
     __find_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
   template <bool _ToCount, class _Dp, bool _IC>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI friend
+  constexpr _CCCL_API inline friend
     typename __bit_iterator<_Dp, _IC>::difference_type __count_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_REFERENCE
+#endif // _CUDA_STD___BIT_REFERENCE_H

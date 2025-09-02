@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_ENABLE_IF_H
-#define _LIBCUDACXX___TYPE_TRAITS_ENABLE_IF_H
+#ifndef _CUDA_STD___TYPE_TRAITS_ENABLE_IF_H
+#define _CUDA_STD___TYPE_TRAITS_ENABLE_IF_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool, class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if
@@ -34,6 +36,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if<true, _Tp>
 template <bool _Bp, class _Tp = void>
 using enable_if_t _CCCL_NODEBUG_ALIAS = typename enable_if<_Bp, _Tp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_ENABLE_IF_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_STD___TYPE_TRAITS_ENABLE_IF_H

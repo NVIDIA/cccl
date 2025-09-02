@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 // Trigger a rebuild of the file
 
@@ -90,19 +92,21 @@ public:
       : __memory_resource_base(__pool.get())
   {}
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
-#  endif // _CCCL_DOXYGEN_INVOKED
+
+  using default_queries = properties_list<device_accessible, host_accessible>;
 };
 
-static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, device_accessible>, "");
-static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_resource, device_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_resource, host_accessible>, "");
 
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_RESOURCE_H

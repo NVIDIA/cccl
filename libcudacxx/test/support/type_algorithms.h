@@ -94,15 +94,12 @@ struct partial_instantiation
 // type categories defined in [basic.fundamental] plus extensions (without CV-qualifiers)
 
 using character_types =
-  type_list<char
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
-            ,
+  type_list<char,
             wchar_t
-#endif // !TEST_HAS_NO_WIDE_CHARACTERS
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
             ,
             char8_t
-#endif // !_LIBCUDACXX_HAS_CHAR8_T()
+#endif // !_CCCL_HAS_CHAR8_T()
             ,
             char16_t,
             char32_t>;
