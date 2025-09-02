@@ -28,6 +28,7 @@ DTYPE_LIST = [
     np.int16,
     np.int32,
     np.int64,
+    np.float16,
     np.float32,
     np.float64,
 ]

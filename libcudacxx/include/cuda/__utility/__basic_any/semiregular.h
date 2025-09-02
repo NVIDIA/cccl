@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_SEMIREGULAR_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_SEMIREGULAR_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_SEMIREGULAR_H
+#define _CUDA___UTILITY_BASIC_ANY_SEMIREGULAR_H
 
 #include <cuda/std/detail/__config>
 
@@ -158,13 +158,13 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   // These overloads are only necessary so that __iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `__iequality_comparable<>::overloads` alias template below.
-  [[noreturn]] friend _CCCL_TRIVIAL_API auto
+  [[noreturn]] friend _CCCL_NODEBUG_API auto
   operator==(__iequality_comparable<> const&, __iequality_comparable<> const&) noexcept -> bool
   {
     ::cuda::std::unreachable();
   }
 
-  [[noreturn]] friend _CCCL_TRIVIAL_API auto
+  [[noreturn]] friend _CCCL_NODEBUG_API auto
   operator!=(__iequality_comparable<> const&, __iequality_comparable<> const&) noexcept -> bool
   {
     ::cuda::std::unreachable();
@@ -186,7 +186,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_ILeft> const&, __basic_any<_IRight> const&>
                  || __any_convertible_to<__basic_any<_IRight> const&, __basic_any<_ILeft> const&>)
-  [[nodiscard]] _CCCL_TRIVIAL_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_API friend auto
   operator!=(__iequality_comparable<_ILeft> const& __lhs, __iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -225,7 +225,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = __basic_any_from_t<__iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!::cuda::std::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_TRIVIAL_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_API friend auto
   operator!=(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -234,7 +234,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = __basic_any_from_t<__iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!::cuda::std::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_TRIVIAL_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_API friend auto
   operator!=(_Object const& __lhs, __iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -319,4 +319,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_SEMIREGULAR_H
+#endif // _CUDA___UTILITY_BASIC_ANY_SEMIREGULAR_H

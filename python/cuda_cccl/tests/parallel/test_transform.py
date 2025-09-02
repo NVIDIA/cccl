@@ -4,6 +4,7 @@
 
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.cccl.parallel.experimental as parallel
 
@@ -27,6 +28,11 @@ def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=
 
 
 def test_unary_transform(input_array):
+    import numpy as np
+
+    if input_array.dtype == np.float16:
+        pytest.skip("float16 is not supported with custom operators")
+
     # example-begin transform-unary
     import numpy as np
 
@@ -46,6 +52,11 @@ def test_unary_transform(input_array):
 
 
 def test_binary_transform(input_array):
+    import numpy as np
+
+    if input_array.dtype == np.float16:
+        pytest.skip("float16 is not supported with custom operators")
+
     # example-begin transform-binary
     import numpy as np
 
@@ -251,3 +262,68 @@ def test_transform_reuse_input_iterator():
     expected = np.arange(1, num_items + 1, dtype=np.int32) + 1
 
     np.testing.assert_allclose(expected, got)
+
+
+def test_unary_transform_well_known_negate():
+    """Test unary transform with well-known NEGATE operation."""
+    dtype = np.int32
+    d_input = cp.array([1, -2, 3, -4, 5], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run unary transform with well-known NEGATE operation
+    parallel.unary_transform(d_input, d_output, parallel.OpKind.NEGATE, len(d_input))
+
+    # Check the result is correct
+    expected = np.array([-1, 2, -3, 4, -5])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.xfail(
+    reason="CCCL_IDENTITY well-known operation fails with NVRTC compilation error in C++ library. See GH#5515."
+)
+def test_unary_transform_well_known_identity():
+    """Test unary transform with well-known IDENTITY operation."""
+    dtype = np.int32
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run unary transform with well-known IDENTITY operation
+    parallel.unary_transform(d_input, d_output, parallel.OpKind.IDENTITY, len(d_input))
+
+    # Check the result is correct
+    expected = np.array([1, 2, 3, 4, 5])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize("dtype", [np.int32, np.float16])
+def test_binary_transform_well_known_plus(dtype):
+    """Test binary transform with well-known PLUS operation."""
+    d_input1 = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_input2 = cp.array([10, 20, 30, 40, 50], dtype=dtype)
+    d_output = cp.empty_like(d_input1, dtype=dtype)
+
+    # Run binary transform with well-known PLUS operation
+    parallel.binary_transform(
+        d_input1, d_input2, d_output, parallel.OpKind.PLUS, len(d_input1)
+    )
+
+    # Check the result is correct
+    expected = np.array([11, 22, 33, 44, 55])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_binary_transform_well_known_multiplies():
+    """Test binary transform with well-known MULTIPLIES operation."""
+    dtype = np.int32
+    d_input1 = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_input2 = cp.array([2, 3, 4, 5, 6], dtype=dtype)
+    d_output = cp.empty_like(d_input1, dtype=dtype)
+
+    # Run binary transform with well-known MULTIPLIES operation
+    parallel.binary_transform(
+        d_input1, d_input2, d_output, parallel.OpKind.MULTIPLIES, len(d_input1)
+    )
+
+    # Check the result is correct
+    expected = np.array([2, 6, 12, 20, 30])
+    np.testing.assert_equal(d_output.get(), expected)

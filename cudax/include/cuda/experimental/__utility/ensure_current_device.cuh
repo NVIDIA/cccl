@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE
-#define _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE
+#ifndef _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE_CUH
+#define _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -66,4 +66,4 @@ struct [[maybe_unused]] __ensure_current_device : ::cuda::__ensure_current_conte
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE
+#endif // _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE_CUH

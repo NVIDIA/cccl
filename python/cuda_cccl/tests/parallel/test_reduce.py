@@ -20,6 +20,8 @@ def random_int(shape, dtype):
 def type_to_problem_sizes(dtype):
     if dtype in [np.uint8, np.int8]:
         return [2, 4, 5, 6]
+    elif dtype in [np.float16]:
+        return [4, 8, 10]
     elif dtype in [np.uint16, np.int16]:
         return [4, 8, 12, 14]
     elif dtype in [np.uint32, np.int32]:
@@ -36,33 +38,39 @@ def get_mark(dt, log_size):
     return pytest.mark.large
 
 
-dtype_size_pairs = [
-    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
-    for dt in [np.uint8, np.uint16, np.uint32, np.uint64]
+def add_op(a, b):
+    return a + b
+
+
+reduce_params = [
+    pytest.param(
+        dt,
+        2**log_size,
+        parallel.OpKind.PLUS if dt == np.float16 else add_op,
+        marks=get_mark(dt, log_size),
+    )
+    for dt in [np.uint8, np.uint16, np.uint32, np.uint64, np.float16]
     for log_size in type_to_problem_sizes(dt)
 ]
 
 
-@pytest.mark.parametrize("dtype,num_items", dtype_size_pairs)
-def test_device_reduce(dtype, num_items):
-    def op(a, b):
-        return a + b
-
+@pytest.mark.parametrize("dtype,num_items,op", reduce_params)
+def test_device_reduce(dtype, num_items, op):
     init_value = 42
     h_init = np.array([init_value], dtype=dtype)
     d_output = numba.cuda.device_array(1, dtype=dtype)
 
     h_input = random_int(num_items, dtype)
     d_input = numba.cuda.to_device(h_input)
+
     parallel.reduce_into(d_input, d_output, op, d_input.size, h_init)
     h_output = d_output.copy_to_host()
-    assert h_output[0] == sum(h_input) + init_value
+    assert h_output[0] == pytest.approx(
+        sum(h_input) + init_value, rel=0.08 if dtype == np.float16 else 0
+    )  # obtained relative error value from c2h/include/c2h/check_results.cuh
 
 
 def test_complex_device_reduce():
-    def op(a, b):
-        return a + b
-
     h_init = np.array([40.0 + 2.0j], dtype=complex)
     d_output = numba.cuda.device_array(1, dtype=complex)
 
@@ -71,7 +79,7 @@ def test_complex_device_reduce():
         h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
         assert d_input.size == num_items
-        parallel.reduce_into(d_input, d_output, op, num_items, h_init)
+        parallel.reduce_into(d_input, d_output, add_op, num_items, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
@@ -81,9 +89,6 @@ def test_complex_device_reduce():
 def _test_device_sum_with_iterator(
     l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
 ):
-    def add_op(a, b):
-        return a + b
-
     expected_result = start_sum_with
     for v in l_varr:
         expected_result = add_op(expected_result, v)
@@ -119,6 +124,7 @@ SUPPORTED_VALUE_TYPE_NAMES = (
     "uint32",
     "int64",
     "uint64",
+    # "float16", # TODO: this doesn't work with iterators right now due to a numba ctypes error
     "float32",
     "float64",
 )
@@ -176,6 +182,7 @@ def test_device_sum_counting_it(
     "value_type_name_pair",
     list(zip(SUPPORTED_VALUE_TYPE_NAMES, SUPPORTED_VALUE_TYPE_NAMES))
     + [
+        # ("float16", "int16"), # TODO: this doesn't work with numba right now due to an unresolved extern operator definition
         ("float32", "int16"),
         ("float32", "int32"),
         ("float64", "int32"),
@@ -597,3 +604,91 @@ def test_reduce_invalid_stream():
             h_init=h_init,
             stream=Stream3(),
         )
+
+
+def test_device_reduce_well_known_plus():
+    """Test reduce with well-known PLUS operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known PLUS operation
+    parallel.reduce_into(d_input, d_output, parallel.OpKind.PLUS, len(d_input), h_init)
+
+    # Check the result is correct
+    expected_output = 15  # 1+2+3+4+5
+    assert (d_output == expected_output).all()
+
+
+@pytest.mark.xfail(reason="MINIMUM op is not implemented. See GH #5515")
+def test_device_reduce_well_known_minimum():
+    """Test reduce with well-known MINIMUM operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([100], dtype=dtype)
+    d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known MINIMUM operation
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.MINIMUM, len(d_input), h_init
+    )
+
+    # Check the result is correct
+    expected_output = 0  # minimum value
+    assert (d_output == expected_output).all()
+
+
+@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
+def test_device_reduce_well_known_maximum():
+    """Test reduce with well-known MAXIMUM operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([-100], dtype=dtype)
+    d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known MAXIMUM operation
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.MAXIMUM, len(d_input), h_init
+    )
+
+    # Check the result is correct
+    expected_output = 9  # maximum value
+    assert (d_output == expected_output).all()
+
+
+def test_device_reduce_well_known_multiplies():
+    """Test reduce with well-known MULTIPLIES operation."""
+    import cupy as cp
+    import numpy as np
+
+    import cuda.cccl.parallel.experimental as parallel
+
+    dtype = np.int32
+    h_init = np.array([1], dtype=dtype)
+    d_input = cp.array([2, 3, 4], dtype=dtype)
+    d_output = cp.empty(1, dtype=dtype)
+
+    # Run reduction with well-known MULTIPLIES operation
+    parallel.reduce_into(
+        d_input, d_output, parallel.OpKind.MULTIPLIES, len(d_input), h_init
+    )
+
+    # Check the result is correct
+    expected_output = 24  # 1*2*3*4
+    assert (d_output == expected_output).all()

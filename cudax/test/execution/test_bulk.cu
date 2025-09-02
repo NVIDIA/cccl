@@ -17,8 +17,8 @@
 #include <cuda/experimental/execution.cuh>
 
 #include "common/checked_receiver.cuh"
+#include "common/dummy_scheduler.cuh"
 #include "common/error_scheduler.cuh"
-#include "common/inline_scheduler.cuh"
 #include "common/utility.cuh"
 #include "testing.cuh" // IWYU pragma: keep
 
@@ -184,7 +184,7 @@ void bulk_keeps_error_types_from_input_sender()
 {
 #if !_CCCL_COMPILER(MSVC)
   constexpr int n = 42;
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler<_exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
@@ -223,7 +223,7 @@ void bulk_keeps_error_types_from_input_sender()
 void bulk_chunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler<_exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
@@ -260,7 +260,7 @@ void bulk_chunked_keeps_error_types_from_input_sender()
 void bulk_unchunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler<_exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
@@ -808,7 +808,7 @@ void late_customizing_bulk_chunked_also_changes_the_behavior_of_bulk()
 {
   bool called{false};
   // The customization will return a different value
-  inline_scheduler<my_domain> sched;
+  dummy_scheduler<my_domain> sched;
   auto sndr = ex::just(string{"hello"}) //
             | ex::continues_on(sched) //
             | ex::bulk(ex::par, 1, [&called](int, string) {
@@ -818,7 +818,7 @@ void late_customizing_bulk_chunked_also_changes_the_behavior_of_bulk()
   REQUIRE_FALSE(called);
 }
 
-struct my_domain2
+struct my_domain2 : ex::default_domain
 {
   _CCCL_TEMPLATE(class Sender, class... Env)
   _CCCL_REQUIRES(ex::sender_for<Sender, ex::bulk_t>)
@@ -826,13 +826,16 @@ struct my_domain2
   {
     return ex::just(string{"hijacked"});
   }
+
+private:
+  using ex::default_domain::apply_sender;
 };
 
 void bulk_can_be_customized_independently_of_bulk_chunked()
 {
   bool called{false};
   // The customization will return a different value
-  inline_scheduler<my_domain2> sched;
+  dummy_scheduler<my_domain2> sched;
   auto sndr = ex::just(string{"hello"}) //
             | ex::continues_on(sched) //
             | ex::bulk(ex::par, 1, [&called](int, string) {

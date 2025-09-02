@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
-#define _LIBCUDACXX___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#ifndef _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#define _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
@@ -394,4 +395,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H
+#endif // _CUDA_STD___RANDOM_LINEAR_CONGRUENTIAL_ENGINE_H

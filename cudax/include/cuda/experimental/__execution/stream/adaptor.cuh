@@ -135,17 +135,17 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
 template <class _Env, class _Config>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
 {
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
-    -> __query_result_t<_Env, _Query>
+  _CCCL_TEMPLATE(class _Query, class... _As)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query, _As...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _As&&... __args) const
+    noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
   {
-    return __env_.query(_Query{});
+    return __env_.query(_Query{}, static_cast<_As&&>(__args)...);
   }
 
   // This query is used to tell transform_sender that the child sender has been adapted to
   // the stream domain.
-  [[nodiscard]] _CCCL_API static constexpr auto query(__stream::__adapted_t) noexcept -> ::cuda::std::__ignore_t
+  [[nodiscard]] _CCCL_API constexpr auto query(__stream::__adapted_t) const noexcept -> ::cuda::std::__ignore_t
   {
     return {};
   }
@@ -178,13 +178,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   }
 
   template <class... _Args>
-  _CCCL_TRIVIAL_API constexpr void set_value(_Args&&... __args) noexcept
+  _CCCL_NODEBUG_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_NODEBUG_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
     if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
@@ -197,7 +197,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
   }
 
-  _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+  _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
@@ -343,7 +343,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
   // This makes sure that when `connect` calls `transform_sender`, it will use the stream
   // domain to find a customization.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(get_domain_override_t) const noexcept -> stream_domain
   {
     return {};
   }
@@ -358,7 +358,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   }
 
   // This sender executes asynchronously with respect to 'start()':
-  [[nodiscard]] _CCCL_API static constexpr auto query(get_completion_behavior_t) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
   {
     return completion_behavior::asynchronous;
   }

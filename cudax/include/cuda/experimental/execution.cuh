@@ -22,6 +22,7 @@
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/get_completion_signatures.cuh>
+#include <cuda/experimental/__execution/inline_scheduler.cuh>
 #include <cuda/experimental/__execution/just.cuh>
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/let_value.cuh>

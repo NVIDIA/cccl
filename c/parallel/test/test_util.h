@@ -87,9 +87,10 @@ inline std::string compile(const std::string& source)
   nvrtcProgram prog;
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto"};
+  // TEST_CTK_PATH needed to include cuda_fp16.h
+  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 3, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
@@ -181,6 +182,12 @@ cccl_type_info get_type_info()
   {
     info.type = cccl_type_enum::CCCL_UINT64;
   }
+#if _CCCL_HAS_NVFP16()
+  else if constexpr (std::is_same_v<T, __half>)
+  {
+    info.type = cccl_type_enum::CCCL_FLOAT16;
+  }
+#endif
   else if constexpr (std::is_same_v<T, float>)
   {
     info.type = cccl_type_enum::CCCL_FLOAT32;
@@ -254,6 +261,14 @@ inline std::string get_reduce_op(cccl_type_enum t)
              "  double* a = reinterpret_cast<double*>(a_void); "
              "  double* b = reinterpret_cast<double*>(b_void); "
              "  double* out = reinterpret_cast<double*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  __half* a = reinterpret_cast<__half*>(a_void); "
+             "  __half* b = reinterpret_cast<__half*>(b_void); "
+             "  __half* out = reinterpret_cast<__half*>(out_void); "
              "  *out = *a + *b; "
              "}";
     default:
@@ -371,6 +386,14 @@ inline std::string get_merge_sort_op(cccl_type_enum t)
              "  bool* result = reinterpret_cast<bool*>(result_void); "
              "  *result = *lhs < *rhs; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  __half* lhs = reinterpret_cast<__half*>(lhs_void); "
+             "  __half* rhs = reinterpret_cast<__half*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -451,6 +474,14 @@ inline std::string get_unique_by_key_op(cccl_type_enum t)
              "  bool* result = reinterpret_cast<bool*>(result_void); "
              "  *result = *lhs == *rhs; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  __half* lhs = reinterpret_cast<__half*>(lhs_void); "
+             "  __half* rhs = reinterpret_cast<__half*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -502,6 +533,13 @@ inline std::string get_unary_op(cccl_type_enum t)
              "  double* a = reinterpret_cast<double*>(a_void); "
              "  double* result = reinterpret_cast<double*>(result_void); "
              "  *result = 2 * *a; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  __half* a = reinterpret_cast<__half*>(a_void); "
+             "  __half* result = reinterpret_cast<__half*>(result_void); "
+             "  *result = __float2half(2.0f) * (*a); "
              "}";
     default:
       throw std::runtime_error("Unsupported type");
@@ -563,6 +601,12 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
              "  double* key = reinterpret_cast<double*>(key_void); "
              "  return key; "
              "};";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void* op(void* key_void) { "
+             "  __half* key = reinterpret_cast<__half*>(key_void); "
+             "  return key; "
+             "};";
 
     default:
       throw std::runtime_error("Unsupported type");
@@ -590,6 +634,10 @@ std::string type_enum_to_name(cccl_type_enum type)
       return "::cuda::std::uint32_t";
     case cccl_type_enum::CCCL_UINT64:
       return "::cuda::std::uint64_t";
+#if _CCCL_HAS_NVFP16()
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "__half";
+#endif
     case cccl_type_enum::CCCL_FLOAT32:
       return "float";
     case cccl_type_enum::CCCL_FLOAT64:
@@ -667,24 +715,27 @@ struct operation_t
 {
   std::string name;
   std::string code;
+  cccl_op_code_type code_type = CCCL_OP_LTOIR; // Default to LTO-IR for backward compatibility
 
   operation_t() = default;
 
-  operation_t(std::string_view op_name, std::string_view op_code)
+  operation_t(std::string_view op_name, std::string_view op_code, cccl_op_code_type op_code_type = CCCL_OP_LTOIR)
       : name(op_name)
       , code(op_code)
+      , code_type(op_code_type)
   {}
 
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::CCCL_STATELESS;
-    op.name       = name.c_str();
-    op.ltoir      = code.c_str();
-    op.ltoir_size = code.size();
-    op.size       = 1;
-    op.alignment  = 1;
-    op.state      = nullptr;
+    op.type      = cccl_op_kind_t::CCCL_STATELESS;
+    op.name      = name.c_str();
+    op.code      = code.c_str();
+    op.code_size = code.size();
+    op.code_type = code_type;
+    op.size      = 1;
+    op.alignment = 1;
+    op.state     = nullptr;
     return op;
   }
 };
@@ -705,20 +756,26 @@ struct stateful_operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::CCCL_STATEFUL;
-    op.size       = sizeof(OpT);
-    op.alignment  = alignof(OpT);
-    op.state      = &op_state;
-    op.name       = name.c_str();
-    op.ltoir      = code.c_str();
-    op.ltoir_size = code.size();
+    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
+    op.size      = sizeof(OpT);
+    op.alignment = alignof(OpT);
+    op.state     = &op_state;
+    op.name      = name.c_str();
+    op.code      = code.c_str();
+    op.code_size = code.size();
+    op.code_type = CCCL_OP_LTOIR; // Stateful operations always use LTO-IR
     return op;
   }
 };
 
 inline operation_t make_operation(std::string_view name, const std::string& code)
 {
-  return operation_t{name, compile(code)};
+  return operation_t{name, compile(code), CCCL_OP_LTOIR};
+}
+
+inline operation_t make_cpp_operation(std::string_view name, const std::string& cpp_code)
+{
+  return operation_t{name, cpp_code, CCCL_OP_CPP_SOURCE};
 }
 
 template <class OpT>
@@ -729,22 +786,22 @@ stateful_operation_t<OpT> make_operation(std::string_view name, const std::strin
 
 static cccl_op_t make_well_known_unary_operation()
 {
-  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 static cccl_op_t make_well_known_binary_operation()
 {
-  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 static cccl_op_t make_well_known_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 static cccl_op_t make_well_known_unique_binary_predicate()
 {
-  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, 1, 1, nullptr};
+  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 template <class ValueT, class StateT>

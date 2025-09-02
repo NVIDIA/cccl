@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FEATURES_H
-#define _LIBCUDACXX___INTERNAL_FEATURES_H
+#ifndef _CUDA_STD___INTERNAL_FEATURES_H
+#define _CUDA_STD___INTERNAL_FEATURES_H
 
 #include <cuda/__cccl_config>
 
@@ -68,4 +68,4 @@
 #  define _LIBCUDACXX_HAS_STL_LITERALS
 #endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 
-#endif // _LIBCUDACXX___INTERNAL_FEATURES_H
+#endif // _CUDA_STD___INTERNAL_FEATURES_H

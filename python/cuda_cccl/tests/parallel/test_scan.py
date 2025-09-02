@@ -58,6 +58,12 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
         return a + b
 
     dtype = input_array.dtype
+
+    if dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = op
+
     is_short_dtype = dtype.itemsize < 16
     # for small range data types make input small to assure that
     # accumulation does not overflow
@@ -66,12 +72,18 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    scan_device(d_input, d_output, len(d_input), op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
 
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
 
-    np.testing.assert_allclose(expected, got, rtol=1e-5)
+    if np.isdtype(dtype, ("real floating", "complex floating")):
+        real_dt = np.finfo(dtype).dtype
+        eps = np.finfo(real_dt).eps
+        rtol = 82 * eps
+        np.testing.assert_allclose(expected, got, rtol=rtol)
+    else:
+        np.testing.assert_array_equal(expected, got)
 
 
 @pytest.mark.parametrize(
@@ -181,3 +193,57 @@ def test_scan_with_stream(force_inclusive, cuda_stream):
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
+
+
+def test_exclusive_scan_well_known_plus():
+    """Test exclusive scan with well-known PLUS operation."""
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run exclusive scan with well-known PLUS operation
+    parallel.exclusive_scan(
+        d_input, d_output, parallel.OpKind.PLUS, h_init, d_input.size
+    )
+
+    # Check the result is correct
+    expected = np.array([0, 1, 3, 6, 10])  # exclusive scan
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_inclusive_scan_well_known_plus():
+    """Test inclusive scan with well-known PLUS operation."""
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run inclusive scan with well-known PLUS operation
+    parallel.inclusive_scan(
+        d_input, d_output, parallel.OpKind.PLUS, h_init, d_input.size
+    )
+
+    # Check the result is correct
+    expected = np.array([1, 3, 6, 10, 15])  # inclusive scan
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.xfail(
+    reason="CCCL_MAXIMUM well-known operation fails with NVRTC compilation error in C++ library"
+)
+def test_exclusive_scan_well_known_maximum():
+    """Test exclusive scan with well-known MAXIMUM operation."""
+    dtype = np.int32
+    h_init = np.array([1], dtype=dtype)
+    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=dtype)
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    # Run exclusive scan with well-known MAXIMUM operation
+    parallel.exclusive_scan(
+        d_input, d_output, parallel.OpKind.MAXIMUM, h_init, d_input.size
+    )
+
+    # Check the result is correct
+    expected = np.array([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
+    np.testing.assert_equal(d_output.get(), expected)

@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
@@ -98,7 +99,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
 
 public:
   template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const noexcept;
 };
 
 struct just_from_t : __just_from_t<just_from_t, set_value_t>
@@ -145,6 +146,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_JustFromTag, _SetTag>::__snd
     return __opstate_t<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  {
+    return __inln_attrs_t<_SetTag>{};
+  }
+
   _CCCL_NO_UNIQUE_ADDRESS __just_from_tag_t __tag_;
   _Fn __fn_;
 };
@@ -165,7 +171,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_from_t::__sndr_t
 
 template <class _JustFromTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
+_CCCL_NODEBUG_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
   using __sndr_t                          = typename _JustFromTag::template __sndr_t<_Fn>;
   using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;

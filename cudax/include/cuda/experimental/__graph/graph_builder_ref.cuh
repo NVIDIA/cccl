@@ -170,14 +170,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \brief Retrieves the underlying CUDA graph object.
   //! \return The `cudaGraph_t` handle.
   //! \throws None
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
 
   //! \brief Retrieves the device on which the graph is built.
   //! \return The device on which the graph is built.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_device() const noexcept -> device_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get_device() const noexcept -> device_ref
   {
     return __dev_;
   }
@@ -189,7 +189,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! new node.
   //! \throws cuda::std::cuda_error if adding the node fails.
   template <class _Node>
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
   {
     return add(_CCCL_MOVE(__node), ::cuda::std::span<cudaGraphNode_t, 0>{});
   }

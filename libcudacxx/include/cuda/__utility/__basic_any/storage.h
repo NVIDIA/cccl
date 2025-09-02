@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_STORAGE_H
+#define _CUDA___UTILITY_BASIC_ANY_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -60,13 +60,13 @@ _CCCL_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
 template <class _Tp,
           class _Up,
           class _Vp = decltype(true ? ::cuda::std::type_identity_t<_Tp*>() : ::cuda::std::type_identity_t<_Up*>())>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
+[[nodiscard]] _CCCL_NODEBUG_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
 {
   return static_cast<_Vp>(__lhs) == static_cast<_Vp>(__rhs);
 }
 
 [[nodiscard]]
-_CCCL_TRIVIAL_API constexpr auto __ptr_eq(::cuda::std::__ignore_t, ::cuda::std::__ignore_t) noexcept -> bool
+_CCCL_NODEBUG_API constexpr auto __ptr_eq(::cuda::std::__ignore_t, ::cuda::std::__ignore_t) noexcept -> bool
 {
   return false;
 }
@@ -75,4 +75,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#endif // _CUDA___UTILITY_BASIC_ANY_STORAGE_H

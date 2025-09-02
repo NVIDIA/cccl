@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#define _CUDA___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -61,7 +61,7 @@ using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
 template <class _DstPtr, class _Src>
-_CCCL_TRIVIAL_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
+_CCCL_NODEBUG_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 {
   static_assert(::cuda::std::is_pointer_v<_DstPtr>, "");
   static_assert(::cuda::std::is_base_of_v<::cuda::std::remove_pointer_t<_DstPtr>, _Src>,
@@ -181,4 +181,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#endif // _CUDA___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
