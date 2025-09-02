@@ -1976,7 +1976,7 @@ static __global__ void kernel_check_value(T* addr, T val)
 
 } // namespace reserved
 
-UNITTEST("stackable task_fence")
+UNITTEST("stackable fence")
 {
   stackable_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
