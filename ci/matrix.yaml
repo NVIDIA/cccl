@@ -63,6 +63,7 @@ workflows:
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['install'], project: 'packaging'}
     # NVHPC stdpar smoke tests
     - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.9', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
@@ -123,6 +124,7 @@ workflows:
     # packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['install'], project: 'packaging'}
     # NVHPC stdpar smoke tests
     - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.9', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
@@ -231,6 +233,7 @@ jobs:
   # General:
   build:        { gpu: false }
   test:         { gpu: true, needs: 'build' }
+  install:      { gpu: false }
 
   test_nobuild: { gpu: true, name: 'Test', invoke: { prefix: 'test' } }
 
