@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.10-cpp-gcc14-cuda13.0",
+  "image": "rapidsai/devcontainers:25.10-cpp-nvhpc25.5",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-gcc14"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-nvhpc25.5"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -24,11 +24,11 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda13.0-gcc14",
-    "CCCL_CUDA_VERSION": "13.0",
-    "CCCL_HOST_COMPILER": "gcc",
-    "CCCL_HOST_COMPILER_VERSION": "14",
-    "CCCL_BUILD_INFIX": "cuda13.0-gcc14",
+    "DEVCONTAINER_NAME": "cuda12.9-nvhpc25.5",
+    "CCCL_CUDA_VERSION": "12.9",
+    "CCCL_HOST_COMPILER": "nvhpc",
+    "CCCL_HOST_COMPILER_VERSION": "25.5",
+    "CCCL_BUILD_INFIX": "cuda12.9-nvhpc25.5",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -62,5 +62,5 @@
       }
     }
   },
-  "name": "cuda13.0-gcc14"
+  "name": "cuda12.9-nvhpc25.5"
 }

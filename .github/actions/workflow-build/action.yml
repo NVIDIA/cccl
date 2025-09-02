@@ -88,10 +88,12 @@ runs:
       run: |
         echo "Parsing matrix file into a workflow..."
 
+        echo "::group::Generating GHA workflow from matrix.yaml"
         ${{ env.matrix_parser }} ${{ inputs.matrix_file }}           \
             --workflows ${{ inputs.workflows }}                      \
             ${{ env.allow_override }}                                \
             ${{ env.dirty_projects_flag }} ${{ env.dirty_projects }}
+        echo "::endgroup::"
 
         if [[ -f workflow/override.json ]]; then
           echo "::group::Override matrix"
