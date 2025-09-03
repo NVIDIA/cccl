@@ -13,13 +13,16 @@
 //! \brief Implements the generation of a DOT file to visualize the task graph
 //!
 //! Environment variables:
-//! - CUDASTF_DOT_FILE
-//! - CUDASTF_DOT_IGNORE_PREREQS
-//! - CUDASTF_DOT_COLOR_BY_DEVICE
-//! - CUDASTF_DOT_REMOVE_DATA_DEPS
-//! - CUDASTF_DOT_TIMING
-//! - CUDASTF_DOT_MAX_DEPTH
-//! - CUDASTF_DOT_SHOW_FENCE
+//! - CUDASTF_DOT_FILE: Path to output DOT file. If not set, DOT generation is disabled.
+//! - CUDASTF_DOT_IGNORE_PREREQS: Set to 1 to disable tracing of prerequisite nodes (default: 0)
+//! - CUDASTF_DOT_COLOR_BY_DEVICE: Set to 1 to color nodes by CUDA device (default: 0)
+//! - CUDASTF_DOT_REMOVE_DATA_DEPS: Set to 1 to hide data dependencies in task labels (default: 0)
+//! - CUDASTF_DOT_TIMING: Set to 1 to enable timing measurement and color-coding (default: 0)
+//! - CUDASTF_DOT_MAX_DEPTH: Maximum section nesting depth to display before collapsing
+//! - CUDASTF_DOT_SHOW_FENCE: Set to 1 to display fence vertices in the graph (default: 0)
+//! - CUDASTF_DOT_KEEP_REDUNDANT: Set to 1 to preserve transitive edges (default: 0, removes redundant edges)
+//! - CUDASTF_DOT_STATS_FILE: Path to output statistics file (edge count, vertex count, timing metrics)
+//! - CUDASTF_DOT_KEEP_FREEZE: Set to 1 to display freeze/unfreeze vertices (default: 0, removes them)
 
 #pragma once
 
