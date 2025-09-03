@@ -320,7 +320,14 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 3)
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUlibrary __libraryLoadData(const void* __code, ::CUjit_option* __jit_opts, void** __jit_opt_vals, unsigned __njit_opts, ::CUlibraryOption* __lib_opts, void** __lib_opt_vals, unsigned __nlib_opts)
+[[nodiscard]] _CCCL_HOST_API inline ::CUlibrary __libraryLoadData(
+  const void* __code,
+  ::CUjit_option* __jit_opts,
+  void** __jit_opt_vals,
+  unsigned __njit_opts,
+  ::CUlibraryOption* __lib_opts,
+  void** __lib_opt_vals,
+  unsigned __nlib_opts)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryLoadData);
   ::CUlibrary __result;

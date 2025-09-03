@@ -8,14 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/devices>
 #include <cuda/std/cstddef>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__driver/driver_api.h>
-#include <cuda/devices>
 #include <cuda/experimental/kernel.cuh>
 
 #include <testing.cuh>

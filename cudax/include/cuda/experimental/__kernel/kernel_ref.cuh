@@ -21,13 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/string_view>
-
-#include <cuda/__device/device_ref.h>
 
 #include <string>
 
@@ -64,7 +63,7 @@ public:
   //!
   //! @param __kernel The kernel object
   explicit constexpr kernel_ref(value_type __kernel) noexcept
-      : __kernel_((::CUkernel)__kernel)
+      : __kernel_((::CUkernel) __kernel)
   {}
 
 #if _CCCL_CTK_AT_LEAST(12, 1)
@@ -77,7 +76,7 @@ public:
   {
     _CCCL_TRY_CUDA_API(::cudaGetKernel,
                        "Failed to get kernel from entry function address",
-                       (cudaKernel_t*)&__kernel_,
+                       (cudaKernel_t*) &__kernel_,
                        (const void*) __entry_func_address);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
@@ -116,7 +115,7 @@ public:
   //! @return The native kernel handle
   [[nodiscard]] constexpr value_type get() const noexcept
   {
-    return (value_type)__kernel_;
+    return (value_type) __kernel_;
   }
 
   //! @brief Compares two `kernel_ref` for equality
