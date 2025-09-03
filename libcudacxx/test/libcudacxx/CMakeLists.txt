@@ -63,6 +63,13 @@ if (MSVC)
   if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
     string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
   endif()
+
+  # Require the conforming preprocessor
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:preprocessor")
+  if (MSVC_TOOLSET_VERSION LESS 143)
+    # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/wd5105")
+  endif()
 endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")

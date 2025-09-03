@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // nvbug5272086
-// UNSUPPORTED: nvcc-12.9 && msvc
+// UNSUPPORTED: msvc
 
 #include <cuda/mdspan>
 #include <cuda/std/type_traits>
