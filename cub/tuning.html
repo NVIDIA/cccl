@@ -347,7 +347,15 @@
 <li class="toctree-l3"><a class="reference internal" href="test_overview.html">CUB Tests</a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarking.html">CUB Benchmarks</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">CUB Tunings</a></li>
-<li class="toctree-l3"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/visibility.html">Symbol Visibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="releases/changelog.html">CUB 2.1.0</a></li>
 
@@ -1982,7 +1990,7 @@ and repeated here:</p>
 However, they take predefined tuning values based on the template arguments of a CUB algorithm
 to build an agent policy for the policy hub.
 The way tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
-The general principles of the policy hub and tunings are documented in the <a class="reference internal" href="developer_overview.html#cub-developer-policies"><span class="std std-ref">CUB device layer documentation</span></a>.
+The general principles of the policy hub and tunings are documented in the <a class="reference internal" href="developer/device_scope.html#cub-developer-policies"><span class="std std-ref">CUB device layer documentation</span></a>.
 There is typically a tuning class template specialization per variant or group of variants and per PTX version.
 For example, signed and unsigned integers of the same size are often represented by the same tuning.
 In general, variants for which the algorithmic behavior is expected to be the same
