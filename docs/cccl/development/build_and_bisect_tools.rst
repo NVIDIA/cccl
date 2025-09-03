@@ -14,7 +14,7 @@ Options
 - ``--preset <name>`` - choose a CMake preset.
 - ``--cmake-options <str>`` - extra arguments for the preset configuration.
 - ``--configure-override <cmd>`` - run a custom configuration command instead of
-a preset. When used, ``--preset`` and ``--cmake-options`` are ignored.
+  a preset. When used, ``--preset`` and ``--cmake-options`` are ignored.
 - ``--build-targets <targets>`` - space separated Ninja targets. If omitted,
   nothing builds.
 - ``--ctest-targets <regex>`` - space separated CTest ``-R`` patterns. If
