@@ -53,7 +53,8 @@ std::string get_device_segmented_sort_fallback_kernel_name(
   std::string_view start_offset_iterator_t,
   std::string_view end_offset_iterator_t,
   std::string_view key_t,
-  std::string_view value_t)
+  std::string_view value_t,
+  cccl_sort_order_t sort_order)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_segmented_sort_policy>(&chained_policy_t));
@@ -72,8 +73,8 @@ std::string get_device_segmented_sort_fallback_kernel_name(
    DeviceSegmentedSortFallbackKernel(...);
   */
   return std::format(
-    "cub::detail::segmented_sort::DeviceSegmentedSortFallbackKernel<cub::SortOrder::Ascending, {0}, {1}, {2}, {3}, "
-    "{4}, {5}>",
+    "cub::detail::segmented_sort::DeviceSegmentedSortFallbackKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
     chained_policy_t, // 0
     key_t, // 1
     value_t, // 2
@@ -88,7 +89,8 @@ std::string get_device_segmented_sort_kernel_small_name(
   std::string_view start_offset_iterator_t,
   std::string_view end_offset_iterator_t,
   std::string_view key_t,
-  std::string_view value_t)
+  std::string_view value_t,
+  cccl_sort_order_t sort_order)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_segmented_sort_policy>(&chained_policy_t));
@@ -107,8 +109,8 @@ std::string get_device_segmented_sort_kernel_small_name(
    DeviceSegmentedSortKernelSmall(...);
   */
   return std::format(
-    "cub::detail::segmented_sort::DeviceSegmentedSortKernelSmall<cub::SortOrder::Ascending, {0}, {1}, {2}, {3}, {4}, "
-    "{5}>",
+    "cub::detail::segmented_sort::DeviceSegmentedSortKernelSmall<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
     chained_policy_t, // 0
     key_t, // 1
     value_t, // 2
@@ -123,7 +125,8 @@ std::string get_device_segmented_sort_kernel_large_name(
   std::string_view start_offset_iterator_t,
   std::string_view end_offset_iterator_t,
   std::string_view key_t,
-  std::string_view value_t)
+  std::string_view value_t,
+  cccl_sort_order_t sort_order)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_segmented_sort_policy>(&chained_policy_t));
@@ -142,8 +145,8 @@ std::string get_device_segmented_sort_kernel_large_name(
    DeviceSegmentedSortKernelLarge(...);
   */
   return std::format(
-    "cub::detail::segmented_sort::DeviceSegmentedSortKernelLarge<cub::SortOrder::Ascending, {0}, {1}, {2}, {3}, {4}, "
-    "{5}>",
+    "cub::detail::segmented_sort::DeviceSegmentedSortKernelLarge<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
     chained_policy_t, // 0
     key_t, // 1
     value_t, // 2
@@ -305,6 +308,7 @@ struct segmented_sort_end_offset_iterator_tag;
 
 CUresult cccl_device_segmented_sort_build(
   cccl_device_segmented_sort_build_result_t* build_ptr,
+  cccl_sort_order_t sort_order,
   cccl_iterator_t keys_in_it,
   cccl_iterator_t keys_out_it,
   cccl_iterator_t values_in_it,
@@ -473,7 +477,8 @@ struct device_segmented_sort_policy {{
       start_offset_iterator_name,
       end_offset_iterator_name,
       key_t,
-      value_t);
+      value_t,
+      sort_order);
 
     std::string segmented_sort_kernel_small_name = segmented_sort::get_device_segmented_sort_kernel_small_name(
       keys_in_iterator_name,
@@ -481,7 +486,8 @@ struct device_segmented_sort_policy {{
       start_offset_iterator_name,
       end_offset_iterator_name,
       key_t,
-      value_t);
+      value_t,
+      sort_order);
 
     std::string segmented_sort_kernel_large_name = segmented_sort::get_device_segmented_sort_kernel_large_name(
       keys_in_iterator_name,
@@ -489,7 +495,8 @@ struct device_segmented_sort_policy {{
       start_offset_iterator_name,
       end_offset_iterator_name,
       key_t,
-      value_t);
+      value_t,
+      sort_order);
 
     std::string segmented_sort_fallback_kernel_lowered_name;
     std::string segmented_sort_kernel_small_lowered_name;
@@ -557,6 +564,7 @@ struct device_segmented_sort_policy {{
     // Use the runtime policy extracted via from_json
     build_ptr->runtime_policy = new segmented_sort::segmented_sort_runtime_tuning_policy{
       large_segment_policy, small_segment_policy, medium_segment_policy, partitioning_threshold};
+    build_ptr->order = sort_order;
   }
   catch (const std::exception& exc)
   {
@@ -569,7 +577,8 @@ struct device_segmented_sort_policy {{
   return error;
 }
 
-CUresult cccl_device_segmented_sort(
+template <cub::SortOrder Order>
+CUresult cccl_device_segmented_sort_impl(
   cccl_device_segmented_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -581,6 +590,8 @@ CUresult cccl_device_segmented_sort(
   int64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
+  bool is_overwrite_okay,
+  int* selector,
   CUstream stream)
 {
   bool pushed    = false;
@@ -594,13 +605,18 @@ CUresult cccl_device_segmented_sort(
 
     // Create DoubleBuffer structures for keys and values
     // CUB will handle keys-only vs key-value sorting internally
-    auto d_keys_double_buffer = cub::DoubleBuffer<indirect_arg_t>(
-      static_cast<indirect_arg_t*>(d_keys_in.state), static_cast<indirect_arg_t*>(d_keys_out.state));
-    auto d_values_double_buffer = cub::DoubleBuffer<indirect_arg_t>(
-      static_cast<indirect_arg_t*>(d_values_in.state), static_cast<indirect_arg_t*>(d_values_out.state));
+    indirect_arg_t key_arg_in{d_keys_in};
+    indirect_arg_t key_arg_out{d_keys_out};
+    cub::DoubleBuffer<indirect_arg_t> d_keys_double_buffer(
+      *static_cast<indirect_arg_t**>(&key_arg_in), *static_cast<indirect_arg_t**>(&key_arg_out));
+
+    indirect_arg_t val_arg_in{d_values_in};
+    indirect_arg_t val_arg_out{d_values_out};
+    cub::DoubleBuffer<indirect_arg_t> d_values_double_buffer(
+      *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
     auto exec_status = cub::DispatchSegmentedSort<
-      cub::SortOrder::Ascending,
+      Order,
       indirect_arg_t, // KeyT
       indirect_arg_t, // ValueT
       OffsetT, // OffsetT
@@ -620,7 +636,7 @@ CUresult cccl_device_segmented_sort(
         num_segments,
         indirect_iterator_t{start_offset_in},
         indirect_iterator_t{end_offset_in},
-        true, // is_overwrite_okay
+        is_overwrite_okay,
         stream,
         /* kernel_source */ {build},
         /* partition_kernel_source */ {build},
@@ -628,6 +644,11 @@ CUresult cccl_device_segmented_sort(
         /* policy */ *reinterpret_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build.runtime_policy),
         /* partition_policy */
         *reinterpret_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
+
+    if (selector != nullptr)
+    {
+      *selector = d_keys_double_buffer.selector;
+    }
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -646,6 +667,44 @@ CUresult cccl_device_segmented_sort(
   }
 
   return error;
+}
+
+CUresult cccl_device_segmented_sort(
+  cccl_device_segmented_sort_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_keys_out,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t d_values_out,
+  int64_t num_items,
+  int64_t num_segments,
+  cccl_iterator_t start_offset_in,
+  cccl_iterator_t end_offset_in,
+  bool is_overwrite_okay,
+  int* selector,
+  CUstream stream)
+{
+  auto segmented_sort_impl =
+    (build.order == CCCL_ASCENDING)
+      ? cccl_device_segmented_sort_impl<cub::SortOrder::Ascending>
+      : cccl_device_segmented_sort_impl<cub::SortOrder::Descending>;
+
+  return segmented_sort_impl(
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    num_items,
+    num_segments,
+    start_offset_in,
+    end_offset_in,
+    is_overwrite_okay,
+    selector,
+    stream);
 }
 
 CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_result_t* build_ptr)

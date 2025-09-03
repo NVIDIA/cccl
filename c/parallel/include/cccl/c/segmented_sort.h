@@ -15,6 +15,7 @@
 #endif // !CCCL_C_EXPERIMENTAL
 
 #include <cuda.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <cccl/c/extern_c.h>
@@ -36,11 +37,13 @@ typedef struct cccl_device_segmented_sort_build_result_t
   CUkernel three_way_partition_kernel;
   void* runtime_policy;
   void* partition_runtime_policy;
+  cccl_sort_order_t order;
 } cccl_device_segmented_sort_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
 CCCL_C_API CUresult cccl_device_segmented_sort_build(
   cccl_device_segmented_sort_build_result_t* build,
+  cccl_sort_order_t sort_order,
   cccl_iterator_t d_keys_in,
   cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
@@ -66,6 +69,8 @@ CCCL_C_API CUresult cccl_device_segmented_sort(
   int64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
+  bool is_overwrite_okay,
+  int* selector,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_result_t* bld_ptr);
