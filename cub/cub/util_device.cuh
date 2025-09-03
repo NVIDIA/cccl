@@ -141,11 +141,14 @@ _CCCL_HOST inline int DeviceCountCachedValue()
  */
 CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  int result = -1;
-
-  NV_IF_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
-
-  return result;
+  if _CCCL_TARGET_IS_HOST
+  {
+    return DeviceCountCachedValue();
+  }
+  else
+  {
+    return DeviceCountUncached();
+  }
 }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document

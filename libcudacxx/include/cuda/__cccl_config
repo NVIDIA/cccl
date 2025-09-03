@@ -32,5 +32,6 @@
 #include <cuda/std/__cccl/unreachable.h> // IWYU pragma: export
 #include <cuda/std/__cccl/version.h> // IWYU pragma: export
 #include <cuda/std/__cccl/visibility.h> // IWYU pragma: export
+#include <cuda/std/__cccl/target_macros.h> // IWYU pragma: export
 
 #endif // _CUDA__CCCL_CONFIG
