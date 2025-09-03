@@ -27,7 +27,7 @@ void test_ready(cuda::stream_ref& ref)
     assert(false && "Should not have thrown");
   }
 #else
-  assert(ref.ready());
+  assert(ref.is_done());
 #endif // TEST_HAS_EXCEPTIONS()
 }
 
