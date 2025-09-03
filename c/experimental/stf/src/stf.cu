@@ -94,13 +94,20 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
 /* Convert the C-API stf_exec_place to a C++ exec_place object */
 exec_place to_exec_place(stf_exec_place* exec_p)
 {
-  if (exec_p->kind == STF_EXEC_PLACE_HOST)
-  {
-    return exec_place::host();
-  }
+  assert(exec_p);
 
-  assert(exec_p->kind == STF_EXEC_PLACE_DEVICE);
-  return exec_place::device(exec_p->u.device.dev_id);
+  switch (exec_p->kind)
+  {
+    case STF_EXEC_PLACE_HOST:
+      return exec_place::host();
+
+    case STF_EXEC_PLACE_DEVICE:
+      return exec_place::device(exec_p->u.device.dev_id);
+
+    default:
+      assert(false && "Invalid execution place kind");
+      return exec_place{}; // invalid exec_place
+  }
 }
 
 /* Convert the C-API stf_data_place to a C++ data_place object */
@@ -108,23 +115,24 @@ data_place to_data_place(stf_data_place* data_p)
 {
   assert(data_p);
 
-  if (data_p->kind == STF_DATA_PLACE_HOST)
+  switch (data_p->kind)
   {
-    return data_place::host();
-  }
+    case STF_DATA_PLACE_HOST:
+      return data_place::host();
 
-  if (data_p->kind == STF_DATA_PLACE_MANAGED)
-  {
-    return data_place::managed();
-  }
+    case STF_DATA_PLACE_MANAGED:
+      return data_place::managed();
 
-  if (data_p->kind == STF_DATA_PLACE_AFFINE)
-  {
-    return data_place::affine();
-  }
+    case STF_DATA_PLACE_AFFINE:
+      return data_place::affine();
 
-  assert(data_p->kind == STF_DATA_PLACE_DEVICE);
-  return data_place::device(data_p->u.device.dev_id);
+    case STF_DATA_PLACE_DEVICE:
+      return data_place::device(data_p->u.device.dev_id);
+
+    default:
+      assert(false && "Invalid data place kind");
+      return data_place::invalid(); // invalid data_place
+  }
 }
 
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
