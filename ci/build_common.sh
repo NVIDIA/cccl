@@ -93,7 +93,7 @@ set -u
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
-    CCCL_BUILD_INFIX="local"
+    CCCL_BUILD_INFIX=""
 fi
 
 mkdir -p ../build
@@ -109,13 +109,10 @@ rm -f $BUILD_ROOT/latest
 ln -sf $BUILD_DIR $BUILD_ROOT/latest
 
 # The more recent preset build dir will always be symlinked to:
-# cccl/build/latest/latest
 # cccl/preset-latest
 function symlink_latest_preset {
     local PRESET=$1
     mkdir -p "$BUILD_DIR/$PRESET"
-    rm -f "$BUILD_ROOT/latest/latest"
-    ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/latest/latest"
     rm -f "$BUILD_ROOT/preset-latest"
     ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/preset-latest"
 }
