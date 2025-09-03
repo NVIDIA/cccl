@@ -141,11 +141,14 @@ _CCCL_HOST inline int DeviceCountCachedValue()
  */
 CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  int result = -1;
-
-  NV_IF_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
-
-  return result;
+  if _CCCL_TARGET_IS_HOST
+  {
+    return DeviceCountCachedValue();
+  }
+  else
+  {
+    return DeviceCountUncached();
+  }
 }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -286,22 +289,24 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
   cudaError_t result = cudaSuccess;
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (cudaFuncAttributes empty_kernel_attrs;
+  if _CCCL_TARGET_IS_HOST
+  {
+    cudaFuncAttributes empty_kernel_attrs;
 
-     result = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, reinterpret_cast<void*>(empty_kernel)));
+    result = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, reinterpret_cast<void*>(empty_kernel)));
 
-     ptx_version = empty_kernel_attrs.ptxVersion * 10;),
-    // NV_IS_DEVICE
-    (
-      // This is necessary to ensure instantiation of EmptyKernel in device
-      // code. The `reinterpret_cast` is necessary to suppress a
-      // set-but-unused warnings. This is a meme now:
-      // https://twitter.com/blelbach/status/1222391615576100864
-      (void) reinterpret_cast<EmptyKernelPtr>(empty_kernel);
+    ptx_version = empty_kernel_attrs.ptxVersion * 10;
+  }
+  else
+  {
+    // This is necessary to ensure instantiation of EmptyKernel in device
+    // code. The `reinterpret_cast` is necessary to suppress a
+    // set-but-unused warnings. This is a meme now:
+    // https://twitter.com/blelbach/status/1222391615576100864
+    (void) reinterpret_cast<EmptyKernelPtr>(empty_kernel);
 
-      ptx_version = CUB_TEMP_GET_PTX;));
+    ptx_version = CUB_TEMP_GET_PTX;
+  }
 
 #  undef CUB_TEMP_GET_PTX
 
@@ -365,12 +370,14 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
-  cudaError_t result = cudaErrorUnknown;
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = PtxVersion(ptx_version, CurrentDevice());),
-               ( // NV_IS_DEVICE:
-                 result = PtxVersionUncached(ptx_version);));
-  return result;
+  if _CCCL_TARGET_IS_HOST
+  {
+    return PtxVersion(ptx_version, CurrentDevice());
+  }
+  else
+  {
+    return PtxVersionUncached(ptx_version);
+  }
 }
 
 /**
@@ -407,30 +414,39 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
 {
-  cudaError_t result = cudaErrorUnknown;
+  if _CCCL_TARGET_IS_HOST
+  {
+    auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
+      // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
+      [=](int& pv) {
+        return SmVersionUncached(pv, device);
+      },
+      device);
 
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
-       // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
-       [=](int& pv) {
-         return SmVersionUncached(pv, device);
-       },
-       device);
+    if (!CubDebug(payload.error))
+    {
+      sm_version = payload.attribute;
+    };
 
-     if (!CubDebug(payload.error)) { sm_version = payload.attribute; };
-
-     result = payload.error;),
-    ( // NV_IS_DEVICE
-      result = SmVersionUncached(sm_version, device);));
-
-  return result;
+    return payload.error;
+  }
+  else
+  {
+    return SmVersionUncached(sm_version, device);
+  }
 }
 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
-  NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
+  if _CCCL_TARGET_IS_HOST
+  {
+    return CubDebug(cudaStreamSynchronize(stream));
+  }
+  else
+  {
+    return cudaErrorNotSupported;
+  }
 }
 
 namespace detail
@@ -440,9 +456,16 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
 #  ifdef CUB_DEBUG_SYNC
-  NV_IF_TARGET(NV_IS_HOST,
-               (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
-               (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+  if _CCCL_TARGET_IS_HOST
+  {
+    _CubLog("%s", "Synchronizing...\n");
+    return SyncStream(stream);
+  }
+  else
+  {
+    _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code");
+    return cudaSuccess;
+  }
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
 #  endif // ^^^ !CUB_DEBUG_SYNC ^^^

@@ -128,11 +128,14 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 
   cudaError_t last_error = cudaSuccess;
 
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (last_error = cudaGetLastError();),
-    (CUB_TEMP_DEVICE_CODE;)
-  );
+  if _CCCL_TARGET_IS_HOST
+  {
+    last_error = cudaGetLastError();
+  }
+  else
+  {
+    CUB_TEMP_DEVICE_CODE;
+  }
 
   #undef CUB_TEMP_DEVICE_CODE
   // clang-format on
@@ -145,20 +148,24 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 #ifdef CUB_STDERR
   if (error)
   {
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, cudaGetErrorString(error));
-       fflush(stderr);),
-      (printf("CUDA error %d [block (%d,%d,%d) thread (%d,%d,%d), %s, %d]\n",
-              error,
-              blockIdx.z,
-              blockIdx.y,
-              blockIdx.x,
-              threadIdx.z,
-              threadIdx.y,
-              threadIdx.x,
-              filename,
-              line);));
+    if _CCCL_TARGET_IS_HOST
+    {
+      fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, cudaGetErrorString(error));
+      fflush(stderr);
+    }
+    else
+    {
+      printf("CUDA error %d [block (%d,%d,%d) thread (%d,%d,%d), %s, %d]\n",
+             error,
+             blockIdx.z,
+             blockIdx.y,
+             blockIdx.x,
+             threadIdx.z,
+             threadIdx.y,
+             threadIdx.x,
+             filename,
+             line);
+    }
   }
 #endif
 
@@ -187,20 +194,24 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Log macro for printf statements.
  */
 #if !defined(_CubLog)
-#  define _CubLog(format, ...)                                    \
-    do                                                            \
-    {                                                             \
-      NV_IF_TARGET(                                               \
-        NV_IS_HOST,                                               \
-        (printf(format, __VA_ARGS__);),                           \
-        (printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \
-                blockIdx.z,                                       \
-                blockIdx.y,                                       \
-                blockIdx.x,                                       \
-                threadIdx.z,                                      \
-                threadIdx.y,                                      \
-                threadIdx.x,                                      \
-                __VA_ARGS__);));                                  \
+#  define _CubLog(format, ...)                                   \
+    do                                                           \
+    {                                                            \
+      if _CCCL_TARGET_IS_HOST                                    \
+      {                                                          \
+        printf(format, __VA_ARGS__);                             \
+      }                                                          \
+      else                                                       \
+      {                                                          \
+        printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \
+               blockIdx.z,                                       \
+               blockIdx.y,                                       \
+               blockIdx.x,                                       \
+               threadIdx.z,                                      \
+               threadIdx.y,                                      \
+               threadIdx.x,                                      \
+               __VA_ARGS__);                                     \
+      }                                                          \
     } while (false)
 #endif
 

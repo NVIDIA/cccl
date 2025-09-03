@@ -69,10 +69,15 @@ _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND ::cuda::std::is_integra
     else
     {
       // the ::min method is faster even if __b is a compile-time constant
-      NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                        (return static_cast<_Common>(::cuda::std::min(__a1, 1 + ((__a1 - 1) / __b1)));),
-                        (const auto __res = __a1 / __b1; //
-                         return static_cast<_Common>(__res + (__res * __b1 != __a1));))
+      if _CCCL_TARGET_IS_DEVICE
+      {
+        return static_cast<_Common>(::cuda::std::min(__a1, 1 + ((__a1 - 1) / __b1)));
+      }
+      else
+      {
+        const auto __res = __a1 / __b1;
+        return static_cast<_Common>(__res + (__res * __b1 != __a1));
+      }
     }
   }
 }
