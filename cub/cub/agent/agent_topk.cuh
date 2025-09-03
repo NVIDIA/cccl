@@ -278,16 +278,16 @@ struct AgentTopK
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int num_buckets      = 1 << BITS_PER_PASS;
 
-  static constexpr bool KEYS_ONLY                = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
-  static constexpr int items_per_thread_for_scan = ::cuda::ceil_div(num_buckets, BLOCK_THREADS);
+  static constexpr bool KEYS_ONLY      = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
+  static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, BLOCK_THREADS);
 
   // Parameterized BlockLoad type for input data
   using block_load_input_t = BlockLoad<key_in_t, BLOCK_THREADS, ITEMS_PER_THREAD, AgentTopKPolicyT::LOAD_ALGORITHM>;
-  using block_load_trans_t = BlockLoad<OffsetT, BLOCK_THREADS, items_per_thread_for_scan, BLOCK_LOAD_TRANSPOSE>;
+  using block_load_trans_t = BlockLoad<OffsetT, BLOCK_THREADS, bins_per_thread, BLOCK_LOAD_TRANSPOSE>;
   // Parameterized BlockScan type
   using block_scan_t = BlockScan<OffsetT, BLOCK_THREADS, AgentTopKPolicyT::SCAN_ALGORITHM>;
   // Parameterized BlockStore type
-  using block_store_trans_t = BlockStore<OffsetT, BLOCK_THREADS, items_per_thread_for_scan, BLOCK_STORE_TRANSPOSE>;
+  using block_store_trans_t = BlockStore<OffsetT, BLOCK_THREADS, bins_per_thread, BLOCK_STORE_TRANSPOSE>;
 
   // Shared memory
   struct _TempStorage
@@ -439,6 +439,23 @@ struct AgentTopK
     }
   }
 
+  _CCCL_DEVICE _CCCL_FORCEINLINE void init_histograms(OffsetT* histogram)
+  {
+    // Initialize histogram bin counts to zeros
+    int histo_offset = 0;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (; histo_offset + BLOCK_THREADS <= num_buckets; histo_offset += BLOCK_THREADS)
+    {
+      histogram[histo_offset + threadIdx.x] = 0;
+    }
+    // Finish up with guarded initialization if necessary
+    if ((num_buckets % BLOCK_THREADS != 0) && (histo_offset + threadIdx.x < num_buckets))
+    {
+      histogram[histo_offset + threadIdx.x] = 0;
+    }
+  }
+
   /**
    * Fused filtering of the current pass and building histogram for the next pass
    */
@@ -454,10 +471,7 @@ struct AgentTopK
     bool early_stop)
   {
     // Initialize shared memory histogram
-    for (OffsetT i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
-    {
-      temp_storage.histogram[i] = 0;
-    }
+    init_histograms(temp_storage.histogram);
 
     // Make sure the histogram was initialized
     __syncthreads();
@@ -599,7 +613,7 @@ struct AgentTopK
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets(volatile OffsetT* histogram)
   {
-    OffsetT thread_data[items_per_thread_for_scan];
+    OffsetT thread_data[bins_per_thread];
 
     // Load global histogram (we can skip initializing oob-items to zero because they won't be stored back)
     block_load_trans_t(temp_storage.load_trans).Load(histogram, thread_data, num_buckets);
@@ -805,10 +819,7 @@ struct AgentTopK
       constexpr int num_passes = calc_num_passes<key_in_t, BITS_PER_PASS>();
       if (pass != num_passes - 1)
       {
-        for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
-        {
-          histogram[i] = 0;
-        }
+        init_histograms(histogram);
       }
     }
   }
