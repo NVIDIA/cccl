@@ -241,16 +241,25 @@ struct BlockScanWarpScans
   ComputeWarpPrefix(ScanOp scan_op, T warp_aggregate, T& block_aggregate, const T& initial_value)
   {
     T warp_prefix = ComputeWarpPrefix(scan_op, warp_aggregate, block_aggregate);
-
-    if (warp_id == 0)
+    if constexpr (cub::detail::has_no_side_effects<ScanOp, T>)
     {
-      warp_prefix = initial_value;
+      warp_prefix = scan_op(initial_value, warp_prefix);
+      if (warp_id == 0)
+      {
+        warp_prefix = initial_value;
+      }
     }
     else
     {
-      warp_prefix = scan_op(initial_value, warp_prefix);
+      if (warp_id == 0)
+      {
+        warp_prefix = initial_value;
+      }
+      else
+      {
+        warp_prefix = scan_op(initial_value, warp_prefix);
+      }
     }
-
     return warp_prefix;
   }
 
