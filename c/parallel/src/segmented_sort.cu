@@ -443,6 +443,8 @@ struct __align__({1}) storage_t {{
     auto [medium_segment_policy, medium_segment_policy_str] =
       RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "MediumSegmentPolicy");
 
+    auto partitioning_threshold = static_cast<int>(runtime_policy["PartitioningThreshold"].get<int>());
+
     // agent_policy_t is to specify parameters like policy_hub does in dispatch_segmented_sort.cuh
     constexpr std::string_view program_preamble_template = R"XXX(
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
@@ -554,7 +556,7 @@ struct device_segmented_sort_policy {{
     build_ptr->cubin_size = result.size;
     // Use the runtime policy extracted via from_json
     build_ptr->runtime_policy = new segmented_sort::segmented_sort_runtime_tuning_policy{
-      large_segment_policy, small_segment_policy, medium_segment_policy};
+      large_segment_policy, small_segment_policy, medium_segment_policy, partitioning_threshold};
   }
   catch (const std::exception& exc)
   {

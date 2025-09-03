@@ -25,6 +25,9 @@
 #include <cccl/c/segmented_sort.h>
 #include <cccl/c/types.h>
 
+using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, double>;
+using item_t    = float;
+
 using BuildResultT = cccl_device_segmented_sort_build_result_t;
 
 struct segmented_sort_cleanup
@@ -149,13 +152,9 @@ extern "C" __device__ {2} {0}({1}* state)
 }
 
 struct SegmentedSort_KeysOnly_Fixture_Tag;
-C2H_TEST_LIST("segmented_sort can sort keys-only with integral types",
-              "[segmented_sort][keys_only]",
-              std::int32_t,
-              std::int64_t,
-              std::uint32_t,
-              std::uint64_t)
+C2H_TEST("segmented_sort can sort keys-only with integral types", "[segmented_sort][keys_only]", key_types)
 {
+  using KeyT = c2h::get<0, TestType>;
   // generate choices for n_segments: 0, 13 and 2 random samples from [50, 200)
   const std::size_t n_segments = GENERATE(0, 13, take(2, random(50, 200)));
   // generate choices for segment size: 1, 20 and random samples
@@ -163,21 +162,18 @@ C2H_TEST_LIST("segmented_sort can sort keys-only with integral types",
 
   const std::size_t n_elems = n_segments * segment_size;
 
-  std::vector<TestType> host_keys = generate<TestType>(n_elems);
-  std::vector<TestType> host_keys_out(n_elems);
+  std::vector<int> host_keys_int = generate<int>(n_elems);
+  std::vector<KeyT> host_keys(host_keys_int.begin(), host_keys_int.end());
+  std::vector<KeyT> host_keys_out(n_elems);
 
   REQUIRE(host_keys.size() == n_elems);
   REQUIRE(host_keys_out.size() == n_elems);
 
-  pointer_t<TestType> keys_in_ptr(host_keys); // copy from host to device
-  pointer_t<TestType> keys_out_ptr(host_keys_out); // copy from host to device
+  pointer_t<KeyT> keys_in_ptr(host_keys); // copy from host to device
+  pointer_t<KeyT> keys_out_ptr(host_keys_out); // copy from host to device
 
-  // Create null value iterators for keys-only sorting
-  // For keys-only sorting, we create dummy iterators that won't be used
-  auto dummy_values_it        = make_constant_iterator<TestType>(std::string{"TestType"});
-  dummy_values_it.state.value = TestType{};
-  cccl_iterator_t values_in   = dummy_values_it;
-  cccl_iterator_t values_out  = dummy_values_it;
+  pointer_t<item_t> values_in;
+  pointer_t<item_t> values_out;
 
   using SizeT                                     = unsigned long long;
   static constexpr std::string_view index_ty_name = "unsigned long long";
@@ -214,7 +210,7 @@ C2H_TEST_LIST("segmented_sort can sort keys-only with integral types",
   end_offset_it.state.segment_size = segment_size;
 
   auto& build_cache    = get_cache<SegmentedSort_KeysOnly_Fixture_Tag>();
-  const auto& test_key = make_key<TestType>();
+  const auto& test_key = make_key<KeyT>();
 
   segmented_sort(
     keys_in_ptr,
@@ -229,7 +225,7 @@ C2H_TEST_LIST("segmented_sort can sort keys-only with integral types",
     test_key);
 
   // Create expected result by sorting each segment
-  std::vector<TestType> expected_keys = host_keys;
+  std::vector<KeyT> expected_keys = host_keys;
   for (std::size_t i = 0; i < n_segments; ++i)
   {
     std::size_t segment_start = i * segment_size;
@@ -237,7 +233,7 @@ C2H_TEST_LIST("segmented_sort can sort keys-only with integral types",
     std::sort(expected_keys.begin() + segment_start, expected_keys.begin() + segment_end);
   }
 
-  REQUIRE(expected_keys == std::vector<TestType>(keys_out_ptr));
+  REQUIRE(expected_keys == std::vector<KeyT>(keys_out_ptr));
 }
 
 struct SegmentedSort_KeyValuePairs_Fixture_Tag;
