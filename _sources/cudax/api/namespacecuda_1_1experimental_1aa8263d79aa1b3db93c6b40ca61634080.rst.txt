@@ -20,10 +20,24 @@ Overloads
    :project: cudax
    :no-link:
 
+``launch(__submitter, __conf, __kernel, __args)``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. doxygenfunction:: cuda::experimental::launch(_Submitter &&__submitter, const kernel_config< _Dimensions, _Config... > &__conf, kernel_ref< void(kernel_config< _Dimensions, _Config... >, _ExpArgs...)> __kernel, _ActArgs &&... __args)
+   :project: cudax
+   :no-link:
+
 ``launch(__submitter, __conf, void(*__kernel)(_ExpArgs...), __args)``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. doxygenfunction:: cuda::experimental::launch(_Submitter &&__submitter, const kernel_config< _Dimensions, _Config... > &__conf, void(*__kernel)(_ExpArgs...), _ActArgs &&... __args)
+   :project: cudax
+   :no-link:
+
+``launch(__submitter, __conf, __kernel, __args)``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. doxygenfunction:: cuda::experimental::launch(_Submitter &&__submitter, const kernel_config< _Dimensions, _Config... > &__conf, kernel_ref< void(_ExpArgs...)> __kernel, _ActArgs &&... __args)
    :project: cudax
    :no-link:
 
