@@ -456,6 +456,26 @@ struct AgentTopK
     }
   }
 
+  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_histograms(OffsetT* local_histogram, OffsetT* global_histogram)
+  {
+    int histo_offset = 0;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (; histo_offset + BLOCK_THREADS <= num_buckets; histo_offset += BLOCK_THREADS)
+    {
+      if (temp_storage.histogram[histo_offset + threadIdx.x] != 0)
+      {
+        atomicAdd(global_histogram + (histo_offset + threadIdx.x), temp_storage.histogram[histo_offset + threadIdx.x]);
+      }
+    }
+
+    // Finish up with guarded merging if necessary
+    if ((num_buckets % BLOCK_THREADS != 0) && (histo_offset + threadIdx.x < num_buckets))
+    {
+      atomicAdd(global_histogram + (histo_offset + threadIdx.x), temp_storage.histogram[histo_offset + threadIdx.x]);
+    }
+  }
+
   /**
    * Fused filtering of the current pass and building histogram for the next pass
    */
@@ -589,7 +609,7 @@ struct AgentTopK
       }
     }
 
-    // Early stop means that subsequent passes are not needed.
+    // Early stop means that subsequent passes are not needed
     if (early_stop)
     {
       return;
@@ -598,14 +618,8 @@ struct AgentTopK
     // Ensure all threads have contributed to the histogram before accumulating in the global memory
     __syncthreads();
 
-    // Merge histograms produced by individual blocks
-    for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
-    {
-      if (temp_storage.histogram[i] != 0)
-      {
-        atomicAdd(histogram + i, temp_storage.histogram[i]);
-      }
-    }
+    // Merge the locally aggregated histogram into the global histogram
+    merge_histograms(temp_storage.histogram, histogram);
   }
 
   /**
