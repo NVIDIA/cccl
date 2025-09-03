@@ -347,9 +347,10 @@ CUDA doesn't support exceptions in device code, however, sometimes we need to wr
 +---------------------+--------------------------------------------------+
 
 When using these macros, there are some important constraints to keep in mind:
-1. The ``try``/``catch`` blocks mustn't be nested due to variable shadowing.
-2. When using ``try``/``catch`` block inside an ``if`` statement, always wrap it in a scope, otherwise it may lead to unexpected behavior.
-3. The ``catch`` clause must always bind to a named variable. If omitted, there will be an expected identifier error.
+
+#. The ``try``/``catch`` blocks mustn't be nested due to variable shadowing.
+#. When using ``try``/``catch`` block inside an ``if`` statement, always wrap it in a scope, otherwise it may lead to unexpected behavior.
+#. The ``catch`` clause must always bind to a named variable. If omitted, there will be an expected identifier error.
 
 Example:
 
