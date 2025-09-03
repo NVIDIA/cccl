@@ -31,6 +31,7 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 
 - The functionality is only supported on ``SM >= 70``.
 - ``lane_mask`` must be non-zero.
+- ``T`` shall have no padding bits, that is, ``T``'s value representation shall be identical to its object representation.
 
 **Undefined Behavior**
 
@@ -57,14 +58,14 @@ Example
     #include <cuda/warp>
 
     struct MyStruct {
-        double x;
-        int    y;
-    };
+        double x; // 8 bytes
+        int    y; // 4 bytes
+    };            // 4 bytes of padding
 
     __global__ void warp_match_kernel() {
         assert(cuda::device::warp_match_all(2));
         assert(cuda::device::warp_match_all(2, cuda::device::lane_mask::all()));
-        assert(cuda::device::warp_match_all(MyStruct{1.0, 3}));
+        assert(cuda::device::warp_match_all(MyStruct{1.0, 3})); // Undefined Behavior
         assert(!cuda::device::warp_match_all(threadIdx.x));
     }
 

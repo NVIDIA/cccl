@@ -436,6 +436,36 @@ C2H_TEST("Reduce works with C++ source operations", "[reduce]")
   REQUIRE(output == expected);
 }
 
+struct Reduce_FloatingPointTypes_Fixture_Tag;
+using floating_point_types = c2h::type_list<
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+  float,
+  double>;
+C2H_TEST("Reduce works with floating point types", "[reduce]", floating_point_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  // Use small input sizes and values to avoid floating point precision issues.
+  const std::size_t num_items = GENERATE(10, 42, 1025);
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input(num_items, T{1});
+
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Reduce_FloatingPointTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, init, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE_APPROX_EQ(std::vector<T>{output}, std::vector<T>{expected});
+}
+
 struct Reduce_CppSourceWithEx_Fixture_Tag;
 C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
 {

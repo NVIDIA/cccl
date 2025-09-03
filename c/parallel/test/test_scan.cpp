@@ -463,6 +463,37 @@ C2H_TEST("Scan works with C++ source operations", "[scan]")
   REQUIRE(output == expected);
 }
 
+struct Scan_FloatingPointTypes_Fixture_Tag;
+using floating_point_types = c2h::type_list<
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+  float,
+  double>;
+C2H_TEST("Scan works with floating point types", "[scan]", floating_point_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  // Use small input sizes and values to avoid floating point precision issues.
+  const std::size_t num_items = GENERATE(10, 42, 1025);
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input(num_items, T{1});
+
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Scan_FloatingPointTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
+
+  const std::vector<T> output = output_ptr;
+  std::vector<T> expected(num_items);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
+  REQUIRE_APPROX_EQ(output, expected);
+}
+
 C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
 {
   using T = int32_t;

@@ -29,6 +29,7 @@ mkdir -p "$2"
 readonly target_directory="$(cd "$2" && pwd)"
 
 echo "Downloading artifact '$artifact_name' to '$target_directory'"
-gh run download ${GITHUB_RUN_ID} \
-  --name "$artifact_name" \
-  --dir "$target_directory"
+"$ci_dir/util/retry.sh" 5 30 \
+  gh run download ${GITHUB_RUN_ID} \
+    --name "$artifact_name" \
+    --dir "$target_directory"
