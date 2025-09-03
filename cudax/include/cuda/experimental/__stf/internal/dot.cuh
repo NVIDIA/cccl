@@ -920,7 +920,11 @@ private:
     }
   }
 
-  // This will update colors if necessary
+  //! Update vertex colors based on timing using percentile-based thresholds
+  //!
+  //! This approach is more robust than average-based coloring because it's not
+  //! skewed by outliers. Tasks are colored based on their relative performance:
+  //! 25% will be green (fast), 50% yellow (average), 25% orange/red (slow).
   void update_colors_with_timing()
   {
     if (!enable_timing)
@@ -928,34 +932,32 @@ private:
       return;
     }
 
-    float sum  = 0.0;
-    size_t cnt = 0;
-
-    // First go over all tasks which have some timing and compute the average duration
+    // Collect all timing values for percentile computation
+    ::std::vector<float> all_durations;
     for (const auto& p : all_vertices)
     {
       if (p.second.timing.has_value())
       {
-        float ms = p.second.timing.value();
-        cnt++;
-        sum += ms;
+        all_durations.push_back(p.second.timing.value());
       }
     }
 
-    if (cnt > 0)
+    if (all_durations.empty())
     {
-      float avg = sum / cnt;
+      return;
+    }
 
-      // Update colors associated to tasks with timing now in order to
-      // illustrate how long they take to execute relative to the average
-      for (auto& p : all_vertices)
+    // Sort durations for percentile computation
+    ::std::sort(all_durations.begin(), all_durations.end());
+
+    // Update colors using percentile-based thresholds
+    for (auto& p : all_vertices)
+    {
+      if (p.second.timing.has_value())
       {
-        if (p.second.timing.has_value())
-        {
-          float ms       = p.second.timing.value();
-          p.second.color = get_color_for_duration(ms, avg);
-          p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
-        }
+        float ms       = p.second.timing.value();
+        p.second.color = get_color_for_duration_percentile(ms, all_durations);
+        p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
       }
     }
   }
@@ -1164,35 +1166,49 @@ private:
   }
 
 private:
-  // Function to get a color based on task duration relative to the average
-  ::std::string get_color_for_duration(double duration, double avg_duration)
+  //! Get color based on task duration using percentile thresholds (more robust than average)
+  //!
+  //! Uses percentile-based thresholds to provide better color distribution:
+  //! - Very fast: < 25th percentile (light green)
+  //! - Fast: 25th-50th percentile (green)
+  //! - Average: 50th-75th percentile (yellow)
+  //! - Slow: 75th-90th percentile (orange)
+  //! - Very slow: > 90th percentile (red)
+  ::std::string get_color_for_duration_percentile(double duration, const ::std::vector<float>& sorted_durations)
   {
-    // Define thresholds relative to the average duration
-    const double very_short_threshold = 0.5 * avg_duration; // < 50% of avg
-    const double short_threshold      = 0.8 * avg_duration; // < 80% of avg
-    const double long_threshold       = 1.5 * avg_duration; // > 150% of avg
-    const double very_long_threshold  = 2.0 * avg_duration; // > 200% of avg
+    if (sorted_durations.empty())
+    {
+      return "#ffd966"; // Default yellow if no data
+    }
 
-    // Return color based on duration thresholds
-    if (duration < very_short_threshold)
+    size_t n = sorted_durations.size();
+
+    // Compute percentile indices (using nearest-rank method)
+    double p25 = sorted_durations[n * 25 / 100]; // 25th percentile
+    double p50 = sorted_durations[n * 50 / 100]; // 50th percentile (median)
+    double p75 = sorted_durations[n * 75 / 100]; // 75th percentile
+    double p90 = sorted_durations[n * 90 / 100]; // 90th percentile
+
+    // Return color based on percentile thresholds
+    if (duration < p25)
     {
-      return "#b6e3b6"; // Light Green for Very Short tasks
+      return "#b6e3b6"; // Light Green for Very Fast tasks (< 25%)
     }
-    else if (duration < short_threshold)
+    else if (duration < p50)
     {
-      return "#69b369"; // Green for Short tasks
+      return "#69b369"; // Green for Fast tasks (25-50%)
     }
-    else if (duration <= long_threshold)
+    else if (duration < p75)
     {
-      return "#ffd966"; // Yellow for Around Average tasks
+      return "#ffd966"; // Yellow for Average tasks (50-75%)
     }
-    else if (duration <= very_long_threshold)
+    else if (duration < p90)
     {
-      return "#ffb84d"; // Orange for Long tasks
+      return "#ffb84d"; // Orange for Slow tasks (75-90%)
     }
     else
     {
-      return "#ff6666"; // Red for Very Long tasks
+      return "#ff6666"; // Red for Very Slow tasks (> 90%)
     }
   }
 
