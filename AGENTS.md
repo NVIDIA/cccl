@@ -23,7 +23,7 @@ The repository uses **CMake** with the **Ninja** generator and provides standard
 
 ### OpenAI Codex
 
-Codex cloud instances instances cannot:
+Codex cloud instances cannot:
 
 * Run Docker containers with devcontainer scripts
 * Access GPUs or run GPU-dependent tests
@@ -54,7 +54,7 @@ Common options:
 Example:
 
 ```bash
-1.devcontainer/launch.sh -d --cuda 13.0 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.0 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`
