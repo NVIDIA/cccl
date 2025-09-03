@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__ptx/instructions/get_sreg.h>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/get_sreg.h>
+#endif // _CCCL_CUDA_COMPILATION()
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <time.h>
