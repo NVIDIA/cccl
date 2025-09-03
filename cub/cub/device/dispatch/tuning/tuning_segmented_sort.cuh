@@ -136,9 +136,10 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {
     using namespace ptx_json;
-    return object<key<"LargeSegmentPolicy">()  = LargeSegment().EncodedPolicy(),
-                  key<"SmallSegmentPolicy">()  = SmallSegment().EncodedPolicy(),
-                  key<"MediumSegmentPolicy">() = MediumSegment().EncodedPolicy()>();
+    return object<key<"LargeSegmentPolicy">()    = LargeSegment().EncodedPolicy(),
+                  key<"SmallSegmentPolicy">()    = SmallSegment().EncodedPolicy(),
+                  key<"MediumSegmentPolicy">()   = MediumSegment().EncodedPolicy(),
+                  key<"PartitioningThreshold">() = value<StaticPolicyT::PARTITIONING_THRESHOLD>()>();
   }
 #endif
 };
