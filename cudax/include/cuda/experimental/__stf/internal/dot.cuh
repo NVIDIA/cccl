@@ -977,7 +977,20 @@ private:
     }
   }
 
-  // Remove one vertex and replace incoming/outgoing edges
+  //! Remove a vertex while preserving graph connectivity
+  //!
+  //! This algorithm removes a vertex from the graph and maintains all dependency
+  //! relationships by connecting its predecessors directly to its successors.
+  //!
+  //! Algorithm:
+  //! 1. Identify all incoming edges (predecessors) to vertex_id
+  //! 2. Identify all outgoing edges (successors) from vertex_id
+  //! 3. Remove all edges involving vertex_id
+  //! 4. Create new edges connecting each predecessor to each successor
+  //! 5. Replace the edge set atomically
+  //!
+  //! This preserves the transitive closure of dependencies while removing
+  //! intermediate nodes (e.g., freeze/unfreeze operations).
   void collapse_vertex(int vertex_id)
   {
     /* We look for incoming edges, and outgoing edges */
@@ -1044,8 +1057,18 @@ private:
     }
   }
 
-  //! Collapse nodes which are parts of sections deeper than the value
-  //! specified in CUDASTF_DOT_MAX_DEPTH
+  //! Hierarchical section collapsing to manage visual complexity
+  //!
+  //! When section nesting exceeds CUDASTF_DOT_MAX_DEPTH, this algorithm:
+  //! 1. Identifies all vertices in sections deeper than max_depth
+  //! 2. Groups vertices by their ancestor section at depth (max_depth + 1)
+  //! 3. Merges all vertices in each group into a single representative vertex
+  //! 4. Combines timing data from collapsed vertices (sum of durations)
+  //! 5. Redirects edges: internal edges removed, external edges preserved
+  //! 6. Updates representative vertex with section name and parent assignment
+  //!
+  //! This transforms deep hierarchies into manageable flat structures while
+  //! preserving the overall dependency relationships and timing information.
   void collapse_sections()
   {
     const char* env_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
@@ -1237,7 +1260,20 @@ private:
     return false;
   }
 
-  // This method will check whether an edge can be removed when there is already a direct path
+  //! Remove transitive edges to simplify graph visualization (transitive reduction)
+  //!
+  //! This algorithm removes edges (A->C) when there exists an alternative path A->B->C,
+  //! making the graph cleaner while preserving all dependency relationships.
+  //!
+  //! Algorithm:
+  //! 1. Build predecessor map for each vertex
+  //! 2. For each edge (A->C), check if there's any intermediate vertex B where:
+  //!    - B is a predecessor of C (B->C exists)
+  //!    - A can reach B through some path (A->...->B)
+  //! 3. If such B exists, the edge A->C is redundant and can be removed
+  //! 4. Use visited set to avoid checking the same paths multiple times
+  //!
+  //! Time Complexity: O(V^3) in worst case, but optimized with caching
   void remove_redundant_edges()
   {
     single_threaded_section guard(mtx);
@@ -1281,6 +1317,20 @@ private:
     ::std::swap(new_edges, all_edges);
   }
 
+  //! Compute the critical path (longest path) through the DAG using topological sort
+  //!
+  //! This algorithm implements the following steps:
+  //! 1. Gather timing data for all vertices (tasks with 0.0 duration for non-timed nodes)
+  //! 2. Build predecessor/successor maps from edges
+  //! 3. Use topological sort for vertex ordering
+  //! 4. During traversal, compute longest distances (critical path lengths)
+  //! 5. Find the vertex with maximum distance (end of critical path)
+  //! 6. Backtrack using path_predecessor to highlight critical path vertices
+  //!
+  //! The algorithm computes:
+  //! - T1 (total work): Sum of all task durations
+  //! - Tinf (critical path): Longest path through the DAG
+  //! - Parallelism ratio: T1/Tinf indicates maximum theoretical speedup
   void compute_critical_path(::std::ofstream& outFile)
   {
     if (!enable_timing)
@@ -1336,7 +1386,7 @@ private:
       }
     }
 
-    // Topological sort using Kahn's algorithm
+    // Topological sort using in-degree counting
     ::std::queue<int> q;
     for (const auto& p : durations)
     {
