@@ -645,10 +645,15 @@ struct AgentTopK
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OutOffsetT k, const int pass)
   {
-    for (int i = threadIdx.x; i < num_buckets; i += BLOCK_THREADS)
+    // Initialize histogram bin counts to zeros
+    int histo_offset = 0;
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (; histo_offset + BLOCK_THREADS <= num_buckets; histo_offset += BLOCK_THREADS)
     {
-      OffsetT prev = (i == 0) ? 0 : temp_storage.histogram[i - 1];
-      OffsetT cur  = temp_storage.histogram[i];
+      const int bin_idx = histo_offset + threadIdx.x;
+      OffsetT prev      = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
+      OffsetT cur       = temp_storage.histogram[bin_idx];
 
       // Identify the bin that the k-th item falls into. One and only one thread will satisfy this condition, so counter
       // is written by only one thread
@@ -659,8 +664,30 @@ struct AgentTopK
 
         // The number of candidates in the next pass
         counter->len                                   = cur - prev;
-        typename Traits<key_in_t>::UnsignedBits bucket = i;
-        //
+        typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
+        // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
+        int start_bit = calc_start_bit<key_in_t, BITS_PER_PASS>(pass);
+        counter->kth_key_bits |= bucket << start_bit;
+      }
+    }
+    // Finish up with guarded initialization if necessary
+    if ((num_buckets % BLOCK_THREADS != 0) && (histo_offset + threadIdx.x < num_buckets))
+    {
+      const int bin_idx = histo_offset + threadIdx.x;
+      OffsetT prev      = (bin_idx == 0) ? 0 : temp_storage.histogram[bin_idx - 1];
+      OffsetT cur       = temp_storage.histogram[bin_idx];
+
+      // Identify the bin that the k-th item falls into. One and only one thread will satisfy this condition, so counter
+      // is written by only one thread
+      if (prev < k && cur >= k)
+      {
+        // The number of items that are yet to be identified
+        counter->k = k - prev;
+
+        // The number of candidates in the next pass
+        counter->len                                   = cur - prev;
+        typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
+        // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
         int start_bit = calc_start_bit<key_in_t, BITS_PER_PASS>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
