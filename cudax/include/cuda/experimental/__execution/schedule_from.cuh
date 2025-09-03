@@ -23,12 +23,13 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
+#include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
@@ -52,7 +53,7 @@ template <class _Tag>
 struct __decay_args
 {
   template <class... _Ts>
-  [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
@@ -62,14 +63,29 @@ struct __decay_args
     }
     else if constexpr (!__nothrow_decay_copyable<_Ts...>)
     {
-      return completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<_Tag(decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
     }
     else
     {
-      return completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...)>{};
+      return completion_signatures<_Tag(decay_t<_Ts>...)>{};
     }
   }
 };
+
+// ATTENTION: This list of queries to not forward must be kept in sync with the
+// __attrs_t struct in __transfer_sndr_t
+template <class _Tag>
+_CCCL_CONCEPT __forwarding_schedule_from_query =
+  __forwarding_query<_Tag>
+  && __none_of<_Tag,
+               get_completion_behavior_t,
+               get_domain_override_t,
+               get_completion_domain_t<set_value_t>,
+               get_completion_domain_t<set_error_t>,
+               get_completion_domain_t<set_stopped_t>,
+               get_completion_scheduler_t<set_value_t>,
+               get_completion_scheduler_t<set_error_t>,
+               get_completion_scheduler_t<set_stopped_t>>;
 
 // A base class for both schedule_from_t::__sndr_t and continues_on_t::__sndr_t
 template <class _Tag, class _Sch, class _Sndr>
@@ -77,49 +93,120 @@ struct __transfer_sndr_t
 {
   using sender_concept = sender_t;
 
-  // For schedule_from, the domain to use when transforming the sender is the same as the
-  // scheduler's domain, or default_domain if it does not define one. For continues_on,
-  // the transformation domain is the same as the predecessor sender's domain, if it
-  // defines one.
-  using __sched_domain_t _CCCL_NODEBUG_ALIAS = __query_result_or_t<_Sch, get_domain_t, default_domain>;
-  using __sndr_domain_t _CCCL_NODEBUG_ALIAS  = __early_domain_of_t<_Sndr, __nil>;
-  using __late_domain_t _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<_Tag, schedule_from_t>, __sched_domain_t, __sndr_domain_t>;
-
   // see SCHED-ATTRS here: https://eel.is/c++draft/exec#snd.expos-6
   struct __attrs_t
   {
-    template <class _SetTag>
-    _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>) const = delete;
-
-    _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>, _Env&&...) const noexcept
+      -> _Sch
     {
       return __self_->__sch_;
     }
 
+    // If the predecessor sender does not have a _SetTag completion, then the completion
+    // scheduler for _SetTag is the scheduler's if it has one.
+    _CCCL_TEMPLATE(class _SetTag, class... _Env)
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr, __fwd_env_t<_Env>...>) )
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
+      -> __call_result_t<get_completion_scheduler_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
+    {
+      return get_completion_scheduler<_SetTag>(__self_->__sch_, __fwd_env(static_cast<_Env&&>(__env))...);
+    }
+
+    // If the scheduler's sender does not have a _SetTag completion, then the completion
+    // scheduler for _SetTag is the sender's if it has one.
+    _CCCL_TEMPLATE(class _SetTag, class... _Env)
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>) )
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
+      -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __fwd_env_t<_Env>...>
+    {
+      return get_completion_scheduler<_SetTag>(
+        execution::get_env(__self_->__sndr_), __fwd_env(static_cast<_Env&&>(__env))...);
+    }
+
     // Both schedule_from and continues_on senders complete on the scheduler's domain.
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> __sched_domain_t
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, _Env&&...) const noexcept
+      -> __scheduler_domain_t<_Sch, __fwd_env_t<_Env>...>
     {
       return {};
     }
 
-    // schedule_from and continues_on have special rules for the domain used to transform
-    // the sender.
-    _CCCL_TEMPLATE(class _LateDomain = __late_domain_t)
-    _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_LateDomain, __nil>) )
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_override_t) noexcept -> _LateDomain
+    // If the predecessor sender does not have a _SetTag completion, then the completion
+    // domain for _SetTag is the scheduler's if it has one.
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _SetTag, class... _Env)
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr, __fwd_env_t<_Env>...>) )
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
+      -> __call_result_t<get_completion_domain_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
     {
       return {};
+    }
+
+    // If the scheduler's sender does not have a _SetTag completion, then the completion
+    // domain for _SetTag is the sender's if it has one.
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _SetTag, class... _Env)
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>) )
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
+      -> __call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __fwd_env_t<_Env>...>
+    {
+      return {};
+    }
+
+    template <class... _Env>
+    _CCCL_API static constexpr auto __get_domain_override() noexcept
+    {
+      if constexpr (__same_as<_Tag, schedule_from_t>)
+      {
+        // for schedule_from, return the domain of the scheduler:
+        if constexpr (__is_instantiable_with<__scheduler_domain_t, _Sch, _Env...>)
+        {
+          return __scheduler_domain_t<_Sch, _Env...>{};
+        }
+      }
+      else if constexpr (__callable<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, _Env...>)
+      {
+        // for continues_on, return the domain of the predecessor sender:
+        return __call_result_t<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, _Env...>();
+      }
+    }
+
+    template <class... _Env>
+    using __domain_override_t _CCCL_NODEBUG_ALIAS =
+      __unless_one_of_t<decltype(__attrs_t::__get_domain_override<__fwd_env_t<_Env>...>()), void>;
+
+    // schedule_from and continues_on have special rules for the domain used to transform
+    // the sender.
+    _CCCL_EXEC_CHECK_DISABLE
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_domain_override_t, _Env&&...) const noexcept
+      -> __domain_override_t<_Env...>
+    {
+      return {};
+    }
+
+    // The completion behavior of schedule_from/continues_on is the weaker of the
+    // completion behaviors of the predecessor sender and the scheduler's sender.
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, _Env&&...) const noexcept
+    {
+      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
+                               execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>());
     }
 
     // The following overload will not be considered when _Query is get_domain_override_t
     // because get_domain_override_t is not a forwarding query.
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(
+      __forwarding_schedule_from_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
     {
-      return execution::get_env(__self_->__sndr_).query(_Query{});
+      return execution::get_env(__self_->__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
     const __transfer_sndr_t* __self_;
@@ -131,7 +218,7 @@ struct __transfer_sndr_t
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
       _CUDAX_LET_COMPLETIONS(
-        auto(__sch_completions) = execution::get_completion_signatures<schedule_result_t<_Sch>, _Env...>())
+        auto(__sch_completions) = execution::get_completion_signatures<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>())
       {
         // The scheduler contributes error and stopped completions.
         return concat_completion_signatures(
@@ -159,19 +246,12 @@ struct __transfer_sndr_t
 struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 {
   _CUDAX_SEMI_PRIVATE :
-  template <class... _As>
-  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_value_t, _CUDA_VSTD::decay_t<_As>...>;
-
-  template <class _Error>
-  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_error_t, _CUDA_VSTD::decay_t<_Error>>;
-
-  using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_stopped_t>;
-
   struct __send_result_fn
   {
     template <class _Rcvr, class _Tag, class... _As>
-    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&&... __args) const noexcept
+    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tag, _As&... __args) const noexcept
     {
+      // moves from lvalues here is intentional:
       _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_As&&>(__args)...);
     }
   };
@@ -180,9 +260,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   struct __send_result_visitor
   {
     template <class _Tuple>
-    _CCCL_API constexpr void operator()(_Tuple&& __tuple) const noexcept
+    _CCCL_API constexpr void operator()(_Tuple& __tuple) const noexcept
     {
-      _CUDA_VSTD::__apply(__send_result_fn{}, static_cast<_Tuple&&>(__tuple), __rcvr_);
+      ::cuda::std::__apply(__send_result_fn{}, __tuple, __rcvr_);
     }
 
     _Rcvr& __rcvr_;
@@ -200,7 +280,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
   template <class _Rcvr, class _Results>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
+    using receiver_concept = receiver_t;
 
     template <class _Tag, class... _As>
     _CCCL_API constexpr void operator()(_Tag, _As&... __as) noexcept
@@ -214,12 +294,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
     {
       execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_TRIVIAL_API constexpr void set_stopped() noexcept
+    _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
     {
       execution::set_stopped(static_cast<_Rcvr&&>(__state_->__rcvr_));
     }
@@ -248,7 +328,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     template <class _Tag, class... _As>
     _CCCL_API void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using __tupl_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<_Tag, _CUDA_VSTD::decay_t<_As>...>;
+      using __tupl_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<_Tag, decay_t<_As>...>;
       if constexpr (__nothrow_decay_copyable<_As...>)
       {
         __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
@@ -300,7 +380,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     using operation_state_concept             = operation_state_t;
     using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
     using __results_t _CCCL_NODEBUG_ALIAS =
-      typename __completions_t::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
+      typename __completions_t::template __transform_q<::cuda::std::__decayed_tuple, __variant>;
     using __rcvr_t       = schedule_from_t::__rcvr_t<_Rcvr, __results_t>;
     using __stash_rcvr_t = schedule_from_t::__stash_rcvr_t<_Sch, _Rcvr, __results_t>;
 
@@ -339,7 +419,7 @@ public:
   };
 
   template <class _Sch, class _Sndr>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);

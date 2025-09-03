@@ -73,7 +73,7 @@ public:
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
   // CUDA stream
-  cudaStream_t get_stream()
+  cudaStream_t get_stream() const
   {
     const auto& e_place = get_exec_place();
     if (e_place.is_grid())
@@ -89,7 +89,7 @@ public:
   }
 
   // TODO use a pos4 and check that we have a grid, of the proper dimension
-  cudaStream_t get_stream(size_t pos)
+  cudaStream_t get_stream(size_t pos) const
   {
     const auto& e_place = get_exec_place();
 
@@ -586,17 +586,17 @@ public:
       auto t = tuple_prepend(get_stream(), typed_deps());
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
-    else if constexpr (reserved::is_invocable_with_filtered<Fun, cudaStream_t, Data...>::value)
+    else if constexpr (reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Data...>>)
     {
       // Use the filtered tuple
-      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
+      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface(typed_deps()));
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
     else
     {
       constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
       constexpr bool fun_invocable_task_non_void_deps =
-        reserved::is_invocable_with_filtered<Fun, decltype(*this), Data...>::value;
+        reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<decltype(*this), Data...>>;
 
       // Invoke passing `*this` as the first argument, followed by the slices
       static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
@@ -609,7 +609,7 @@ public:
       else if constexpr (fun_invocable_task_non_void_deps)
       {
         return ::std::apply(::std::forward<Fun>(fun),
-                            tuple_prepend(*this, reserved::remove_void_interface_types(typed_deps())));
+                            tuple_prepend(*this, reserved::remove_void_interface(typed_deps())));
       }
     }
   }

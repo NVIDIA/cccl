@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_FUNCTIONS_COMMON_H
-#define _LIBCUDACXX___ATOMIC_FUNCTIONS_COMMON_H
+#ifndef _CUDA_STD___ATOMIC_FUNCTIONS_COMMON_H
+#define _CUDA_STD___ATOMIC_FUNCTIONS_COMMON_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
 struct __atomic_ptr_skip
@@ -51,8 +51,8 @@ struct __atomic_ptr_skip<_Tp[n]>
 template <typename _Tp>
 using __atomic_ptr_skip_t = __atomic_ptr_skip<remove_cvref_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_COMMON_H
+#endif // _CUDA_STD___ATOMIC_FUNCTIONS_COMMON_H

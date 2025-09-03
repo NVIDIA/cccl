@@ -736,7 +736,7 @@ struct iterator_traits<only_set_when_expected_it>
 };
 } // namespace std
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
 struct iterator_traits<only_set_when_expected_it>
 {
@@ -745,7 +745,7 @@ struct iterator_traits<only_set_when_expected_it>
   using iterator_category = thrust::random_access_device_iterator_tag;
   using difference_type   = ::cuda::std::ptrdiff_t;
 };
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 void TestCopyWithBigIndexesHelper(int magnitude)
 {

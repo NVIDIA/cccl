@@ -1154,10 +1154,12 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   OutputIterator2 out_false,
   Predicate pred);
 
-/*! \} // end stream_compaction
+/*!
+ * \} end group partitioning
  */
 
-/*! \} // end reordering
+/*!
+ * \} end group reordering
  */
 
 /*! \addtogroup searching
@@ -1268,7 +1270,8 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Predicate pred);
 
-/*! \} // searching
+/*!
+ * \} end group searching
  */
 
 /*! \addtogroup reductions
@@ -1374,8 +1377,12 @@ _CCCL_HOST_DEVICE bool is_partitioned(
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(InputIterator first, InputIterator last, Predicate pred);
 
-/*! \} // end predicates
- *  \} // end reductions
+/*!
+ * \} end group predicates
+ */
+
+/*!
+ * \} end group reductions
  */
 
 THRUST_NAMESPACE_END

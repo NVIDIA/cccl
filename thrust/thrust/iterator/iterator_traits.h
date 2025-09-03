@@ -238,6 +238,24 @@ struct iterator_traversal<::cuda::permutation_iterator<Iter, Offset>>
   using type = random_access_traversal_tag;
 };
 
+template <class Iter>
+struct iterator_system<::cuda::std::reverse_iterator<Iter>> : iterator_system<Iter>
+{};
+template <class Iter>
+struct iterator_traversal<::cuda::std::reverse_iterator<Iter>> : iterator_traversal<Iter>
+{};
+
+template <class IndexType, class Bijection>
+struct iterator_system<::cuda::shuffle_iterator<IndexType, Bijection>>
+{
+  using type = any_system_tag;
+};
+template <class IndexType, class Bijection>
+struct iterator_traversal<::cuda::shuffle_iterator<IndexType, Bijection>>
+{
+  using type = random_access_traversal_tag;
+};
+
 template <class Iter, class Stride>
 struct iterator_system<::cuda::strided_iterator<Iter, Stride>> : iterator_system<Iter>
 {};
@@ -276,6 +294,17 @@ struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<I
 template <class Iter, class Fn>
 struct iterator_traversal<::cuda::transform_iterator<Iter, Fn>> : iterator_traversal<Iter>
 {};
+
+template <class... Iterators>
+struct iterator_system<::cuda::zip_iterator<Iterators...>>
+{
+  using type = detail::minimum_system_t<iterator_system_t<Iterators>...>;
+};
+template <class... Iterators>
+struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
+{
+  using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
+};
 
 THRUST_NAMESPACE_END
 

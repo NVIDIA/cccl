@@ -43,8 +43,8 @@ struct MinimalElementType
       : val(42)
   {}
 
-  // MSVC2019 cannot list init the element and complains about the deleted copy constructor. Emulate via private
-#if _CCCL_COMPILER(MSVC2019)
+  // MSVC cannot list init the element and complains about the deleted copy constructor. Emulate via private
+#if _CCCL_COMPILER(MSVC)
 
 private:
   constexpr MinimalElementType(const MinimalElementType&) = default;

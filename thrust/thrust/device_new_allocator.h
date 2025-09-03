@@ -71,7 +71,7 @@ public:
   /*! \c const reference to allocated element, \c device_reference<const T>. */
   using const_reference = device_reference<const T>;
 
-  /*! Type of allocation size, \c ::cuda::std::size_t. */
+  /*! Type of allocation size, \c size_t. */
   using size_type = ::cuda::std::size_t;
 
   /*! Type of allocation difference, \c pointer::difference_type. */

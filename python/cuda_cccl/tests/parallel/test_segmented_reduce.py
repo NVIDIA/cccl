@@ -41,9 +41,14 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
+    if input_array.dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = binary_op
+
     # Call single-phase API directly with num_segments parameter
     parallel.segmented_reduce(
-        d_in, d_out, start_offsets, end_offsets, binary_op, h_init, n_segments
+        d_in, d_out, start_offsets, end_offsets, reduce_op, h_init, n_segments
     )
 
     d_expected = cp.empty_like(d_out)
@@ -262,3 +267,46 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
+
+
+def test_segmented_reduce_well_known_plus():
+    """Test segmented reduce with well-known PLUS operation."""
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+
+    # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
+    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    # Run segmented reduce with well-known PLUS operation
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, parallel.OpKind.PLUS, h_init, 3
+    )
+
+    # Check the result is correct
+    expected = np.array([6, 9, 30])  # sums of each segment
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
+def test_segmented_reduce_well_known_maximum():
+    """Test segmented reduce with well-known MAXIMUM operation."""
+    dtype = np.int32
+    h_init = np.array([-100], dtype=dtype)
+
+    # Create segmented data: [1, 9, 3] | [4, 2] | [6, 7, 1, 8]
+    d_input = cp.array([1, 9, 3, 4, 2, 6, 7, 1, 8], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    # Run segmented reduce with well-known MAXIMUM operation
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, parallel.OpKind.MAXIMUM, h_init, 3
+    )
+
+    # Check the result is correct
+    expected = np.array([9, 4, 8])  # max of each segment
+    np.testing.assert_equal(d_output.get(), expected)

@@ -26,18 +26,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <thread_scope _Sco>
-class latch : public _CUDA_VSTD::__latch_base<_Sco>
+class latch : public ::cuda::std::__latch_base<_Sco>
 {
 public:
-  _CCCL_API constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
-      : _CUDA_VSTD::__latch_base<_Sco>(__count)
+  _CCCL_API constexpr latch(::cuda::std::ptrdiff_t __count)
+      : ::cuda::std::__latch_base<_Sco>(__count)
   {}
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

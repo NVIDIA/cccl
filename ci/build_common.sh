@@ -96,13 +96,29 @@ if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
 fi
 
-# Presets will be configured in this directory:
-BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
+mkdir -p ../build
+# Absolute path to cccl/build
+BUILD_ROOT=$(cd "../build" && pwd)
 
-# The most recent build will always be symlinked to cccl/build/latest
+# Absolute path to per-devcontainer build directory
+BUILD_DIR="$BUILD_ROOT/$CCCL_BUILD_INFIX"
+
+# The most recent devcontainer build dir will always be symlinked to cccl/build/latest
 mkdir -p $BUILD_DIR
-rm -f ../build/latest
-ln -sf $BUILD_DIR ../build/latest
+rm -f $BUILD_ROOT/latest
+ln -sf $BUILD_DIR $BUILD_ROOT/latest
+
+# The more recent preset build dir will always be symlinked to:
+# cccl/build/latest/latest
+# cccl/preset-latest
+function symlink_latest_preset {
+    local PRESET=$1
+    mkdir -p "$BUILD_DIR/$PRESET"
+    rm -f "$BUILD_ROOT/latest/latest"
+    ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/latest/latest"
+    rm -f "$BUILD_ROOT/preset-latest"
+    ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/preset-latest"
+}
 
 # Now that BUILD_DIR exists, use readlink to canonicalize the path:
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
@@ -192,6 +208,8 @@ function configure_preset()
     local CMAKE_OPTIONS=$3
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
+    symlink_latest_preset "$PRESET"
+
     pushd .. > /dev/null
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
       # Retry 5 times with 30 seconds between attempts to try to WAR network issues during CPM fetch on CI runners:
@@ -222,6 +240,8 @@ function build_preset() {
     local green="1;32"
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+
+    symlink_latest_preset "$PRESET"
 
     if $CONFIGURE_ONLY; then
         return 0
@@ -269,6 +289,8 @@ function test_preset()
     local BUILD_NAME=$1
     local PRESET=$2
     local GPU_REQUIRED=${3:-true}
+
+    symlink_latest_preset "$PRESET"
 
     if $CONFIGURE_ONLY; then
         return 0

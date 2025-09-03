@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_CPP_DIALECT_H
-#define _LIBCUDACXX___INTERNAL_CPP_DIALECT_H
+#ifndef _CUDA_STD___INTERNAL_CPP_DIALECT_H
+#define _CUDA_STD___INTERNAL_CPP_DIALECT_H
 
 #include <cuda/__cccl_config>
 
@@ -41,4 +41,4 @@
 #  endif // _CCCL_STD_VER < 2017
 #endif // CCCL_IGNORE_DEPRECATED_CPP_DIALECT
 
-#endif // _LIBCUDACXX___INTERNAL_CPP_DIALECT_H
+#endif // _CUDA_STD___INTERNAL_CPP_DIALECT_H

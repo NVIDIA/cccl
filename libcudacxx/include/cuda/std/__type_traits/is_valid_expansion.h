@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_VALID_EXPANSION_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_VALID_EXPANSION_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_VALID_EXPANSION_H
+#define _CUDA_STD___TYPE_TRAITS_IS_VALID_EXPANSION_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <template <class...> class _Templ, class... _Args, class = _Templ<_Args...>>
 _CCCL_API inline true_type __sfinae_test_impl(int);
@@ -32,10 +32,10 @@ template <template <class...> class, class...>
 _CCCL_API inline false_type __sfinae_test_impl(...);
 
 template <template <class...> class _Templ, class... _Args>
-using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));
+using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::__sfinae_test_impl<_Templ, _Args...>(0));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_VALID_EXPANSION_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_VALID_EXPANSION_H

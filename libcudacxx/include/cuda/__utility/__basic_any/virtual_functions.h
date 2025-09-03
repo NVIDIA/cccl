@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#define _CUDA___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __override_tag
@@ -61,31 +61,32 @@ using __class_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::__class_of_(_Fn()));
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
 template <class _DstPtr, class _Src>
-_CCCL_TRIVIAL_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
+_CCCL_NODEBUG_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 {
-  static_assert(_CUDA_VSTD::is_pointer_v<_DstPtr>, "");
-  static_assert(_CUDA_VSTD::is_base_of_v<_CUDA_VSTD::remove_pointer_t<_DstPtr>, _Src>, "invalid C-style cast detected");
+  static_assert(::cuda::std::is_pointer_v<_DstPtr>, "");
+  static_assert(::cuda::std::is_base_of_v<::cuda::std::remove_pointer_t<_DstPtr>, _Src>,
+                "invalid C-style cast detected");
   return (_DstPtr) __ptr; // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 }
 
 template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-[[nodiscard]] _CCCL_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
+[[nodiscard]] _CCCL_API auto __override_fn_([[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
                                             [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
-  using __value_type _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<_IsConst, _Tp>;
+  using __value_type _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<_IsConst, _Tp>;
 
-  if constexpr (_CUDA_VSTD::is_same_v<_Tp, void>)
+  if constexpr (::cuda::std::is_same_v<_Tp, void>)
   {
     // This instantiation is created only during the computation of the vtable
     // type. It is never actually called.
     _CCCL_UNREACHABLE();
   }
-  else if constexpr (_CUDA_VSTD::is_member_function_pointer_v<decltype(_Fn)>)
+  else if constexpr (::cuda::std::is_member_function_pointer_v<decltype(_Fn)>)
   {
     // _Fn may be a pointer to a member function of a private base of _Tp. So
     // after static_cast-ing to _Tp*, we need to use a C-style cast to get a
     // pointer to the correct base class.
-    using __class_type  = _CUDA_VSTD::__maybe_const<_IsConst, __class_of<decltype(_Fn)>>;
+    using __class_type  = ::cuda::std::__maybe_const<_IsConst, __class_of<decltype(_Fn)>>;
     __class_type& __obj = *::cuda::__c_style_cast<__class_type*>(static_cast<__value_type*>(__pv));
     return (__obj.*_Fn)(static_cast<_Args&&>(__args)...);
   }
@@ -100,47 +101,47 @@ template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class
 _CCCL_DIAG_POP
 
 template <class _Fn, class _Tp = void, auto _Override = 0>
-extern _CUDA_VSTD::__undefined<_Fn> __virtual_override_fn;
+extern ::cuda::std::__undefined<_Fn> __virtual_override_fn;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void*, _Args...)> //
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void*, _Args...)> //
   __virtual_override_fn<_Ret (*)(_Cp&, _Args...), _Tp, _Override> = //
   &__override_fn_<_Tp, _Override, _Ret, false, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void const*, _Args...)>
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void const*, _Args...)>
   __virtual_override_fn<_Ret (*)(_Cp const&, _Args...), _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void*, _Args...) noexcept>
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void*, _Args...) noexcept>
   __virtual_override_fn<_Ret (*)(_Cp&, _Args...) noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, false, true, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void const*, _Args...) noexcept>
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void const*, _Args...) noexcept>
   __virtual_override_fn<_Ret (*)(_Cp const&, _Args...) noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
 // TODO: Add support for member functions with reference qualifiers.
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void*, _Args...)> //
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void*, _Args...)> //
   __virtual_override_fn<_Ret (_Cp::*)(_Args...), _Tp, _Override> = //
   &__override_fn_<_Tp, _Override, _Ret, false, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void const*, _Args...)> //
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void const*, _Args...)> //
   __virtual_override_fn<_Ret (_Cp::*)(_Args...) const, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void*, _Args...) noexcept>
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void*, _Args...) noexcept>
   __virtual_override_fn<_Ret (_Cp::*)(_Args...) noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, false, true, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-inline constexpr _CUDA_VSTD::type_identity_t<_Ret (*)(void const*, _Args...) noexcept>
+inline constexpr ::cuda::std::type_identity_t<_Ret (*)(void const*, _Args...) noexcept>
   __virtual_override_fn<_Ret (_Cp::*)(_Args...) const noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
@@ -151,10 +152,10 @@ template <class _Ret, class... _Args>
 _CCCL_API auto __get_virtual_result(_Ret (*)(_Args...) noexcept) noexcept -> _Ret;
 
 template <class _Ret, class... _Args>
-_CCCL_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> _CUDA_VSTD::false_type;
+_CCCL_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> ::cuda::std::false_type;
 
 template <class _Ret, class... _Args>
-_CCCL_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> _CUDA_VSTD::true_type;
+_CCCL_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> ::cuda::std::true_type;
 
 //!
 //! __virtual_fn
@@ -176,8 +177,8 @@ struct __virtual_fn
   __function_t __fn_;
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H
+#endif // _CUDA___UTILITY_BASIC_ANY_VIRUAL_FUNCTIONS_H

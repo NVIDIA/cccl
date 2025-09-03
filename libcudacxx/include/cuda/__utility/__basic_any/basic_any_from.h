@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
+#define _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! `__basic_any_from`
@@ -36,19 +36,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! a pointer or a reference to the full `__basic_any` object.
 //!
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super>&& __self) noexcept -> __basic_any<_Super>&&
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>&& __self) noexcept -> __basic_any<_Super>&&
 {
   return static_cast<__basic_any<_Super>&&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super>& __self) noexcept -> __basic_any<_Super>&
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>& __self) noexcept -> __basic_any<_Super>&
 {
   return static_cast<__basic_any<_Super>&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super> const& __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super> const& __self) noexcept
   -> __basic_any<_Super> const&
 {
   return static_cast<__basic_any<_Super> const&>(__self);
@@ -64,13 +64,13 @@ template <template <class...> class _Interface>
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super>* __self) noexcept -> __basic_any<_Super>*
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super>* __self) noexcept -> __basic_any<_Super>*
 {
   return static_cast<__basic_any<_Super>*>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __basic_any_from(_Interface<_Super> const* __self) noexcept
+[[nodiscard]] _CCCL_NODEBUG_API auto __basic_any_from(_Interface<_Super> const* __self) noexcept
   -> __basic_any<_Super> const*
 {
   return static_cast<__basic_any<_Super> const*>(__self);
@@ -85,12 +85,12 @@ template <template <class...> class _Interface>
 }
 
 template <class _CvInterface>
-using __cvref_basic_any_from_t = decltype(::cuda::__basic_any_from(_CUDA_VSTD::declval<_CvInterface>()));
+using __cvref_basic_any_from_t = decltype(::cuda::__basic_any_from(::cuda::std::declval<_CvInterface>()));
 
 template <class _CvInterface>
-using __basic_any_from_t = _CUDA_VSTD::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
-_LIBCUDACXX_END_NAMESPACE_CUDA
+using __basic_any_from_t = ::cuda::std::decay_t<__cvref_basic_any_from_t<_CvInterface>>;
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H
+#endif // _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_FROM_H

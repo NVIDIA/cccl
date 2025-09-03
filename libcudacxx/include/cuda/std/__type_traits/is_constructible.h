@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __is_construct
 {
@@ -84,10 +84,10 @@ struct __is_constructible_helper
   // Example: static_cast<int&&>(declval<double>());
   // NOTE: The static_cast implementation below is required to support
   //  classes with explicit conversion operators.
-  template <class _To, class _From, class = decltype(__eat<_To>(_CUDA_VSTD::declval<_From>()))>
+  template <class _To, class _From, class = decltype(__eat<_To>(::cuda::std::declval<_From>()))>
   _CCCL_API inline static true_type __test_cast(int);
 
-  template <class _To, class _From, class = decltype(static_cast<_To>(_CUDA_VSTD::declval<_From>()))>
+  template <class _To, class _From, class = decltype(static_cast<_To>(::cuda::std::declval<_From>()))>
   _CCCL_API inline static integral_constant<
     bool,
     !__is_invalid_base_to_derived_cast<_To, _From>::value && !__is_invalid_lvalue_to_rvalue_cast<_To, _From>::value>
@@ -96,12 +96,12 @@ struct __is_constructible_helper
   template <class, class>
   _CCCL_API inline static false_type __test_cast(...);
 
-  template <class _Tp, class... _Args, class = decltype(_Tp(_CUDA_VSTD::declval<_Args>()...))>
+  template <class _Tp, class... _Args, class = decltype(_Tp(::cuda::std::declval<_Args>()...))>
   _CCCL_API inline static true_type __test_nary(int);
   template <class _Tp, class...>
   _CCCL_API inline static false_type __test_nary(...);
 
-  template <class _Tp, class _A0, class = decltype(::new _Tp(_CUDA_VSTD::declval<_A0>()))>
+  template <class _Tp, class _A0, class = decltype(::new _Tp(::cuda::std::declval<_A0>()))>
   _CCCL_API inline static is_destructible<_Tp> __test_unary(int);
   template <class, class>
   _CCCL_API inline static false_type __test_unary(...);
@@ -167,8 +167,8 @@ inline constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::valu
 
 #endif // defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_IS_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_IS_CONSTRUCTIBLE_H

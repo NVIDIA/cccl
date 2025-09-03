@@ -297,6 +297,12 @@ public:
   // move-constructible
   cuda_kernel_scope(cuda_kernel_scope&&) = default;
 
+  auto& set_exec_place(exec_place e_place_)
+  {
+    e_place = mv(e_place_);
+    return *this;
+  }
+
   /// Add a set of dependencies
   template <typename... Pack>
   void add_deps(task_dep_untyped first, Pack&&... pack)
@@ -446,7 +452,7 @@ public:
     // should be executed one after the other.
     if constexpr (chained)
     {
-      kernel_descs = ::std::apply(f, deps.instance(t));
+      kernel_descs = ::std::apply(f, deps.non_void_instance(t));
       assert(!kernel_descs.empty());
     }
     else
@@ -456,7 +462,7 @@ public:
       // descriptor, not a vector
       static_assert(!chained);
 
-      cuda_kernel_desc res = ::std::apply(f, deps.instance(t));
+      cuda_kernel_desc res = ::std::apply(f, deps.non_void_instance(t));
       kernel_descs.push_back(res);
     }
   }
@@ -530,7 +536,11 @@ private:
           kernel_descs[i].launch_in_graph(chain[i], g);
           if (i > 0)
           {
+#if _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], nullptr, 1));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
             cuda_safe_call(cudaGraphAddDependencies(g, &chain[i - 1], &chain[i], 1));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
           }
         }
       }

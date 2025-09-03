@@ -102,7 +102,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion to resource_ref")
+  SECTION("conversion to synchronous_resource_ref")
   {
     Counts expected{};
     {
@@ -110,7 +110,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      cudax::resource_ref<cudax::host_accessible> ref = mr;
+      cudax::synchronous_resource_ref<cudax::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
       auto* ptr = ref.allocate_sync(bytes(100), align(8));

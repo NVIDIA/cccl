@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
-#define _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#ifndef _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#define _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __atomic_cuda_memorder
 {
@@ -122,11 +122,11 @@ using __atomic_cuda_deduce_bitwise =
 
 template <class _Type>
 using __atomic_cuda_deduce_arithmetic = _If<
-  _CCCL_TRAIT(is_floating_point, _Type),
+  is_floating_point_v<_Type>,
   _If<sizeof(_Type) == 4,
       __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
       __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
-  _If<_CCCL_TRAIT(is_signed, _Type),
+  _If<is_signed_v<_Type>,
       __type_switch<sizeof(_Type),
                     __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
                     __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
@@ -141,11 +141,11 @@ using __atomic_cuda_deduce_arithmetic = _If<
 
 template <class _Type>
 using __atomic_cuda_deduce_minmax = _If<
-  _CCCL_TRAIT(is_floating_point, _Type),
+  is_floating_point_v<_Type>,
   _If<sizeof(_Type) == 4,
       __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
       __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
-  _If<_CCCL_TRAIT(is_signed, _Type),
+  _If<is_signed_v<_Type>,
       __type_switch<sizeof(_Type),
                     __type_case<1, __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>>,
                     __type_case<2, __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>>,
@@ -162,16 +162,16 @@ template <class _Type>
 using __atomic_enable_if_native_bitwise = bool;
 
 template <class _Type>
-using __atomic_enable_if_native_arithmetic = enable_if_t<_CCCL_TRAIT(is_scalar, _Type), bool>;
+using __atomic_enable_if_native_arithmetic = enable_if_t<is_scalar_v<_Type>, bool>;
 
 template <class _Type>
-using __atomic_enable_if_native_minmax = enable_if_t<_CCCL_TRAIT(is_integral, _Type), bool>;
+using __atomic_enable_if_native_minmax = enable_if_t<is_integral_v<_Type>, bool>;
 
 template <class _Type>
-using __atomic_enable_if_not_native_minmax = enable_if_t<!_CCCL_TRAIT(is_integral, _Type), bool>;
+using __atomic_enable_if_not_native_minmax = enable_if_t<!is_integral_v<_Type>, bool>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H
+#endif // _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H

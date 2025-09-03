@@ -7,12 +7,13 @@ libcu++
    :hidden:
    :maxdepth: 3
 
+   Overview <self>
    setup
+   releases
    standard_api
    extended_api
-   ptx
-   releases
-   contributing
+   ptx_api
+   API reference <api/index>
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++
 developers easier.

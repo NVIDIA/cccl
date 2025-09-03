@@ -94,6 +94,22 @@ class context
       };
     }
 
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
+    }
+
     auto& set_symbol(::std::string s) &
     {
       payload->*[&](auto& self) {
@@ -164,6 +180,7 @@ class context
     ::std::variant<T1, T2> payload;
   };
 
+public:
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -192,6 +209,45 @@ class context
         self.set_symbol(mv(s));
       };
       return mv(*this);
+    }
+
+    auto&& set_exec_place(exec_place e_place) &
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return *this;
+    }
+
+    auto&& set_exec_place(exec_place e_place) &&
+    {
+      payload->*[&](auto& self) {
+        self.set_exec_place(mv(e_place));
+      };
+      return mv(*this);
+    }
+
+    auto& start()
+    {
+      payload->*[&](auto& self) {
+        self.start();
+      };
+      return *this;
+    }
+
+    auto& end()
+    {
+      payload->*[&](auto& self) {
+        self.end();
+      };
+      return *this;
+    }
+
+    void enable_capture()
+    {
+      payload->*[&](auto& self) {
+        self.enable_capture();
+      };
     }
 
     /**
@@ -234,11 +290,17 @@ class context
       };
     }
 
+    cudaStream_t get_stream() const
+    {
+      return payload->*[&](auto& self) {
+        return self.get_stream();
+      };
+    }
+
   private:
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
 
-public:
   /**
    * @brief Default constructor for the context class.
    */
@@ -893,6 +955,29 @@ UNITTEST("context with arguments")
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
+inline void unit_test_context_pfor_integral()
+{
+  context ctx;
+  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
+  ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
+  ctx.host_launch(lA.read())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      EXPECT(A(i) == 2 * i);
+    }
+  };
+  ctx.finalize();
+}
+
+UNITTEST("context parallel_for integral shape")
+{
+  unit_test_context_pfor_integral();
+};
+
 inline void unit_test_context_pfor()
 {
   context ctx;
@@ -1370,23 +1455,6 @@ UNITTEST("make_tuple_indexwise")
   EXPECT(t2 == ::std::tuple(0, 2));
 };
 
-UNITTEST("auto_dump set/get")
-{
-  context ctx;
-
-  int A[1024];
-  int B[1024];
-  auto lA = ctx.logical_data(A);
-  auto lB = ctx.logical_data(B);
-
-  // Disable auto dump
-  lA.set_auto_dump(false);
-  EXPECT(lA.get_auto_dump() == false);
-
-  // Enabled by default
-  EXPECT(lB.get_auto_dump() == true);
-};
-
 UNITTEST("cuda stream place")
 {
   cudaStream_t user_stream;
@@ -1451,13 +1519,13 @@ UNITTEST("token elision")
   auto lC = ctx.logical_data(buf);
 
   // with all arguments
-  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with argument elision
   ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with all arguments
-  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](void_interface, void_interface, slice<int>) {};
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
 
   // with argument elision
   ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
@@ -1481,6 +1549,45 @@ UNITTEST("token vector")
   ctx.task(tokens[0].read(), tokens[1].write())->*[](cudaStream_t) {};
   ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
   ctx.task(tokens[1].read(), tokens[2].read(), tokens[3].write())->*[](cudaStream_t) {};
+
+  ctx.finalize();
+};
+
+UNITTEST("get_stream")
+{
+  context ctx;
+
+  auto token = ctx.token();
+  auto t     = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  EXPECT(s != nullptr);
+  t.end();
+  ctx.finalize();
+};
+
+UNITTEST("get_stream graph")
+{
+  graph_ctx ctx;
+
+  auto token = ctx.token();
+
+  auto t = ctx.task(token.write());
+  t.start();
+  cudaStream_t s = t.get_stream();
+  // We are not capturing so there is no stream associated
+  EXPECT(s == nullptr);
+  cudaGraphNode_t n;
+  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  t.end();
+
+  auto t2 = ctx.task(token.rw());
+  t2.enable_capture();
+  t2.start();
+  cudaStream_t s2 = t2.get_stream();
+  // We are capturing so the stream used for capture is associated to the task
+  EXPECT(s2 != nullptr);
+  t2.end();
 
   ctx.finalize();
 };

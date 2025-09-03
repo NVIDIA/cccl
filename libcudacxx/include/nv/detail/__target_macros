@@ -281,6 +281,7 @@
 #define NV_HAS_FEATURE_SM_90a  NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_100a NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_103a NV_NO_TARGET
+#define NV_HAS_FEATURE_SM_110a NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_120a NV_NO_TARGET
 #define NV_HAS_FEATURE_SM_121a NV_NO_TARGET
 
@@ -453,15 +454,6 @@
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100a 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100a 0
-#  endif
-
-// Re-enable sm_101a support in nvcc.
-#  undef NV_HAS_FEATURE_SM_101a
-#  define NV_HAS_FEATURE_SM_101a __NV_HAS_FEATURE_SM_101a
-#  if defined(__CUDA_ARCH_FEAT_SM101_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1010))
-#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 1
-#  else
-#    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 0
 #  endif
 
 // Re-enable sm_103a support in nvcc.

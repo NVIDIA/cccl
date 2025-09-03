@@ -25,7 +25,10 @@
 template <typename RandomAccessIteratorOut, typename... RandomAccessIteratorsIn>
 #if TUNE_BASE
 using policy_hub_t =
-  cub::detail::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut>;
+  cub::detail::transform::policy_hub</* stable address */ false,
+                                     /* dense output */ true,
+                                     ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                     RandomAccessIteratorOut>;
 #else
 struct policy_hub_t
 {
@@ -48,27 +51,24 @@ struct policy_hub_t
 };
 #endif
 
-template <typename OffsetT,
-          typename... RandomAccessIteratorsIn,
-          typename RandomAccessIteratorOut,
-          typename TransformOp,
-          typename ExecTag = decltype(nvbench::exec_tag::no_batch)>
-void bench_transform(
-  nvbench::state& state,
-  ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-  RandomAccessIteratorOut output,
-  OffsetT num_items,
-  TransformOp transform_op,
-  ExecTag exec_tag = nvbench::exec_tag::no_batch)
+template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
+void bench_transform(nvbench::state& state,
+                     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+                     RandomAccessIteratorOut output,
+                     OffsetT num_items,
+                     TransformOp transform_op)
 {
-  state.exec(nvbench::exec_tag::gpu | exec_tag, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
-                                       OffsetT,
-                                       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                       RandomAccessIteratorOut,
-                                       TransformOp,
-                                       policy_hub_t<RandomAccessIteratorOut, RandomAccessIteratorsIn...>>::
-      dispatch(inputs, output, num_items, transform_op, launch.get_stream());
+  state.exec(nvbench::exec_tag::gpu, [&](const nvbench::launch& launch) {
+    cub::detail::transform::dispatch_t<
+      cub::detail::transform::requires_stable_address::no,
+      OffsetT,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut,
+      cub::detail::transform::always_true_predicate,
+      TransformOp,
+      policy_hub_t<RandomAccessIteratorOut, RandomAccessIteratorsIn...>>::
+      dispatch(
+        inputs, output, num_items, cub::detail::transform::always_true_predicate{}, transform_op, launch.get_stream());
   });
 }
 

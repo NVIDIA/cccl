@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_SAME_H
+#define _CUDA_STD___TYPE_TRAITS_IS_SAME_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
@@ -70,15 +70,15 @@ inline constexpr bool is_same_v<_Tp, _Tp> = true;
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = bool_constant<_CCCL_TRAIT(is_same, _Tp, _Up)>;
+using _IsSame = bool_constant<is_same_v<_Tp, _Up>>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!_CCCL_TRAIT(is_same, _Tp, _Up)>;
+using _IsNotSame = bool_constant<!is_same_v<_Tp, _Up>>;
 
 #endif // defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SAME_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_SAME_H

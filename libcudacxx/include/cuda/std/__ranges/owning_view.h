@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_OWNING_VIEW_H
-#define _LIBCUDACXX___RANGES_OWNING_VIEW_H
+#ifndef _CUDA_STD___RANGES_OWNING_VIEW_H
+#define _CUDA_STD___RANGES_OWNING_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <range _Rp>
@@ -65,7 +65,7 @@ public:
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
   _CCCL_API constexpr owning_view(_Rp&& __r) noexcept(is_nothrow_move_constructible_v<_Rp>)
       : view_interface<owning_view<_Rp>>()
-      , __r_(_CUDA_VSTD::move(__r))
+      , __r_(::cuda::std::move(__r))
   {}
 
   _CCCL_HIDE_FROM_ABI owning_view(owning_view&&)            = default;
@@ -81,72 +81,72 @@ public:
   }
   [[nodiscard]] _CCCL_API constexpr _Rp&& base() && noexcept
   {
-    return _CUDA_VSTD::move(__r_);
+    return ::cuda::std::move(__r_);
   }
   [[nodiscard]] _CCCL_API constexpr const _Rp&& base() const&& noexcept
   {
-    return _CUDA_VSTD::move(__r_);
+    return ::cuda::std::move(__r_);
   }
 
   [[nodiscard]] _CCCL_API constexpr iterator_t<_Rp> begin()
   {
-    return _CUDA_VRANGES::begin(__r_);
+    return ::cuda::std::ranges::begin(__r_);
   }
   [[nodiscard]] _CCCL_API constexpr sentinel_t<_Rp> end()
   {
-    return _CUDA_VRANGES::end(__r_);
+    return ::cuda::std::ranges::end(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
-    return _CUDA_VRANGES::begin(__r_);
+    return ::cuda::std::ranges::begin(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto end() const
   {
-    return _CUDA_VRANGES::end(__r_);
+    return ::cuda::std::ranges::end(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
-  _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, _Range&>)
+  _CCCL_REQUIRES(invocable<::cuda::std::ranges::__empty::__fn, _Range&>)
   [[nodiscard]] _CCCL_API constexpr bool empty()
   {
-    return _CUDA_VRANGES::empty(__r_);
+    return ::cuda::std::ranges::empty(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
-  _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, const _Range&>)
+  _CCCL_REQUIRES(invocable<::cuda::std::ranges::__empty::__fn, const _Range&>)
   [[nodiscard]] _CCCL_API constexpr bool empty() const
   {
-    return _CUDA_VRANGES::empty(__r_);
+    return ::cuda::std::ranges::empty(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<_Range>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return _CUDA_VRANGES::size(__r_);
+    return ::cuda::std::ranges::size(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return _CUDA_VRANGES::size(__r_);
+    return ::cuda::std::ranges::size(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<_Range>)
   [[nodiscard]] _CCCL_API constexpr auto data()
   {
-    return _CUDA_VRANGES::data(__r_);
+    return ::cuda::std::ranges::data(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<const _Range>)
   [[nodiscard]] _CCCL_API constexpr auto data() const
   {
-    return _CUDA_VRANGES::data(__r_);
+    return ::cuda::std::ranges::data(__r_);
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(owning_view);
@@ -154,8 +154,8 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_OWNING_VIEW_H
+#endif // _CUDA_STD___RANGES_OWNING_VIEW_H

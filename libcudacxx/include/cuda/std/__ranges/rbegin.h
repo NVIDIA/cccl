@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_RBEGIN_H
-#define _LIBCUDACXX___RANGES_RBEGIN_H
+#ifndef _CUDA_STD___RANGES_RBEGIN_H
+#define _CUDA_STD___RANGES_RBEGIN_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,11 +33,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [ranges.access.rbegin]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__rbegin)
+_CCCL_BEGIN_NAMESPACE_CPO(__rbegin)
 template <class _Tp>
 void rbegin(_Tp&) = delete;
 template <class _Tp>
@@ -58,8 +58,8 @@ concept __unqualified_rbegin =
 template <class _Tp>
 concept __can_reverse =
   __can_borrow<_Tp> && !__member_rbegin<_Tp> && !__unqualified_rbegin<_Tp> && requires(_Tp&& __t) {
-    { _CUDA_VRANGES::begin(__t) } -> same_as<decltype(_CUDA_VRANGES::end(__t))>;
-    { _CUDA_VRANGES::begin(__t) } -> bidirectional_iterator;
+    { ::cuda::std::ranges::begin(__t) } -> same_as<decltype(::cuda::std::ranges::end(__t))>;
+    { ::cuda::std::ranges::begin(__t) } -> bidirectional_iterator;
   };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -86,11 +86,12 @@ _CCCL_CONCEPT __unqualified_rbegin = _CCCL_FRAGMENT(__unqualified_rbegin_, _Tp);
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __can_reverse_,
-  requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
-                      requires(!__member_rbegin<_Tp>),
-                      requires(!__unqualified_rbegin<_Tp>),
-                      requires(same_as<decltype(_CUDA_VRANGES::end(__t)), decltype(_CUDA_VRANGES::begin(__t))>),
-                      requires(bidirectional_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
+  requires(_Tp&& __t)(
+    requires(__can_borrow<_Tp>),
+    requires(!__member_rbegin<_Tp>),
+    requires(!__unqualified_rbegin<_Tp>),
+    requires(same_as<decltype(::cuda::std::ranges::end(__t)), decltype(::cuda::std::ranges::begin(__t))>),
+    requires(bidirectional_iterator<decltype(::cuda::std::ranges::begin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_reverse = _CCCL_FRAGMENT(__can_reverse_, _Tp);
@@ -119,16 +120,16 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_reverse<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CUDA_VRANGES::end(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(::cuda::std::ranges::end(__t)))
   {
-    return _CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::end(__t));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__member_rbegin<_Tp> && !__unqualified_rbegin<_Tp> && !__can_reverse<_Tp>) )
   void operator()(_Tp&&) const = delete;
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
@@ -137,38 +138,38 @@ _CCCL_GLOBAL_CONSTANT auto rbegin = __rbegin::__fn{};
 
 // [range.access.crbegin]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__crbegin)
+_CCCL_BEGIN_NAMESPACE_CPO(__crbegin)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t))))
-      -> decltype(_CUDA_VRANGES::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t))))
+      -> decltype(::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
-    return _CUDA_VRANGES::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t));
+    return ::cuda::std::ranges::rbegin(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_CUDA_VRANGES::rbegin(static_cast<const _Tp&&>(__t))))
-      -> decltype(_CUDA_VRANGES::rbegin(static_cast<const _Tp&&>(__t)))
+    noexcept(noexcept(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t))))
+      -> decltype(::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t)))
   {
-    return _CUDA_VRANGES::rbegin(static_cast<const _Tp&&>(__t));
+    return ::cuda::std::ranges::rbegin(static_cast<const _Tp&&>(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto crbegin = __crbegin::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_RBEGIN_H
+#endif // _CUDA_STD___RANGES_RBEGIN_H

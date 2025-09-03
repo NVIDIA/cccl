@@ -23,11 +23,11 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
@@ -79,11 +79,10 @@ struct __completion_fn<true, true>
 
 template <class _Result, bool _Nothrow>
 using __completion_ _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
+  ::cuda::std::__type_call1<__completion_fn<__same_as<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
-using __completion _CCCL_NODEBUG_ALIAS =
-  __completion_<_CUDA_VSTD::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 
 template <class _Fn, class _Rcvr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
@@ -115,7 +114,7 @@ struct __upon_t
     {
       if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
       {
-        if constexpr (_CUDA_VSTD::is_same_v<void, _CUDA_VSTD::__call_result_t<_Fn, _Ts...>>)
+        if constexpr (__same_as<void, __call_result_t<_Fn, _Ts...>>)
         {
           static_cast<_Fn&&>(__state_->__fn_)(static_cast<_Ts&&>(__ts)...);
           execution::set_value(static_cast<_Rcvr&&>(__state_->__rcvr_));
@@ -141,7 +140,7 @@ struct __upon_t
     }
 
     template <class _Tag, class... _Ts>
-    _CCCL_TRIVIAL_API void __complete(_Tag, _Ts&&... __ts) noexcept
+    _CCCL_NODEBUG_API void __complete(_Tag, _Ts&&... __ts) noexcept
     {
       if constexpr (_Tag{} == _SetTag{})
       {
@@ -206,7 +205,7 @@ struct __upon_t
     template <class... _Ts>
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
-      if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Ts...>)
+      if constexpr (__callable<_Fn, _Ts...>)
       {
         return __upon::__completion<_Fn, _Ts...>{};
       }
@@ -224,18 +223,18 @@ struct __upon_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_base_t;
 
   template <class _Fn>
-  struct _CCCL_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
-                                                  // extended (host/device) lambda
+  struct _CCCL_TYPE_VISIBILITY_HIDDEN __closure_base_t // hidden visibility because member __fn_ is hidden if it is an
+                                                       // extended (host/device) lambda
   {
     template <class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr) -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
-      -> _CUDA_VSTD::__call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_NODEBUG_API friend constexpr auto operator|(_Sndr __sndr, __closure_base_t __self) //
+      -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
     }
@@ -245,10 +244,10 @@ struct __upon_t
 
 public:
   template <class _Sndr, class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Fn __fn) const;
 };
 
 struct then_t : __upon_t<then_t, set_value_t>
@@ -366,7 +365,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT upon_stopped_t::__closure_t
 
 template <class _UponTag, class _SetTag>
 template <class _Sndr, class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
+_CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
   using __sndr_t   = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
   using __domain_t = __early_domain_of_t<_Sndr>;
@@ -383,7 +382,7 @@ _CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr _
 
 template <class _UponTag, class _SetTag>
 template <class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
+_CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
 {
   using __closure_t = typename _UponTag::template __closure_t<_Fn>;
   return __closure_t{{static_cast<_Fn&&>(__fn)}};

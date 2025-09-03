@@ -15,9 +15,6 @@ import cuda.cccl.parallel.experimental as parallel
 def basic_unique_by_key_example():
     """Demonstrate basic unique by key operation."""
 
-    def compare_op(lhs, rhs):
-        return np.uint8(lhs == rhs)
-
     h_in_keys = np.array([0, 2, 2, 9, 5, 5, 5, 8], dtype="int32")
     h_in_values = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype="float32")
 
@@ -34,7 +31,7 @@ def basic_unique_by_key_example():
         d_out_keys,
         d_out_values,
         d_out_num_selected,
-        compare_op,
+        parallel.OpKind.EQUAL_TO,
         d_in_keys.size,
     )
 
@@ -62,9 +59,6 @@ def basic_unique_by_key_example():
 def string_deduplication_example():
     """Demonstrate unique by key for string-like data (using integers to represent strings)."""
 
-    def compare_op(lhs, rhs):
-        return np.uint8(lhs == rhs)
-
     # Simulate string IDs: ["apple", "apple", "banana", "cherry", "cherry", "date"]
     # Using integers to represent string IDs
     h_string_ids = np.array([1, 1, 2, 3, 3, 4], dtype="int32")  # string IDs
@@ -83,7 +77,7 @@ def string_deduplication_example():
         d_out_keys,
         d_out_values,
         d_out_num_selected,
-        compare_op,
+        parallel.OpKind.EQUAL_TO,
         d_in_keys.size,
     )
 
@@ -109,9 +103,6 @@ def string_deduplication_example():
 def keys_only_unique_example():
     """Demonstrate unique by key with keys only (no values)."""
 
-    def compare_op(lhs, rhs):
-        return np.uint8(lhs == rhs)
-
     h_in_keys = np.array([1, 1, 1, 2, 2, 3, 4, 4, 4, 4], dtype="int32")
     d_in_keys = cp.asarray(h_in_keys)
     d_out_keys = cp.empty_like(d_in_keys)
@@ -124,7 +115,7 @@ def keys_only_unique_example():
         d_out_keys,
         None,
         d_out_num_selected,
-        compare_op,
+        parallel.OpKind.EQUAL_TO,
         d_in_keys.size,
     )
 

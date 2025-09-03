@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_EXCLUSIVE_SCAN_H
-#define _LIBCUDACXX___NUMERIC_EXCLUSIVE_SCAN_H
+#ifndef _CUDA_STD___NUMERIC_EXCLUSIVE_SCAN_H
+#define _CUDA_STD___NUMERIC_EXCLUSIVE_SCAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
 _CCCL_API constexpr _OutputIterator
@@ -38,14 +38,14 @@ exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
     _Tp __tmp(__b(__init, *__first));
     while (true)
     {
-      *__result = _CUDA_VSTD::move(__init);
+      *__result = ::cuda::std::move(__init);
       ++__result;
       ++__first;
       if (__first == __last)
       {
         break;
       }
-      __init = _CUDA_VSTD::move(__tmp);
+      __init = ::cuda::std::move(__tmp);
       __tmp  = __b(__init, *__first);
     }
   }
@@ -56,11 +56,11 @@ template <class _InputIterator, class _OutputIterator, class _Tp>
 _CCCL_API constexpr _OutputIterator
 exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init)
 {
-  return _CUDA_VSTD::exclusive_scan(__first, __last, __result, __init, _CUDA_VSTD::plus<>());
+  return ::cuda::std::exclusive_scan(__first, __last, __result, __init, ::cuda::std::plus<>());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NUMERIC_EXCLUSIVE_SCAN_H
+#endif // _CUDA_STD___NUMERIC_EXCLUSIVE_SCAN_H

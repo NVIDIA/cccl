@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_IOTA_VIEW_H
-#define _LIBCUDACXX___RANGES_IOTA_VIEW_H
+#ifndef _CUDA_STD___RANGES_IOTA_VIEW_H
+#define _CUDA_STD___RANGES_IOTA_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -47,7 +47,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <weakly_incrementable _Start, semiregular _BoundSentinel = unreachable_sentinel_t>
@@ -75,7 +75,7 @@ public:
   public:
     _CCCL_HIDE_FROM_ABI __sentinel() = default;
     _CCCL_API constexpr explicit __sentinel(_BoundSentinel __bound_sentinel)
-        : __bound_sentinel_(_CUDA_VSTD::move(__bound_sentinel))
+        : __bound_sentinel_(::cuda::std::move(__bound_sentinel))
     {}
 
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __iterator& __x, const __sentinel& __y)
@@ -135,7 +135,7 @@ public:
 
   _CCCL_API constexpr explicit iota_view(_Start __value) noexcept(is_nothrow_move_constructible_v<_Start>)
       : view_interface<iota_view<_Start, _BoundSentinel>>()
-      , __value_(_CUDA_VSTD::move(__value))
+      , __value_(::cuda::std::move(__value))
   {}
 
   _CCCL_API constexpr iota_view(
@@ -143,13 +143,13 @@ public:
     type_identity_t<_BoundSentinel> __bound_sentinel) noexcept(is_nothrow_move_constructible_v<_Start>
                                                                && is_nothrow_move_constructible_v<_BoundSentinel>)
       : view_interface<iota_view<_Start, _BoundSentinel>>()
-      , __value_(_CUDA_VSTD::move(__value))
-      , __bound_sentinel_(_CUDA_VSTD::move(__bound_sentinel))
+      , __value_(::cuda::std::move(__value))
+      , __bound_sentinel_(::cuda::std::move(__bound_sentinel))
   {
     // Validate the precondition if possible.
     if constexpr (totally_ordered_with<_Start, _BoundSentinel>)
     {
-      _CCCL_ASSERT(_CUDA_VRANGES::less_equal()(__value_, __bound_sentinel_),
+      _CCCL_ASSERT(::cuda::std::ranges::less_equal()(__value_, __bound_sentinel_),
                    "Precondition violated: value is greater than bound.");
     }
   }
@@ -157,19 +157,19 @@ public:
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES(same_as<_Start, _BoundSentinel2>)
   _CCCL_API constexpr iota_view(__iterator __first, __iterator __last)
-      : iota_view(_CUDA_VSTD::move(__first.__value_), _CUDA_VSTD::move(__last.__value_))
+      : iota_view(::cuda::std::move(__first.__value_), ::cuda::std::move(__last.__value_))
   {}
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES(same_as<_BoundSentinel2, unreachable_sentinel_t>)
   _CCCL_API constexpr iota_view(__iterator __first, _BoundSentinel __last)
-      : iota_view(_CUDA_VSTD::move(__first.__value_), _CUDA_VSTD::move(__last))
+      : iota_view(::cuda::std::move(__first.__value_), ::cuda::std::move(__last))
   {}
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES((!same_as<_Start, _BoundSentinel2>) _CCCL_AND(!same_as<_Start, unreachable_sentinel_t>))
   _CCCL_API constexpr iota_view(__iterator __first, __sentinel __last)
-      : iota_view(_CUDA_VSTD::move(__first.__value_), _CUDA_VSTD::move(__last.__bound_sentinel_))
+      : iota_view(::cuda::std::move(__first.__value_), ::cuda::std::move(__last.__bound_sentinel_))
   {}
 
   [[nodiscard]] _CCCL_API constexpr __iterator begin() const
@@ -205,15 +205,15 @@ public:
       {
         if (__bound_sentinel_ < 0)
         {
-          return _CUDA_VSTD::__to_unsigned_like(-__value_) - _CUDA_VSTD::__to_unsigned_like(-__bound_sentinel_);
+          return ::cuda::std::__to_unsigned_like(-__value_) - ::cuda::std::__to_unsigned_like(-__bound_sentinel_);
         }
-        return _CUDA_VSTD::__to_unsigned_like(__bound_sentinel_) + _CUDA_VSTD::__to_unsigned_like(-__value_);
+        return ::cuda::std::__to_unsigned_like(__bound_sentinel_) + ::cuda::std::__to_unsigned_like(-__value_);
       }
-      return _CUDA_VSTD::__to_unsigned_like(__bound_sentinel_) - _CUDA_VSTD::__to_unsigned_like(__value_);
+      return ::cuda::std::__to_unsigned_like(__bound_sentinel_) - ::cuda::std::__to_unsigned_like(__value_);
     }
     else
     {
-      return _CUDA_VSTD::__to_unsigned_like(__bound_sentinel_ - __value_);
+      return ::cuda::std::__to_unsigned_like(__bound_sentinel_ - __value_);
     }
     _CCCL_UNREACHABLE();
   }
@@ -227,40 +227,40 @@ _CCCL_HOST_DEVICE iota_view(_Start, _BoundSentinel) -> iota_view<_Start, _BoundS
 template <class _Start, class _BoundSentinel>
 inline constexpr bool enable_borrowed_range<iota_view<_Start, _BoundSentinel>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iota)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__iota)
 
 struct __fn
 {
   template <class _Start>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start) const
-    noexcept(noexcept(_CUDA_VRANGES::iota_view(_CUDA_VSTD::forward<_Start>(__start))))
+    noexcept(noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start))))
       -> iota_view<remove_cvref_t<_Start>>
   {
-    return _CUDA_VRANGES::iota_view(_CUDA_VSTD::forward<_Start>(__start));
+    return ::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start));
   }
 
   template <class _Start, class _BoundSentinel>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Start&& __start, _BoundSentinel&& __bound_sentinel) const
-    noexcept(noexcept(_CUDA_VRANGES::iota_view(_CUDA_VSTD::forward<_Start>(__start),
-                                               _CUDA_VSTD::forward<_BoundSentinel>(__bound_sentinel))))
+    noexcept(noexcept(::cuda::std::ranges::iota_view(::cuda::std::forward<_Start>(__start),
+                                                     ::cuda::std::forward<_BoundSentinel>(__bound_sentinel))))
       -> iota_view<remove_cvref_t<_Start>, remove_cvref_t<_BoundSentinel>>
   {
-    return _CUDA_VRANGES::iota_view(
-      _CUDA_VSTD::forward<_Start>(__start), _CUDA_VSTD::forward<_BoundSentinel>(__bound_sentinel));
+    return ::cuda::std::ranges::iota_view(
+      ::cuda::std::forward<_Start>(__start), ::cuda::std::forward<_BoundSentinel>(__bound_sentinel));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iota = __iota::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_IOTA_VIEW_H
+#endif // _CUDA_STD___RANGES_IOTA_VIEW_H

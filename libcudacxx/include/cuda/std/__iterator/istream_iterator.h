@@ -4,12 +4,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ISTREAM_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_ISTREAM_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_ISTREAM_ITERATOR_H
+#define _CUDA_STD___ITERATOR_ISTREAM_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,14 +31,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
 class _CCCL_TYPE_VISIBILITY_DEFAULT istream_iterator
-#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
-    : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
-#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
 public:
   using iterator_category = input_iterator_tag;
@@ -59,11 +56,13 @@ public:
       : __in_stream_(nullptr)
       , __value_()
   {}
+
   _CCCL_API constexpr istream_iterator(default_sentinel_t)
       : istream_iterator()
   {}
-  _CCCL_API inline istream_iterator(istream_type& __s)
-      : __in_stream_(_CUDA_VSTD::addressof(__s))
+
+  _CCCL_API istream_iterator(istream_type& __s)
+      : __in_stream_(::cuda::std::addressof(__s))
   {
     if (!(*__in_stream_ >> __value_))
     {
@@ -71,15 +70,17 @@ public:
     }
   }
 
-  _CCCL_API inline const _Tp& operator*() const
+  [[nodiscard]] _CCCL_API const _Tp& operator*() const noexcept
   {
     return __value_;
   }
-  _CCCL_API inline const _Tp* operator->() const
+
+  [[nodiscard]] _CCCL_API const _Tp* operator->() const noexcept
   {
-    return _CUDA_VSTD::addressof((operator*()));
+    return ::cuda::std::addressof((operator*()));
   }
-  _CCCL_API inline istream_iterator& operator++()
+
+  _CCCL_API istream_iterator& operator++()
   {
     if (!(*__in_stream_ >> __value_))
     {
@@ -87,7 +88,8 @@ public:
     }
     return *this;
   }
-  _CCCL_API inline istream_iterator operator++(int)
+
+  _CCCL_API istream_iterator operator++(int)
   {
     istream_iterator __t(*this);
     ++(*this);
@@ -95,23 +97,27 @@ public:
   }
 
   template <class _Up, class _CharU, class _TraitsU, class _DistanceU>
-  friend _CCCL_API inline bool operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
-                                          const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
+  _CCCL_API friend bool operator==(const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __x,
+                                   const istream_iterator<_Up, _CharU, _TraitsU, _DistanceU>& __y);
 
-  friend _CCCL_API inline bool operator==(const istream_iterator& __i, default_sentinel_t)
+  [[nodiscard]] _CCCL_API friend bool operator==(const istream_iterator& __i, default_sentinel_t)
   {
     return __i.__in_stream_ == nullptr;
   }
+
 #if _CCCL_STD_VER < 2020
-  friend _CCCL_API inline bool operator==(default_sentinel_t, const istream_iterator& __i)
+
+  [[nodiscard]] _CCCL_API friend bool operator==(default_sentinel_t, const istream_iterator& __i)
   {
     return __i.__in_stream_ == nullptr;
   }
-  friend _CCCL_API inline bool operator!=(const istream_iterator& __i, default_sentinel_t)
+
+  [[nodiscard]] _CCCL_API friend bool operator!=(const istream_iterator& __i, default_sentinel_t)
   {
     return __i.__in_stream_ != nullptr;
   }
-  friend _CCCL_API inline bool operator!=(default_sentinel_t, const istream_iterator& __i)
+
+  [[nodiscard]] _CCCL_API friend bool operator!=(default_sentinel_t, const istream_iterator& __i)
   {
     return __i.__in_stream_ != nullptr;
   }
@@ -120,21 +126,21 @@ public:
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-_CCCL_API inline bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-                                 const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
+[[nodiscard]] _CCCL_API bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
+                                        const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
 {
   return __x.__in_stream_ == __y.__in_stream_;
 }
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
-_CCCL_API inline bool operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
-                                 const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
+[[nodiscard]] _CCCL_API bool operator!=(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,
+                                        const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __y)
 {
   return !(__x == __y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ISTREAM_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_ISTREAM_ITERATOR_H
