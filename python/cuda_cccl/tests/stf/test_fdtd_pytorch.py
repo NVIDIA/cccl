@@ -49,7 +49,7 @@ def init_field(ctx, ld, value):
         ctx.task(ld.write()) as t,
         torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
     ):
-        field = t.get_arg_as_tensor(0)
+        field = t.tensor_arguments()
         if value == 0:
             field.zero_()
         else:
@@ -173,7 +173,7 @@ def fdtd_3d_pytorch(
             ctx.task(lez.rw()) as t,
             torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
         ):
-            ez = t.get_arg_as_tensor(0)
+            ez = t.tensor_arguments()
             ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
 
         # -------------------------
@@ -222,7 +222,7 @@ def fdtd_3d_pytorch(
                 ctx.task(lez.read()) as t,
                 torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
             ):
-                ez = t.get_arg_as_tensor(0)
+                ez = t.tensor_arguments()
                 print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
                 show_slice(ez, plane="xy")
             pass

@@ -441,6 +441,12 @@ cdef class task:
             raise RuntimeError("numba support is not available") from e
         return cai_to_numba(cai)
 
+    def numba_arguments(self):
+        arg_cnt=len(self._lds_args)
+        if arg_cnt == 1:
+            return self.get_arg_numba(0)
+        return tuple(self.get_arg_numba(i) for i in range(arg_cnt))
+
     def get_arg_as_tensor(self, index):
         cai = self.get_arg_cai(index)
         try:
@@ -451,6 +457,8 @@ cdef class task:
 
     def tensor_arguments(self):
         arg_cnt=len(self._lds_args)
+        if arg_cnt == 1:
+            return self.get_arg_as_tensor(0)
         return tuple(self.get_arg_as_tensor(i) for i in range(arg_cnt))
 
     # ---- context‑manager helpers -------------------------------

@@ -42,7 +42,7 @@ def test_numba_graph():
     lX = ctx.logical_data(X)
     with ctx.task(rw(lX)) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        dX = t.get_arg_numba(0)
+        dX = t.numba_arguments()
         scale[32, 64, nb_stream](2.0, dX)
 
     ctx.finalize()
@@ -61,7 +61,7 @@ def test_numba():
 
     with ctx.task(rw(lX)) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        dX = t.get_arg_numba(0)
+        dX = t.numba_arguments()
         # dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
         scale[32, 64, nb_stream](2.0, dX)
 
@@ -74,14 +74,12 @@ def test_numba():
 
     with ctx.task(read(lX), rw(lZ)) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        dX = t.get_arg_numba(0)
-        dZ = t.get_arg_numba(1)
+        dX, dZ = t.numba_arguments()
         axpy[32, 64, nb_stream](2.0, dX, dZ)
 
     with ctx.task(read(lY), rw(lZ)) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        dY = t.get_arg_numba(0)
-        dZ = t.get_arg_numba(1)
+        dY, dZ = t.numba_arguments()
         axpy[32, 64, nb_stream](2.0, dY, dZ)
 
     ctx.finalize()
@@ -217,7 +215,7 @@ def test_numba_places():
 
     with ctx.task(lX.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        dX = t.get_arg_numba(0)
+        dX = t.numba_arguments()
         scale[32, 64, nb_stream](2.0, dX)
 
     with ctx.task(lX.read(), lY.rw()) as t:

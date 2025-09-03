@@ -37,7 +37,7 @@ class Plaintext:
             cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
-            hvalues = t.get_arg_numba(0)
+            hvalues = t.numba_arguments()
             print([v for v in hvalues])
 
 

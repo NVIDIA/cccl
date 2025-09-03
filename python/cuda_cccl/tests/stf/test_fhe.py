@@ -37,7 +37,7 @@ class Plaintext:
             cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
-            hvalues = t.get_arg_numba(0)
+            hvalues = t.numba_arguments()
             print([v for v in hvalues])
 
 
@@ -85,8 +85,7 @@ class Ciphertext:
 
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
-            da = t.get_arg_numba(0)
-            dresult = t.get_arg_numba(1)
+            da, dresult = t.numba_arguments()
             not_kernel[32, 16, nb_stream](da, dresult)
 
         return result
@@ -100,9 +99,7 @@ class Ciphertext:
 
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
-            da = t.get_arg_numba(0)
-            db = t.get_arg_numba(1)
-            dresult = t.get_arg_numba(2)
+            da, db, dresult = t.numba_arguments()
             or_kernel[32, 16, nb_stream](da, db, dresult)
 
         return result
@@ -117,9 +114,7 @@ class Ciphertext:
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             nb_stream.synchronize()
-            da = t.get_arg_numba(0)
-            db = t.get_arg_numba(1)
-            dresult = t.get_arg_numba(2)
+            da, db, dresult = t.numba_arguments()
             and_kernel[32, 16, nb_stream](da, db, dresult)
 
         return result
@@ -133,8 +128,7 @@ class Ciphertext:
 
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
-            da = t.get_arg_numba(0)
-            dresult = t.get_arg_numba(1)
+            da, dresult = t.numba_arguments()
             # reverse the toy XOR "encryption"
             xor_kernel[32, 16, nb_stream](da, dresult, 0x42)
 
