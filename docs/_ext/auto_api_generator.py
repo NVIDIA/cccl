@@ -498,18 +498,18 @@ def generate_group_index_page(group_name, group_refid, project_name, xml_dir, ap
                 # Get all member functions, typedefs, variables, etc.
                 for sectiondef in compounddef.findall("sectiondef"):
                     for memberdef in sectiondef.findall("memberdef"):
-                        member_kind = memberdef.get("kind")
                         member_name = memberdef.find("name")
-                        if member_name is not None:
-                            member_refid = memberdef.get("id")
-                            member_rst_file = Path(api_dir) / f"{member_refid}.rst"
-                            # only add refids for exists pages.
-                            # Refids corresponding to overloads
-                            # do not have associated RST file
-                            if member_rst_file.exists():
-                                members.append(
-                                    (member_kind, member_name.text, member_refid)
-                                )
+                        if member_name is None:
+                            continue
+                        member_refid = memberdef.get("id")
+                        member_rst_file = Path(api_dir) / f"{member_refid}.rst"
+                        # only add refids for exists pages.
+                        # Refids corresponding to overloads
+                        # do not have associated RST file
+                        if not member_rst_file.exists():
+                            continue
+                        member_kind = memberdef.get("kind")
+                        members.append((member_kind, member_name.text, member_refid))
         except Exception as e:
             logger.warning(f"Failed to parse group XML {group_xml_file}: {e}")
 
