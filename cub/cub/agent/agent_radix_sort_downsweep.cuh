@@ -51,6 +51,7 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/cstdint>
