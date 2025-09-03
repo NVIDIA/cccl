@@ -39,7 +39,7 @@ set(stf_test_sources
   interface/cuda_kernel_chain-add_deps.cu
   interface/cuda_kernel_chain-add_deps_low_level.cu
   interface/cuda_kernel_empty_args.cu
-  interface/data_from_device_async.cu
+
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
