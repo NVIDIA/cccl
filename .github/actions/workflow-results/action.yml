@@ -52,10 +52,6 @@ runs:
         find jobs -type f -exec dos2unix -v {} \;
         echo "::endgroup::"
 
-        echo "::group::Job artifacts"
-        tree jobs
-        echo "::endgroup::"
-
     - name: Fetch workflow job info
       if: ${{ inputs.github_token != ''}}
       continue-on-error: true
@@ -97,11 +93,11 @@ runs:
         python3 "${GITHUB_ACTION_PATH}/parse-job-times.py" workflow/workflow.json results/jobs.json
 
         echo "::group::Unmapped jobs"
-        cat workflow/unmapped_jobs.md
+        cat workflow/unmapped_jobs.md || :
         echo "::endgroup::"
 
         echo "::group::Job Times"
-        cat workflow/job_times.md
+        cat workflow/job_times.md || :
         echo "::endgroup::"
 
     - name: Check for job success
@@ -140,9 +136,17 @@ runs:
         readonly icon=$(if ${success}; then echo "🥳"; else echo "😬"; fi)
         (
           echo "## [${icon} Job Matrix Results]($(cat workflow/summary_url.txt))"
-          cat workflow/final_summary.md
-          cat workflow/unmapped_jobs.md
-          cat workflow/job_times.md
+          declare -a files=(
+            workflow/final_summary.md
+            workflow/unmapped_jobs.md
+            workflow/job_times.md
+          )
+
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              cat "$file"
+            fi
+          done
         ) | tee -a "${GITHUB_STEP_SUMMARY}"
         echo "::endgroup::"
 
