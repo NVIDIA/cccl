@@ -396,7 +396,8 @@ struct AgentScan
     {
       // Scan first tile
       AccumT block_aggregate;
-      ScanFirstTile<IS_INCLUSIVE, IS_LAST_TILE>(items, init_value, scan_op, block_aggregate, num_remaining);
+      ScanFirstTile<IS_INCLUSIVE, IS_LAST_TILE && !cub::detail::has_no_side_effects<ScanOpT, AccumT>>(
+        items, init_value, scan_op, block_aggregate, num_remaining);
 
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
       {
@@ -407,7 +408,10 @@ struct AgentScan
     {
       // Scan non-first tile
       TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
-      ScanSubsequentTile<TilePrefixCallbackOpT, IS_INCLUSIVE, IS_LAST_TILE>(items, scan_op, prefix_op, num_remaining);
+      ScanSubsequentTile<TilePrefixCallbackOpT,
+                         IS_INCLUSIVE,
+                         IS_LAST_TILE && !cub::detail::has_no_side_effects<ScanOpT, AccumT>>(
+        items, scan_op, prefix_op, num_remaining);
     }
 
     __syncthreads();
