@@ -521,8 +521,17 @@ def make_transform_iterator(
 
     it_host_advance = it.host_advance
     it_advance = cuda.jit(it.advance, device=True)
-    it_input_dereference = cuda.jit(it.input_dereference, device=True)
-    it_output_dereference = cuda.jit(it.output_dereference, device=True)
+
+    if io_kind is IteratorIOKind.INPUT:
+        try:
+            it_input_dereference = cuda.jit(it.input_dereference, device=True)
+        except AttributeError:
+            raise TypeError("The wrapped iterator is not an input iterator")
+    else:
+        try:
+            it_output_dereference = cuda.jit(it.output_dereference, device=True)
+        except AttributeError:
+            raise TypeError("The wrapped iterator is not an output iterator")
 
     op = cuda.jit(op, device=True)
     underlying_value_type = it.value_type
