@@ -276,8 +276,7 @@
         "CCCL_ENABLE_C": true,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
-        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
-        "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": false
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
       }
     },
     {
@@ -287,8 +286,6 @@
       "cacheVariables": {
         "CCCL_ENABLE_C": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
-        "CCCL_C_Parallel_ENABLE_TESTING": false,
-        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": false,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
       }
     },
