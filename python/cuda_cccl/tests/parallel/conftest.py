@@ -1,3 +1,5 @@
+import warnings
+
 import cupy as cp
 import numpy as np
 import pytest
@@ -71,13 +73,27 @@ def cuda_stream() -> Stream:
 
 @pytest.fixture(scope="function", autouse=True)
 def verify_sass(request, monkeypatch):
+    """
+    Fixture to enable SASS verification for LDL/STL instructions.
+    Skips verification for tests marked with @pytest.mark.no_verify_sass
+    or when CTK version is < 13.1 (nvbug 5243118).
+    """
     if request.node.get_closest_marker("no_verify_sass"):
         return
 
     import cuda.cccl.parallel.experimental._cccl_interop
 
-    monkeypatch.setattr(
-        cuda.cccl.parallel.experimental._cccl_interop,
-        "_check_sass",
-        True,
-    )
+    # Check if CTK version allows SASS checks
+    if cuda.cccl.parallel.experimental._cccl_interop._should_check_sass_for_ctk_version():
+        monkeypatch.setattr(
+            cuda.cccl.parallel.experimental._cccl_interop,
+            "_check_sass",
+            True,
+        )
+    else:
+        # Emit a warning that SASS checks are disabled for this CTK version
+        warnings.warn(
+            "SASS verification for LDL/STL instructions is disabled for CTK < 13.1 "
+            "due to nvrtc bug (nvbug 5243118)",
+            UserWarning,
+        )

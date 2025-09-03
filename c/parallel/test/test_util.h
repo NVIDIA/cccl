@@ -30,24 +30,18 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/types.h>
 
-// Check if we should allow SASS checks based on nvrtc version
+// Check if CTK version allows SASS checks for LDL/STL instructions
 // This addresses nvbug 5243118: nvrtc generates LDL/STL instructions prior to CTK 13.1
-// where nvcc would not generate them
-inline bool is_nvrtc_sass_check_allowed()
+// where nvcc would not generate them. Since c.parallel ALWAYS uses nvrtc internally to compile
+// kernel template instantiations (not nvcc), we must disable SASS checks for CTK versions prior to 13.1.
+inline bool is_ctk_version_allows_sass_check()
 {
-#ifdef __CUDACC_RTC__
-  // We're compiling with nvrtc - check CTK version for the bug
-#  if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
+#if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
   // Bug is fixed in CTK 13.1+
   return (__CUDACC_VER_MAJOR__ > 13) || (__CUDACC_VER_MAJOR__ == 13 && __CUDACC_VER_MINOR__ >= 1);
-#  else
+#else
   // Conservative: disable if version unknown
   return false;
-#  endif
-#else
-  // We're compiling with nvcc - no CTK version restriction needed
-  // nvbug 5243118 does not affect nvcc compilation
-  return true;
 #endif
 }
 

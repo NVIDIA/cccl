@@ -81,8 +81,8 @@ struct unique_by_key_build
     // Check compute capability (existing logic)
     bool cc_allows_check = cc_major < 9;
 
-    // Check for nvrtc-specific LDL/STL bug (resolves nvbug 5243118)
-    bool ctk_allows_check = is_nvrtc_sass_check_allowed();
+    // Disable SASS checks for CTK < 13.1 due to nvrtc bug (nvbug 5243118)
+    bool ctk_allows_check = is_ctk_version_allows_sass_check();
 
     return cc_allows_check && ctk_allows_check;
   }

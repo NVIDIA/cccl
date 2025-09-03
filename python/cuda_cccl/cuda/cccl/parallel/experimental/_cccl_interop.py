@@ -346,6 +346,22 @@ def _check_compile_result(cubin: bytes):
     assert "STL" not in sass, "STL instruction found in SASS"
 
 
+def _should_check_sass_for_ctk_version() -> bool:
+    """
+    Check if we should verify absence of LDL/STL instructions based on CTK version.
+    Disabled for CTK < 13.1 due to nvrtc bug (nvbug 5243118).
+
+    Returns True if CTK version is 13.1 or higher, False otherwise.
+    """
+    import cuda  # type: ignore[import-not-found]
+
+    runtime_version = cuda.cudart.cudaRuntimeGetVersion()[1]
+    major = runtime_version // 1000
+    minor = (runtime_version % 1000) // 10
+    # Bug is fixed in CTK 13.1+
+    return (major > 13) or (major == 13 and minor >= 1)
+
+
 # this global variable controls whether the compile result is checked
 # for LDL/STL instructions. Should be set to `True` for testing only.
 _check_sass: bool = False
@@ -369,7 +385,9 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         **kwargs,
     )
 
-    if _check_sass:
+    # Only check SASS if enabled AND CTK version is 13.1+
+    # (nvbug 5243118 causes false positives in earlier versions)
+    if _check_sass and _should_check_sass_for_ctk_version():
         cubin = result._get_cubin()
         _check_compile_result(cubin)
 
