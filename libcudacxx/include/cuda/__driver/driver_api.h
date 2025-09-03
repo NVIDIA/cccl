@@ -319,6 +319,16 @@ _CCCL_HOST_API inline void __eventElapsedTime(::CUevent __start, ::CUevent __end
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+[[nodiscard]] _CCCL_HOST_API inline unsigned long long __greenCtxGetId(::CUgreenCtx __green_ctx)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxGetId, cuGreenCtxGetId, 13, 0);
+  unsigned long long __id;
+  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get the ID of a green context", __green_ctx, &__id);
+  return __id;
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED
 
