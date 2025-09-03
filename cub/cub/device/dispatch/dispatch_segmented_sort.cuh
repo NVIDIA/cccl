@@ -903,8 +903,8 @@ private:
   {
     cudaError_t error = cudaSuccess;
 
-    const auto blocks_in_grid       = static_cast<local_segment_index_t>(num_segments);
-    constexpr auto threads_in_block = static_cast<unsigned int>(wrapped_policy.LargeSegment().BlockThreads());
+    const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
+    const auto threads_in_block = static_cast<unsigned int>(wrapped_policy.LargeSegment().BlockThreads());
 
 // Log kernel configuration
 #ifdef CUB_DEBUG_LOG

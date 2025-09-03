@@ -131,6 +131,8 @@ namespace detail
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   RadixSortDownsweepAgentPolicy,
   (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
   (RADIX_BITS, RadixBits, int),
   (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
   (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
