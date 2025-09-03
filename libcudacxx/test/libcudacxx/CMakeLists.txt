@@ -51,6 +51,18 @@ string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
 
+if (CCCL_ENABLE_ASAN)
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+      " --compiler-options=-fsanitize=address"
+      " --compiler-options=-fno-omit-frame-pointer"
+      " --compiler-options=-fsanitize-address-use-after-scope")
+    string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -fsanitize=address")
+  else()
+    message(FATAL_ERROR "CCCL_ENABLE_ASAN is only supported with GCC and Clang, given ${CMAKE_CXX_COMPILER_ID}.")
+  endif()
+endif()
+
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
