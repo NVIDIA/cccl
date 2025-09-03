@@ -93,7 +93,7 @@ set -u
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
-    CCCL_BUILD_INFIX=""
+    CCCL_BUILD_INFIX="local"
 fi
 
 mkdir -p ../build
