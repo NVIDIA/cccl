@@ -788,6 +788,8 @@ class Configuration(object):
         compute_archs = self.get_lit_conf("compute_archs")
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")
+            self.cxx.compile_flags += ["-device-int128"]
+            self.cxx.compile_flags += ["-device-float128"]
         if self.cxx.type == "nvcc":
             self.cxx.compile_flags += ["--extended-lambda"]
         real_arch_format = "-gencode=arch=compute_{0},code=sm_{0}"
