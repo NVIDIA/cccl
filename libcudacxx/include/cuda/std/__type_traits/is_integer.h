@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_INTEGER_H
+#define _CUDA_STD___TYPE_TRAITS_IS_INTEGER_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __cccl_is_integer is a trait that tests whether a type is an integral type intended for arithmetic.
 // In contrast to is_integral, __cccl_is_integer excludes bool and character types.
@@ -38,8 +38,8 @@ template <class _Tp>
 inline constexpr bool __cccl_is_cv_integer_v =
   __cccl_is_cv_signed_integer_v<_Tp> || __cccl_is_cv_unsigned_integer_v<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_INTEGER_H

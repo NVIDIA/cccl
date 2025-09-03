@@ -76,6 +76,7 @@ CompileFlags:
     - -Wno-unknown-cuda-version
     - -Wno-pragma-system-header-outside-header
     - --no-cuda-version-check
+    - -stdlib=libc++
     # report all errors
     - "-ferror-limit=0"
     - "-ftemplate-backtrace-limit=0"

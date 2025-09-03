@@ -369,7 +369,7 @@ template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
   using cub::detail::unsafe_bitcast;
-  using T                       = _CUDA_VSTD::iter_value_t<Input>;
+  using T                       = ::cuda::std::iter_value_t<Input>;
   using SimdReduceOp            = cuda_operator_to_simd_x2_t<ReductionOp, T>;
   using SimdType                = vector_type_x2_t<T>;
   constexpr auto length         = static_size_v<Input>;

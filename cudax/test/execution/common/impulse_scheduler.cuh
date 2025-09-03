@@ -23,123 +23,121 @@
 
 #include "testing.cuh" // IWYU pragma: keep
 
+namespace ex = cuda::experimental::execution;
+
 #if _CCCL_HOST_COMPILATION()
 
 namespace
 {
+namespace _impulse
+{
+struct _attrs_t
+{
+  constexpr auto query(ex::get_completion_behavior_t) const noexcept
+  {
+    return ex::completion_behavior::asynchronous;
+  }
+};
+} // namespace _impulse
+
 //! Scheduler that will send impulses on user's request.
 //! One can obtain senders from this, connect them to receivers and start the operation states.
 //! Until the scheduler is told to start the next operation, the actions in the operation states are
 //! not executed. This is similar to a task scheduler, but it's single threaded. It has basic
 //! thread-safety to allow it to be run with `sync_wait` (which makes us not control when the
 //! operation_state object is created and started).
-struct impulse_scheduler
+struct impulse_scheduler : _impulse::_attrs_t
 {
 private:
   //! Command type that can store the action of firing up a sender
-  using cmd_t     = std::function<void()>;
-  using cmd_vec_t = std::vector<cmd_t>;
+  using _cmd_t     = std::function<void()>;
+  using _cmd_vec_t = std::vector<_cmd_t>;
 
-  struct data_t : std::enable_shared_from_this<data_t>
+  struct _data_t : std::enable_shared_from_this<_data_t>
   {
-    explicit data_t(int id)
+    explicit _data_t(int id)
         : id_(id)
     {}
 
     int id_;
-    std::mutex mutex_;
-    std::condition_variable cv_;
-    std::vector<std::function<void()>> all_commands_;
+    std::mutex mutex_{};
+    std::condition_variable cv_{};
+    std::vector<std::function<void()>> all_commands_{};
   };
 
   //! That data_t shared between the operation state and the actual scheduler
   //! Shared pointer to allow the scheduler to be copied (not the best semantics, but it will do)
-  std::shared_ptr<data_t> data_{};
+  std::shared_ptr<_data_t> _data_{};
 
   template <class Rcvr>
-  struct opstate_t : cuda::__immovable
+  struct _opstate_t : cuda::__immovable
   {
-    using operation_state_concept = cudax_async::operation_state_t;
+    using operation_state_concept = ex::operation_state_t;
 
-    data_t* data_;
-    Rcvr rcvr_;
+    _data_t* _data_;
+    Rcvr _rcvr_;
 
-    opstate_t(data_t* data, Rcvr&& rcvr)
-        : data_(data)
-        , rcvr_(static_cast<Rcvr&&>(rcvr))
+    explicit _opstate_t(_data_t* data, Rcvr&& rcvr)
+        : _data_(data)
+        , _rcvr_(static_cast<Rcvr&&>(rcvr))
     {}
 
-    void start() & noexcept
+    void start() noexcept
     {
       // Enqueue another command to the list of all commands
       // The scheduler will start this, whenever start_next() is called
-      std::unique_lock lock{data_->mutex_};
-      data_->all_commands_.emplace_back([this]() {
-        if (cudax_async::get_stop_token(cudax_async::get_env(rcvr_)).stop_requested())
+      std::unique_lock lock{_data_->mutex_};
+      _data_->all_commands_.emplace_back([this]() {
+        if (ex::get_stop_token(ex::get_env(_rcvr_)).stop_requested())
         {
-          cudax_async::set_stopped(static_cast<Rcvr&&>(rcvr_));
+          ex::set_stopped(static_cast<Rcvr&&>(_rcvr_));
         }
         else
         {
-          cudax_async::set_value(static_cast<Rcvr&&>(rcvr_));
+          ex::set_value(static_cast<Rcvr&&>(_rcvr_));
         }
       });
-      data_->cv_.notify_all();
+      _data_->cv_.notify_all();
     }
   };
 
-  struct env_t
+  struct _sndr_t
   {
-    data_t* data_;
+    using sender_concept = ex::sender_t;
 
-    impulse_scheduler query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) const noexcept
-    {
-      return impulse_scheduler{data_};
-    }
+    _data_t* _data_;
 
-    impulse_scheduler query(cudax_async::get_completion_scheduler_t<cudax_async::set_stopped_t>) const noexcept
-    {
-      return impulse_scheduler{data_};
-    }
-  };
-
-  struct sndr_t
-  {
-    using sender_concept = cudax_async::sender_t;
-
-    data_t* data_;
-
-    template <class Self, class... Env>
+    template <class Self>
     _CCCL_HOST_DEVICE static constexpr auto get_completion_signatures()
     {
-      return cudax_async::completion_signatures<cudax_async::set_value_t(), cudax_async::set_stopped_t()>();
+      return ex::completion_signatures<ex::set_value_t(), ex::set_stopped_t()>();
     }
 
     template <class Rcvr>
-    opstate_t<Rcvr> connect(Rcvr rcvr)
+    auto connect(Rcvr rcvr) -> _opstate_t<Rcvr>
     {
-      return {data_, static_cast<Rcvr&&>(rcvr)};
+      return _opstate_t<Rcvr>{_data_, static_cast<Rcvr&&>(rcvr)};
     }
 
     auto get_env() const noexcept
     {
-      return env_t{data_};
+      return _impulse::_attrs_t{};
     }
   };
 
-  explicit impulse_scheduler(data_t* data)
-      : data_(data->shared_from_this())
+  explicit impulse_scheduler(_data_t* data)
+      : _data_(data->shared_from_this())
   {}
 
 public:
-  using scheduler_concept = cudax_async::scheduler_t;
+  using scheduler_concept = ex::scheduler_t;
 
   impulse_scheduler()
-      : data_(std::make_shared<data_t>(0))
+      : _data_(std::make_shared<_data_t>(0))
   {}
 
   explicit impulse_scheduler(int id)
-      : data_(std::make_shared<data_t>(id))
+      : _data_(std::make_shared<_data_t>(id))
   {}
 
   ~impulse_scheduler() = default;
@@ -149,17 +147,17 @@ public:
   bool try_start_next()
   {
     // Wait for a command that we can execute
-    std::unique_lock lock{data_->mutex_};
+    std::unique_lock lock{_data_->mutex_};
 
     // If there are no commands in the queue, return false
-    if (data_->all_commands_.empty())
+    if (_data_->all_commands_.empty())
     {
       return false;
     }
 
     // Pop one command from the queue
-    auto cmd = std::move(data_->all_commands_.front());
-    data_->all_commands_.erase(data_->all_commands_.begin());
+    auto cmd = std::move(_data_->all_commands_.front());
+    _data_->all_commands_.erase(_data_->all_commands_.begin());
     // Exit the lock before executing the command
     lock.unlock();
     // Execute the command, i.e., send an impulse to the connected sender
@@ -173,34 +171,34 @@ public:
   void start_next()
   {
     // Wait for a command that we can execute
-    std::unique_lock lock{data_->mutex_};
-    while (data_->all_commands_.empty())
+    std::unique_lock lock{_data_->mutex_};
+    while (_data_->all_commands_.empty())
     {
-      data_->cv_.wait(lock);
+      _data_->cv_.wait(lock);
     }
 
     // Pop one command from the queue
-    auto cmd = std::move(data_->all_commands_.front());
-    data_->all_commands_.erase(data_->all_commands_.begin());
+    auto cmd = std::move(_data_->all_commands_.front());
+    _data_->all_commands_.erase(_data_->all_commands_.begin());
     // Exit the lock before executing the command
     lock.unlock();
     // Execute the command, i.e., send an impulse to the connected sender
     cmd();
   }
 
-  sndr_t schedule() const noexcept
+  _sndr_t schedule() const noexcept
   {
-    return sndr_t{data_.get()};
+    return _sndr_t{_data_.get()};
   }
 
-  friend bool operator==(impulse_scheduler, impulse_scheduler) noexcept
+  friend bool operator==(const impulse_scheduler& a, const impulse_scheduler& b) noexcept
   {
-    return true;
+    return a._data_ == b._data_;
   }
 
-  friend bool operator!=(impulse_scheduler, impulse_scheduler) noexcept
+  friend bool operator!=(const impulse_scheduler& a, const impulse_scheduler& b) noexcept
   {
-    return false;
+    return a._data_ != b._data_;
   }
 };
 } // namespace

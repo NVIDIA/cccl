@@ -4,7 +4,7 @@
 #define _CUDA_PTX_GENERATED_TCGEN05_SHIFT_H_
 
 /*
-// tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_110a
+// tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_103a, SM_110a
 // .cta_group = { .cta_group::1, .cta_group::2 }
 template <cuda::ptx::dot_cta_group Cta_Group>
 __device__ static inline void tcgen05_shift_down(
@@ -12,12 +12,17 @@ __device__ static inline void tcgen05_shift_down(
   uint32_t taddr);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_shift_down_is_not_supported_before_SM_100a_SM_110a__();
-template <dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_shift_down(cta_group_t<_Cta_Group> __cta_group, _CUDA_VSTD::uint32_t __taddr)
+extern "C" _CCCL_DEVICE void
+__cuda_ptx_tcgen05_shift_down_is_only_supported_on_SM_100a_103a_110a_depending_on_the_variant__();
+template <::cuda::ptx::dot_cta_group _Cta_Group>
+_CCCL_DEVICE static inline void
+tcgen05_shift_down(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH_FEAT_SM100_ALL || __CUDA_ARCH_FEAT_SM110_ALL
+#  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
+    || (defined(__CUDA_ARCH_FEAT_SM100_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1000))) \
+    || (defined(__CUDA_ARCH_FEAT_SM103_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1030))) \
+    || (defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100)))
   if constexpr (__cta_group == cta_group_1)
   {
     asm volatile("tcgen05.shift.cta_group::1.down [%0];" : : "r"(__taddr) : "memory");
@@ -26,9 +31,10 @@ _CCCL_DEVICE static inline void tcgen05_shift_down(cta_group_t<_Cta_Group> __cta
   {
     asm volatile("tcgen05.shift.cta_group::2.down [%0];" : : "r"(__taddr) : "memory");
   }
+
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_shift_down_is_not_supported_before_SM_100a_SM_110a__();
+  __cuda_ptx_tcgen05_shift_down_is_only_supported_on_SM_100a_103a_110a_depending_on_the_variant__();
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

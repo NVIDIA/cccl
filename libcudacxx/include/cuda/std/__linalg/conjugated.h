@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___LINALG_CONJUGATED_HPP
-#define _LIBCUDACXX___LINALG_CONJUGATED_HPP
+#ifndef _CUDA_STD___LINALG_CONJUGATED_H
+#define _CUDA_STD___LINALG_CONJUGATED_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
@@ -48,7 +48,7 @@ class conjugated_accessor
 {
 private:
   using __nested_element_type = typename _NestedAccessor::element_type;
-  using __nc_result_type      = decltype(conj_if_needed(_CUDA_VSTD::declval<__nested_element_type>()));
+  using __nc_result_type      = decltype(conj_if_needed(::cuda::std::declval<__nested_element_type>()));
 
 public:
   using element_type     = add_const_t<__nc_result_type>;
@@ -132,8 +132,8 @@ conjugated(mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAc
 
 } // end namespace linalg
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP
+#endif // _CUDA_STD___LINALG_CONJUGATED_HPP

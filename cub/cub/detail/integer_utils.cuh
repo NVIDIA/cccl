@@ -31,7 +31,7 @@ namespace detail
 template <typename Input>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
 {
-  using namespace _CUDA_VSTD;
+  using namespace ::cuda::std;
   static_assert(__cccl_is_integer_v<Input>);
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   using unsigned_t         = make_unsigned_t<Input>;
@@ -45,7 +45,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
 template <typename Input>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integers(Input inputA, Input inputB)
 {
-  using namespace _CUDA_VSTD;
+  using namespace ::cuda::std;
   static_assert(__cccl_is_integer_v<Input>);
   constexpr auto num_bits = __num_bits_v<Input>;
   using unsigned_t        = __make_nbit_uint_t<num_bits>;
@@ -59,14 +59,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integers(Input inputA, Input inputB)
 template <typename MinMaxOp, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(MinMaxOp, T value)
 {
-  using namespace _CUDA_VSTD;
+  using namespace ::cuda::std;
   static_assert(::cuda::is_floating_point_v<T>);
   static_assert(is_cuda_minimum_maximum_v<MinMaxOp, T>);
   using signed_t        = __make_nbit_int_t<__num_bits_v<T>, true>;
   constexpr auto lowest = numeric_limits<signed_t>::lowest();
   constexpr auto is_max = is_cuda_maximum_v<MinMaxOp, T>;
   const auto nan        = is_max ? static_cast<T>(-numeric_limits<T>::quiet_NaN()) : numeric_limits<T>::quiet_NaN();
-  auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
+  auto value1           = ::cuda::std::isnan(value) ? nan : value;
   auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
   return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
 }
@@ -74,8 +74,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(MinMaxOp, T
 template <typename FloatingPointType, typename IntegerType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(IntegerType value)
 {
-  static_assert(_CUDA_VSTD::__cccl_is_integer_v<IntegerType>);
-  constexpr auto lowest = _CUDA_VSTD::numeric_limits<IntegerType>::lowest();
+  static_assert(::cuda::std::__cccl_is_integer_v<IntegerType>);
+  constexpr auto lowest = ::cuda::std::numeric_limits<IntegerType>::lowest();
   auto value1           = static_cast<IntegerType>(value < 0 ? lowest - value : value);
   return cub::detail::unsafe_bitcast<FloatingPointType>(value1);
 }

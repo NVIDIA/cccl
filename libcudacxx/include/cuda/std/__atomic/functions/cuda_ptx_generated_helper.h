@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
-#define _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#ifndef _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#define _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __atomic_cuda_memorder
 {
@@ -170,8 +170,8 @@ using __atomic_enable_if_native_minmax = enable_if_t<is_integral_v<_Type>, bool>
 template <class _Type>
 using __atomic_enable_if_not_native_minmax = enable_if_t<!is_integral_v<_Type>, bool>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H
+#endif // _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H

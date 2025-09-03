@@ -9,10 +9,12 @@ CCCL Development Guide
 
    macro
    testing
+   build_and_bisect_tools
 
 This living document serves to describe the internal details and the development process of CCCL libraries.
 
 Documentation:
 
-- `CCCL Internal Macros <https://nvidia.github.io/cccl/cccl/development/macro.html>`__
-- `CCCL Testing Utilities <https://nvidia.github.io/cccl/cccl/development/testing.html>`__
+- :doc:`CCCL Internal Macros <macro>`
+- :doc:`CCCL Testing Utilities <testing>`
+- :doc:`CCCL Bisect And Targeted Build/Test Helpers <build_and_bisect_tools>`

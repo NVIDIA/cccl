@@ -28,8 +28,18 @@
 #include <cuda/std/__format/format_args.h>
 #include <cuda/std/__format/format_context.h>
 #include <cuda/std/__format/format_error.h>
+#include <cuda/std/__format/format_integral.h>
 #include <cuda/std/__format/format_parse_context.h>
+#include <cuda/std/__format/format_spec_parser.h>
 #include <cuda/std/__format/formatter.h>
+#include <cuda/std/__format/formatters/bool.h>
+#include <cuda/std/__format/formatters/char.h>
+#include <cuda/std/__format/formatters/fp.h>
+#include <cuda/std/__format/formatters/int.h>
+#include <cuda/std/__format/formatters/ptr.h>
+#include <cuda/std/__format/formatters/str.h>
+#include <cuda/std/__format/output_utils.h>
+#include <cuda/std/__format/parse_arg_id.h>
 #include <cuda/std/version>
 
 #endif // _CUDA_STD_FORMAT

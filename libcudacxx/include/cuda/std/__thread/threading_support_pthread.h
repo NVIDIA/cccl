@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_PTHREAD_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_PTHREAD_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_PTHREAD_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_PTHREAD_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Mutex
 using __cccl_mutex_t = pthread_mutex_t;
@@ -73,14 +73,14 @@ using __cccl_tls_key = pthread_key_t;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC
 
-[[nodiscard]] _CCCL_API constexpr timespec __cccl_to_timespec(const _CUDA_VSTD::chrono::nanoseconds& __ns)
+[[nodiscard]] _CCCL_API constexpr timespec __cccl_to_timespec(const ::cuda::std::chrono::nanoseconds& __ns)
 {
   constexpr auto __ts_sec_max = numeric_limits<time_t>::max();
 
   timespec __ts{};
-  const auto __s = _CUDA_VSTD::chrono::duration_cast<chrono::seconds>(__ns);
+  const auto __s = ::cuda::std::chrono::duration_cast<chrono::seconds>(__ns);
 
-  if (_CUDA_VSTD::cmp_less(__s.count(), __ts_sec_max))
+  if (::cuda::std::cmp_less(__s.count(), __ts_sec_max))
   {
     __ts.tv_sec  = static_cast<time_t>(__s.count());
     __ts.tv_nsec = static_cast<decltype(__ts.tv_nsec)>((__ns - __s).count());
@@ -115,7 +115,8 @@ _CCCL_API inline bool __cccl_semaphore_wait(__cccl_semaphore_t* __sem)
   return sem_wait(__sem) == 0;
 }
 
-_CCCL_API inline bool __cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, _CUDA_VSTD::chrono::nanoseconds const& __ns)
+_CCCL_API inline bool
+__cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, ::cuda::std::chrono::nanoseconds const& __ns)
 {
   const auto __ts = __cccl_to_timespec(__ns);
   return sem_timedwait(__sem, &__ts) == 0;
@@ -126,17 +127,17 @@ _CCCL_API inline void __cccl_thread_yield()
   sched_yield();
 }
 
-_CCCL_API inline void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns)
+_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
 {
   auto __ts = __cccl_to_timespec(__ns);
   while (nanosleep(&__ts, &__ts) == -1 && errno == EINTR)
     ;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_LIBCUDACXX_HAS_THREAD_API_PTHREAD
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_PTHREAD_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_PTHREAD_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NULL_POINTER_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NULL_POINTER_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NULL_POINTER_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NULL_POINTER_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool is_null_pointer_v = is_same_v<remove_cv_t<_Tp>, nullptr_t>;
@@ -36,8 +36,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public bool_constant<is_null_pointer_v<_Tp>>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NULL_POINTER_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NULL_POINTER_H

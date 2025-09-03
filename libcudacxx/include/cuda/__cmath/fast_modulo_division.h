@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
-#define _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
+#ifndef _CUDA___CMATH_FAST_MODULO_DIVISION_H
+#define _CUDA___CMATH_FAST_MODULO_DIVISION_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,19 +37,19 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
  **********************************************************************************************************************/
 
 template <typename _Tp, typename _Lhs>
-[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_Tp, _Lhs>
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Lhs>
 __multiply_extract_higher_bits_fallback(_Tp __x, _Lhs __y)
 {
-  using __ret_t         = _CUDA_VSTD::common_type_t<_Tp, _Lhs>;
-  constexpr int __shift = _CUDA_VSTD::__num_bits_v<__ret_t> / 2;
-  using __half_bits_t   = _CUDA_VSTD::__make_nbit_uint_t<_CUDA_VSTD::__num_bits_v<__ret_t>>;
+  using __ret_t         = ::cuda::std::common_type_t<_Tp, _Lhs>;
+  constexpr int __shift = ::cuda::std::__num_bits_v<__ret_t> / 2;
+  using __half_bits_t   = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<__ret_t>>;
   auto __x_high         = static_cast<__half_bits_t>(__x >> __shift);
   auto __x_low          = static_cast<__half_bits_t>(__x);
   auto __y_high         = static_cast<__half_bits_t>(__y >> __shift);
@@ -67,11 +67,11 @@ __multiply_extract_higher_bits_fallback(_Tp __x, _Lhs __y)
 }
 
 template <typename _Tp, typename _Lhs>
-[[nodiscard]] _CCCL_API constexpr _CUDA_VSTD::common_type_t<_Tp, _Lhs> __multiply_extract_higher_bits(_Tp __x, _Lhs __y)
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::common_type_t<_Tp, _Lhs> __multiply_extract_higher_bits(_Tp __x, _Lhs __y)
 {
-  using _CUDA_VSTD::__cccl_is_integer_v;
-  using _CUDA_VSTD::__num_bits_v;
-  using _CUDA_VSTD::is_signed_v;
+  using ::cuda::std::__cccl_is_integer_v;
+  using ::cuda::std::__num_bits_v;
+  using ::cuda::std::is_signed_v;
   static_assert(__cccl_is_integer_v<_Tp>, "__multiply_extract_higher_bits: T is required to be an integer type");
   static_assert(__cccl_is_integer_v<_Lhs>, "__multiply_extract_higher_bits: T is required to be an integer type");
   if constexpr (is_signed_v<_Tp>)
@@ -84,8 +84,8 @@ template <typename _Tp, typename _Lhs>
     _CCCL_ASSERT(__y >= 0, "__y must be non-negative");
     _CCCL_ASSUME(__y >= 0);
   }
-  using __ret_t = _CUDA_VSTD::common_type_t<_Tp, _Lhs>;
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  using __ret_t = ::cuda::std::common_type_t<_Tp, _Lhs>;
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     if constexpr (sizeof(_Tp) == sizeof(uint32_t) && sizeof(_Lhs) == sizeof(uint32_t))
     {
@@ -101,7 +101,7 @@ template <typename _Tp, typename _Lhs>
   if constexpr (sizeof(__ret_t) < sizeof(uint64_t) || (sizeof(__ret_t) == sizeof(uint64_t) && _CCCL_HAS_INT128()))
   {
     constexpr auto __mul_bits = ::cuda::next_power_of_two(__num_bits_v<_Tp> + __num_bits_v<_Lhs>);
-    using __larger_t          = _CUDA_VSTD::__make_nbit_uint_t<__mul_bits>;
+    using __larger_t          = ::cuda::std::__make_nbit_uint_t<__mul_bits>;
     auto __ret                = (static_cast<__larger_t>(__x) * __y) >> (__mul_bits / 2);
     return static_cast<__ret_t>(__ret);
   }
@@ -130,10 +130,10 @@ class fast_mod_div
   using __max_supported_t = uint64_t;
 #endif
 
-  static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= sizeof(__max_supported_t),
+  static_assert(::cuda::std::__cccl_is_integer_v<_Tp> && sizeof(_Tp) <= sizeof(__max_supported_t),
                 "fast_mod_div: T is required to be an integer type");
 
-  using __unsigned_t = _CUDA_VSTD::make_unsigned_t<_Tp>;
+  using __unsigned_t = ::cuda::std::make_unsigned_t<_Tp>;
 
 public:
   fast_mod_div() = delete;
@@ -141,11 +141,11 @@ public:
   _CCCL_API explicit fast_mod_div(_Tp __divisor1) noexcept
       : __divisor{__divisor1}
   {
-    using _CUDA_VSTD::__num_bits_v;
-    using __larger_t = _CUDA_VSTD::__make_nbit_uint_t<__num_bits_v<_Tp> * 2>;
+    using ::cuda::std::__num_bits_v;
+    using __larger_t = ::cuda::std::__make_nbit_uint_t<__num_bits_v<_Tp> * 2>;
     _CCCL_ASSERT(__divisor > 0, "divisor must be positive");
     _CCCL_ASSERT(!_DivisorIsNeverOne || __divisor1 != 1, "cuda::fast_mod_div: divisor must not be one");
-    if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+    if constexpr (::cuda::std::is_signed_v<_Tp>)
     {
       __shift            = ::cuda::ceil_ilog2(__divisor) - 1; // is_pow2(x) ? log2(x) - 1 : log2(x)
       auto __k           = __num_bits_v<_Tp> + __shift; // k: [N, 2*N-2]
@@ -168,13 +168,13 @@ public:
   }
 
   template <typename _Lhs>
-  [[nodiscard]] _CCCL_API friend _CUDA_VSTD::common_type_t<_Tp, _Lhs>
+  [[nodiscard]] _CCCL_API friend ::cuda::std::common_type_t<_Tp, _Lhs>
   operator/(_Lhs __dividend, fast_mod_div<_Tp> __divisor1) noexcept
   {
-    using _CUDA_VSTD::is_same_v;
-    using _CUDA_VSTD::is_signed_v;
-    using _CUDA_VSTD::is_unsigned_v;
-    static_assert(_CUDA_VSTD::__cccl_is_integer_v<_Lhs> && sizeof(_Tp) <= sizeof(__max_supported_t),
+    using ::cuda::std::is_same_v;
+    using ::cuda::std::is_signed_v;
+    using ::cuda::std::is_unsigned_v;
+    static_assert(::cuda::std::__cccl_is_integer_v<_Lhs> && sizeof(_Tp) <= sizeof(__max_supported_t),
                   "cuda::fast_mod_div: T is required to be an integer type");
     static_assert(sizeof(_Lhs) < sizeof(_Tp) || is_same_v<_Lhs, _Tp> || (is_signed_v<_Lhs> && is_unsigned_v<_Tp>),
                   "cuda::fast_mod_div: if dividend and divisor have the same size, dividend must be signed and divisor "
@@ -183,8 +183,8 @@ public:
     {
       _CCCL_ASSERT(__dividend >= 0, "dividend must be non-negative");
     }
-    using __common_t    = _CUDA_VSTD::common_type_t<_Tp, _Lhs>;
-    using _Up           = _CUDA_VSTD::make_unsigned_t<_Lhs>;
+    using __common_t    = ::cuda::std::common_type_t<_Tp, _Lhs>;
+    using _Up           = ::cuda::std::make_unsigned_t<_Lhs>;
     const auto __div    = __divisor1.__divisor; // cannot use structure binding because of clang-14
     const auto __mul    = __divisor1.__multiplier;
     const auto __shift_ = __divisor1.__shift;
@@ -196,7 +196,7 @@ public:
         return static_cast<__common_t>(__udividend >> __shift_);
       }
       // if dividend is a signed type, overflow is not possible
-      if (is_signed_v<_Lhs> || __udividend != _CUDA_VSTD::numeric_limits<_Up>::max()) // avoid overflow
+      if (is_signed_v<_Lhs> || __udividend != ::cuda::std::numeric_limits<_Up>::max()) // avoid overflow
       {
         __udividend += static_cast<_Up>(__divisor1.__add);
       }
@@ -212,7 +212,7 @@ public:
   }
 
   template <typename _Lhs>
-  [[nodiscard]] _CCCL_API friend _CUDA_VSTD::common_type_t<_Tp, _Lhs>
+  [[nodiscard]] _CCCL_API friend ::cuda::std::common_type_t<_Tp, _Lhs>
   operator%(_Lhs __dividend, fast_mod_div<_Tp> __divisor1) noexcept
   {
     return __dividend - (__dividend / __divisor1) * __divisor1.__divisor;
@@ -235,15 +235,15 @@ private:
  **********************************************************************************************************************/
 
 template <typename _Tp, typename _Lhs>
-[[nodiscard]] _CCCL_API _CUDA_VSTD::pair<_Tp, _Lhs> div(_Tp __dividend, fast_mod_div<_Lhs> __divisor) noexcept
+[[nodiscard]] _CCCL_API ::cuda::std::pair<_Tp, _Lhs> div(_Tp __dividend, fast_mod_div<_Lhs> __divisor) noexcept
 {
   auto __quotient  = __dividend / __divisor;
   auto __remainder = __dividend - __quotient * __divisor;
   return {__quotient, __remainder};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_FAST_MODULO_DIVISION_H
+#endif // _CUDA___CMATH_FAST_MODULO_DIVISION_H

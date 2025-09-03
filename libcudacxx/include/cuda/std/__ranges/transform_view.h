@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_TRANSFORM_VIEW_H
-#define _LIBCUDACXX___RANGES_TRANSFORM_VIEW_H
+#ifndef _CUDA_STD___RANGES_TRANSFORM_VIEW_H
+#define _CUDA_STD___RANGES_TRANSFORM_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -57,7 +57,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Fn, class _View>
 _CCCL_CONCEPT __regular_invocable_with_range_ref = regular_invocable<_Fn, range_reference_t<_View>>;
@@ -147,8 +147,8 @@ public:
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
     _CCCL_API constexpr __iterator(_Parent& __parent, iterator_t<_Base> __current)
-        : __parent_(_CUDA_VSTD::addressof(__parent))
-        , __current_(_CUDA_VSTD::move(__current))
+        : __parent_(::cuda::std::addressof(__parent))
+        , __current_(::cuda::std::move(__current))
     {}
 
     // Note: `__i` should always be `__iterator<false>`, but directly using
@@ -158,7 +158,7 @@ public:
     _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<iterator_t<_View>, iterator_t<_Base>>)
     _CCCL_API constexpr __iterator(__iterator<!_OtherConst> __i)
         : __parent_(__i.__parent_)
-        , __current_(_CUDA_VSTD::move(__i.__current_))
+        , __current_(::cuda::std::move(__i.__current_))
     {}
 
     [[nodiscard]] _CCCL_API constexpr const iterator_t<_Base>& base() const& noexcept
@@ -168,13 +168,13 @@ public:
 
     [[nodiscard]] _CCCL_API constexpr iterator_t<_Base> base() &&
     {
-      return _CUDA_VSTD::move(__current_);
+      return ::cuda::std::move(__current_);
     }
 
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
-      noexcept(noexcept(_CUDA_VSTD::invoke(*__parent_->__func_, *__current_)))
+      noexcept(noexcept(::cuda::std::invoke(*__parent_->__func_, *__current_)))
     {
-      return _CUDA_VSTD::invoke(*__parent_->__func_, *__current_);
+      return ::cuda::std::invoke(*__parent_->__func_, *__current_);
     }
 
     _CCCL_API constexpr __iterator& operator++()
@@ -237,7 +237,7 @@ public:
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
       noexcept(__nothrow_subscript<_Fn, _Base2>)
     {
-      return _CUDA_VSTD::invoke(*__parent_->__func_, __current_[__n]);
+      return ::cuda::std::invoke(*__parent_->__func_, __current_[__n]);
     }
 
     template <class _Base2 = _Base>
@@ -348,7 +348,7 @@ public:
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
     _CCCL_REQUIRES(_OtherConst&& convertible_to<sentinel_t<_View>, sentinel_t<_Base>>)
     _CCCL_API constexpr __sentinel(__sentinel<!_OtherConst> __i)
-        : __end_(_CUDA_VSTD::move(__i.__end_))
+        : __end_(::cuda::std::move(__i.__end_))
     {}
 
     [[nodiscard]] _CCCL_API constexpr sentinel_t<_Base> base() const
@@ -416,8 +416,8 @@ public:
 
   _CCCL_API constexpr transform_view(_View __base, _Fn __func)
       : view_interface<transform_view<_View, _Fn>>()
-      , __base_(_CUDA_VSTD::move(__base))
-      , __func_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__func))
+      , __base_(::cuda::std::move(__base))
+      , __func_(::cuda::std::in_place, ::cuda::std::move(__func))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -428,29 +428,29 @@ public:
   }
   [[nodiscard]] _CCCL_API constexpr _View base() &&
   {
-    return _CUDA_VSTD::move(__base_);
+    return ::cuda::std::move(__base_);
   }
 
   [[nodiscard]] _CCCL_API constexpr __iterator<false> begin()
   {
-    return __iterator<false>{*this, _CUDA_VRANGES::begin(__base_)};
+    return __iterator<false>{*this, ::cuda::std::ranges::begin(__base_)};
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2> _CCCL_AND __regular_invocable_with_range_ref<const _Fn&, const _View2>)
   [[nodiscard]] _CCCL_API constexpr __iterator<true> begin() const
   {
-    return __iterator<true>(*this, _CUDA_VRANGES::begin(__base_));
+    return __iterator<true>(*this, ::cuda::std::ranges::begin(__base_));
   }
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
     if constexpr (common_range<_View>)
     {
-      return __iterator<false>(*this, _CUDA_VRANGES::end(__base_));
+      return __iterator<false>(*this, ::cuda::std::ranges::end(__base_));
     }
     else
     {
-      return __sentinel<false>(_CUDA_VRANGES::end(__base_));
+      return __sentinel<false>(::cuda::std::ranges::end(__base_));
     }
   }
 
@@ -460,11 +460,11 @@ public:
   {
     if constexpr (common_range<const _View>)
     {
-      return __iterator<true>(*this, _CUDA_VRANGES::end(__base_));
+      return __iterator<true>(*this, ::cuda::std::ranges::end(__base_));
     }
     else
     {
-      return __sentinel<true>(_CUDA_VRANGES::end(__base_));
+      return __sentinel<true>(::cuda::std::ranges::end(__base_));
     }
   }
 
@@ -472,31 +472,31 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return _CUDA_VRANGES::size(__base_);
+    return ::cuda::std::ranges::size(__base_);
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return _CUDA_VRANGES::size(__base_);
+    return ::cuda::std::ranges::size(__base_);
   }
 };
 
 template <class _Range, class _Fn>
-_CCCL_HOST_DEVICE transform_view(_Range&&, _Fn) -> transform_view<_CUDA_VIEWS::all_t<_Range>, _Fn>;
+_CCCL_HOST_DEVICE transform_view(_Range&&, _Fn) -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__transform)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__transform)
 struct __fn
 {
   template <class _Range, class _Fn>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Fn&& __f) const
-    noexcept(noexcept(transform_view(_CUDA_VSTD::forward<_Range>(__range), _CUDA_VSTD::forward<_Fn>(__f))))
+    noexcept(noexcept(transform_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Fn>(__f))))
       -> transform_view<all_t<_Range>, remove_cvref_t<_Fn>>
   {
-    return transform_view(_CUDA_VSTD::forward<_Range>(__range), _CUDA_VSTD::forward<_Fn>(__f));
+    return transform_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Fn>(__f));
   }
 
   _CCCL_TEMPLATE(class _Fn)
@@ -504,19 +504,19 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Fn&& __f) const
     noexcept(is_nothrow_constructible_v<decay_t<_Fn>, _Fn>)
   {
-    return __pipeable(_CUDA_VSTD::__bind_back(*this, _CUDA_VSTD::forward<_Fn>(__f)));
+    return __pipeable(::cuda::std::__bind_back(*this, ::cuda::std::forward<_Fn>(__f)));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto transform = __transform::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_TRANSFORM_VIEW_H
+#endif // _CUDA_STD___RANGES_TRANSFORM_VIEW_H

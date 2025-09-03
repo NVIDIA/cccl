@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_INVERSE_HYPERBOLIC_FUNCTIONS_H
-#define _LIBCUDACXX___CMATH_INVERSE_HYPERBOLIC_FUNCTIONS_H
+#ifndef _CUDA_STD___CMATH_INVERSE_HYPERBOLIC_FUNCTIONS_H
+#define _CUDA_STD___CMATH_INVERSE_HYPERBOLIC_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // acosh
 
@@ -100,21 +100,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half acosh(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::acoshf(__half2float(__x)));
+  return __float2half(::cuda::std::acoshf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 acosh(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::acoshf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::acoshf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double acosh(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::acosh((double) __x);
+  return ::cuda::std::acosh((double) __x);
 }
 
 // asinh
@@ -181,21 +181,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half asinh(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::asinhf(__half2float(__x)));
+  return __float2half(::cuda::std::asinhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 asinh(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::asinhf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::asinhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double asinh(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::asinh((double) __x);
+  return ::cuda::std::asinh((double) __x);
 }
 
 // atanh
@@ -262,25 +262,25 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half atanh(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::atanhf(__half2float(__x)));
+  return __float2half(::cuda::std::atanhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 atanh(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::atanhf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::atanhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double atanh(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::atanh((double) __x);
+  return ::cuda::std::atanh((double) __x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_INVERSE_HYPERBOLIC_FUNCTIONS_H
+#endif // _CUDA_STD___CMATH_INVERSE_HYPERBOLIC_FUNCTIONS_H

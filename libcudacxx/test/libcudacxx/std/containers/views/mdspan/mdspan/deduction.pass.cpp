@@ -48,7 +48,7 @@
 //                typename MappingType::layout_type, AccessorType>;
 
 // nvbug5272086
-// UNSUPPORTED: nvcc-12.9 && msvc
+// UNSUPPORTED: msvc
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>

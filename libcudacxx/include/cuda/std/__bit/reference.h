@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_REFERENCE
-#define _LIBCUDACXX___BIT_REFERENCE
+#ifndef _CUDA_STD___BIT_REFERENCE_H
+#define _CUDA_STD___BIT_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Cp>
 class __bit_const_reference;
@@ -108,7 +108,7 @@ public:
   }
   _CCCL_API constexpr __bit_iterator<_Cp, false> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
+    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(::cuda::std::countr_zero(__mask_)));
   }
 
   friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
@@ -176,7 +176,7 @@ public:
 
   _CCCL_API constexpr __bit_iterator<_Cp, true> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
+    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(::cuda::std::countr_zero(__mask_)));
   }
 
 private:
@@ -201,7 +201,7 @@ _CCCL_API constexpr void __fill_n_impl(__bit_iterator<_Cp, false> __first, typen
   if (__first.__ctz_ != 0)
   {
     __storage_type __clz_f = static_cast<__storage_type>(__bits_per_word - __first.__ctz_);
-    __storage_type __dn    = (_CUDA_VSTD::min) (__clz_f, static_cast<__storage_type>(__n));
+    __storage_type __dn    = (::cuda::std::min) (__clz_f, static_cast<__storage_type>(__n));
     __storage_type __m     = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
     if (_FillVal)
     {
@@ -216,7 +216,7 @@ _CCCL_API constexpr void __fill_n_impl(__bit_iterator<_Cp, false> __first, typen
   }
   // do middle whole words
   __storage_type __nw = __n / __bits_per_word;
-  _CUDA_VSTD::fill_n(_CUDA_VSTD::__to_address(__first.__seg_), __nw, _FillVal ? ~static_cast<__storage_type>(0) : 0);
+  ::cuda::std::fill_n(::cuda::std::__to_address(__first.__seg_), __nw, _FillVal ? ~static_cast<__storage_type>(0) : 0);
   __n -= (__nw * __bits_per_word).__data;
   // do last partial word
   if (__n > 0)
@@ -241,11 +241,11 @@ _CCCL_API constexpr void fill_n(__bit_iterator<_Cp, false> __first, typename _Cp
   {
     if (__value)
     {
-      _CUDA_VSTD::__fill_n_impl<true>(__first, __n);
+      ::cuda::std::__fill_n_impl<true>(__first, __n);
     }
     else
     {
-      _CUDA_VSTD::__fill_n_impl<false>(__first, __n);
+      ::cuda::std::__fill_n_impl<false>(__first, __n);
     }
   }
 }
@@ -255,7 +255,7 @@ _CCCL_API constexpr void fill_n(__bit_iterator<_Cp, false> __first, typename _Cp
 template <class _Cp>
 _CCCL_API constexpr void fill(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __last, bool __value)
 {
-  _CUDA_VSTD::fill_n(__first, static_cast<typename _Cp::size_type>(__last - __first), __value);
+  ::cuda::std::fill_n(__first, static_cast<typename _Cp::size_type>(__last - __first), __value);
 }
 
 // copy
@@ -276,7 +276,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_aligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz       = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
       __n -= __dn;
       __storage_type __m = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
       __storage_type __b = *__first.__seg_ & __m;
@@ -290,7 +290,8 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_aligned(
     // __first.__ctz_ == 0;
     // do middle words
     __storage_type __nw = __n / __bits_per_word;
-    _CUDA_VSTD::copy_n(_CUDA_VSTD::__to_address(__first.__seg_), __nw.__data, _CUDA_VSTD::__to_address(__result.__seg_));
+    ::cuda::std::copy_n(
+      ::cuda::std::__to_address(__first.__seg_), __nw.__data, ::cuda::std::__to_address(__result.__seg_));
     __result.__seg_ += __nw.__data;
     __n -= (__nw * __bits_per_word).__data;
     // do last word
@@ -323,12 +324,12 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_unaligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz_f     = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz_f), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
       __storage_type __m   = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b   = *__first.__seg_ & __m;
       unsigned __clz_r     = __bits_per_word - __result.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min<__storage_type>(__dn, __clz_r);
+      __storage_type __ddn = ::cuda::std::min<__storage_type>(__dn, __clz_r);
       __m                  = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __ddn));
       *__result.__seg_ &= ~__m;
       if (__result.__ctz_ > __first.__ctz_)
@@ -370,7 +371,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_unaligned(
     {
       __m                 = ~__storage_type(0) >> (__bits_per_word - __n);
       __storage_type __b  = *__first.__seg_ & __m;
-      __storage_type __dn = _CUDA_VSTD::min(__n, static_cast<difference_type>(__clz_r));
+      __storage_type __dn = ::cuda::std::min(__n, static_cast<difference_type>(__clz_r));
       __m                 = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __dn));
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b << __result.__ctz_;
@@ -395,9 +396,9 @@ copy(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last
 {
   if (__first.__ctz_ == __result.__ctz_)
   {
-    return _CUDA_VSTD::__copy_aligned(__first, __last, __result);
+    return ::cuda::std::__copy_aligned(__first, __last, __result);
   }
-  return _CUDA_VSTD::__copy_unaligned(__first, __last, __result);
+  return ::cuda::std::__copy_unaligned(__first, __last, __result);
 }
 
 // copy_backward
@@ -417,7 +418,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
     // do first word
     if (__last.__ctz_ != 0)
     {
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__last.__ctz_), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__last.__ctz_), __n);
       __n -= __dn;
       unsigned __clz     = __bits_per_word - __last.__ctz_;
       __storage_type __m = (~__storage_type(0) << (__last.__ctz_ - __dn)) & (~__storage_type(0) >> __clz);
@@ -433,7 +434,8 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
     __storage_type __nw = __n / __bits_per_word;
     __result.__seg_ -= __nw.__data;
     __last.__seg_ -= __nw.__data;
-    _CUDA_VSTD::copy_n(_CUDA_VSTD::__to_address(__last.__seg_), __nw.__data, _CUDA_VSTD::__to_address(__result.__seg_));
+    ::cuda::std::copy_n(
+      ::cuda::std::__to_address(__last.__seg_), __nw.__data, ::cuda::std::__to_address(__result.__seg_));
     __n -= (__nw * __bits_per_word).__data;
     // do last word
     if (__n > 0)
@@ -494,13 +496,13 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
     // do first word
     if (__last.__ctz_ != 0)
     {
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__last.__ctz_), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__last.__ctz_), __n);
       __n -= __dn;
       unsigned __clz_l     = __bits_per_word - __last.__ctz_;
       __storage_type __m   = (~__storage_type(0) << (__last.__ctz_ - __dn)) & (~__storage_type(0) >> __clz_l);
       __storage_type __b   = *__last.__seg_ & __m;
       unsigned __clz_r     = __bits_per_word - __result.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min(__dn, static_cast<difference_type>(__result.__ctz_));
+      __storage_type __ddn = ::cuda::std::min(__dn, static_cast<difference_type>(__result.__ctz_));
       if (__ddn > 0)
       {
         __m = (~__storage_type(0) << (__result.__ctz_ - __ddn)) & (~__storage_type(0) >> __clz_r);
@@ -564,7 +566,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
       __m                 = ~__storage_type(0) << (__bits_per_word - __n);
       __storage_type __b  = *--__last.__seg_ & __m;
       __clz_r             = __bits_per_word - __result.__ctz_;
-      __storage_type __dn = _CUDA_VSTD::min(__n, static_cast<difference_type>(__result.__ctz_));
+      __storage_type __dn = ::cuda::std::min(__n, static_cast<difference_type>(__result.__ctz_));
       __m                 = (~__storage_type(0) << (__result.__ctz_ - __dn)) & (~__storage_type(0) >> __clz_r);
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b >> (__bits_per_word - __result.__ctz_);
@@ -593,9 +595,9 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> copy_backward(
 {
   if (__last.__ctz_ == __result.__ctz_)
   {
-    return _CUDA_VSTD::__copy_backward_aligned(__first, __last, __result);
+    return ::cuda::std::__copy_backward_aligned(__first, __last, __result);
   }
-  return _CUDA_VSTD::__copy_backward_unaligned(__first, __last, __result);
+  return ::cuda::std::__copy_backward_unaligned(__first, __last, __result);
 }
 
 // move
@@ -604,7 +606,7 @@ template <class _Cp, bool _IsConst>
 _CCCL_API inline __bit_iterator<_Cp, false>
 move(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
-  return _CUDA_VSTD::copy(__first, __last, __result);
+  return ::cuda::std::copy(__first, __last, __result);
 }
 
 // move_backward
@@ -613,7 +615,7 @@ template <class _Cp, bool _IsConst>
 _CCCL_API inline __bit_iterator<_Cp, false> move_backward(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
 {
-  return _CUDA_VSTD::copy_backward(__first, __last, __result);
+  return ::cuda::std::copy_backward(__first, __last, __result);
 }
 
 // swap_ranges
@@ -634,7 +636,7 @@ _CCCL_API inline __bit_iterator<_Cr, false> __swap_ranges_aligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz       = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
       __n -= __dn;
       __storage_type __m  = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
       __storage_type __b1 = *__first.__seg_ & __m;
@@ -686,13 +688,13 @@ _CCCL_API inline __bit_iterator<_Cr, false> __swap_ranges_unaligned(
     if (__first.__ctz_ != 0)
     {
       unsigned __clz_f     = __bits_per_word - __first.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz_f), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
       __storage_type __m  = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b1 = *__first.__seg_ & __m;
       *__first.__seg_ &= ~__m;
       unsigned __clz_r     = __bits_per_word - __result.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min<__storage_type>(__dn, __clz_r);
+      __storage_type __ddn = ::cuda::std::min<__storage_type>(__dn, __clz_r);
       __m                  = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __ddn));
       __storage_type __b2  = *__result.__seg_ & __m;
       *__result.__seg_ &= ~__m;
@@ -747,7 +749,7 @@ _CCCL_API inline __bit_iterator<_Cr, false> __swap_ranges_unaligned(
       __m                 = ~__storage_type(0) >> (__bits_per_word - __n);
       __storage_type __b1 = *__first.__seg_ & __m;
       *__first.__seg_ &= ~__m;
-      __storage_type __dn = _CUDA_VSTD::min<__storage_type>(__n, __clz_r);
+      __storage_type __dn = ::cuda::std::min<__storage_type>(__n, __clz_r);
       __m                 = (~__storage_type(0) << __result.__ctz_) & (~__storage_type(0) >> (__clz_r - __dn));
       __storage_type __b2 = *__result.__seg_ & __m;
       *__result.__seg_ &= ~__m;
@@ -776,9 +778,9 @@ _CCCL_API inline __bit_iterator<_Cr, false> swap_ranges(
 {
   if (__first1.__ctz_ == __first2.__ctz_)
   {
-    return _CUDA_VSTD::__swap_ranges_aligned(__first1, __last1, __first2);
+    return ::cuda::std::__swap_ranges_aligned(__first1, __last1, __first2);
   }
-  return _CUDA_VSTD::__swap_ranges_unaligned(__first1, __last1, __first2);
+  return ::cuda::std::__swap_ranges_unaligned(__first1, __last1, __first2);
 }
 
 // rotate
@@ -804,11 +806,11 @@ struct __bit_array
   _CCCL_API constexpr explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {
-        _CUDA_VSTD::__construct_at(__word_ + __i, 0);
+        ::cuda::std::__construct_at(__word_ + __i, 0);
       }
     }
   }
@@ -840,13 +842,13 @@ rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, 
       if (__d1 <= __bit_array<_Cp>::capacity())
       {
         __bit_array<_Cp> __b(__d1);
-        _CUDA_VSTD::copy(__first, __middle, __b.begin());
-        _CUDA_VSTD::copy(__b.begin(), __b.end(), _CUDA_VSTD::copy(__middle, __last, __first));
+        ::cuda::std::copy(__first, __middle, __b.begin());
+        ::cuda::std::copy(__b.begin(), __b.end(), ::cuda::std::copy(__middle, __last, __first));
         break;
       }
       else
       {
-        __bit_iterator<_Cp, false> __mp = _CUDA_VSTD::swap_ranges(__first, __middle, __middle);
+        __bit_iterator<_Cp, false> __mp = ::cuda::std::swap_ranges(__first, __middle, __middle);
         __first                         = __middle;
         __middle                        = __mp;
         __d2 -= __d1;
@@ -857,14 +859,14 @@ rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, 
       if (__d2 <= __bit_array<_Cp>::capacity())
       {
         __bit_array<_Cp> __b(__d2);
-        _CUDA_VSTD::copy(__middle, __last, __b.begin());
-        _CUDA_VSTD::copy_backward(__b.begin(), __b.end(), _CUDA_VSTD::copy_backward(__first, __middle, __last));
+        ::cuda::std::copy(__middle, __last, __b.begin());
+        ::cuda::std::copy_backward(__b.begin(), __b.end(), ::cuda::std::copy_backward(__first, __middle, __last));
         break;
       }
       else
       {
         __bit_iterator<_Cp, false> __mp = __first + __d2;
-        _CUDA_VSTD::swap_ranges(__first, __mp, __middle);
+        ::cuda::std::swap_ranges(__first, __mp, __middle);
         __first = __mp;
         __d1 -= __d2;
       }
@@ -891,12 +893,12 @@ _CCCL_API constexpr bool __equal_unaligned(
     if (__first1.__ctz_ != 0)
     {
       unsigned __clz_f     = __bits_per_word - __first1.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz_f), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
       __storage_type __m   = (~__storage_type(0) << __first1.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b   = *__first1.__seg_ & __m;
       unsigned __clz_r     = __bits_per_word - __first2.__ctz_;
-      __storage_type __ddn = _CUDA_VSTD::min<__storage_type>(__dn, __clz_r);
+      __storage_type __ddn = ::cuda::std::min<__storage_type>(__dn, __clz_r);
       __m                  = (~__storage_type(0) << __first2.__ctz_) & (~__storage_type(0) >> (__clz_r - __ddn));
       if (__first2.__ctz_ > __first1.__ctz_)
       {
@@ -949,7 +951,7 @@ _CCCL_API constexpr bool __equal_unaligned(
     {
       __m                 = ~__storage_type(0) >> (__bits_per_word - __n);
       __storage_type __b  = *__first1.__seg_ & __m;
-      __storage_type __dn = _CUDA_VSTD::min(__n, static_cast<difference_type>(__clz_r));
+      __storage_type __dn = ::cuda::std::min(__n, static_cast<difference_type>(__clz_r));
       __m                 = (~__storage_type(0) << __first2.__ctz_) & (~__storage_type(0) >> (__clz_r - __dn));
       if ((*__first2.__seg_ & __m) != (__b << __first2.__ctz_))
       {
@@ -987,7 +989,7 @@ _CCCL_API constexpr bool __equal_aligned(
     if (__first1.__ctz_ != 0)
     {
       unsigned __clz       = __bits_per_word - __first1.__ctz_;
-      difference_type __dn = _CUDA_VSTD::min(static_cast<difference_type>(__clz), __n);
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
       __n -= __dn;
       __storage_type __m = (~__storage_type(0) << __first1.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
       if ((*__first2.__seg_ & __m) != (*__first1.__seg_ & __m))
@@ -1028,9 +1030,9 @@ equal(__bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __b
 {
   if (__first1.__ctz_ == __first2.__ctz_)
   {
-    return _CUDA_VSTD::__equal_aligned(__first1, __last1, __first2);
+    return ::cuda::std::__equal_aligned(__first1, __last1, __first2);
   }
-  return _CUDA_VSTD::__equal_unaligned(__first1, __last1, __first2);
+  return ::cuda::std::__equal_unaligned(__first1, __last1, __first2);
 }
 
 template <class _Cp, bool _IsConst>
@@ -1263,8 +1265,8 @@ private:
     typename __bit_iterator<_Dp, _IC>::difference_type __count_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_REFERENCE
+#endif // _CUDA_STD___BIT_REFERENCE_H

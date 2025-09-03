@@ -1,5 +1,10 @@
 .. _libcudacxx-releases:
 
+.. warning::
+    This table is no longer maintained since libcu++ was merged into the CCCL project.
+    For the latest releases, checkout the CCCL releases
+    on `GitHub <https://github.com/NVIDIA/cccl/releases>`_.
+
 Releases
 ========
 

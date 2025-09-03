@@ -55,12 +55,14 @@ public:
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
   [[nodiscard]] void* allocate_sync(const size_t __bytes,
-                                    const size_t __alignment = _CUDA_VMR::default_cuda_malloc_host_alignment) const
+                                    const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD::__throw_invalid_argument("Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync.");
+      ::cuda::std::__throw_invalid_argument(
+        "Invalid alignment passed to "
+        "legacy_pinned_memory_resource::allocate_sync.");
     }
 
     void* __ptr{nullptr};
@@ -73,7 +75,7 @@ public:
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   void deallocate_sync(
-    void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_host_alignment) const noexcept
+    void* __ptr, const size_t, const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
@@ -99,25 +101,23 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(legacy_pinned_memory_resource const&, host_accessible) noexcept {}
-#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
-    return __alignment <= _CUDA_VMR::default_cuda_malloc_host_alignment
-        && (_CUDA_VMR::default_cuda_malloc_host_alignment % __alignment == 0);
+    return __alignment <= ::cuda::mr::default_cuda_malloc_host_alignment
+        && (::cuda::mr::default_cuda_malloc_host_alignment % __alignment == 0);
   }
 
   using default_queries = properties_list<device_accessible, host_accessible>;
 };
 
-static_assert(_CUDA_VMR::synchronous_resource_with<legacy_pinned_memory_resource, device_accessible>, "");
-static_assert(_CUDA_VMR::synchronous_resource_with<legacy_pinned_memory_resource, host_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
 

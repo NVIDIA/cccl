@@ -207,8 +207,8 @@ template <typename Input,
           typename Output,
           typename ScanOp,
           typename PrefixT,
-          typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
-          typename AccumT = _CUDA_VSTD::__accumulator_t<ScanOp, ValueT, PrefixT>>
+          typename ValueT = ::cuda::std::iter_value_t<Input>,
+          typename AccumT = ::cuda::std::__accumulator_t<ScanOp, ValueT, PrefixT>>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
   Input& input, Output& output, ScanOp scan_op, int valid_items, PrefixT prefix, bool apply_prefix = true)
 {
@@ -457,8 +457,8 @@ template <typename Input,
           typename Output,
           typename ScanOp,
           typename PrefixT,
-          typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
-          typename AccumT = _CUDA_VSTD::__accumulator_t<ScanOp, ValueT, PrefixT>>
+          typename ValueT = ::cuda::std::iter_value_t<Input>,
+          typename AccumT = ::cuda::std::__accumulator_t<ScanOp, ValueT, PrefixT>>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
   Input& input, Output& output, ScanOp scan_op, int valid_items, PrefixT prefix, bool apply_prefix = true)
 {

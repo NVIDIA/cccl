@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H
-#define _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H
+#ifndef _CUDA_STD___MEMORY_ASSUME_ALIGNED_H
+#define _CUDA_STD___MEMORY_ASSUME_ALIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,20 +30,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _Align, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
-  static_assert(_CUDA_VSTD::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2");
+  static_assert(::cuda::std::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2");
   static_assert(_Align >= alignof(_Tp), "Alignment must be greater than or equal to the alignment of the input type");
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return __ptr;
 #else
-  if (!_CUDA_VSTD::is_constant_evaluated())
+  if (!::cuda::std::is_constant_evaluated())
   {
 #  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
-    _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
+    _CCCL_ASSERT(::cuda::std::bit_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
 #  endif // !_CCCL_COMPILER(MSVC) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
 #  if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, _Align));
@@ -53,8 +53,8 @@ template <size_t _Align, class _Tp>
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H
+#endif // _CUDA_STD___MEMORY_ASSUME_ALIGNED_H

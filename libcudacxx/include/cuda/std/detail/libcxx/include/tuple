@@ -193,10 +193,10 @@ template <class... Types>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class>
-struct __is_tuple_of_iterator_references : _CUDA_VSTD::false_type
+struct __is_tuple_of_iterator_references : ::cuda::std::false_type
 {};
 
 // __tuple_leaf
@@ -282,38 +282,38 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
-      : __value_(_CUDA_VSTD::forward<_Tp>(__t))
+      : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
-      : __value_(_CUDA_VSTD::forward<_Tp>(__t))
+      : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
-      : __value_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
+      : __value_(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
-      : __value_(_CUDA_VSTD::forward<_Tp>(__t), __a)
+      : __value_(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
   _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
-    __value_ = _CUDA_VSTD::forward<_Tp>(__t);
+    __value_ = ::cuda::std::forward<_Tp>(__t);
     return *this;
   }
 
   _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
-    _CUDA_VSTD::swap(*this, __t);
+    ::cuda::std::swap(*this, __t);
     return 0;
   }
 
@@ -354,7 +354,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept(is_nothrow_constructible_v<_Hp, _Tp>)
-      : __value_(_CUDA_VSTD::forward<_Tp>(__t))
+      : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
                   "Attempted construction of reference element "
@@ -364,7 +364,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
-      : __value_(_CUDA_VSTD::forward<_Tp>(__t))
+      : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
                   "Attempted construction of reference element binds to a "
@@ -385,7 +385,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
   {
-    __value_ = _CUDA_VSTD::move(__t.__value_);
+    __value_ = ::cuda::std::move(__t.__value_);
     return *this;
   }
 
@@ -393,13 +393,13 @@ public:
   template <class _Tp>
   _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
-    __value_ = _CUDA_VSTD::forward<_Tp>(__t);
+    __value_ = ::cuda::std::forward<_Tp>(__t);
     return *this;
   }
 
   _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
-    _CUDA_VSTD::swap(*this, __t);
+    ::cuda::std::swap(*this, __t);
     return 0;
   }
 
@@ -449,25 +449,25 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _CCCL_API constexpr explicit __tuple_leaf(_Tp&& __t) noexcept((is_nothrow_constructible<_Hp, _Tp>::value))
-      : _Hp(_CUDA_VSTD::forward<_Tp>(__t))
+      : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
-      : _Hp(_CUDA_VSTD::forward<_Tp>(__t))
+      : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
-      : _Hp(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
+      : _Hp(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _CCCL_API inline explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
-      : _Hp(_CUDA_VSTD::forward<_Tp>(__t), __a)
+      : _Hp(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -482,14 +482,14 @@ public:
   template <class _Tp, enable_if_t<is_assignable_v<_Hp&, _Tp>, int> = 0>
   _CCCL_API inline __tuple_leaf& operator=(_Tp&& __t) noexcept(is_nothrow_assignable_v<_Hp&, _Tp>)
   {
-    _Hp::operator=(_CUDA_VSTD::forward<_Tp>(__t));
+    _Hp::operator=(::cuda::std::forward<_Tp>(__t));
     return *this;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
-    _CUDA_VSTD::swap(*this, __t);
+    ::cuda::std::swap(*this, __t);
     return 0;
   }
 
@@ -548,22 +548,22 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
             bool __all_nothrow_constructible                   = __all<is_nothrow_constructible_v<_Tp, _Up>...>::value>
   _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag,
                                             _Up&&... __u) noexcept(__all_nothrow_constructible)
-      : __tuple_leaf<_Indx, _Tp>(_CUDA_VSTD::forward<_Up>(__u))...
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<_Up>(__u))...
   {}
 
   // Handle non-allocator, partial default initialization
   // Recursively delegate until we have full rank
   template <class... _Up, enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
   _CCCL_API constexpr explicit __tuple_impl(__tuple_variadic_constructor_tag __tag, _Up&&... __u) noexcept(
-    noexcept(__tuple_impl(__tag, _CUDA_VSTD::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})))
-      : __tuple_impl(__tag, _CUDA_VSTD::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})
+    noexcept(__tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})))
+      : __tuple_impl(__tag, ::cuda::std::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})
   {}
 
   // Handle allocator aware, full initialization
   template <class _Alloc, class... _Up, enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
   _CCCL_API inline explicit __tuple_impl(
     allocator_arg_t, const _Alloc& __a, __tuple_variadic_constructor_tag, _Up&&... __u)
-      : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, _Up>(), __a, _CUDA_VSTD::forward<_Up>(__u))...
+      : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, _Up>(), __a, ::cuda::std::forward<_Up>(__u))...
   {}
 
   // Handle allocator aware, full default initialization
@@ -578,22 +578,22 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _CCCL_API constexpr __tuple_impl(_Tuple&& __t) noexcept(
     (__all<is_nothrow_constructible_v<_Tp, __tuple_elem_at<_Tuple, _Indx>>...>::value))
-      : __tuple_leaf<_Indx, _Tp>(_CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
   {}
 
   template <class _Alloc, class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _CCCL_API inline __tuple_impl(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
-                                 _CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...
+                                 ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...
   {}
 
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _CCCL_API inline __tuple_impl&
   operator=(_Tuple&& __t) noexcept((__all<is_nothrow_assignable_v<_Tp&, __tuple_elem_at<_Tuple, _Indx>>...>::value))
   {
-    _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
-      _CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...);
+    ::cuda::std::__swallow(__tuple_leaf<_Indx, _Tp>::operator=(
+      ::cuda::std::forward<__tuple_elem_at<_Tuple, _Indx>>(::cuda::std::get<_Indx>(__t)))...);
     return *this;
   }
 
@@ -604,7 +604,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 
   _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
   {
-    _CUDA_VSTD::__swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
+    ::cuda::std::__swallow(__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t))...);
   }
 };
 
@@ -827,14 +827,14 @@ public:
             class _Constraints                                       = __variadic_constraints<_Up...>,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr tuple(_Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
-      : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
+      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
   {}
 
   template <class... _Up,
             class _Constraints                                       = __variadic_constraints<_Up...>,
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API constexpr explicit tuple(_Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
-      : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
+      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
   {}
 
   template <class... _Up>
@@ -848,7 +848,7 @@ public:
             enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API constexpr explicit tuple(_Up&&... __u) noexcept(is_nothrow_constructible_v<_BaseT, _Up...>)
-      : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
+      : __base_(__tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
   {}
 
   template <class _Alloc,
@@ -857,7 +857,7 @@ public:
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _Up&&... __u) noexcept(
     _Constraints::__nothrow_constructible)
-      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
+      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
   {}
 
   template <class _Alloc,
@@ -866,7 +866,7 @@ public:
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _Up&&... __u) noexcept(
     _Constraints::__nothrow_constructible)
-      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
+      : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, ::cuda::std::forward<_Up>(__u)...)
   {}
 
   template <class _Tuple>
@@ -880,7 +880,7 @@ public:
             enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int>    = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
-      : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t),
+      : tuple(::cuda::std::forward<_TupleOfIteratorReferences>(__t),
               typename __make_tuple_indices<sizeof...(_Tp)>::type{})
   {}
 
@@ -889,7 +889,7 @@ private:
             size_t... _Indices,
             enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t, __tuple_indices<_Indices...>)
-      : tuple(_CUDA_VSTD::get<_Indices>(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t))...)
+      : tuple(::cuda::std::get<_Indices>(::cuda::std::forward<_TupleOfIteratorReferences>(__t))...)
   {}
 
 public:
@@ -899,7 +899,7 @@ public:
             enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
             enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
   _CCCL_API constexpr tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
-      : __base_(_CUDA_VSTD::forward<_Tuple>(__t))
+      : __base_(::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
@@ -916,7 +916,7 @@ public:
             enable_if_t<!is_lvalue_reference_v<_Tuple>, int>          = 0,
             enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _CCCL_API constexpr explicit tuple(_Tuple&& __t) noexcept(is_nothrow_constructible_v<_BaseT, _Tuple>)
-      : __base_(_CUDA_VSTD::forward<_Tuple>(__t))
+      : __base_(::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
@@ -932,7 +932,7 @@ public:
             class _Constraints                                       = __tuple_like_constraints<_Tuple>,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_API inline tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
-      : __base_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tuple>(__t))
+      : __base_(allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   template <class _Alloc,
@@ -940,7 +940,7 @@ public:
             class _Constraints                                       = __tuple_like_constraints<_Tuple>,
             enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_API inline explicit tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
-      : __base_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tuple>(__t))
+      : __base_(allocator_arg_t(), __a, ::cuda::std::forward<_Tuple>(__t))
   {}
 
   using _CanCopyAssign = __all<is_copy_assignable_v<_Tp>...>;
@@ -952,7 +952,7 @@ public:
   template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>::value, bool> = false>
   _CCCL_API inline tuple& operator=(_Tuple&& __t) noexcept(is_nothrow_assignable_v<_BaseT&, _Tuple>)
   {
-    __base_.operator=(_CUDA_VSTD::forward<_Tuple>(__t));
+    __base_.operator=(::cuda::std::forward<_Tuple>(__t));
     return *this;
   }
 
@@ -1016,13 +1016,13 @@ _CCCL_API constexpr const tuple_element_t<_Ip, tuple<_Tp...>>& get(const tuple<_
 template <size_t _Ip, class... _Tp>
 _CCCL_API constexpr tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&& __t) noexcept
 {
-  return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
+  return ::cuda::std::move(__t).template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
 _CCCL_API constexpr const tuple_element_t<_Ip, tuple<_Tp...>>&& get(const tuple<_Tp...>&& __t) noexcept
 {
-  return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
+  return ::cuda::std::move(__t).template __get_impl<_Ip>();
 }
 
 namespace __find_detail
@@ -1066,25 +1066,25 @@ struct __find_exactly_one_t : public __find_detail::__find_exactly_one_checked<_
 template <class _T1, class... _Args>
 _CCCL_API constexpr _T1& get(tuple<_Args...>& __tup) noexcept
 {
-  return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(__tup);
+  return ::cuda::std::get<__find_exactly_one_t<_T1, _Args...>::value>(__tup);
 }
 
 template <class _T1, class... _Args>
 _CCCL_API constexpr _T1 const& get(tuple<_Args...> const& __tup) noexcept
 {
-  return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(__tup);
+  return ::cuda::std::get<__find_exactly_one_t<_T1, _Args...>::value>(__tup);
 }
 
 template <class _T1, class... _Args>
 _CCCL_API constexpr _T1&& get(tuple<_Args...>&& __tup) noexcept
 {
-  return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(_CUDA_VSTD::move(__tup));
+  return ::cuda::std::get<__find_exactly_one_t<_T1, _Args...>::value>(::cuda::std::move(__tup));
 }
 
 template <class _T1, class... _Args>
 _CCCL_API constexpr _T1 const&& get(tuple<_Args...> const&& __tup) noexcept
 {
-  return _CUDA_VSTD::get<__find_exactly_one_t<_T1, _Args...>::value>(_CUDA_VSTD::move(__tup));
+  return ::cuda::std::get<__find_exactly_one_t<_T1, _Args...>::value>(::cuda::std::move(__tup));
 }
 
 // tie
@@ -1098,13 +1098,13 @@ _CCCL_API constexpr tuple<_Tp&...> tie(_Tp&... __t) noexcept
 template <class... _Tp>
 _CCCL_API constexpr tuple<unwrap_ref_decay_t<_Tp>...> make_tuple(_Tp&&... __t)
 {
-  return tuple<unwrap_ref_decay_t<_Tp>...>(_CUDA_VSTD::forward<_Tp>(__t)...);
+  return tuple<unwrap_ref_decay_t<_Tp>...>(::cuda::std::forward<_Tp>(__t)...);
 }
 
 template <class... _Tp>
 _CCCL_API constexpr tuple<_Tp&&...> forward_as_tuple(_Tp&&... __t) noexcept
 {
-  return tuple<_Tp&&...>(_CUDA_VSTD::forward<_Tp>(__t)...);
+  return tuple<_Tp&&...>(::cuda::std::forward<_Tp>(__t)...);
 }
 
 template <size_t _Ip>
@@ -1114,7 +1114,7 @@ struct __tuple_equal
   template <class _Tp, class _Up>
   _CCCL_API constexpr bool operator()(const _Tp& __x, const _Up& __y)
   {
-    return __tuple_equal<_Ip - 1>()(__x, __y) && _CUDA_VSTD::get<_Ip - 1>(__x) == _CUDA_VSTD::get<_Ip - 1>(__y);
+    return __tuple_equal<_Ip - 1>()(__x, __y) && ::cuda::std::get<_Ip - 1>(__x) == ::cuda::std::get<_Ip - 1>(__y);
   }
 };
 
@@ -1149,11 +1149,11 @@ struct __tuple_less
   _CCCL_API constexpr bool operator()(const _Tp& __x, const _Up& __y)
   {
     const size_t __idx = tuple_size<_Tp>::value - _Ip;
-    if (_CUDA_VSTD::get<__idx>(__x) < _CUDA_VSTD::get<__idx>(__y))
+    if (::cuda::std::get<__idx>(__x) < ::cuda::std::get<__idx>(__y))
     {
       return true;
     }
-    if (_CUDA_VSTD::get<__idx>(__y) < _CUDA_VSTD::get<__idx>(__x))
+    if (::cuda::std::get<__idx>(__y) < ::cuda::std::get<__idx>(__x))
     {
       return false;
     }
@@ -1283,8 +1283,8 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
   _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&>::type
   operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
   {
-    return _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
-                                        _CUDA_VSTD::get<_J0>(_CUDA_VSTD::forward<_Tuple0>(__t0))...);
+    return ::cuda::std::forward_as_tuple(::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
+                                         ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...);
   }
 
   template <class _Tuple0, class _Tuple1, class... _Tuples>
@@ -1296,10 +1296,10 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
     return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_J0, _T0>>&&...>,
                        __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
                        __make_tuple_indices_t<tuple_size<_T1>::value>>()(
-      _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
-                                   _CUDA_VSTD::get<_J0>(_CUDA_VSTD::forward<_Tuple0>(__t0))...),
-      _CUDA_VSTD::forward<_Tuple1>(__t1),
-      _CUDA_VSTD::forward<_Tuples>(__tpls)...);
+      ::cuda::std::forward_as_tuple(::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
+                                    ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...),
+      ::cuda::std::forward<_Tuple1>(__t1),
+      ::cuda::std::forward<_Tuples>(__tpls)...);
   }
 };
 
@@ -1308,7 +1308,7 @@ _CCCL_API constexpr typename __tuple_cat_return<_Tuple0, _Tuples...>::type tuple
 {
   using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
   return __tuple_cat<tuple<>, __tuple_indices<>, __make_tuple_indices_t<tuple_size<_T0>::value>>()(
-    tuple<>(), _CUDA_VSTD::forward<_Tuple0>(__t0), _CUDA_VSTD::forward<_Tuples>(__tpls)...);
+    tuple<>(), ::cuda::std::forward<_Tuple0>(__t0), ::cuda::std::forward<_Tuples>(__tpls)...);
 }
 
 template <class... _Tp, class _Alloc>
@@ -1323,8 +1323,8 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_bas
   tuple<_Args2...>& __second_args,
   __tuple_indices<_I1...>,
   __tuple_indices<_I2...>)
-    : first(_CUDA_VSTD::forward<_Args1>(_CUDA_VSTD::get<_I1>(__first_args))...)
-    , second(_CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...)
+    : first(::cuda::std::forward<_Args1>(::cuda::std::get<_I1>(__first_args))...)
+    , second(::cuda::std::forward<_Args2>(::cuda::std::get<_I2>(__second_args))...)
 {}
 
 #define _LIBCUDACXX_NOEXCEPT_RETURN(...) \
@@ -1336,28 +1336,28 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_bas
 template <class _Fn, class _Tuple, size_t... _Id>
 _CCCL_API constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f, _Tuple&& __t, __tuple_indices<_Id...>)
   _LIBCUDACXX_NOEXCEPT_RETURN(
-    _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::get<_Id>(_CUDA_VSTD::forward<_Tuple>(__t))...))
+    ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::get<_Id>(::cuda::std::forward<_Tuple>(__t))...))
 
     template <class _Fn, class _Tuple>
     _CCCL_API constexpr decltype(auto) apply(_Fn&& __f, _Tuple&& __t)
-      _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__apply_tuple_impl(
-        _CUDA_VSTD::forward<_Fn>(__f),
-        _CUDA_VSTD::forward<_Tuple>(__t),
+      _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__apply_tuple_impl(
+        ::cuda::std::forward<_Fn>(__f),
+        ::cuda::std::forward<_Tuple>(__t),
         __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
         template <class _Tp, class _Tuple, size_t... _Idx>
         _CCCL_API constexpr _Tp
   __make_from_tuple_impl(_Tuple&& __t, __tuple_indices<_Idx...>)
-    _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::forward<_Tuple>(__t))...))
+    _LIBCUDACXX_NOEXCEPT_RETURN(_Tp(::cuda::std::get<_Idx>(::cuda::std::forward<_Tuple>(__t))...))
 
       template <class _Tp, class _Tuple>
       _CCCL_API constexpr _Tp
-  make_from_tuple(_Tuple&& __t) _LIBCUDACXX_NOEXCEPT_RETURN(_CUDA_VSTD::__make_from_tuple_impl<_Tp>(
-    _CUDA_VSTD::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
+  make_from_tuple(_Tuple&& __t) _LIBCUDACXX_NOEXCEPT_RETURN(::cuda::std::__make_from_tuple_impl<_Tp>(
+    ::cuda::std::forward<_Tuple>(__t), __make_tuple_indices_t<tuple_size_v<remove_reference_t<_Tuple>>>{}))
 
 #undef _LIBCUDACXX_NOEXCEPT_RETURN
 
-    _LIBCUDACXX_END_NAMESPACE_STD
+    _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

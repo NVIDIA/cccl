@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_CREATEPOLICY
-#define _CUDA___ANNOTATED_PTR_CREATEPOLICY
+#ifndef _CUDA___ANNOTATED_PTR_CREATEPOLICY_H
+#define _CUDA___ANNOTATED_PTR_CREATEPOLICY_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_evict_t : uint32_t
 {
@@ -177,7 +177,7 @@ template <typename T = void>
 [[nodiscard]] _CCCL_CONST _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __createpolicy_range(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_size, uint32_t __total_size)
 {
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global), "ptr must be global");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global), "ptr must be global");
   _CCCL_ASSERT(__primary_size > 0, "primary_size  must be greater than zero");
   _CCCL_ASSERT(__primary_size <= __total_size, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
@@ -203,8 +203,8 @@ __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float 
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_CREATEPOLICY
+#endif // _CUDA___ANNOTATED_PTR_CREATEPOLICY_H

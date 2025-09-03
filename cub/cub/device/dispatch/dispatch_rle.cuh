@@ -268,12 +268,12 @@ struct DeviceRleDispatch
    * Types and constants
    ******************************************************************************/
   // Offsets to index items within one partition (i.e., a single kernel invocation)
-  using local_offset_t = _CUDA_VSTD::int32_t;
+  using local_offset_t = ::cuda::std::int32_t;
 
   // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
   // invocation, we may require multiple kernel invocations
-  static constexpr bool use_streaming_invocation = _CUDA_VSTD::numeric_limits<OffsetT>::max()
-                                                 > _CUDA_VSTD::numeric_limits<local_offset_t>::max();
+  static constexpr bool use_streaming_invocation = ::cuda::std::numeric_limits<OffsetT>::max()
+                                                 > ::cuda::std::numeric_limits<local_offset_t>::max();
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = OffsetT;
@@ -337,38 +337,6 @@ struct DeviceRleDispatch
    * @tparam DeviceRleSweepKernelPtr
    *   Function type of cub::DeviceRleSweepKernelPtr
    *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to
-   *   `temp_storage_bytes` and no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_in
-   *   Pointer to the input sequence of data items
-   *
-   * @param d_offsets_out
-   *   Pointer to the output sequence of run-offsets
-   *
-   * @param d_lengths_out
-   *   Pointer to the output sequence of run-lengths
-   *
-   * @param d_num_runs_out
-   *   Pointer to the total number of runs encountered (i.e., length of `d_offsets_out`)
-   *
-   * @param equality_op
-   *   Equality operator for input items
-   *
-   * @param num_items
-   *   Total number of input items (i.e., length of `d_in`)
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   *
-   * @param ptx_version
-   *   PTX version of dispatch kernels
-   *
    * @param device_scan_init_kernel
    *   Kernel function pointer to parameterization of cub::DeviceScanInitKernel
    *
@@ -389,14 +357,15 @@ struct DeviceRleDispatch
     auto capped_num_items_per_invocation = num_items;
     if constexpr (use_streaming_invocation)
     {
-      capped_num_items_per_invocation = static_cast<global_offset_t>(_CUDA_VSTD::numeric_limits<local_offset_t>::max());
+      capped_num_items_per_invocation =
+        static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
       // Make sure that the number of items is a multiple of tile size
       capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
     }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
     const auto max_num_items_per_invocation =
-      use_streaming_invocation ? _CUDA_VSTD::min(capped_num_items_per_invocation, num_items) : num_items;
+      use_streaming_invocation ? ::cuda::std::min(capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
@@ -474,7 +443,7 @@ struct DeviceRleDispatch
       }
 
       // Log init_kernel configuration
-      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",

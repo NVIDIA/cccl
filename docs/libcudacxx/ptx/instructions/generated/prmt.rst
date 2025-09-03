@@ -3,7 +3,7 @@
 
 prmt.b32
 ^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32 dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -14,7 +14,7 @@ prmt.b32
 
 prmt.b32.f4e
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32.f4e dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -25,7 +25,7 @@ prmt.b32.f4e
 
 prmt.b32.b4e
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32.b4e dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -36,7 +36,7 @@ prmt.b32.b4e
 
 prmt.b32.rc8
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32.rc8 dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -47,7 +47,7 @@ prmt.b32.rc8
 
 prmt.b32.ecl
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32.ecl dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -58,7 +58,7 @@ prmt.b32.ecl
 
 prmt.b32.ecr
 ^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32.ecr dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -69,7 +69,7 @@ prmt.b32.ecr
 
 prmt.b32.rc16
 ^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // prmt.b32.rc16 dest, a_reg, b_reg, c_reg; // PTX ISA 20, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>

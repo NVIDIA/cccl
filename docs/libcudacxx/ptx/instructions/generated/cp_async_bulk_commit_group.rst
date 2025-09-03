@@ -3,7 +3,7 @@
 
 cp.async.bulk.commit_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.commit_group; // PTX ISA 80, SM_90
    template <typename = void>

@@ -46,7 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to an unsigned type
@@ -266,17 +266,17 @@ protected:
 
   _CCCL_API constexpr __bitset& operator<<=(size_t __pos) noexcept
   {
-    __pos = _CUDA_VSTD::min(__pos, _Size);
-    _CUDA_VSTD::copy_backward(__make_iter(0), __make_iter(_Size - __pos), __make_iter(_Size));
-    _CUDA_VSTD::fill_n(__make_iter(0), __pos, false);
+    __pos = ::cuda::std::min(__pos, _Size);
+    ::cuda::std::copy_backward(__make_iter(0), __make_iter(_Size - __pos), __make_iter(_Size));
+    ::cuda::std::fill_n(__make_iter(0), __pos, false);
     return *this;
   }
 
   _CCCL_API constexpr __bitset& operator>>=(size_t __pos) noexcept
   {
-    __pos = _CUDA_VSTD::min(__pos, _Size);
-    _CUDA_VSTD::copy(__make_iter(__pos), __make_iter(_Size), __make_iter(0));
-    _CUDA_VSTD::fill_n(__make_iter(_Size - __pos), __pos, false);
+    __pos = ::cuda::std::min(__pos, _Size);
+    ::cuda::std::copy(__make_iter(__pos), __make_iter(_Size), __make_iter(0));
+    ::cuda::std::fill_n(__make_iter(_Size - __pos), __pos, false);
     return *this;
   }
 
@@ -370,10 +370,10 @@ private:
   _CCCL_API constexpr unsigned long to_ulong(false_type) const
   {
     const_iterator __e = __make_iter(_Size);
-    const_iterator __i = _CUDA_VSTD::find(__make_iter(sizeof(unsigned long) * CHAR_BIT), __e, true);
+    const_iterator __i = ::cuda::std::find(__make_iter(sizeof(unsigned long) * CHAR_BIT), __e, true);
     if (__i != __e)
     {
-      _CUDA_VSTD::__throw_overflow_error("bitset to_ulong overflow error");
+      ::cuda::std::__throw_overflow_error("bitset to_ulong overflow error");
     }
 
     return to_ulong(true_type());
@@ -402,10 +402,10 @@ private:
   _CCCL_API constexpr unsigned long long to_ullong(false_type) const
   {
     const_iterator __e = __make_iter(_Size);
-    const_iterator __i = _CUDA_VSTD::find(__make_iter(sizeof(unsigned long long) * CHAR_BIT), __e, true);
+    const_iterator __i = ::cuda::std::find(__make_iter(sizeof(unsigned long long) * CHAR_BIT), __e, true);
     if (__i != __e)
     {
-      _CUDA_VSTD::__throw_overflow_error("bitset to_ullong overflow error");
+      ::cuda::std::__throw_overflow_error("bitset to_ullong overflow error");
     }
 
     return to_ullong(true_type());
@@ -528,7 +528,7 @@ protected:
 #if _CCCL_COMPILER(MSVC)
     if (static_cast<unsigned long>(__first_.__data) != __first_.__data)
     {
-      _CUDA_VSTD::__throw_overflow_error("bitset to_ulong overflow error");
+      ::cuda::std::__throw_overflow_error("bitset to_ulong overflow error");
     }
     return static_cast<unsigned long>(__first_.__data);
 #else // ^^ _CCCL_COMPILER(MSVC) ^^ | vv !_CCCL_COMPILER(MSVC) vv
@@ -648,14 +648,14 @@ _CCCL_API constexpr void __throw_if_out_of_range(size_t __pos, const char* __msg
 {
   if (__pos >= _Size)
   {
-    _CUDA_VSTD::__throw_out_of_range(__msg);
+    ::cuda::std::__throw_out_of_range(__msg);
   }
 }
 
 template <>
 _CCCL_API inline void __throw_if_out_of_range<0>(size_t __pos, const char* __msg)
 {
-  _CUDA_VSTD::__throw_out_of_range(__msg);
+  ::cuda::std::__throw_out_of_range(__msg);
 }
 
 template <size_t _Size>
@@ -678,7 +678,7 @@ public:
   _CCCL_API constexpr explicit bitset(
     const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {
-    size_t __rlen = _CUDA_VSTD::min(__n, char_traits<_CharT>::length(__str));
+    size_t __rlen = ::cuda::std::min(__n, char_traits<_CharT>::length(__str));
     __init_from_cstr(__str, __rlen, __zero, __one);
   }
 
@@ -692,10 +692,10 @@ public:
   {
     if (__pos > __str.size())
     {
-      _CUDA_VSTD::__throw_out_of_range("bitset string pos out of range");
+      ::cuda::std::__throw_out_of_range("bitset string pos out of range");
     }
 
-    size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
+    size_t __rlen = ::cuda::std::min(__n, __str.size() - __pos);
     __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 
@@ -710,10 +710,10 @@ public:
   {
     if (__pos > __str.size())
     {
-      _CUDA_VSTD::__throw_out_of_range("bitset string pos out of range");
+      ::cuda::std::__throw_out_of_range("bitset string pos out of range");
     }
 
-    size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
+    size_t __rlen = ::cuda::std::min(__n, __str.size() - __pos);
     __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 #endif // defined(_LIBCUDACXX_HAS_STRING)
@@ -751,13 +751,13 @@ public:
 
   _CCCL_API constexpr bitset& set() noexcept
   {
-    _CUDA_VSTD::fill_n(base::__make_iter(0), _Size, true);
+    ::cuda::std::fill_n(base::__make_iter(0), _Size, true);
     return *this;
   }
 
   _CCCL_API constexpr bitset& set(size_t __pos, bool __val = true)
   {
-    _CUDA_VSTD::__throw_if_out_of_range<_Size>(__pos, "bitset set argument out of range");
+    ::cuda::std::__throw_if_out_of_range<_Size>(__pos, "bitset set argument out of range");
 
     (*this)[__pos] = __val;
     return *this;
@@ -765,13 +765,13 @@ public:
 
   _CCCL_API constexpr bitset& reset() noexcept
   {
-    _CUDA_VSTD::fill_n(base::__make_iter(0), _Size, false);
+    ::cuda::std::fill_n(base::__make_iter(0), _Size, false);
     return *this;
   }
 
   _CCCL_API constexpr bitset& reset(size_t __pos)
   {
-    _CUDA_VSTD::__throw_if_out_of_range<_Size>(__pos, "bitset reset argument out of range");
+    ::cuda::std::__throw_if_out_of_range<_Size>(__pos, "bitset reset argument out of range");
 
     (*this)[__pos] = false;
     return *this;
@@ -792,7 +792,7 @@ public:
 
   _CCCL_API constexpr bitset& flip(size_t __pos)
   {
-    _CUDA_VSTD::__throw_if_out_of_range<_Size>(__pos, "bitset flip argument out of range");
+    ::cuda::std::__throw_if_out_of_range<_Size>(__pos, "bitset flip argument out of range");
 
     reference __r = base::__make_ref(__pos);
     __r           = ~__r;
@@ -863,7 +863,7 @@ public:
 #endif // defined(_LIBCUDACXX_HAS_STRING)
   _CCCL_API constexpr size_t count() const noexcept
   {
-    return static_cast<size_t>(_CUDA_VSTD::count(base::__make_iter(0), base::__make_iter(_Size), true));
+    return static_cast<size_t>(::cuda::std::count(base::__make_iter(0), base::__make_iter(_Size), true));
   }
 
   _CCCL_API constexpr size_t size() const noexcept
@@ -872,7 +872,7 @@ public:
   }
   _CCCL_API constexpr bool operator==(const bitset& __rhs) const noexcept
   {
-    return _CUDA_VSTD::equal(base::__make_iter(0), base::__make_iter(_Size), __rhs.__make_iter(0));
+    return ::cuda::std::equal(base::__make_iter(0), base::__make_iter(_Size), __rhs.__make_iter(0));
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -884,7 +884,7 @@ public:
 
   _CCCL_API constexpr bool test(size_t __pos) const
   {
-    _CUDA_VSTD::__throw_if_out_of_range<_Size>(__pos, "bitset test argument out of range");
+    ::cuda::std::__throw_if_out_of_range<_Size>(__pos, "bitset test argument out of range");
 
     return (*this)[__pos];
   }
@@ -925,18 +925,18 @@ private:
     {
       if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one))
       {
-        _CUDA_VSTD::__throw_invalid_argument("bitset string ctor has invalid argument");
+        ::cuda::std::__throw_invalid_argument("bitset string ctor has invalid argument");
       }
     }
 
-    size_t __mp = _CUDA_VSTD::min(__size, _Size);
+    size_t __mp = ::cuda::std::min(__size, _Size);
     size_t __i  = 0;
     for (; __i < __mp; ++__i)
     {
       _CharT __c   = __str[__mp - 1 - __i];
       (*this)[__i] = _Traits::eq(__c, __one);
     }
-    _CUDA_VSTD::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
+    ::cuda::std::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
   }
 
   _CCCL_API inline size_t __hash_code() const noexcept
@@ -987,7 +987,7 @@ template <class _CharT, class _Traits, size_t _Size>
 _CCCL_API inline basic_ostream<_CharT, _Traits>&
 operator<<(basic_ostream<_CharT, _Traits>& __os, const bitset<_Size>& __x);
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -33,8 +33,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup transformations
- *  \addtogroup filling
+/*! \addtogroup filling
  *  \ingroup transformations
  *  \{
  */
@@ -192,8 +191,8 @@ fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputI
 template <typename OutputIterator, typename Size, typename T>
 _CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& value);
 
-/*! \} // end filling
- *  \} // transformations
+/*!
+ * \} end group filling
  */
 
 THRUST_NAMESPACE_END

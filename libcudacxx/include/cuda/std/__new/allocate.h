@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NEW_ALLOCATE_H
-#define _LIBCUDACXX___NEW_ALLOCATE_H
+#ifndef _CUDA_STD___NEW_ALLOCATE_H
+#define _CUDA_STD___NEW_ALLOCATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
 {
@@ -76,51 +76,51 @@ using ::std::align_val_t;
 _CCCL_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (_CUDA_VSTD::__is_overaligned_for_new(__align))
+  if (::cuda::std::__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return _CUDA_VSTD::__cccl_operator_new(__size, __align_val);
+    return ::cuda::std::__cccl_operator_new(__size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  return _CUDA_VSTD::__cccl_operator_new(__size);
+  return ::cuda::std::__cccl_operator_new(__size);
 }
 
 template <class... _Args>
 _CCCL_API inline void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] size_t __size, _Args... __args)
 {
 #if _LIBCUDACXX_HAS_SIZED_DEALLOCATION()
-  return _CUDA_VSTD::__cccl_operator_delete(__ptr, __size, __args...);
+  return ::cuda::std::__cccl_operator_delete(__ptr, __size, __args...);
 #else // ^^^ _LIBCUDACXX_HAS_SIZED_DEALLOCATION() ^^^ / vvv !_LIBCUDACXX_HAS_SIZED_DEALLOCATION() vvv
-  return _CUDA_VSTD::__cccl_operator_delete(__ptr, __args...);
+  return ::cuda::std::__cccl_operator_delete(__ptr, __args...);
 #endif // !_LIBCUDACXX_HAS_SIZED_DEALLOCATION()
 }
 
 _CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (_CUDA_VSTD::__is_overaligned_for_new(__align))
+  if (::cuda::std::__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return _CUDA_VSTD::__do_deallocate_handle_size(__ptr, __size, __align_val);
+    return ::cuda::std::__do_deallocate_handle_size(__ptr, __size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  return _CUDA_VSTD::__do_deallocate_handle_size(__ptr, __size);
+  return ::cuda::std::__do_deallocate_handle_size(__ptr, __size);
 }
 
 _CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (_CUDA_VSTD::__is_overaligned_for_new(__align))
+  if (::cuda::std::__is_overaligned_for_new(__align))
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
-    return _CUDA_VSTD::__cccl_operator_delete(__ptr, __align_val);
+    return ::cuda::std::__cccl_operator_delete(__ptr, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  return _CUDA_VSTD::__cccl_operator_delete(__ptr);
+  return ::cuda::std::__cccl_operator_delete(__ptr);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NEW_ALLOCATE_H
+#endif // _CUDA_STD___NEW_ALLOCATE_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MATH_EXPONENTIAL_FUNCTIONS_H
-#define _LIBCUDACXX___MATH_EXPONENTIAL_FUNCTIONS_H
+#ifndef _CUDA_STD___MATH_EXPONENTIAL_FUNCTIONS_H
+#define _CUDA_STD___MATH_EXPONENTIAL_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // exp
 
@@ -109,7 +109,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
                         __xf                  = ::expf(__xf);
                         __half_raw __ret_repr = ::__float2half_rn(__xf);
 
-                        uint16_t __repr = _CUDA_VSTD::__fp_get_storage(__x);
+                        uint16_t __repr = ::cuda::std::__fp_get_storage(__x);
                         switch (__repr)
                         {
                           case 8057:
@@ -130,14 +130,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 exp(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hexp(__x);), (return __float2bfloat16(_CUDA_VSTD::expf(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hexp(__x);), (return __float2bfloat16(::cuda::std::expf(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double exp(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::exp((double) __x);
+  return ::cuda::std::exp((double) __x);
 }
 
 // frexp
@@ -205,21 +205,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half frexp(__half __x, int* __e) noexcept
 {
-  return __float2half(_CUDA_VSTD::frexpf(__half2float(__x), __e));
+  return __float2half(::cuda::std::frexpf(__half2float(__x), __e));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 frexp(__nv_bfloat16 __x, int* __e) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::frexpf(__bfloat162float(__x), __e));
+  return __float2bfloat16(::cuda::std::frexpf(__bfloat162float(__x), __e));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double frexp(_Integer __x, int* __e) noexcept
 {
-  return _CUDA_VSTD::frexp((double) __x, __e);
+  return ::cuda::std::frexp((double) __x, __e);
 }
 
 // ldexp
@@ -287,21 +287,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half ldexp(__half __x, int __e) noexcept
 {
-  return __float2half(_CUDA_VSTD::ldexpf(__half2float(__x), __e));
+  return __float2half(::cuda::std::ldexpf(__half2float(__x), __e));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 ldexp(__nv_bfloat16 __x, int __e) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::ldexpf(__bfloat162float(__x), __e));
+  return __float2bfloat16(::cuda::std::ldexpf(__bfloat162float(__x), __e));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double ldexp(_Integer __x, int __e) noexcept
 {
-  return _CUDA_VSTD::ldexp((double) __x, __e);
+  return ::cuda::std::ldexp((double) __x, __e);
 }
 
 // exp2
@@ -369,7 +369,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half exp2(__half __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hexp2(__x);), (return __float2half(_CUDA_VSTD::exp2f(__half2float(__x)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hexp2(__x);), (return __float2half(::cuda::std::exp2f(__half2float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -377,14 +377,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 exp2(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (return ::hexp2(__x);), (return __float2bfloat16(_CUDA_VSTD::exp2f(__bfloat162float(__x)));))
+    NV_IS_DEVICE, (return ::hexp2(__x);), (return __float2bfloat16(::cuda::std::exp2f(__bfloat162float(__x)));))
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double exp2(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::exp2((double) __x);
+  return ::cuda::std::exp2((double) __x);
 }
 
 // expm1
@@ -452,21 +452,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half expm1(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::expm1f(__half2float(__x)));
+  return __float2half(::cuda::std::expm1f(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 expm1(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::expm1f(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::expm1f(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double expm1(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::expm1((double) __x);
+  return ::cuda::std::expm1((double) __x);
 }
 
 // scalbln
@@ -534,21 +534,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half scalbln(__half __x, long __y) noexcept
 {
-  return __float2half(_CUDA_VSTD::scalblnf(__half2float(__x), __y));
+  return __float2half(::cuda::std::scalblnf(__half2float(__x), __y));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 scalbln(__nv_bfloat16 __x, long __y) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::scalblnf(__bfloat162float(__x), __y));
+  return __float2bfloat16(::cuda::std::scalblnf(__bfloat162float(__x), __y));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double scalbln(_Integer __x, long __y) noexcept
 {
-  return _CUDA_VSTD::scalbln((double) __x, __y);
+  return ::cuda::std::scalbln((double) __x, __y);
 }
 
 // scalbn
@@ -616,21 +616,21 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half scalbn(__half __x, int __y) noexcept
 {
-  return __float2half(_CUDA_VSTD::scalbnf(__half2float(__x), __y));
+  return __float2half(::cuda::std::scalbnf(__half2float(__x), __y));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 scalbn(__nv_bfloat16 __x, int __y) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::scalbnf(__bfloat162float(__x), __y));
+  return __float2bfloat16(::cuda::std::scalbnf(__bfloat162float(__x), __y));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double scalbn(_Integer __x, int __y) noexcept
 {
-  return _CUDA_VSTD::scalbn((double) __x, __y);
+  return ::cuda::std::scalbn((double) __x, __y);
 }
 
 // pow
@@ -698,14 +698,14 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half pow(__half __x, __half __y) noexcept
 {
-  return __float2half(_CUDA_VSTD::powf(__half2float(__x), __half2float(__y)));
+  return __float2half(::cuda::std::powf(__half2float(__x), __half2float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 pow(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::powf(__bfloat162float(__x), __bfloat162float(__y)));
+  return __float2bfloat16(::cuda::std::powf(__bfloat162float(__x), __bfloat162float(__y)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -714,11 +714,11 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 {
   using __result_type = __promote_t<_A1, _A2>;
   static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
-  return _CUDA_VSTD::pow((__result_type) __x, (__result_type) __y);
+  return ::cuda::std::pow((__result_type) __x, (__result_type) __y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MATH_EXPONENTIAL_FUNCTIONS_H
+#endif // _CUDA_STD___MATH_EXPONENTIAL_FUNCTIONS_H

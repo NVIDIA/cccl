@@ -9,7 +9,7 @@
 
 #include <unittest/unittest.h>
 
-// ensure that we properly support thrust::reverse_iterator from cuda::std
+// ensure that we properly support thrust::transform_output_iterator from cuda::std
 void TestTransformOutputIteratorTraits()
 {
   using func    = ::cuda::std::negate<int>;

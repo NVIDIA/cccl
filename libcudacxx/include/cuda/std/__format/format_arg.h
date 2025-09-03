@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMAT_ARG_H
-#define _LIBCUDACXX___FORMAT_FORMAT_ARG_H
+#ifndef _CUDA_STD___FORMAT_FORMAT_ARG_H
+#define _CUDA_STD___FORMAT_FORMAT_ARG_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fmt_arg_t : uint8_t
 {
@@ -110,7 +110,7 @@ public:
   {
     template <class _Tp>
     _CCCL_API explicit __handle(_Tp& __v) noexcept
-        : __ptr_(_CUDA_VSTD::addressof(__v))
+        : __ptr_(::cuda::std::addressof(__v))
         , __format_(__formatter_invoker<_Tp>)
     {}
 
@@ -176,7 +176,7 @@ public:
       : __ptr_(__value)
   {}
   _CCCL_API __basic_format_arg_value(__handle&& __value) noexcept
-      : __handle_(_CUDA_VSTD::move(__value))
+      : __handle_(::cuda::std::move(__value))
   {}
 };
 
@@ -242,41 +242,41 @@ _CCCL_API decltype(auto) visit_format_arg(_Visitor&& __vis, basic_format_arg<_Co
   switch (__arg.__type_)
   {
     case __fmt_arg_t::__none:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__monostate_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__monostate_);
     case __fmt_arg_t::__boolean:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__boolean_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__boolean_);
     case __fmt_arg_t::__char_type:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__char_type_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__char_type_);
     case __fmt_arg_t::__int:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__int_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__int_);
     case __fmt_arg_t::__long_long:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__long_long_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__long_long_);
     case __fmt_arg_t::__unsigned:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__unsigned_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__unsigned_);
     case __fmt_arg_t::__unsigned_long_long:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__unsigned_long_long_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__unsigned_long_long_);
     case __fmt_arg_t::__float:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__float_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__float_);
     case __fmt_arg_t::__double:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__double_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__double_);
     case __fmt_arg_t::__long_double:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__long_double_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__long_double_);
     case __fmt_arg_t::__const_char_type_ptr:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__const_char_type_ptr_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__const_char_type_ptr_);
     case __fmt_arg_t::__string_view:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__string_view_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__string_view_);
     case __fmt_arg_t::__ptr:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis), __arg.__value_.__ptr_);
+      return ::cuda::std::invoke(::cuda::std::forward<_Visitor>(__vis), __arg.__value_.__ptr_);
     case __fmt_arg_t::__handle:
-      return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Visitor>(__vis),
-                                typename basic_format_arg<_Context>::handle{__arg.__value_.__handle_});
+      return ::cuda::std::invoke(
+        ::cuda::std::forward<_Visitor>(__vis), typename basic_format_arg<_Context>::handle{__arg.__value_.__handle_});
     default:
       _CCCL_UNREACHABLE();
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMAT_ARG_H
+#endif // _CUDA_STD___FORMAT_FORMAT_ARG_H

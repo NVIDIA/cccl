@@ -446,7 +446,7 @@ struct DispatchReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
@@ -494,7 +494,7 @@ struct DispatchReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = _CUDA_VSTD::min(num_tiles, max_dim_x);
+      int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
 // Log reduce_by_key_kernel configuration

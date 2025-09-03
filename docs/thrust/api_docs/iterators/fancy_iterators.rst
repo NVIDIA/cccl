@@ -21,4 +21,4 @@ Fancy iterators
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__fancyiterator*
+   ../../api/group__fancyiterator*

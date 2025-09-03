@@ -110,9 +110,9 @@ struct test_buffer
   test_buffer& operator=(const test_buffer&) = delete;
   test_buffer& operator=(test_buffer&& other)
   {
-    _CUDA_VSTD::exchange(type, other.type);
-    _CUDA_VSTD::exchange(data_ptr, other.data_ptr);
-    _CUDA_VSTD::exchange(buffer_size, other.buffer_size);
+    ::cuda::std::exchange(type, other.type);
+    ::cuda::std::exchange(data_ptr, other.data_ptr);
+    ::cuda::std::exchange(buffer_size, other.buffer_size);
     return *this;
   }
 

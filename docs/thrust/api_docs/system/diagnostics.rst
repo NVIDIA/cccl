@@ -14,4 +14,4 @@ System Diagnostics
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__system__diagnostics*
+   ../../api/group__system__diagnostics*

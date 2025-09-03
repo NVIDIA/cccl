@@ -35,8 +35,8 @@ struct graph;
 struct path_builder;
 
 template <class... _Nodes>
-_CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
-  -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
+_CCCL_NODEBUG_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
+  -> ::cuda::std::array<cudaGraphNode_t, sizeof...(_Nodes)>;
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

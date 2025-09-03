@@ -865,13 +865,13 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 // chrono user-defined literals; this seems like the lesser of two evils, so...
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
+_CCCL_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock;
-_LIBCUDACXX_END_NAMESPACE_FILESYSTEM
+_CCCL_END_NAMESPACE_FILESYSTEM
 
 #define _LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T double
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
@@ -1098,7 +1098,7 @@ public:
                 && (treat_as_floating_point<rep>::value
                     || (__no_overflow<_Period2, period>::type::den == 1 && !treat_as_floating_point<_Rep2>::value))>* =
       0)
-      : __rep_(_CUDA_VSTD::chrono::duration_cast<duration>(__d).count())
+      : __rep_(::cuda::std::chrono::duration_cast<duration>(__d).count())
   {}
 
   // observer
@@ -1447,7 +1447,7 @@ namespace chrono
 template <class _ToDuration, class _Clock, class _Duration>
 _CCCL_API constexpr time_point<_Clock, _ToDuration> time_point_cast(const time_point<_Clock, _Duration>& __t)
 {
-  return time_point<_Clock, _ToDuration>(_CUDA_VSTD::chrono::duration_cast<_ToDuration>(__t.time_since_epoch()));
+  return time_point<_Clock, _ToDuration>(::cuda::std::chrono::duration_cast<_ToDuration>(__t.time_since_epoch()));
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
@@ -1589,7 +1589,7 @@ public:
       (return time_point(duration_cast<duration>(nanoseconds(
         ::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch())
           .count())));),
-      (return time_point(duration_cast<duration>(nanoseconds(_CUDA_VPTX::get_sreg_globaltimer())));))
+      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
   }
 
   [[nodiscard]] _CCCL_API inline static time_t to_time_t(const time_point& __t) noexcept
@@ -1622,7 +1622,7 @@ using high_resolution_clock = system_clock;
 #endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
 
 // [time.clock.file], type file_clock
-using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
+using file_clock = ::cuda::std::__fs::filesystem::_FilesystemClock;
 
 template <class _Duration>
 using file_time = time_point<file_clock, _Duration>;
@@ -2127,16 +2127,16 @@ _CCCL_API constexpr weekday& weekday::operator-=(const days& __dd) noexcept
 class weekday_indexed
 {
 private:
-  _CUDA_VSTD::chrono::weekday __wd;
+  ::cuda::std::chrono::weekday __wd;
   unsigned char __idx;
 
 public:
   _CCCL_HIDE_FROM_ABI weekday_indexed() = default;
-  _CCCL_API constexpr weekday_indexed(const _CUDA_VSTD::chrono::weekday& __wdval, unsigned __idxval) noexcept
+  _CCCL_API constexpr weekday_indexed(const ::cuda::std::chrono::weekday& __wdval, unsigned __idxval) noexcept
       : __wd{__wdval}
       , __idx(static_cast<unsigned char>(__idxval))
   {}
-  _CCCL_API constexpr _CUDA_VSTD::chrono::weekday weekday() const noexcept
+  _CCCL_API constexpr ::cuda::std::chrono::weekday weekday() const noexcept
   {
     return __wd;
   }
@@ -2163,13 +2163,13 @@ _CCCL_API constexpr bool operator!=(const weekday_indexed& __lhs, const weekday_
 class weekday_last
 {
 private:
-  _CUDA_VSTD::chrono::weekday __wd;
+  ::cuda::std::chrono::weekday __wd;
 
 public:
-  _CCCL_API explicit constexpr weekday_last(const _CUDA_VSTD::chrono::weekday& __val) noexcept
+  _CCCL_API explicit constexpr weekday_last(const ::cuda::std::chrono::weekday& __val) noexcept
       : __wd{__val}
   {}
-  _CCCL_API constexpr _CUDA_VSTD::chrono::weekday weekday() const noexcept
+  _CCCL_API constexpr ::cuda::std::chrono::weekday weekday() const noexcept
   {
     return __wd;
   }
@@ -3584,11 +3584,11 @@ namespace chrono
 using namespace literals::chrono_literals;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #ifndef __cuda_std__
 
-_LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
+_CCCL_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock
 {
 #  if _CCCL_HAS_INT128()
@@ -3618,7 +3618,7 @@ struct _FilesystemClock
     return time_point(__secs(__t));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_FILESYSTEM
+_CCCL_END_NAMESPACE_FILESYSTEM
 #endif // __cuda_std__
 
 _CCCL_END_NV_DIAG_SUPPRESS()

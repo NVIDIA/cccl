@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FILL_H
-#define _LIBCUDACXX___ALGORITHM_FILL_H
+#ifndef _CUDA_STD___ALGORITHM_FILL_H
+#define _CUDA_STD___ALGORITHM_FILL_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Tp>
@@ -42,17 +42,17 @@ template <class _RandomAccessIterator, class _Tp>
 _CCCL_API constexpr void
 __fill(_RandomAccessIterator __first, _RandomAccessIterator __last, const _Tp& __value_, random_access_iterator_tag)
 {
-  _CUDA_VSTD::fill_n(__first, __last - __first, __value_);
+  ::cuda::std::fill_n(__first, __last - __first, __value_);
 }
 
 template <class _ForwardIterator, class _Tp>
 _CCCL_API constexpr void fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
-  _CUDA_VSTD::__fill(__first, __last, __value_, typename iterator_traits<_ForwardIterator>::iterator_category());
+  ::cuda::std::__fill(__first, __last, __value_, typename iterator_traits<_ForwardIterator>::iterator_category());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_FILL_H
+#endif // _CUDA_STD___ALGORITHM_FILL_H

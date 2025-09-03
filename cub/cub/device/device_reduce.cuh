@@ -80,7 +80,7 @@ struct get_tuning_query_t
 template <class Derived>
 struct tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
   {
     return static_cast<const Derived&>(*this);
   }
@@ -478,14 +478,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using default_determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
     using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
@@ -534,13 +534,15 @@ public:
         default_determinism_t>;
 
       // Query relevant properties from the environment
-      auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-      auto mr = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+      auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+      auto mr =
+        ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
       void* d_temp_storage      = nullptr;
       size_t temp_storage_bytes = 0;
 
-      using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+      using tuning_t = ::cuda::std::execution::
+        __query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
       // Query the required temporary storage size
       cudaError_t error = reduce_impl<tuning_t>(
@@ -637,14 +639,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Sum");
 
-    static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
                   "Determinism should be used inside requires to have an effect.");
-    using requirements_t =
-      _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_requirements_t, _CUDA_STD_EXEC::env<>>;
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
     using default_determinism_t =
-      _CUDA_STD_EXEC::__query_result_or_t<requirements_t, //
-                                          _CUDA_EXEC::determinism::__get_determinism_t,
-                                          _CUDA_EXEC::determinism::run_to_run_t>;
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
     constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
 
@@ -665,13 +667,15 @@ public:
                                  default_determinism_t>;
 
     // Query relevant properties from the environment
-    auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr =
+      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
 
-    using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
+    using tuning_t =
+      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
 
     using InitT = OutputT;
 

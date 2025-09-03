@@ -50,7 +50,7 @@ template <class Fn>
 using first_parameter_t = typename first_parameter<decltype(&Fn::operator())>::type;
 
 template <class Value, class Fn, class = void>
-struct has_unique_value_overload : _CUDA_VSTD::false_type
+struct has_unique_value_overload : ::cuda::std::false_type
 {};
 
 // clang-format off
@@ -58,11 +58,11 @@ template <class Value, class Fn>
 struct has_unique_value_overload<
   Value,
   Fn,
-  _CUDA_VSTD::enable_if_t<
-              !_CUDA_VSTD::is_reference_v<first_parameter_t<Fn>> &&
-              _CUDA_VSTD::is_convertible_v<Value, first_parameter_t<Fn>
+  ::cuda::std::enable_if_t<
+              !::cuda::std::is_reference_v<first_parameter_t<Fn>> &&
+              ::cuda::std::is_convertible_v<Value, first_parameter_t<Fn>
              >>>
-    : _CUDA_VSTD::true_type
+    : ::cuda::std::true_type
 {};
 
 // For trivial types, foreach is not allowed to copy values, even if those are trivially copyable.
@@ -70,12 +70,12 @@ struct has_unique_value_overload<
 // The trait below checks if the freedom to copy trivial types can be regained.
 template <typename Value, typename Fn>
 using can_regain_copy_freedom =
-  _CUDA_VSTD::integral_constant<
+  ::cuda::std::integral_constant<
     bool,
-    _CUDA_VSTD::is_trivially_constructible_v<Value> &&
-    _CUDA_VSTD::is_trivially_copy_assignable_v<Value> &&
-    _CUDA_VSTD::is_trivially_move_assignable_v<Value> &&
-    _CUDA_VSTD::is_trivially_destructible_v<Value> &&
+    ::cuda::std::is_trivially_constructible_v<Value> &&
+    ::cuda::std::is_trivially_copy_assignable_v<Value> &&
+    ::cuda::std::is_trivially_move_assignable_v<Value> &&
+    ::cuda::std::is_trivially_destructible_v<Value> &&
     has_unique_value_overload<Value, Fn>::value>;
 // clang-format on
 
@@ -136,11 +136,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 template <int Rank, typename ExtentType, typename FastDivModType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto extent_at(ExtentType extents, FastDivModType dynamic_extent)
 {
-  if constexpr (ExtentType::static_extent(Rank) != _CUDA_VSTD::dynamic_extent)
+  if constexpr (ExtentType::static_extent(Rank) != ::cuda::std::dynamic_extent)
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
-    using unsigned_index_type = _CUDA_VSTD::make_unsigned_t<index_type>;
+    using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
     return static_cast<unsigned_index_type>(extents.static_extent(Rank));
   }
   else
@@ -158,7 +158,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtentType extents, Fas
   {
     using extent_index_type   = typename ExtentType::index_type;
     using index_type          = implicit_prom_t<extent_index_type>;
-    using unsigned_index_type = _CUDA_VSTD::make_unsigned_t<index_type>;
+    using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
     return static_cast<unsigned_index_type>(cub::detail::sub_size<Rank + 1>(extents));
   }
   else
@@ -187,14 +187,14 @@ struct op_wrapper_extents_t
   FastDivModArrayT extents_mod_array;
 
   template <typename OffsetT, size_t... Ranks>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, _CUDA_VSTD::index_sequence<Ranks...>)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, ::cuda::std::index_sequence<Ranks...>)
   {
     using cub::detail::for_each::coordinate_at;
     op(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
   }
 
   template <typename OffsetT, size_t... Ranks>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, _CUDA_VSTD::index_sequence<Ranks...>) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void impl(OffsetT i, ::cuda::std::index_sequence<Ranks...>) const
   {
     using cub::detail::for_each::coordinate_at;
     op(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
@@ -203,13 +203,13 @@ struct op_wrapper_extents_t
   template <typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
   {
-    impl(i, _CUDA_VSTD::make_index_sequence<ExtentsT::rank()>{});
+    impl(i, ::cuda::std::make_index_sequence<ExtentsT::rank()>{});
   }
 
   template <typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i) const
   {
-    impl(i, _CUDA_VSTD::make_index_sequence<ExtentsT::rank()>{});
+    impl(i, ::cuda::std::make_index_sequence<ExtentsT::rank()>{});
   }
 };
 

@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_CONCEPTS_H
-#define _LIBCUDACXX___RANGES_CONCEPTS_H
+#ifndef _CUDA_STD___RANGES_CONCEPTS_H
+#define _CUDA_STD___RANGES_CONCEPTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -52,8 +52,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class _Tp>
 concept range = requires(_Tp& __t) {
-  _CUDA_VRANGES::begin(__t); // sometimes equality-preserving
-  _CUDA_VRANGES::end(__t);
+  ::cuda::std::ranges::begin(__t); // sometimes equality-preserving
+  ::cuda::std::ranges::end(__t);
 };
 
 template <class _Tp>
@@ -66,7 +66,7 @@ concept borrowed_range =
 // `iterator_t` defined in <__ranges/access.h>
 
 template <range _Rp>
-using sentinel_t = decltype(_CUDA_VRANGES::end(_CUDA_VSTD::declval<_Rp&>()));
+using sentinel_t = decltype(::cuda::std::ranges::end(::cuda::std::declval<_Rp&>()));
 
 template <range _Rp>
 using range_difference_t = iter_difference_t<iterator_t<_Rp>>;
@@ -85,10 +85,10 @@ using range_common_reference_t = iter_common_reference_t<iterator_t<_Rp>>;
 
 // [range.sized]
 template <class _Tp>
-concept sized_range = range<_Tp> && requires(_Tp& __t) { _CUDA_VRANGES::size(__t); };
+concept sized_range = range<_Tp> && requires(_Tp& __t) { ::cuda::std::ranges::size(__t); };
 
 template <sized_range _Rp>
-using range_size_t = decltype(_CUDA_VRANGES::size(_CUDA_VSTD::declval<_Rp&>()));
+using range_size_t = decltype(::cuda::std::ranges::size(::cuda::std::declval<_Rp&>()));
 
 // `disable_sized_range` defined in `<__ranges/size.h>`
 
@@ -119,7 +119,7 @@ concept random_access_range = bidirectional_range<_Tp> && random_access_iterator
 
 template <class _Tp>
 concept contiguous_range = random_access_range<_Tp> && contiguous_iterator<iterator_t<_Tp>> && requires(_Tp& __t) {
-  { _CUDA_VRANGES::data(__t) } -> same_as<add_pointer_t<range_reference_t<_Tp>>>;
+  { ::cuda::std::ranges::data(__t) } -> same_as<add_pointer_t<range_reference_t<_Tp>>>;
 };
 
 template <class _Tp>
@@ -147,8 +147,8 @@ template <class _Tp>
 _CCCL_CONCEPT range =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)
   (
-    void(_CUDA_VRANGES::begin(__t)),
-    void(_CUDA_VRANGES::end(__t))
+    void(::cuda::std::ranges::begin(__t)),
+    void(::cuda::std::ranges::end(__t))
   );
 
 template <class _Tp>
@@ -172,7 +172,7 @@ _CCCL_CONCEPT borrowed_range = _CCCL_FRAGMENT(__borrowed_range_, _Range);
 // `iterator_t` defined in <__ranges/access.h>
 
 template <class _Rp>
-using sentinel_t = enable_if_t<range<_Rp>, decltype(_CUDA_VRANGES::end(_CUDA_VSTD::declval<_Rp&>()))>;
+using sentinel_t = enable_if_t<range<_Rp>, decltype(::cuda::std::ranges::end(::cuda::std::declval<_Rp&>()))>;
 
 template <class _Rp>
 using range_difference_t = enable_if_t<range<_Rp>, iter_difference_t<iterator_t<_Rp>>>;
@@ -192,13 +192,13 @@ using range_common_reference_t = enable_if_t<range<_Rp>, iter_common_reference_t
 // [range.sized]
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__sized_range_,
-                       requires(_Tp& __t)(requires(range<_Tp>), typename(decltype(_CUDA_VRANGES::size(__t)))));
+                       requires(_Tp& __t)(requires(range<_Tp>), typename(decltype(::cuda::std::ranges::size(__t)))));
 
 template <class _Tp>
 _CCCL_CONCEPT sized_range = _CCCL_FRAGMENT(__sized_range_, _Tp);
 
 template <class _Rp>
-using range_size_t = enable_if_t<sized_range<_Rp>, decltype(_CUDA_VRANGES::size(_CUDA_VSTD::declval<_Rp&>()))>;
+using range_size_t = enable_if_t<sized_range<_Rp>, decltype(::cuda::std::ranges::size(::cuda::std::declval<_Rp&>()))>;
 
 // `disable_sized_range` defined in `<__ranges/size.h>`
 
@@ -257,9 +257,10 @@ _CCCL_CONCEPT random_access_range = _CCCL_FRAGMENT(__random_access_range_, _Tp);
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __contiguous_range_,
-  requires(_Tp& __t)(requires(random_access_range<_Tp>),
-                     requires(contiguous_iterator<iterator_t<_Tp>>),
-                     requires(same_as<decltype(_CUDA_VRANGES::data(__t)), add_pointer_t<range_reference_t<_Tp>>>)));
+  requires(_Tp& __t)(
+    requires(random_access_range<_Tp>),
+    requires(contiguous_iterator<iterator_t<_Tp>>),
+    requires(same_as<decltype(::cuda::std::ranges::data(__t)), add_pointer_t<range_reference_t<_Tp>>>)));
 
 template <class _Tp>
 _CCCL_CONCEPT contiguous_range = _CCCL_FRAGMENT(__contiguous_range_, _Tp);
@@ -306,8 +307,8 @@ template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_CONCEPTS_H
+#endif // _CUDA_STD___RANGES_CONCEPTS_H

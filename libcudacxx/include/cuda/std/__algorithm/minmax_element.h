@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H
-#define _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H
+#ifndef _CUDA_STD___ALGORITHM_MINMAX_ELEMENT_H
+#define _CUDA_STD___ALGORITHM_MINMAX_ELEMENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Comp, class _Proj>
 class _MinmaxElementLessFunc
@@ -46,7 +46,8 @@ public:
   template <class _Iter>
   _CCCL_API constexpr bool operator()(_Iter& __it1, _Iter& __it2)
   {
-    return _CUDA_VSTD::__invoke(__comp_, _CUDA_VSTD::__invoke(__proj_, *__it1), _CUDA_VSTD::__invoke(__proj_, *__it2));
+    return ::cuda::std::__invoke(
+      __comp_, ::cuda::std::__invoke(__proj_, *__it1), ::cuda::std::__invoke(__proj_, *__it2));
   }
 };
 
@@ -119,22 +120,22 @@ template <class _ForwardIterator, class _Compare>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
-                "_CUDA_VSTD::minmax_element requires a ForwardIterator");
+                "::cuda::std::minmax_element requires a ForwardIterator");
   static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
                 "The comparator has to be callable");
   auto __proj = identity();
-  return _CUDA_VSTD::__minmax_element_impl(__first, __last, __comp, __proj);
+  return ::cuda::std::__minmax_element_impl(__first, __last, __comp, __proj);
 }
 
 template <class _ForwardIterator>
 [[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 {
-  return _CUDA_VSTD::minmax_element(__first, __last, __less{});
+  return ::cuda::std::minmax_element(__first, __last, __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H
+#endif // _CUDA_STD___ALGORITHM_MINMAX_ELEMENT_H

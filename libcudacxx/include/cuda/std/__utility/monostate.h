@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_MONOSTATE_H
-#define _LIBCUDACXX___UTILITY_MONOSTATE_H
+#ifndef _CUDA_STD___UTILITY_MONOSTATE_H
+#define _CUDA_STD___UTILITY_MONOSTATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT monostate
 {};
@@ -92,8 +92,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
 };
 #endif // __cuda_std__
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_MONOSTATE_H
+#endif // _CUDA_STD___UTILITY_MONOSTATE_H

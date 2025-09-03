@@ -20,8 +20,15 @@
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
 
-using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, double>;
-using item_t    = float;
+using key_types =
+  c2h::type_list<uint8_t,
+                 int16_t,
+                 uint32_t,
+#if _CCCL_HAS_NVFP16()
+                 __half,
+#endif
+                 double>;
+using item_t = float;
 
 using BuildResultT = cccl_device_merge_sort_build_result_t;
 
@@ -492,6 +499,151 @@ struct large_key_pair
   int a;
   char c[100];
 };
+
+C2H_TEST("MergeSort works with C++ source operations", "[merge_sort]")
+{
+  using key_t = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337, 42000);
+
+  // Create operation from C++ source instead of LTO-IR
+  std::string cpp_source = R"(
+    extern "C" __device__ void op(void* lhs, void* rhs, void* result) {
+      int* ilhs = (int*)lhs;
+      int* irhs = (int*)rhs;
+      bool* bresult = (bool*)result;
+      *bresult = *ilhs < *irhs;
+    }
+  )";
+
+  operation_t op = make_cpp_operation("op", cpp_source);
+
+  std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  pointer_t<key_t> input_keys_ptr(input_keys);
+  pointer_t<key_t> output_keys_ptr(num_items);
+
+  // Use int for items but won't actually use them
+  pointer_t<int> input_items_ptr;
+  pointer_t<int> output_items_ptr;
+
+  // Test key including flag that this uses C++ source
+  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(key_t).name());
+
+  auto& cache = fixture<merge_sort_build_cache_t, DeviceMergeSort_SortKeys_Fixture_Tag>::get_or_create().get_value();
+  std::optional<merge_sort_build_cache_t> cache_opt = cache;
+
+  merge_sort(input_keys_ptr, input_items_ptr, output_keys_ptr, output_items_ptr, num_items, op, cache_opt, test_key);
+
+  const std::vector<key_t> output = output_keys_ptr;
+  std::vector<key_t> expected     = input_keys;
+  std::sort(expected.begin(), expected.end());
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("MergeSort works with C++ source operations using custom headers", "[merge_sort]")
+{
+  using key_t = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337, 42000);
+
+  // Create operation from C++ source that uses the identity function from header
+  std::string cpp_source = R"(
+    #include "test_identity.h"
+    extern "C" __device__ void op(void* lhs, void* rhs, void* result) {
+      int* ilhs = (int*)lhs;
+      int* irhs = (int*)rhs;
+      bool* bresult = (bool*)result;
+      int val_lhs = test_identity(*ilhs);
+      int val_rhs = test_identity(*irhs);
+      *bresult = val_lhs < val_rhs;
+    }
+  )";
+
+  operation_t op = make_cpp_operation("op", cpp_source);
+
+  std::vector<key_t> input_keys = make_shuffled_sequence<key_t>(num_items);
+  pointer_t<key_t> input_keys_ptr(input_keys);
+  pointer_t<key_t> output_keys_ptr(num_items);
+
+  // Use int for items but won't actually use them
+  pointer_t<int> input_items_ptr;
+  pointer_t<int> output_items_ptr;
+
+  // Test _ex version with custom build configuration
+  cccl_build_config config;
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  config.extra_compile_flags     = extra_flags;
+  config.num_extra_compile_flags = 1;
+  config.extra_include_dirs      = extra_dirs;
+  config.num_extra_include_dirs  = 1;
+
+  // Build with _ex version
+  cccl_device_merge_sort_build_result_t build;
+  const auto& build_info = BuildInformation<>::init();
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort_build_ex(
+      &build,
+      input_keys_ptr,
+      input_items_ptr,
+      output_keys_ptr,
+      output_items_ptr,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      &config));
+
+  // Execute the merge sort
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort(
+      build,
+      d_temp_storage,
+      &temp_storage_bytes,
+      input_keys_ptr,
+      input_items_ptr,
+      output_keys_ptr,
+      output_items_ptr,
+      num_items,
+      op,
+      CU_STREAM_LEGACY));
+  pointer_t<char> temp_storage(temp_storage_bytes);
+  d_temp_storage = static_cast<void*>(temp_storage.ptr);
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_merge_sort(
+      build,
+      d_temp_storage,
+      &temp_storage_bytes,
+      input_keys_ptr,
+      input_items_ptr,
+      output_keys_ptr,
+      output_items_ptr,
+      num_items,
+      op,
+      CU_STREAM_LEGACY));
+
+  // Verify results
+  std::vector<key_t> output_keys(num_items);
+  cudaMemcpy(
+    output_keys.data(), static_cast<void*>(output_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost);
+  std::vector<key_t> expected_keys(num_items);
+  cudaMemcpy(
+    expected_keys.data(), static_cast<void*>(input_keys_ptr.ptr), sizeof(key_t) * num_items, cudaMemcpyDeviceToHost);
+  std::sort(expected_keys.begin(), expected_keys.end());
+  std::sort(expected_keys.begin(), expected_keys.end());
+  REQUIRE(output_keys == expected_keys);
+
+  // Cleanup
+  REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
+}
 
 // TODO: We no longer fail to build for large types due to no vsmem. Instead, the build passes,
 // but we get a ptxas error about the kernel using too much shared memory.

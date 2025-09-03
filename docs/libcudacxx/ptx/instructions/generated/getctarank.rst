@@ -3,7 +3,7 @@
 
 getctarank.shared::cluster.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // getctarank.space.u32 dest, addr; // PTX ISA 78, SM_90
    // .space     = { .shared::cluster }

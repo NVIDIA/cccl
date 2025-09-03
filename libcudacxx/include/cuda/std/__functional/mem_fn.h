@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_MEM_FN_H
-#define _LIBCUDACXX___FUNCTIONAL_MEM_FN_H
+#ifndef _CUDA_STD___FUNCTIONAL_MEM_FN_H
+#define _CUDA_STD___FUNCTIONAL_MEM_FN_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 class __mem_fn : public __weak_result_type<_Tp>
@@ -50,7 +50,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
   operator()(_ArgTypes&&... __args) const
   {
-    return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
@@ -60,8 +60,8 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 __mem_fn<_Rp _Tp::*> mem_fn(_Rp _Tp::* __
   return __mem_fn<_Rp _Tp::*>(__pm);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_MEM_FN_H
+#endif // _CUDA_STD___FUNCTIONAL_MEM_FN_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
-#define _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_LOCKED_H
+#define _CUDA_STD___ATOMIC_TYPES_LOCKED_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Locked atomics must override the dispatch to be able to implement RMW primitives around the embedded lock.
 template <typename _Tp>
@@ -218,8 +218,8 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __patte
   return __old;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
+#endif // _CUDA_STD___ATOMIC_TYPES_LOCKED_H

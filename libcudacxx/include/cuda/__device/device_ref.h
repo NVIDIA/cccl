@@ -30,7 +30,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 class physical_device;
 namespace arch
 {
@@ -64,7 +64,6 @@ public:
     return __id_;
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -78,7 +77,7 @@ public:
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -91,8 +90,7 @@ public:
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#    endif // _CCCL_STD_VER <= 2017
-#  endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Retrieve the specified attribute for the device
   //!
@@ -124,7 +122,7 @@ public:
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    _CUDA_DRIVER::__deviceGetName(__name.data(), __max_name_length, get());
+    ::cuda::__driver::__deviceGetName(__name.data(), __max_name_length, get());
     return __name;
   }
 
@@ -169,7 +167,7 @@ public:
   ::std::vector<device_ref> peer_devices() const;
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

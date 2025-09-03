@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_DATA_H
-#define _LIBCUDACXX___ITERATOR_DATA_H
+#ifndef _CUDA_STD___ITERATOR_DATA_H
+#define _CUDA_STD___ITERATOR_DATA_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
@@ -54,8 +54,8 @@ _CCCL_API constexpr const _Ep* data(initializer_list<_Ep> __il) noexcept
   return __il.begin();
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_DATA_H
+#endif // _CUDA_STD___ITERATOR_DATA_H

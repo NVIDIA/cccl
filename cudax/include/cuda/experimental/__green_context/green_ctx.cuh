@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX
-#define _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#ifndef _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
+#define _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH
 
 #include <cuda/__cccl_config>
 
@@ -42,9 +42,9 @@ struct green_context
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
-    auto __dev_handle = _CUDA_DRIVER::__deviceGet(__dev_id);
-    __green_ctx       = _CUDA_DRIVER::__greenCtxCreate(__dev_handle);
-    __transformed     = _CUDA_DRIVER::__ctxFromGreenCtx(__green_ctx);
+    auto __dev_handle = ::cuda::__driver::__deviceGet(__dev_id);
+    __green_ctx       = ::cuda::__driver::__greenCtxCreate(__dev_handle);
+    __transformed     = ::cuda::__driver::__ctxFromGreenCtx(__green_ctx);
   }
 
   green_context(const green_context&)            = delete;
@@ -54,10 +54,10 @@ struct green_context
   [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
     int __id;
-    CUcontext __transformed = _CUDA_DRIVER::__ctxFromGreenCtx(__gctx);
-    _CUDA_DRIVER::__ctxPush(__transformed);
+    CUcontext __transformed = ::cuda::__driver::__ctxFromGreenCtx(__gctx);
+    ::cuda::__driver::__ctxPush(__transformed);
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Failed to get device ordinal from a green context", &__id);
-    _CUDA_DRIVER::__ctxPop();
+    ::cuda::__driver::__ctxPop();
     return green_context(__id, __gctx, __transformed);
   }
 
@@ -65,14 +65,14 @@ struct green_context
   {
     __transformed = nullptr;
     __dev_id      = -1;
-    return _CUDA_VSTD::exchange(__green_ctx, nullptr);
+    return ::cuda::std::exchange(__green_ctx, nullptr);
   }
 
   ~green_context()
   {
     if (__green_ctx)
     {
-      [[maybe_unused]] cudaError_t __status = _CUDA_DRIVER::__greenCtxDestroyNoThrow(__green_ctx);
+      [[maybe_unused]] cudaError_t __status = ::cuda::__driver::__greenCtxDestroyNoThrow(__green_ctx);
     }
   }
 
@@ -90,4 +90,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX
+#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX_CUH

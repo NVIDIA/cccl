@@ -16,14 +16,17 @@
 
 #include "test_resource.cuh"
 
-static_assert(cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, cudax::host_accessible>);
-static_assert(cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, get_data>);
-static_assert(!cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, cudax::device_accessible>);
+static_assert(
+  cuda::has_property<cudax::any_synchronous_resource<cudax::host_accessible, get_data>, cudax::host_accessible>);
+static_assert(cuda::has_property<cudax::any_synchronous_resource<cudax::host_accessible, get_data>, get_data>);
+static_assert(
+  !cuda::has_property<cudax::any_synchronous_resource<cudax::host_accessible, get_data>, cudax::device_accessible>);
 
 struct unused_property
 {};
 
-TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
+TEMPLATE_TEST_CASE_METHOD(
+  test_fixture, "any_synchronous_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
   constexpr bool is_big = sizeof(TestResource) > cuda::__default_small_object_size;
@@ -33,7 +36,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<cudax::host_accessible, get_data> mr{TestResource{42, this}};
+      cudax::any_synchronous_resource<cudax::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -54,7 +57,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<cudax::host_accessible, get_data> mr{TestResource{42, this}};
+      cudax::any_synchronous_resource<cudax::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -89,7 +92,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<cudax::host_accessible, get_data> mr{TestResource{42, this}};
+      cudax::any_synchronous_resource<cudax::host_accessible, get_data> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -117,9 +120,9 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::managed_memory_resource managed1{}, managed2{};
+      cudax::legacy_managed_memory_resource managed1{}, managed2{};
       CHECK(managed1 == managed2);
-      cudax::any_resource<cudax::device_accessible> mr{managed1};
+      cudax::any_synchronous_resource<cudax::device_accessible> mr{managed1};
       CHECK(mr == managed1);
     }
     CHECK(this->counts == expected);
@@ -128,21 +131,22 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion from any_resource to cudax::resource_ref")
+  SECTION("conversion from any_synchronous_resource to cudax::synchronous_resource_ref")
   {
     Counts expected{};
     {
-      cudax::any_resource<cudax::host_accessible, cudax::device_accessible, get_data> mr{TestResource{42, this}};
+      cudax::any_synchronous_resource<cudax::host_accessible, cudax::device_accessible, get_data> mr{
+        TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      // conversion from any_resource to cuda::mr::resource_ref:
-      cuda::mr::resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
+      // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref:
+      cudax::synchronous_resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
 
-      // conversion from any_resource to cuda::mr::resource_ref with narrowing:
-      cuda::mr::resource_ref<cudax::host_accessible, get_data> ref2 = mr;
+      // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref with narrowing:
+      cudax::synchronous_resource_ref<cudax::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
@@ -159,21 +163,22 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     CHECK(this->counts == expected);
   }
 
-  SECTION("conversion from any_resource to cuda::mr::resource_ref")
+  SECTION("conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref")
   {
     Counts expected{};
     {
-      cudax::any_resource<cudax::host_accessible, cudax::device_accessible, get_data> mr{TestResource{42, this}};
+      cudax::any_synchronous_resource<cudax::host_accessible, cudax::device_accessible, get_data> mr{
+        TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      // conversion from any_resource to cuda::mr::resource_ref:
-      cuda::mr::resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
+      // conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref:
+      cuda::mr::synchronous_resource_ref<cudax::host_accessible, cudax::device_accessible, get_data> ref = mr;
 
-      // conversion from any_resource to cuda::mr::resource_ref with narrowing:
-      cuda::mr::resource_ref<cudax::host_accessible, get_data> ref2 = mr;
+      // conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref with narrowing:
+      cuda::mr::synchronous_resource_ref<cudax::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
@@ -193,16 +198,16 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion from resource_ref to any_resource")
+  SECTION("conversion from synchronous_resource_ref to any_synchronous_resource")
   {
     Counts expected{};
     {
       TestResource test{42, this};
       ++expected.object_count;
-      cudax::resource_ref<cudax::host_accessible, get_data> ref{test};
+      cudax::synchronous_resource_ref<cudax::host_accessible, get_data> ref{test};
       CHECK(this->counts == expected);
 
-      cudax::any_resource<cudax::host_accessible, get_data> mr = ref;
+      cudax::any_synchronous_resource<cudax::host_accessible, get_data> mr = ref;
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.copy_count;
@@ -229,13 +234,14 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<cudax::host_accessible, cudax::device_accessible, get_data> mr{TestResource{42, this}};
+      cudax::any_synchronous_resource<cudax::host_accessible, cudax::device_accessible, get_data> mr{
+        TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      cudax::any_resource<cudax::device_accessible, get_data> mr2 = mr;
+      cudax::any_synchronous_resource<cudax::device_accessible, get_data> mr2 = mr;
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.copy_count;
@@ -263,13 +269,13 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("make_any_resource")
+  SECTION("make_any_synchronous_resource")
   {
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::any_resource<cudax::host_accessible, get_data> mr =
-        cudax::make_any_resource<TestResource, cudax::host_accessible, get_data>(42, this);
+      cudax::any_synchronous_resource<cudax::host_accessible, get_data> mr =
+        cudax::make_any_synchronous_resource<TestResource, cudax::host_accessible, get_data>(42, this);
       expected.new_count += is_big;
       ++expected.object_count;
       CHECK(this->counts == expected);

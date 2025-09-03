@@ -123,7 +123,7 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
 
    template<class MemoryResource>
        requires cuda::mr::resource<MemoryResource>
-   void* allocate_maybe_sync_check_alignment(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
+   void* allocate_maybe_sync_check_alignment(MemoryResource& resource, cuda::stream_ref stream, std::size_t size) {
        if constexpr(cuda::mr::resource_with<MemoryResource, required_alignment>) {
            return resource.allocate(stream, size, get_property(resource, required_alignment));
        } else if constexpr (cuda::mr::resource<MemoryResource>) {
@@ -138,7 +138,7 @@ concept. The ``{synchronous_}resource_with`` concept allows checking resources f
    // Potentially more concise
    template<class MemoryResource>
        requires cuda::mr::resource<MemoryResource>
-   void* allocate_maybe_sync_check_alignment2(MemoryResource& resource, std::size_t size, cuda::stream_ref stream) {
+   void* allocate_maybe_sync_check_alignment2(MemoryResource& resource, cuda::stream_ref stream, std::size_t size) {
        constexpr std::size_t align = cuda::mr::resource_with<MemoryResource, required_alignment>
                                    ? get_property(resource, required_alignment)
                                    : my_default_alignment;

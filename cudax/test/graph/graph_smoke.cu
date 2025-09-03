@@ -22,7 +22,7 @@ namespace
 // Empty node descriptor for testing
 struct empty_node_descriptor
 {
-  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, _CUDA_VSTD::span<cudaGraphNode_t> deps) const
+  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, ::cuda::std::span<cudaGraphNode_t> deps) const
   {
     cudaGraphNode_t node;
     _CCCL_TRY_CUDA_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, deps.data(), deps.size());
@@ -159,7 +159,7 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
 C2H_TEST("Path builder with kernel nodes", "[graph]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  cudax::managed_memory_resource mr;
+  cudax::legacy_managed_memory_resource mr;
   int* ptr = static_cast<int*>(mr.allocate_sync(sizeof(int)));
   *ptr     = 0;
 

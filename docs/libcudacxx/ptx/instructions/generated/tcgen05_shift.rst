@@ -3,9 +3,9 @@
 
 tcgen05.shift.cta_group::1.down
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
-   // tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_110a
+   // tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_103a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
    template <cuda::ptx::dot_cta_group Cta_Group>
    __device__ static inline void tcgen05_shift_down(
@@ -14,9 +14,9 @@ tcgen05.shift.cta_group::1.down
 
 tcgen05.shift.cta_group::2.down
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
-   // tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_110a
+   // tcgen05.shift.cta_group.down [taddr]; // PTX ISA 86, SM_100a, SM_103a, SM_110a
    // .cta_group = { .cta_group::1, .cta_group::2 }
    template <cuda::ptx::dot_cta_group Cta_Group>
    __device__ static inline void tcgen05_shift_down(

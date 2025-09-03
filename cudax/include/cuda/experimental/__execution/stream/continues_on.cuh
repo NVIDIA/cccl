@@ -59,7 +59,7 @@ struct __continues_on_t
       // no-op
     }
 
-    _CCCL_API constexpr void set_error(_CUDA_VSTD::__ignore_t) noexcept
+    _CCCL_API constexpr void set_error(::cuda::std::__ignore_t) noexcept
     {
       // no-op
     }
@@ -144,15 +144,15 @@ struct __continues_on_t
     }
 
     _CCCL_NO_UNIQUE_ADDRESS __thunk_t __tag_;
-    _CUDA_VSTD::__ignore_t __ignore_;
+    ::cuda::std::__ignore_t __ignore_;
     _Sndr __sndr_;
   };
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
+  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     auto& [__tag, __sched, __child] = __sndr;
-    using __child_t                 = _CUDA_VSTD::__copy_cvref_t<_Sndr, decltype(__child)>;
+    using __child_t                 = ::cuda::std::__copy_cvref_t<_Sndr, decltype(__child)>;
 
     // If the child sender has not already been adapted to be a stream sender,
     // we adapt it now.

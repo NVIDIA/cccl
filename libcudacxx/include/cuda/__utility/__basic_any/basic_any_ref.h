@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#define _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! \c __ireference<_Interface>
@@ -52,12 +52,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <class _Interface>
 struct __ireference : _Interface
 {
-  static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expected a class type");
+  static_assert(::cuda::std::is_class_v<_Interface>, "expected a class type");
   static constexpr size_t __size_      = sizeof(void*);
   static constexpr size_t __align_     = alignof(void*);
-  static constexpr bool __is_const_ref = _CUDA_VSTD::is_const_v<_Interface>;
+  static constexpr bool __is_const_ref = ::cuda::std::is_const_v<_Interface>;
 
-  using interface _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::remove_const_t<_Interface>;
+  using interface _CCCL_NODEBUG_ALIAS = ::cuda::std::remove_const_t<_Interface>;
 };
 
 #if !_CCCL_HAS_CONCEPTS()
@@ -104,9 +104,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
     , __basic_any_reference_conversion_base<_Interface>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 {
-  static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
-  using interface_type                 = _CUDA_VSTD::remove_const_t<_Interface>;
-  static constexpr bool __is_const_ref = _CUDA_VSTD::is_const_v<_Interface>;
+  static_assert(::cuda::std::is_class_v<_Interface>, "expecting a class type");
+  using interface_type                 = ::cuda::std::remove_const_t<_Interface>;
+  static constexpr bool __is_const_ref = ::cuda::std::is_const_v<_Interface>;
 
   __basic_any(__basic_any&&)      = delete;
   __basic_any(__basic_any const&) = delete;
@@ -126,14 +126,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.
-  [[nodiscard]] _CCCL_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CCCL_API auto type() const noexcept -> ::cuda::std::__type_info_ref
   {
     return *__get_rtti()->__object_info_->__object_typeid_;
   }
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.
-  [[nodiscard]] _CCCL_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CCCL_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
   {
     return *__get_rtti()->__interface_typeid_;
   }
@@ -144,13 +144,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __basic_any<__ireference<_Interface>>
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto has_value() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto has_value() noexcept -> bool
   {
     return true;
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }
@@ -166,7 +166,7 @@ private:
   //! \brief Constructs a \c __basic_any<__ireference<_Interface>> from an lvalue
   //! reference to a \c __basic_any<_Interface>.
   _CCCL_API explicit __basic_any(
-    _CUDA_VSTD::__maybe_const<__is_const_ref, __basic_any<interface_type>>& __other) noexcept
+    ::cuda::std::__maybe_const<__is_const_ref, __basic_any<interface_type>>& __other) noexcept
   {
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
@@ -174,20 +174,20 @@ private:
   //! \brief Constructs a \c __basic_any<__ireference<_Interface>> from a
   //! vtable pointer and an object pointer.
   _CCCL_API __basic_any(__vptr_for<interface_type> __vptr,
-                        _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __optr) noexcept
+                        ::cuda::std::__maybe_const<__is_const_ref, void>* __optr) noexcept
       : __vptr_(__vptr)
       , __optr_(__optr)
   {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_API void reset() noexcept {}
+  _CCCL_NODEBUG_API void reset() noexcept {}
 
   //! \brief No-op.
-  _CCCL_TRIVIAL_API void __release_() noexcept {}
+  _CCCL_NODEBUG_API void __release_() noexcept {}
 
   //! \brief Rebinds the reference with a vtable pointer and object pointer.
   _CCCL_API void __set_ref(__vptr_for<interface_type> __vptr,
-                           _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
+                           ::cuda::std::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     __vptr_ = __vptr;
     __optr_ = __vptr_ ? __obj : nullptr;
@@ -197,7 +197,7 @@ private:
   //! interface and object pointer. The vtable pointer is cast to the correct
   //! type. If the cast fails, the reference is set to null.
   template <class _VTable>
-  _CCCL_API void __set_ref(_VTable const* __other, _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
+  _CCCL_API void __set_ref(_VTable const* __other, ::cuda::std::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     using _OtherInterface = typename _VTable::interface;
     __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
@@ -211,7 +211,7 @@ private:
   //! if the \c _Interface is a base of one of `Interfaces...`.
   template <class... _Interfaces>
   _CCCL_API void __set_ref(__iset_vptr<_Interfaces...> __other,
-                           _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
+                           ::cuda::std::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     using _OtherInterface = __iset_<_Interfaces...>;
     __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
@@ -221,7 +221,7 @@ private:
   template <class _SrcCvAny>
   _CCCL_API void __convert_from(_SrcCvAny&& __from)
   {
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type;
+    using __src_interface_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type;
     if (!__from.has_value())
     {
       __throw_bad_any_cast();
@@ -230,23 +230,23 @@ private:
     __set_ref(__to_vptr, __from.__get_optr());
   }
 
-  _CCCL_TRIVIAL_API auto __get_optr() const noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ref, void>*
+  _CCCL_NODEBUG_API auto __get_optr() const noexcept -> ::cuda::std::__maybe_const<__is_const_ref, void>*
   {
     return __optr_;
   }
 
-  _CCCL_TRIVIAL_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
+  _CCCL_NODEBUG_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
   {
     return __vptr_;
   }
 
-  _CCCL_TRIVIAL_API auto __get_rtti() const noexcept -> __rtti const*
+  _CCCL_NODEBUG_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __vptr_->__query_interface(__iunknown());
   }
 
   __vptr_for<interface_type> __vptr_{};
-  _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __optr_{};
+  ::cuda::std::__maybe_const<__is_const_ref, void>* __optr_{};
 };
 
 _CCCL_END_NV_DIAG_SUPPRESS()
@@ -258,15 +258,15 @@ _CCCL_DIAG_POP
 template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ireference<_Interface>>
 {
-  static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
+  static_assert(::cuda::std::is_class_v<_Interface>, "expecting a class type");
   using typename __basic_any<__ireference<_Interface>>::interface_type;
   using __basic_any<__ireference<_Interface>>::__is_const_ref;
 
-  _CCCL_TRIVIAL_API __basic_any(__basic_any&& __other) noexcept
+  _CCCL_NODEBUG_API __basic_any(__basic_any&& __other) noexcept
       : __basic_any(const_cast<__basic_any const&>(__other))
   {}
 
-  _CCCL_TRIVIAL_API __basic_any(__basic_any& __other) noexcept
+  _CCCL_NODEBUG_API __basic_any(__basic_any& __other) noexcept
       : __basic_any(const_cast<__basic_any const&>(__other))
   {}
 
@@ -276,8 +276,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
-  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND(__is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>)
+  _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::remove_const_t<_Tp>)
+  _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND(__is_const_ref || !::cuda::std::is_const_v<_Tp>)
                    _CCCL_AND __satisfies<_Up, interface_type>)
   _CCCL_API __basic_any(_Tp& __obj) noexcept
       : __basic_any<__ireference<_Interface>>()
@@ -287,7 +287,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   }
 
   _CCCL_TEMPLATE(class _SrcInterface)
-  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
+  _CCCL_REQUIRES((!::cuda::std::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
                  (!__is_value_v<_SrcInterface>) _CCCL_AND //
                    __any_convertible_to<__basic_any<_SrcInterface>, __basic_any>)
   _CCCL_API __basic_any(__basic_any<_SrcInterface>&& __src) noexcept
@@ -297,7 +297,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   }
 
   _CCCL_TEMPLATE(class _SrcInterface)
-  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
+  _CCCL_REQUIRES((!::cuda::std::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
                    __any_convertible_to<__basic_any<_SrcInterface>&, __basic_any>)
   _CCCL_API __basic_any(__basic_any<_SrcInterface>& __src) noexcept
       : __basic_any<__ireference<_Interface>>()
@@ -306,7 +306,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   }
 
   _CCCL_TEMPLATE(class _SrcInterface)
-  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
+  _CCCL_REQUIRES((!::cuda::std::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
                    __any_convertible_to<__basic_any<_SrcInterface> const&, __basic_any>)
   _CCCL_API __basic_any(__basic_any<_SrcInterface> const& __src) noexcept
       : __basic_any<__ireference<_Interface>>()
@@ -317,9 +317,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
   auto operator=(__basic_any&&) -> __basic_any&      = delete;
   auto operator=(__basic_any const&) -> __basic_any& = delete;
 
-  _CCCL_TRIVIAL_API auto move() & noexcept -> __basic_any<__ireference<_Interface>>&&
+  _CCCL_NODEBUG_API auto move() & noexcept -> __basic_any<__ireference<_Interface>>&&
   {
-    return _CUDA_VSTD::move(*this);
+    return ::cuda::std::move(*this);
   }
 
 private:
@@ -330,8 +330,8 @@ private:
   __basic_any() = default;
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_REF_H
+#endif // _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_REF_H

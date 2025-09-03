@@ -34,7 +34,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
 class timed_event : public event
@@ -82,7 +82,7 @@ public:
   static timed_event from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static timed_event from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static timed_event from_native_handle(::cuda::std::nullptr_t) = delete;
 
   //! @brief Compute the time elapsed between two `timed_event` objects.
   //!
@@ -94,11 +94,11 @@ public:
   //! @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
   //!
   //! @note The elapsed time has a resolution of approximately 0.5 microseconds.
-  [[nodiscard]] friend _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
+  [[nodiscard]] friend ::cuda::std::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
-    _CUDA_DRIVER::__eventElapsedTime(__start.get(), __end.get(), &__ms);
-    return _CUDA_VSTD::chrono::nanoseconds(static_cast<_CUDA_VSTD::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
+    ::cuda::__driver::__eventElapsedTime(__start.get(), __end.get(), &__ms);
+    return ::cuda::std::chrono::nanoseconds(static_cast<::cuda::std::chrono::nanoseconds::rep>(__ms * 1'000'000.0));
   }
 
 private:
@@ -109,7 +109,7 @@ private:
   {}
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_RUNTIME_ASSUME_ALIGNED_H
-#define _LIBCUDACXX___MEMORY_RUNTIME_ASSUME_ALIGNED_H
+#ifndef _CUDA_STD___MEMORY_RUNTIME_ASSUME_ALIGNED_H
+#define _CUDA_STD___MEMORY_RUNTIME_ASSUME_ALIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,10 +27,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API _Tp* __runtime_assume_aligned(_Tp* __ptr, _CUDA_VSTD::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_API _Tp* __runtime_assume_aligned(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
 #if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
   using _Up = remove_volatile_t<_Tp>;
@@ -55,8 +55,8 @@ template <typename _Tp>
 #endif // defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_RUNTIME_ASSUME_ALIGNED_H
+#endif // _CUDA_STD___MEMORY_RUNTIME_ASSUME_ALIGNED_H

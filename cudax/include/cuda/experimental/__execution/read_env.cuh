@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -49,7 +50,7 @@ private:
   template <class _Rcvr, class _Query>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using operation_state_concept = operation_state_t;
 
     _Rcvr __rcvr_;
 
@@ -85,6 +86,14 @@ private:
     }
   };
 
+  struct __attrs_t
+  {
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t) const noexcept
+    {
+      return completion_behavior::inline_completion;
+    }
+  };
+
 public:
   template <class _Query>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -93,27 +102,25 @@ public:
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.
   template <class _Query>
-  _CCCL_TRIVIAL_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
+  _CCCL_NODEBUG_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
 };
 
 template <class _Query>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
+  using sender_concept = sender_t;
 
   template <class _Self, class _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    if constexpr (!_CUDA_VSTD::__is_callable_v<_Query, _Env>)
+    if constexpr (!__callable<_Query, _Env>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY),
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (_CUDA_VSTD::is_void_v<_CUDA_VSTD::__call_result_t<_Query, _Env>>)
+    else if constexpr (::cuda::std::is_void_v<__call_result_t<_Query, _Env>>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY),
@@ -122,7 +129,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
     }
     else
     {
-      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{}
+      return completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>{}
            + __eptr_completion_if<!__nothrow_callable<_Query, _Env>>();
     }
 
@@ -134,10 +141,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
+
+  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  {
+    return __attrs_t{};
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
+  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 };
 
 template <class _Query>
-_CCCL_TRIVIAL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
+_CCCL_NODEBUG_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
 {
   return __sndr_t<_Query>{{}, __query};
 }

@@ -16,7 +16,7 @@ struct get_reduce_tuning_query_t
 template <class Derived>
 struct reduce_tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_reduce_tuning_query_t&) const noexcept -> Derived
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_reduce_tuning_query_t&) const noexcept -> Derived
   {
     return static_cast<const Derived&>(*this);
   }
@@ -43,7 +43,7 @@ struct get_scan_tuning_query_t
 
 struct scan_tuning
 {
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
   {
     return *this;
   }

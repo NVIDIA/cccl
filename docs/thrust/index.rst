@@ -1,18 +1,19 @@
 .. _thrust-module:
 
-Thrust: The C++ Parallel Algorithms Library
-==================================================
+Thrust
+======
 
 .. toctree::
    :hidden:
    :maxdepth: 2
 
-   :ref:`Overview <thrust-module>`
+   Overview <self>
+   developer_cmake_options
    releases
    release_process
-   developer_build
    api
-   ${repo_docs_api_path}/thrust_api
+   API documentation <api>
+   API reference <api/index>
 
 Thrust is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the
 C++ Standard Library. Thrust's **high-level** interface greatly enhances programmer **productivity** while

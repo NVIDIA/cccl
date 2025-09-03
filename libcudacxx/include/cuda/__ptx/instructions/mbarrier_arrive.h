@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.15.13. Parallel Synchronization and Communication Instructions: mbarrier.arrive
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive
@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/mbarrier_arrive_expect_tx.h>
 #include <cuda/__ptx/instructions/generated/mbarrier_arrive_no_complete.h>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

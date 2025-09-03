@@ -39,7 +39,7 @@ struct timespec
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::clock_t;
 using ::size_t;
@@ -61,7 +61,7 @@ using ::timespec;
 #  undef _LIBCUDACXX_POP_CLOCK_MACRO
 #endif // _LIBCUDACXX_POP_CLOCK_MACRO
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::clock();), (return static_cast<clock_t>(_CUDA_VPTX::get_sreg_clock64());))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::clock();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
 }
 
 // difftime
@@ -85,7 +85,7 @@ using ::timespec;
 #if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE time_t __cccl_time_impl_device(time_t* __v) noexcept
 {
-  const auto __t = static_cast<clock_t>(_CUDA_VPTX::get_sreg_globaltimer() / 1'000'000'000);
+  const auto __t = static_cast<clock_t>(::cuda::ptx::get_sreg_globaltimer() / 1'000'000'000);
   if (__v != nullptr)
   {
     *__v = __t;
@@ -105,7 +105,7 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
 #  undef _LIBCUDACXX_POP_TIME_MACRO
 #endif // _LIBCUDACXX_POP_TIME_MACRO
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return _CUDA_VSTD::__cccl_time_impl_device(__v);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return ::cuda::std::__cccl_time_impl_device(__v);))
 }
 
 #if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
@@ -119,7 +119,7 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
   {
     return 0;
   }
-  const auto __t = _CUDA_VPTX::get_sreg_globaltimer();
+  const auto __t = ::cuda::ptx::get_sreg_globaltimer();
   __ts->tv_sec   = static_cast<time_t>(__t / 1'000'000'000);
   __ts->tv_nsec  = static_cast<long>(__t % 1'000'000'000);
   return __base;
@@ -140,12 +140,12 @@ template <int = 0>
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
-                    (return _CUDA_VSTD::__cccl_timespec_get_impl_device(__ts, __base);))
+                    (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
 }
 
 #endif // !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

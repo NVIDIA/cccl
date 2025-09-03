@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION
+
 void list_devices()
 {
   int device_count;

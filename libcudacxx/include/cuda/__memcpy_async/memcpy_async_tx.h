@@ -40,10 +40,10 @@
 
 #    include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
-template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
+template <typename _Tp, ::cuda::std::size_t _Alignment>
 _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   _Tp* __dest,
   const _Tp* __src,
@@ -55,7 +55,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   // memcpy_async when compiling with GCC 4.8.
   // FIXME: remove the #if once GCC 4.8 is no longer supported.
 #    if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 4, 8)
-  static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
+  static_assert(::cuda::std::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
   static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
@@ -63,25 +63,25 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__dest, __src, __size), "memcpy_async_tx preconditions unmet");
 
   _CCCL_ASSERT(
-    _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::barrier_native_handle(__b), _CUDA_DEVICE::address_space::shared),
+    ::cuda::device::is_address_from(::cuda::device::barrier_native_handle(__b), ::cuda::device::address_space::shared),
     "Barrier must be located in local shared memory.");
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::shared),
+  _CCCL_ASSERT(::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared),
                "dest must point to shared memory.");
-  _CCCL_ASSERT(_CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::global),
+  _CCCL_ASSERT(::cuda::device::is_address_from(__src, ::cuda::device::address_space::global),
                "src must point to global memory.");
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (
-      if (_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::shared)
-          && _CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::global)) {
-        _CUDA_VPTX::cp_async_bulk(
-          _CUDA_VPTX::space_cluster,
-          _CUDA_VPTX::space_global,
+      if (::cuda::device::is_address_from(__dest, ::cuda::device::address_space::shared)
+          && ::cuda::device::is_address_from(__src, ::cuda::device::address_space::global)) {
+        ::cuda::ptx::cp_async_bulk(
+          ::cuda::ptx::space_cluster,
+          ::cuda::ptx::space_global,
           __dest,
           __src,
           static_cast<uint32_t>(__size),
-          _CUDA_DEVICE::barrier_native_handle(__b));
+          ::cuda::device::barrier_native_handle(__b));
       } else {
         // memcpy_async_tx only supports copying from global to shared
         // or from shared to remote cluster dsmem. To copy to remote
@@ -89,12 +89,12 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // is not yet implemented. So we trap in this case as well.
         _CCCL_UNREACHABLE();
       }),
-    (_CUDA_DEVICE::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
+    (::cuda::device::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 
   return async_contract_fulfillment::async;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #    include <cuda/std/__cccl/epilogue.h>
 

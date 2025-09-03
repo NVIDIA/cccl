@@ -260,6 +260,22 @@ def radix_sort(
     end_bit: int | None = None,
     stream=None,
 ):
+    """
+    Performs device-wide radix sort.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in_keys: Device array or DoubleBuffer containing the input sequence of keys
+        d_out_keys: Device array to store the sorted keys (optional)
+        d_in_values: Device array or DoubleBuffer containing the input sequence of values (optional)
+        d_out_values: Device array to store the sorted values (optional)
+        order: Sort order (ascending or descending)
+        num_items: Number of items to sort
+        begin_bit: Beginning bit position for comparison (optional)
+        end_bit: Ending bit position for comparison (optional)
+        stream: CUDA stream for the operation (optional)
+    """
     sorter = make_radix_sort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
     tmp_storage_bytes = sorter(
         None,

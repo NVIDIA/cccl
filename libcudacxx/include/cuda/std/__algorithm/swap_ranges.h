@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SWAP_RANGES_H
-#define _LIBCUDACXX___ALGORITHM_SWAP_RANGES_H
+#ifndef _CUDA_STD___ALGORITHM_SWAP_RANGES_H
+#define _CUDA_STD___ALGORITHM_SWAP_RANGES_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // 2+2 iterators: the shorter size will be used.
 _CCCL_EXEC_CHECK_DISABLE
@@ -42,7 +42,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
     ++__first2;
   }
 
-  return pair<_ForwardIterator1, _ForwardIterator2>(_CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__first2));
+  return pair<_ForwardIterator1, _ForwardIterator2>(::cuda::std::move(__first1), ::cuda::std::move(__first2));
 }
 
 // 2+1 iterators: size2 >= size1.
@@ -58,7 +58,7 @@ __swap_ranges(_ForwardIterator1 __first1, _Sentinel1 __last1, _ForwardIterator2 
     ++__first2;
   }
 
-  return pair<_ForwardIterator1, _ForwardIterator2>(_CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__first2));
+  return pair<_ForwardIterator1, _ForwardIterator2>(::cuda::std::move(__first1), ::cuda::std::move(__first2));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -66,13 +66,13 @@ template <class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_API constexpr _ForwardIterator2
 swap_ranges(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2)
 {
-  return _CUDA_VSTD::__swap_ranges<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__last1), _CUDA_VSTD::move(__first2))
+  return ::cuda::std::__swap_ranges<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__first2))
     .second;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_SWAP_RANGES_H
+#endif // _CUDA_STD___ALGORITHM_SWAP_RANGES_H

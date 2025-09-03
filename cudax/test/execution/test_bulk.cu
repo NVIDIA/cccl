@@ -17,8 +17,8 @@
 #include <cuda/experimental/execution.cuh>
 
 #include "common/checked_receiver.cuh"
+#include "common/dummy_scheduler.cuh"
 #include "common/error_scheduler.cuh"
-#include "common/inline_scheduler.cuh"
 #include "common/utility.cuh"
 #include "testing.cuh" // IWYU pragma: keep
 
@@ -184,7 +184,7 @@ void bulk_keeps_error_types_from_input_sender()
 {
 #if !_CCCL_COMPILER(MSVC)
   constexpr int n = 42;
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler<_exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
@@ -223,7 +223,7 @@ void bulk_keeps_error_types_from_input_sender()
 void bulk_chunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler<_exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
@@ -260,7 +260,7 @@ void bulk_chunked_keeps_error_types_from_input_sender()
 void bulk_unchunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
-  inline_scheduler sched1{};
+  dummy_scheduler sched1{};
   error_scheduler<_exception_ptr> sched2{};
   error_scheduler<int> sched3{43};
 
@@ -298,7 +298,7 @@ void bulk_can_be_used_with_a_function()
 {
   constexpr int n = 9;
   int counter1[n]{};
-  _CUDA_VSTD::fill_n(counter1, n, 0);
+  ::cuda::std::fill_n(counter1, n, 0);
 
   auto sndr = ex::just(&counter1) //
             | ex::bulk(ex::par, n, function<int, n>);
@@ -315,7 +315,7 @@ void bulk_chunked_can_be_used_with_a_function()
 {
   constexpr int n = 9;
   int counter2[n]{};
-  _CUDA_VSTD::fill_n(counter2, n, 0);
+  ::cuda::std::fill_n(counter2, n, 0);
 
   auto sndr = ex::just(&counter2) //
             | ex::bulk_chunked(ex::par, n, function_range<int, n>);
@@ -332,7 +332,7 @@ void bulk_unchunked_can_be_used_with_a_function()
 {
   constexpr int n = 9;
   int counter3[n]{};
-  _CUDA_VSTD::fill_n(counter3, n, 0);
+  ::cuda::std::fill_n(counter3, n, 0);
 
   auto sndr = ex::just(&counter3) //
             | ex::bulk_unchunked(ex::par, n, function<int, n>);
@@ -570,12 +570,12 @@ constexpr std::size_t n = 9;
 
 void bulk_forwards_values_that_can_be_taken_by_reference()
 {
-  _CUDA_VSTD::array<int, n> vals{};
-  _CUDA_VSTD::array<int, n> vals_expected{};
-  _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
+  ::cuda::std::array<int, n> vals{};
+  ::cuda::std::array<int, n> vals_expected{};
+  ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk(ex::par, n, [&](std::size_t i, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
@@ -584,12 +584,12 @@ void bulk_forwards_values_that_can_be_taken_by_reference()
 
 void bulk_chunked_forwards_values_that_can_be_taken_by_reference()
 {
-  _CUDA_VSTD::array<int, n> vals{};
-  _CUDA_VSTD::array<int, n> vals_expected{};
-  _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
+  ::cuda::std::array<int, n> vals{};
+  ::cuda::std::array<int, n> vals_expected{};
+  ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_chunked(ex::par, n, [&](std::size_t b, std::size_t e, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk_chunked(ex::par, n, [&](std::size_t b, std::size_t e, ::cuda::std::array<int, n>& vals) {
                 for (; b != e; ++b)
                 {
                   vals[b] = static_cast<int>(b);
@@ -601,12 +601,12 @@ void bulk_chunked_forwards_values_that_can_be_taken_by_reference()
 
 void bulk_unchunked_forwards_values_that_can_be_taken_by_reference()
 {
-  _CUDA_VSTD::array<int, n> vals{};
-  _CUDA_VSTD::array<int, n> vals_expected{};
-  _CUDA_VSTD::iota(vals_expected.begin(), vals_expected.end(), 0);
+  ::cuda::std::array<int, n> vals{};
+  ::cuda::std::array<int, n> vals_expected{};
+  ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, _CUDA_VSTD::array<int, n>& vals) {
+            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
@@ -664,7 +664,7 @@ void bulk_can_throw_and_set_error_will_be_called()
             | ex::bulk(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
+  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -676,7 +676,7 @@ void bulk_chunked_can_throw_and_set_error_will_be_called()
             | ex::bulk_chunked(ex::par, n, [](int, int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
+  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -688,7 +688,7 @@ void bulk_unchunked_can_throw_and_set_error_will_be_called()
             | ex::bulk_unchunked(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{});
+  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 #endif // _CCCL_HAS_EXCEPTIONS() && !defined(__CUDA_ARCH__)
@@ -808,7 +808,7 @@ void late_customizing_bulk_chunked_also_changes_the_behavior_of_bulk()
 {
   bool called{false};
   // The customization will return a different value
-  inline_scheduler<my_domain> sched;
+  dummy_scheduler<my_domain> sched;
   auto sndr = ex::just(string{"hello"}) //
             | ex::continues_on(sched) //
             | ex::bulk(ex::par, 1, [&called](int, string) {
@@ -818,7 +818,7 @@ void late_customizing_bulk_chunked_also_changes_the_behavior_of_bulk()
   REQUIRE_FALSE(called);
 }
 
-struct my_domain2
+struct my_domain2 : ex::default_domain
 {
   _CCCL_TEMPLATE(class Sender, class... Env)
   _CCCL_REQUIRES(ex::sender_for<Sender, ex::bulk_t>)
@@ -826,13 +826,16 @@ struct my_domain2
   {
     return ex::just(string{"hijacked"});
   }
+
+private:
+  using ex::default_domain::apply_sender;
 };
 
 void bulk_can_be_customized_independently_of_bulk_chunked()
 {
   bool called{false};
   // The customization will return a different value
-  inline_scheduler<my_domain2> sched;
+  dummy_scheduler<my_domain2> sched;
   auto sndr = ex::just(string{"hello"}) //
             | ex::continues_on(sched) //
             | ex::bulk(ex::par, 1, [&called](int, string) {

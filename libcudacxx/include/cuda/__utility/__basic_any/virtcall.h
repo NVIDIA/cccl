@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_VIRTCALL_H
+#define _CUDA___UTILITY_BASIC_ANY_VIRTCALL_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! __virtuals_map
@@ -86,7 +86,7 @@ using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
   __virtuals_map<__overrides_for_t<_Interface>, __overrides_for_t<__rebind_interface<_Interface, _Super>>>;
 
 template <auto _Mbr, class _Interface, class _Super>
-extern _CUDA_VSTD::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ctag<_Mbr>> __virtual_fn_for_v;
+extern ::cuda::std::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ctag<_Mbr>> __virtual_fn_for_v;
 
 // This alias indirects through the above variable template to cache the result
 // of the virtuals map lookup.
@@ -119,7 +119,7 @@ _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
+_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -129,7 +129,7 @@ _CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super>* __self, _Args&&... __args)
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
+_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -139,7 +139,7 @@ _CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super> const* __self, _Args&&... _
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
 _CCCL_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
-_CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
+_CCCL_NODEBUG_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -153,10 +153,10 @@ _CCCL_TRIVIAL_API auto __virtcall(_Interface<_Super...> const*, _Args&&...) //
   _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_VIRTCALL_H
+#endif // _CUDA___UTILITY_BASIC_ANY_VIRTCALL_H

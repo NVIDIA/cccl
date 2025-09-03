@@ -18,8 +18,11 @@ __device__ static inline void red_async(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void red_async(
-  op_inc_t, _CUDA_VSTD::uint32_t* __dest, const _CUDA_VSTD::uint32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+_CCCL_DEVICE static inline void
+red_async(::cuda::ptx::op_inc_t,
+          ::cuda::std::uint32_t* __dest,
+          const ::cuda::std::uint32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_u32 (due to parameter type constraint)
 // __op == op_inc (due to parameter type constraint)
@@ -50,8 +53,11 @@ __device__ static inline void red_async(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void red_async(
-  op_dec_t, _CUDA_VSTD::uint32_t* __dest, const _CUDA_VSTD::uint32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+_CCCL_DEVICE static inline void
+red_async(::cuda::ptx::op_dec_t,
+          ::cuda::std::uint32_t* __dest,
+          const ::cuda::std::uint32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_u32 (due to parameter type constraint)
 // __op == op_dec (due to parameter type constraint)
@@ -82,8 +88,11 @@ __device__ static inline void red_async(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void red_async(
-  op_min_t, _CUDA_VSTD::uint32_t* __dest, const _CUDA_VSTD::uint32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+_CCCL_DEVICE static inline void
+red_async(::cuda::ptx::op_min_t,
+          ::cuda::std::uint32_t* __dest,
+          const ::cuda::std::uint32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_u32 (due to parameter type constraint)
 // __op == op_min (due to parameter type constraint)
@@ -114,8 +123,11 @@ __device__ static inline void red_async(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void red_async(
-  op_max_t, _CUDA_VSTD::uint32_t* __dest, const _CUDA_VSTD::uint32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+_CCCL_DEVICE static inline void
+red_async(::cuda::ptx::op_max_t,
+          ::cuda::std::uint32_t* __dest,
+          const ::cuda::std::uint32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_u32 (due to parameter type constraint)
 // __op == op_max (due to parameter type constraint)
@@ -146,8 +158,11 @@ __device__ static inline void red_async(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void red_async(
-  op_add_t, _CUDA_VSTD::uint32_t* __dest, const _CUDA_VSTD::uint32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+_CCCL_DEVICE static inline void
+red_async(::cuda::ptx::op_add_t,
+          ::cuda::std::uint32_t* __dest,
+          const ::cuda::std::uint32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_u32 (due to parameter type constraint)
 // __op == op_add (due to parameter type constraint)
@@ -179,7 +194,10 @@ __device__ static inline void red_async(
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
-red_async(op_min_t, _CUDA_VSTD::int32_t* __dest, const _CUDA_VSTD::int32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+red_async(::cuda::ptx::op_min_t,
+          ::cuda::std::int32_t* __dest,
+          const ::cuda::std::int32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_s32 (due to parameter type constraint)
 // __op == op_min (due to parameter type constraint)
@@ -211,7 +229,10 @@ __device__ static inline void red_async(
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
-red_async(op_max_t, _CUDA_VSTD::int32_t* __dest, const _CUDA_VSTD::int32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+red_async(::cuda::ptx::op_max_t,
+          ::cuda::std::int32_t* __dest,
+          const ::cuda::std::int32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_s32 (due to parameter type constraint)
 // __op == op_max (due to parameter type constraint)
@@ -243,7 +264,10 @@ __device__ static inline void red_async(
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
-red_async(op_add_t, _CUDA_VSTD::int32_t* __dest, const _CUDA_VSTD::int32_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+red_async(::cuda::ptx::op_add_t,
+          ::cuda::std::int32_t* __dest,
+          const ::cuda::std::int32_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_s32 (due to parameter type constraint)
 // __op == op_add (due to parameter type constraint)
@@ -273,9 +297,9 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
-red_async(op_and_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+red_async(::cuda::ptx::op_and_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
@@ -284,7 +308,7 @@ red_async(op_and_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* 
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__value)),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 #  else
@@ -308,9 +332,9 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
-red_async(op_or_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+red_async(::cuda::ptx::op_or_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
@@ -319,7 +343,7 @@ red_async(op_or_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* _
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__value)),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 #  else
@@ -343,9 +367,9 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true>
+template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
 _CCCL_DEVICE static inline void
-red_async(op_xor_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+red_async(::cuda::ptx::op_xor_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
@@ -354,7 +378,7 @@ red_async(op_xor_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* 
   asm("red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
       :
       : "r"(__as_ptr_remote_dsmem(__dest)),
-        "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__value)),
+        "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__value)),
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory");
 #  else
@@ -379,8 +403,11 @@ __device__ static inline void red_async(
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void red_async(
-  op_add_t, _CUDA_VSTD::uint64_t* __dest, const _CUDA_VSTD::uint64_t& __value, _CUDA_VSTD::uint64_t* __remote_bar)
+_CCCL_DEVICE static inline void
+red_async(::cuda::ptx::op_add_t,
+          ::cuda::std::uint64_t* __dest,
+          const ::cuda::std::uint64_t& __value,
+          ::cuda::std::uint64_t* __remote_bar)
 {
 // __type == type_u64 (due to parameter type constraint)
 // __op == op_add (due to parameter type constraint)
@@ -411,7 +438,10 @@ __device__ static inline void red_async(
 extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename = void>
 _CCCL_DEVICE static inline void
-red_async(op_add_t, _CUDA_VSTD::int64_t* __dest, const _CUDA_VSTD::int64_t& __value, _CUDA_VSTD::int64_t* __remote_bar)
+red_async(::cuda::ptx::op_add_t,
+          ::cuda::std::int64_t* __dest,
+          const ::cuda::std::int64_t& __value,
+          ::cuda::std::int64_t* __remote_bar)
 {
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900

@@ -65,11 +65,11 @@ struct always_true_predicate
 } // namespace detail::transform
 CUB_NAMESPACE_END
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 template <>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : _CUDA_VSTD::true_type
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
 {};
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
@@ -293,6 +293,12 @@ _CCCL_HOST_DEVICE constexpr auto first_item(T head, Ts...) -> T
   return head;
 }
 
+template <typename T>
+inline constexpr size_t size_of = sizeof(T);
+
+template <>
+inline constexpr size_t size_of<void> = 0;
+
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
 {
@@ -329,25 +335,29 @@ struct policy_hub<RequiresStableAddress,
   // for vectorized policy:
   static constexpr bool all_input_values_same_size = all_equal(sizeof(it_value_t<RandomAccessIteratorsIn>)...);
   static constexpr int load_store_word_size        = 8; // TODO(bgruber): make this 16, and 32 on Blackwell+
-  static constexpr int value_type_size             = first_item(int{sizeof(it_value_t<RandomAccessIteratorsIn>)}..., 1);
+  // if there are no inputs, we take the size of the output value
+  static constexpr int value_type_size =
+    first_item(int{sizeof(it_value_t<RandomAccessIteratorsIn>)}..., int{size_of<it_value_t<RandomAccessIteratorOut>>});
   static constexpr bool value_type_divides_load_store_size =
     load_store_word_size % value_type_size == 0; // implicitly checks that value_type_size <= load_store_word_size
-  static constexpr int target_bytes_per_thread = 32; // guestimate by gevtushenko
+  static constexpr int target_bytes_per_thread =
+    no_input_streams ? 16 /* by experiment on RTX 5090 */ : 32 /* guestimate by gevtushenko for loading */;
   static constexpr int items_per_thread_vec =
     ::cuda::round_up(target_bytes_per_thread, load_store_word_size) / value_type_size;
   using default_vectorized_policy_t = vectorized_policy_t<256, items_per_thread_vec, load_store_word_size>;
+
+  static constexpr bool fallback_to_prefetch =
+    RequiresStableAddress || !can_memcpy_inputs || !all_input_values_same_size || !value_type_divides_load_store_size
+    || !DenseOutput;
 
   // TODO(bgruber): consider a separate kernel for just filling
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || !all_input_values_same_size
-      || !value_type_divides_load_store_size || !DenseOutput;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
-    using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
+    static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
+    using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, default_vectorized_policy_t>;
   };
 
   struct policy800 : ChainedPolicy<800, policy800, policy300>
@@ -364,13 +374,19 @@ struct policy_hub<RequiresStableAddress,
         block_threads* async_policy::min_items_per_thread,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem;
+    static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams;
 
   public:
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(800);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::memcpy_async;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<block_threads>, async_policy>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
+    static constexpr auto algorithm =
+      fallback_to_prefetch ? Algorithm::prefetch
+      : fallback_to_vectorized
+        ? Algorithm::vectorized
+        : Algorithm::memcpy_async;
+    using algo_policy =
+      ::cuda::std::_If<fallback_to_prefetch,
+                       prefetch_policy_t<block_threads>,
+                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
   };
 
   template <int AsyncBlockSize, int PtxVersion>
@@ -395,16 +411,23 @@ struct policy_hub<RequiresStableAddress,
     // complex, so let's fall back in this case.
     static constexpr int max_alignment =
       ::cuda::std::max({alignment, int{alignof(it_value_t<RandomAccessIteratorsIn>)}...});
-    static constexpr int tile_sizes_retain_alignment =
+    static constexpr bool tile_sizes_retain_alignment =
       (((int{sizeof(it_value_t<RandomAccessIteratorsIn>)} * AsyncBlockSize) % max_alignment == 0) && ...);
-
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy_inputs || no_input_streams || exhaust_smem || !tile_sizes_retain_alignment;
+    static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
+    static constexpr bool fallback_to_vectorized =
+      exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams;
 
   public:
-    static constexpr int min_bif    = arch_to_min_bytes_in_flight(PtxVersion);
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+    static constexpr auto algorithm =
+      fallback_to_prefetch ? Algorithm::prefetch
+      : fallback_to_vectorized
+        ? Algorithm::vectorized
+        : Algorithm::ublkcp;
+    using algo_policy =
+      ::cuda::std::_If<fallback_to_prefetch,
+                       prefetch_policy_t<256>,
+                       ::cuda::std::_If<fallback_to_vectorized, default_vectorized_policy_t, async_policy>>;
   };
 
   struct policy900

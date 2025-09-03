@@ -21,6 +21,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -78,11 +80,11 @@ public:
   }
 
   /* Returns the same untyped task dependency with a read-only access mode */
-  task_dep_untyped as_read_mode_untyped() const
+  task_dep_untyped as_mode(access_mode another) const
   {
-    task_dep_untyped res(*this);
-    res.m = access_mode::read;
-    return res;
+    auto result = *this;
+    result.m    = another;
+    return result;
   }
 
   // We should only assign it once
@@ -213,9 +215,9 @@ public:
   }
 
   /* Returns the same task dependency with a read-only access mode */
-  task_dep<T> as_read_mode() const
+  task_dep<T> as_mode(access_mode another) const
   {
-    return task_dep<T>(as_read_mode_untyped());
+    return task_dep<T>(task_dep_untyped::as_mode(another));
   }
 
   /**
@@ -318,6 +320,26 @@ public:
   {
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
       return at<i>().instance(t);
+    });
+  }
+
+  using non_void_instance_t = reserved::remove_void_interface_from_pack_t<Data...>;
+
+  /**
+   * @brief Get all non void instances
+   */
+  non_void_instance_t non_void_instance(task& t)
+  {
+    // Note that make_tuple_indexwise will remove ::std::ignore entries
+    return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
+      if constexpr (::std::is_same_v<type_at<i>, void_interface>)
+      {
+        return ::std::ignore;
+      }
+      else
+      {
+        return at<i>().instance(t);
+      }
     });
   }
 

@@ -9,7 +9,7 @@
 
 // <cuda/std/type_traits>
 
-// _CUDA_VSTD::is_constant_evaluated()
+// ::cuda::std::is_constant_evaluated()
 
 // returns false when there's no constant evaluation support from the compiler.
 //  as well as when called not in a constexpr context

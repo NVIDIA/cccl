@@ -40,7 +40,7 @@ struct bad_reference_wrapper
   __host__ __device__ operator T&() const;
 };
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename T>
 struct common_type<T, ::S<T>>
@@ -71,7 +71,7 @@ template <>
 struct common_type<::X<double>, ::X<double>>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 template <class>
 struct VoidT

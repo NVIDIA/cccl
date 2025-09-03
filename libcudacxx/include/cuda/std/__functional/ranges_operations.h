@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H
-#define _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H
+#ifndef _CUDA_STD___FUNCTIONAL_RANGES_OPERATIONS_H
+#define _CUDA_STD___FUNCTIONAL_RANGES_OPERATIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,16 +26,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 struct equal_to
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(equality_comparable_with<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(_CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u))))
+    noexcept(noexcept(bool(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u))))
   {
-    return _CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u);
+    return ::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u);
   }
 
   using is_transparent = void;
@@ -46,9 +46,9 @@ struct not_equal_to
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(equality_comparable_with<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(!(_CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u)))))
+    noexcept(noexcept(bool(!(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u)))))
   {
-    return !(_CUDA_VSTD::forward<_Tp>(__t) == _CUDA_VSTD::forward<_Up>(__u));
+    return !(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u));
   }
 
   using is_transparent = void;
@@ -59,9 +59,9 @@ struct less
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(_CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u))))
+    noexcept(noexcept(bool(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u))))
   {
-    return _CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u);
+    return ::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u);
   }
 
   using is_transparent = void;
@@ -72,9 +72,9 @@ struct less_equal
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(!(_CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t)))))
+    noexcept(noexcept(bool(!(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t)))))
   {
-    return !(_CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t));
+    return !(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t));
   }
 
   using is_transparent = void;
@@ -85,9 +85,9 @@ struct greater
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(_CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t))))
+    noexcept(noexcept(bool(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t))))
   {
-    return _CUDA_VSTD::forward<_Up>(__u) < _CUDA_VSTD::forward<_Tp>(__t);
+    return ::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t);
   }
 
   using is_transparent = void;
@@ -98,16 +98,16 @@ struct greater_equal
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(!(_CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u)))))
+    noexcept(noexcept(bool(!(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u)))))
   {
-    return !(_CUDA_VSTD::forward<_Tp>(__t) < _CUDA_VSTD::forward<_Up>(__u));
+    return !(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u));
   }
 
   using is_transparent = void;
 };
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H
+#endif // _CUDA_STD___FUNCTIONAL_RANGES_OPERATIONS_H

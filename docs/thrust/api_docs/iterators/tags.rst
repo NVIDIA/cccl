@@ -7,4 +7,4 @@ Iterator tags
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*iterator__tag*
+   ../../api/*iterator__tag*

@@ -30,8 +30,6 @@ fi
 job_def=$("${ci_dir}/util/workflow/get_job_def.sh" "$job_id")
 
 py_version=$(echo "$job_def" | jq -r '.origin.matrix_job.py_version')
-# transform to just major version:
-cuda_verison=$(echo "$job_def" | jq -r '.cuda' | sed -E 's/^([0-9]+)\..*/\1/')
 host=$(echo "$job_def" | jq -r '.origin.matrix_job.cxx_family')
 if [[ "$host" == "MSVC" ]]; then
   os="windows"
@@ -40,7 +38,7 @@ else
 fi
 arch=$(echo "$job_def" | jq -r '.origin.matrix_job.cpu')
 
-for tag in "$py_version" "$cuda_verison" "$os" "$arch"; do
+for tag in "$py_version" "$os" "$arch"; do
   if [[ -z "$tag" ]]; then
     echo "Error: Missing required field in job definition for job ID '$job_id'." >&2
     echo "$usage" >&2
@@ -50,4 +48,4 @@ for tag in "$py_version" "$cuda_verison" "$os" "$arch"; do
   fi
 done
 
-echo "wheel-cccl-$os-$arch-cu$cuda_verison-py$py_version"
+echo "wheel-cccl-$os-$arch-py$py_version"

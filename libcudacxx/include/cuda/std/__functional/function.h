@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -60,9 +60,9 @@
 [[noreturn]] _CCCL_API inline void __throw_bad_function_call()
 {
 #  if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (::cuda::std::terminate();))
 #  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #  endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
@@ -153,27 +153,29 @@ public:
   }
 
   _CCCL_API inline explicit __alloc_func(_Target&& __f)
-      : __f_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__f)), _CUDA_VSTD::forward_as_tuple())
+      : __f_(piecewise_construct, ::cuda::std::forward_as_tuple(::cuda::std::move(__f)), ::cuda::std::forward_as_tuple())
   {}
 
   _CCCL_API inline explicit __alloc_func(const _Target& __f, const _Alloc& __a)
-      : __f_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(__f), _CUDA_VSTD::forward_as_tuple(__a))
+      : __f_(piecewise_construct, ::cuda::std::forward_as_tuple(__f), ::cuda::std::forward_as_tuple(__a))
   {}
 
   _CCCL_API inline explicit __alloc_func(const _Target& __f, _Alloc&& __a)
-      : __f_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__a)))
+      : __f_(piecewise_construct,
+             ::cuda::std::forward_as_tuple(__f),
+             ::cuda::std::forward_as_tuple(::cuda::std::move(__a)))
   {}
 
   _CCCL_API inline explicit __alloc_func(_Target&& __f, _Alloc&& __a)
       : __f_(piecewise_construct,
-             _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__f)),
-             _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__a)))
+             ::cuda::std::forward_as_tuple(::cuda::std::move(__f)),
+             ::cuda::std::forward_as_tuple(::cuda::std::move(__a)))
   {}
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
     using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_.first(), _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+    return _Invoker::__call(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __alloc_func* __clone() const
@@ -216,7 +218,7 @@ public:
   }
 
   _CCCL_API inline explicit __default_alloc_func(_Target&& __f)
-      : __f_(_CUDA_VSTD::move(__f))
+      : __f_(::cuda::std::move(__f))
   {}
 
   _CCCL_API inline explicit __default_alloc_func(const _Target& __f)
@@ -226,7 +228,7 @@ public:
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
     using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_, _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+    return _Invoker::__call(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
   _CCCL_API inline __default_alloc_func* __clone() const
@@ -286,7 +288,7 @@ class __func<_Fp, _Alloc, _Rp(_ArgTypes...)> : public __base<_Rp(_ArgTypes...)>
 
 public:
   _CCCL_API inline explicit __func(_Fp&& __f)
-      : __f_(_CUDA_VSTD::move(__f))
+      : __f_(::cuda::std::move(__f))
   {}
 
   _CCCL_API inline explicit __func(const _Fp& __f, const _Alloc& __a)
@@ -294,11 +296,11 @@ public:
   {}
 
   _CCCL_API inline explicit __func(const _Fp& __f, _Alloc&& __a)
-      : __f_(__f, _CUDA_VSTD::move(__a))
+      : __f_(__f, ::cuda::std::move(__a))
   {}
 
   _CCCL_API inline explicit __func(_Fp&& __f, _Alloc&& __a)
-      : __f_(_CUDA_VSTD::move(__f), _CUDA_VSTD::move(__a))
+      : __f_(::cuda::std::move(__f), ::cuda::std::move(__a))
   {}
 
   virtual __base<_Rp(_ArgTypes...)>* __clone() const;
@@ -349,7 +351,7 @@ void __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy_deallocate() noexcept
 template <class _Fp, class _Alloc, class _Rp, class... _ArgTypes>
 _Rp __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::operator()(_ArgTypes&&... __arg)
 {
-  return __f_(_CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+  return __f_(::cuda::std::forward<_ArgTypes>(__arg)...);
 }
 
 #  ifndef _CCCL_NO_RTTI
@@ -359,7 +361,7 @@ const void* __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target(const type_info& __ti
 {
   if (__ti == typeid(_Fp))
   {
-    return _CUDA_VSTD::addressof(__f_.__target());
+    return ::cuda::std::addressof(__f_.__target());
   }
   return nullptr;
 }
@@ -409,13 +411,13 @@ public:
       if (sizeof(_Fun) <= sizeof(__buf_) && is_nothrow_copy_constructible<_Fp>::value
           && is_nothrow_copy_constructible<_FunAlloc>::value)
       {
-        __f_ = ::new ((void*) &__buf_) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
+        __f_ = ::new ((void*) &__buf_) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }
       else
       {
         using _Dp = __allocator_destructor<_FunAlloc>;
         unique_ptr<__func, _Dp> __hold(__af.allocate(1), _Dp(__af, 1));
-        ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f), _Alloc(__a));
+        ::new ((void*) __hold.get()) _Fun(::cuda::std::move(__f), _Alloc(__a));
         __f_ = __hold.release();
       }
     }
@@ -423,7 +425,7 @@ public:
 
   template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __value_func>::value>>
   _CCCL_API inline explicit __value_func(_Fp&& __f)
-      : __value_func(_CUDA_VSTD::forward<_Fp>(__f), allocator<_Fp>())
+      : __value_func(::cuda::std::forward<_Fp>(__f), allocator<_Fp>())
   {}
 
   _CCCL_API inline __value_func(const __value_func& __f)
@@ -514,7 +516,7 @@ public:
     {
       __throw_bad_function_call();
     }
-    return (*__f_)(_CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return (*__f_)(::cuda::std::forward<_ArgTypes>(__args)...);
   }
 
   _CCCL_API inline void swap(__value_func& __f) noexcept
@@ -554,7 +556,7 @@ public:
     }
     else
     {
-      _CUDA_VSTD::swap(__f_, __f.__f_);
+      ::cuda::std::swap(__f_, __f.__f_);
     }
   }
 
@@ -729,7 +731,7 @@ private:
   static _Rp __call_impl(const __policy_storage* __buf, __fast_forward<_ArgTypes>... __args)
   {
     _Fun* __f = reinterpret_cast<_Fun*>(__use_small_storage<_Fun>::value ? &__buf->__small : __buf->__large);
-    return (*__f)(_CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return (*__f)(::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
@@ -776,13 +778,13 @@ public:
       _FunAlloc __af(__a);
       if (__use_small_storage<_Fun>())
       {
-        ::new ((void*) &__buf_.__small) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
+        ::new ((void*) &__buf_.__small) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }
       else
       {
         using _Dp = __allocator_destructor<_FunAlloc>;
         unique_ptr<_Fun, _Dp> __hold(__af.allocate(1), _Dp(__af, 1));
-        ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
+        ::new ((void*) __hold.get()) _Fun(::cuda::std::move(__f), _Alloc(__af));
         __buf_.__large = __hold.release();
       }
     }
@@ -800,12 +802,12 @@ public:
       __policy_  = __policy::__create<_Fun>();
       if (__use_small_storage<_Fun>())
       {
-        ::new ((void*) &__buf_.__small) _Fun(_CUDA_VSTD::move(__f));
+        ::new ((void*) &__buf_.__small) _Fun(::cuda::std::move(__f));
       }
       else
       {
         __builtin_new_allocator::__holder_t __hold = __builtin_new_allocator::__allocate_type<_Fun>(1);
-        __buf_.__large                             = ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f));
+        __buf_.__large                             = ::new ((void*) __hold.get()) _Fun(::cuda::std::move(__f));
         (void) __hold.release();
       }
     }
@@ -867,14 +869,14 @@ public:
 
   _CCCL_API inline _Rp operator()(_ArgTypes&&... __args) const
   {
-    return __invoker_.__call_(_CUDA_VSTD::addressof(__buf_), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return __invoker_.__call_(::cuda::std::addressof(__buf_), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 
   _CCCL_API inline void swap(__policy_func& __f)
   {
-    _CUDA_VSTD::swap(__invoker_, __f.__invoker_);
-    _CUDA_VSTD::swap(__policy_, __f.__policy_);
-    _CUDA_VSTD::swap(__buf_, __f.__buf_);
+    ::cuda::std::swap(__invoker_, __f.__invoker_);
+    ::cuda::std::swap(__policy_, __f.__policy_);
+    ::cuda::std::swap(__buf_, __f.__buf_);
   }
 
   _CCCL_API inline explicit operator bool() const noexcept
@@ -962,7 +964,7 @@ public:
 
   virtual _Rp operator()(_ArgTypes&&... __arg)
   {
-    return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
 #    ifndef _CCCL_NO_RTTI
@@ -1160,13 +1162,13 @@ function<_Rp(_ArgTypes...)>::function(const function& __f)
 
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(function&& __f) noexcept
-    : __f_(_CUDA_VSTD::move(__f.__f_))
+    : __f_(::cuda::std::move(__f.__f_))
 {}
 
 template <class _Rp, class... _ArgTypes>
 template <class _Fp, class>
 function<_Rp(_ArgTypes...)>::function(_Fp __f)
-    : __f_(_CUDA_VSTD::move(__f))
+    : __f_(::cuda::std::move(__f))
 {}
 
 template <class _Rp, class... _ArgTypes>
@@ -1179,7 +1181,7 @@ function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(const functi
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(function&& __f) noexcept
 {
-  __f_ = _CUDA_VSTD::move(__f.__f_);
+  __f_ = ::cuda::std::move(__f.__f_);
   return *this;
 }
 
@@ -1194,7 +1196,7 @@ template <class _Rp, class... _ArgTypes>
 template <class _Fp, class>
 function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(_Fp&& __f)
 {
-  function(_CUDA_VSTD::forward<_Fp>(__f)).swap(*this);
+  function(::cuda::std::forward<_Fp>(__f)).swap(*this);
   return *this;
 }
 
@@ -1211,7 +1213,7 @@ void function<_Rp(_ArgTypes...)>::swap(function& __f) noexcept
 template <class _Rp, class... _ArgTypes>
 _Rp function<_Rp(_ArgTypes...)>::operator()(_ArgTypes... __arg) const
 {
-  return __f_(_CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+  return __f_(::cuda::std::forward<_ArgTypes>(__arg)...);
 }
 
 #  ifndef _CCCL_NO_RTTI
@@ -1268,10 +1270,10 @@ _CCCL_API inline void swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTy
   return __x.swap(__y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_FUNCTION_H

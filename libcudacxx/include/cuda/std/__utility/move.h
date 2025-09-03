@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_MOVE_H
-#define _LIBCUDACXX___UTILITY_MOVE_H
+#ifndef _CUDA_STD___UTILITY_MOVE_H
+#define _CUDA_STD___UTILITY_MOVE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,24 +31,24 @@
 // would prefer to bring the ::std:: function into the ::cuda::std:: namespace with a using
 // declaration, like this:
 //
-//   _LIBCUDACXX_BEGIN_NAMESPACE_STD
+//   _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //   using ::std::move;
-//   _LIBCUDACXX_END_NAMESPACE_STD
+//   _CCCL_END_NAMESPACE_CUDA_STD
 //
 // But "using ::std::move;" would also drag in the algorithm ::std::move(In, In, Out),
 // which would conflict with ::cuda::std::move algorithm in <cuda/std/algorithm.h>.
 //
-// So instead, we define a _CCCL_MOVE macro that can be used in place of _CUDA_VSTD::move
+// So instead, we define a _CCCL_MOVE macro that can be used in place of ::cuda::std::move
 
 #if _CCCL_HAS_BUILTIN_STD_MOVE()
 #  define _CCCL_MOVE(...) ::std::move(__VA_ARGS__)
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
-#  define _CCCL_MOVE(...) _CUDA_VSTD::move(__VA_ARGS__)
+#  define _CCCL_MOVE(...) ::cuda::std::move(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE()
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
@@ -64,11 +64,11 @@ using __move_if_noexcept_result_t =
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
 {
-  return _CUDA_VSTD::move(__x);
+  return ::cuda::std::move(__x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_MOVE_H
+#endif // _CUDA_STD___UTILITY_MOVE_H

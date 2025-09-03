@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_AS_CONST_H
-#define _LIBCUDACXX___UTILITY_AS_CONST_H
+#ifndef _CUDA_STD___UTILITY_AS_CONST_H
+#define _CUDA_STD___UTILITY_AS_CONST_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_BUILTIN_STD_AS_CONST()
 
@@ -45,8 +45,8 @@ void as_const(const _Tp&&) = delete;
 
 #endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_AS_CONST_H
+#endif // _CUDA_STD___UTILITY_AS_CONST_H

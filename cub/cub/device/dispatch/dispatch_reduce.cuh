@@ -568,7 +568,7 @@ template <
   typename InitT,
   typename AccumT =
     ::cuda::std::__accumulator_t<ReductionOpT,
-                                 _CUDA_VSTD::invoke_result_t<TransformOpT, _CUDA_VSTD::iter_value_t<InputIteratorT>>,
+                                 ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                  InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<

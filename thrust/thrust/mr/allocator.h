@@ -15,7 +15,7 @@
  */
 
 /*! \file
- *  \brief Allocator types usable with \ref Memory Resources.
+ *  \brief Allocator types usable with \ref memory_resources "Memory Resources".
  */
 
 #pragma once

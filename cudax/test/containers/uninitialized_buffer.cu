@@ -61,14 +61,14 @@ constexpr int get_property(const cudax::device_memory_resource&, my_property)
   return 42;
 }
 
-__global__ void kernel(_CUDA_VSTD::span<int> data)
+__global__ void kernel(::cuda::std::span<int> data)
 {
   // Touch the memory to be sure it's accessible
   CUDAX_CHECK(data.size() == 1024);
   data[0] = 42;
 }
 
-__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
+__global__ void const_kernel(::cuda::std::span<const int> data)
 {
   // Touch the memory to be sure it's accessible
   CUDAX_CHECK(data.size() == 1024);

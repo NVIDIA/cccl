@@ -175,7 +175,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   enum
   {
     // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = _CUDA_VSTD::min(4, ITEMS_PER_THREAD),
+    MAX_VEC_SIZE = ::cuda::std::min(4, ITEMS_PER_THREAD),
 
     // Vector size must be a power of two and an even divisor of the items per thread
     VEC_SIZE =
@@ -1112,7 +1112,7 @@ public:
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
    *
-   * @param temp_storage[in]
+   * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore(TempStorage& temp_storage)
@@ -1165,10 +1165,10 @@ public:
   //!
   //! @endrst
   //!
-  //! @param block_itr[out]
+  //! @param[out] block_itr
   //!   The thread block's base output iterator for storing to
   //!
-  //! @param items[in]
+  //! @param[in] items
   //!   Data to store
   template <typename OutputIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
@@ -1218,13 +1218,13 @@ public:
   //!
   //! @endrst
   //!
-  //! @param block_itr[out]
+  //! @param[out] block_itr
   //!   The thread block's base output iterator for storing to
   //!
-  //! @param items[in]
+  //! @param[in] items
   //!   Data to store
   //!
-  //! @param valid_items[in]
+  //! @param[in] valid_items
   //!   Number of valid items to write
   template <typename OutputIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)

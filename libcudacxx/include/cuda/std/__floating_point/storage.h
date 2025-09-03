@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_STORAGE_H
-#define _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#ifndef _CUDA_STD___FLOATING_POINT_STORAGE_H
+#define _CUDA_STD___FLOATING_POINT_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/format.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 [[nodiscard]] _CCCL_API constexpr auto __fp_storage_type_impl() noexcept
@@ -91,7 +91,7 @@ template <class _Tp>
 {
   if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
-    return _CUDA_VSTD::bit_cast<_Tp>(__v);
+    return ::cuda::std::bit_cast<_Tp>(__v);
   }
   else if constexpr (__is_ext_cccl_fp_v<_Tp>)
   {
@@ -181,7 +181,7 @@ template <class _Tp>
 {
   if constexpr (__is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
-    return _CUDA_VSTD::bit_cast<__fp_storage_of_t<_Tp>>(__v);
+    return ::cuda::std::bit_cast<__fp_storage_of_t<_Tp>>(__v);
   }
   else if constexpr (__is_ext_cccl_fp_v<_Tp>)
   {
@@ -241,8 +241,8 @@ template <class _Tp>
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_STORAGE_H
+#endif // _CUDA_STD___FLOATING_POINT_STORAGE_H

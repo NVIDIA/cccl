@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE
-#define _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE
+#ifndef _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE_H
+#define _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _AccessProperty>
 class __annotated_ptr_base
@@ -36,10 +36,10 @@ class __annotated_ptr_base
 protected:
   _CCCL_API static constexpr uint64_t __default_property() noexcept
   {
-    return _CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>     ? __l2_interleave_normal
-         : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::normal>     ? __l2_interleave_normal_demote
-         : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::persisting> ? __l2_interleave_persisting
-         : _CUDA_VSTD::is_same_v<_AccessProperty, access_property::streaming>
+    return ::cuda::std::is_same_v<_AccessProperty, access_property::global>     ? __l2_interleave_normal
+         : ::cuda::std::is_same_v<_AccessProperty, access_property::normal>     ? __l2_interleave_normal_demote
+         : ::cuda::std::is_same_v<_AccessProperty, access_property::persisting> ? __l2_interleave_persisting
+         : ::cuda::std::is_same_v<_AccessProperty, access_property::streaming>
            ? __l2_interleave_streaming
            : 0; // access_property::shared;
   }
@@ -93,8 +93,8 @@ protected:
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE
+#endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE_H

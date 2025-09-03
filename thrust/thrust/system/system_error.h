@@ -171,10 +171,11 @@ private:
    */
 }; // end system_error
 
-} // namespace system
-
-/*! \} // end system_diagnostics
+/*!
+ * \} end group system_diagnostics
  */
+
+} // namespace system
 
 // import names into thrust::
 using system::system_error;

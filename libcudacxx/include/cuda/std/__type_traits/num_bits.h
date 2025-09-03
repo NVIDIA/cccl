@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_NUM_BITS
-#define _LIBCUDACXX___TYPE_TRAITS_NUM_BITS
+#ifndef _CUDA_STD___TYPE_TRAITS_NUM_BITS_H
+#define _CUDA_STD___TYPE_TRAITS_NUM_BITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
 [[nodiscard]] _CCCL_API constexpr int __num_bits_impl() noexcept
@@ -116,8 +116,8 @@ inline constexpr int __num_bits_helper_v<complex<_Tp>> = __num_bits_impl<_Tp>() 
 template <typename _Tp>
 inline constexpr int __num_bits_v = __num_bits_helper_v<remove_cvref_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_NUM_BITS
+#endif // _CUDA_STD___TYPE_TRAITS_NUM_BITS_H

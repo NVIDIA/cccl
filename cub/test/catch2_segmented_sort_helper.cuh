@@ -1525,7 +1525,7 @@ struct offset_scan_op_t
   __device__ _CCCL_FORCEINLINE int operator()(int a, int b) const
   {
     const int sum = a + b;
-    return _CUDA_VSTD::min(sum, max_items);
+    return ::cuda::std::min(sum, max_items);
   }
 };
 

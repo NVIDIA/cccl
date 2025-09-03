@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_MDSPAN_H
-#define _LIBCUDACXX___FWD_MDSPAN_H
+#ifndef _CUDA_STD___FWD_MDSPAN_H
+#define _CUDA_STD___FWD_MDSPAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [mdspan.accessor.default]
 template <class _ElementType>
@@ -83,8 +83,8 @@ inline constexpr bool __is_std_mdspan_v = false;
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
 inline constexpr bool __is_std_mdspan_v<mdspan<_ElementType, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_MDSPAN_H
+#endif // _CUDA_STD___FWD_MDSPAN_H

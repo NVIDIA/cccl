@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_STORAGE_H
+#define _CUDA___UTILITY_BASIC_ANY_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,48 +30,49 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 [[nodiscard]] _CCCL_API inline constexpr auto __buffer_size(size_t __size) -> size_t
 {
   //! round up to the nearest multiple of `__word`, which is the size of a
   //! void*.
-  return ((__size ? (_CUDA_VSTD::max) (__size, sizeof(void*)) : __default_small_object_size) + __word - 1) / __word
+  return ((__size ? (::cuda::std::max) (__size, sizeof(void*)) : __default_small_object_size) + __word - 1) / __word
        * __word;
 }
 
 [[nodiscard]] _CCCL_API inline constexpr auto __buffer_align(size_t __align) -> size_t
 {
   //! need to be able to store a void* in the buffer.
-  return __align ? (_CUDA_VSTD::max) (__align, alignof(void*)) : __default_small_object_align;
+  return __align ? (::cuda::std::max) (__align, alignof(void*)) : __default_small_object_align;
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline constexpr auto __is_small(size_t __size, size_t __align) noexcept -> bool
 {
-  return (sizeof(_Tp) <= __size) && (__align % alignof(_Tp) == 0) && _CUDA_VSTD::is_nothrow_move_constructible_v<_Tp>;
+  return (sizeof(_Tp) <= __size) && (__align % alignof(_Tp) == 0) && ::cuda::std::is_nothrow_move_constructible_v<_Tp>;
 }
 
 _CCCL_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
 {
-  _CUDA_VSTD::swap(*static_cast<void**>(__lhs), *static_cast<void**>(__rhs));
+  ::cuda::std::swap(*static_cast<void**>(__lhs), *static_cast<void**>(__rhs));
 }
 
 template <class _Tp,
           class _Up,
-          class _Vp = decltype(true ? _CUDA_VSTD::type_identity_t<_Tp*>() : _CUDA_VSTD::type_identity_t<_Up*>())>
-[[nodiscard]] _CCCL_TRIVIAL_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
+          class _Vp = decltype(true ? ::cuda::std::type_identity_t<_Tp*>() : ::cuda::std::type_identity_t<_Up*>())>
+[[nodiscard]] _CCCL_NODEBUG_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
 {
   return static_cast<_Vp>(__lhs) == static_cast<_Vp>(__rhs);
 }
 
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __ptr_eq(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t) noexcept -> bool
+[[nodiscard]]
+_CCCL_NODEBUG_API constexpr auto __ptr_eq(::cuda::std::__ignore_t, ::cuda::std::__ignore_t) noexcept -> bool
 {
   return false;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_STORAGE_H
+#endif // _CUDA___UTILITY_BASIC_ANY_STORAGE_H

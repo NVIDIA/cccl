@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___STREAM_STREAM_REF
-#define _CUDA___STREAM_STREAM_REF
+#ifndef _CUDA___STREAM_STREAM_REF_H
+#define _CUDA___STREAM_STREAM_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
 {
@@ -78,7 +78,7 @@ public:
   stream_ref(int) = delete;
 
   //! Disallow construction from `nullptr`.
-  stream_ref(_CUDA_VSTD::nullptr_t) = delete;
+  stream_ref(::cuda::std::nullptr_t) = delete;
 
   //! @brief Compares two `stream_ref`s for equality
   //!
@@ -117,7 +117,7 @@ public:
   //! @throws cuda::cuda_error if synchronization fails.
   _CCCL_HOST_API void sync() const
   {
-    _CUDA_DRIVER::__streamSynchronize(__stream);
+    ::cuda::__driver::__streamSynchronize(__stream);
   }
 
   //! @brief Deprecated. Use sync() instead.
@@ -138,7 +138,7 @@ public:
   {
     _CCCL_ASSERT(__ev.get() != nullptr, "cuda::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
-    _CUDA_DRIVER::__streamWaitEvent(get(), __ev.get());
+    ::cuda::__driver::__streamWaitEvent(get(), __ev.get());
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
@@ -166,7 +166,7 @@ public:
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
-    const auto __result = _CUDA_DRIVER::__streamQueryNoThrow(__stream);
+    const auto __result = ::cuda::__driver::__streamQueryNoThrow(__stream);
     switch (__result)
     {
       case ::cudaErrorNotReady:
@@ -195,7 +195,7 @@ public:
   //! @return value representing the priority of the wrapped stream.
   [[nodiscard]] _CCCL_HOST_API int priority() const
   {
-    return _CUDA_DRIVER::__streamGetPriority(__stream);
+    return ::cuda::__driver::__streamGetPriority(__stream);
   }
 
   //! @brief Get the unique ID of the stream
@@ -207,7 +207,7 @@ public:
   //! @throws cuda_error if the ID query fails
   [[nodiscard]] _CCCL_HOST_API stream_id id() const
   {
-    return stream_id{_CUDA_DRIVER::__streamGetId(__stream)};
+    return stream_id{::cuda::__driver::__streamGetId(__stream)};
   }
 
   //! @brief Create a new event and record it into this stream
@@ -238,7 +238,7 @@ public:
   //! @throws cuda_error if device check fails
   _CCCL_HOST_API device_ref device() const
   {
-    CUcontext __stream_ctx = _CUDA_DRIVER::__streamGetCtx(__stream);
+    CUcontext __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
     __ensure_current_context __setter(__stream_ctx);
     int __id;
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
@@ -258,7 +258,7 @@ inline void event_ref::record(stream_ref __stream) const
   _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::record no event set");
   _CCCL_ASSERT(__stream.get() != nullptr, "cuda::event_ref::record invalid stream passed");
   // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-  _CUDA_DRIVER::__eventRecord(__event_, __stream.get());
+  ::cuda::__driver::__eventRecord(__event_, __stream.get());
 }
 
 inline event::event(stream_ref __stream, event::flags __flags)
@@ -284,13 +284,13 @@ inline timed_event::timed_event(stream_ref __stream, event::flags __flags)
 inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
   auto __ctx = __driver::__streamGetCtx(__stream.get());
-  _CUDA_DRIVER::__ctxPush(__ctx);
+  ::cuda::__driver::__ctxPush(__ctx);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#endif //_CUDA___STREAM_STREAM_REF
+#endif //_CUDA___STREAM_STREAM_REF_H

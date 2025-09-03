@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Adaptor that transforms a N-ary function \c _Fn into one accepting a \c tuple of size N
 template <class _Fn>
@@ -47,26 +47,26 @@ public:
   //! @brief default construct a zip_function if \c _Fn is default_initializable
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Fn2 = _Fn)
-  _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Fn2>)
-  _CCCL_API constexpr zip_function() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Fn2>)
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Fn2>)
+  _CCCL_API constexpr zip_function() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Fn2>)
       : __fun_()
   {}
 
   //! @brief construct a zip_function from a functor \p __fun
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr zip_function(const _Fn& __fun) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Fn>)
+  _CCCL_API constexpr zip_function(const _Fn& __fun) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
       : __fun_(__fun)
   {}
 
   //! @brief construct a zip_function from a functor \p __fun
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr zip_function(_Fn&& __fun) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Fn>)
-      : __fun_(_CUDA_VSTD::move(__fun))
+  _CCCL_API constexpr zip_function(_Fn&& __fun) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Fn>)
+      : __fun_(::cuda::std::move(__fun))
   {}
 
   template <class _Fn2, class _Tuple>
   static constexpr bool __is_nothrow_invocable =
-    noexcept(_CUDA_VSTD::apply(_CUDA_VSTD::declval<_Fn2>(), _CUDA_VSTD::declval<_Tuple>()));
+    noexcept(::cuda::std::apply(::cuda::std::declval<_Fn2>(), ::cuda::std::declval<_Tuple>()));
 
   //! @brief Applies a tuple \p __tuple to the stored functor
   _CCCL_EXEC_CHECK_DISABLE
@@ -74,7 +74,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Tuple&& __tuple) const
     noexcept(__is_nothrow_invocable<const _Fn&, _Tuple>)
   {
-    return _CUDA_VSTD::apply(__fun_, _CUDA_VSTD::forward<_Tuple>(__tuple));
+    return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 
   //! @brief Applies a tuple \p __tuple to the stored functor
@@ -83,11 +83,11 @@ public:
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator()(_Tuple&& __tuple) noexcept(__is_nothrow_invocable<_Fn&, _Tuple>)
   {
-    return _CUDA_VSTD::apply(__fun_, _CUDA_VSTD::forward<_Tuple>(__tuple));
+    return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

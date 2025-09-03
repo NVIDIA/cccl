@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_NEXT_PERMUTATION_H
-#define _LIBCUDACXX___ALGORITHM_NEXT_PERMUTATION_H
+#ifndef _CUDA_STD___ALGORITHM_NEXT_PERMUTATION_H
+#define _CUDA_STD___ALGORITHM_NEXT_PERMUTATION_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _BidirectionalIterator, class _Sentinel>
@@ -43,7 +43,7 @@ __next_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
   _BidirectionalIterator __i         = __last_iter;
   if (__first == __last || __first == --__i)
   {
-    return _Result(_CUDA_VSTD::move(__last_iter), false);
+    return _Result(::cuda::std::move(__last_iter), false);
   }
 
   while (true)
@@ -55,13 +55,13 @@ __next_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
       while (!__comp(*__i, *--__j))
         ;
       _IterOps<_AlgPolicy>::iter_swap(__i, __j);
-      _CUDA_VSTD::__reverse<_AlgPolicy>(__ip1, __last_iter);
-      return _Result(_CUDA_VSTD::move(__last_iter), true);
+      ::cuda::std::__reverse<_AlgPolicy>(__ip1, __last_iter);
+      return _Result(::cuda::std::move(__last_iter), true);
     }
     if (__i == __first)
     {
-      _CUDA_VSTD::__reverse<_AlgPolicy>(__first, __last_iter);
-      return _Result(_CUDA_VSTD::move(__last_iter), false);
+      ::cuda::std::__reverse<_AlgPolicy>(__first, __last_iter);
+      return _Result(::cuda::std::move(__last_iter), false);
     }
   }
 }
@@ -70,19 +70,19 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator, class _Compare>
 _CCCL_API constexpr bool next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
-  return _CUDA_VSTD::__next_permutation<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), static_cast<__comp_ref_type<_Compare>>(__comp))
+  return ::cuda::std::__next_permutation<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first), ::cuda::std::move(__last), static_cast<__comp_ref_type<_Compare>>(__comp))
     .second;
 }
 
 template <class _BidirectionalIterator>
 _CCCL_API constexpr bool next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
-  return _CUDA_VSTD::next_permutation(__first, __last, __less{});
+  return ::cuda::std::next_permutation(__first, __last, __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_NEXT_PERMUTATION_H
+#endif // _CUDA_STD___ALGORITHM_NEXT_PERMUTATION_H

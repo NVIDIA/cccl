@@ -12,6 +12,10 @@ project(
 
 find_package(CUDAToolkit)
 
+set(CUDA_VERSION_MAJOR ${CUDAToolkit_VERSION_MAJOR})
+set(CUDA_VERSION_DIR "cu${CUDA_VERSION_MAJOR}")
+message(STATUS "Building for CUDA ${CUDA_VERSION_MAJOR}, output directory: ${CUDA_VERSION_DIR}")
+
 set(_cccl_root ../..)
 
 include(${_cccl_root}/cmake/AppendOptionIfAvailable.cmake)
@@ -50,9 +54,13 @@ install(
     DESTINATION ${_dest_incl_dir}
 )
 
+# ensure the destination directory exists
+file(MAKE_DIRECTORY "cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR}/cccl")
+
+# Install version-specific binaries
 install(
     TARGETS cccl.c.parallel
-    DESTINATION cuda/cccl/parallel/experimental/cccl
+    DESTINATION cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR}/cccl
 )
 
 # Build and install Cython extension
@@ -92,15 +100,20 @@ string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/cccl/parallel/experimental/_bindings_impl.pyx")
+
 set(_generated_extension_src "${cuda_cccl_BINARY_DIR}/_bindings_impl.c")
 set(_depfile "${cuda_cccl_BINARY_DIR}/_bindings_impl.c.dep")
+
+# Custom Cython compilation command for version-specific target
 add_custom_command(
     OUTPUT "${_generated_extension_src}"
     COMMAND "${Python3_EXECUTABLE}" -m cython
-    ARGS ${CYTHON_FLAGS_LIST} "${pyx_source_file}" --output-file ${_generated_extension_src}
+    ARGS ${CYTHON_FLAGS_LIST} "${pyx_source_file}" --output-file "${_generated_extension_src}"
     DEPENDS "${pyx_source_file}"
     DEPFILE "${_depfile}"
+    COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
 )
+
 set_source_files_properties("${_generated_extension_src}" PROPERTIES GENERATED TRUE)
 add_custom_target(cythonize_bindings_impl ALL
     DEPENDS "${_generated_extension_src}"
@@ -111,4 +124,4 @@ add_dependencies(_bindings_impl cythonize_bindings_impl)
 target_link_libraries(_bindings_impl PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
-install(TARGETS _bindings_impl DESTINATION cuda/cccl/parallel/experimental)
+install(TARGETS _bindings_impl DESTINATION cuda/cccl/parallel/experimental/${CUDA_VERSION_DIR})

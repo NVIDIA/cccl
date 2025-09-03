@@ -62,9 +62,9 @@ THRUST_NAMESPACE_BEGIN
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <size_t N, class T>
-using tuple_element = _CUDA_VSTD::tuple_element<N, T>;
+using tuple_element = ::cuda::std::tuple_element<N, T>;
 #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-using _CUDA_VSTD::tuple_element;
+using ::cuda::std::tuple_element;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! This metafunction returns the number of elements
@@ -77,9 +77,9 @@ using _CUDA_VSTD::tuple_element;
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T>
-using tuple_size = _CUDA_VSTD::tuple_size<T>;
+using tuple_size = ::cuda::std::tuple_size<T>;
 #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-using _CUDA_VSTD::tuple_size;
+using ::cuda::std::tuple_size;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \brief \p tuple is a heterogeneous, fixed-size collection of values.
@@ -121,17 +121,14 @@ using _CUDA_VSTD::tuple_size;
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class... Ts>
-using tuple = _CUDA_VSTD::tuple<T...>;
+using tuple = ::cuda::std::tuple<T...>;
 #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-using _CUDA_VSTD::tuple;
+using ::cuda::std::tuple;
 #endif // _CCCL_DOXYGEN_INVOKED
 
-using _CUDA_VSTD::get;
-using _CUDA_VSTD::make_tuple;
-using _CUDA_VSTD::tie;
-
-/*! \endcond
- */
+using ::cuda::std::get;
+using ::cuda::std::make_tuple;
+using ::cuda::std::tie;
 
 /*! \} // tuple
  */

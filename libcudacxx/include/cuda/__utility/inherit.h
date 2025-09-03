@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_INHERIT_H
-#define _LIBCUDACXX___UTILITY_INHERIT_H
+#ifndef _CUDA___UTILITY_INHERIT_H
+#define _CUDA___UTILITY_INHERIT_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,14 +23,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __inherit : _Types...
 {};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_INHERIT_H
+#endif // _CUDA___UTILITY_INHERIT_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H
-#define _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H
+#ifndef _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H
+#define _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -55,11 +55,11 @@
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
 template <class _Tp, class = void>
-struct __cccl_type_is_defined : _CUDA_VSTD::false_type
+struct __cccl_type_is_defined : ::cuda::std::false_type
 {};
 
 template <class _Tp>
-struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
+struct __cccl_type_is_defined<_Tp, ::cuda::std::void_t<decltype(sizeof(_Tp))>> : ::cuda::std::true_type
 {};
 
 // detect whether the used STL has contiguous_iterator_tag defined
@@ -76,7 +76,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -222,7 +222,7 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<0>)
                  random_access_iterator_tag>;
 
 template <class _Iter>
-using __iter_concept_t = decltype(_CUDA_VSTD::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
+using __iter_concept_t = decltype(::cuda::std::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
 
 template <class _Iter, class = void>
 struct __iter_concept_cache
@@ -925,8 +925,8 @@ using __iter_diff_t = typename iterator_traits<_Iter>::difference_type;
 template <class _InputIterator>
 using __iter_value_type = typename iterator_traits<_InputIterator>::value_type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H
+#endif // _CUDA_STD___ITERATOR_ITERATOR_TRAITS_H

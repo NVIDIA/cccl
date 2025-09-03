@@ -27,20 +27,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the negative value of the input number
 //! @param __v The input number
 //! @return The signed negative value of \p __v
 //! @note This function doesn't cause undefined behavior when negating the minimum value of a signed integer type.
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp neg(_Tp __v) noexcept
 {
-  return static_cast<_Tp>(~_CUDA_VSTD::__to_unsigned_like(__v) + 1);
+  return static_cast<_Tp>(~::cuda::std::__to_unsigned_like(__v) + 1);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -3,7 +3,7 @@
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -20,7 +20,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -37,7 +37,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -54,7 +54,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -71,7 +71,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -88,7 +88,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -105,7 +105,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -122,7 +122,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -139,7 +139,7 @@ cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -156,7 +156,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -173,7 +173,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -190,7 +190,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -207,7 +207,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -224,7 +224,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -241,7 +241,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -258,7 +258,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -275,7 +275,7 @@ cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -292,7 +292,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -309,7 +309,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -326,7 +326,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -343,7 +343,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -360,7 +360,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -377,7 +377,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -394,7 +394,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -411,7 +411,7 @@ cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -428,7 +428,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -445,7 +445,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -462,7 +462,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -479,7 +479,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -496,7 +496,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -513,7 +513,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -530,7 +530,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -547,7 +547,7 @@ cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -564,7 +564,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -581,7 +581,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -598,7 +598,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -615,7 +615,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -632,7 +632,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -649,7 +649,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -666,7 +666,7 @@ cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.bulk_group
 
 cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
    // .dst       = { .global }

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_BIND_FRONT_H
-#define _LIBCUDACXX___FUNCTIONAL_BIND_FRONT_H
+#ifndef _CUDA_STD___FUNCTIONAL_BIND_FRONT_H
+#define _CUDA_STD___FUNCTIONAL_BIND_FRONT_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,16 +33,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __bind_front_op
 {
   template <class... _Args>
   _CCCL_API constexpr auto operator()(_Args&&... __args) const
-    noexcept(noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...)))
-      -> decltype(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...))
+    noexcept(noexcept(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...)))
+      -> decltype(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...))
   {
-    return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...);
+    return ::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...);
   }
 };
 
@@ -63,11 +63,11 @@ _CCCL_API constexpr auto
 bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tuple<decay_t<_Args>...>, _Args&&...>)
 {
   return __bind_front_t<decay_t<_Fn>, decay_t<_Args>...>(
-    _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_BIND_FRONT_H
+#endif // _CUDA_STD___FUNCTIONAL_BIND_FRONT_H

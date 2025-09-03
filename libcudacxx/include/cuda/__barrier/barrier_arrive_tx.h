@@ -36,16 +36,16 @@
 
 #    include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
 [[nodiscard]] _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
   barrier<thread_scope_block>& __b,
-  _CUDA_VSTD::ptrdiff_t __arrive_count_update,
-  _CUDA_VSTD::ptrdiff_t __transaction_count_update)
+  ::cuda::std::ptrdiff_t __arrive_count_update,
+  ::cuda::std::ptrdiff_t __transaction_count_update)
 {
   _CCCL_ASSERT(
-    _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::barrier_native_handle(__b), _CUDA_DEVICE::address_space::shared),
+    ::cuda::device::is_address_from(::cuda::device::barrier_native_handle(__b), ::cuda::device::address_space::shared),
     "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
   _CCCL_ASSERT(__arrive_count_update <= (1 << 20) - 1, "Arrival count update cannot exceed 2^20 - 1.");
@@ -66,33 +66,33 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
     NV_PROVIDES_SM_90,
     (
 
-      auto __native_handle = _CUDA_DEVICE::barrier_native_handle(__b);
+      auto __native_handle = ::cuda::device::barrier_native_handle(__b);
       auto __bh            = ::__cvta_generic_to_shared(__native_handle);
       if (__arrive_count_update == 1) {
-        __token = _CUDA_VPTX::mbarrier_arrive_expect_tx(
-          _CUDA_VPTX::sem_release,
-          _CUDA_VPTX::scope_cta,
-          _CUDA_VPTX::space_shared,
+        __token = ::cuda::ptx::mbarrier_arrive_expect_tx(
+          ::cuda::ptx::sem_release,
+          ::cuda::ptx::scope_cta,
+          ::cuda::ptx::space_shared,
           __native_handle,
           __transaction_count_update);
       } else {
         asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
             :
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+            : "r"(static_cast<::cuda::std::uint32_t>(__bh)),
+              "r"(static_cast<::cuda::std::uint32_t>(__transaction_count_update))
             : "memory");
-        __token = _CUDA_VPTX::mbarrier_arrive(
-          _CUDA_VPTX::sem_release,
-          _CUDA_VPTX::scope_cta,
-          _CUDA_VPTX::space_shared,
+        __token = ::cuda::ptx::mbarrier_arrive(
+          ::cuda::ptx::sem_release,
+          ::cuda::ptx::scope_cta,
+          ::cuda::ptx::space_shared,
           __native_handle,
           __arrive_count_update);
       }),
-    (_CUDA_DEVICE::__cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();));
+    (::cuda::device::__cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();));
   return __token;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #    include <cuda/std/__cccl/epilogue.h>
 

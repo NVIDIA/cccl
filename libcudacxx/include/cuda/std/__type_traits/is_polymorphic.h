@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_POLYMORPHIC_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_POLYMORPHIC_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_POLYMORPHIC_H
+#define _CUDA_STD___TYPE_TRAITS_IS_POLYMORPHIC_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
 
@@ -42,7 +42,7 @@ inline constexpr bool is_polymorphic_v = _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp);
 
 template <typename _Tp>
 _CCCL_HOST_DEVICE char& __is_polymorphic_impl(
-  enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
+  enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(::cuda::std::declval<_Tp*>())) != 0, int>);
 template <typename _Tp>
 _CCCL_HOST_DEVICE __two& __is_polymorphic_impl(...);
 
@@ -56,8 +56,8 @@ inline constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_POLYMORPHIC_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_POLYMORPHIC_H

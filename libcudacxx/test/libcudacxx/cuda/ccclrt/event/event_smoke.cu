@@ -24,9 +24,9 @@ cuda::event_ref fn_takes_event_ref(cuda::event_ref ref)
 } // namespace test
 } // namespace
 
-static_assert(!_CUDA_VSTD::is_default_constructible_v<cuda::event_ref>);
-static_assert(!_CUDA_VSTD::is_default_constructible_v<cuda::event>);
-static_assert(!_CUDA_VSTD::is_default_constructible_v<cuda::timed_event>);
+static_assert(!::cuda::std::is_default_constructible_v<cuda::event_ref>);
+static_assert(!::cuda::std::is_default_constructible_v<cuda::event>);
+static_assert(!::cuda::std::is_default_constructible_v<cuda::timed_event>);
 
 C2H_CCCLRT_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
 {
@@ -128,7 +128,7 @@ C2H_CCCLRT_TEST("can take the difference of two timed_event objects", "[event]")
   CCCLRT_REQUIRE(*i == 42);
   auto elapsed = end - start;
   CCCLRT_REQUIRE(elapsed.count() >= 0);
-  STATIC_REQUIRE(_CUDA_VSTD::is_same_v<decltype(elapsed), _CUDA_VSTD::chrono::nanoseconds>);
+  STATIC_REQUIRE(::cuda::std::is_same_v<decltype(elapsed), ::cuda::std::chrono::nanoseconds>);
   stream.sync();
 }
 

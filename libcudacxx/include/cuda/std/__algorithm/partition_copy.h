@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_PARTITION_COPY_H
-#define _LIBCUDACXX___ALGORITHM_PARTITION_COPY_H
+#ifndef _CUDA_STD___ALGORITHM_PARTITION_COPY_H
+#define _CUDA_STD___ALGORITHM_PARTITION_COPY_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator1, class _OutputIterator2, class _Predicate>
@@ -52,8 +52,8 @@ _CCCL_API constexpr pair<_OutputIterator1, _OutputIterator2> partition_copy(
   return pair<_OutputIterator1, _OutputIterator2>(__out_true, __out_false);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_PARTITION_COPY_H
+#endif // _CUDA_STD___ALGORITHM_PARTITION_COPY_H

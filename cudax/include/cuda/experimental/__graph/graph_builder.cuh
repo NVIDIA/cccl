@@ -81,7 +81,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
   graph_builder(int) = delete;
 
   /// Disallow construction from `nullptr`.
-  graph_builder(_CUDA_VSTD::nullptr_t) = delete;
+  graph_builder(::cuda::std::nullptr_t) = delete;
 
   //! \brief Constructs an uninitialized CUDA graph.
   //! \param __dev The device on which graph nodes will execute, default to device 0.
@@ -96,7 +96,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
   //! \throws None
   //! \post `__other.get() == nullptr`
   _CCCL_HOST_API constexpr graph_builder(graph_builder&& __other) noexcept
-      : graph_builder_ref(_CUDA_VSTD::exchange(__other.__graph_, nullptr), __other.__dev_)
+      : graph_builder_ref(::cuda::std::exchange(__other.__graph_, nullptr), __other.__dev_)
   {}
 
   //! \brief Copy constructor for `graph_builder`.
@@ -154,9 +154,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
   //! \return The `cudaGraph_t` handle, leaving this object in a null state.
   //! \throws None
   //! \post `get() == nullptr`
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto release() noexcept -> cudaGraph_t
   {
-    return _CUDA_VSTD::exchange(__graph_, nullptr);
+    return ::cuda::std::exchange(__graph_, nullptr);
   }
 
   //! \brief Resets the `graph_builder` object, destroying the underlying CUDA graph object.
@@ -164,7 +164,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
   //! \post `get() == nullptr`
   _CCCL_HOST_API constexpr void reset() noexcept
   {
-    if (auto __graph = _CUDA_VSTD::exchange(__graph_, nullptr))
+    if (auto __graph = ::cuda::std::exchange(__graph_, nullptr))
     {
       _CCCL_ASSERT_CUDA_API(cudaGraphDestroy, "cudaGraphDestroy failed", __graph);
     }

@@ -26,6 +26,7 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/forward_like.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>
 #include <cuda/experimental/__execution/stream/adaptor.cuh>
@@ -43,7 +44,7 @@ struct __starts_on_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_stream_fn
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API auto operator()(const _Sndr& __sndr, _CUDA_VSTD::__ignore_t) const
+    [[nodiscard]] _CCCL_API auto operator()(const _Sndr& __sndr, ::cuda::std::__ignore_t) const
     {
       // __sndr is a write_env sender (see __mk_sndr_base below), which contains an
       // environment that contains the stream scheduler, from which we can obtain the
@@ -61,23 +62,25 @@ struct __starts_on_t
     // write_env to let _Sndr and its children know that they are running on the stream
     // scheduler. We construct the adaptor with a __get_stream_fn that knows how to obtain
     // the stream from the write_env sender.
-    return __stream::__adapt(write_env(static_cast<_Sndr&&>(__sndr), __sch_env_t{__sch}), __get_stream_fn{});
+    return __stream::__adapt(write_env(static_cast<_Sndr&&>(__sndr), __mk_sch_env(__sch)), __get_stream_fn{});
   }
 
   template <class _Sch, class _Sndr>
   using __sndr_base_t = decltype(__starts_on_t::__mk_sndr_base(declval<_Sch>(), declval<_Sndr>()));
 
   template <class _Sch, class _Sndr>
-  using __with_sch_t = _CUDA_VSTD::__call_result_t<write_env_t, _Sndr, __sch_env_t<_Sch>>;
+  using __with_sch_t = __call_result_t<write_env_t, _Sndr, __call_result_t<__mk_sch_env_t, _Sch>>;
 
   // Wrap the sender returned from __mk_sndr_base in a type that hides the complexity of
   // the sender's type name. This results in more readable diagnostics.
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __stream::__sndr_t<__with_sch_t<_Sch, _Sndr>, __get_stream_fn>
   {
+    // BUGBUG NO this is a wrong use of __mk_sch_env. it needs to be passed an
+    // environment. turn this into a transform_sender.
     _CCCL_API explicit constexpr __sndr_t(_Sch __sch, _Sndr __sndr)
         : __stream::__sndr_t<__with_sch_t<_Sch, _Sndr>, __get_stream_fn>{
-            {}, {}, write_env(static_cast<_Sndr&&>(__sndr), __sch_env_t{__sch})}
+            {}, {}, write_env(static_cast<_Sndr&&>(__sndr), __mk_sch_env(__sch))}
     {}
   };
 
@@ -85,10 +88,10 @@ struct __starts_on_t
   // It returns a custom sender that knows how to start the child sender on the specified
   // stream.
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) const
+  [[nodiscard]] _CCCL_API auto operator()(_Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     auto& [__ign0, __sch, __child] = __sndr;
-    return __sndr_t{__sch, _CUDA_VSTD::forward_like<_Sndr>(__child)};
+    return __sndr_t{__sch, ::cuda::std::forward_like<_Sndr>(__child)};
   }
 };
 } // namespace __stream

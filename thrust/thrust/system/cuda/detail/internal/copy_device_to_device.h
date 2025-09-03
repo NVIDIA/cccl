@@ -61,6 +61,9 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
+  // FIXME(bgruber): We must not check is_trivially_relocatable, since we do not semantically relocate, but copy (the
+  // source remains valid). This is relevant for types like `unique_ptr`, which are trivially relocatable, but not
+  // trivially copyable.
   if constexpr (is_indirectly_trivially_relocatable_to<InputIt, OutputIt>::value)
   {
     using InputTy = thrust::detail::it_value_t<InputIt>;

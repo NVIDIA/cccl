@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
-#define _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
+#ifndef _CUDA_STD___TUPLE_SFINAE_HELPERS_H
+#define _CUDA_STD___TUPLE_SFINAE_HELPERS_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool... _Preds>
 struct __all_dummy;
@@ -262,8 +262,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl_sfinae_helper<_Impl, false, false
   __tuple_impl_sfinae_helper& operator=(__tuple_impl_sfinae_helper&&)      = delete;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
+#endif // _CUDA_STD___TUPLE_SFINAE_HELPERS_H

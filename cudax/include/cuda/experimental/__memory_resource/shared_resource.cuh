@@ -52,15 +52,15 @@ namespace cuda::experimental
 template <class _Resource>
 struct shared_resource : __copy_default_queries<_Resource>
 {
-  static_assert(_CUDA_VMR::synchronous_resource<_Resource>, "");
+  static_assert(::cuda::mr::synchronous_resource<_Resource>, "");
 
   //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
   //! that has been constructed with arguments \c __args. The \c _Resource object is
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
   template <class... _Args>
-  explicit shared_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args)
-      : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
+  explicit shared_resource(::cuda::std::in_place_type_t<_Resource>, _Args&&... __args)
+      : __control_block(new _Control_block{_Resource{::cuda::std::forward<_Args>(__args)...}, 1})
   {}
 
   //! @brief Copy-constructs a \c shared_resource object resulting in an copy that shares
@@ -71,7 +71,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   {
     if (__control_block)
     {
-      __control_block->__ref_count.fetch_add(1, _CUDA_VSTD::memory_order_relaxed);
+      __control_block->__ref_count.fetch_add(1, ::cuda::std::memory_order_relaxed);
     }
   }
 
@@ -80,14 +80,14 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @param __other The \c shared_resource object to move from.
   //! @post \c __other is left in a valid but unspecified state.
   shared_resource(shared_resource&& __other) noexcept
-      : __control_block(_CUDA_VSTD::exchange(__other.__control_block, nullptr))
+      : __control_block(::cuda::std::exchange(__other.__control_block, nullptr))
   {}
 
   //! @brief Releases the reference held by this \c shared_resource object. If this is the
   //! last reference to the wrapped resource, the resource is deleted.
   ~shared_resource()
   {
-    if (__control_block && __control_block->__ref_count.fetch_sub(1, _CUDA_VSTD::memory_order_acq_rel) == 1)
+    if (__control_block && __control_block->__ref_count.fetch_sub(1, ::cuda::std::memory_order_acq_rel) == 1)
     {
       delete __control_block;
     }
@@ -116,7 +116,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   {
     if (this != &__other)
     {
-      shared_resource(_CUDA_VSTD::move(__other)).swap(*this);
+      shared_resource(::cuda::std::move(__other)).swap(*this);
     }
 
     return *this;
@@ -126,7 +126,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @param __other The other \c shared_resource.
   void swap(shared_resource& __other) noexcept
   {
-    _CUDA_VSTD::swap(__control_block, __other.__control_block);
+    ::cuda::std::swap(__control_block, __other.__control_block);
   }
 
   //! @brief Swaps a \c shared_resource with another one.
@@ -140,7 +140,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
   {
     return __control_block->__resource.allocate_sync(__bytes, __alignment);
   }
@@ -149,7 +149,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
+  void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t)) noexcept
   {
     __control_block->__resource.deallocate_sync(__ptr, __bytes, __alignment);
   }
@@ -163,7 +163,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @note The caller is responsible for ensuring that the memory is not accessed until the
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
-  _CCCL_REQUIRES(_CUDA_VMR::resource<_ThisResource>)
+  _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
   [[nodiscard]] void* allocate(::cuda::stream_ref __stream, size_t __bytes, size_t __alignment)
   {
     return this->__control_block->__resource.allocate(__stream, __bytes, __alignment);
@@ -178,7 +178,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! @note The caller is responsible for ensuring that the memory is not accessed after the
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
-  _CCCL_REQUIRES(_CUDA_VMR::resource<_ThisResource>)
+  _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
   void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment)
   {
     this->__control_block->__resource.deallocate(__stream, __ptr, __bytes, __alignment);
@@ -231,7 +231,7 @@ private:
   struct _Control_block
   {
     _Resource __resource;
-    _CUDA_VSTD::atomic<int> __ref_count;
+    ::cuda::std::atomic<int> __ref_count;
   };
 
   _Control_block* __control_block;
@@ -243,9 +243,9 @@ private:
 //! Factory function for `shared_resource` objects
 //! -----------------------------------------------
 //!
-//! ``make_any_resource`` constructs an :ref:`shared_resource <cudax-memory-resource-shared-resource>` object that wraps
-//! a newly constructed instance of the given resource type. The resource type must satisfy the ``cuda::mr::resource``
-//! concept and provide all of the properties specified in the template parameter pack.
+//! ``make_any_synchronous_resource`` constructs an :ref:`shared_resource <cudax-memory-resource-shared-resource>`
+//! object that wraps a newly constructed instance of the given resource type. The resource type must satisfy the
+//! ``cuda::mr::resource`` concept and provide all of the properties specified in the template parameter pack.
 //!
 //! @param __args The arguments used to construct the instance of the resource type.
 //!
@@ -253,9 +253,9 @@ private:
 template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
-  static_assert(_CUDA_VMR::synchronous_resource<_Resource>,
+  static_assert(::cuda::mr::synchronous_resource<_Resource>,
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
-  return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
+  return shared_resource<_Resource>{::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
 }
 
 } // namespace cuda::experimental

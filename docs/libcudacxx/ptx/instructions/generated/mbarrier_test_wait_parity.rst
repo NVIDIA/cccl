@@ -3,7 +3,7 @@
 
 mbarrier.test_wait.parity.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.  PTX ISA 71, SM_80
    template <typename = void>
@@ -13,7 +13,7 @@ mbarrier.test_wait.parity.shared.b64
 
 mbarrier.test_wait.parity.acquire.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.parity.sem.scope.shared::cta.b64 waitComplete, [addr], phaseParity;                  // 4.  PTX ISA 80, SM_90
    // .sem       = { .acquire }
@@ -27,7 +27,7 @@ mbarrier.test_wait.parity.acquire.cta.shared::cta.b64
 
 mbarrier.test_wait.parity.acquire.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.parity.sem.scope.shared::cta.b64 waitComplete, [addr], phaseParity;                  // 4.  PTX ISA 80, SM_90
    // .sem       = { .acquire }
@@ -41,7 +41,7 @@ mbarrier.test_wait.parity.acquire.cluster.shared::cta.b64
 
 mbarrier.test_wait.parity.relaxed.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.parity.sem.scope.shared::cta.b64 waitComplete, [addr], phaseParity; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -55,7 +55,7 @@ mbarrier.test_wait.parity.relaxed.cta.shared::cta.b64
 
 mbarrier.test_wait.parity.relaxed.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.parity.sem.scope.shared::cta.b64 waitComplete, [addr], phaseParity; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // is_nothrow_destructible
 
@@ -51,7 +51,7 @@ struct __cccl_is_nothrow_destructible : false_type
 
 template <class _Tp>
 struct __cccl_is_nothrow_destructible<_Tp, true>
-    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp())>
+    : public integral_constant<bool, noexcept(::cuda::std::declval<_Tp>().~_Tp())>
 {};
 
 template <class _Tp>
@@ -75,8 +75,8 @@ inline constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_Tp>::
 
 #endif // !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_DESTRUCTIBLE_H

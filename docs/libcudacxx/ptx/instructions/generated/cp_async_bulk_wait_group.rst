@@ -3,7 +3,7 @@
 
 cp.async.bulk.wait_group
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.wait_group N; // PTX ISA 80, SM_90
    template <int N32>
@@ -12,7 +12,7 @@ cp.async.bulk.wait_group
 
 cp.async.bulk.wait_group.read
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.bulk.wait_group.read N; // PTX ISA 80, SM_90
    template <int N32>

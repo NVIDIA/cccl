@@ -207,11 +207,11 @@ struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
 } // namespace std
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
 struct numeric_limits<custom_numeric> : numeric_limits<int>
 {};
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 using NumericTypes = unittest::type_list<
   char,

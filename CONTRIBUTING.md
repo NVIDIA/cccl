@@ -181,6 +181,12 @@ We encourage users who want to debug device code to install the [Nsight Visual S
 2. Create a pull request targeting the `main` branch of the original CCCL repository. Refer to [GitHub's documentation](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) for more information on creating a pull request.
 3. Describe the purpose and context of the changes in the pull request description.
 
+### Documentation Preview
+
+Documentation previews allow reviewers to see how changes will appear on the live documentation site before merging. Previews are automatically generated for all pull requests and updated with every commit. To skip building documentation for a PR, include `[skip-docs]` in your commit message.
+
+The preview URL will be posted as a comment on your PR and automatically cleaned up when the PR is closed.
+
 ## Code Formatting (pre-commit hooks)
 
 CCCL uses [pre-commit](https://pre-commit.com/) to execute all code linters and formatters. These

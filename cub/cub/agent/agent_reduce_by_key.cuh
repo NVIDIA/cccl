@@ -164,7 +164,7 @@ template <typename AgentReduceByKeyPolicyT,
 struct AgentReduceByKey
 {
   // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
-  static constexpr bool is_streaming_invocation = !_CUDA_VSTD::is_same_v<StreamingContextT, NullType>;
+  static constexpr bool is_streaming_invocation = !::cuda::std::is_same_v<StreamingContextT, NullType>;
 
   //---------------------------------------------------------------------
   // Types and constants

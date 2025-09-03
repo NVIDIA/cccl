@@ -35,14 +35,14 @@
 
 #    include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
 _CCCL_DEVICE inline void
-barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __transaction_count_update)
+barrier_expect_tx(barrier<thread_scope_block>& __b, ::cuda::std::ptrdiff_t __transaction_count_update)
 {
   _CCCL_ASSERT(
-    _CUDA_DEVICE::is_address_from(_CUDA_DEVICE::barrier_native_handle(__b), _CUDA_DEVICE::address_space::shared),
+    ::cuda::device::is_address_from(::cuda::device::barrier_native_handle(__b), ::cuda::device::address_space::shared),
     "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
@@ -58,13 +58,13 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
   // On architectures pre-sm90, arrive_tx is not supported.
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (auto __bh = ::__cvta_generic_to_shared(_CUDA_DEVICE::barrier_native_handle(__b));
-     asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;" : : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-         "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update)) : "memory");),
-    (_CUDA_DEVICE::__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
+    (auto __bh = ::__cvta_generic_to_shared(::cuda::device::barrier_native_handle(__b));
+     asm("mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;" : : "r"(static_cast<::cuda::std::uint32_t>(__bh)),
+         "r"(static_cast<::cuda::std::uint32_t>(__transaction_count_update)) : "memory");),
+    (::cuda::device::__cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #    include <cuda/std/__cccl/epilogue.h>
 

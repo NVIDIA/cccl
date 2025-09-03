@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! Uses static_cast to cast a value \p __from to type \p _To. \p _To needs to be constructible from \p _From, and \p
 //! implement operator!=. This function is intended to show that narrowing and a potential change of the value is
@@ -41,9 +41,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named">ES.49</a>.
 template <class _To, class _From>
 [[nodiscard]] _CCCL_API constexpr _To
-narrow_cast(_From&& __from) noexcept(noexcept(static_cast<_To>(_CUDA_VSTD::forward<_From>(__from))))
+narrow_cast(_From&& __from) noexcept(noexcept(static_cast<_To>(::cuda::std::forward<_From>(__from))))
 {
-  return static_cast<_To>(_CUDA_VSTD::forward<_From>(__from));
+  return static_cast<_To>(::cuda::std::forward<_From>(__from));
 }
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -58,9 +58,9 @@ struct narrowing_error : ::std::runtime_error
 [[noreturn]] _CCCL_API inline void __throw_narrowing_error()
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw narrowing_error{};), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw narrowing_error{};), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
@@ -72,8 +72,8 @@ struct narrowing_error : ::std::runtime_error
 template <class _To, class _From>
 [[nodiscard]] _CCCL_API constexpr _To narrow(_From __from)
 {
-  static_assert(_CUDA_VSTD::is_constructible_v<_From, _To>);
-  static_assert(_CUDA_VSTD::is_constructible_v<_To, _From>);
+  static_assert(::cuda::std::is_constructible_v<_From, _To>);
+  static_assert(::cuda::std::is_constructible_v<_To, _From>);
 
   const auto __converted = static_cast<_To>(__from);
   if (static_cast<_From>(__converted) != __from)
@@ -81,16 +81,16 @@ template <class _To, class _From>
     ::cuda::__throw_narrowing_error();
   }
 
-  if constexpr (_CUDA_VSTD::is_arithmetic_v<_From>)
+  if constexpr (::cuda::std::is_arithmetic_v<_From>)
   {
-    if constexpr (_CUDA_VSTD::is_signed_v<_From> && !_CUDA_VSTD::is_signed_v<_To>)
+    if constexpr (::cuda::std::is_signed_v<_From> && !::cuda::std::is_signed_v<_To>)
     {
       if (__from < _From{})
       {
         ::cuda::__throw_narrowing_error();
       }
     }
-    if constexpr (!_CUDA_VSTD::is_signed_v<_From> && _CUDA_VSTD::is_signed_v<_To>)
+    if constexpr (!::cuda::std::is_signed_v<_From> && ::cuda::std::is_signed_v<_To>)
     {
       if (__converted < _To{})
       {
@@ -101,7 +101,7 @@ template <class _To, class _From>
   return __converted;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

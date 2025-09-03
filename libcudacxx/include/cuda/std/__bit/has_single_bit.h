@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_HAS_SINGLE_BIT_H
-#define _LIBCUDACXX___BIT_HAS_SINGLE_BIT_H
+#ifndef _CUDA_STD___BIT_HAS_SINGLE_BIT_H
+#define _CUDA_STD___BIT_HAS_SINGLE_BIT_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,17 +27,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool has_single_bit(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::popcount(__t) == 1;
+  return ::cuda::std::popcount(__t) == 1;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_HAS_SINGLE_BIT_H
+#endif // _CUDA_STD___BIT_HAS_SINGLE_BIT_H

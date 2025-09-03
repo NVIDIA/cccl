@@ -275,7 +275,7 @@ C++20
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION
 
 #  ifdef __cpp_lib_variant
 
@@ -292,7 +292,7 @@ public:
 };
 #  endif // !__cpp_lib_variant
 
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+_CCCL_END_NAMESPACE_CUDA_STD_NOVERSION
 
 #  include <cuda/std/__cccl/epilogue.h>
 
@@ -300,15 +300,14 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[noreturn]] _CCCL_API inline void __throw_bad_variant_access()
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_variant_access();), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::std::bad_variant_access();), (::cuda::std::terminate();))
 #else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
 
@@ -360,7 +359,7 @@ variant_alternative<_Ip, const volatile _Tp> : add_cv<variant_alternative_t<_Ip,
 template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
 {
-  static_assert(_Ip < sizeof...(_Types), "Index out of bounds in _CUDA_VSTD::variant_alternative<>");
+  static_assert(_Ip < sizeof...(_Types), "Index out of bounds in ::cuda::std::variant_alternative<>");
   using type = __type_index_c<_Ip, _Types...>;
 };
 
@@ -408,13 +407,13 @@ _CCCL_API constexpr const variant<_Types...>& __as_variant(const variant<_Types.
 template <class... _Types>
 _CCCL_API constexpr variant<_Types...>&& __as_variant(variant<_Types...>&& __vs) noexcept
 {
-  return _CUDA_VSTD::move(__vs);
+  return ::cuda::std::move(__vs);
 }
 
 template <class... _Types>
 _CCCL_API constexpr const variant<_Types...>&& __as_variant(const variant<_Types...>&& __vs) noexcept
 {
-  return _CUDA_VSTD::move(__vs);
+  return ::cuda::std::move(__vs);
 }
 
 namespace __find_detail
@@ -517,13 +516,13 @@ struct __union
   template <class _Vp>
   _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v, in_place_index_t<0>)
   {
-    return _CUDA_VSTD::forward<_Vp>(__v).__head;
+    return ::cuda::std::forward<_Vp>(__v).__head;
   }
 
   template <class _Vp, size_t _Ip>
   _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v, in_place_index_t<_Ip>)
   {
-    return __get_alt(_CUDA_VSTD::forward<_Vp>(__v).__tail, in_place_index<_Ip - 1>);
+    return __get_alt(::cuda::std::forward<_Vp>(__v).__tail, in_place_index<_Ip - 1>);
   }
 };
 
@@ -532,7 +531,7 @@ struct __base
   template <size_t _Ip, class _Vp>
   _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v)
   {
-    return __union::__get_alt(_CUDA_VSTD::forward<_Vp>(__v).__data, in_place_index<_Ip>);
+    return __union::__get_alt(::cuda::std::forward<_Vp>(__v).__data, in_place_index<_Ip>);
   }
 };
 
@@ -541,7 +540,7 @@ struct __variant
   template <size_t _Ip, class _Vp>
   _CCCL_API static constexpr auto&& __get_alt(_Vp&& __v)
   {
-    return __base::__get_alt<_Ip>(_CUDA_VSTD::forward<_Vp>(__v).__impl_);
+    return __base::__get_alt<_Ip>(::cuda::std::forward<_Vp>(__v).__impl_);
   }
 };
 
@@ -589,9 +588,9 @@ struct __variant
     _Visitor&& __visitor,
     _Vs&&... __vs)
   {
-    return _CUDA_VSTD::__invoke(
-      _CUDA_VSTD::forward<_Visitor>(__visitor),
-      __access::__base::__get_alt<_ProcessedIndices>(_CUDA_VSTD::forward<_Vs>(__vs).__impl_)...);
+    return ::cuda::std::__invoke(
+      ::cuda::std::forward<_Visitor>(__visitor),
+      __access::__base::__get_alt<_ProcessedIndices>(::cuda::std::forward<_Vs>(__vs).__impl_)...);
   }
 
   template <size_t _CurrentIndex,
@@ -616,16 +615,16 @@ struct __variant
         integer_sequence<size_t, _ProcessedIndices..., _CurrentIndex>{},
         integer_sequence<size_t, _UnprocessedIndices...>{},
         __next_index,
-        _CUDA_VSTD::forward<_Visitor>(__visitor),
-        _CUDA_VSTD::forward<_Vs>(__vs)...);
+        ::cuda::std::forward<_Visitor>(__visitor),
+        ::cuda::std::forward<_Vs>(__vs)...);
     }
 
     return __visit_impl(
       integer_sequence<size_t, _ProcessedIndices...>{},
       integer_sequence<size_t, _CurrentIndex - 1, _UnprocessedIndices...>{},
       __current_index,
-      _CUDA_VSTD::forward<_Visitor>(__visitor),
-      _CUDA_VSTD::forward<_Vs>(__vs)...);
+      ::cuda::std::forward<_Visitor>(__visitor),
+      ::cuda::std::forward<_Vs>(__vs)...);
   }
 
   _CCCL_BEGIN_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
@@ -647,8 +646,8 @@ struct __variant
         integer_sequence<size_t, _ProcessedIndices..., 0>{},
         integer_sequence<size_t, _UnprocessedIndices...>{},
         __next_index,
-        _CUDA_VSTD::forward<_Visitor>(__visitor),
-        _CUDA_VSTD::forward<_Vs>(__vs)...);
+        ::cuda::std::forward<_Visitor>(__visitor),
+        ::cuda::std::forward<_Vs>(__vs)...);
     }
     _CCCL_UNREACHABLE();
   }
@@ -665,8 +664,8 @@ struct __variant
       integer_sequence<size_t>{},
       integer_sequence<size_t, (remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
-      __make_value_visitor(_CUDA_VSTD::forward<_Visitor>(__visitor)),
-      _CUDA_VSTD::forward<_Vs>(__vs)...);
+      __make_value_visitor(::cuda::std::forward<_Visitor>(__visitor)),
+      ::cuda::std::forward<_Vs>(__vs)...);
   }
 
   template <class _Rp, class _Visitor, class... _Vs>
@@ -677,8 +676,8 @@ struct __variant
       integer_sequence<size_t>{},
       integer_sequence<size_t, (remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
-      __make_value_visitor<_Rp>(_CUDA_VSTD::forward<_Visitor>(__visitor)),
-      _CUDA_VSTD::forward<_Vs>(__vs)...);
+      __make_value_visitor<_Rp>(::cuda::std::forward<_Visitor>(__visitor)),
+      ::cuda::std::forward<_Vs>(__vs)...);
   }
 
 private:
@@ -694,9 +693,9 @@ private:
     template <class... _Alts>
     _CCCL_API constexpr decltype(auto) operator()(_Alts&&... __alts) const
     {
-      __std_visit_exhaustive_visitor_check<_Visitor, decltype((_CUDA_VSTD::forward<_Alts>(__alts).__value))...>();
-      return _CUDA_VSTD::__invoke(
-        _CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Alts>(__alts).__value...);
+      __std_visit_exhaustive_visitor_check<_Visitor, decltype((::cuda::std::forward<_Alts>(__alts).__value))...>();
+      return ::cuda::std::__invoke(
+        ::cuda::std::forward<_Visitor>(__visitor), ::cuda::std::forward<_Alts>(__alts).__value...);
     }
     _Visitor&& __visitor;
   };
@@ -707,9 +706,9 @@ private:
     template <class... _Alts>
     _CCCL_API constexpr _Rp operator()(_Alts&&... __alts) const
     {
-      __std_visit_exhaustive_visitor_check<_Visitor, decltype((_CUDA_VSTD::forward<_Alts>(__alts).__value))...>();
-      return _CUDA_VSTD::__invoke(
-        _CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Alts>(__alts).__value...);
+      __std_visit_exhaustive_visitor_check<_Visitor, decltype((::cuda::std::forward<_Alts>(__alts).__value))...>();
+      return ::cuda::std::__invoke(
+        ::cuda::std::forward<_Visitor>(__visitor), ::cuda::std::forward<_Alts>(__alts).__value...);
     }
     _Visitor&& __visitor;
   };
@@ -720,8 +719,8 @@ private:
     template <class... _Alts>
     _CCCL_API constexpr void operator()(_Alts&&... __alts) const
     {
-      __std_visit_exhaustive_visitor_check<_Visitor, decltype((_CUDA_VSTD::forward<_Alts>(__alts).__value))...>();
-      _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Alts>(__alts).__value...);
+      __std_visit_exhaustive_visitor_check<_Visitor, decltype((::cuda::std::forward<_Alts>(__alts).__value))...>();
+      ::cuda::std::__invoke(::cuda::std::forward<_Visitor>(__visitor), ::cuda::std::forward<_Alts>(__alts).__value...);
     }
     _Visitor&& __visitor;
   };
@@ -729,13 +728,13 @@ private:
   template <class _Visitor>
   _CCCL_API static constexpr auto __make_value_visitor(_Visitor&& __visitor)
   {
-    return __value_visitor<_Visitor>{_CUDA_VSTD::forward<_Visitor>(__visitor)};
+    return __value_visitor<_Visitor>{::cuda::std::forward<_Visitor>(__visitor)};
   }
 
   template <class _Rp, class _Visitor>
   _CCCL_API static constexpr auto __make_value_visitor(_Visitor&& __visitor)
   {
-    return __value_visitor_return_type<_Rp, _Visitor>{_CUDA_VSTD::forward<_Visitor>(__visitor)};
+    return __value_visitor_return_type<_Rp, _Visitor>{::cuda::std::forward<_Visitor>(__visitor)};
   }
 };
 
@@ -749,7 +748,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __alt
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _CCCL_API explicit constexpr __alt(in_place_t, _Args&&... __args)
-      : __value(_CUDA_VSTD::forward<_Args>(__args)...)
+      : __value(::cuda::std::forward<_Args>(__args)...)
   {}
   _CCCL_EXEC_CHECK_DISABLE
   constexpr __alt(const __alt&) = default;
@@ -789,12 +788,12 @@ public:                                                                         
                                                                                  \
   template <class... _Args>                                                      \
   _CCCL_API explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-      : __head(in_place, _CUDA_VSTD::forward<_Args>(__args)...)                  \
+      : __head(in_place, ::cuda::std::forward<_Args>(__args)...)                 \
   {}                                                                             \
                                                                                  \
   template <size_t _Ip, class... _Args>                                          \
   _CCCL_API explicit constexpr __union(in_place_index_t<_Ip>, _Args&&... __args) \
-      : __tail(in_place_index<_Ip - 1>, _CUDA_VSTD::forward<_Args>(__args)...)   \
+      : __tail(in_place_index<_Ip - 1>, ::cuda::std::forward<_Args>(__args)...)  \
   {}                                                                             \
                                                                                  \
   _CCCL_HIDE_FROM_ABI __union(const __union&)            = default;              \
@@ -838,7 +837,7 @@ public:
 
   template <size_t _Ip, class... _Args>
   _CCCL_API explicit constexpr __base(in_place_index_t<_Ip>, _Args&&... __args)
-      : __data(in_place_index<_Ip>, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __data(in_place_index<_Ip>, ::cuda::std::forward<_Args>(__args)...)
       , __index(_Ip)
   {}
 
@@ -860,7 +859,7 @@ protected:
 
   _CCCL_API constexpr auto&& __as_base() &&
   {
-    return _CUDA_VSTD::move(*this);
+    return ::cuda::std::move(*this);
   }
 
   _CCCL_API constexpr auto&& __as_base() const&
@@ -870,7 +869,7 @@ protected:
 
   _CCCL_API constexpr auto&& __as_base() const&&
   {
-    return _CUDA_VSTD::move(*this);
+    return ::cuda::std::move(*this);
   }
 
   _CCCL_API static constexpr size_t __size()
@@ -996,13 +995,13 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == _CurrentIndex)
     {
-      __construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
+      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
                      in_place,
-                     __access::__base::__get_alt<_CurrentIndex>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
+                     __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     __generic_construct_impl(
-      integral_constant<size_t, _CurrentIndex - 1>{}, __index, __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index, __lhs, ::cuda::std::forward<_Rhs>(__rhs));
   }
 
   template <class _Rhs>
@@ -1011,9 +1010,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
   {
     if (__index == 0)
     {
-      __construct_at(_CUDA_VSTD::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
+      __construct_at(::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
                      in_place,
-                     __access::__base::__get_alt<0>(_CUDA_VSTD::forward<_Rhs>(__rhs).__as_base()).__value);
+                     __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1028,7 +1027,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API inline static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    __construct_at(_CUDA_VSTD::addressof(__a), in_place, _CUDA_VSTD::forward<_Args>(__args)...);
+    __construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
@@ -1040,7 +1039,7 @@ protected:
     {
       constexpr size_t __np = remove_cvref_t<__ctor>::__size();
       __generic_construct_impl(
-        integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
+        integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, ::cuda::std::forward<_Rhs>(__rhs));
       __lhs.__index = static_cast<decltype(__lhs.__index)>(__rhs.index());
     }
   }
@@ -1074,7 +1073,7 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _CCCL_API inline __move_constructor(__move_constructor&& __that) noexcept(
     __all<is_nothrow_move_constructible_v<_Types>...>::value) : __move_constructor(__valueless_t{}) {
-    this->__generic_construct(*this, _CUDA_VSTD::move(__that));
+    this->__generic_construct(*this, ::cuda::std::move(__that));
   });
 
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_Unavailable, __move_constructor(__move_constructor&&) = delete;);
@@ -1128,10 +1127,10 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Tr
     {
       this->__assign_alt(
         __access::__base::__get_alt<_CurrentIndex>(this->__as_base()),
-        __access::__base::__get_alt<_CurrentIndex>(_CUDA_VSTD::forward<_Other>(__rhs).__as_base()).__value);
+        __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Other>(__rhs).__as_base()).__value);
       return;
     }
-    this->__generic_assign(integral_constant<size_t, _CurrentIndex - 1>{}, __index, _CUDA_VSTD::forward<_Other>(__rhs));
+    this->__generic_assign(integral_constant<size_t, _CurrentIndex - 1>{}, __index, ::cuda::std::forward<_Other>(__rhs));
   }
 
   template <class _Other>
@@ -1141,7 +1140,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Tr
     if (__index == 0)
     {
       this->__assign_alt(__access::__base::__get_alt<0>(this->__as_base()),
-                         __access::__base::__get_alt<0>(_CUDA_VSTD::forward<_Other>(__rhs).__as_base()).__value);
+                         __access::__base::__get_alt<0>(::cuda::std::forward<_Other>(__rhs).__as_base()).__value);
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
@@ -1156,7 +1155,8 @@ public:
   _CCCL_API inline auto& __emplace(_Args&&... __args)
   {
     this->__destroy();
-    auto& __res = this->__construct_alt(__access::__base::__get_alt<_Ip>(*this), _CUDA_VSTD::forward<_Args>(__args)...);
+    auto& __res =
+      this->__construct_alt(__access::__base::__get_alt<_Ip>(*this), ::cuda::std::forward<_Args>(__args)...);
     this->__index = _Ip;
     return __res;
   }
@@ -1171,11 +1171,11 @@ protected:
   {
     if (this->index() == _Ip)
     {
-      __a.__value = _CUDA_VSTD::forward<_Arg>(__arg);
+      __a.__value = ::cuda::std::forward<_Arg>(__arg);
     }
     else
     {
-      this->__emplace<_Ip>(_CUDA_VSTD::forward<_Arg>(__arg));
+      this->__emplace<_Ip>(::cuda::std::forward<_Arg>(__arg));
     }
   }
 
@@ -1188,11 +1188,11 @@ protected:
   {
     if (this->index() == _Ip)
     {
-      __a.__value = _CUDA_VSTD::forward<_Arg>(__arg);
+      __a.__value = ::cuda::std::forward<_Arg>(__arg);
     }
     else
     {
-      this->__emplace<_Ip>(_Tp(_CUDA_VSTD::forward<_Arg>(__arg)));
+      this->__emplace<_Ip>(_Tp(::cuda::std::forward<_Arg>(__arg)));
     }
   }
 
@@ -1210,7 +1210,7 @@ protected:
     else
     {
       constexpr size_t __np = remove_cvref_t<__assignment>::__size();
-      this->__generic_assign(integral_constant<size_t, __np - 1>{}, __that.index(), _CUDA_VSTD::forward<_That>(__that));
+      this->__generic_assign(integral_constant<size_t, __np - 1>{}, __that.index(), ::cuda::std::forward<_That>(__that));
     }
   }
 };
@@ -1244,7 +1244,7 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _CCCL_API inline __move_assignment&
   operator=(__move_assignment&& __that) noexcept(
     __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>::value) {
-    this->__generic_assign(_CUDA_VSTD::move(__that));
+    this->__generic_assign(::cuda::std::move(__that));
     return *this;
   });
 
@@ -1299,7 +1299,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_
   {
     if (__index == _CurrentIndex)
     {
-      using _CUDA_VSTD::swap;
+      using ::cuda::std::swap;
       swap(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base()).__value,
            __access::__base::__get_alt<_CurrentIndex>(__rhs.__as_base()).__value);
       return;
@@ -1312,7 +1312,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_
   {
     if (__index == 0)
     {
-      using _CUDA_VSTD::swap;
+      using ::cuda::std::swap;
       swap(__access::__base::__get_alt<0>(__lhs.__as_base()).__value,
            __access::__base::__get_alt<0>(__rhs.__as_base()).__value);
       return;
@@ -1331,7 +1331,7 @@ public:
   template <size_t _Ip, class _Arg>
   _CCCL_API inline void __assign(_Arg&& __arg)
   {
-    this->__assign_alt(__access::__base::__get_alt<_Ip>(*this), _CUDA_VSTD::forward<_Arg>(__arg));
+    this->__assign_alt(__access::__base::__get_alt<_Ip>(*this), ::cuda::std::forward<_Arg>(__arg));
   }
 
   _CCCL_API inline void __swap(__impl& __that)
@@ -1348,14 +1348,14 @@ public:
     else
     {
       __impl* __lhs = this;
-      __impl* __rhs = _CUDA_VSTD::addressof(__that);
+      __impl* __rhs = ::cuda::std::addressof(__that);
       if (__lhs->__move_nothrow() && !__rhs->__move_nothrow())
       {
-        _CUDA_VSTD::swap(__lhs, __rhs);
+        ::cuda::std::swap(__lhs, __rhs);
       }
-      __impl __tmp(_CUDA_VSTD::move(*__rhs));
-      this->__generic_construct(*__rhs, _CUDA_VSTD::move(*__lhs));
-      this->__generic_construct(*__lhs, _CUDA_VSTD::move(__tmp));
+      __impl __tmp(::cuda::std::move(*__rhs));
+      this->__generic_construct(*__rhs, ::cuda::std::move(*__lhs));
+      this->__generic_construct(*__lhs, ::cuda::std::move(__tmp));
     }
   }
 
@@ -1551,7 +1551,7 @@ public:
             class _Constraints = __match_construct<_Arg>,
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API constexpr variant(_Arg&& __arg) noexcept(_Constraints::__nothrow_constructible)
-      : __impl_(in_place_index<_Constraints::_Ip>, _CUDA_VSTD::forward<_Arg>(__arg))
+      : __impl_(in_place_index<_Constraints::_Ip>, ::cuda::std::forward<_Arg>(__arg))
   {}
 
   template <size_t _Ip, class... _Args>
@@ -1566,7 +1566,7 @@ public:
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API explicit constexpr variant(in_place_index_t<_Ip>,
                                        _Args&&... __args) noexcept(_Constraints::__nothrow_constructible)
-      : __impl_(in_place_index<_Ip>, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __impl_(in_place_index<_Ip>, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <size_t _Ip, class _Up, class... _Args>
@@ -1582,7 +1582,7 @@ public:
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API explicit constexpr variant(in_place_index_t<_Ip>, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     _Constraints::__nothrow_constructible)
-      : __impl_(in_place_index<_Ip>, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __impl_(in_place_index<_Ip>, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class _Tp,
@@ -1592,7 +1592,7 @@ public:
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API explicit constexpr variant(in_place_type_t<_Tp>,
                                        _Args&&... __args) noexcept(_Constraints::__nothrow_constructible)
-      : __impl_(in_place_index<_Ip>, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __impl_(in_place_index<_Ip>, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   template <class _Tp,
@@ -1603,7 +1603,7 @@ public:
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API explicit constexpr variant(in_place_type_t<_Tp>, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     _Constraints::__nothrow_constructible)
-      : __impl_(in_place_index<_Ip>, __il, _CUDA_VSTD::forward<_Args>(__args)...)
+      : __impl_(in_place_index<_Ip>, __il, ::cuda::std::forward<_Args>(__args)...)
   {}
 
   _CCCL_HIDE_FROM_ABI ~variant() = default;
@@ -1620,7 +1620,7 @@ public:
   template <class _Arg, class _Constraints = __match_assign<_Arg>, class = enable_if_t<_Constraints::__assignable>>
   _CCCL_API inline variant& operator=(_Arg&& __arg) noexcept(_Constraints::__nothrow_assignable)
   {
-    __impl_.template __assign<_Constraints::_Ip>(_CUDA_VSTD::forward<_Arg>(__arg));
+    __impl_.template __assign<_Constraints::_Ip>(::cuda::std::forward<_Arg>(__arg));
     return *this;
   }
 
@@ -1630,7 +1630,7 @@ public:
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API inline typename _Constraints::_Tp& emplace(_Args&&... __args)
   {
-    return __impl_.template __emplace<_Ip>(_CUDA_VSTD::forward<_Args>(__args)...);
+    return __impl_.template __emplace<_Ip>(::cuda::std::forward<_Args>(__args)...);
   }
 
   template <size_t _Ip,
@@ -1640,7 +1640,7 @@ public:
             class              = enable_if_t<_Constraints::__constructible>>
   _CCCL_API inline typename _Constraints::_Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
   {
-    return __impl_.template __emplace<_Ip>(__il, _CUDA_VSTD::forward<_Args>(__args)...);
+    return __impl_.template __emplace<_Ip>(__il, ::cuda::std::forward<_Args>(__args)...);
   }
 
   template <class _Tp,
@@ -1649,7 +1649,7 @@ public:
             enable_if_t<is_constructible_v<_Tp, _Args...>, int> = 0>
   _CCCL_API inline _Tp& emplace(_Args&&... __args)
   {
-    return __impl_.template __emplace<_Ip>(_CUDA_VSTD::forward<_Args>(__args)...);
+    return __impl_.template __emplace<_Ip>(::cuda::std::forward<_Args>(__args)...);
   }
 
   template <class _Tp,
@@ -1659,7 +1659,7 @@ public:
             enable_if_t<is_constructible_v<_Tp, initializer_list<_Up>&, _Args...>, int> = 0>
   _CCCL_API inline _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
   {
-    return __impl_.template __emplace<_Ip>(__il, _CUDA_VSTD::forward<_Args>(__args)...);
+    return __impl_.template __emplace<_Ip>(__il, ::cuda::std::forward<_Args>(__args)...);
   }
 
   _CCCL_API constexpr bool valueless_by_exception() const noexcept
@@ -1706,18 +1706,18 @@ _CCCL_API constexpr bool __holds_alternative(const variant<_Types...>& __v) noex
 template <class _Tp, class... _Types>
 _CCCL_API constexpr bool holds_alternative(const variant<_Types...>& __v) noexcept
 {
-  return _CUDA_VSTD::__holds_alternative<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::__holds_alternative<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <size_t _Ip, class _Vp>
 _CCCL_API constexpr auto&& __generic_get(_Vp&& __v)
 {
   using __variant_detail::__access::__variant;
-  if (!_CUDA_VSTD::__holds_alternative<_Ip>(__v))
+  if (!::cuda::std::__holds_alternative<_Ip>(__v))
   {
-    _CUDA_VSTD::__throw_bad_variant_access();
+    ::cuda::std::__throw_bad_variant_access();
   }
-  return __variant::__get_alt<_Ip>(_CUDA_VSTD::forward<_Vp>(__v)).__value;
+  return __variant::__get_alt<_Ip>(::cuda::std::forward<_Vp>(__v)).__value;
 }
 
 template <size_t _Ip, class... _Types>
@@ -1725,7 +1725,7 @@ _CCCL_API constexpr variant_alternative_t<_Ip, variant<_Types...>>& get(variant<
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
-  return _CUDA_VSTD::__generic_get<_Ip>(__v);
+  return ::cuda::std::__generic_get<_Ip>(__v);
 }
 
 template <size_t _Ip, class... _Types>
@@ -1733,7 +1733,7 @@ _CCCL_API constexpr variant_alternative_t<_Ip, variant<_Types...>>&& get(variant
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
-  return _CUDA_VSTD::__generic_get<_Ip>(_CUDA_VSTD::move(__v));
+  return ::cuda::std::__generic_get<_Ip>(::cuda::std::move(__v));
 }
 
 template <size_t _Ip, class... _Types>
@@ -1741,7 +1741,7 @@ _CCCL_API constexpr const variant_alternative_t<_Ip, variant<_Types...>>& get(co
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
-  return _CUDA_VSTD::__generic_get<_Ip>(__v);
+  return ::cuda::std::__generic_get<_Ip>(__v);
 }
 
 template <size_t _Ip, class... _Types>
@@ -1749,43 +1749,43 @@ _CCCL_API constexpr const variant_alternative_t<_Ip, variant<_Types...>>&& get(c
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
-  return _CUDA_VSTD::__generic_get<_Ip>(_CUDA_VSTD::move(__v));
+  return ::cuda::std::__generic_get<_Ip>(::cuda::std::move(__v));
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr _Tp& get(variant<_Types...>& __v)
 {
   static_assert(!is_void_v<_Tp>, "");
-  return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr _Tp&& get(variant<_Types...>&& __v)
 {
   static_assert(!is_void_v<_Tp>, "");
-  return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
+  return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(::cuda::std::move(__v));
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr const _Tp& get(const variant<_Types...>& __v)
 {
   static_assert(!is_void_v<_Tp>, "");
-  return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr const _Tp&& get(const variant<_Types...>&& __v)
 {
   static_assert(!is_void_v<_Tp>, "");
-  return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
+  return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(::cuda::std::move(__v));
 }
 
 template <size_t _Ip, class _Vp>
 _CCCL_API constexpr auto* __generic_get_if(_Vp* __v) noexcept
 {
   using __variant_detail::__access::__variant;
-  return __v && _CUDA_VSTD::__holds_alternative<_Ip>(*__v)
-         ? _CUDA_VSTD::addressof(__variant::__get_alt<_Ip>(*__v).__value)
+  return __v && ::cuda::std::__holds_alternative<_Ip>(*__v)
+         ? ::cuda::std::addressof(__variant::__get_alt<_Ip>(*__v).__value)
          : nullptr;
 }
 
@@ -1795,7 +1795,7 @@ get_if(variant<_Types...>* __v) noexcept
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
-  return _CUDA_VSTD::__generic_get_if<_Ip>(__v);
+  return ::cuda::std::__generic_get_if<_Ip>(__v);
 }
 
 template <size_t _Ip, class... _Types>
@@ -1804,21 +1804,21 @@ get_if(const variant<_Types...>* __v) noexcept
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
-  return _CUDA_VSTD::__generic_get_if<_Ip>(__v);
+  return ::cuda::std::__generic_get_if<_Ip>(__v);
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr add_pointer_t<_Tp> get_if(variant<_Types...>* __v) noexcept
 {
   static_assert(!is_void_v<_Tp>, "");
-  return _CUDA_VSTD::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr add_pointer_t<const _Tp> get_if(const variant<_Types...>* __v) noexcept
 {
   static_assert(!is_void_v<_Tp>, "");
-  return _CUDA_VSTD::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Operator>
@@ -1828,10 +1828,10 @@ struct __convert_to_bool
   _CCCL_API constexpr bool operator()(_T1&& __t1, _T2&& __t2) const
   {
     static_assert(
-      is_convertible_v<decltype(_Operator{}(_CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2))), bool>,
+      is_convertible_v<decltype(_Operator{}(::cuda::std::forward<_T1>(__t1), ::cuda::std::forward<_T2>(__t2))), bool>,
       "the relational operator does not return a type which is "
       "implicitly convertible to bool");
-    return _Operator{}(_CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2));
+    return _Operator{}(::cuda::std::forward<_T1>(__t1), ::cuda::std::forward<_T2>(__t2));
   }
 };
 
@@ -1843,7 +1843,7 @@ struct __variant_binary_visitor
   {
     return __visit(integral_constant<size_t, variant_size_v<_LeftVariant> - 1>{},
                    __index,
-                   _CUDA_VSTD::forward<_BinaryOp>(__op),
+                   ::cuda::std::forward<_BinaryOp>(__op),
                    __lhs,
                    __rhs);
   }
@@ -1859,10 +1859,10 @@ private:
   {
     if (__index == _CurrentIndex)
     {
-      return __op(_CUDA_VSTD::get<_CurrentIndex>(__lhs), _CUDA_VSTD::get<_CurrentIndex>(__rhs));
+      return __op(::cuda::std::get<_CurrentIndex>(__lhs), ::cuda::std::get<_CurrentIndex>(__rhs));
     }
     return __visit(
-      integral_constant<size_t, _CurrentIndex - 1>{}, __index, _CUDA_VSTD::forward<_BinaryOp>(__op), __lhs, __rhs);
+      integral_constant<size_t, _CurrentIndex - 1>{}, __index, ::cuda::std::forward<_BinaryOp>(__op), __lhs, __rhs);
   }
 
   template <class _BinaryOp, class _LeftVariant, class _RightVariant>
@@ -1875,11 +1875,11 @@ private:
   {
     if (__index == 0)
     {
-      return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
+      return __op(::cuda::std::get<0>(__lhs), ::cuda::std::get<0>(__rhs));
     }
     // We already checked that every variant has a value, so we should never reach this line
 #if _CCCL_COMPILER(MSVC) // MSVC needs this to be wrapped in a function or it will error
-    _CUDA_VSTD::unreachable();
+    ::cuda::std::unreachable();
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
     _CCCL_UNREACHABLE();
 #endif // !_CCCL_COMPILER(MSVC)
@@ -2040,29 +2040,30 @@ template <class... _Vs>
 _CCCL_API constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
   [[maybe_unused]] int __unused[] = {
-    (_CUDA_VSTD::__as_variant(__vs).valueless_by_exception() ? _CUDA_VSTD::__throw_bad_variant_access() : void(), 0)...,
+    (::cuda::std::__as_variant(__vs).valueless_by_exception() ? ::cuda::std::__throw_bad_variant_access() : void(),
+     0)...,
     0};
 }
 
 template <class _Visitor,
           class... _Vs,
-          typename = void_t<decltype(_CUDA_VSTD::__as_variant(_CUDA_VSTD::declval<_Vs>()))...>>
+          typename = void_t<decltype(::cuda::std::__as_variant(::cuda::std::declval<_Vs>()))...>>
 _CCCL_API constexpr decltype(auto) visit(_Visitor&& __visitor, _Vs&&... __vs)
 {
   using __variant_detail::__visitation::__variant;
-  _CUDA_VSTD::__throw_if_valueless(_CUDA_VSTD::forward<_Vs>(__vs)...);
-  return __variant::__visit_value(_CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Vs>(__vs)...);
+  ::cuda::std::__throw_if_valueless(::cuda::std::forward<_Vs>(__vs)...);
+  return __variant::__visit_value(::cuda::std::forward<_Visitor>(__visitor), ::cuda::std::forward<_Vs>(__vs)...);
 }
 
 template <class _Rp,
           class _Visitor,
           class... _Vs,
-          typename = void_t<decltype(_CUDA_VSTD::__as_variant(_CUDA_VSTD::declval<_Vs>()))...>>
+          typename = void_t<decltype(::cuda::std::__as_variant(::cuda::std::declval<_Vs>()))...>>
 _CCCL_API constexpr _Rp visit(_Visitor&& __visitor, _Vs&&... __vs)
 {
   using __variant_detail::__visitation::__variant;
-  _CUDA_VSTD::__throw_if_valueless(_CUDA_VSTD::forward<_Vs>(__vs)...);
-  return __variant::__visit_value<_Rp>(_CUDA_VSTD::forward<_Visitor>(__visitor), _CUDA_VSTD::forward<_Vs>(__vs)...);
+  ::cuda::std::__throw_if_valueless(::cuda::std::forward<_Vs>(__vs)...);
+  return __variant::__visit_value<_Rp>(::cuda::std::forward<_Visitor>(__visitor), ::cuda::std::forward<_Vs>(__vs)...);
 }
 
 template <class... _Types>
@@ -2107,34 +2108,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
     size_t __res = __v.valueless_by_exception()
                    ? 299792458 // Random value chosen by the universe upon creation
                    : __hash(integral_constant<size_t, sizeof...(_Types) - 1>{}, __v.index(), __v);
-    return _CUDA_VSTD::__hash_combine(__res, hash<size_t>{}(__v.index()));
+    return ::cuda::std::__hash_combine(__res, hash<size_t>{}(__v.index()));
   }
 };
 #endif // __cuda_std__
 
-// __unchecked_get is the same as _CUDA_VSTD::get, except, it is UB to use it
-// with the wrong type whereas _CUDA_VSTD::get will throw or returning nullptr.
-// This makes it faster than _CUDA_VSTD::get.
+// __unchecked_get is the same as ::cuda::std::get, except, it is UB to use it
+// with the wrong type whereas ::cuda::std::get will throw or returning nullptr.
+// This makes it faster than ::cuda::std::get.
 template <size_t _Ip, class _Vp>
 _CCCL_API constexpr auto&& __unchecked_get(_Vp&& __v) noexcept
 {
   using __variant_detail::__access::__variant;
-  return __variant::__get_alt<_Ip>(_CUDA_VSTD::forward<_Vp>(__v)).__value;
+  return __variant::__get_alt<_Ip>(::cuda::std::forward<_Vp>(__v)).__value;
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr auto&& __unchecked_get(const variant<_Types...>& __v) noexcept
 {
-  return _CUDA_VSTD::__unchecked_get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::__unchecked_get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 _CCCL_API constexpr auto&& __unchecked_get(variant<_Types...>& __v) noexcept
 {
-  return _CUDA_VSTD::__unchecked_get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
+  return ::cuda::std::__unchecked_get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

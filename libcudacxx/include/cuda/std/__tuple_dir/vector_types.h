@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
-#define _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#ifndef _CUDA_STD___TUPLE_VECTOR_TYPES_H
+#define _CUDA_STD___TUPLE_VECTOR_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  include <cuda/std/__floating_point/nvfp_types.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__tuple_dir/structured_bindings.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
@@ -35,16 +35,16 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 
-#  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size, ...)                      \
-    template <>                                                                                    \
-    struct tuple_size<__name##__size##__VA_ARGS__> : _CUDA_VSTD::integral_constant<size_t, __size> \
-    {};                                                                                            \
-                                                                                                   \
-    template <size_t _Ip>                                                                          \
-    struct tuple_element<_Ip, __name##__size##__VA_ARGS__>                                         \
-    {                                                                                              \
-      static_assert(_Ip < __size, "tuple_element index out of range");                             \
-      using type = __type;                                                                         \
+#  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size, ...)                       \
+    template <>                                                                                     \
+    struct tuple_size<__name##__size##__VA_ARGS__> : ::cuda::std::integral_constant<size_t, __size> \
+    {};                                                                                             \
+                                                                                                    \
+    template <size_t _Ip>                                                                           \
+    struct tuple_element<_Ip, __name##__size##__VA_ARGS__>                                          \
+    {                                                                                               \
+      static_assert(_Ip < __size, "tuple_element index out of range");                              \
+      using type = __type;                                                                          \
     };
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(__name, __type) \
@@ -53,26 +53,26 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, 3)           \
     _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, 4)
 
-#  define _LIBCUDACXX_SPECIALIZE_GET(__name, __base_type)                                                           \
-    template <size_t _Ip>                                                                                           \
-    _CCCL_API constexpr __base_type& get(__name& __val) noexcept                                                    \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
-    }                                                                                                               \
-    template <size_t _Ip>                                                                                           \
-    _CCCL_API constexpr const __base_type& get(const __name& __val) noexcept                                        \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
-    }                                                                                                               \
-    template <size_t _Ip>                                                                                           \
-    _CCCL_API constexpr __base_type&& get(__name&& __val) noexcept                                                  \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
-    }                                                                                                               \
-    template <size_t _Ip>                                                                                           \
-    _CCCL_API constexpr const __base_type&& get(const __name&& __val) noexcept                                      \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<const __name&&>(__val)); \
+#  define _LIBCUDACXX_SPECIALIZE_GET(__name, __base_type)                                                            \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr __base_type& get(__name& __val) noexcept                                                     \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
+    }                                                                                                                \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr const __base_type& get(const __name& __val) noexcept                                         \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
+    }                                                                                                                \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr __base_type&& get(__name&& __val) noexcept                                                   \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
+    }                                                                                                                \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr const __base_type&& get(const __name&& __val) noexcept                                       \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<const __name&&>(__val)); \
     }
 
 #  define _LIBCUDACXX_SPECIALIZE_GET_VECTOR(__name, __base_type) \
@@ -83,7 +83,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(char, signed char)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uchar, unsigned char)
@@ -275,7 +275,7 @@ _LIBCUDACXX_SPECIALIZE_GET(__half2, __half)
 _LIBCUDACXX_SPECIALIZE_GET(__nv_bfloat162, __nv_bfloat16)
 #  endif // _CCCL_HAS_NVBF16()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
@@ -288,4 +288,4 @@ _CCCL_DIAG_POP
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#endif // _CUDA_STD___TUPLE_VECTOR_TYPES_H

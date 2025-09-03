@@ -50,9 +50,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ inputs.run-id }}
         run: |
-          gh run download ${RUN_ID} -D dl -R ${{ github.repository }}
+          gh run download ${RUN_ID} -D dl -R ${{ github.repository }} -p 'wheel-*'
           mkdir dist
-          mv dl/*/*.whl dist/
+          mv dl/*/*/*.whl dist/
           rm -rf dl
           ls -lh dist/
 

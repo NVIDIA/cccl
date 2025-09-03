@@ -244,7 +244,7 @@ private:
     LOG_PACKING_RATIO = Log2<PACKING_RATIO>::VALUE,
 
     // Always at least one lane
-    LOG_COUNTER_LANES = _CUDA_VSTD::max(RADIX_BITS - LOG_PACKING_RATIO, 0),
+    LOG_COUNTER_LANES = ::cuda::std::max(RADIX_BITS - LOG_PACKING_RATIO, 0),
     COUNTER_LANES     = 1 << LOG_COUNTER_LANES,
 
     // The number of packed counters per thread (plus one for padding)
@@ -256,7 +256,7 @@ public:
   enum
   {
     /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = _CUDA_VSTD::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS),
+    BINS_TRACKED_PER_THREAD = ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS),
   };
 
 private:
@@ -585,7 +585,7 @@ public:
   enum
   {
     /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = _CUDA_VSTD::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS),
+    BINS_TRACKED_PER_THREAD = ::cuda::std::max(1, (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS),
   };
 
 private:

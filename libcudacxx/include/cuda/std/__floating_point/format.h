@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_FORMAT_H
-#define _LIBCUDACXX___FLOATING_POINT_FORMAT_H
+#ifndef _CUDA_STD___FLOATING_POINT_FORMAT_H
+#define _CUDA_STD___FLOATING_POINT_FORMAT_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__fwd/fp.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cfloat>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_format
 {
@@ -141,7 +141,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-inline constexpr __fp_format __fp_format_of_v = _CUDA_VSTD::__fp_format_of_v_impl<_Tp>();
+inline constexpr __fp_format __fp_format_of_v = ::cuda::std::__fp_format_of_v_impl<_Tp>();
 
 template <class _Tp>
 inline constexpr __fp_format __fp_format_of_v<const _Tp> = __fp_format_of_v<_Tp>;
@@ -155,8 +155,8 @@ inline constexpr __fp_format __fp_format_of_v<const volatile _Tp> = __fp_format_
 template <__fp_format _Fmt>
 inline constexpr __fp_format __fp_format_of_v<__cccl_fp<_Fmt>> = _Fmt;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_FORMAT_H
+#endif // _CUDA_STD___FLOATING_POINT_FORMAT_H

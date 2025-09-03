@@ -47,7 +47,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/discard_memory>
+#include <cuda/memory>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN

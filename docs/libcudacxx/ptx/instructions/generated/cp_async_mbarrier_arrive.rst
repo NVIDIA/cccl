@@ -3,7 +3,7 @@
 
 cp.async.mbarrier.arrive.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.async.mbarrier.arrive.b64 [addr]; // PTX ISA 70, SM_80
    template <typename = void>

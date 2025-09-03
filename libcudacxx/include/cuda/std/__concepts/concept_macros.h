@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CONCEPTS
-#define _CUDA___CONCEPTS
+#ifndef _CUDA___CONCEPTS_CONCEPT_MACROS_H
+#define _CUDA___CONCEPTS_CONCEPT_MACROS_H
 
 #include <cuda/std/detail/__config>
 
@@ -97,22 +97,22 @@ _CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
 {}
 
 // So that we can refer to the ::cuda::std namespace below
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-// We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
+// We put an alias for ::cuda::std here because of a bug in nvcc <12.2
 // where a requirement such as:
 //
 //  { expression } -> ::concept<type>
 //
 // where ::concept is a fully qualified name, would not compile. The
-// _CUDA_VSTD macro is fully qualified.
-namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
+// ::cuda::std macro is fully qualified.
+namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias-decls)
 
 #if _CCCL_CUDACC_BELOW(12, 2)
 #  define _CCCL_CONCEPT_VSTD __cccl_unqualified_cuda_std // must not be fully qualified
 #else
-#  define _CCCL_CONCEPT_VSTD _CUDA_VSTD
+#  define _CCCL_CONCEPT_VSTD ::cuda::std
 #endif
 
 #define _CCCL_CONCEPT_FRAGMENT_REQS_M0(_REQ) _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
@@ -201,7 +201,8 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) ::__cccl_requires<noexcept(__VA_ARGS__)>
 #  endif
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
-    ::__cccl_requires<_CUDA_VSTD::same_as<_CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _CCCL_PP_RPAREN>>
+    ::__cccl_requires<                              \
+      _CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _CCCL_PP_RPAREN>>
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...) __VA_ARGS__, decltype _CCCL_PP_LPAREN
 
 #  define _CCCL_FRAGMENT(_NAME, ...) \
@@ -270,4 +271,4 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDA___CONCEPTS
+#endif //_CUDA___CONCEPTS_CONCEPT_MACROS_H

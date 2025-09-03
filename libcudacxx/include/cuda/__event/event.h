@@ -32,7 +32,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 class timed_event;
 
@@ -77,7 +77,7 @@ public:
   //!
   //! @post `__other` is in a moved-from state.
   constexpr event(event&& __other) noexcept
-      : event_ref(_CUDA_VSTD::exchange(__other.__event_, {}))
+      : event_ref(::cuda::std::exchange(__other.__event_, {}))
   {}
 
   // Disallow copy construction.
@@ -92,7 +92,7 @@ public:
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto __status = _CUDA_DRIVER::__eventDestroyNoThrow(__event_);
+      [[maybe_unused]] auto __status = ::cuda::__driver::__eventDestroyNoThrow(__event_);
     }
   }
 
@@ -103,8 +103,8 @@ public:
   //! @post `__other` is in a moved-from state.
   event& operator=(event&& __other) noexcept
   {
-    event __tmp(_CUDA_VSTD::move(__other));
-    _CUDA_VSTD::swap(__event_, __tmp.__event_);
+    event __tmp(::cuda::std::move(__other));
+    ::cuda::std::swap(__event_, __tmp.__event_);
     return *this;
   }
 
@@ -127,7 +127,7 @@ public:
   static event from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static event from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static event from_native_handle(::cuda::std::nullptr_t) = delete;
 
   //! @brief Retrieve the native `cudaEvent_t` handle and give up ownership.
   //!
@@ -136,15 +136,13 @@ public:
   //! @post The event object is in a moved-from state.
   [[nodiscard]] constexpr ::cudaEvent_t release() noexcept
   {
-    return _CUDA_VSTD::exchange(__event_, {});
+    return ::cuda::std::exchange(__event_, {});
   }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   [[nodiscard]] friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
     return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
   }
-#  endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   // Use `event::from_native_handle(e)` to construct an owning `event`
@@ -164,7 +162,7 @@ private:
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

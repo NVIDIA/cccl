@@ -21,6 +21,7 @@
 
 #include <format>
 #include <memory>
+#include <vector>
 
 #include "jit_templates/templates/input_iterator.h"
 #include "jit_templates/templates/operation.h"
@@ -34,6 +35,7 @@
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 struct device_reduce_policy;
 using TransformOpT = ::cuda::std::identity;
@@ -158,7 +160,7 @@ struct reduce_kernel_source
 struct reduce_iterator_tag;
 struct reduction_operation_tag;
 
-CUresult cccl_device_reduce_build(
+CUresult cccl_device_reduce_build_ex(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
@@ -169,7 +171,8 @@ CUresult cccl_device_reduce_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -191,8 +194,9 @@ CUresult cccl_device_reduce_build(
 
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
 
-    constexpr size_t ptx_num_args      = 5;
-    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+    constexpr size_t ptx_num_args      = 6;
+    const char* ptx_args[ptx_num_args] = {
+      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
 
     const std::string src = std::format(
       R"XXX(
@@ -256,8 +260,8 @@ struct __align__({1}) storage_t {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 9;
-    const char* args[num_args] = {
+    // Build compilation arguments
+    std::vector<const char*> args = {
       arch.c_str(),
       cub_path,
       thrust_path,
@@ -268,14 +272,17 @@ struct __align__({1}) storage_t {{
       "-DCUB_DISABLE_CDP",
       "-std=c++20"};
 
+    // Add user's extra flags if config is provided
+    cccl::detail::extend_args_with_build_config(args, config);
+
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append({op.ltoir, op.ltoir_size});
+    appender.append_operation(op);
     appender.add_iterator_definition(input_it);
     appender.add_iterator_definition(output_it);
 
@@ -285,12 +292,12 @@ struct __align__({1}) storage_t {{
         ->add_expression({single_tile_kernel_name})
         ->add_expression({single_tile_second_kernel_name})
         ->add_expression({reduction_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
         ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
         ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -402,4 +409,22 @@ CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr
   }
 
   return CUDA_SUCCESS;
+}
+
+// Backward compatibility wrapper
+CUresult cccl_device_reduce_build(
+  cccl_device_reduce_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_value_t init,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_reduce_build_ex(
+    build, d_in, d_out, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, nullptr);
 }

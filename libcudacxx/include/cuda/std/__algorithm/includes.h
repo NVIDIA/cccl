@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_INCLUDES_H
-#define _LIBCUDACXX___ALGORITHM_INCLUDES_H
+#ifndef _CUDA_STD___ALGORITHM_INCLUDES_H
+#define _CUDA_STD___ALGORITHM_INCLUDES_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Iter1, class _Sent1, class _Iter2, class _Sent2, class _Comp, class _Proj1, class _Proj2>
@@ -40,13 +40,13 @@ _CCCL_API constexpr bool __includes(
   for (; __first2 != __last2; ++__first1)
   {
     if (__first1 == __last1
-        || _CUDA_VSTD::__invoke(
-          __comp, _CUDA_VSTD::__invoke(__proj2, *__first2), _CUDA_VSTD::__invoke(__proj1, *__first1)))
+        || ::cuda::std::__invoke(
+          __comp, ::cuda::std::__invoke(__proj2, *__first2), ::cuda::std::__invoke(__proj1, *__first1)))
     {
       return false;
     }
-    if (!_CUDA_VSTD::__invoke(
-          __comp, _CUDA_VSTD::__invoke(__proj1, *__first1), _CUDA_VSTD::__invoke(__proj2, *__first2)))
+    if (!::cuda::std::__invoke(
+          __comp, ::cuda::std::__invoke(__proj1, *__first1), ::cuda::std::__invoke(__proj2, *__first2)))
     {
       ++__first2;
     }
@@ -62,11 +62,11 @@ template <class _InputIterator1, class _InputIterator2, class _Compare>
   static_assert(__is_callable<_Compare, decltype(*__first1), decltype(*__first2)>::value,
                 "Comparator has to be callable");
 
-  return _CUDA_VSTD::__includes(
-    _CUDA_VSTD::move(__first1),
-    _CUDA_VSTD::move(__last1),
-    _CUDA_VSTD::move(__first2),
-    _CUDA_VSTD::move(__last2),
+  return ::cuda::std::__includes(
+    ::cuda::std::move(__first1),
+    ::cuda::std::move(__last1),
+    ::cuda::std::move(__first2),
+    ::cuda::std::move(__last2),
     static_cast<__comp_ref_type<_Compare>>(__comp),
     identity(),
     identity());
@@ -77,16 +77,16 @@ template <class _InputIterator1, class _InputIterator2>
 [[nodiscard]] _CCCL_API constexpr bool
 includes(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
-  return _CUDA_VSTD::includes(
-    _CUDA_VSTD::move(__first1),
-    _CUDA_VSTD::move(__last1),
-    _CUDA_VSTD::move(__first2),
-    _CUDA_VSTD::move(__last2),
+  return ::cuda::std::includes(
+    ::cuda::std::move(__first1),
+    ::cuda::std::move(__last1),
+    ::cuda::std::move(__first2),
+    ::cuda::std::move(__last2),
     __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_INCLUDES_H
+#endif // _CUDA_STD___ALGORITHM_INCLUDES_H

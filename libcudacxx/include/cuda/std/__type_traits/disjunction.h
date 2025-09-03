@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_DISJUNCTION_H
-#define _LIBCUDACXX___TYPE_TRAITS_DISJUNCTION_H
+#ifndef _CUDA_STD___TYPE_TRAITS_DISJUNCTION_H
+#define _CUDA_STD___TYPE_TRAITS_DISJUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <bool>
 struct _OrImpl;
@@ -70,8 +70,8 @@ struct disjunction : _Or<_Args...>
 template <class... _Args>
 inline constexpr bool disjunction_v = _Or<_Args...>::value;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_DISJUNCTION_H
+#endif // _CUDA_STD___TYPE_TRAITS_DISJUNCTION_H

@@ -31,37 +31,62 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+#  if defined(__CUDACC__) || defined(_NVHPC_CUDA) || defined(__CUDACC_RTC__)
+#    define _CUDA_PTX_CUDACC_MAJOR() __CUDACC_VER_MAJOR__
+#  elif defined(__CUDA__) && defined(__clang__)
+#    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
+#  endif // ^^^ has cuda compiler ^^^
+
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
+
+#  if _CUDA_PTX_CUDACC_MAJOR() < 13
+struct alignas(32) longlong4_32a
+{
+  long long x, y, z, w;
+};
+struct alignas(32) ulonglong4_32a
+{
+  unsigned long long x, y, z, w;
+};
+struct alignas(32) double4_32a
+{
+  double x, y, z, w;
+};
+#  else
+using ::double4_32a;
+using ::longlong4_32a;
+using ::ulonglong4_32a;
+#  endif // _CUDA_PTX_CUDACC_MAJOR() < 13
 
 /*************************************************************
  *
  * Conversion from generic pointer -> state space "pointer"
  *
  **************************************************************/
-inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_smem(const void* __ptr)
+inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_smem(const void* __ptr)
 {
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__ptr));
+  return static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__ptr));
 }
 
-inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_dsmem(const void* __ptr)
+inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
   return __as_ptr_smem(__ptr);
 }
 
-inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
+inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
   return __as_ptr_smem(__ptr);
 }
 
-inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
+inline _CCCL_DEVICE ::cuda::std::uint64_t __as_ptr_gmem(const void* __ptr)
 {
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint64_t>(::__cvta_generic_to_global(__ptr));
+  return static_cast<::cuda::std::uint64_t>(::__cvta_generic_to_global(__ptr));
 }
 
 /*************************************************************
@@ -70,28 +95,28 @@ inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
  *
  **************************************************************/
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_smem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_smem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(::__cvta_shared_to_generic(__ptr));
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_dsmem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_dsmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_remote_dsmem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_remote_dsmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
+inline _CCCL_DEVICE _Tp* __from_ptr_gmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(::__cvta_global_to_generic(__ptr));
@@ -103,19 +128,19 @@ inline _CCCL_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
  *
  **************************************************************/
 template <typename _Tp>
-inline _CCCL_DEVICE _CUDA_VSTD::uint32_t __as_b32(_Tp __val)
+inline _CCCL_DEVICE ::cuda::std::uint32_t __as_b32(_Tp __val)
 {
   static_assert(sizeof(_Tp) == 4, "");
   // Consider using std::bitcast
-  return *reinterpret_cast<_CUDA_VSTD::uint32_t*>(&__val);
+  return *reinterpret_cast<::cuda::std::uint32_t*>(&__val);
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _CUDA_VSTD::uint64_t __as_b64(_Tp __val)
+inline _CCCL_DEVICE ::cuda::std::uint64_t __as_b64(_Tp __val)
 {
   static_assert(sizeof(_Tp) == 8, "");
   // Consider using std::bitcast
-  return *reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__val);
+  return *reinterpret_cast<::cuda::std::uint64_t*>(&__val);
 }
 
 /*************************************************************
@@ -128,7 +153,7 @@ template <typename _B8>
 inline _CCCL_DEVICE uint32_t __b8_as_u32(_B8 __val)
 {
   static_assert(sizeof(_B8) == 1);
-  _CUDA_VSTD::uint32_t __u32 = 0;
+  ::cuda::std::uint32_t __u32 = 0;
   ::memcpy(&__u32, &__val, 1);
   return __u32;
 }
@@ -142,7 +167,7 @@ inline _CCCL_DEVICE _B8 __u32_as_b8(uint32_t __u32)
   return b8;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #  include <cuda/std/__cccl/epilogue.h>
 

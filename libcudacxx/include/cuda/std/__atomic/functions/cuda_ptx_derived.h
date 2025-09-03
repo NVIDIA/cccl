@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
-#define __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
+#ifndef __CUDA_STD___ATOMIC_FUNCTIONS_DERIVED_H
+#define __CUDA_STD___ATOMIC_FUNCTIONS_DERIVED_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CUDA_COMPILATION()
 
@@ -394,8 +394,8 @@ _CCCL_DEVICE static inline void __atomic_signal_fence_cuda(int)
 
 #endif // _CCCL_CUDA_COMPILATION()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __LIBCUDACXX___ATOMIC_FUNCTIONS_DERIVED_H
+#endif // __CUDA_STD___ATOMIC_FUNCTIONS_DERIVED_H

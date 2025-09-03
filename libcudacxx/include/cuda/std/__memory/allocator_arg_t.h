@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_ALLOCATOR_ARG_T_H
-#define _LIBCUDACXX___FUNCTIONAL_ALLOCATOR_ARG_T_H
+#ifndef _CUDA_STD___FUNCTIONAL_ALLOCATOR_ARG_T_H
+#define _CUDA_STD___FUNCTIONAL_ALLOCATOR_ARG_T_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t
 {
@@ -58,7 +58,7 @@ template <class _Tp, class _Allocator, class... _Args>
 _CCCL_API inline void
 __user_alloc_construct_impl(integral_constant<int, 0>, _Tp* __storage, const _Allocator&, _Args&&... __args)
 {
-  new (__storage) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
+  new (__storage) _Tp(::cuda::std::forward<_Args>(__args)...);
 }
 
 // FIXME: This should have a version which takes a non-const alloc.
@@ -66,7 +66,7 @@ template <class _Tp, class _Allocator, class... _Args>
 _CCCL_API inline void
 __user_alloc_construct_impl(integral_constant<int, 1>, _Tp* __storage, const _Allocator& __a, _Args&&... __args)
 {
-  new (__storage) _Tp(allocator_arg, __a, _CUDA_VSTD::forward<_Args>(__args)...);
+  new (__storage) _Tp(allocator_arg, __a, ::cuda::std::forward<_Args>(__args)...);
 }
 
 // FIXME: This should have a version which takes a non-const alloc.
@@ -74,11 +74,11 @@ template <class _Tp, class _Allocator, class... _Args>
 _CCCL_API inline void
 __user_alloc_construct_impl(integral_constant<int, 2>, _Tp* __storage, const _Allocator& __a, _Args&&... __args)
 {
-  new (__storage) _Tp(_CUDA_VSTD::forward<_Args>(__args)..., __a);
+  new (__storage) _Tp(::cuda::std::forward<_Args>(__args)..., __a);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_ALLOCATOR_ARG_T_H
+#endif // _CUDA_STD___FUNCTIONAL_ALLOCATOR_ARG_T_H

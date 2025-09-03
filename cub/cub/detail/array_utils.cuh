@@ -40,7 +40,7 @@
 
 #include <cuda/std/array> // array
 #include <cuda/std/cstddef> // size_t
-#include <cuda/std/iterator> // _CUDA_VSTD::iter_value_t
+#include <cuda/std/iterator> // ::cuda::std::iter_value_t
 #include <cuda/std/type_traits> // _If
 #include <cuda/std/utility> // index_sequence
 
@@ -54,21 +54,21 @@ namespace detail
  * Generic Array-like to Array Conversion
  **********************************************************************************************************************/
 
-template <typename CastType, typename Input, _CUDA_VSTD::size_t... i>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE _CUDA_VSTD::array<CastType, static_size_v<Input>>
-to_array_impl(const Input& input, _CUDA_VSTD::index_sequence<i...>)
+template <typename CastType, typename Input, ::cuda::std::size_t... i>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
+to_array_impl(const Input& input, ::cuda::std::index_sequence<i...>)
 {
-  using ArrayType = _CUDA_VSTD::array<CastType, static_size_v<Input>>;
+  using ArrayType = ::cuda::std::array<CastType, static_size_v<Input>>;
   return ArrayType{static_cast<CastType>(input[i])...};
 }
 
 template <typename CastType = void, typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE _CUDA_VSTD::array<CastType, static_size_v<Input>>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
 to_array(const Input& input)
 {
-  using InputType = _CUDA_VSTD::iter_value_t<Input>;
-  using CastType1 = _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<CastType, void>, InputType, CastType>;
-  return to_array_impl<CastType1>(input, _CUDA_VSTD::make_index_sequence<static_size_v<Input>>{});
+  using InputType = ::cuda::std::iter_value_t<Input>;
+  using CastType1 = ::cuda::std::_If<::cuda::std::is_same_v<CastType, void>, InputType, CastType>;
+  return to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<static_size_v<Input>>{});
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED

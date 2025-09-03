@@ -68,11 +68,11 @@ namespace rfa
 {
 
 template <typename Invocable, typename InputT>
-using transformed_input_t = _CUDA_VSTD::decay_t<typename _CUDA_VSTD::__invoke_of<Invocable, InputT>::type>;
+using transformed_input_t = ::cuda::std::decay_t<typename ::cuda::std::__invoke_of<Invocable, InputT>::type>;
 
 template <typename InitT, typename InputIteratorT, typename TransformOpT>
 using accum_t =
-  _CUDA_VSTD::__accumulator_t<_CUDA_VSTD::plus<>, InitT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
+  ::cuda::std::__accumulator_t<::cuda::std::plus<>, InitT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
 template <typename FloatType                                                              = float,
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>

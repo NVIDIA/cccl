@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_INVOKE_H
-#define _LIBCUDACXX___FUNCTIONAL_INVOKE_H
+#ifndef _CUDA_STD___FUNCTIONAL_INVOKE_H
+#define _CUDA_STD___FUNCTIONAL_INVOKE_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,11 +40,11 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
-// TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
+// TODO: Disentangle the type traits and ::cuda::std::invoke properly
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __any
 {
@@ -328,7 +328,8 @@ _CCCL_API inline __nat __invoke(__any, _Args&&... __args);
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet1<_Fp, _A0>>
-_CCCL_API constexpr decltype((_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
+_CCCL_API constexpr decltype((::cuda::std::declval<_A0>()
+                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
          _Args&&... __args) noexcept(noexcept((static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...)))
@@ -338,8 +339,8 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet2<_Fp, _A0>>
-_CCCL_API constexpr decltype((_CUDA_VSTD::declval<_A0>().get()
-                              .*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
+_CCCL_API constexpr decltype((::cuda::std::declval<_A0>().get()
+                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get().*__f)(static_cast<_Args&&>(__args)...)))
 {
   return (__a0.get().*__f)(static_cast<_Args&&>(__args)...);
@@ -347,8 +348,8 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&&... __args) noexcept(noexcept((__a0.get()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class... _Args, class = __enable_if_bullet3<_Fp, _A0>>
-_CCCL_API constexpr decltype(((*_CUDA_VSTD::declval<_A0>())
-                              .*_CUDA_VSTD::declval<_Fp>())(_CUDA_VSTD::declval<_Args>()...))
+_CCCL_API constexpr decltype(((*::cuda::std::declval<_A0>())
+                              .*::cuda::std::declval<_Fp>())(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f,
          _A0&& __a0,
          _Args&&... __args) noexcept(noexcept(((*static_cast<_A0&&>(__a0)).*__f)(static_cast<_Args&&>(__args)...)))
@@ -360,7 +361,7 @@ __invoke(_Fp&& __f,
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet4<_Fp, _A0>>
-_CCCL_API constexpr decltype(_CUDA_VSTD::declval<_A0>().*_CUDA_VSTD::declval<_Fp>())
+_CCCL_API constexpr decltype(::cuda::std::declval<_A0>().*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f))
 {
   return static_cast<_A0&&>(__a0).*__f;
@@ -368,7 +369,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(static_cast<_A0&&>(__a0).*__f)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet5<_Fp, _A0>>
-_CCCL_API constexpr decltype(_CUDA_VSTD::declval<_A0>().get().*_CUDA_VSTD::declval<_Fp>())
+_CCCL_API constexpr decltype(::cuda::std::declval<_A0>().get().*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 {
   return __a0.get().*__f;
@@ -376,7 +377,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept(__a0.get().*__f))
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class = __enable_if_bullet6<_Fp, _A0>>
-_CCCL_API constexpr decltype((*_CUDA_VSTD::declval<_A0>()).*_CUDA_VSTD::declval<_Fp>())
+_CCCL_API constexpr decltype((*::cuda::std::declval<_A0>()).*::cuda::std::declval<_Fp>())
 __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept((*static_cast<_A0&&>(__a0)).*__f))
 {
   return (*static_cast<_A0&&>(__a0)).*__f;
@@ -386,7 +387,7 @@ __invoke(_Fp&& __f, _A0&& __a0) noexcept(noexcept((*static_cast<_A0&&>(__a0)).*_
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class... _Args>
-_CCCL_API constexpr decltype(_CUDA_VSTD::declval<_Fp>()(_CUDA_VSTD::declval<_Args>()...))
+_CCCL_API constexpr decltype(::cuda::std::declval<_Fp>()(::cuda::std::declval<_Args>()...))
 __invoke(_Fp&& __f, _Args&&... __args) noexcept(noexcept(static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...)))
 {
   return static_cast<_Fp&&>(__f)(static_cast<_Args&&>(__args)...);
@@ -397,7 +398,8 @@ template <class _Ret, class _Fp, class... _Args>
 struct __invocable_r
 {
   template <class _XFp, class... _XArgs>
-  _CCCL_API inline static decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_XFp>(), _CUDA_VSTD::declval<_XArgs>()...))
+  _CCCL_API inline static decltype(::cuda::std::__invoke(
+    ::cuda::std::declval<_XFp>(), ::cuda::std::declval<_XArgs>()...))
   __try_call(int);
 
   template <class _XFp, class... _XArgs>
@@ -430,13 +432,14 @@ struct __nothrow_invocable_r_imp<true, false, _Ret, _Fp, _Args...>
   _CCCL_API inline static void __test_noexcept(_Tp) noexcept;
 
   static const bool value =
-    noexcept(_ThisT::__test_noexcept<_Ret>(_CUDA_VSTD::__invoke(declval<_Fp>(), _CUDA_VSTD::declval<_Args>()...)));
+    noexcept(_ThisT::__test_noexcept<_Ret>(::cuda::std::__invoke(declval<_Fp>(), ::cuda::std::declval<_Args>()...)));
 };
 
 template <class _Ret, class _Fp, class... _Args>
 struct __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
 {
-  static const bool value = noexcept(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Fp>(), _CUDA_VSTD::declval<_Args>()...));
+  static const bool value =
+    noexcept(::cuda::std::__invoke(::cuda::std::declval<_Fp>(), ::cuda::std::declval<_Args>()...));
 };
 
 template <class _Ret, class _Fp, class... _Args>
@@ -476,7 +479,7 @@ struct __invoke_void_return_wrapper
   template <class... _Args>
   _CCCL_API static constexpr _Ret __call(_Args&&... __args)
   {
-    return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
+    return ::cuda::std::__invoke(::cuda::std::forward<_Args>(__args)...);
   }
 };
 
@@ -486,7 +489,7 @@ struct __invoke_void_return_wrapper<_Ret, true>
   template <class... _Args>
   _CCCL_API static constexpr void __call(_Args&&... __args)
   {
-    _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::__invoke(::cuda::std::forward<_Args>(__args)...);
   }
 };
 
@@ -535,7 +538,7 @@ template <class _Fn, class... _Args>
 _CCCL_API constexpr invoke_result_t<_Fn, _Args...>
 invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
 {
-  return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
+  return ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
 }
 
 _CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
@@ -543,15 +546,15 @@ _CCCL_REQUIRES(is_invocable_r_v<_Ret, _Fn, _Args...>)
 _CCCL_API constexpr _Ret invoke_r(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_r_v<_Ret, _Fn, _Args...>)
 {
   return __invoke_void_return_wrapper<_Ret>::__call(
-    _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
+    ::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)...);
 }
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invocable, typename InputT, typename InitT = InputT>
-using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invocable, InitT, InputT>::type>::type;
+using __accumulator_t = typename decay<typename ::cuda::std::__invoke_of<Invocable, InitT, InputT>::type>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_INVOKE_H
+#endif // _CUDA_STD___FUNCTIONAL_INVOKE_H

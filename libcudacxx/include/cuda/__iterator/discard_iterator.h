@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief \p discard_iterator is an iterator which represents a special kind of pointer that ignores values written to
 //! it upon dereference. This iterator is useful for ignoring the output of certain algorithms without wasting memory
@@ -67,22 +67,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 class discard_iterator
 {
 private:
-  _CUDA_VSTD::ptrdiff_t __index_ = 0;
+  ::cuda::std::ptrdiff_t __index_ = 0;
 
 public:
   struct __discard_proxy
   {
     _CCCL_TEMPLATE(class _Tp)
-    _CCCL_REQUIRES((!_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Tp>, __discard_proxy>) )
+    _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, __discard_proxy>) )
     _CCCL_API constexpr const __discard_proxy& operator=(_Tp&&) const noexcept
     {
       return *this;
     }
   };
 
-  using iterator_concept  = _CUDA_VSTD::random_access_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
-  using difference_type   = _CUDA_VSTD::ptrdiff_t;
+  using iterator_concept  = ::cuda::std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+  using difference_type   = ::cuda::std::ptrdiff_t;
   using value_type        = void;
   using pointer           = void;
   using reference         = void;
@@ -93,9 +93,9 @@ public:
   //! @brief Constructs a \p discard_iterator with a given \p __index
   //! @param __index The index used for the discard iterator
   _CCCL_TEMPLATE(class _Integer)
-  _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
+  _CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)
   _CCCL_API constexpr discard_iterator(_Integer __index) noexcept
-      : __index_(static_cast<_CUDA_VSTD::ptrdiff_t>(__index))
+      : __index_(static_cast<::cuda::std::ptrdiff_t>(__index))
   {}
 
   //! @brief Returns the stored index
@@ -191,7 +191,7 @@ public:
   //! @param __lhs The left \c discard_iterator
   //! @return -__lhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
-  operator-(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
+  operator-(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
   {
     return static_cast<difference_type>(-__lhs.__index_);
   }
@@ -200,7 +200,7 @@ public:
   //! @param __rhs The right \c discard_iterator
   //! @return __rhs.__index_
   [[nodiscard]] _CCCL_API friend constexpr difference_type
-  operator-(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
+  operator-(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return static_cast<difference_type>(__rhs.__index_);
   }
@@ -231,7 +231,7 @@ public:
 
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
+  operator==(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
   {
     return __lhs.__index_ == 0;
   }
@@ -239,21 +239,21 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
+  operator==(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ == 0;
   }
 
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
+  operator!=(const discard_iterator& __lhs, ::cuda::std::default_sentinel_t) noexcept
   {
     return __lhs.__index_ != 0;
   }
 
   //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
   [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
+  operator!=(::cuda::std::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ != 0;
   }
@@ -300,14 +300,14 @@ public:
 //! @brief Creates a \p discard_iterator from an optional index.
 //! @param __index The index of the \p discard_iterator within a range. The default index is \c 0.
 //! @return A new \p discard_iterator with \p __index as the couner.
-_CCCL_TEMPLATE(class _Integer = _CUDA_VSTD::ptrdiff_t)
-_CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Integer>)
+_CCCL_TEMPLATE(class _Integer = ::cuda::std::ptrdiff_t)
+_CCCL_REQUIRES(::cuda::std::__integer_like<_Integer>)
 [[nodiscard]] _CCCL_API constexpr discard_iterator make_discard_iterator(_Integer __index = 0)
 {
   return discard_iterator{__index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

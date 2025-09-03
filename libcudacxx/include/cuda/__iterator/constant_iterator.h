@@ -30,39 +30,39 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief The \c constant_iterator class represents an iterator in a sequence of repeated values.
-template <class _Tp, class _Index = _CUDA_VSTD::ptrdiff_t>
+template <class _Tp, class _Index = ::cuda::std::ptrdiff_t>
 class constant_iterator
 {
 private:
-  static_assert(_CUDA_VSTD::__integer_like<_Index>, "The index type of cuda::constant_iterator must be integer-like!");
+  static_assert(::cuda::std::__integer_like<_Index>, "The index type of cuda::constant_iterator must be integer-like!");
 
-  _CUDA_VRANGES::__movable_box<_Tp> __value_{_CUDA_VSTD::in_place};
+  ::cuda::std::ranges::__movable_box<_Tp> __value_{::cuda::std::in_place};
   _Index __index_ = 0;
 
 public:
-  using iterator_concept  = _CUDA_VSTD::random_access_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
+  using iterator_concept  = ::cuda::std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
-  using difference_type   = _CUDA_VSTD::ptrdiff_t;
+  using difference_type   = ::cuda::std::ptrdiff_t;
 
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constant_iterator()
-    requires _CUDA_VSTD::default_initializable<_Tp>
+    requires ::cuda::std::default_initializable<_Tp>
   = default;
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Tp2>)
-  _CCCL_API constexpr constant_iterator() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Tp2>) {}
+  _CCCL_REQUIRES(::cuda::std::default_initializable<_Tp2>)
+  _CCCL_API constexpr constant_iterator() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Tp2>) {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
   //! @brief Creates \c constant_iterator from a \p __value. The index is set to zero
   //! @param __value The value to store in the \c constant_iterator
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr constant_iterator(_Tp __value) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Tp>)
-      : __value_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__value))
+  _CCCL_API constexpr constant_iterator(_Tp __value) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Tp>)
+      : __value_(::cuda::std::in_place, ::cuda::std::move(__value))
       , __index_()
   {}
 
@@ -71,10 +71,10 @@ public:
   //! @param __index The index in the sequence represented by this \c constant_iterator
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(typename _Index2)
-  _CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Index2>)
+  _CCCL_REQUIRES(::cuda::std::__integer_like<_Index2>)
   _CCCL_API constexpr explicit constant_iterator(_Tp __value, _Index2 __index) noexcept(
-    _CUDA_VSTD::is_nothrow_move_constructible_v<_Tp>)
-      : __value_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__value))
+    ::cuda::std::is_nothrow_move_constructible_v<_Tp>)
+      : __value_(::cuda::std::in_place, ::cuda::std::move(__value))
       , __index_(static_cast<_Index>(__index))
   {}
 
@@ -105,7 +105,7 @@ public:
 
   //! @brief Increments the stored index
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr constant_iterator operator++(int) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Tp>)
+  _CCCL_API constexpr constant_iterator operator++(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
   {
     auto __tmp = *this;
     ++*this;
@@ -122,7 +122,7 @@ public:
 
   //! @brief Decrements the stored index
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr constant_iterator operator--(int) noexcept(_CUDA_VSTD::is_nothrow_copy_constructible_v<_Tp>)
+  _CCCL_API constexpr constant_iterator operator--(int) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
   {
     auto __tmp = *this;
     --*this;
@@ -235,22 +235,22 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE constant_iterator(_Tp) -> constant_iterator<_Tp, _CUDA_VSTD::ptrdiff_t>;
+_CCCL_HOST_DEVICE constant_iterator(_Tp) -> constant_iterator<_Tp, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Tp, typename _Index)
-_CCCL_REQUIRES(_CUDA_VSTD::__integer_like<_Index>)
+_CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
 _CCCL_HOST_DEVICE constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Index>;
 
 //! @brief make_constant_iterator creates a bounded \p constant_iterator from a value and an index
 //! @param __value The value to be returned by the \p constant_iterator
 //! @param __index The optional index of the \p constant_iterator representing the position in a sequence. Defaults to 0
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr auto make_constant_iterator(_Tp __value, _CUDA_VSTD::ptrdiff_t __index = 0)
+[[nodiscard]] _CCCL_API constexpr auto make_constant_iterator(_Tp __value, ::cuda::std::ptrdiff_t __index = 0)
 {
-  return constant_iterator<_Tp>{_CUDA_VSTD::move(__value), __index};
+  return constant_iterator<_Tp>{::cuda::std::move(__value), __index};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

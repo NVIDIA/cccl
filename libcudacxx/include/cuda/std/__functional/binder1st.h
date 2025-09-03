@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
-#define _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
+#ifndef _CUDA_STD___FUNCTIONAL_BINDER1ST_H
+#define _CUDA_STD___FUNCTIONAL_BINDER1ST_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
@@ -67,8 +67,8 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H
+#endif // _CUDA_STD___FUNCTIONAL_BINDER1ST_H

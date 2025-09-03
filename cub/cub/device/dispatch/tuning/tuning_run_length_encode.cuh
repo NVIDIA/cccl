@@ -603,7 +603,7 @@ struct policy_hub
     static constexpr int nominal_4B_items_per_thread = 15;
     // TODO(bgruber): use clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
-      _CUDA_VSTD::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
     using RleSweepPolicyT =
       AgentRlePolicy<96,
                      ITEMS_PER_THREAD,

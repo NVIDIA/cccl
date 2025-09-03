@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_CLASS_OR_ENUM_H
-#define _LIBCUDACXX___CONCEPTS_CLASS_OR_ENUM_H
+#ifndef _CUDA_STD___CONCEPTS_CLASS_OR_ENUM_H
+#define _CUDA_STD___CONCEPTS_CLASS_OR_ENUM_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 _CCCL_CONCEPT __class_or_enum = is_class_v<_Tp> || is_union_v<_Tp> || is_enum_v<_Tp>;
@@ -38,8 +38,8 @@ _CCCL_CONCEPT __class_or_enum = is_class_v<_Tp> || is_union_v<_Tp> || is_enum_v<
 template <class _Tp>
 _CCCL_CONCEPT __workaround_52970 = is_class_v<remove_cvref_t<_Tp>> || is_union_v<remove_cvref_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_CLASS_OR_ENUM_H
+#endif // _CUDA_STD___CONCEPTS_CLASS_OR_ENUM_H

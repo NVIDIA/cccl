@@ -59,11 +59,11 @@ void __stream_callback_caller(cudaStream_t, cudaError_t __status, void* __callab
 template <typename _Callable, typename... _Args>
 void host_launch(stream_ref __stream, _Callable __callable, _Args... __args)
 {
-  static_assert(_CUDA_VSTD::is_invocable_v<_Callable, _Args...>,
+  static_assert(::cuda::std::is_invocable_v<_Callable, _Args...>,
                 "Callable can't be called with the supplied arguments");
-  auto __lambda_ptr = new auto([__callable   = _CUDA_VSTD::move(__callable),
-                                __args_tuple = _CUDA_VSTD::make_tuple(_CUDA_VSTD::move(__args)...)]() mutable {
-    _CUDA_VSTD::apply(__callable, __args_tuple);
+  auto __lambda_ptr = new auto([__callable   = ::cuda::std::move(__callable),
+                                __args_tuple = ::cuda::std::make_tuple(::cuda::std::move(__args)...)]() mutable {
+    ::cuda::std::apply(__callable, __args_tuple);
   });
 
   // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
@@ -100,13 +100,13 @@ void __host_func_launcher(void* __callable_ptr)
 template <typename _Callable, typename... _Args>
 void host_launch(stream_ref __stream, ::cuda::std::reference_wrapper<_Callable> __callable)
 {
-  static_assert(_CUDA_VSTD::is_invocable_v<_Callable>, "Callable in reference_wrapper can't take any arguments");
+  static_assert(::cuda::std::is_invocable_v<_Callable>, "Callable in reference_wrapper can't take any arguments");
   _CCCL_TRY_CUDA_API(
     cudaLaunchHostFunc,
     "Failed to launch host function",
     __stream.get(),
     __host_func_launcher<_Callable*>,
-    _CUDA_VSTD::addressof(__callable.get()));
+    ::cuda::std::addressof(__callable.get()));
 }
 
 } // namespace cuda::experimental

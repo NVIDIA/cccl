@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
-#define _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_LITERAL_TYPE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_LITERAL_TYPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 template <class _Tp>
@@ -52,8 +52,8 @@ _LIBCUDACXX_DEPRECATED inline constexpr bool is_literal_type_v = is_literal_type
 
 #endif // defined(_CCCL_BUILTIN_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE
+#endif // _CUDA_STD___TYPE_TRAITS_IS_LITERAL_TYPE_H

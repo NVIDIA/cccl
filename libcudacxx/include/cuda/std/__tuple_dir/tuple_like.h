@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_TUPLE_LIKE_H
-#define _LIBCUDACXX___TUPLE_TUPLE_LIKE_H
+#ifndef _CUDA_STD___TUPLE_TUPLE_LIKE_H
+#define _CUDA_STD___TUPLE_TUPLE_LIKE_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __tuple_like_impl : false_type
@@ -66,8 +66,8 @@ template <class _Tp>
 struct __tuple_like_impl<complex<_Tp>> : true_type
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct __tuple_like_impl<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>> : true_type
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct __tuple_like_impl<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : true_type
 {};
 
 template <class... _Tp>
@@ -83,8 +83,8 @@ _CCCL_CONCEPT __pair_like = _CCCL_REQUIRES_EXPR((_Tp)) //
   (requires(__tuple_like_impl<remove_cvref_t<_Tp>>::value), requires(tuple_size<remove_cvref_t<_Tp>>::value == 2));
 #endif // _CCCL_STD_VER >= 2014
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_TUPLE_LIKE_H
+#endif // _CUDA_STD___TUPLE_TUPLE_LIKE_H

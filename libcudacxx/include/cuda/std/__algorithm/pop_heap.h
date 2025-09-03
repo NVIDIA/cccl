@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_POP_HEAP_H
-#define _LIBCUDACXX___ALGORITHM_POP_HEAP_H
+#ifndef _CUDA_STD___ALGORITHM_POP_HEAP_H
+#define _CUDA_STD___ALGORITHM_POP_HEAP_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
@@ -51,19 +51,19 @@ _CCCL_API constexpr void __pop_heap(
   if (__len > 1)
   {
     value_type __top             = _IterOps<_AlgPolicy>::__iter_move(__first); // create a hole at __first
-    _RandomAccessIterator __hole = _CUDA_VSTD::__floyd_sift_down<_AlgPolicy>(__first, __comp_ref, __len);
+    _RandomAccessIterator __hole = ::cuda::std::__floyd_sift_down<_AlgPolicy>(__first, __comp_ref, __len);
     --__last;
 
     if (__hole == __last)
     {
-      *__hole = _CUDA_VSTD::move(__top);
+      *__hole = ::cuda::std::move(__top);
     }
     else
     {
       *__hole = _IterOps<_AlgPolicy>::__iter_move(__last);
       ++__hole;
-      *__last = _CUDA_VSTD::move(__top);
-      _CUDA_VSTD::__sift_up<_AlgPolicy>(__first, __hole, __comp_ref, __hole - __first);
+      *__last = ::cuda::std::move(__top);
+      ::cuda::std::__sift_up<_AlgPolicy>(__first, __hole, __comp_ref, __hole - __first);
     }
   }
 }
@@ -72,23 +72,23 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
 _CCCL_API constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value,
+  static_assert(::cuda::std::is_copy_constructible<_RandomAccessIterator>::value,
                 "Iterators must be copy constructible.");
-  static_assert(_CUDA_VSTD::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
+  static_assert(::cuda::std::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
 
   typename iterator_traits<_RandomAccessIterator>::difference_type __len = __last - __first;
-  _CUDA_VSTD::__pop_heap<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __len);
+  ::cuda::std::__pop_heap<_ClassicAlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), __comp, __len);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator>
 _CCCL_API constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
-  _CUDA_VSTD::pop_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
+  ::cuda::std::pop_heap(::cuda::std::move(__first), ::cuda::std::move(__last), __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_POP_HEAP_H
+#endif // _CUDA_STD___ALGORITHM_POP_HEAP_H

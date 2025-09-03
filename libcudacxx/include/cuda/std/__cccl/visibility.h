@@ -53,10 +53,13 @@
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
+#  define _CCCL_TYPE_VISIBILITY_HIDDEN
 #elif _CCCL_HAS_ATTRIBUTE(__type_visibility__)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT __attribute__((__type_visibility__("default")))
+#  define _CCCL_TYPE_VISIBILITY_HIDDEN  __attribute__((__type_visibility__("hidden")))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__type_visibility__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__type_visibility__) vvv
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_VISIBILITY_DEFAULT
+#  define _CCCL_TYPE_VISIBILITY_HIDDEN  _CCCL_VISIBILITY_HIDDEN
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_COMPILER(MSVC)
@@ -82,12 +85,14 @@
 #  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !CCCL_DETAIL_KERNEL_ATTRIBUTES
 
-// _CCCL_HIDE_FROM_ABI and _CCCL_FORCEINLINE cannot be used together because they both try
-// to add `inline` to the function declaration. The following macros slice the function
-// attributes differently to avoid this problem:
-// - `_CCCL_API` declares the function host/device and hides the symbol from the ABI
-// - `_CCCL_TRIVIAL_API` does the same while also inlining and hiding the function from
-//   debuggers
+//! @brief \c _CCCL_HIDE_FROM_ABI and \c _CCCL_FORCEINLINE cannot be used together because
+//! they both try to add `inline` to the function declaration. The following macros slice
+//! the function attributes differently to avoid this problem:
+//! - \c _CCCL_API declares the function host/device and hides the symbol from the ABI
+//! - \c _CCCL_NODEBUG_API does the same while also hiding the function from
+//!   debuggers and marking the function as \c inline.
+//! - \c _CCCL_TRIVIAL_API does the same as \c _CCCL_NODEBUG_API while also force-inlining
+//!   the function.
 #if _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_API        _CCCL_HOST_DEVICE
 #  define _CCCL_HOST_API   _CCCL_HOST
@@ -98,13 +103,23 @@
 #  define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !_CCCL_COMPILER(NVHPC)
 
-// _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
-// debuggers to skip it. This is useful for trivial internal functions that do dispatching
-// or other plumbing work. It is particularly useful in the definition of customization
-// point objects.
-#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+//! @brief \c _CCCL_NODEBUG_API marks a function's visibility as hidden and causes
+//! debuggers to skip it. This is useful for functions like \c cuda::std::move that
+//! debuggers should not step into. If a \c _CCCL_NODEBUG_API function \c F calls a normal
+//! function \c G, stepping into \c F in a debugger will skip over \c F and step directly
+//! into \c G. In a stacktrace, \c F will still be shone, but you will not be able to
+//! set the debugger's active frame to \c F.
+#define _CCCL_NODEBUG_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_NODEBUG_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+
+//! @brief \c _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden,
+//! and causes debuggers to skip it. This is useful for trivial internal functions that do
+//! dispatching or other plumbing work. It is particularly useful in the definition of
+//! customization point objects.
+#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
+#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG _CCCL_FORCEINLINE
 
 // Some functions have their addresses appear in public types (e.g., in
 // `cuda::__overrides_for` specializations). If the function is declared

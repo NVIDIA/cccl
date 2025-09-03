@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_CONVERSIONS_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_CONVERSIONS_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_CONVERSIONS_H
+#define _CUDA___UTILITY_BASIC_ANY_CONVERSIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //!
 //! conversions
@@ -87,11 +87,11 @@ template <class _Ty>
 _CCCL_API auto __normalize_interface(_Ty*) -> _Ty*;
 
 template <class _Ty>
-using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize_interface(_CUDA_VSTD::declval<_Ty>()));
+using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize_interface(::cuda::std::declval<_Ty>()));
 
 // Used to map a __basic_any specialization to a normalized interface type:
 template <class _Ty>
-extern _CUDA_VSTD::__undefined<_Ty> __interface_from;
+extern ::cuda::std::__undefined<_Ty> __interface_from;
 template <class _Interface>
 extern _Interface __interface_from<__basic_any<_Interface>>;
 template <class _Interface>
@@ -151,7 +151,7 @@ using __dst_archetype_of _CCCL_NODEBUG_ALIAS = decltype(__as_immovable<__src_arc
 // but at least it is possible.
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_castable_to =
-  _CUDA_VSTD::convertible_to<__src_archetype_of<_SrcCvAny>, __dst_archetype_of<_DstCvAny>>;
+  ::cuda::std::convertible_to<__src_archetype_of<_SrcCvAny>, __dst_archetype_of<_DstCvAny>>;
 
 // If the archetypes are implicitly convertible **and** the source interface
 // is an extension of the destination one, then it is possible to implicitly
@@ -159,11 +159,11 @@ _CCCL_CONCEPT __any_castable_to =
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_convertible_to =
   __any_castable_to<_SrcCvAny, _DstCvAny> && //
-  __extension_of<typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type,
-                 typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;
+  __extension_of<typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type,
+                 typename ::cuda::std::remove_reference_t<_DstCvAny>::interface_type>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_CONVERSIONS_H
+#endif // _CUDA___UTILITY_BASIC_ANY_CONVERSIONS_H

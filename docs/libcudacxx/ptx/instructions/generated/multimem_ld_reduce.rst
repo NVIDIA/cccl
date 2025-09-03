@@ -3,7 +3,7 @@
 
 multimem.ld_reduce.weak.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -16,7 +16,7 @@ multimem.ld_reduce.weak.global.min.u32
 
 multimem.ld_reduce.relaxed.cta.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -31,7 +31,7 @@ multimem.ld_reduce.relaxed.cta.global.min.u32
 
 multimem.ld_reduce.relaxed.cluster.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -46,7 +46,7 @@ multimem.ld_reduce.relaxed.cluster.global.min.u32
 
 multimem.ld_reduce.relaxed.gpu.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -61,7 +61,7 @@ multimem.ld_reduce.relaxed.gpu.global.min.u32
 
 multimem.ld_reduce.relaxed.sys.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -76,7 +76,7 @@ multimem.ld_reduce.relaxed.sys.global.min.u32
 
 multimem.ld_reduce.acquire.cta.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -91,7 +91,7 @@ multimem.ld_reduce.acquire.cta.global.min.u32
 
 multimem.ld_reduce.acquire.cluster.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -106,7 +106,7 @@ multimem.ld_reduce.acquire.cluster.global.min.u32
 
 multimem.ld_reduce.acquire.gpu.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -121,7 +121,7 @@ multimem.ld_reduce.acquire.gpu.global.min.u32
 
 multimem.ld_reduce.acquire.sys.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -136,7 +136,7 @@ multimem.ld_reduce.acquire.sys.global.min.u32
 
 multimem.ld_reduce.weak.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -149,7 +149,7 @@ multimem.ld_reduce.weak.global.min.u64
 
 multimem.ld_reduce.relaxed.cta.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -164,7 +164,7 @@ multimem.ld_reduce.relaxed.cta.global.min.u64
 
 multimem.ld_reduce.relaxed.cluster.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -179,7 +179,7 @@ multimem.ld_reduce.relaxed.cluster.global.min.u64
 
 multimem.ld_reduce.relaxed.gpu.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -194,7 +194,7 @@ multimem.ld_reduce.relaxed.gpu.global.min.u64
 
 multimem.ld_reduce.relaxed.sys.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -209,7 +209,7 @@ multimem.ld_reduce.relaxed.sys.global.min.u64
 
 multimem.ld_reduce.acquire.cta.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -224,7 +224,7 @@ multimem.ld_reduce.acquire.cta.global.min.u64
 
 multimem.ld_reduce.acquire.cluster.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -239,7 +239,7 @@ multimem.ld_reduce.acquire.cluster.global.min.u64
 
 multimem.ld_reduce.acquire.gpu.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -254,7 +254,7 @@ multimem.ld_reduce.acquire.gpu.global.min.u64
 
 multimem.ld_reduce.acquire.sys.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -269,7 +269,7 @@ multimem.ld_reduce.acquire.sys.global.min.u64
 
 multimem.ld_reduce.weak.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -282,7 +282,7 @@ multimem.ld_reduce.weak.global.min.s32
 
 multimem.ld_reduce.relaxed.cta.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -297,7 +297,7 @@ multimem.ld_reduce.relaxed.cta.global.min.s32
 
 multimem.ld_reduce.relaxed.cluster.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -312,7 +312,7 @@ multimem.ld_reduce.relaxed.cluster.global.min.s32
 
 multimem.ld_reduce.relaxed.gpu.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -327,7 +327,7 @@ multimem.ld_reduce.relaxed.gpu.global.min.s32
 
 multimem.ld_reduce.relaxed.sys.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -342,7 +342,7 @@ multimem.ld_reduce.relaxed.sys.global.min.s32
 
 multimem.ld_reduce.acquire.cta.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -357,7 +357,7 @@ multimem.ld_reduce.acquire.cta.global.min.s32
 
 multimem.ld_reduce.acquire.cluster.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -372,7 +372,7 @@ multimem.ld_reduce.acquire.cluster.global.min.s32
 
 multimem.ld_reduce.acquire.gpu.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -387,7 +387,7 @@ multimem.ld_reduce.acquire.gpu.global.min.s32
 
 multimem.ld_reduce.acquire.sys.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -402,7 +402,7 @@ multimem.ld_reduce.acquire.sys.global.min.s32
 
 multimem.ld_reduce.weak.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -415,7 +415,7 @@ multimem.ld_reduce.weak.global.min.s64
 
 multimem.ld_reduce.relaxed.cta.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -430,7 +430,7 @@ multimem.ld_reduce.relaxed.cta.global.min.s64
 
 multimem.ld_reduce.relaxed.cluster.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -445,7 +445,7 @@ multimem.ld_reduce.relaxed.cluster.global.min.s64
 
 multimem.ld_reduce.relaxed.gpu.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -460,7 +460,7 @@ multimem.ld_reduce.relaxed.gpu.global.min.s64
 
 multimem.ld_reduce.relaxed.sys.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -475,7 +475,7 @@ multimem.ld_reduce.relaxed.sys.global.min.s64
 
 multimem.ld_reduce.acquire.cta.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -490,7 +490,7 @@ multimem.ld_reduce.acquire.cta.global.min.s64
 
 multimem.ld_reduce.acquire.cluster.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -505,7 +505,7 @@ multimem.ld_reduce.acquire.cluster.global.min.s64
 
 multimem.ld_reduce.acquire.gpu.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -520,7 +520,7 @@ multimem.ld_reduce.acquire.gpu.global.min.s64
 
 multimem.ld_reduce.acquire.sys.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -535,7 +535,7 @@ multimem.ld_reduce.acquire.sys.global.min.s64
 
 multimem.ld_reduce.weak.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -548,7 +548,7 @@ multimem.ld_reduce.weak.global.max.u32
 
 multimem.ld_reduce.relaxed.cta.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -563,7 +563,7 @@ multimem.ld_reduce.relaxed.cta.global.max.u32
 
 multimem.ld_reduce.relaxed.cluster.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -578,7 +578,7 @@ multimem.ld_reduce.relaxed.cluster.global.max.u32
 
 multimem.ld_reduce.relaxed.gpu.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -593,7 +593,7 @@ multimem.ld_reduce.relaxed.gpu.global.max.u32
 
 multimem.ld_reduce.relaxed.sys.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -608,7 +608,7 @@ multimem.ld_reduce.relaxed.sys.global.max.u32
 
 multimem.ld_reduce.acquire.cta.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -623,7 +623,7 @@ multimem.ld_reduce.acquire.cta.global.max.u32
 
 multimem.ld_reduce.acquire.cluster.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -638,7 +638,7 @@ multimem.ld_reduce.acquire.cluster.global.max.u32
 
 multimem.ld_reduce.acquire.gpu.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -653,7 +653,7 @@ multimem.ld_reduce.acquire.gpu.global.max.u32
 
 multimem.ld_reduce.acquire.sys.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -668,7 +668,7 @@ multimem.ld_reduce.acquire.sys.global.max.u32
 
 multimem.ld_reduce.weak.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -681,7 +681,7 @@ multimem.ld_reduce.weak.global.max.u64
 
 multimem.ld_reduce.relaxed.cta.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -696,7 +696,7 @@ multimem.ld_reduce.relaxed.cta.global.max.u64
 
 multimem.ld_reduce.relaxed.cluster.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -711,7 +711,7 @@ multimem.ld_reduce.relaxed.cluster.global.max.u64
 
 multimem.ld_reduce.relaxed.gpu.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -726,7 +726,7 @@ multimem.ld_reduce.relaxed.gpu.global.max.u64
 
 multimem.ld_reduce.relaxed.sys.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -741,7 +741,7 @@ multimem.ld_reduce.relaxed.sys.global.max.u64
 
 multimem.ld_reduce.acquire.cta.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -756,7 +756,7 @@ multimem.ld_reduce.acquire.cta.global.max.u64
 
 multimem.ld_reduce.acquire.cluster.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -771,7 +771,7 @@ multimem.ld_reduce.acquire.cluster.global.max.u64
 
 multimem.ld_reduce.acquire.gpu.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -786,7 +786,7 @@ multimem.ld_reduce.acquire.gpu.global.max.u64
 
 multimem.ld_reduce.acquire.sys.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -801,7 +801,7 @@ multimem.ld_reduce.acquire.sys.global.max.u64
 
 multimem.ld_reduce.weak.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -814,7 +814,7 @@ multimem.ld_reduce.weak.global.max.s32
 
 multimem.ld_reduce.relaxed.cta.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -829,7 +829,7 @@ multimem.ld_reduce.relaxed.cta.global.max.s32
 
 multimem.ld_reduce.relaxed.cluster.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -844,7 +844,7 @@ multimem.ld_reduce.relaxed.cluster.global.max.s32
 
 multimem.ld_reduce.relaxed.gpu.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -859,7 +859,7 @@ multimem.ld_reduce.relaxed.gpu.global.max.s32
 
 multimem.ld_reduce.relaxed.sys.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -874,7 +874,7 @@ multimem.ld_reduce.relaxed.sys.global.max.s32
 
 multimem.ld_reduce.acquire.cta.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -889,7 +889,7 @@ multimem.ld_reduce.acquire.cta.global.max.s32
 
 multimem.ld_reduce.acquire.cluster.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -904,7 +904,7 @@ multimem.ld_reduce.acquire.cluster.global.max.s32
 
 multimem.ld_reduce.acquire.gpu.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -919,7 +919,7 @@ multimem.ld_reduce.acquire.gpu.global.max.s32
 
 multimem.ld_reduce.acquire.sys.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -934,7 +934,7 @@ multimem.ld_reduce.acquire.sys.global.max.s32
 
 multimem.ld_reduce.weak.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -947,7 +947,7 @@ multimem.ld_reduce.weak.global.max.s64
 
 multimem.ld_reduce.relaxed.cta.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -962,7 +962,7 @@ multimem.ld_reduce.relaxed.cta.global.max.s64
 
 multimem.ld_reduce.relaxed.cluster.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -977,7 +977,7 @@ multimem.ld_reduce.relaxed.cluster.global.max.s64
 
 multimem.ld_reduce.relaxed.gpu.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -992,7 +992,7 @@ multimem.ld_reduce.relaxed.gpu.global.max.s64
 
 multimem.ld_reduce.relaxed.sys.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1007,7 +1007,7 @@ multimem.ld_reduce.relaxed.sys.global.max.s64
 
 multimem.ld_reduce.acquire.cta.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1022,7 +1022,7 @@ multimem.ld_reduce.acquire.cta.global.max.s64
 
 multimem.ld_reduce.acquire.cluster.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1037,7 +1037,7 @@ multimem.ld_reduce.acquire.cluster.global.max.s64
 
 multimem.ld_reduce.acquire.gpu.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1052,7 +1052,7 @@ multimem.ld_reduce.acquire.gpu.global.max.s64
 
 multimem.ld_reduce.acquire.sys.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1067,7 +1067,7 @@ multimem.ld_reduce.acquire.sys.global.max.s64
 
 multimem.ld_reduce.weak.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1080,7 +1080,7 @@ multimem.ld_reduce.weak.global.add.u32
 
 multimem.ld_reduce.relaxed.cta.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1095,7 +1095,7 @@ multimem.ld_reduce.relaxed.cta.global.add.u32
 
 multimem.ld_reduce.relaxed.cluster.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1110,7 +1110,7 @@ multimem.ld_reduce.relaxed.cluster.global.add.u32
 
 multimem.ld_reduce.relaxed.gpu.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1125,7 +1125,7 @@ multimem.ld_reduce.relaxed.gpu.global.add.u32
 
 multimem.ld_reduce.relaxed.sys.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1140,7 +1140,7 @@ multimem.ld_reduce.relaxed.sys.global.add.u32
 
 multimem.ld_reduce.acquire.cta.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1155,7 +1155,7 @@ multimem.ld_reduce.acquire.cta.global.add.u32
 
 multimem.ld_reduce.acquire.cluster.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1170,7 +1170,7 @@ multimem.ld_reduce.acquire.cluster.global.add.u32
 
 multimem.ld_reduce.acquire.gpu.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1185,7 +1185,7 @@ multimem.ld_reduce.acquire.gpu.global.add.u32
 
 multimem.ld_reduce.acquire.sys.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1200,7 +1200,7 @@ multimem.ld_reduce.acquire.sys.global.add.u32
 
 multimem.ld_reduce.weak.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1213,7 +1213,7 @@ multimem.ld_reduce.weak.global.add.u64
 
 multimem.ld_reduce.relaxed.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1228,7 +1228,7 @@ multimem.ld_reduce.relaxed.cta.global.add.u64
 
 multimem.ld_reduce.relaxed.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1243,7 +1243,7 @@ multimem.ld_reduce.relaxed.cluster.global.add.u64
 
 multimem.ld_reduce.relaxed.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1258,7 +1258,7 @@ multimem.ld_reduce.relaxed.gpu.global.add.u64
 
 multimem.ld_reduce.relaxed.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1273,7 +1273,7 @@ multimem.ld_reduce.relaxed.sys.global.add.u64
 
 multimem.ld_reduce.acquire.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1288,7 +1288,7 @@ multimem.ld_reduce.acquire.cta.global.add.u64
 
 multimem.ld_reduce.acquire.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1303,7 +1303,7 @@ multimem.ld_reduce.acquire.cluster.global.add.u64
 
 multimem.ld_reduce.acquire.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1318,7 +1318,7 @@ multimem.ld_reduce.acquire.gpu.global.add.u64
 
 multimem.ld_reduce.acquire.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1333,7 +1333,7 @@ multimem.ld_reduce.acquire.sys.global.add.u64
 
 multimem.ld_reduce.weak.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1346,7 +1346,7 @@ multimem.ld_reduce.weak.global.add.s32
 
 multimem.ld_reduce.relaxed.cta.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1361,7 +1361,7 @@ multimem.ld_reduce.relaxed.cta.global.add.s32
 
 multimem.ld_reduce.relaxed.cluster.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1376,7 +1376,7 @@ multimem.ld_reduce.relaxed.cluster.global.add.s32
 
 multimem.ld_reduce.relaxed.gpu.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1391,7 +1391,7 @@ multimem.ld_reduce.relaxed.gpu.global.add.s32
 
 multimem.ld_reduce.relaxed.sys.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1406,7 +1406,7 @@ multimem.ld_reduce.relaxed.sys.global.add.s32
 
 multimem.ld_reduce.acquire.cta.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1421,7 +1421,7 @@ multimem.ld_reduce.acquire.cta.global.add.s32
 
 multimem.ld_reduce.acquire.cluster.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1436,7 +1436,7 @@ multimem.ld_reduce.acquire.cluster.global.add.s32
 
 multimem.ld_reduce.acquire.gpu.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1451,7 +1451,7 @@ multimem.ld_reduce.acquire.gpu.global.add.s32
 
 multimem.ld_reduce.acquire.sys.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.s32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1466,7 +1466,7 @@ multimem.ld_reduce.acquire.sys.global.add.s32
 
 multimem.ld_reduce.weak.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1479,7 +1479,7 @@ multimem.ld_reduce.weak.global.add.u64
 
 multimem.ld_reduce.relaxed.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1494,7 +1494,7 @@ multimem.ld_reduce.relaxed.cta.global.add.u64
 
 multimem.ld_reduce.relaxed.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1509,7 +1509,7 @@ multimem.ld_reduce.relaxed.cluster.global.add.u64
 
 multimem.ld_reduce.relaxed.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1524,7 +1524,7 @@ multimem.ld_reduce.relaxed.gpu.global.add.u64
 
 multimem.ld_reduce.relaxed.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1539,7 +1539,7 @@ multimem.ld_reduce.relaxed.sys.global.add.u64
 
 multimem.ld_reduce.acquire.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1554,7 +1554,7 @@ multimem.ld_reduce.acquire.cta.global.add.u64
 
 multimem.ld_reduce.acquire.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1569,7 +1569,7 @@ multimem.ld_reduce.acquire.cluster.global.add.u64
 
 multimem.ld_reduce.acquire.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1584,7 +1584,7 @@ multimem.ld_reduce.acquire.gpu.global.add.u64
 
 multimem.ld_reduce.acquire.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.u64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1599,7 +1599,7 @@ multimem.ld_reduce.acquire.sys.global.add.u64
 
 multimem.ld_reduce.weak.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1612,7 +1612,7 @@ multimem.ld_reduce.weak.global.and.b32
 
 multimem.ld_reduce.relaxed.cta.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1627,7 +1627,7 @@ multimem.ld_reduce.relaxed.cta.global.and.b32
 
 multimem.ld_reduce.relaxed.cluster.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1642,7 +1642,7 @@ multimem.ld_reduce.relaxed.cluster.global.and.b32
 
 multimem.ld_reduce.relaxed.gpu.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1657,7 +1657,7 @@ multimem.ld_reduce.relaxed.gpu.global.and.b32
 
 multimem.ld_reduce.relaxed.sys.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1672,7 +1672,7 @@ multimem.ld_reduce.relaxed.sys.global.and.b32
 
 multimem.ld_reduce.acquire.cta.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1687,7 +1687,7 @@ multimem.ld_reduce.acquire.cta.global.and.b32
 
 multimem.ld_reduce.acquire.cluster.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1702,7 +1702,7 @@ multimem.ld_reduce.acquire.cluster.global.and.b32
 
 multimem.ld_reduce.acquire.gpu.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1717,7 +1717,7 @@ multimem.ld_reduce.acquire.gpu.global.and.b32
 
 multimem.ld_reduce.acquire.sys.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1732,7 +1732,7 @@ multimem.ld_reduce.acquire.sys.global.and.b32
 
 multimem.ld_reduce.weak.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1745,7 +1745,7 @@ multimem.ld_reduce.weak.global.or.b32
 
 multimem.ld_reduce.relaxed.cta.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1760,7 +1760,7 @@ multimem.ld_reduce.relaxed.cta.global.or.b32
 
 multimem.ld_reduce.relaxed.cluster.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1775,7 +1775,7 @@ multimem.ld_reduce.relaxed.cluster.global.or.b32
 
 multimem.ld_reduce.relaxed.gpu.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1790,7 +1790,7 @@ multimem.ld_reduce.relaxed.gpu.global.or.b32
 
 multimem.ld_reduce.relaxed.sys.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1805,7 +1805,7 @@ multimem.ld_reduce.relaxed.sys.global.or.b32
 
 multimem.ld_reduce.acquire.cta.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1820,7 +1820,7 @@ multimem.ld_reduce.acquire.cta.global.or.b32
 
 multimem.ld_reduce.acquire.cluster.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1835,7 +1835,7 @@ multimem.ld_reduce.acquire.cluster.global.or.b32
 
 multimem.ld_reduce.acquire.gpu.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1850,7 +1850,7 @@ multimem.ld_reduce.acquire.gpu.global.or.b32
 
 multimem.ld_reduce.acquire.sys.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1865,7 +1865,7 @@ multimem.ld_reduce.acquire.sys.global.or.b32
 
 multimem.ld_reduce.weak.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -1878,7 +1878,7 @@ multimem.ld_reduce.weak.global.xor.b32
 
 multimem.ld_reduce.relaxed.cta.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1893,7 +1893,7 @@ multimem.ld_reduce.relaxed.cta.global.xor.b32
 
 multimem.ld_reduce.relaxed.cluster.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1908,7 +1908,7 @@ multimem.ld_reduce.relaxed.cluster.global.xor.b32
 
 multimem.ld_reduce.relaxed.gpu.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1923,7 +1923,7 @@ multimem.ld_reduce.relaxed.gpu.global.xor.b32
 
 multimem.ld_reduce.relaxed.sys.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1938,7 +1938,7 @@ multimem.ld_reduce.relaxed.sys.global.xor.b32
 
 multimem.ld_reduce.acquire.cta.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1953,7 +1953,7 @@ multimem.ld_reduce.acquire.cta.global.xor.b32
 
 multimem.ld_reduce.acquire.cluster.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1968,7 +1968,7 @@ multimem.ld_reduce.acquire.cluster.global.xor.b32
 
 multimem.ld_reduce.acquire.gpu.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1983,7 +1983,7 @@ multimem.ld_reduce.acquire.gpu.global.xor.b32
 
 multimem.ld_reduce.acquire.sys.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b32 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -1998,7 +1998,7 @@ multimem.ld_reduce.acquire.sys.global.xor.b32
 
 multimem.ld_reduce.weak.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -2011,7 +2011,7 @@ multimem.ld_reduce.weak.global.and.b64
 
 multimem.ld_reduce.relaxed.cta.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2026,7 +2026,7 @@ multimem.ld_reduce.relaxed.cta.global.and.b64
 
 multimem.ld_reduce.relaxed.cluster.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2041,7 +2041,7 @@ multimem.ld_reduce.relaxed.cluster.global.and.b64
 
 multimem.ld_reduce.relaxed.gpu.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2056,7 +2056,7 @@ multimem.ld_reduce.relaxed.gpu.global.and.b64
 
 multimem.ld_reduce.relaxed.sys.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2071,7 +2071,7 @@ multimem.ld_reduce.relaxed.sys.global.and.b64
 
 multimem.ld_reduce.acquire.cta.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2086,7 +2086,7 @@ multimem.ld_reduce.acquire.cta.global.and.b64
 
 multimem.ld_reduce.acquire.cluster.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2101,7 +2101,7 @@ multimem.ld_reduce.acquire.cluster.global.and.b64
 
 multimem.ld_reduce.acquire.gpu.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2116,7 +2116,7 @@ multimem.ld_reduce.acquire.gpu.global.and.b64
 
 multimem.ld_reduce.acquire.sys.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2131,7 +2131,7 @@ multimem.ld_reduce.acquire.sys.global.and.b64
 
 multimem.ld_reduce.weak.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -2144,7 +2144,7 @@ multimem.ld_reduce.weak.global.or.b64
 
 multimem.ld_reduce.relaxed.cta.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2159,7 +2159,7 @@ multimem.ld_reduce.relaxed.cta.global.or.b64
 
 multimem.ld_reduce.relaxed.cluster.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2174,7 +2174,7 @@ multimem.ld_reduce.relaxed.cluster.global.or.b64
 
 multimem.ld_reduce.relaxed.gpu.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2189,7 +2189,7 @@ multimem.ld_reduce.relaxed.gpu.global.or.b64
 
 multimem.ld_reduce.relaxed.sys.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2204,7 +2204,7 @@ multimem.ld_reduce.relaxed.sys.global.or.b64
 
 multimem.ld_reduce.acquire.cta.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2219,7 +2219,7 @@ multimem.ld_reduce.acquire.cta.global.or.b64
 
 multimem.ld_reduce.acquire.cluster.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2234,7 +2234,7 @@ multimem.ld_reduce.acquire.cluster.global.or.b64
 
 multimem.ld_reduce.acquire.gpu.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2249,7 +2249,7 @@ multimem.ld_reduce.acquire.gpu.global.or.b64
 
 multimem.ld_reduce.acquire.sys.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2264,7 +2264,7 @@ multimem.ld_reduce.acquire.sys.global.or.b64
 
 multimem.ld_reduce.weak.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .weak }
@@ -2277,7 +2277,7 @@ multimem.ld_reduce.weak.global.xor.b64
 
 multimem.ld_reduce.relaxed.cta.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2292,7 +2292,7 @@ multimem.ld_reduce.relaxed.cta.global.xor.b64
 
 multimem.ld_reduce.relaxed.cluster.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2307,7 +2307,7 @@ multimem.ld_reduce.relaxed.cluster.global.xor.b64
 
 multimem.ld_reduce.relaxed.gpu.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2322,7 +2322,7 @@ multimem.ld_reduce.relaxed.gpu.global.xor.b64
 
 multimem.ld_reduce.relaxed.sys.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2337,7 +2337,7 @@ multimem.ld_reduce.relaxed.sys.global.xor.b64
 
 multimem.ld_reduce.acquire.cta.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2352,7 +2352,7 @@ multimem.ld_reduce.acquire.cta.global.xor.b64
 
 multimem.ld_reduce.acquire.cluster.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2367,7 +2367,7 @@ multimem.ld_reduce.acquire.cluster.global.xor.b64
 
 multimem.ld_reduce.acquire.gpu.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }
@@ -2382,7 +2382,7 @@ multimem.ld_reduce.acquire.gpu.global.xor.b64
 
 multimem.ld_reduce.acquire.sys.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.ld_reduce.sem.scope.global.op.b64 dest, [addr]; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .acquire }

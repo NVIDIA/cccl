@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
+#define _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface>
 _CCCL_API auto __is_basic_any_test(__basic_any<_Interface>&&) -> __basic_any<_Interface>&&;
@@ -73,7 +73,7 @@ private:
   static constexpr size_t __align_ = __buffer_align(_Interface::align);
 
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
-  alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
+  alignas(__align_)::cuda::std::byte __buffer_[__size_];
 };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // Without concepts, we need a base class to correctly implement movability
@@ -117,7 +117,7 @@ private:
   static constexpr size_t __align_ = __buffer_align(_Interface::align);
 
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
-  alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
+  alignas(__align_)::cuda::std::byte __buffer_[__size_];
 };
 
 template <class _Interface>
@@ -141,8 +141,8 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
 };
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H
+#endif // _CUDA___UTILITY_BASIC_ANY_BASIC_ANY_BASE_H

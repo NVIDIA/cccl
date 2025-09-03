@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_LERP_H
-#define _LIBCUDACXX___CMATH_LERP_H
+#ifndef _CUDA_STD___CMATH_LERP_H
+#define _CUDA_STD___CMATH_LERP_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/promote.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Fp>
 [[nodiscard]] _CCCL_API constexpr _Fp __lerp(_Fp __a, _Fp __b, _Fp __t) noexcept
@@ -55,32 +55,32 @@ template <typename _Fp>
 
 [[nodiscard]] _CCCL_API constexpr float lerp(float __a, float __b, float __t) noexcept
 {
-  return _CUDA_VSTD::__lerp(__a, __b, __t);
+  return ::cuda::std::__lerp(__a, __b, __t);
 }
 
 [[nodiscard]] _CCCL_API constexpr double lerp(double __a, double __b, double __t) noexcept
 {
-  return _CUDA_VSTD::__lerp(__a, __b, __t);
+  return ::cuda::std::__lerp(__a, __b, __t);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr long double lerp(long double __a, long double __b, long double __t) noexcept
 {
-  return _CUDA_VSTD::__lerp(__a, __b, __t);
+  return ::cuda::std::__lerp(__a, __b, __t);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half lerp(__half __a, __half __b, __half __t) noexcept
 {
-  return __float2half(_CUDA_VSTD::__lerp(__half2float(__a), __half2float(__b), __half2float(__t)));
+  return __float2half(::cuda::std::__lerp(__half2float(__a), __half2float(__b), __half2float(__t)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 lerp(__nv_bfloat16 __a, __nv_bfloat16 __b, __nv_bfloat16 __t) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::__lerp(__bfloat162float(__a), __bfloat162float(__b), __bfloat162float(__t)));
+  return __float2bfloat16(::cuda::std::__lerp(__bfloat162float(__a), __bfloat162float(__b), __bfloat162float(__t)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -91,11 +91,11 @@ _CCCL_API constexpr enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && 
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
   static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>), "");
-  return _CUDA_VSTD::__lerp((__result_type) __a, (__result_type) __b, (__result_type) __t);
+  return ::cuda::std::__lerp((__result_type) __a, (__result_type) __b, (__result_type) __t);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_LERP_H
+#endif // _CUDA_STD___CMATH_LERP_H

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union
 
 import numba
 import numpy as np
@@ -13,7 +13,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..iterators._iterators import IteratorBase
+from ..op import OpKind
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -34,12 +35,9 @@ class _SegmentedReduce:
         d_out: DeviceArrayLike,
         start_offsets_in: DeviceArrayLike | IteratorBase,
         end_offsets_in: DeviceArrayLike | IteratorBase,
-        op: Callable,
+        op: Callable | OpKind,
         h_init: np.ndarray | GpuStruct,
     ):
-        start_offsets_in, end_offsets_in = scrub_duplicate_ltoirs(
-            start_offsets_in, end_offsets_in
-        )
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
@@ -69,7 +67,12 @@ class _SegmentedReduce:
             value_type = numba.from_dtype(h_init.dtype)
         else:
             value_type = numba.typeof(h_init)
-        self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+
+        # For well-known operations, we don't need a signature
+        if isinstance(op, OpKind):
+            self.op_wrapper = cccl.to_cccl_op(op, None)
+        else:
+            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
         self.build_result = call_build(
             _bindings.DeviceSegmentedReduceBuildResult,
             self.d_in_cccl,
@@ -134,14 +137,21 @@ def make_cache_key(
     d_out: DeviceArrayLike,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     d_in_key = _to_key(d_in)
     d_out_key = protocols.get_dtype(d_out)
     start_offsets_in_key = _to_key(start_offsets_in)
     end_offsets_in_key = _to_key(end_offsets_in)
-    op_key = CachableFunction(op)
+
+    # Handle well-known operations differently
+    op_key: Union[tuple[str, int], CachableFunction]
+    if isinstance(op, OpKind):
+        op_key = (op.name, op.value)
+    else:
+        op_key = CachableFunction(op)
+
     h_init_key = h_init.dtype
     return (
         d_in_key,
@@ -159,7 +169,7 @@ def make_segmented_reduce(
     d_out: DeviceArrayLike,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
@@ -178,7 +188,7 @@ def make_segmented_reduce(
         d_out: Device array that will store the result of the reduction
         start_offsets_in: Device array or iterator containing offsets to start of segments
         end_offsets_in: Device array or iterator containing offsets to end of segments
-        op: Callable representing the binary operator to apply
+        op: Callable or OpKind representing the binary operator to apply
         init: Numpy array storing initial value of the reduction
 
     Returns:
@@ -192,11 +202,26 @@ def segmented_reduce(
     d_out: DeviceArrayLike,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
     num_segments: int,
     stream=None,
 ):
+    """
+    Performs device-wide segmented reduction.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array to store the result of the reduction for each segment
+        start_offsets_in: Device array or iterator containing the sequence of beginning offsets
+        end_offsets_in: Device array or iterator containing the sequence of ending offsets
+        op: Binary reduction operator
+        h_init: Initial value for the reduction
+        num_segments: Number of segments to reduce
+        stream: CUDA stream for the operation (optional)
+    """
     reducer = make_segmented_reduce(
         d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
     )

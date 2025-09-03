@@ -18,9 +18,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, _CUDA_VSTD::uint32_t* __addr, _CUDA_VSTD::uint32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::uint32_t* __addr,
+  ::cuda::std::uint32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -80,9 +84,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -142,9 +150,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, _CUDA_VSTD::int32_t* __addr, _CUDA_VSTD::int32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::int32_t* __addr,
+  ::cuda::std::int32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -204,9 +216,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, _CUDA_VSTD::int64_t* __addr, _CUDA_VSTD::int64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_min_t,
+  ::cuda::std::int64_t* __addr,
+  ::cuda::std::int64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -266,9 +282,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, _CUDA_VSTD::uint32_t* __addr, _CUDA_VSTD::uint32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::uint32_t* __addr,
+  ::cuda::std::uint32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -328,9 +348,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -390,9 +414,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, _CUDA_VSTD::int32_t* __addr, _CUDA_VSTD::int32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::int32_t* __addr,
+  ::cuda::std::int32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -452,9 +480,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, _CUDA_VSTD::int64_t* __addr, _CUDA_VSTD::int64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_max_t,
+  ::cuda::std::int64_t* __addr,
+  ::cuda::std::int64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -514,9 +546,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, _CUDA_VSTD::uint32_t* __addr, _CUDA_VSTD::uint32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::uint32_t* __addr,
+  ::cuda::std::uint32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -576,9 +612,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, _CUDA_VSTD::uint64_t* __addr, _CUDA_VSTD::uint64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::uint64_t* __addr,
+  ::cuda::std::uint64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -638,9 +678,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, _CUDA_VSTD::int32_t* __addr, _CUDA_VSTD::int32_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::int32_t* __addr,
+  ::cuda::std::int32_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -700,9 +744,13 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <dot_sem _Sem, dot_scope _Scope>
+template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
 _CCCL_DEVICE static inline void multimem_red(
-  sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, _CUDA_VSTD::int64_t* __addr, _CUDA_VSTD::int64_t __val)
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_add_t,
+  ::cuda::std::int64_t* __addr,
+  ::cuda::std::int64_t __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -762,9 +810,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, _B32* __addr, _B32 __val)
+template <typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_and_op_t,
+  _B32* __addr,
+  _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -775,56 +830,56 @@ multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, _B32* __ad
   {
     asm("multimem.red.relaxed.cta.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.red.relaxed.cluster.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.red.relaxed.gpu.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.red.relaxed.sys.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cta)
   {
     asm("multimem.red.release.cta.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.red.release.cluster.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_gpu)
   {
     asm("multimem.red.release.gpu.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_sys)
   {
     asm("multimem.red.release.sys.global.and.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
 #  else
@@ -849,9 +904,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, _B32* __addr, _B32 __val)
+template <typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_or_op_t,
+  _B32* __addr,
+  _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -862,56 +924,56 @@ multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, _B32* __add
   {
     asm("multimem.red.relaxed.cta.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.red.relaxed.cluster.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.red.relaxed.gpu.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.red.relaxed.sys.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cta)
   {
     asm("multimem.red.release.cta.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.red.release.cluster.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_gpu)
   {
     asm("multimem.red.release.gpu.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_sys)
   {
     asm("multimem.red.release.sys.global.or.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
 #  else
@@ -936,9 +998,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B32, _CUDA_VSTD::enable_if_t<sizeof(_B32) == 4, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, _B32* __addr, _B32 __val)
+template <typename _B32,
+          ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_xor_op_t,
+  _B32* __addr,
+  _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -949,56 +1018,56 @@ multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, _B32* __ad
   {
     asm("multimem.red.relaxed.cta.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.red.relaxed.cluster.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.red.relaxed.gpu.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.red.relaxed.sys.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cta)
   {
     asm("multimem.red.release.cta.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.red.release.cluster.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_gpu)
   {
     asm("multimem.red.release.gpu.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_sys)
   {
     asm("multimem.red.release.sys.global.xor.b32 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const _CUDA_VSTD::int32_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "r"(/*as_b32*/ *reinterpret_cast<const ::cuda::std::int32_t*>(&__val))
         : "memory");
   }
 #  else
@@ -1023,9 +1092,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, _B64* __addr, _B64 __val)
+template <typename _B64,
+          ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_and_op_t,
+  _B64* __addr,
+  _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -1036,56 +1112,56 @@ multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, _B64* __ad
   {
     asm("multimem.red.relaxed.cta.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.red.relaxed.cluster.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.red.relaxed.gpu.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.red.relaxed.sys.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cta)
   {
     asm("multimem.red.release.cta.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.red.release.cluster.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_gpu)
   {
     asm("multimem.red.release.gpu.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_sys)
   {
     asm("multimem.red.release.sys.global.and.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
 #  else
@@ -1110,9 +1186,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, _B64* __addr, _B64 __val)
+template <typename _B64,
+          ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_or_op_t,
+  _B64* __addr,
+  _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -1123,56 +1206,56 @@ multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, _B64* __add
   {
     asm("multimem.red.relaxed.cta.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.red.relaxed.cluster.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.red.relaxed.gpu.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.red.relaxed.sys.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cta)
   {
     asm("multimem.red.release.cta.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.red.release.cluster.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_gpu)
   {
     asm("multimem.red.release.gpu.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_sys)
   {
     asm("multimem.red.release.sys.global.or.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
 #  else
@@ -1197,9 +1280,16 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_red_is_not_supported_before_SM_90__();
-template <typename _B64, _CUDA_VSTD::enable_if_t<sizeof(_B64) == 8, bool> = true, dot_sem _Sem, dot_scope _Scope>
-_CCCL_DEVICE static inline void
-multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, _B64* __addr, _B64 __val)
+template <typename _B64,
+          ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
+          ::cuda::ptx::dot_sem _Sem,
+          ::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void multimem_red(
+  ::cuda::ptx::sem_t<_Sem> __sem,
+  ::cuda::ptx::scope_t<_Scope> __scope,
+  ::cuda::ptx::op_xor_op_t,
+  _B64* __addr,
+  _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -1210,56 +1300,56 @@ multimem_red(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, _B64* __ad
   {
     asm("multimem.red.relaxed.cta.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_cluster)
   {
     asm("multimem.red.relaxed.cluster.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_gpu)
   {
     asm("multimem.red.relaxed.gpu.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_relaxed && __scope == scope_sys)
   {
     asm("multimem.red.relaxed.sys.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cta)
   {
     asm("multimem.red.release.cta.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_cluster)
   {
     asm("multimem.red.release.cluster.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_gpu)
   {
     asm("multimem.red.release.gpu.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
   else if constexpr (__sem == sem_release && __scope == scope_sys)
   {
     asm("multimem.red.release.sys.global.xor.b64 [%0], %1;"
         :
-        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const _CUDA_VSTD::int64_t*>(&__val))
+        : "l"(__as_ptr_gmem(__addr)), "l"(/*as_b64*/ *reinterpret_cast<const ::cuda::std::int64_t*>(&__val))
         : "memory");
   }
 #  else

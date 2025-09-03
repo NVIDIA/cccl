@@ -1,0 +1,179 @@
+# Doxyfile for CUB
+
+PROJECT_NAME           = CUB
+OUTPUT_DIRECTORY       = ../_build/doxygen/cub
+CREATE_SUBDIRS         = NO
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = YES
+
+INPUT                  = ../../cub/cub \
+                         ../../cub/cub/thread \
+                         ../../cub/cub/warp \
+                         ../../cub/cub/block \
+                         ../../cub/cub/device \
+                         ../../cub/cub/grid \
+                         ../../cub/cub/iterator
+
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */detail/* */test/* */examples/*
+EXCLUDE_SYMBOLS        = *detail* CUB_DETAIL*
+
+FILE_PATTERNS          = *.cuh *.h
+EXTENSION_MAPPING      = cuh=C++ cu=C++
+
+# Documentation extraction settings
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+SHOW_INCLUDE_FILES     = YES
+INLINE_INHERITED_MEMB  = YES
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = ../../cub
+STRIP_FROM_INC_PATH    = ../../cub
+SHORT_NAMES            = NO
+
+# Parsing settings
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = NO
+MULTILINE_CPP_IS_BRIEF = NO
+INHERIT_DOCS           = YES
+SEPARATE_MEMBER_PAGES  = NO
+TAB_SIZE               = 4
+BUILTIN_STL_SUPPORT    = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+SKIP_FUNCTION_MACROS   = YES
+
+# IMPORTANT: Aliases for custom commands
+# The rst alias enables embedding reStructuredText in doxygen comments
+ALIASES = "rst=\verbatim embed:rst:leading-asterisk"
+ALIASES += "endrst=\endverbatim"
+ALIASES += "rststar=\verbatim embed:rst:leading-asterisk"
+ALIASES += "inlinerst=\verbatim embed:rst:inline"
+
+# Key aliases that are used within @rst blocks (from repo.toml)
+ALIASES += "smemwarpreuse=A subsequent ``__syncwarp()`` warp-wide barrier should be invoked after calling this method if the collective's temporary storage (e.g., ``temp_storage``) is to be reused or repurposed."
+ALIASES += "smemreuse=A subsequent ``__syncthreads()`` threadblock barrier should be invoked after calling this method if the collective's temporary storage (e.g., ``temp_storage``) is to be reused or repurposed."
+ALIASES += "smemreuse{1}=After any operation, a subsequent ``__syncthreads()`` barrier is required if the collective's \1 is to be reused or repurposed"
+ALIASES += "smemstorage{1}=The operations exposed by \1 require a temporary memory allocation of this nested type for thread communication. This opaque storage can be allocated directly using the ``__shared__`` keyword. Alternatively, it can be aliased to externally allocated memory (shared or global) or ``union``'d with other storage allocation types to facilitate memory reuse."
+ALIASES += "granularity=Efficiency is increased with increased granularity ``ITEMS_PER_THREAD``. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of ``cub::BlockLoad`` for efficiently gathering a :ref:`blocked arrangement <flexible-data-arrangement>` of elements across threads."
+ALIASES += "blocksize=The number of threads in the block is a multiple of the architecture's warp size"
+ALIASES += "ptxversion=The PTX compute capability for which to to specialize this collective, formatted as per the ``__CUDA_ARCH__`` macro (e.g., 750 for sm_75). Useful for determining the collective's storage requirements for a given device from the host. (Default: the value of ``__CUDA_ARCH__`` during the current compiler pass)"
+ALIASES += "blockcollective{1}=Every thread in the block uses the \1 class by first specializing the \1 type, then instantiating an instance with parameters for communication, and finally invoking one or more collective member functions."
+ALIASES += "warpcollective{1}=Every thread in the warp uses the \1 class by first specializing the \1 type, then instantiating an instance with parameters for communication, and finally invoking or more collective member functions."
+ALIASES += "devicestorage=When ``d_temp_storage`` is ``nullptr``, no work is done and the required allocation size is returned in ``temp_storage_bytes``."
+ALIASES += "devicestorageP=This operation requires a relatively small allocation of temporary device storage that is ``O(P)``, where ``P`` is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size ``N``)."
+ALIASES += "devicestorageNP=This operation requires an allocation of temporary device storage that is ``O(N+P)``, where ``N`` is the length of the input and ``P`` is the number of streaming multiprocessors on the device."
+ALIASES += "devicestorageNCP=This operation requires a relatively small allocation of temporary device storage that is ``O(N/C + P)``, where ``N`` is the length of the input, ``C`` is the number of concurrent threads that can be actively scheduled on each streaming multiprocessor (typically several thousand), and ``P`` is the number of streaming multiprocessors on the device."
+ALIASES += "cdp_class{1}= - Dynamic parallelism. \1 methods can be called within kernel code on devices in which CUDA dynamic parallelism is supported."
+ALIASES += "iterator=(may be a simple pointer type)"
+ALIASES += "offset_size1=(Consider using 32-bit values as offsets/lengths/etc. For example, ``int`` will typically yield better performance than ``size_t`` in 64-bit memory mode.)"
+ALIASES += "offset_size2=Careful consideration should be given to the size of integer types used for offsets and lengths. Many (if not most) scenarios will only require 32-bit offsets (e.g., ``int``). 64-bit offset types (e.g., ``size_t`` on 64-bit memory mode) can consume a significant amount of thread storage resources, adversely affecting processor occupancy and performance."
+ALIASES += "rowmajor=For multi-dimensional blocks, threads are linearly ranked in row-major order."
+ALIASES += "blocked=Assumes a :ref:`blocked arrangement <flexible-data-arrangement>` of (*block-threads* * *items-per-thread*) items across the thread block, where *thread*\ :sub:`i` owns the *i*\ :sup:`th` range of *items-per-thread* contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed."
+ALIASES += "striped=Assumes a :ref:`striped arrangement <flexible-data-arrangement>` of (*block-threads* * *items-per-thread*) items across the thread block, where *thread*\ :sub:`i` owns items (*i*), (*i* + *block-threads*), ..., (*i* + (*block-threads* * (*items-per-thread* - 1))).  For multi-dimensional thread blocks, a row-major thread ordering is assumed."
+ALIASES += "warpstriped=Assumes a *warp-striped arrangement* of elements across threads, where warp\ :sub:`i` owns the *i*\ :sup:`th` range of (*warp-threads* * *items-per-thread*) contiguous items, and each thread owns items (*i*), (*i* + *warp-threads*), ..., (*i* + (*warp-threads* * (*items-per-thread* - 1)))."
+ALIASES += "linear_performance{1}=The work-complexity of \1 as a function of input size is linear, resulting in performance throughput that plateaus with problem sizes large enough to saturate the GPU."
+ALIASES += "plots_below=Performance plots for other scenarios can be found in the detailed method descriptions below."
+ALIASES += "identityzero=This operation assumes the value of obtained by the ``T``'s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value \"zero\" for addition."
+ALIASES += "lookback=`decoupled look-back <https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back>`_"
+
+# Predefined macros (based on repo.toml doxygen_predefined)
+PREDEFINED             = __device__= \
+                        __host__= \
+                        __global__= \
+                        __forceinline__= \
+                        "__declspec(x)=" \
+                        "__align__(x)=" \
+                        __cccl_lib_mdspan \
+                        "CUB_NAMESPACE_BEGIN=namespace cub {" \
+                        "CUB_NAMESPACE_END=}" \
+                        "CUB_NS_PREFIX=" \
+                        "CUB_NS_POSTFIX=" \
+                        "CUB_NS_QUALIFIER=cub::" \
+                        "CUB_DETAIL_MAGIC_NS_BEGIN=" \
+                        "CUB_DETAIL_MAGIC_NS_END=" \
+                        "_CCCL_AND=&&" \
+                        "_CCCL_CONCEPT=constexpr bool " \
+                        "_CCCL_CONSTEXPR_FRIEND=friend " \
+                        "_CCCL_CONSTEXPR_CXX20=constexpr" \
+                        "_CCCL_CONSTEXPR_CXX23=constexpr" \
+                        "_CCCL_CTK_AT_LEAST(x, y)=1" \
+                        "_CCCL_CTK_BELOW(x, y)=0" \
+                        "_CCCL_CUDACC_AT_LEAST(x, y)=1" \
+                        "_CCCL_CUDACC_BELOW(x, y)=0" \
+                        _CCCL_DEVICE= \
+                        _CCCL_DIAG_PUSH= \
+                        _CCCL_DIAG_POP= \
+                        "_CCCL_DIAG_SUPPRESS_CLANG(x)=" \
+                        "_CCCL_DIAG_SUPPRESS_GCC(x)=" \
+                        "_CCCL_DIAG_SUPPRESS_MSVC(x)=" \
+                        "_CCCL_DIAG_SUPPRESS_NVHPC(x)=" \
+                        _CCCL_DOXYGEN_INVOKED \
+                        _CCCL_EXEC_CHECK_DISABLE= \
+                        _CCCL_FORCEINLINE= \
+                        "_CCCL_GLOBAL_CONSTANT=inline constexpr" \
+                        "_CCCL_HAS_CTK()=1" \
+                        _CCCL_HIDE_FROM_ABI= \
+                        _CCCL_HOST= \
+                        _CCCL_HOST_DEVICE= \
+                        "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>" \
+                        _CCCL_STD_VER=2020 \
+                        _CCCL_SUPPRESS_DEPRECATED_PUSH= \
+                        _CCCL_SUPPRESS_DEPRECATED_POP= \
+                        "_CCCL_TEMPLATE(x)=template<x, " \
+                        "_CCCL_TRAIT(x, y)=x<y>::value" \
+                        "_CCCL_TRAILING_REQUIRES(x)=-> x requires " \
+                        _CCCL_TYPE_VISIBILITY_DEFAULT= \
+                        _CCCL_TYPE_VISIBILITY_HIDDEN= \
+                        _CCCL_API=inline \
+                        _CCCL_DEVICE_API=inline \
+                        _CCCL_HOST_API=inline \
+                        _CCCL_NODEBUG_API = inline \
+                        _CCCL_NODEBUG_DEVICE_API = inline \
+                        _CCCL_NODEBUG_HOST_API = inline \
+                        _CCCL_TRIVIAL_API = inline \
+                        _CCCL_TRIVIAL_DEVICE_API = inline \
+                        _CCCL_TRIVIAL_HOST_API = inline \
+                        _CCCL_VISIBILITY_DEFAULT= \
+                        _CCCL_VISIBILITY_HIDDEN= \
+                        _CCCL_TRY=try \
+                        _CCCL_CATCH=catch \
+                        "_CCCL_CATCH_ALL=catch (...)" \
+                        _CCCL_PUBLIC_API=inline \
+                        _CCCL_PUBLIC_DEVICE_API=inline \
+                        _CCCL_PUBLIC_HOST_API=inline \
+                        "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
+                        "_CCCL_END_NAMESPACE_CUDA_STD=}" \
+                        "_CUDAX_CONSTEXPR_FRIEND=friend" \
+                        "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1" \
+                        "CCCL_DEPRECATED=" \
+                        "CCCL_DEPRECATED_BECAUSE(x)=" \
+                        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT" \
+                        "CUB_DISABLE_NAMESPACE_MAGIC" \
+                        "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
+                        "CUB_RUNTIME_FUNCTION=" \
+                        "CUB_STATIC_ASSERT(cond,msg)=" \
+                        "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
+                        "THRUST_FWD(x)=x" \
+                        "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
+                        "THRUST_NAMESPACE_END=}" \
+                        "THRUST_PREVENT_MACRO_SUBSTITUTION" \
+                        _CCCL_DOXYGEN_INVOKED
+
+# Quiet mode
+QUIET                  = YES
+WARNINGS               = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO

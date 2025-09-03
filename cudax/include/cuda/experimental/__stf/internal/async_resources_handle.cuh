@@ -432,7 +432,7 @@ public:
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
   }
 
-  _CUDA_VSTD::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
+  ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool>
   cached_graphs_query(size_t nnodes, size_t nedges, ::std::shared_ptr<cudaGraph_t> g)
   {
     assert(pimpl);

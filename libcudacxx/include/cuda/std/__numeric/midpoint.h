@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_MIDPOINT_H
-#define _LIBCUDACXX___NUMERIC_MIDPOINT_H
+#ifndef _CUDA_STD___NUMERIC_MIDPOINT_H
+#define _CUDA_STD___NUMERIC_MIDPOINT_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 [[nodiscard]]
@@ -59,7 +59,7 @@ midpoint(_Tp __a, _Tp __b) noexcept
 template <class _Tp, enable_if_t<is_object_v<_Tp> && !is_void_v<_Tp> && (sizeof(_Tp) > 0), int> = 0>
 [[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {
-  return __a + _CUDA_VSTD::midpoint(ptrdiff_t(0), __b - __a);
+  return __a + ::cuda::std::midpoint(ptrdiff_t(0), __b - __a);
 }
 
 template <typename _Tp>
@@ -79,19 +79,19 @@ template <class _Fp>
 {
   constexpr _Fp __lo = numeric_limits<_Fp>::min() * 2;
   constexpr _Fp __hi = numeric_limits<_Fp>::max() / 2;
-  return _CUDA_VSTD::__fp_abs(__a) <= __hi && _CUDA_VSTD::__fp_abs(__b) <= __hi
+  return ::cuda::std::__fp_abs(__a) <= __hi && ::cuda::std::__fp_abs(__b) <= __hi
          ? // typical case: overflow is impossible
            (__a + __b) / 2
          : // always correctly rounded
-           _CUDA_VSTD::__fp_abs(__a) < __lo ? __a + __b / 2 : // not safe to halve a
-             _CUDA_VSTD::__fp_abs(__b) < __lo
+           ::cuda::std::__fp_abs(__a) < __lo ? __a + __b / 2 : // not safe to halve a
+             ::cuda::std::__fp_abs(__b) < __lo
              ? __a / 2 + __b
              : // not safe to halve b
              __a / 2 + __b / 2; // otherwise correctly rounded
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NUMERIC_MIDPOINT_H
+#endif // _CUDA_STD___NUMERIC_MIDPOINT_H

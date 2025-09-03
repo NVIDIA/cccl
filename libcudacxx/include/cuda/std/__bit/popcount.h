@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_POPCOUNT_H
-#define _LIBCUDACXX___BIT_POPCOUNT_H
+#ifndef _CUDA_STD___BIT_POPCOUNT_H
+#define _CUDA_STD___BIT_POPCOUNT_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_popcount_impl_constexpr(_Tp __v) noexcept
@@ -54,8 +54,8 @@ template <typename _Tp>
 #if defined(_CCCL_BUILTIN_POPCOUNTLL)
     return _CCCL_BUILTIN_POPCOUNTLL(__v);
 #else // ^^^ _CCCL_BUILTIN_POPCOUNTLL ^^^ / vvv !_CCCL_BUILTIN_POPCOUNTLL vvv
-    return _CUDA_VSTD::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v))
-         + _CUDA_VSTD::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v >> 32));
+    return ::cuda::std::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v))
+         + ::cuda::std::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v >> 32));
 #endif // ^^^ !_CCCL_BUILTIN_POPCOUNTLL ^^^
   }
 }
@@ -84,7 +84,7 @@ template <typename _Tp>
     return static_cast<int>(::_CountOneBits64(__v));
   }
 #  else // ^^^ msvc intrinsics ^^^ / vvv other vvv
-  return _CUDA_VSTD::__cccl_popcount_impl_constexpr(__v);
+  return ::cuda::std::__cccl_popcount_impl_constexpr(__v);
 #  endif // ^^^ other ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -109,17 +109,17 @@ template <typename _Tp>
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return _CUDA_VSTD::__cccl_popcount_impl_host(__v);),
-                      (return _CUDA_VSTD::__cccl_popcount_impl_device(__v);))
+                      (return ::cuda::std::__cccl_popcount_impl_host(__v);),
+                      (return ::cuda::std::__cccl_popcount_impl_device(__v);))
   }
-  return _CUDA_VSTD::__cccl_popcount_impl_constexpr(__v);
+  return ::cuda::std::__cccl_popcount_impl_constexpr(__v);
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int popcount(_Tp __v) noexcept
 {
   int __count{};
@@ -130,14 +130,14 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
     using _Sp = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
-    __count   = _CUDA_VSTD::__cccl_popcount_impl(static_cast<_Sp>(__v));
+    __count   = ::cuda::std::__cccl_popcount_impl(static_cast<_Sp>(__v));
   }
   else
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (size_t __i = 0; __i < sizeof(_Tp) / sizeof(uint64_t); ++__i)
     {
-      __count += _CUDA_VSTD::__cccl_popcount_impl(static_cast<uint64_t>(__v));
+      __count += ::cuda::std::__cccl_popcount_impl(static_cast<uint64_t>(__v));
       __v >>= numeric_limits<uint64_t>::digits;
     }
   }
@@ -147,8 +147,8 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>)
   return __count;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_POPCOUNT_H
+#endif // _CUDA_STD___BIT_POPCOUNT_H

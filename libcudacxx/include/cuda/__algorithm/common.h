@@ -30,37 +30,38 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-using __as_span_t = _CUDA_VSTD::span<_CUDA_VSTD::remove_reference_t<_CUDA_VRANGES::range_reference_t<_Tp>>>;
+using __as_span_t = ::cuda::std::span<::cuda::std::remove_reference_t<::cuda::std::ranges::range_reference_t<_Tp>>>;
 
 //! @brief A concept that checks if the type can be converted to a `cuda::std::span`.
 //! The type must be a contiguous range.
 template <typename _Tp>
 _CCCL_CONCEPT __spannable = _CCCL_REQUIRES_EXPR((_Tp))( //
-  requires(_CUDA_VRANGES::contiguous_range<_Tp>), //
-  requires(_CUDA_VSTD::convertible_to<_Tp, __as_span_t<_Tp>>));
+  requires(::cuda::std::ranges::contiguous_range<_Tp>), //
+  requires(::cuda::std::convertible_to<_Tp, __as_span_t<_Tp>>));
 
 template <typename _Tp>
 using __as_mdspan_t =
-  _CUDA_VSTD::mdspan<typename _CUDA_VSTD::decay_t<_Tp>::value_type,
-                     typename _CUDA_VSTD::decay_t<_Tp>::extents_type,
-                     typename _CUDA_VSTD::decay_t<_Tp>::layout_type,
-                     typename _CUDA_VSTD::decay_t<_Tp>::accessor_type>;
+  ::cuda::std::mdspan<typename ::cuda::std::decay_t<_Tp>::value_type,
+                      typename ::cuda::std::decay_t<_Tp>::extents_type,
+                      typename ::cuda::std::decay_t<_Tp>::layout_type,
+                      typename ::cuda::std::decay_t<_Tp>::accessor_type>;
 
 //! @brief A concept that checks if the type can be converted to a `cuda::std::mdspan`.
 //! The type must have a conversion to `__as_mdspan_t<_Tp>`.
 template <typename _Tp>
-_CCCL_CONCEPT __mdspannable = _CCCL_REQUIRES_EXPR((_Tp))(requires(_CUDA_VSTD::convertible_to<_Tp, __as_mdspan_t<_Tp>>));
+_CCCL_CONCEPT __mdspannable =
+  _CCCL_REQUIRES_EXPR((_Tp))(requires(::cuda::std::convertible_to<_Tp, __as_mdspan_t<_Tp>>));
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_HOST_API constexpr auto __as_mdspan(_Tp&& __value) noexcept -> __as_mdspan_t<_Tp>
 {
-  return _CUDA_VSTD::forward<_Tp>(__value);
+  return ::cuda::std::forward<_Tp>(__value);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

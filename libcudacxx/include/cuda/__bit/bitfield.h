@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 #if __cccl_ptx_isa >= 200
 
@@ -69,19 +69,19 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp
 bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
-  [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
+  static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
+  [[maybe_unused]] constexpr auto __digits = ::cuda::std::numeric_limits<_Tp>::digits;
   _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
     {
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
         NV_PROVIDES_SM_70, (;),
-        NV_IS_DEVICE,      (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                             return ::cuda::__bfi(static_cast<_Up>(__dest), static_cast<_Up>(__source),
                                                  __start, __width);))
       // clang-format on
@@ -94,19 +94,20 @@ bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp bitfield_extract(const _Tp __value, int __start, int __width) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_extract() requires unsigned integer types");
-  [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
+  static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>,
+                "bitfield_extract() requires unsigned integer types");
+  [[maybe_unused]] constexpr auto __digits = ::cuda::std::numeric_limits<_Tp>::digits;
   _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
     {
       // clang-format off
       NV_DISPATCH_TARGET( // all SM < 70
         NV_PROVIDES_SM_70, (;),
-        NV_IS_DEVICE,      (using _Up = _CUDA_VSTD::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                             return ::cuda::__bfe(static_cast<_Up>(__value), __start, __width);))
       // clang-format on
     }
@@ -114,7 +115,7 @@ template <typename _Tp>
   return ::cuda::__shr(__value, __start) & ::cuda::bitmask<_Tp>(0, __width);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

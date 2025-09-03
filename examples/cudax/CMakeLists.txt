@@ -54,12 +54,19 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # mdspan on windows only works in C++20 mode
   target_compile_features(cudax_samples_interface INTERFACE cxx_std_20)
 
-  # cudax requires dim3 to be usable from a constexpr context, and the CUDART
-  # headers require __cplusplus to be defined for this to work:
+  # Require the conforming preprocessor
   target_compile_options(cudax_samples_interface INTERFACE
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus /Zc:preprocessor>
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus -Xcompiler=/Zc:preprocessor>
   )
+
+  if (MSVC_TOOLSET_VERSION LESS 143)
+    # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
+    target_compile_options(cudax_samples_interface INTERFACE
+      $<$<COMPILE_LANGUAGE:CXX>:/wd5105>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd5105>
+    )
+  endif()
 endif()
 
 # The vector_add sample demonstrates a simple CUDA kernel that adds two vectors

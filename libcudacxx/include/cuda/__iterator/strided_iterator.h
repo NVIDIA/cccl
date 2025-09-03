@@ -36,20 +36,20 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is
 //! incremented or decremented.
 //!
 //! @param _Iter A random access iterator
 //! @param _Stride Either an \ref __integer-like__ or a \ref __integral-constant-like__ specifying the stride
-template <class _Iter, class _Stride = _CUDA_VSTD::iter_difference_t<_Iter>>
+template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
 class strided_iterator
 {
 private:
-  static_assert(_CUDA_VSTD::random_access_iterator<_Iter>,
+  static_assert(::cuda::std::random_access_iterator<_Iter>,
                 "The iterator underlying a strided_iterator must be a random access iterator.");
-  static_assert(_CUDA_VSTD::__integer_like<_Stride> || _CUDA_VSTD::__integral_constant_like<_Stride>,
+  static_assert(::cuda::std::__integer_like<_Stride> || ::cuda::std::__integral_constant_like<_Stride>,
                 "The stride of a strided_iterator must either be an integer-like or integral-constant-like.");
 
   _Iter __iter_{};
@@ -59,10 +59,10 @@ private:
   friend class strided_iterator;
 
 public:
-  using iterator_concept  = _CUDA_VSTD::random_access_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
-  using value_type        = _CUDA_VSTD::iter_value_t<_Iter>;
-  using difference_type   = _CUDA_VSTD::iter_difference_t<_Iter>;
+  using iterator_concept  = ::cuda::std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+  using value_type        = ::cuda::std::iter_value_t<_Iter>;
+  using difference_type   = ::cuda::std::iter_difference_t<_Iter>;
 
   //! NOTE: _Iter must be default initializable because it is a random_access_iterator and thereby semiregular
   //!       _Stride must be integer-like or integral_constant_like which requires default constructability
@@ -73,18 +73,18 @@ public:
   // would value construct to 0 and incrementing the iterator would do nothing.
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Stride2 = _Stride)
-  _CCCL_REQUIRES((!_CUDA_VSTD::__integer_like<_Stride2>) )
+  _CCCL_REQUIRES((!::cuda::std::__integer_like<_Stride2>) )
   _CCCL_API constexpr explicit strided_iterator(_Iter __iter) noexcept(
-    _CUDA_VSTD::is_nothrow_move_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_default_constructible_v<_Stride2>)
-      : __iter_(_CUDA_VSTD::move(__iter))
+    ::cuda::std::is_nothrow_move_constructible_v<_Iter> && ::cuda::std::is_nothrow_default_constructible_v<_Stride2>)
+      : __iter_(::cuda::std::move(__iter))
       , __stride_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit strided_iterator(_Iter __iter, _Stride __stride) noexcept(
-    _CUDA_VSTD::is_nothrow_move_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_move_constructible_v<_Stride>)
-      : __iter_(_CUDA_VSTD::move(__iter))
-      , __stride_(_CUDA_VSTD::move(__stride))
+    ::cuda::std::is_nothrow_move_constructible_v<_Iter> && ::cuda::std::is_nothrow_move_constructible_v<_Stride>)
+      : __iter_(::cuda::std::move(__iter))
+      , __stride_(::cuda::std::move(__stride))
   {}
 
   //! @brief Returns a const reference to the iterator stored in this \p transform_iterator
@@ -95,18 +95,18 @@ public:
 
   //! @brief Extracts the iterator stored in this \p transform_iterator
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Iter>)
+  [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>)
   {
-    return _CUDA_VSTD::move(__iter_);
+    return ::cuda::std::move(__iter_);
   }
 
   static constexpr bool __noexcept_stride =
-    noexcept(static_cast<difference_type>(_CUDA_VSTD::__de_ice(_CUDA_VSTD::declval<const _Stride&>())));
+    noexcept(static_cast<difference_type>(::cuda::std::__de_ice(::cuda::std::declval<const _Stride&>())));
 
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr difference_type stride() const noexcept(__noexcept_stride)
   {
-    return static_cast<difference_type>(_CUDA_VSTD::__de_ice(__stride_));
+    return static_cast<difference_type>(::cuda::std::__de_ice(__stride_));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -117,7 +117,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::__dereferenceable<const _Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const noexcept(noexcept(*__iter_))
   {
     return *__iter_;
@@ -132,7 +132,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::__dereferenceable<const _Iter2>)
+  _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
     noexcept(__noexcept_stride && noexcept(__iter_[__n]))
   {
@@ -150,7 +150,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr auto operator++(int) noexcept(
     noexcept(__noexcept_stride && noexcept(__iter_ += 1))
-    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Stride>)
+    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Stride>)
   {
     auto __tmp = *this;
     __iter_ += stride();
@@ -167,7 +167,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr strided_iterator operator--(int) noexcept(
     noexcept(__noexcept_stride && noexcept(__iter_ -= 1))
-    && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Iter> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Stride>)
+    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Stride>)
   {
     auto __tmp = *this;
     __iter_ -= stride();
@@ -192,10 +192,10 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() == ::cuda::std::declval<const _OtherIter&>()))
   {
     return __x.__iter_ == __y.base();
   }
@@ -203,10 +203,10 @@ public:
 #if _CCCL_STD_VER <= 2017
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() == _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() == ::cuda::std::declval<const _OtherIter&>()))
   {
     return __x.__iter_ != __y.base();
   }
@@ -214,52 +214,52 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() < ::cuda::std::declval<const _OtherIter&>()))
   {
     return __x.__iter_ < __y.base();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() < ::cuda::std::declval<const _OtherIter&>()))
   {
     return __y < __x;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator<=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() < ::cuda::std::declval<const _OtherIter&>()))
   {
     return !(__y < __x);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator>=(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() < _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() < ::cuda::std::declval<const _OtherIter&>()))
   {
     return !(__x < __y);
   }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::totally_ordered_with<_Iter, _OtherIter>)
+  _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Iter, _OtherIter>)
   _CCCL_REQUIRES(
-    _CUDA_VSTD::totally_ordered<_Iter, _OtherIter> _CCCL_AND _CUDA_VSTD::three_way_comparable_with<_Iter, _OtherIter>)
+    ::cuda::std::totally_ordered<_Iter, _OtherIter> _CCCL_AND ::cuda::std::three_way_comparable_with<_Iter, _OtherIter>)
   [[nodiscard]] _CCCL_API friend constexpr auto
   operator<=>(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<const _Iter&>() <=> _CUDA_VSTD::declval<const _OtherIter&>()))
+    noexcept(::cuda::std::declval<const _Iter&>() <=> ::cuda::std::declval<const _OtherIter&>()))
   {
     return __x.__iter_ <=> __y.base();
   }
@@ -290,10 +290,10 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherStride)
-  _CCCL_REQUIRES(_CUDA_VSTD::sized_sentinel_for<_OtherIter, _Iter>)
+  _CCCL_REQUIRES(::cuda::std::sized_sentinel_for<_OtherIter, _Iter>)
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const strided_iterator& __x, const strided_iterator<_OtherIter, _OtherStride>& __y) noexcept(
-    noexcept(_CUDA_VSTD::declval<_Iter>() - _CUDA_VSTD::declval<_OtherIter>()))
+    noexcept(::cuda::std::declval<_Iter>() - ::cuda::std::declval<_OtherIter>()))
   {
     const difference_type __diff = __x.__iter_ - __y.base();
     _CCCL_ASSERT(__x.stride() == __y.stride(), "Taking the difference of two strided_iterators with different stride");
@@ -308,13 +308,13 @@ _CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _S
 //! @brief make_strided_iterator creates a \p strided_iterator from a random access iterator and an optional stride
 //! @param __iter The random_access iterator
 //! @param __stride The optional stride. Is value initialized if not provided
-template <class _Iter, class _Stride = _CUDA_VSTD::iter_difference_t<_Iter>>
+template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
 [[nodiscard]] _CCCL_API constexpr auto make_strided_iterator(_Iter __iter, _Stride __stride = {})
 {
-  return strided_iterator<_Iter, _Stride>{_CUDA_VSTD::move(__iter), _CUDA_VSTD::move(__stride)};
+  return strided_iterator<_Iter, _Stride>{::cuda::std::move(__iter), ::cuda::std::move(__stride)};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

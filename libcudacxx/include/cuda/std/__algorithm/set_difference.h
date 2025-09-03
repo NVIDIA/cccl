@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SET_DIFFERENCE_H
-#define _LIBCUDACXX___ALGORITHM_SET_DIFFERENCE_H
+#ifndef _CUDA_STD___ALGORITHM_SET_DIFFERENCE_H
+#define _CUDA_STD___ALGORITHM_SET_DIFFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Comp, class _InIter1, class _Sent1, class _InIter2, class _Sent2, class _OutIter>
@@ -58,8 +58,8 @@ _CCCL_API constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>> __s
       ++__first2;
     }
   }
-  return _CUDA_VSTD::__copy<_AlgPolicy>(
-    _CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__last1), _CUDA_VSTD::move(__result));
+  return ::cuda::std::__copy<_AlgPolicy>(
+    ::cuda::std::move(__first1), ::cuda::std::move(__last1), ::cuda::std::move(__result));
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
@@ -71,7 +71,7 @@ _CCCL_API constexpr _OutputIterator set_difference(
   _OutputIterator __result,
   _Compare __comp)
 {
-  return _CUDA_VSTD::__set_difference<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
+  return ::cuda::std::__set_difference<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
            __first1, __last1, __first2, __last2, __result, __comp)
     .second;
 }
@@ -84,12 +84,12 @@ _CCCL_API constexpr _OutputIterator set_difference(
   _InputIterator2 __last2,
   _OutputIterator __result)
 {
-  return _CUDA_VSTD::__set_difference<_ClassicAlgPolicy>(__first1, __last1, __first2, __last2, __result, __less{})
+  return ::cuda::std::__set_difference<_ClassicAlgPolicy>(__first1, __last1, __first2, __last2, __result, __less{})
     .second;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_SET_DIFFERENCE_H
+#endif // _CUDA_STD___ALGORITHM_SET_DIFFERENCE_H

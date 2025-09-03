@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ALLOCATE_AT_LEAST_H
-#define _LIBCUDACXX___MEMORY_ALLOCATE_AT_LEAST_H
+#ifndef _CUDA_STD___MEMORY_ALLOCATE_AT_LEAST_H
+#define _CUDA_STD___MEMORY_ALLOCATE_AT_LEAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_STD_VER >= 2023
 template <class _Pointer>
@@ -55,7 +55,7 @@ allocate_at_least(_Alloc& __alloc, size_t __n)
 template <class _Alloc>
 [[nodiscard]] _CCCL_API constexpr auto __allocate_at_least(_Alloc& __alloc, size_t __n)
 {
-  return _CUDA_VSTD::allocate_at_least(__alloc, __n);
+  return ::cuda::std::allocate_at_least(__alloc, __n);
 }
 #else // ^^^ _CCCL_STD_VER >= 2023 ^^^ / vvv _CCCL_STD_VER < 2023 vvv
 template <class _Pointer>
@@ -74,8 +74,8 @@ __allocate_at_least(_Alloc& __alloc, size_t __n)
 
 #endif // _CCCL_STD_VER >= 2023
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ALLOCATE_AT_LEAST_H
+#endif // _CUDA_STD___MEMORY_ALLOCATE_AT_LEAST_H

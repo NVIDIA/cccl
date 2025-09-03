@@ -10,7 +10,8 @@
 // UNSUPPORTED: nvrtc
 
 // error: expression must have a constant value annotated_ptr.h: note #2701-D: attempt to access run-time storage
-// UNSUPPORTED: clang-14, gcc-11, gcc-10, gcc-9, gcc-8, gcc-7, msvc-19.29
+// UNSUPPORTED: clang-14, gcc-12, gcc-11, gcc-10, gcc-9, gcc-8, gcc-7, msvc-19.29
+// UNSUPPORTED: msvc && nvcc-12.0
 
 #include <cuda/annotated_ptr>
 

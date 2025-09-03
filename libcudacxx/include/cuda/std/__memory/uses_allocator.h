@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_USES_ALLOCATOR_H
-#define _LIBCUDACXX___MEMORY_USES_ALLOCATOR_H
+#ifndef _CUDA_STD___MEMORY_USES_ALLOCATOR_H
+#define _CUDA_STD___MEMORY_USES_ALLOCATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class = void>
 inline constexpr bool __has_allocator_type_v = false;
@@ -47,8 +47,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator : public integral_constant<b
 template <class _Tp, class _Alloc>
 inline constexpr bool uses_allocator_v = __uses_allocator_v<_Tp, _Alloc>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_USES_ALLOCATOR_H
+#endif // _CUDA_STD___MEMORY_USES_ALLOCATOR_H

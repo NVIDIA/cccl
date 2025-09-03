@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H
-#define _LIBCUDACXX___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H
+#ifndef _CUDA_STD___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H
+#define _CUDA_STD___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
 _CCCL_API constexpr _OutputIterator transform_exclusive_scan(
@@ -44,8 +44,8 @@ _CCCL_API constexpr _OutputIterator transform_exclusive_scan(
   return __result;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H
+#endif // _CUDA_STD___NUMERIC_TRANSFORM_EXCLUSIVE_SCAN_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __LIBCUDACXX___ATOMIC_API_COMMON_H
-#define __LIBCUDACXX___ATOMIC_API_COMMON_H
+#ifndef __CUDA_STD___ATOMIC_API_COMMON_H
+#define __CUDA_STD___ATOMIC_API_COMMON_H
 
 #include <cuda/std/detail/__config>
 
@@ -189,4 +189,4 @@
     return fetch_sub(__op) - __op;                                                                \
   }
 
-#endif // __LIBCUDACXX___ATOMIC_API_COMMON_H
+#endif // __CUDA_STD___ATOMIC_API_COMMON_H

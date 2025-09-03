@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MDSPAN_RESTRICT_ACCESSOR
-#define _CUDA___MDSPAN_RESTRICT_ACCESSOR
+#ifndef _CUDA___MDSPAN_RESTRICT_ACCESSOR_H
+#define _CUDA___MDSPAN_RESTRICT_ACCESSOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
 class __restrict_accessor;
@@ -58,16 +58,16 @@ inline constexpr bool is_restrict_accessor_v<__restrict_accessor<_Accessor>> = t
 template <typename _Accessor>
 class __restrict_accessor : public _Accessor
 {
-  static_assert(_CUDA_VSTD::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
+  static_assert(::cuda::std::is_pointer_v<typename _Accessor::data_handle_type>, "Accessor must be pointer based");
 
   using __data_handle_type = typename _Accessor::data_handle_type;
-  using __element_type     = _CUDA_VSTD::remove_pointer_t<__data_handle_type>;
+  using __element_type     = ::cuda::std::remove_pointer_t<__data_handle_type>;
 
   static constexpr bool __is_access_noexcept =
-    noexcept(_CUDA_VSTD::declval<_Accessor>().access(_CUDA_VSTD::declval<__data_handle_type>(), 0));
+    noexcept(::cuda::std::declval<_Accessor>().access(::cuda::std::declval<__data_handle_type>(), 0));
 
   static constexpr bool __is_offset_noexcept =
-    noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
+    noexcept(::cuda::std::declval<_Accessor>().offset(::cuda::std::declval<__data_handle_type>(), 0));
 
 public:
   using offset_policy    = __restrict_accessor<typename _Accessor::offset_policy>;
@@ -76,29 +76,29 @@ public:
   using element_type     = typename _Accessor::element_type;
 
   _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
-  _CCCL_REQUIRES(_CUDA_VSTD::is_default_constructible_v<_Accessor2>)
-  _CCCL_API inline __restrict_accessor() noexcept(_CUDA_VSTD::is_nothrow_default_constructible_v<_Accessor2>)
+  _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor2>)
+  _CCCL_API inline __restrict_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {}
 
   _CCCL_API constexpr __restrict_accessor(const _Accessor& __acc) noexcept(
-    _CUDA_VSTD::is_nothrow_copy_constructible_v<_Accessor>)
+    ::cuda::std::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {}
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(
-    _CUDA_VSTD::is_constructible_v<_OtherAccessor> _CCCL_AND(_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+    ::cuda::std::is_constructible_v<_OtherAccessor> _CCCL_AND(::cuda::std::is_convertible_v<_OtherAccessor, _Accessor>))
   _CCCL_API constexpr __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(noexcept(_Accessor{
-    _CUDA_VSTD::declval<_OtherAccessor>()}))
+    ::cuda::std::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
-  _CCCL_REQUIRES(
-    _CUDA_VSTD::is_constructible_v<_OtherAccessor> _CCCL_AND(!_CUDA_VSTD::is_convertible_v<_OtherAccessor, _Accessor>))
+  _CCCL_REQUIRES(::cuda::std::is_constructible_v<_OtherAccessor> _CCCL_AND(
+    !::cuda::std::is_convertible_v<_OtherAccessor, _Accessor>))
   _CCCL_API constexpr explicit __restrict_accessor(const __restrict_accessor<_OtherAccessor>& __acc) noexcept(
-    noexcept(_Accessor{_CUDA_VSTD::declval<_OtherAccessor>()}))
+    noexcept(_Accessor{::cuda::std::declval<_OtherAccessor>()}))
       : _Accessor{__acc}
   {}
 
@@ -115,8 +115,8 @@ public:
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MDSPAN_RESTRICT_ACCESSOR
+#endif // _CUDA___MDSPAN_RESTRICT_ACCESSOR_H

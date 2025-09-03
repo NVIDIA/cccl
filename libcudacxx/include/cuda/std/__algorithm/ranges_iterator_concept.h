@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_RANGES_ITERATOR_CONCEPT_H
-#define _LIBCUDACXX___ALGORITHM_RANGES_ITERATOR_CONCEPT_H
+#ifndef _CUDA_STD___ALGORITHM_RANGES_ITERATOR_CONCEPT_H
+#define _CUDA_STD___ALGORITHM_RANGES_ITERATOR_CONCEPT_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _IterMaybeQualified>
 _CCCL_API constexpr auto __get_iterator_concept()
@@ -58,8 +58,8 @@ _CCCL_API constexpr auto __get_iterator_concept()
 template <class _Iter>
 using __iterator_concept = decltype(__get_iterator_concept<_Iter>());
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_RANGES_ITERATOR_CONCEPT_H
+#endif // _CUDA_STD___ALGORITHM_RANGES_ITERATOR_CONCEPT_H

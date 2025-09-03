@@ -38,14 +38,14 @@ public:
   _CCCL_HIDE_FROM_ABI __intrusive_queue() noexcept = default;
 
   _CCCL_API __intrusive_queue(__intrusive_queue&& __other) noexcept
-      : __head_(_CUDA_VSTD::exchange(__other.__head_, nullptr))
-      , __tail_(_CUDA_VSTD::exchange(__other.__tail_, nullptr))
+      : __head_(::cuda::std::exchange(__other.__head_, nullptr))
+      , __tail_(::cuda::std::exchange(__other.__tail_, nullptr))
   {}
 
   _CCCL_API auto operator=(__intrusive_queue&& __other) noexcept -> __intrusive_queue&
   {
-    __head_ = _CUDA_VSTD::exchange(__other.__head_, nullptr);
-    __tail_ = _CUDA_VSTD::exchange(__other.__tail_, nullptr);
+    __head_ = ::cuda::std::exchange(__other.__head_, nullptr);
+    __tail_ = ::cuda::std::exchange(__other.__tail_, nullptr);
     return *this;
   }
 
@@ -107,7 +107,7 @@ public:
   _CCCL_API auto pop_front() noexcept -> _Item*
   {
     _CCCL_ASSERT(!empty(), "");
-    _Item* __item = _CUDA_VSTD::exchange(__head_, __head_->*_Next);
+    _Item* __item = ::cuda::std::exchange(__head_, __head_->*_Next);
     // This should test if __head_ == nullptr, but due to a bug in
     // nvc++'s optimization, `__head_` isn't assigned until later.
     // Filed as NVBug#3952534.
@@ -141,8 +141,8 @@ public:
   {
     if (!__other.empty())
     {
-      (empty() ? __head_ : __tail_->*_Next) = _CUDA_VSTD::exchange(__other.__head_, nullptr);
-      __tail_                               = _CUDA_VSTD::exchange(__other.__tail_, nullptr);
+      (empty() ? __head_ : __tail_->*_Next) = ::cuda::std::exchange(__other.__head_, nullptr);
+      __tail_                               = ::cuda::std::exchange(__other.__tail_, nullptr);
     }
   }
 
@@ -164,10 +164,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator
   {
     using value_type _CCCL_NODEBUG_ALIAS        = _Item*;
-    using difference_type _CCCL_NODEBUG_ALIAS   = _CUDA_VSTD::ptrdiff_t;
+    using difference_type _CCCL_NODEBUG_ALIAS   = ::cuda::std::ptrdiff_t;
     using pointer _CCCL_NODEBUG_ALIAS           = _Item* const*;
     using reference _CCCL_NODEBUG_ALIAS         = _Item* const&;
-    using iterator_category _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::forward_iterator_tag;
+    using iterator_category _CCCL_NODEBUG_ALIAS = ::cuda::std::forward_iterator_tag;
 
     _CCCL_HIDE_FROM_ABI iterator() noexcept = default;
 
@@ -193,7 +193,7 @@ public:
     _CCCL_API auto operator++() noexcept -> iterator&
     {
       _CCCL_ASSERT(__item_ != nullptr, "");
-      __predecessor_ = _CUDA_VSTD::exchange(__item_, __item_->*_Next);
+      __predecessor_ = ::cuda::std::exchange(__item_, __item_->*_Next);
       return *this;
     }
 

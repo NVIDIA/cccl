@@ -3,7 +3,7 @@
 
 cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -21,7 +21,7 @@ cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16
 
 cp.reduce.async.bulk.global.shared::cta.bulk_group.max.f16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
    // .dst       = { .global }
@@ -39,7 +39,7 @@ cp.reduce.async.bulk.global.shared::cta.bulk_group.max.f16
 
 cp.reduce.async.bulk.global.shared::cta.bulk_group.add.noftz.f16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // cp.reduce.async.bulk.dst.src.bulk_group.op.noftz.type  [dstMem], [srcMem], size; // 5. PTX ISA 80, SM_90
    // .dst       = { .global }

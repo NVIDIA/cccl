@@ -11,4 +11,4 @@ It is recommended to replace `thrust::tuple` with `cuda::std::tuple`.
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*typedef*tuple*
+   ../../api/*tuple*

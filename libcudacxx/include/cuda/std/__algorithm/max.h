@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MAX_H
-#define _LIBCUDACXX___ALGORITHM_MAX_H
+#ifndef _CUDA_STD___ALGORITHM_MAX_H
+#define _CUDA_STD___ALGORITHM_MAX_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
@@ -46,17 +46,17 @@ template <class _Tp>
 template <class _Tp, class _Compare>
 [[nodiscard]] _CCCL_API constexpr _Tp max(initializer_list<_Tp> __t, _Compare __comp)
 {
-  return *_CUDA_VSTD::__max_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
+  return *::cuda::std::__max_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
 }
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp max(initializer_list<_Tp> __t)
 {
-  return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less{});
+  return *::cuda::std::max_element(__t.begin(), __t.end(), __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MAX_H
+#endif // _CUDA_STD___ALGORITHM_MAX_H

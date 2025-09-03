@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_LOGICAL_DEVICE
-#define _CUDAX__DEVICE_LOGICAL_DEVICE
+#ifndef _CUDAX__DEVICE_LOGICAL_DEVICE_CUH
+#define _CUDAX__DEVICE_LOGICAL_DEVICE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -146,4 +146,4 @@ struct __logical_device_access
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__DEVICE_DEVICE_REF
+#endif // _CUDAX__DEVICE_LOGICAL_DEVICE_CUH

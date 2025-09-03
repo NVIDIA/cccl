@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_COPY_H
-#define _LIBCUDACXX___ALGORITHM_COPY_H
+#ifndef _CUDA_STD___ALGORITHM_COPY_H
+#define _CUDA_STD___ALGORITHM_COPY_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _InputIterator, class _OutputIterator>
@@ -55,9 +55,9 @@ _CCCL_API constexpr bool __dispatch_memmove(_Up* __result, _Tp* __first, const s
   _CCCL_BUILTIN_MEMMOVE(__result, __first, __n * sizeof(_Up));
   return true;
 #else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    _CUDA_VSTD::memmove(__result, __first, __n * sizeof(_Up));
+    ::cuda::std::memmove(__result, __first, __n * sizeof(_Up));
     return true;
   }
 
@@ -108,7 +108,7 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
     {
       return {__last, __result + __n};
     }
-    if ((!_CUDA_VSTD::is_constant_evaluated() && __first < __result)
+    if ((!::cuda::std::is_constant_evaluated() && __first < __result)
         || __constexpr_tail_overlap(__first, __result, __last))
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)
@@ -130,13 +130,13 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __re
 template <class _InputIterator, class _OutputIterator>
 _CCCL_API constexpr _OutputIterator copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::__copy<_ClassicAlgPolicy>(
-           _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result))
+  return ::cuda::std::__copy<_ClassicAlgPolicy>(
+           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
     .second;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_COPY_H
+#endif // _CUDA_STD___ALGORITHM_COPY_H

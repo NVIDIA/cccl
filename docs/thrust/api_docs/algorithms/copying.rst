@@ -9,4 +9,4 @@ Copying
 
    copying/gather
    copying/scatter
-   ${repo_docs_api_path}/*function_group__copying*
+   ../../api/group__copying*

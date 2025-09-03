@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(MSVC)
 
@@ -112,8 +112,8 @@ using __select_traits =
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
