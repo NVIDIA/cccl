@@ -259,8 +259,7 @@ def test_unary_transform_well_known_negate():
     d_output = cp.empty_like(d_input, dtype=dtype)
 
     # Run unary transform with well-known NEGATE operation
-    parallel.unary_transform(
-        d_input, d_output, parallel.OpKind.NEGATE, len(d_input))
+    parallel.unary_transform(d_input, d_output, parallel.OpKind.NEGATE, len(d_input))
 
     # Check the result is correct
     expected = np.array([-1, 2, -3, 4, -5])
@@ -277,8 +276,7 @@ def test_unary_transform_well_known_identity():
     d_output = cp.empty_like(d_input, dtype=dtype)
 
     # Run unary transform with well-known IDENTITY operation
-    parallel.unary_transform(
-        d_input, d_output, parallel.OpKind.IDENTITY, len(d_input))
+    parallel.unary_transform(d_input, d_output, parallel.OpKind.IDENTITY, len(d_input))
 
     # Check the result is correct
     expected = np.array([1, 2, 3, 4, 5])
