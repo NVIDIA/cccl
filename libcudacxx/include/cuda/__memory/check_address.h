@@ -37,7 +37,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 [[nodiscard]] _CCCL_DEVICE_API inline bool
 __is_smem_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
@@ -99,7 +99,7 @@ __are_ptrs_overlapping(const void* __ptr_lhs, const void* __ptr_rhs, ::cuda::std
   return ((__ptr1 + __n) < __ptr2) || ((__ptr2 + __n) < __ptr1);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
