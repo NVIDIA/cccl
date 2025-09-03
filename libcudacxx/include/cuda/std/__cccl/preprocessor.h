@@ -99,6 +99,8 @@
 #define _CCCL_PP_FOR_EACH_7(_Mp, _1, _2, _3, _4, _5, _6, _7) _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7)
 #define _CCCL_PP_FOR_EACH_8(_Mp, _1, _2, _3, _4, _5, _6, _7, _8) \
   _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8)
+#define _CCCL_PP_FOR_EACH_9(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9)
 
 #define _CCCL_PP_PROBE_EMPTY_PROBE__CCCL_PP_PROBE_EMPTY _CCCL_PP_PROBE(~)
 
