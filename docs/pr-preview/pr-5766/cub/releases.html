@@ -55,7 +55,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="CUB 2.1.0" href="releases/changelog.html" />
-    <link rel="prev" title="CUB Developer Overview" href="developer_overview.html" />
+    <link rel="prev" title="NVTX" href="developer/nvtx.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -341,7 +341,15 @@
 <li class="toctree-l3"><a class="reference internal" href="test_overview.html">CUB Tests</a></li>
 <li class="toctree-l3"><a class="reference internal" href="benchmarking.html">CUB Benchmarks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tuning.html">CUB Tunings</a></li>
-<li class="toctree-l3"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/visibility.html">Symbol Visibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">CUB Releases</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="releases/changelog.html">CUB 2.1.0</a></li>
 
@@ -1291,7 +1299,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::streamed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::streamed_interface_of&lt; void_interface &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1thread__level.html">cuda::experimental::thread_level</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../cudax/api/namespacecuda_1_1experimental_1ac387364c8610b584beb5b7429fbf231f.html">cuda::experimental::make_async_buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/namespacecuda_1_1experimental_1ac034d65c7fa02b6ea678e9173358e3c7.html">cuda::experimental::make_async_buffer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/namespacecuda_1_1experimental_1ae52f048fec5bb8c0e028ec6ee18e0ae4.html">cuda::experimental::depends_on</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e.html">cuda::experimental::start_path</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../cudax/api/namespacecuda_1_1experimental_1a173aac0f7accd9eef0e7c7d2e05da650.html">cuda::experimental::get_launch_dimensions</a></li>
@@ -1691,12 +1699,12 @@ on <a class="reference external" href="https://github.com/NVIDIA/cccl/releases">
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="developer_overview.html"
+       href="developer/nvtx.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">CUB Developer Overview</p>
+        <p class="prev-next-title">NVTX</p>
       </div>
     </a>
     <a class="right-next"
