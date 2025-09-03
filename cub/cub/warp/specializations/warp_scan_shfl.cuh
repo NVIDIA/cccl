@@ -413,15 +413,25 @@ struct WarpScanShfl
 
     // Perform scan op if from a valid peer
     _T output;
-    if (static_cast<int>(lane_id) < first_lane + offset)
+    if constexpr (cub::detail::has_no_side_effects<ScanOpT, T>)
     {
-      output = input;
+      output = scan_op(temp, input);
+      if (static_cast<int>(lane_id) < first_lane + offset)
+      {
+        output = input;
+      }
     }
     else
     {
-      output = scan_op(temp, input);
+      if (static_cast<int>(lane_id) < first_lane + offset)
+      {
+        output = input;
+      }
+      else
+      {
+        output = scan_op(temp, input);
+      }
     }
-
     return output;
   }
 
