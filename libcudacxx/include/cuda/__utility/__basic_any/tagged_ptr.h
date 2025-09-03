@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_BASIC_ANY_TAGGED_PTR_H
-#define _LIBCUDACXX___UTILITY_BASIC_ANY_TAGGED_PTR_H
+#ifndef _CUDA___UTILITY_BASIC_ANY_TAGGED_PTR_H
+#define _CUDA___UTILITY_BASIC_ANY_TAGGED_PTR_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Ptr>
 struct __tagged_ptr;
@@ -51,8 +51,8 @@ struct __tagged_ptr<_Tp*>
   uintptr_t __ptr_ = 0;
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_BASIC_ANY_TAGGED_PTR_H
+#endif // _CUDA___UTILITY_BASIC_ANY_TAGGED_PTR_H

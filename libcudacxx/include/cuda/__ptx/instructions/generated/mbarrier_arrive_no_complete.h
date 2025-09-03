@@ -13,11 +13,11 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
 #if __cccl_ptx_isa >= 700
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_arrive_no_complete_is_not_supported_before_SM_80__();
 template <typename = void>
-_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t
-mbarrier_arrive_no_complete(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __count)
+_CCCL_DEVICE static inline ::cuda::std::uint64_t
+mbarrier_arrive_no_complete(::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __count)
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
-  _CUDA_VSTD::uint64_t __state;
+  ::cuda::std::uint64_t __state;
   asm("mbarrier.arrive.noComplete.shared.b64                       %0,  [%1], %2;    // 5. "
       : "=l"(__state)
       : "r"(__as_ptr_smem(__addr)), "r"(__count)

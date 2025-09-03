@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__GRAPH_PATH_BUILDER
-#define _CUDAX__GRAPH_PATH_BUILDER
+#ifndef _CUDAX__GRAPH_PATH_BUILDER_CUH
+#define _CUDAX__GRAPH_PATH_BUILDER_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -134,9 +134,10 @@ struct path_builder
 
   //! \brief Get the dependencies of the path builder.
   //! \return A span of the dependencies of the path builder.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto get_dependencies() const noexcept -> _CUDA_VSTD::span<const cudaGraphNode_t>
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API auto get_dependencies() const noexcept
+    -> ::cuda::std::span<const cudaGraphNode_t>
   {
-    return _CUDA_VSTD::span(__nodes_.data(), __nodes_.size());
+    return ::cuda::std::span(__nodes_.data(), __nodes_.size());
   }
 
   //! \brief Add the dependencies of another path builder to this path builder.
@@ -158,7 +159,7 @@ struct path_builder
   {
     (
       [this](auto&& __arg) {
-        if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<decltype(__arg)>, graph_node_ref>)
+        if constexpr (::cuda::std::is_same_v<::cuda::std::decay_t<decltype(__arg)>, graph_node_ref>)
         {
           __nodes_.push_back(__arg.get());
         }
@@ -172,21 +173,21 @@ struct path_builder
 
   //! \brief Get the graph that the path builder is building.
   //! \return The graph that the path builder is building.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_graph() const noexcept -> graph_builder_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get_graph() const noexcept -> graph_builder_ref
   {
     return graph_builder_ref(__graph_, __dev_);
   }
 
   //! \internal
   //! Internal graph handle getter to match graph_node_ref::__get_graph().
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
   {
     return __graph_;
   }
 
   //! \brief Retrieves the device on which graph nodes inserted by the path builder will execute.
   //! \return The device on which graph nodes inserted by the path builder will execute.
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_device() const noexcept -> device_ref
+  [[nodiscard]] _CCCL_NODEBUG_HOST_API constexpr auto get_device() const noexcept -> device_ref
   {
     return __dev_;
   }
@@ -228,4 +229,4 @@ template <typename _FirstNode, typename... _Nodes>
 
 } // namespace cuda::experimental
 
-#endif // _CUDAX__GRAPH_PATH_BUILDER
+#endif // _CUDAX__GRAPH_PATH_BUILDER_CUH

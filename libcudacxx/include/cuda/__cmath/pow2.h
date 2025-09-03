@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CMATH_POW2
-#define _CUDA___CMATH_POW2
+#ifndef _CUDA___CMATH_POW2_H
+#define _CUDA___CMATH_POW2_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,46 +29,46 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr bool is_power_of_two(_Tp __t) noexcept
 {
-  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__t >= _Tp{0}, "cuda::is_power_of_two requires non-negative input");
   }
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-  return _CUDA_VSTD::has_single_bit(static_cast<_Up>(__t));
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+  return ::cuda::std::has_single_bit(static_cast<_Up>(__t));
 }
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp next_power_of_two(_Tp __t) noexcept
 {
-  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__t >= _Tp{0}, "cuda::is_power_of_two requires non-negative input");
   }
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-  return _CUDA_VSTD::bit_ceil(static_cast<_Up>(__t));
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+  return ::cuda::std::bit_ceil(static_cast<_Up>(__t));
 }
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp prev_power_of_two(_Tp __t) noexcept
 {
-  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__t >= _Tp{0}, "cuda::is_power_of_two requires non-negative input");
   }
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-  return _CUDA_VSTD::bit_floor(static_cast<_Up>(__t));
+  using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+  return ::cuda::std::bit_floor(static_cast<_Up>(__t));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___CMATH_POW2
+#endif // _CUDA___CMATH_POW2_H

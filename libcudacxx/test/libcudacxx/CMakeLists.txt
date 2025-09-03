@@ -25,6 +25,7 @@ option(LIBCUDACXX_TEST_WITH_NVRTC
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
   # Should also set up dependency on the project when NVRTC is enabled
+  set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/nvrtc_force_include.h")
   foreach (include IN ITEMS ${CUDA_INCLUDE_DIR})
     set(LIBCUDACXX_TEST_COMPILER_FLAGS "${LIBCUDACXX_TEST_COMPILER_FLAGS} -I'${include}'")
   endforeach()
@@ -61,6 +62,13 @@ if (MSVC)
   # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
   if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
     string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  endif()
+
+  # Require the conforming preprocessor
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:preprocessor")
+  if (MSVC_TOOLSET_VERSION LESS 143)
+    # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/wd5105")
   endif()
 endif()
 

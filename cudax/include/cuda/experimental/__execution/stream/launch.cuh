@@ -35,7 +35,7 @@ struct stream_domain::__apply_t<__kernel_t>
   template <class _Sndr, class _Env>
   _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
   {
-    static_assert(_CUDA_VSTD::__always_false_v<_Sndr>,
+    static_assert(::cuda::std::__always_false_v<_Sndr>,
                   "The CUDA stream scheduler does not yet support the `launch` algorithm.");
   }
 };

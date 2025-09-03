@@ -71,12 +71,12 @@ template <class _Tp, _IsConstIter _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host>
 {
 public:
-  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
+  using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
-  using difference_type   = _CUDA_VSTD::ptrdiff_t;
-  using pointer           = _CUDA_VSTD::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = _CUDA_VSTD::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using difference_type   = ::cuda::std::ptrdiff_t;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -118,12 +118,12 @@ template <class _Tp, _IsConstIter _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__device>
 {
 public:
-  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
+  using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
-  using difference_type   = _CUDA_VSTD::ptrdiff_t;
-  using pointer           = _CUDA_VSTD::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = _CUDA_VSTD::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using difference_type   = ::cuda::std::ptrdiff_t;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -165,12 +165,12 @@ template <class _Tp, _IsConstIter _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, _ExecutionSpace::__host_device>
 {
 public:
-  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
+  using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
-  using difference_type   = _CUDA_VSTD::ptrdiff_t;
-  using pointer           = _CUDA_VSTD::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = _CUDA_VSTD::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using difference_type   = ::cuda::std::ptrdiff_t;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -210,20 +210,20 @@ protected:
 
 template <class _CvTp, class... _Properties>
 class heterogeneous_iterator
-    : public __heterogeneous_iterator_access<_CUDA_VSTD::remove_const_t<_CvTp>,
-                                             _CUDA_VSTD::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
+    : public __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
+                                             ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
                                              __select_execution_space<_Properties...>>
 {
   using __base =
-    __heterogeneous_iterator_access<_CUDA_VSTD::remove_const_t<_CvTp>,
-                                    _CUDA_VSTD::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
+    __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
+                                    ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
                                     __select_execution_space<_Properties...>>;
 
 public:
-  using iterator_concept  = _CUDA_VSTD::contiguous_iterator_tag;
-  using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
-  using value_type        = _CUDA_VSTD::remove_const_t<_CvTp>;
-  using difference_type   = _CUDA_VSTD::ptrdiff_t;
+  using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+  using value_type        = ::cuda::std::remove_const_t<_CvTp>;
+  using difference_type   = ::cuda::std::ptrdiff_t;
   using pointer           = _CvTp*;
   using reference         = _CvTp&;
 
@@ -237,7 +237,7 @@ public:
   //! @brief Constructs an immutable \c heterogeneous_iterator from a mutable one
   //! @param __other The mutable \c heterogeneous_iterator
   _CCCL_TEMPLATE(class _OtherTp)
-  _CCCL_REQUIRES((_CUDA_VSTD::is_same_v<_OtherTp, value_type>) _CCCL_AND(_CUDA_VSTD::is_const_v<_CvTp>))
+  _CCCL_REQUIRES((::cuda::std::is_same_v<_OtherTp, value_type>) _CCCL_AND(::cuda::std::is_const_v<_CvTp>))
   _CCCL_API constexpr heterogeneous_iterator(heterogeneous_iterator<_OtherTp, _Properties...> __other) noexcept
       : __base(__other.__ptr_)
   {}
@@ -358,7 +358,7 @@ public:
 #    endif // _CCCL_STD_VER <= 2017
 
 #    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  [[nodiscard]] _CCCL_API friend constexpr _CUDA_VSTD::strong_ordering
+  [[nodiscard]] _CCCL_API friend constexpr ::cuda::std::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
@@ -414,7 +414,7 @@ public:
 };
 } // namespace cuda::experimental
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Here be dragons: We need to ensure that the iterator can work with legacy interfaces that take a pointer.
 // This will obviously eat all of our execution checks
@@ -423,18 +423,18 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
 {
   using pointer         = ::cuda::experimental::heterogeneous_iterator<_Tp, _Properties...>;
   using element_type    = _Tp;
-  using difference_type = _CUDA_VSTD::ptrdiff_t;
+  using difference_type = ::cuda::std::ptrdiff_t;
 
   //! @brief Retrieve the address of the element pointed at by an heterogeneous_iterator
   //! @param __iter A heterogeneous_iterator.
   //! @return A pointer to the element pointed to by the heterogeneous_iterator
   [[nodiscard]] _CCCL_API static constexpr element_type* to_address(const pointer __iter) noexcept
   {
-    return _CUDA_VSTD::to_address(__iter.__unwrap());
+    return ::cuda::std::to_address(__iter.__unwrap());
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SET_INTERSECTION_H
-#define _LIBCUDACXX___ALGORITHM_SET_INTERSECTION_H
+#ifndef _CUDA_STD___ALGORITHM_SET_INTERSECTION_H
+#define _CUDA_STD___ALGORITHM_SET_INTERSECTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InIter1, class _InIter2, class _OutIter>
@@ -41,9 +41,9 @@ struct __set_intersection_result
 
   // need a constructor as C++03 aggregate init is hard
   _CCCL_API constexpr __set_intersection_result(_InIter1&& __in_iter1, _InIter2&& __in_iter2, _OutIter&& __out_iter)
-      : __in1_(_CUDA_VSTD::move(__in_iter1))
-      , __in2_(_CUDA_VSTD::move(__in_iter2))
-      , __out_(_CUDA_VSTD::move(__out_iter))
+      : __in1_(::cuda::std::move(__in_iter1))
+      , __in2_(::cuda::std::move(__in_iter2))
+      , __out_(::cuda::std::move(__out_iter))
   {}
 };
 
@@ -71,9 +71,9 @@ _CCCL_API constexpr __set_intersection_result<_InIter1, _InIter2, _OutIter> __se
   }
 
   return __set_intersection_result<_InIter1, _InIter2, _OutIter>(
-    _IterOps<_AlgPolicy>::next(_CUDA_VSTD::move(__first1), _CUDA_VSTD::move(__last1)),
-    _IterOps<_AlgPolicy>::next(_CUDA_VSTD::move(__first2), _CUDA_VSTD::move(__last2)),
-    _CUDA_VSTD::move(__result));
+    _IterOps<_AlgPolicy>::next(::cuda::std::move(__first1), ::cuda::std::move(__last1)),
+    _IterOps<_AlgPolicy>::next(::cuda::std::move(__first2), ::cuda::std::move(__last2)),
+    ::cuda::std::move(__result));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -86,12 +86,12 @@ _CCCL_API constexpr _OutputIterator set_intersection(
   _OutputIterator __result,
   _Compare __comp)
 {
-  return _CUDA_VSTD::__set_intersection<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
-           _CUDA_VSTD::move(__first1),
-           _CUDA_VSTD::move(__last1),
-           _CUDA_VSTD::move(__first2),
-           _CUDA_VSTD::move(__last2),
-           _CUDA_VSTD::move(__result),
+  return ::cuda::std::__set_intersection<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
+           ::cuda::std::move(__first1),
+           ::cuda::std::move(__last1),
+           ::cuda::std::move(__first2),
+           ::cuda::std::move(__last2),
+           ::cuda::std::move(__result),
            __comp)
     .__out_;
 }
@@ -105,18 +105,18 @@ _CCCL_API constexpr _OutputIterator set_intersection(
   _InputIterator2 __last2,
   _OutputIterator __result)
 {
-  return _CUDA_VSTD::__set_intersection<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first1),
-           _CUDA_VSTD::move(__last1),
-           _CUDA_VSTD::move(__first2),
-           _CUDA_VSTD::move(__last2),
-           _CUDA_VSTD::move(__result),
+  return ::cuda::std::__set_intersection<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first1),
+           ::cuda::std::move(__last1),
+           ::cuda::std::move(__first2),
+           ::cuda::std::move(__last2),
+           ::cuda::std::move(__result),
            __less{})
     .__out_;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_SET_INTERSECTION_H
+#endif // _CUDA_STD___ALGORITHM_SET_INTERSECTION_H

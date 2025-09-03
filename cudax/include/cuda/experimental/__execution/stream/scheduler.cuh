@@ -74,14 +74,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       return stream_scheduler{__stream_};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_t) noexcept -> stream_domain
+    template <class _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_error_t>, _Env&& __env) const noexcept
+      -> __scheduler_of_t<_Env&>
+    {
+      return execution::get_scheduler(__env);
+    }
+
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept
+      -> stream_domain
     {
       return {};
     }
 
-    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(get_domain_override_t) noexcept -> stream_domain
+    template <class _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&& __env) const noexcept
+      -> __call_result_t<get_domain_t, _Env&>
+    {
+      return execution::get_domain(__env);
+    }
+
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_domain_override_t) const noexcept -> stream_domain
     {
       return {};
+    }
+
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_completion_behavior_t) const noexcept
+    {
+      return completion_behavior::asynchronous;
     }
 
     stream_ref __stream_;
@@ -195,12 +215,19 @@ public:
     return __stream_;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> stream_domain
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept -> stream_domain
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(get_forward_progress_guarantee_t) noexcept
+  template <class _Env>
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&&) const noexcept
+    -> __call_result_t<get_domain_t, _Env&>
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto query(get_forward_progress_guarantee_t) const noexcept
     -> forward_progress_guarantee
   {
     return forward_progress_guarantee::weakly_parallel;
@@ -239,7 +266,7 @@ _CCCL_HOST_API inline auto stream_ref::schedule() const noexcept
   return execution::schedule(execution::stream_scheduler{*this});
 }
 
-[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(const execution::get_domain_t&) noexcept
+[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(const execution::get_domain_t&) const noexcept
   -> execution::stream_domain
 {
   return {};

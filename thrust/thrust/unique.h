@@ -977,7 +977,6 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input range.
  *  \param last  The end of the input range.
- *  \param binary_pred  The binary predicate used to determine equality.
  *  \return The number of runs of equal elements in <tt>[first, new_last)</tt>
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -1052,7 +1051,6 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
  *
  *  \param first The beginning of the input range.
  *  \param last  The end of the input range.
- *  \param binary_pred  The binary predicate used to determine equality.
  *  \return The number of runs of equal elements in <tt>[first, new_last)</tt>
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward

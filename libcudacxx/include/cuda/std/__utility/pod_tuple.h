@@ -56,7 +56,7 @@
 // Unroll tuples of size 1-8 to bring down the number of template instantiations and to
 // permit __tuple to be used to initialize a structured binding without resorting to the
 // heavy-weight std::tuple protocol. This code was generated with the following macros,
-// which can be found here: https://godbolt.org/z/v6aac9v7E
+// which can be found here: https://godbolt.org/z/WEGoa9n4q
 
 /*
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_Tp, _Idx)
@@ -71,8 +71,9 @@
     _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;                                                               \
     _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                          \
                                                                                                        \
+    _CCCL_EXEC_CHECK_DISABLE                                                                           \
     template <class _Fn, class _Self, class... _Us>                                                    \
-    _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us)         \
+    _CCCL_NODEBUG_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us)         \
     _CCCL_ARROW(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...,                                  \
                                          static_cast<_Self&&>(__self).__val0                           \
                                          _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR, 1)))              \
@@ -87,7 +88,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunknown-warning-option") // "unknown warning group '-Wc++26-extensions'"
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions") // "pack indexing is a C++26 extension"
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVHPC)
 // GCC (as of v14) does not implement the resolution of CWG1835
@@ -120,8 +121,9 @@ struct __tupl_base;
 template <size_t... _Index, class... _Ts>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tupl_base<index_sequence<_Index...>, _Ts...> : __box<_Index, _Ts>...
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us)
+  _CCCL_NODEBUG_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us)
     _CCCL_ARROW(static_cast<_Fn&&>(__fn)(
       static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self)._CCCL_CWG1835_TEMPLATE __box<_Index, _Ts>::__value...))
 };
@@ -143,8 +145,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
   _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
   _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)...,
     static_cast<_Self&&>(__self).__val0,
@@ -178,6 +181,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
       static_cast<_Self&&>(__self).__val7);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5, class _Tp6>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6>
 {
@@ -189,8 +193,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
   _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
   _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)...,
     static_cast<_Self&&>(__self).__val0,
@@ -221,6 +226,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
       static_cast<_Self&&>(__self).__val6);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
 {
@@ -231,8 +237,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
   _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
   _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)...,
     static_cast<_Self&&>(__self).__val0,
@@ -260,6 +267,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
       static_cast<_Self&&>(__self).__val5);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
 {
@@ -269,8 +277,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
   _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
   _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)...,
     static_cast<_Self&&>(__self).__val0,
@@ -295,6 +304,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
       static_cast<_Self&&>(__self).__val4);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2, class _Tp3>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
 {
@@ -303,8 +313,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
   _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
   _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)...,
     static_cast<_Self&&>(__self).__val0,
@@ -326,6 +337,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
       static_cast<_Self&&>(__self).__val3);
   }
 };
+
 template <class _Tp0, class _Tp1, class _Tp2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
 {
@@ -333,8 +345,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
   _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
   _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)...,
     static_cast<_Self&&>(__self).__val0,
@@ -353,14 +366,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
       static_cast<_Self&&>(__self).__val2);
   }
 };
+
 template <class _Tp0, class _Tp1>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
   _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto
+  _CCCL_NODEBUG_API static constexpr auto
   __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(noexcept(static_cast<_Fn&&>(__fn)(
     static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__val0, static_cast<_Self&&>(__self).__val1)))
     -> decltype((static_cast<_Fn&&>(__fn)(
@@ -370,13 +385,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1>
       __fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__val0, static_cast<_Self&&>(__self).__val1);
   }
 };
+
 template <class _Tp0>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0>
 {
   _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_NODEBUG_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     noexcept(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__val0)))
     -> decltype((static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__val0)))
   {
@@ -392,7 +409,7 @@ _CCCL_HOST_DEVICE __tuple(_Ts...) -> __tuple<_Ts...>;
 //
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn, class _Tuple, class... _Us>
-_CCCL_TRIVIAL_API constexpr auto __apply(_Fn&& __fn, _Tuple&& __tuple, _Us&&... __us)
+_CCCL_NODEBUG_API constexpr auto __apply(_Fn&& __fn, _Tuple&& __tuple, _Us&&... __us)
   _CCCL_ARROW(__tuple.__apply(static_cast<_Fn&&>(__fn), static_cast<_Tuple&&>(__tuple), static_cast<_Us&&>(__us)...))
 
     template <class _Fn, class _Tuple, class... _Us>
@@ -400,15 +417,15 @@ _CCCL_TRIVIAL_API constexpr auto __apply(_Fn&& __fn, _Tuple&& __tuple, _Us&&... 
       decltype(declval<_Tuple>().__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...));
 
 template <class _Fn, class _Tuple, class... _Us>
-_CCCL_CONCEPT __applicable = _CUDA_VSTD::_IsValidExpansion<__apply_result_t, _Fn, _Tuple, _Us...>::value;
+_CCCL_CONCEPT __applicable = ::cuda::std::_IsValidExpansion<__apply_result_t, _Fn, _Tuple, _Us...>::value;
 
 template <class _Fn, class _Tuple, class... _Us>
 using __nothrow_applicable_detail_t =
-  _CUDA_VSTD::enable_if_t<noexcept(declval<_Tuple>().__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...))>;
+  ::cuda::std::enable_if_t<noexcept(declval<_Tuple>().__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...))>;
 
 template <class _Fn, class _Tuple, class... _Us>
 _CCCL_CONCEPT __nothrow_applicable =
-  _CUDA_VSTD::_IsValidExpansion<__nothrow_applicable_detail_t, _Fn, _Tuple, _Us...>::value;
+  ::cuda::std::_IsValidExpansion<__nothrow_applicable_detail_t, _Fn, _Tuple, _Us...>::value;
 
 //
 // __get<I>(tupl)
@@ -421,7 +438,7 @@ template <size_t _Idx>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn
 {
   template <class... _Ts>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Ts&&... __ts) const noexcept -> decltype(auto)
+  _CCCL_NODEBUG_API constexpr auto operator()(_Ts&&... __ts) const noexcept -> decltype(auto)
   {
     return static_cast<decltype(__ts...[_Idx])&&>(__ts...[_Idx]);
   }
@@ -430,16 +447,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn
 #else // ^^^ _CCCL_HAS_PACK_INDEXING() ^^^ / vvv !_CCCL_HAS_PACK_INDEXING() vvv
 
 template <size_t>
-using __ignore_t = _CUDA_VSTD::__ignore_t;
+using __ignore_t = ::cuda::std::__ignore_t;
 
-template <size_t _Idx, class = _CUDA_VSTD::make_index_sequence<_Idx>>
+template <size_t _Idx, class = ::cuda::std::make_index_sequence<_Idx>>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn;
 
 template <size_t _Idx, size_t... _Is>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn<_Idx, _CUDA_VSTD::index_sequence<_Is...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn<_Idx, ::cuda::std::index_sequence<_Is...>>
 {
   template <class _Ty, class... _Rest>
-  _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t<_Is>..., _Ty&& __ty, _Rest&&...) noexcept -> _Ty&&
+  _CCCL_NODEBUG_API constexpr auto operator()(__ignore_t<_Is>..., _Ty&& __ty, _Rest&&...) noexcept -> _Ty&&
   {
     return static_cast<_Ty&&>(__ty);
   }
@@ -449,7 +466,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __get_fn<_Idx, _CUDA_VSTD::index_sequence<_
 } // namespace __detail
 
 template <size_t _Idx, class _Tuple>
-_CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tuple) noexcept -> decltype(auto)
+_CCCL_NODEBUG_API constexpr auto __get(_Tuple&& __tuple) noexcept -> decltype(auto)
 {
   return __tuple.__apply(__detail::__get_fn<_Idx>{}, static_cast<_Tuple&&>(__tuple));
 }
@@ -499,9 +516,9 @@ _CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
 
 template <size_t _Index, class _Tuple>
 using __tuple_element_t _CCCL_NODEBUG_ALIAS =
-  decltype(_CUDA_VSTD::__remove_rvalue_ref(_CUDA_VSTD::__get<_Index>(declval<_Tuple>())));
+  decltype(::cuda::std::__remove_rvalue_ref(::cuda::std::__get<_Index>(declval<_Tuple>())));
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 

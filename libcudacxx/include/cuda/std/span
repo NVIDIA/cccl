@@ -59,7 +59,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = is_convertible_v<_From (*)[], _To (*)[]>;
@@ -68,12 +68,13 @@ template <class _Range, class _ElementType>
 _CCCL_CONCEPT_FRAGMENT(
   __span_compatible_range_,
   requires()(
-    requires(_CUDA_VRANGES::contiguous_range<_Range>),
-    requires(_CUDA_VRANGES::sized_range<_Range>),
-    requires((_CUDA_VRANGES::borrowed_range<_Range> || is_const_v<_ElementType>) ),
+    requires(::cuda::std::ranges::contiguous_range<_Range>),
+    requires(::cuda::std::ranges::sized_range<_Range>),
+    requires((::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>) ),
     requires((!is_array_v<remove_cvref_t<_Range>>) ),
     requires((!__is_std_span_v<remove_cvref_t<_Range>> && !__is_std_array_v<remove_cvref_t<_Range>>) ),
-    requires(is_convertible_v<remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]>)));
+    requires(
+      is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>)));
 
 template <class _Range, class _ElementType>
 _CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
@@ -150,7 +151,7 @@ public:
   using reference        = _Tp&;
   using const_reference  = const _Tp&;
   using iterator         = __wrap_iter<pointer>;
-  using reverse_iterator = _CUDA_VSTD::reverse_iterator<iterator>;
+  using reverse_iterator = ::cuda::std::reverse_iterator<iterator>;
 
   static constexpr size_type extent = _Extent;
 
@@ -175,7 +176,7 @@ public:
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
   _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
-      : __data_{_CUDA_VSTD::to_address(__first)}
+      : __data_{::cuda::std::to_address(__first)}
   {
     _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
   }
@@ -183,7 +184,7 @@ public:
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
   _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
-      : __data_{_CUDA_VSTD::to_address(__first)}
+      : __data_{::cuda::std::to_address(__first)}
   {
     _CCCL_ASSERT((__last - __first >= 0), "invalid range in span's constructor (iterator, sentinel)");
     _CCCL_ASSERT(__last - __first == _Extent,
@@ -211,9 +212,9 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr explicit span(_Range&& __r)
-      : __data_{_CUDA_VRANGES::data(__r)}
+      : __data_{::cuda::std::ranges::data(__r)}
   {
-    _CCCL_ASSERT(_CUDA_VRANGES::size(__r) == _Extent, "size mismatch in span's constructor (range)");
+    _CCCL_ASSERT(::cuda::std::ranges::size(__r) == _Extent, "size mismatch in span's constructor (range)");
   }
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _Extent2 = _Extent)
@@ -307,7 +308,7 @@ public:
   {
     if (__idx >= size())
     {
-      _CUDA_VSTD::__throw_out_of_range("span::at");
+      ::cuda::std::__throw_out_of_range("span::at");
     }
     return __data_[__idx];
   }
@@ -375,7 +376,7 @@ public:
   using reference        = _Tp&;
   using const_reference  = const _Tp&;
   using iterator         = __wrap_iter<pointer>;
-  using reverse_iterator = _CUDA_VSTD::reverse_iterator<iterator>;
+  using reverse_iterator = ::cuda::std::reverse_iterator<iterator>;
 
   static constexpr size_type extent = dynamic_extent;
 
@@ -398,14 +399,14 @@ public:
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
   _CCCL_API constexpr span(_It __first, size_type __count)
-      : __data_{_CUDA_VSTD::to_address(__first)}
+      : __data_{::cuda::std::to_address(__first)}
       , __size_{__count}
   {}
 
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
   _CCCL_API constexpr span(_It __first, _End __last)
-      : __data_(_CUDA_VSTD::to_address(__first))
+      : __data_(::cuda::std::to_address(__first))
       , __size_(__last - __first)
   {
     _CCCL_ASSERT(__last - __first >= 0, "invalid range in span's constructor (iterator, sentinel)");
@@ -434,8 +435,8 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr span(_Range&& __r)
-      : __data_(_CUDA_VRANGES::data(__r))
-      , __size_{_CUDA_VRANGES::size(__r)}
+      : __data_(::cuda::std::ranges::data(__r))
+      , __size_{::cuda::std::ranges::size(__r)}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherExtent)
@@ -524,7 +525,7 @@ public:
   {
     if (__idx >= size())
     {
-      _CUDA_VSTD::__throw_out_of_range("span::at");
+      ::cuda::std::__throw_out_of_range("span::at");
     }
     return __data_[__idx];
   }
@@ -609,18 +610,18 @@ _CCCL_HOST_DEVICE span(_It, _EndOrSize)
   -> span<remove_reference_t<iter_reference_t<_It>>, __maybe_static_ext<_EndOrSize>>;
 
 _CCCL_TEMPLATE(class _Range)
-_CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>>>;
+_CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
+_CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 template <class _Tp, size_t _Extent>
 inline constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
 
 template <class _Tp, size_t _Extent>
 inline constexpr bool enable_view<span<_Tp, _Extent>> = true;
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

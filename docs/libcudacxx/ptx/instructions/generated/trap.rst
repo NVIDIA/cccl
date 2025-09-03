@@ -3,7 +3,7 @@
 
 trap
 ^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // trap; // PTX ISA 10, SM_50
    template <typename = void>

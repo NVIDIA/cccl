@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_REVERSE_H
-#define _LIBCUDACXX___ALGORITHM_REVERSE_H
+#ifndef _CUDA_STD___ALGORITHM_REVERSE_H
+#define _CUDA_STD___ALGORITHM_REVERSE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator>
@@ -64,18 +64,18 @@ template <class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
 _CCCL_API constexpr void __reverse(_BidirectionalIterator __first, _Sentinel __last)
 {
   using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_BidirectionalIterator>;
-  _CUDA_VSTD::__reverse_impl<_AlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _IterCategory());
+  ::cuda::std::__reverse_impl<_AlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last), _IterCategory());
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator>
 _CCCL_API constexpr void reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
-  _CUDA_VSTD::__reverse<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
+  ::cuda::std::__reverse<_ClassicAlgPolicy>(::cuda::std::move(__first), ::cuda::std::move(__last));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_REVERSE_H
+#endif // _CUDA_STD___ALGORITHM_REVERSE_H

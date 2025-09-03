@@ -3,7 +3,7 @@
 
 shl.b16
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shl.b16 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename B16, enable_if_t<sizeof(B16) == 2, bool> = true>
@@ -13,7 +13,7 @@ shl.b16
 
 shl.b32
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shl.b32 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename B32, enable_if_t<sizeof(B32) == 4, bool> = true>
@@ -23,7 +23,7 @@ shl.b32
 
 shl.b64
 ^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // shl.b64 dest, a_reg, b_reg; // PTX ISA 10, SM_50
    template <typename B64, enable_if_t<sizeof(B64) == 8, bool> = true>

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_CAST_H
-#define _LIBCUDACXX___FLOATING_POINT_CAST_H
+#ifndef _CUDA_STD___FLOATING_POINT_CAST_H
+#define _CUDA_STD___FLOATING_POINT_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _To, class _From>
 [[nodiscard]] _CCCL_API inline constexpr _To __fp_cast(_From __v) noexcept
@@ -64,37 +64,37 @@ template <class _To, class _From>
 #if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_float_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_float_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
     }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_float_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_float_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
     }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_float_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_float_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
     }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_float_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_float_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_float_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_float_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_float_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_float_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -133,37 +133,37 @@ template <class _To, class _From>
 #if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_double_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_double_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
     }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_double_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_double_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
     }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_double_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(::__nv_cvt_double_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
     }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_double_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_double_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_double_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_double_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_double_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_double_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
     }
 #endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -189,49 +189,49 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP16()
     else if constexpr (is_same_v<_To, __half>)
     {
-      return _CUDA_VSTD::__fp_cast<__half>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__half>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVBF16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e4m3>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e5m2>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e2m3>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e3m2>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp4_e2m1>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -249,12 +249,12 @@ template <class _To, class _From>
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, __half>)
@@ -264,43 +264,43 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_halfraw_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_halfraw_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_halfraw_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_halfraw_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_halfraw_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(::__nv_cvt_halfraw_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_halfraw_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(::__nv_cvt_halfraw_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_halfraw_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
+      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(::__nv_cvt_halfraw_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -318,18 +318,18 @@ template <class _To, class _From>
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
     else if constexpr (is_same_v<_To, __half>)
     {
-      return _CUDA_VSTD::__fp_cast<__half>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__half>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
@@ -339,40 +339,40 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_bfloat16raw_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e4m3>(::__nv_cvt_bfloat16raw_to_fp8(__v, __NV_NOSAT, __NV_E4M3));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_bfloat16raw_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e5m2>(::__nv_cvt_bfloat16raw_to_fp8(__v, __NV_NOSAT, __NV_E5M2));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(
+      return ::cuda::std::__fp_from_storage<__nv_fp8_e8m0>(
         ::__nv_cvt_bfloat16raw_to_e8m0(__v, __NV_NOSAT, cudaRoundZero));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e2m3>(
         ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E2M3, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(
+      return ::cuda::std::__fp_from_storage<__nv_fp6_e3m2>(
         ::__nv_cvt_bfloat16raw_to_fp6(__v, __NV_E3M2, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(
+      return ::cuda::std::__fp_from_storage<__nv_fp4_e2m1>(
         ::__nv_cvt_bfloat16raw_to_fp4(__v, __NV_E2M1, cudaRoundNearest));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
@@ -387,16 +387,16 @@ template <class _To, class _From>
   {
     if constexpr (is_same_v<_To, float>)
     {
-      return _CUDA_VSTD::__fp_cast<float>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<float>(::cuda::std::__fp_cast<__half>(__v));
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
@@ -408,7 +408,7 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
@@ -418,31 +418,31 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e5m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e2m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e3m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp4_e2m1>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -456,16 +456,16 @@ template <class _To, class _From>
   {
     if constexpr (is_same_v<_To, float>)
     {
-      return _CUDA_VSTD::__fp_cast<float>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<float>(::cuda::std::__fp_cast<__half>(__v));
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
@@ -477,13 +477,13 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVBF16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e4m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
@@ -493,25 +493,25 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e2m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e3m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp4_e2m1>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -525,22 +525,22 @@ template <class _To, class _From>
   {
     if constexpr (is_same_v<_To, float>)
     {
-      return _CUDA_VSTD::__fp_cast<float>(_CUDA_VSTD::__fp_cast<__nv_bfloat16>(__v));
+      return ::cuda::std::__fp_cast<float>(::cuda::std::__fp_cast<__nv_bfloat16>(__v));
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<__nv_bfloat16>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<__nv_bfloat16>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<__nv_bfloat16>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<__nv_bfloat16>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
     else if constexpr (is_same_v<_To, __half>)
     {
-      return _CUDA_VSTD::__fp_cast<__half>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__half>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
@@ -552,13 +552,13 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e4m3>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e5m2>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
@@ -568,19 +568,19 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e2m3>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e3m2>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp4_e2m1>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -594,16 +594,16 @@ template <class _To, class _From>
   {
     if constexpr (is_same_v<_To, float>)
     {
-      return _CUDA_VSTD::__fp_cast<float>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<float>(::cuda::std::__fp_cast<__half>(__v));
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
@@ -615,25 +615,25 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVBF16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e4m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e5m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
@@ -643,13 +643,13 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e3m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp4_e2m1>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -663,16 +663,16 @@ template <class _To, class _From>
   {
     if constexpr (is_same_v<_To, float>)
     {
-      return _CUDA_VSTD::__fp_cast<float>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<float>(::cuda::std::__fp_cast<__half>(__v));
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
@@ -684,31 +684,31 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVBF16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e4m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e5m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e2m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
@@ -718,7 +718,7 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVFP4_E2M1()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp4_e2m1>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp4_e2m1>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
@@ -732,16 +732,16 @@ template <class _To, class _From>
   {
     if constexpr (is_same_v<_To, float>)
     {
-      return _CUDA_VSTD::__fp_cast<float>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<float>(::cuda::std::__fp_cast<__half>(__v));
     }
     else if constexpr (is_same_v<_To, double>)
     {
-      return _CUDA_VSTD::__fp_cast<double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  if _CCCL_HAS_LONG_DOUBLE()
     else if constexpr (is_same_v<_To, long double>)
     {
-      return _CUDA_VSTD::__fp_cast<long double>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<long double>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
@@ -753,37 +753,37 @@ template <class _To, class _From>
 #  if _CCCL_HAS_NVBF16()
     else if constexpr (is_same_v<_To, __nv_bfloat16>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_bfloat16>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_bfloat16>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVBF16()
 #  if _CCCL_HAS_NVFP8_E4M3()
     else if constexpr (is_same_v<_To, __nv_fp8_e4m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e4m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e4m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
     else if constexpr (is_same_v<_To, __nv_fp8_e5m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e5m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e5m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
     else if constexpr (is_same_v<_To, __nv_fp8_e8m0>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp8_e8m0>(_CUDA_VSTD::__fp_cast<float>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp8_e8m0>(::cuda::std::__fp_cast<float>(__v));
     }
 #  endif // _CCCL_HAS_NVFP8_E8M0()
 #  if _CCCL_HAS_NVFP6_E2M3()
     else if constexpr (is_same_v<_To, __nv_fp6_e2m3>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e2m3>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e2m3>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E2M3()
 #  if _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp6_e3m2>)
     {
-      return _CUDA_VSTD::__fp_cast<__nv_fp6_e3m2>(_CUDA_VSTD::__fp_cast<__half>(__v));
+      return ::cuda::std::__fp_cast<__nv_fp6_e3m2>(::cuda::std::__fp_cast<__half>(__v));
     }
 #  endif // _CCCL_HAS_NVFP6_E3M2()
     else if constexpr (is_same_v<_To, __nv_fp4_e2m1>)
@@ -802,8 +802,8 @@ template <class _To, class _From>
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_CAST_H
+#endif // _CUDA_STD___FLOATING_POINT_CAST_H

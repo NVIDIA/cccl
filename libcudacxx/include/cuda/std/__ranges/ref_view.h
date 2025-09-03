@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_REF_VIEW_H
-#define _LIBCUDACXX___RANGES_REF_VIEW_H
+#ifndef _CUDA_STD___RANGES_REF_VIEW_H
+#define _CUDA_STD___RANGES_REF_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _Range>
 struct __conversion_tester
@@ -69,7 +69,7 @@ public:
                    __convertible_to_lvalue<_Tp, _Range>)
   _CCCL_API constexpr ref_view(_Tp&& __t)
       : view_interface<ref_view<_Range>>()
-      , __range_(_CUDA_VSTD::addressof(static_cast<_Range&>(_CUDA_VSTD::forward<_Tp>(__t))))
+      , __range_(::cuda::std::addressof(static_cast<_Range&>(::cuda::std::forward<_Tp>(__t))))
   {}
 
   _CCCL_API constexpr _Range& base() const
@@ -79,32 +79,32 @@ public:
 
   _CCCL_API constexpr iterator_t<_Range> begin() const
   {
-    return _CUDA_VRANGES::begin(*__range_);
+    return ::cuda::std::ranges::begin(*__range_);
   }
   _CCCL_API constexpr sentinel_t<_Range> end() const
   {
-    return _CUDA_VRANGES::end(*__range_);
+    return ::cuda::std::ranges::end(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
-  _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, const _Range2&>)
+  _CCCL_REQUIRES(invocable<::cuda::std::ranges::__empty::__fn, const _Range2&>)
   _CCCL_API constexpr bool empty() const
   {
-    return _CUDA_VRANGES::empty(*__range_);
+    return ::cuda::std::ranges::empty(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(sized_range<_Range2>)
   _CCCL_API constexpr auto size() const
   {
-    return _CUDA_VRANGES::size(*__range_);
+    return ::cuda::std::ranges::size(*__range_);
   }
 
   _CCCL_TEMPLATE(class _Range2 = _Range)
   _CCCL_REQUIRES(contiguous_range<_Range2>)
   _CCCL_API constexpr auto data() const
   {
-    return _CUDA_VRANGES::data(*__range_);
+    return ::cuda::std::ranges::data(*__range_);
   }
 };
 
@@ -114,8 +114,8 @@ _CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_REF_VIEW_H
+#endif // _CUDA_STD___RANGES_REF_VIEW_H

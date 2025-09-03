@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_GAMMA_H
-#define _LIBCUDACXX___CMATH_GAMMA_H
+#ifndef _CUDA_STD___CMATH_GAMMA_H
+#define _CUDA_STD___CMATH_GAMMA_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // lgamma
 
@@ -100,21 +100,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half lgamma(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::lgammaf(__half2float(__x)));
+  return __float2half(::cuda::std::lgammaf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 lgamma(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::lgammaf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::lgammaf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double lgamma(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::lgamma((double) __x);
+  return ::cuda::std::lgamma((double) __x);
 }
 
 // tgamma
@@ -181,25 +181,25 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half tgamma(__half __x) noexcept
 {
-  return __float2half(_CUDA_VSTD::tgammaf(__half2float(__x)));
+  return __float2half(::cuda::std::tgammaf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 tgamma(__nv_bfloat16 __x) noexcept
 {
-  return __float2bfloat16(_CUDA_VSTD::tgammaf(__bfloat162float(__x)));
+  return __float2bfloat16(::cuda::std::tgammaf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 [[nodiscard]] _CCCL_API inline double tgamma(_Integer __x) noexcept
 {
-  return _CUDA_VSTD::tgamma((double) __x);
+  return ::cuda::std::tgamma((double) __x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_GAMMA_H
+#endif // _CUDA_STD___CMATH_GAMMA_H

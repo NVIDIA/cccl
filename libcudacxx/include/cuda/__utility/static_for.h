@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_STATIC_FOR_H
-#define _LIBCUDACXX___UTILITY_STATIC_FOR_H
+#ifndef _CUDA___UTILITY_STATIC_FOR_H
+#define _CUDA___UTILITY_STATIC_FOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,39 +26,39 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _SizeType, _SizeType _Start, _SizeType _Step, typename _Operator, _SizeType... _Indices, typename... _TArgs>
 _CCCL_API constexpr void
-__static_for_impl(_Operator __op, _CUDA_VSTD::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept(
-  (true && ... && noexcept(__op(_CUDA_VSTD::integral_constant<_SizeType, (_Indices * _Step + _Start)>{}, __args...))))
+__static_for_impl(_Operator __op, ::cuda::std::integer_sequence<_SizeType, _Indices...>, _TArgs&&... __args) noexcept(
+  (true && ... && noexcept(__op(::cuda::std::integral_constant<_SizeType, (_Indices * _Step + _Start)>{}, __args...))))
 {
-  (__op(_CUDA_VSTD::integral_constant<_SizeType, (_Indices * _Step + _Start)>{}, __args...), ...);
+  (__op(::cuda::std::integral_constant<_SizeType, (_Indices * _Step + _Start)>{}, __args...), ...);
 }
 
 template <typename _Tp, _Tp _Size, typename _Operator, typename... _TArgs>
 _CCCL_API constexpr void
 static_for(_Operator __op, _TArgs&&... __args) noexcept(noexcept(::cuda::__static_for_impl<_Tp, 0, 1>(
-  __op, _CUDA_VSTD::make_integer_sequence<_Tp, _Size>{}, _CUDA_VSTD::forward<_TArgs>(__args)...)))
+  __op, ::cuda::std::make_integer_sequence<_Tp, _Size>{}, ::cuda::std::forward<_TArgs>(__args)...)))
 {
   ::cuda::__static_for_impl<_Tp, 0, 1>(
-    __op, _CUDA_VSTD::make_integer_sequence<_Tp, _Size>{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
+    __op, ::cuda::std::make_integer_sequence<_Tp, _Size>{}, ::cuda::std::forward<_TArgs>(__args)...);
 }
 
 template <typename _Tp, _Tp _Start, _Tp _End, _Tp _Step = 1, typename _Operator, typename... _TArgs>
 _CCCL_API constexpr void
 static_for(_Operator __op, _TArgs&&... __args) noexcept(noexcept(::cuda::__static_for_impl<_Tp, _Start, _Step>(
-  __op, _CUDA_VSTD::make_integer_sequence<_Tp, (_End - _Start) / _Step>{}, _CUDA_VSTD::forward<_TArgs>(__args)...)))
+  __op, ::cuda::std::make_integer_sequence<_Tp, (_End - _Start) / _Step>{}, ::cuda::std::forward<_TArgs>(__args)...)))
 {
   ::cuda::__static_for_impl<_Tp, _Start, _Step>(
-    __op, _CUDA_VSTD::make_integer_sequence<_Tp, (_End - _Start) / _Step>{}, _CUDA_VSTD::forward<_TArgs>(__args)...);
+    __op, ::cuda::std::make_integer_sequence<_Tp, (_End - _Start) / _Step>{}, ::cuda::std::forward<_TArgs>(__args)...);
 }
 
 template <auto _Size, typename _Operator, typename... _TArgs>
 _CCCL_API constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept(
-  noexcept(::cuda::static_for<decltype(_Size), _Size>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...)))
+  noexcept(::cuda::static_for<decltype(_Size), _Size>(__op, ::cuda::std::forward<_TArgs>(__args)...)))
 {
-  ::cuda::static_for<decltype(_Size), _Size>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
+  ::cuda::static_for<decltype(_Size), _Size>(__op, ::cuda::std::forward<_TArgs>(__args)...);
 }
 
 template <auto _Start,
@@ -67,13 +67,13 @@ template <auto _Start,
           typename _Operator,
           typename... _TArgs>
 _CCCL_API constexpr void static_for(_Operator __op, _TArgs&&... __args) noexcept(
-  noexcept(::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...)))
+  noexcept(::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, ::cuda::std::forward<_TArgs>(__args)...)))
 {
-  ::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, _CUDA_VSTD::forward<_TArgs>(__args)...);
+  ::cuda::static_for<decltype(_Start), _Start, _End, _Step>(__op, ::cuda::std::forward<_TArgs>(__args)...);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_STATIC_FOR_H
+#endif // _CUDA___UTILITY_STATIC_FOR_H

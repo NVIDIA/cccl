@@ -82,6 +82,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_sequence.cu
     execution/test_starts_on.cu
     #execution/test_stream_context.cu
+    execution/test_then.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
@@ -138,6 +139,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target green_context ${cn_target}
     green_context/green_ctx_smoke.cu
+  )
+
+  cudax_add_catch2_test(test_target kernel ${cn_target}
+    kernel/kernel_ref.cu
   )
 
   cudax_add_catch2_test(test_target algorithm ${cn_target}

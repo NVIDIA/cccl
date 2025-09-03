@@ -34,7 +34,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 // Forward declaration in barrier of pipeline
 enum class pipeline_role
@@ -110,7 +110,7 @@ public:
       const uint32_t __match_mask =
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(__shared_state_get_refcount()));
       const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
-      __elected                   = (_CUDA_VPTX::get_sreg_laneid() == __elected_id);
+      __elected                   = (::cuda::ptx::get_sreg_laneid() == __elected_id);
       __sub_count                 = ::__popc(__match_mask);
       , __elected = true;
       __sub_count = 1;)
@@ -169,16 +169,16 @@ public:
   }
 
   template <class _Rep, class _Period>
-  _CCCL_API inline bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
+  _CCCL_API inline bool consumer_wait_for(const ::cuda::std::chrono::duration<_Rep, _Period>& __duration)
   {
     barrier<_Scope>& __stage_barrier = __shared_state_get_stage(__tail)->__produced;
-    return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
-      _CUDA_VSTD::__barrier_poll_tester_parity<barrier<_Scope>>(&__stage_barrier, __produced_phase_parity),
-      _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__duration));
+    return ::cuda::std::__cccl_thread_poll_with_backoff(
+      ::cuda::std::__barrier_poll_tester_parity<barrier<_Scope>>(&__stage_barrier, __produced_phase_parity),
+      ::cuda::std::chrono::duration_cast<::cuda::std::chrono::nanoseconds>(__duration));
   }
 
   template <class _Clock, class _Duration>
-  _CCCL_API inline bool consumer_wait_until(const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time_point)
+  _CCCL_API inline bool consumer_wait_until(const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time_point)
   {
     return consumer_wait_for(__time_point - _Clock::now());
   }
@@ -299,7 +299,7 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
       const uint32_t __match_mask =
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(&__shared_state->__refcount));
       const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
-      __elected                   = (_CUDA_VPTX::get_sreg_laneid() == __elected_id);
+      __elected                   = (::cuda::ptx::get_sreg_laneid() == __elected_id);
       __add_count                 = ::__popc(__match_mask);
       , __elected = true;
       __add_count = 1;)
@@ -326,18 +326,18 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
   return pipeline<_Scope>(reinterpret_cast<char*>(__shared_state->__stages), _Stages_count, true);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <uint8_t _Prior>
 _CCCL_DEVICE void __pipeline_consumer_wait(pipeline<thread_scope_thread>& __pipeline);
 
 _CCCL_DEVICE inline void __pipeline_consumer_wait(pipeline<thread_scope_thread>& __pipeline, uint8_t __prior);
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <>
 class pipeline<thread_scope_thread>
@@ -369,14 +369,15 @@ public:
       if (__head == __tail) { return; }
 
       const uint8_t __prior = __head - __tail - 1;
-      _CUDA_DEVICE::__pipeline_consumer_wait(*this, __prior);
+      ::cuda::device::__pipeline_consumer_wait(*this, __prior);
       ++__tail;)
   }
 
   _CCCL_API inline void consumer_release() {}
 
   template <class _Rep, class _Period>
-  _CCCL_API inline bool consumer_wait_for([[maybe_unused]] const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
+  _CCCL_API inline bool
+  consumer_wait_for([[maybe_unused]] const ::cuda::std::chrono::duration<_Rep, _Period>& __duration)
   {
     consumer_wait();
     return true;
@@ -384,7 +385,7 @@ public:
 
   template <class _Clock, class _Duration>
   _CCCL_API inline bool
-  consumer_wait_until([[maybe_unused]] const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time_point)
+  consumer_wait_until([[maybe_unused]] const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time_point)
   {
     consumer_wait();
     return true;
@@ -409,9 +410,9 @@ private:
     const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <uint8_t _Prior>
 _CCCL_DEVICE void __pipeline_consumer_wait([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline)
@@ -426,38 +427,38 @@ _CCCL_DEVICE inline void __pipeline_consumer_wait(pipeline<thread_scope_thread>&
   switch (__prior)
   {
     case 0:
-      _CUDA_DEVICE::__pipeline_consumer_wait<0>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<0>(__pipeline);
       break;
     case 1:
-      _CUDA_DEVICE::__pipeline_consumer_wait<1>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<1>(__pipeline);
       break;
     case 2:
-      _CUDA_DEVICE::__pipeline_consumer_wait<2>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<2>(__pipeline);
       break;
     case 3:
-      _CUDA_DEVICE::__pipeline_consumer_wait<3>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<3>(__pipeline);
       break;
     case 4:
-      _CUDA_DEVICE::__pipeline_consumer_wait<4>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<4>(__pipeline);
       break;
     case 5:
-      _CUDA_DEVICE::__pipeline_consumer_wait<5>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<5>(__pipeline);
       break;
     case 6:
-      _CUDA_DEVICE::__pipeline_consumer_wait<6>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<6>(__pipeline);
       break;
     case 7:
-      _CUDA_DEVICE::__pipeline_consumer_wait<7>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<7>(__pipeline);
       break;
     default:
-      _CUDA_DEVICE::__pipeline_consumer_wait<8>(__pipeline);
+      ::cuda::device::__pipeline_consumer_wait<8>(__pipeline);
       break;
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_API inline pipeline<thread_scope_thread> make_pipeline()
 {
@@ -467,7 +468,7 @@ _CCCL_API inline pipeline<thread_scope_thread> make_pipeline()
 template <uint8_t _Prior>
 _CCCL_API inline void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_80, _CUDA_DEVICE::__pipeline_consumer_wait<_Prior>(__pipeline);
+  NV_IF_TARGET(NV_PROVIDES_SM_80, ::cuda::device::__pipeline_consumer_wait<_Prior>(__pipeline);
                __pipeline.__tail = __pipeline.__head - _Prior;)
 }
 
@@ -489,10 +490,10 @@ _CCCL_API inline async_contract_fulfillment __memcpy_async_pipeline(
   //    Do not (yet) allow async_bulk_group completion. Do not allow
   //    mbarrier_complete_tx completion, even though it may be possible if
   //    the pipeline has stage barriers in shared memory.
-  _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
+  ::cuda::std::uint32_t __allowed_completions = ::cuda::std::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
+  constexpr auto __align = ::cuda::std::max(alignof(_Tp), __get_size_align_v<_Size>);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
   // functions.
@@ -570,7 +571,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_
     __pipeline);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

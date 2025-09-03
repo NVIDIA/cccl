@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY
-#define _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY
+#ifndef _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY_H
+#define _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,29 +30,29 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //----------------------------------------------------------------------------------------------------------------------
 // Private access property methods
 
 template <typename _Property>
 inline constexpr bool __is_access_property_v =
-  _CUDA_VSTD::__is_one_of_v<_Property,
-                            access_property::shared,
-                            access_property::global,
-                            access_property::normal,
-                            access_property::persisting,
-                            access_property::streaming,
-                            access_property>;
+  ::cuda::std::__is_one_of_v<_Property,
+                             access_property::shared,
+                             access_property::global,
+                             access_property::normal,
+                             access_property::persisting,
+                             access_property::streaming,
+                             access_property>;
 
 template <typename _Property>
 inline constexpr bool __is_global_access_property_v =
-  _CUDA_VSTD::__is_one_of_v<_Property,
-                            access_property::global,
-                            access_property::normal,
-                            access_property::persisting,
-                            access_property::streaming,
-                            access_property>;
+  ::cuda::std::__is_one_of_v<_Property,
+                             access_property::global,
+                             access_property::normal,
+                             access_property::persisting,
+                             access_property::streaming,
+                             access_property>;
 
 #if _CCCL_CUDA_COMPILATION()
 
@@ -60,21 +60,21 @@ template <typename _Property>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
 __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 {
-  if constexpr (_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
+  if constexpr (::cuda::std::is_same_v<_Property, access_property::shared>)
   {
-    [[maybe_unused]] bool __b = _CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::shared);
+    [[maybe_unused]] bool __b = ::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared);
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
   else if constexpr (__is_global_access_property_v<_Property>)
   {
-    [[maybe_unused]] bool __b = _CUDA_DEVICE::is_address_from(__ptr, _CUDA_DEVICE::address_space::global);
+    [[maybe_unused]] bool __b = ::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global);
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
   else
   {
-    static_assert(_CUDA_VSTD::__always_false_v<_Property>, "invalid access_property");
+    static_assert(::cuda::std::__always_false_v<_Property>, "invalid access_property");
   }
   return __ptr;
 }
@@ -89,7 +89,7 @@ template <typename _Property>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Property __prop)
 {
   static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
-  if constexpr (!_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
+  if constexpr (!::cuda::std::is_same_v<_Property, access_property::shared>)
   {
     [[maybe_unused]] auto __raw_prop = static_cast<uint64_t>(access_property{__prop});
     return ::cuda::__associate_raw_descriptor(__ptr, __raw_prop);
@@ -121,8 +121,8 @@ template <typename _Tp, typename _Property>
   return ::cuda::__associate(__ptr, __prop);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY
+#endif // _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY_H

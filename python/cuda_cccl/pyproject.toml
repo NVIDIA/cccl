@@ -16,24 +16,36 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
 ]
 requires-python = ">=3.9"
+
 dependencies = [
   "numba>=0.60.0",
   "numpy",
-  "cuda-bindings>=12.9.1,<13.0.0",
   "cuda-pathfinder>=1.1.0",
   "cuda-core",
-  "nvidia-cuda-nvrtc-cu12",
-  "nvidia-nvjitlink-cu12",
   "numba-cuda>=0.18.0",
 ]
+
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-test = [
+cu12 = ["cuda-bindings>=12.9.1,<13.0.0", "cuda-toolkit[nvrtc,nvjitlink]==12.*"]
+cu13 = ["cuda-bindings>=13.0.0,<14.0.0", "cuda-toolkit[nvrtc,nvjitlink]==13.*"]
+test-cu12 = [
+  # an undocumented way to inherit the dependencies of the cu12 extra.
+  # GH pypa #11296
+  "cuda-cccl[cu12]",
   "pytest",
   "pytest-xdist",
   "cupy-cuda12x",
+  "typing_extensions",
+  "pytest-benchmark",
+]
+test-cu13 = [
+  "cuda-cccl[cu13]",
+  "pytest",
+  "pytest-xdist",
+  "cupy-cuda13x",
   "typing_extensions",
   "pytest-benchmark",
 ]
@@ -60,6 +72,8 @@ provider = "scikit_build_core.metadata.setuptools_scm"
 
 [tool.setuptools_scm]
 root = "../.."
+git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
+
 
 [tool.scikit-build.wheel.packages]
 "cuda" = "cuda"
@@ -73,7 +87,8 @@ module = [
   "numba.*",
   "llvmlite",
   "cuda.cccl.headers.*",
-  "cuda.bindings",
+  "cuda.cccl._cuda_version_utils.*",
+  "cuda.bindings.*",
   "cuda.core.*",
 ]
 ignore_missing_imports = true

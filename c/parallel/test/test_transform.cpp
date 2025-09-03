@@ -521,3 +521,141 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
     REQUIRE(expected == std::vector<int>(output_ptr));
   }
 }
+
+using floating_point_types = c2h::type_list<
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+  float,
+  double>;
+struct Transform_FloatingPointTypes_Fixture_Tag;
+C2H_TEST("Transform works with floating point types", "[transform]", floating_point_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op                   = make_operation("op", get_unary_op(get_type_info<T>().type));
+  const std::vector<int> int_input = generate<int>(num_items);
+  const std::vector<T> input(int_input.begin(), int_input.end());
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_FloatingPointTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<T> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
+    return T{2} * x;
+  });
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+}
+
+C2H_TEST("Transform works with C++ source operations", "[transform]")
+{
+  using T = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337, 42000);
+
+  // Create operation from C++ source instead of LTO-IR
+  std::string cpp_source = R"(
+    extern "C" __device__ void op(void* input, void* output) {
+      int* in = (int*)input;
+      int* out = (int*)output;
+      *out = *in * 2;
+    }
+  )";
+
+  operation_t op = make_cpp_operation("op", cpp_source);
+
+  const std::vector<T> input = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+
+  // Test key including flag that this uses C++ source
+  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
+
+  auto& cache = fixture<transform_build_cache_t, Transform_IntegralTypes_Fixture_Tag>::get_or_create().get_value();
+  std::optional<transform_build_cache_t> cache_opt = cache;
+
+  unary_transform(input_ptr, output_ptr, num_items, op, cache_opt, test_key);
+
+  const std::vector<T> output = output_ptr;
+  std::vector<T> expected     = input;
+  std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
+    return x * 2;
+  });
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("Transform works with C++ source operations using custom headers", "[transform]")
+{
+  using T = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337, 42000);
+
+  // Create operation from C++ source that uses the identity function from header
+  std::string cpp_source = R"(
+    #include "test_identity.h"
+    extern "C" __device__ void op(void* input, void* output) {
+      int* in = (int*)input;
+      int* out = (int*)output;
+      int val = test_identity(*in);
+      *out = val * 2;
+    }
+  )";
+
+  operation_t op = make_cpp_operation("op", cpp_source);
+
+  const std::vector<T> input = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+
+  // Test _ex version with custom build configuration
+  cccl_build_config config;
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  config.extra_compile_flags     = extra_flags;
+  config.num_extra_compile_flags = 1;
+  config.extra_include_dirs      = extra_dirs;
+  config.num_extra_include_dirs  = 1;
+
+  // Build with _ex version
+  cccl_device_transform_build_result_t build;
+  const auto& build_info = BuildInformation<>::init();
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_build_ex(
+      &build,
+      input_ptr,
+      output_ptr,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      &config));
+
+  // Execute the transform
+  REQUIRE(CUDA_SUCCESS == cccl_device_unary_transform(build, input_ptr, output_ptr, num_items, op, CU_STREAM_LEGACY));
+
+  // Verify results
+  std::vector<T> output(num_items);
+  cudaMemcpy(output.data(), static_cast<void*>(output_ptr.ptr), sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  std::vector<T> expected = input;
+  std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
+    return x * 2;
+  });
+  REQUIRE(output == expected);
+
+  // Cleanup
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}

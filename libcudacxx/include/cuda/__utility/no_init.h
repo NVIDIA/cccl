@@ -13,7 +13,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT no_init_t
 {
@@ -22,7 +22,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT no_init_t
 
 _CCCL_GLOBAL_CONSTANT no_init_t no_init{};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

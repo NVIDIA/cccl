@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H
-#define _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H
+#ifndef _CUDA_STD___ALGORITHM_MAKE_PROJECTED_H
+#define _CUDA_STD___ALGORITHM_MAKE_PROJECTED_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Pred, class _Proj>
 struct _ProjectedPred
@@ -49,24 +49,24 @@ struct _ProjectedPred
   template <class _Tp>
   typename __invoke_of<
     _Pred&,
-    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>()))>::type constexpr
+    decltype(::cuda::std::__invoke(::cuda::std::declval<_Proj&>(), ::cuda::std::declval<_Tp>()))>::type constexpr
     _CCCL_API inline
     operator()(_Tp&& __v) const
   {
-    return _CUDA_VSTD::__invoke(__pred, _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_Tp>(__v)));
+    return ::cuda::std::__invoke(__pred, ::cuda::std::__invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
   }
 
   template <class _T1, class _T2>
   typename __invoke_of<
     _Pred&,
-    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T1>())),
-    decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>()))>::type constexpr
+    decltype(::cuda::std::__invoke(::cuda::std::declval<_Proj&>(), ::cuda::std::declval<_T1>())),
+    decltype(::cuda::std::__invoke(::cuda::std::declval<_Proj&>(), ::cuda::std::declval<_T2>()))>::type constexpr
     _CCCL_API inline
     operator()(_T1&& __lhs, _T2&& __rhs) const
   {
-    return _CUDA_VSTD::__invoke(__pred,
-                                _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_T1>(__lhs)),
-                                _CUDA_VSTD::__invoke(__proj, _CUDA_VSTD::forward<_T2>(__rhs)));
+    return ::cuda::std::__invoke(__pred,
+                                 ::cuda::std::__invoke(__proj, ::cuda::std::forward<_T1>(__lhs)),
+                                 ::cuda::std::__invoke(__proj, ::cuda::std::forward<_T2>(__rhs)));
   }
 };
 
@@ -89,8 +89,8 @@ _CCCL_API constexpr _Pred& __make_projected(_Pred& __pred, _Proj&)
   return __pred;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H
+#endif // _CUDA_STD___ALGORITHM_MAKE_PROJECTED_H
