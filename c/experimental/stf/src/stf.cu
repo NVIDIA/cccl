@@ -16,69 +16,60 @@ using namespace cuda::experimental::stf;
 
 extern "C" {
 
-struct stf_ctx_handle_t
-{
-  context ctx;
-};
-
-struct stf_logical_data_handle_t
-{
-  // XXX should we always store a logical_data<slice<char>> instead ?
-  logical_data_untyped ld;
-};
-
-struct stf_task_handle_t
-{
-  context::unified_task<> t;
-};
-
 void stf_ctx_create(stf_ctx_handle* ctx)
 {
   assert(ctx);
-  *ctx = new stf_ctx_handle_t{context{}};
+  *ctx = new context{};
 }
 
 void stf_ctx_create_graph(stf_ctx_handle* ctx)
 {
   assert(ctx);
-  *ctx = new stf_ctx_handle_t{context{graph_ctx()}};
+  *ctx = new context{graph_ctx()};
 }
 
 void stf_ctx_finalize(stf_ctx_handle ctx)
 {
-  ctx->ctx.finalize();
   assert(ctx);
-  delete ctx;
+  auto* context_ptr = static_cast<context*>(ctx);
+  context_ptr->finalize();
+  delete context_ptr;
 }
 
 cudaStream_t stf_fence(stf_ctx_handle ctx)
 {
   assert(ctx);
-  return ctx->ctx.fence();
+  auto* context_ptr = static_cast<context*>(ctx);
+  return context_ptr->fence();
 }
 
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
 {
-  assert(ld);
   assert(ctx);
+  assert(ld);
 
-  // Create a slice<char> logical data
-  auto ld_typed = ctx->ctx.logical_data(make_slice((char*) addr, sz));
+  auto* context_ptr = static_cast<context*>(ctx);
+  auto ld_typed     = context_ptr->logical_data(make_slice((char*) addr, sz));
 
-  // Stored in its untyped version
-  *ld = new stf_logical_data_handle_t{ld_typed};
+  // Store the logical_data_untyped directly as opaque pointer
+  *ld = new logical_data_untyped{ld_typed};
 }
 
 void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
 {
   assert(ld);
-  ld->ld.set_symbol(symbol);
+  assert(symbol);
+
+  auto* ld_ptr = static_cast<logical_data_untyped*>(ld);
+  ld_ptr->set_symbol(symbol);
 }
 
 void stf_logical_data_destroy(stf_logical_data_handle ld)
 {
   assert(ld);
-  delete ld;
+
+  auto* ld_ptr = static_cast<logical_data_untyped*>(ld);
+  delete ld_ptr;
 }
 
 void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to)
@@ -86,8 +77,9 @@ void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_
   assert(ctx);
   assert(to);
 
-  auto ld_typed = ctx->ctx.logical_data(shape_of<slice<char>>(length));
-  *to           = new stf_logical_data_handle_t{ld_typed};
+  auto* context_ptr = static_cast<context*>(ctx);
+  auto ld_typed     = context_ptr->logical_data(shape_of<slice<char>>(length));
+  *to               = new logical_data_untyped{ld_typed};
 }
 
 void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
@@ -95,7 +87,8 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
   assert(ctx);
   assert(ld);
 
-  *ld = new stf_logical_data_handle_t{ctx->ctx.token()};
+  auto* context_ptr = static_cast<context*>(ctx);
+  *ld               = new logical_data_untyped{context_ptr->token()};
 }
 
 /* Convert the C-API stf_exec_place to a C++ exec_place object */
@@ -136,16 +129,20 @@ data_place to_data_place(stf_data_place* data_p)
 
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
 {
-  assert(t);
   assert(ctx);
+  assert(t);
 
-  *t = new stf_task_handle_t{ctx->ctx.task()};
+  auto* context_ptr = static_cast<context*>(ctx);
+  *t                = new context::unified_task<>{context_ptr->task()};
 }
 
 void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p)
 {
   assert(t);
-  t->t.set_exec_place(to_exec_place(exec_p));
+  assert(exec_p);
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  task_ptr->set_exec_place(to_exec_place(exec_p));
 }
 
 void stf_task_set_symbol(stf_task_handle t, const char* symbol)
@@ -153,7 +150,8 @@ void stf_task_set_symbol(stf_task_handle t, const char* symbol)
   assert(t);
   assert(symbol);
 
-  t->t.set_symbol(symbol);
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  task_ptr->set_symbol(symbol);
 }
 
 void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
@@ -161,7 +159,9 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
   assert(t);
   assert(ld);
 
-  t->t.add_deps(task_dep_untyped(ld->ld, access_mode(m)));
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  auto* ld_ptr   = static_cast<logical_data_untyped*>(ld);
+  task_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m)));
 }
 
 void stf_task_add_dep_with_dplace(
@@ -171,44 +171,58 @@ void stf_task_add_dep_with_dplace(
   assert(ld);
   assert(data_p);
 
-  t->t.add_deps(task_dep_untyped(ld->ld, access_mode(m), to_data_place(data_p)));
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  auto* ld_ptr   = static_cast<logical_data_untyped*>(ld);
+  task_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m), to_data_place(data_p)));
 }
 
 void* stf_task_get(stf_task_handle t, int index)
 {
   assert(t);
-  auto s = t->t.template get<slice<const char>>(index);
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  auto s         = task_ptr->template get<slice<const char>>(index);
   return (void*) s.data_handle();
 }
 
 void stf_task_start(stf_task_handle t)
 {
   assert(t);
-  t->t.start();
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  task_ptr->start();
 }
 
 void stf_task_end(stf_task_handle t)
 {
   assert(t);
-  t->t.end();
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  task_ptr->end();
 }
 
 void stf_task_enable_capture(stf_task_handle t)
 {
   assert(t);
-  t->t.enable_capture();
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  task_ptr->enable_capture();
 }
 
 CUstream stf_task_get_custream(stf_task_handle t)
 {
   assert(t);
-  return (CUstream) t->t.get_stream();
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  return (CUstream) task_ptr->get_stream();
 }
 
 void stf_task_destroy(stf_task_handle t)
 {
   assert(t);
-  delete t;
+
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  delete task_ptr;
 }
 
 /**
@@ -228,25 +242,24 @@ void stf_task_destroy(stf_task_handle t)
 
  *
  */
-struct stf_cuda_kernel_handle_t
-{
-  // return type of ctx.cuda_kernel()
-  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  kernel_type k;
-};
-
 void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k)
 {
-  assert(k);
   assert(ctx);
+  assert(k);
 
-  *k = new stf_cuda_kernel_handle_t{ctx->ctx.cuda_kernel()};
+  auto* context_ptr = static_cast<context*>(ctx);
+  using kernel_type = decltype(context_ptr->cuda_kernel());
+  *k                = new kernel_type{context_ptr->cuda_kernel()};
 }
 
 void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place* exec_p)
 {
   assert(k);
-  k->k.set_exec_place(to_exec_place(exec_p));
+  assert(exec_p);
+
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  kernel_ptr->set_exec_place(to_exec_place(exec_p));
 }
 
 void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
@@ -254,7 +267,9 @@ void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
   assert(k);
   assert(symbol);
 
-  k->k.set_symbol(symbol);
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  kernel_ptr->set_symbol(symbol);
 }
 
 void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle ld, stf_access_mode m)
@@ -262,13 +277,19 @@ void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle l
   assert(k);
   assert(ld);
 
-  k->k.add_deps(task_dep_untyped(ld->ld, access_mode(m)));
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  auto* ld_ptr      = static_cast<logical_data_untyped*>(ld);
+  kernel_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m)));
 }
 
 void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
 {
   assert(k);
-  k->k.start();
+
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  kernel_ptr->start();
 }
 
 void stf_cuda_kernel_add_desc_cufunc(
@@ -280,28 +301,42 @@ void stf_cuda_kernel_add_desc_cufunc(
   int arg_cnt,
   const void** args)
 {
+  assert(k);
+
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+
   cuda_kernel_desc desc;
   desc.configure_raw(cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args);
-
-  k->k.add_kernel_desc(mv(desc));
+  kernel_ptr->add_kernel_desc(mv(desc));
 }
 
 void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index)
 {
-  auto s = k->k.template get<slice<const char>>(index);
+  assert(k);
+
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  auto s            = kernel_ptr->template get<slice<const char>>(index);
   return (void*) s.data_handle();
 }
 
 void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
 {
   assert(k);
-  k->k.end();
+
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  kernel_ptr->end();
 }
 
 void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 {
   assert(t);
-  delete t;
+
+  using kernel_type = decltype(::std::declval<context>().cuda_kernel());
+  auto* kernel_ptr  = static_cast<kernel_type*>(t);
+  delete kernel_ptr;
 }
 
 } // extern "C"

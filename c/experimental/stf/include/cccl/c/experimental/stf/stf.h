@@ -145,7 +145,7 @@ static inline struct stf_data_place make_affine_data_place()
   return p;
 }
 
-typedef struct stf_ctx_handle_t* stf_ctx_handle;
+typedef void* stf_ctx_handle;
 
 void stf_ctx_create(stf_ctx_handle* ctx);
 // TODO stf_ctx_create_with_flags and an enum instead ?
@@ -157,7 +157,7 @@ void stf_ctx_finalize(stf_ctx_handle ctx);
 
 cudaStream_t stf_fence(stf_ctx_handle ctx);
 
-typedef struct stf_logical_data_handle_t* stf_logical_data_handle;
+typedef void* stf_logical_data_handle;
 
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
 void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
@@ -169,7 +169,7 @@ void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_
 
 void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
 
-typedef struct stf_task_handle_t* stf_task_handle;
+typedef void* stf_task_handle;
 
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
 void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p);
@@ -184,7 +184,7 @@ void* stf_task_get(stf_task_handle t, int submitted_index);
 void stf_task_destroy(stf_task_handle t);
 void stf_task_enable_capture(stf_task_handle t);
 
-typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
+typedef void* stf_cuda_kernel_handle;
 
 void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
 void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place* exec_p);
