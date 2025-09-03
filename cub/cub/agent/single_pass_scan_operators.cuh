@@ -1303,7 +1303,7 @@ struct TilePrefixCallbackOp
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-      if (threadIdx.x == 0)
+      if (cub::detail::has_no_side_effects<ScanOpT, T> || threadIdx.x == 0)
       {
         exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
       }
