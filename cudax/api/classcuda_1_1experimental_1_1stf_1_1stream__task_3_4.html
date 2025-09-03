@@ -1853,7 +1853,7 @@ The lambda must accept exactly one argument. If the type of the lambda’s argum
 <p>This function prepares a task for execution by setting up its execution context, sorting its dependencies to avoid deadlocks, and ensuring all necessary data dependencies are fulfilled. It handles both small and large tasks by checking the task size and adjusting its behavior accordingly. Dependencies are processed to mark data usage, allocate necessary resources, and update data instances for task execution. This function also handles the task’s transition from the setup phase to the running phase.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The function <code class="docutils literal notranslate"><span class="pre">EXPECT</span></code>s the task to be in the setup phase and the execution place not to be <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#classcuda_1_1experimental_1_1stf_1_1exec__place_1aca053b97a9271ffab0de370bae60713b"><span class="std std-ref"><span class="pre">exec_place::device_auto()</span></span></a></code>. </p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">EXPECT</span></code>s the task to be in the setup phase and the execution place not to be <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#classcuda_1_1experimental_1_1stf_1_1exec__place_1aca053b97a9271ffab0de370bae60713b"><span class="std std-ref"><span class="pre">exec_place::device_auto()</span></span></a></code>. </p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
