@@ -39,12 +39,13 @@ namespace cuda::experimental::stf
  *
  * The type manipulated will be `slice<T, dimensions>`.
  */
-template <typename T, size_t dimensions = 1>
-class slice_graph_interface : public graph_data_interface<slice<T, dimensions>>
+template <typename T, typename... P>
+class mdspan_graph_interface : public graph_data_interface<mdspan<T, P...>>
 {
 public:
+  static constexpr size_t dimensions = mdspan<T, P...>::rank();
   /// @brief Alias for the base class
-  using base = graph_data_interface<slice<T, dimensions>>;
+  using base = graph_data_interface<mdspan<T, P...>>;
   /// @brief Alias for the shape type
   using typename base::shape_t;
 
@@ -55,7 +56,7 @@ public:
    *
    * @param s either a slice or the shape of a slice
    */
-  slice_graph_interface(slice<T, dimensions> s)
+  mdspan_graph_interface(mdspan<T, P...> s)
       : base(mv(s))
   {}
 
@@ -64,7 +65,7 @@ public:
    *
    * @param s either a slice or the shape of a slice
    */
-  slice_graph_interface(shape_of<slice<T, dimensions>> s)
+  mdspan_graph_interface(shape_of<mdspan<T, P...>> s)
       : base(mv(s))
   {}
 
@@ -303,7 +304,7 @@ struct graphed_interface_of;
 template <typename T, typename... P>
 struct graphed_interface_of<mdspan<T, P...>>
 {
-  using type = slice_graph_interface<T, mdspan<T, P...>::rank()>;
+  using type = mdspan_graph_interface<T, P...>;
 };
 
 } // namespace cuda::experimental::stf
