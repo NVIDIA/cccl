@@ -23,7 +23,7 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <cub/device/device_transform.cuh>
-#endif
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
@@ -186,7 +186,7 @@ public:
   //! destroyed.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI async_buffer(async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
+  _CCCL_HOST_API async_buffer(async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __buf_(::cuda::std::move(__other.__buf_))
   {}
 
