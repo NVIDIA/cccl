@@ -746,7 +746,7 @@ public:
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
-    single_threaded_section guard(mtx);
+    ::std::lock_guard<::std::mutex> guard(mtx);
 
     if (dot_filename.empty())
     {
@@ -1289,7 +1289,7 @@ private:
   //! Time Complexity: O(V^3) in worst case, but optimized with caching
   void remove_redundant_edges()
   {
-    single_threaded_section guard(mtx);
+    ::std::lock_guard<::std::mutex> guard(mtx);
 
     ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
@@ -1351,7 +1351,7 @@ private:
       return;
     }
 
-    single_threaded_section guard(mtx);
+    ::std::lock_guard<::std::mutex> guard(mtx);
 
     // Total Work (T1) in Cilk terminology
     float t1 = 0.0f;
