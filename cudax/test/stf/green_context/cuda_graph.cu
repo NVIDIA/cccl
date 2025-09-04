@@ -56,7 +56,7 @@ int main()
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
   // The green_context_helper class automates the creation of green context views
-  green_context_helper gc(num_sms, ctx.async_resources());
+  green_context_helper gc(num_sms);
 
   for (int iter = 0; iter < NITER; iter++)
   {

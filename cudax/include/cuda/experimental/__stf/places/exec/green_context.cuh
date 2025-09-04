@@ -58,7 +58,7 @@ class green_context_helper
 {
 public:
   /* Create green contexts with sm_count SMs per context on a specific device (current device by default) */
-  green_context_helper(int sm_count, async_resources_handle& resources, int devid = cuda_try<cudaGetDevice>())
+  green_context_helper(int sm_count, int devid = cuda_try<cudaGetDevice>())
       : devid(devid)
       , numsm(sm_count)
   {
