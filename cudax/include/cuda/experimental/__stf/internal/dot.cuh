@@ -101,7 +101,8 @@ struct per_vertex_info
 {
   //! color of the vertex
   //!
-  //! This color can for example be computed according to the duration of the task, if measured, or based on the device which executes the task.
+  //! This color can for example be computed according to the duration of the task, if measured, or based on the device
+  //! which executes the task.
   ::std::string color;
   //! text associated to the vertex
   ::std::string label;
@@ -816,7 +817,7 @@ public:
         outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
       }
 
-      edge_count = all_edges.size();
+      edge_count   = all_edges.size();
       vertex_count = all_vertices.size();
 
       outFile << "// Edge   count : " << edge_count << "\n";
