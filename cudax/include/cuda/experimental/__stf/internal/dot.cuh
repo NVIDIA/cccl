@@ -1285,10 +1285,10 @@ private:
   //! 4. Use visited set to avoid checking the same paths multiple times
   //!
   //! Time Complexity: O(V^3) in worst case, but optimized with caching
+  //!
+  //! @note This method assumes the caller already holds the mutex (mtx)
   void remove_redundant_edges()
   {
-    ::std::lock_guard<::std::mutex> guard(mtx);
-
     ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
     // We first dump the set of edges into a map of predecessors per node
@@ -1342,14 +1342,14 @@ private:
   //! - T1 (total work): Sum of all task durations
   //! - Tinf (critical path): Longest path through the DAG
   //! - Parallelism ratio: T1/Tinf indicates maximum theoretical speedup
+  //!
+  //! @note This method assumes the caller already holds the mutex (mtx)
   void compute_critical_path(::std::ofstream& outFile)
   {
     if (!enable_timing)
     {
       return;
     }
-
-    ::std::lock_guard<::std::mutex> guard(mtx);
 
     // Total Work (T1) in Cilk terminology
     float t1 = 0.0f;
