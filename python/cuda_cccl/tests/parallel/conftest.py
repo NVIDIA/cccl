@@ -49,6 +49,22 @@ def input_array(request):
     return array
 
 
+# Define a pytest fixture that returns random floating-point arrays only
+@pytest.fixture(
+    params=[
+        np.float32,
+        np.float64,
+    ]
+)
+def floating_array(request):
+    dtype = np.dtype(request.param)
+    sample_size = 1000
+
+    # Generate random floating-point values
+    array = cp.random.random(sample_size).astype(dtype)
+    return array
+
+
 class Stream:
     """
     Simple cupy stream wrapper that implements the __cuda_stream__ protocol.
