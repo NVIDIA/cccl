@@ -70,8 +70,9 @@ struct value<Nested, void>
   }
 };
 
-template <int V>
-struct value<V, void>
+// Integral constants (matches both signed and unsigned integrals)
+template <auto V>
+struct value<V, cuda::std::enable_if_t<cuda::std::is_integral_v<decltype(V)>, void>>
 {
   __forceinline__ __device__ static void emit()
   {
