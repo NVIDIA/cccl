@@ -197,7 +197,7 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 From PyPI:
 
 ```bash
-pip install cuda-cccl
+pip install cuda-cccl[cu13] # or [cu12] for CTK 12.X
 ```
 
 From source:
@@ -205,7 +205,7 @@ From source:
 ```bash
 git clone https://github.com/NVIDIA/cccl.git
 cd cccl/python/cuda_cccl
-pip install -e .[test]
+pip install -e .[test-cu13] # or [test-cu12] for CTK 12.X
 ```
 
 Requirements:
