@@ -182,44 +182,6 @@ void segmented_sort(
 //   Test section
 // ==============
 
-static std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
-  std::string_view index_ty_name,
-  std::string_view state_name,
-  std::string_view advance_fn_name,
-  std::string_view dereference_fn_name)
-{
-  static constexpr std::string_view it_state_src_tmpl = R"XXX(
-struct {0} {{
-  {1} linear_id;
-  {1} row_size;
-}};
-)XXX";
-
-  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
-
-  static constexpr std::string_view it_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
-{{
-  state->linear_id += offset;
-}}
-)XXX";
-
-  const std::string it_advance_fn_def_src =
-    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
-
-  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ {2} {0}({1}* state)
-{{
-  return (state->linear_id) * (state->row_size);
-}}
-)XXX";
-
-  const std::string it_deref_fn_def_src =
-    std::format(it_deref_src_tmpl, dereference_fn_name, state_name, index_ty_name);
-
-  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
-}
-
 struct SegmentedSort_KeysOnly_Fixture_Tag;
 C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", test_params_tuple)
 {
@@ -231,10 +193,8 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   const bool is_overwrite_okay    = this_test_params.is_overwrite_okay();
   int selector                    = -1;
 
-  // generate choices for n_segments: 0, 13 and 2 random samples from [50, 200)
-  const std::size_t n_segments = GENERATE(0, 13, take(2, random(50, 200)));
-  // generate choices for segment size: 1, 20 and random samples
-  const std::size_t segment_size = GENERATE(1, 20, take(2, random(10, 100)));
+  const std::size_t n_segments   = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
+  const std::size_t segment_size = GENERATE(1, 12, take(2, random(1 << 10, 1 << 12)));
 
   const std::size_t n_elems = n_segments * segment_size;
 
@@ -285,6 +245,12 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   end_offset_it.state.linear_id    = 1;
   end_offset_it.state.segment_size = segment_size;
 
+  // Provide host-advance callbacks for offset iterators
+  auto start_offsets_cccl         = static_cast<cccl_iterator_t>(start_offset_it);
+  auto end_offsets_cccl           = static_cast<cccl_iterator_t>(end_offset_it);
+  start_offsets_cccl.host_advance = &host_advance_linear_id<segment_offset_iterator_state_t>;
+  end_offsets_cccl.host_advance   = &host_advance_linear_id<segment_offset_iterator_state_t>;
+
   auto& build_cache             = get_cache<SegmentedSort_KeysOnly_Fixture_Tag>();
   const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
@@ -300,8 +266,8 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
     values_out,
     n_elems,
     n_segments,
-    start_offset_it,
-    end_offset_it,
+    start_offsets_cccl,
+    end_offsets_cccl,
     is_overwrite_okay,
     &selector,
     build_cache,
