@@ -119,9 +119,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = parallel.ReverseInputIterator(
-        parallel.CountingIterator(np.int32(num_items))
-    )
+    d_input = parallel.ReverseIterator(parallel.CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -261,7 +259,7 @@ def test_scan_transform_output_iterator(floating_array):
     def square(x):
         return x * x
 
-    d_out_it = parallel.TransformOutputIterator(d_output, square)
+    d_out_it = parallel.TransformIterator(d_output, square)
 
     parallel.inclusive_scan(
         d_input, d_out_it, parallel.OpKind.PLUS, h_init, d_input.size

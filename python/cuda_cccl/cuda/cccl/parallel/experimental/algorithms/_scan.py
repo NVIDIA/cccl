@@ -41,8 +41,8 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         force_inclusive: bool,
     ):
-        self.d_in_cccl = cccl.to_cccl_iter(d_in)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)

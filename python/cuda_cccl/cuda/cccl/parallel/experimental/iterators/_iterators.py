@@ -2,7 +2,6 @@ import copy
 import ctypes
 import operator
 import uuid
-from enum import Enum
 from functools import lru_cache
 from typing import Callable, Dict, Tuple
 
@@ -26,11 +25,6 @@ from ..typing import DeviceArrayLike
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
-
-
-class IteratorIOKind(Enum):
-    INPUT = 0
-    OUTPUT = 1
 
 
 @lru_cache(maxsize=256)  # TODO: what's a reasonable value?
@@ -70,15 +64,14 @@ class IteratorBase:
     - an `advance` property that returns a (static) method which receives the
       pointer and performs an action that advances the pointer by the offset
       `distance` (returns nothing).
-    - a `dereference` property that returns a (static) method which accepts the
-      pointer and returns a value. For output iterators, `dereference` is used
-      to write to the pointer, so it also the value to be written as an
-      argument.
+    - `input_dereference` and `output_dereference` properties that return
+      (static) methods for reading from and writing to the iterator respectively.
 
     Iterators are not meant to be used directly. They are constructed and passed
     to algorithms (e.g., `reduce`), which internally invoke their methods.
 
-    The `advance` and `dereference` must be compilable to device code by numba.
+    The `advance`, `input_dereference`, and `output_dereference` must be compilable
+    to device code by numba.
     """
 
     iterator_kind_type: type  # must be a subclass of IteratorKind
@@ -88,7 +81,6 @@ class IteratorBase:
         cvalue,
         state_type: types.Type,
         value_type: types.Type,
-        iterator_io: IteratorIOKind,
     ):
         """
         Parameters
@@ -100,17 +92,12 @@ class IteratorBase:
           and dereference functions. This should be a pointer type.
         value_type
           The numba type of the value returned by the dereference operation.
-        iterator_io
-          An enumerator specifying whether the iterator will be used as an input
-          or output. This is used to select what methods that the `advance` and
-          `dereference` properties will return.
         """
         self.cvalue = cvalue
         self.state_type = state_type
         self.state_ptr_type = types.CPointer(state_type)
         self.value_type = value_type
 
-        self.iterator_io = iterator_io
         self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self.state_ = IteratorState(self.cvalue)
         self._ltoirs: Dict[str, bytes] | None = None
@@ -128,23 +115,14 @@ class IteratorBase:
         if self._ltoirs is None:
             abi_suffix = _get_abi_suffix(self.kind)
             advance_abi_name = f"advance_{abi_suffix}"
-            deref_abi_name = f"dereference_{abi_suffix}"
             advance_ltoir, _ = cached_compile(
                 self.advance,
                 self._get_advance_signature(),
                 output="ltoir",
                 abi_name=advance_abi_name,
             )
-
-            deref_ltoir, _ = cached_compile(
-                self.dereference,
-                self._get_dereference_signature(),
-                output="ltoir",
-                abi_name=deref_abi_name,
-            )
             self._ltoirs = {
                 advance_abi_name: advance_ltoir,
-                deref_abi_name: deref_ltoir,
             }
         assert self._ltoirs is not None
         return self._ltoirs
@@ -162,8 +140,14 @@ class IteratorBase:
         raise NotImplementedError("Subclasses must override advance property")
 
     @property
-    def dereference(state):
-        raise NotImplementedError("Subclasses must override dereference property")
+    def input_dereference(state):
+        raise NotImplementedError("Subclasses must override input_dereference property")
+
+    @property
+    def output_dereference(state):
+        raise NotImplementedError(
+            "Subclasses must override output_dereference property"
+        )
 
     def __add__(self, offset: int):
         # add the offset to the iterator's state, and return a new iterator
@@ -172,7 +156,6 @@ class IteratorBase:
         res.state_ptr_type = self.state_ptr_type
         res.state_type = self.state_type
         res.value_type = self.value_type
-        res.iterator_io = self.iterator_io
         res.kind_ = self.kind_
         res._ltoirs = self._ltoirs
         res.cvalue = type(self.cvalue)(self.cvalue.value + offset)
@@ -186,14 +169,6 @@ class IteratorBase:
             types.uint64,  # distance type
         )
 
-    def _get_dereference_signature(self) -> Tuple:
-        if self.iterator_io is IteratorIOKind.INPUT:
-            # state, result
-            return (self.state_ptr_type, types.CPointer(self.value_type))
-        else:
-            # state, value
-            return (self.state_ptr_type, self.value_type)
-
     def copy(self):
         out = object.__new__(self.__class__)
         IteratorBase.__init__(
@@ -201,7 +176,6 @@ class IteratorBase:
             self.cvalue,
             self.state_type,
             self.value_type,
-            self.iterator_io,
         )
         out.ltoirs = copy.copy(self._ltoirs)
         return out
@@ -244,9 +218,7 @@ class RawPointerKind(IteratorKind):
 class RawPointer(IteratorBase):
     iterator_kind_type = RawPointerKind
 
-    def __init__(
-        self, ptr: int, value_type: types.Type, iterator_io: IteratorIOKind, obj: object
-    ):
+    def __init__(self, ptr: int, value_type: types.Type, obj: object):
         cvalue = ctypes.c_void_p(ptr)
         state_type = types.CPointer(value_type)
         self.obj = obj  # the container holding the data
@@ -254,7 +226,6 @@ class RawPointer(IteratorBase):
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=iterator_io,
         )
 
     @property
@@ -265,14 +236,6 @@ class RawPointer(IteratorBase):
     @property
     def advance(self):
         return RawPointer.input_advance
-
-    @property
-    def dereference(self):
-        return (
-            RawPointer.input_dereference
-            if self.iterator_io is IteratorIOKind.INPUT
-            else RawPointer.output_dereference
-        )
 
     @staticmethod
     def input_advance(state, distance):
@@ -291,7 +254,6 @@ def pointer(container, value_type: types.Type) -> RawPointer:
     return RawPointer(
         container.__cuda_array_interface__["data"][0],
         value_type,
-        IteratorIOKind.INPUT,
         container,
     )
 
@@ -332,7 +294,6 @@ class CacheModifiedPointer(IteratorBase):
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=IteratorIOKind.INPUT,
         )
 
     @property
@@ -344,15 +305,21 @@ class CacheModifiedPointer(IteratorBase):
         return self.input_advance
 
     @property
-    def dereference(self):
-        return self.input_dereference
+    def input_dereference(self):
+        return self._input_dereference
+
+    @property
+    def output_dereference(self):
+        raise AttributeError(
+            "CacheModifiedPointer cannot be used as an output iterator"
+        )
 
     @staticmethod
     def input_advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
-    def input_dereference(state, result):
+    def _input_dereference(state, result):
         result[0] = load_cs(state[0])
 
 
@@ -371,7 +338,6 @@ class ConstantIterator(IteratorBase):
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=IteratorIOKind.INPUT,
         )
 
     @property
@@ -383,15 +349,19 @@ class ConstantIterator(IteratorBase):
         return self.input_advance
 
     @property
-    def dereference(self):
-        return self.input_dereference
+    def input_dereference(self):
+        return self._input_dereference
+
+    @property
+    def output_dereference(self):
+        raise AttributeError("ConstantIterator cannot be used as an output iterator")
 
     @staticmethod
     def input_advance(state, distance):
         pass
 
     @staticmethod
-    def input_dereference(state, result):
+    def _input_dereference(state, result):
         result[0] = state[0]
 
 
@@ -410,7 +380,6 @@ class CountingIterator(IteratorBase):
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=IteratorIOKind.INPUT,
         )
 
     @property
@@ -422,29 +391,27 @@ class CountingIterator(IteratorBase):
         return self.input_advance
 
     @property
-    def dereference(self):
-        return self.input_dereference
+    def input_dereference(self):
+        return self._input_dereference
+
+    @property
+    def output_dereference(self):
+        raise AttributeError("CountingIterator cannot be used as an output iterator")
 
     @staticmethod
     def input_advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
-    def input_dereference(state, result):
+    def _input_dereference(state, result):
         result[0] = state[0]
 
 
-class ReverseInputIteratorKind(IteratorKind):
+class ReverseIteratorKind(IteratorKind):
     pass
 
 
-class ReverseOutputIteratorKind(IteratorKind):
-    pass
-
-
-def make_reverse_iterator(
-    it: DeviceArrayLike | IteratorBase, iterator_io: IteratorIOKind
-):
+def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
     if not hasattr(it, "__cuda_array_interface__") and not isinstance(it, IteratorBase):
         raise NotImplementedError(
             f"Reverse iterator is not implemented for type {type(it)}"
@@ -452,19 +419,22 @@ def make_reverse_iterator(
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawPointer(
-            last_element_ptr, numba.from_dtype(get_dtype(it)), iterator_io, it
-        )
+        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)), it)
 
     it_advance = cuda.jit(it.advance, device=True)
-    it_dereference = cuda.jit(it.dereference, device=True)
+    it_input_dereference = (
+        cuda.jit(it.input_dereference, device=True)
+        if hasattr(it, "input_dereference")
+        else None
+    )
+    it_output_dereference = (
+        cuda.jit(it.output_dereference, device=True)
+        if hasattr(it, "output_dereference")
+        else None
+    )
 
     class ReverseIterator(IteratorBase):
-        iterator_kind_type = (
-            ReverseInputIteratorKind
-            if iterator_io is IteratorIOKind.INPUT
-            else ReverseOutputIteratorKind
-        )
+        iterator_kind_type = ReverseIteratorKind
 
         def __init__(self, it):
             self._it = it
@@ -472,7 +442,6 @@ def make_reverse_iterator(
                 cvalue=it.cvalue,
                 state_type=it.state_type,
                 value_type=it.value_type,
-                iterator_io=iterator_io,
             )
             self.kind_ = self.__class__.iterator_kind_type(
                 (it.kind, it.value_type), it.state_type
@@ -487,24 +456,28 @@ def make_reverse_iterator(
             return self.input_output_advance
 
         @property
-        def dereference(self):
-            return (
-                ReverseIterator.input_dereference
-                if self.iterator_io is IteratorIOKind.INPUT
-                else ReverseIterator.output_dereference
-            )
+        def input_dereference(self):
+            if it_input_dereference is None:
+                raise AttributeError("This iterator is not an input iterator")
+            return ReverseIterator._input_dereference
+
+        @property
+        def output_dereference(self):
+            if it_output_dereference is None:
+                raise AttributeError("This iterator is not an output iterator")
+            return ReverseIterator._output_dereference
 
         @staticmethod
         def input_output_advance(state, distance):
             return it_advance(state, -distance)
 
         @staticmethod
-        def input_dereference(state, result):
-            it_dereference(state, result)
+        def _input_dereference(state, result):
+            it_input_dereference(state, result)
 
         @staticmethod
-        def output_dereference(state, x):
-            it_dereference(state, x)
+        def _output_dereference(state, x):
+            it_output_dereference(state, x)
 
     return ReverseIterator(it)
 
@@ -513,25 +486,23 @@ class TransformIteratorKind(IteratorKind):
     pass
 
 
-def make_transform_iterator(
-    it, op: Callable, io_kind: IteratorIOKind = IteratorIOKind.INPUT
-):
+def make_transform_iterator(it, op: Callable):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
 
     it_host_advance = it.host_advance
     it_advance = cuda.jit(it.advance, device=True)
 
-    if io_kind is IteratorIOKind.INPUT:
-        try:
-            it_input_dereference = cuda.jit(it.input_dereference, device=True)
-        except AttributeError:
-            raise TypeError("The wrapped iterator is not an input iterator")
-    else:
-        try:
-            it_output_dereference = cuda.jit(it.output_dereference, device=True)
-        except AttributeError:
-            raise TypeError("The wrapped iterator is not an output iterator")
+    it_input_dereference = (
+        cuda.jit(it.input_dereference, device=True)
+        if hasattr(it, "input_dereference")
+        else None
+    )
+    it_output_dereference = (
+        cuda.jit(it.output_dereference, device=True)
+        if hasattr(it, "output_dereference")
+        else None
+    )
 
     op = cuda.jit(op, device=True)
     underlying_value_type = it.value_type
@@ -549,9 +520,7 @@ def make_transform_iterator(
     class TransformIterator(IteratorBase):
         iterator_kind_type = TransformIteratorKind
 
-        def __init__(
-            self, it: IteratorBase, op: CUDADispatcher, iterator_io: IteratorIOKind
-        ):
+        def __init__(self, it: IteratorBase, op: CUDADispatcher):
             self._it = it
             self._op = CachableFunction(op.py_func)
             state_type = it.state_type
@@ -569,7 +538,6 @@ def make_transform_iterator(
                 cvalue=it.cvalue,
                 state_type=state_type,
                 value_type=value_type,
-                iterator_io=iterator_io,
             )
             self.kind_ = self.__class__.iterator_kind_type(
                 (value_type, self._it.kind, self._op), self.state_type
@@ -584,19 +552,23 @@ def make_transform_iterator(
             return self.input_advance
 
         @property
-        def dereference(self):
-            return (
-                TransformIterator.input_dereference
-                if self.iterator_io is IteratorIOKind.INPUT
-                else TransformIterator.output_dereference
-            )
+        def input_dereference(self):
+            if it_input_dereference is None:
+                raise AttributeError("This iterator is not an input iterator")
+            return TransformIterator._input_dereference
+
+        @property
+        def output_dereference(self):
+            if it_output_dereference is None:
+                raise AttributeError("This iterator is not an output iterator")
+            return TransformIterator._output_dereference
 
         @staticmethod
         def input_advance(state, distance):
             return it_advance(state, distance)
 
         @staticmethod
-        def input_dereference(state, result):
+        def _input_dereference(state, result):
             # Allocate temporary storage for the underlying type
             temp_ptr = alloca_temp_for_underlying_type()
             # Call underlying iterator's dereference with temp storage
@@ -605,10 +577,10 @@ def make_transform_iterator(
             result[0] = op(temp_ptr[0])
 
         @staticmethod
-        def output_dereference(state, x):
+        def _output_dereference(state, x):
             it_output_dereference(state, op(x))
 
-    return TransformIterator(it, op, io_kind)
+    return TransformIterator(it, op)
 
 
 def _get_last_element_ptr(device_array) -> int:
