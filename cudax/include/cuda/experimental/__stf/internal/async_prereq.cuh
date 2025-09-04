@@ -162,7 +162,7 @@ public:
   // stream then depends on the list of events
   virtual void sync_with_stream(backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
-    fprintf(stderr, "sync_with_stream: unsupported synchronization with stream.\n");
+    fprintf(stderr, "Unsupported synchronization with stream.\n");
     abort();
   }
 
