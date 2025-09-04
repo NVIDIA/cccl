@@ -34,7 +34,7 @@
 // This addresses nvbug 5243118: nvrtc generates LDL/STL instructions prior to CTK 13.1
 // where nvcc would not generate them. Since c.parallel ALWAYS uses nvrtc internally to compile
 // kernel template instantiations (not nvcc), we must disable SASS checks for CTK versions prior to 13.1.
-inline bool is_ctk_version_allows_sass_check()
+inline bool ctk_version_allows_sass_check()
 {
 #if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__)
   // Bug is fixed in CTK 13.1+

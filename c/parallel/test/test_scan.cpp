@@ -78,7 +78,7 @@ struct scan_build
     bool cc_allows_check = (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
 
     // Disable SASS checks for CTK < 13.1 due to nvrtc bug (nvbug 5243118)
-    bool ctk_allows_check = is_ctk_version_allows_sass_check();
+    bool ctk_allows_check = ctk_version_allows_sass_check();
 
     return cc_allows_check && ctk_allows_check;
   }
