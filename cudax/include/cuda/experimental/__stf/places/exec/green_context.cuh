@@ -281,6 +281,19 @@ inline exec_place exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>&
   return exec_place_green_ctx(gc_view_ptr);
 }
 
+// Implementation of async_resources_handle::get_gc_helper moved here to avoid circular dependencies
+inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_helper(int dev_id, int sm_count)
+{
+  assert(pimpl);
+  assert(dev_id < int(pimpl->per_device_gc_helper.size()));
+  auto& h = pimpl->per_device_gc_helper[dev_id];
+  if (!h)
+  {
+    h = ::std::make_shared<green_context_helper>(sm_count, dev_id);
+  }
+  return h;
+}
+
 } // end namespace cuda::experimental::stf
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)

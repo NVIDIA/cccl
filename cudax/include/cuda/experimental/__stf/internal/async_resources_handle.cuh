@@ -448,17 +448,7 @@ public:
   }
 
   // Get green context helper with lazy initialization
-  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count)
-  {
-    assert(pimpl);
-    assert(dev_id < int(pimpl->per_device_gc_helper.size()));
-    auto& h = pimpl->per_device_gc_helper[dev_id];
-    if (!h)
-    {
-      h = ::std::make_shared<green_context_helper>(sm_count, dev_id);
-    }
-    return h;
-  }
+  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count);
 
   // Register an external green context helper
   void register_gc_helper(int dev_id, ::std::shared_ptr<green_context_helper> helper)
