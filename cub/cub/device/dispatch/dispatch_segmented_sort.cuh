@@ -277,6 +277,11 @@ struct DeviceSegmentedSortKernelSource
   CUB_DEFINE_KERNEL_GETTER(
     SegmentedSortKernelLarge,
     DeviceSegmentedSortKernelLarge<Order, MaxPolicyT, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t KeySize()
+  {
+    return sizeof(KeyT);
+  }
 };
 } // namespace detail::segmented_sort
 
@@ -680,7 +685,7 @@ private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int GetNumPasses(int radix_bits)
   {
     constexpr int byte_size = 8;
-    constexpr int num_bits  = sizeof(KeyT) * byte_size;
+    const int num_bits      = kernel_source.KeySize() * byte_size;
     const int num_passes    = ::cuda::ceil_div(num_bits, radix_bits);
     return num_passes;
   }
