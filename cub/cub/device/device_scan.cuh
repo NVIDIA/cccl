@@ -356,6 +356,62 @@ struct DeviceScan
                stream);
   }
 
+  //! @name Exclusive scans
+  //! @{
+
+  //! @rst
+  //! Computes a device-wide exclusive prefix sum.
+  //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_out``.
+  //!
+  //! - Supports non-commutative sum operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a user-defined exclusive-scan of a
+  //! device vector of ``float`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-env-determinism
+  //!     :end-before: example-end exclusive-sum-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan inputs @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_in
+  //!   Random-access iterator to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Random-access iterator to the output sequence of data items
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
@@ -598,48 +654,14 @@ struct DeviceScan
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! The code snippet below illustrates the exclusive prefix min-scan of an ``int`` device vector
+  //! The code snippet below illustrates a user-defined exclusive-scan of a
+  //! device vector of ``float`` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <cuda/std/climits> // for INT_MAX
-  //!
-  //!    // CustomMin functor
-  //!    struct CustomMin
-  //!    {
-  //!        template <typename T>
-  //!        __host__ __device__ __forceinline__
-  //!        T operator()(const T &a, const T &b) const {
-  //!            return (b < a) ? b : a;
-  //!        }
-  //!    };
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers for
-  //!    // input and output
-  //!    int          num_items;      // e.g., 7
-  //!    int          *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    int          *d_out;         // e.g., [ ,  ,  ,  ,  ,  ,  ]
-  //!    CustomMin    min_op;
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements for exclusive
-  //!    // prefix scan
-  //!    void     *d_temp_storage = nullptr;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceScan::ExclusiveScan(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_in, d_out, min_op, (int) INT_MAX, num_items);
-  //!
-  //!    // Allocate temporary storage for exclusive prefix scan
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run exclusive prefix min-scan
-  //!    cub::DeviceScan::ExclusiveScan(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_in, d_out, min_op, (int) INT_MAX, num_items);
-  //!
-  //!    // d_out <-- [2147483647, 8, 6, 6, 5, 3, 0]
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-env-determinism
+  //!     :end-before: example-end exclusive-scan-env-determinism
   //!
   //! @endrst
   //!
@@ -658,12 +680,8 @@ struct DeviceScan
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
   //!
-  //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //!
-  //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -680,9 +698,9 @@ struct DeviceScan
   //! @param[in] num_items
   //!   Total number of input items (i.e., the length of `d_in`)
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
