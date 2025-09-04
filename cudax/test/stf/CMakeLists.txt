@@ -39,7 +39,7 @@ set(stf_test_sources
   interface/cuda_kernel_chain-add_deps.cu
   interface/cuda_kernel_chain-add_deps_low_level.cu
   interface/cuda_kernel_empty_args.cu
-  interface/data_from_device_async.cu
+
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
@@ -96,11 +96,13 @@ set(stf_test_codegen_sources
   freeze/constant_logical_data.cu
   freeze/freeze.cu
   freeze/freeze_rw.cu
+  freeze/freeze_write_back.cu
   freeze/task_fence.cu
   freeze/token.cu
   graph/epoch.cu
   graph/freeze_for_graph.cu
   graph/freeze_nested_graphs.cu
+  graph/freeze_while_graphs.cu
   # graph/graph_composition.cu
   graph/graph_tmp_data.cu
   graph/many.cu
@@ -188,7 +190,6 @@ set(stf_unittested_headers
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
-  cuda/experimental/__stf/utility/stopwatch.cuh
   cuda/experimental/__stf/utility/unittest.cuh
   cuda/experimental/__stf/utility/unstable_unique.cuh
 )

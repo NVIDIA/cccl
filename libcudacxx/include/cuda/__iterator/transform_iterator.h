@@ -208,7 +208,7 @@ public:
     return ::cuda::std::move(__current_);
   }
 
-  //! @brief Invokes the stored functor with the value pointed to by the stored iterator
+  //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
@@ -218,12 +218,66 @@ public:
     return ::cuda::std::invoke(*__func_, *__current_);
   }
 
-  //! @brief Invokes the stored functor with the value pointed to by the stored iterator
+  //! @cond
+  //! @brief Dereferences the stored iterator and applies the stored functor to the result
+  //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
+  //! forgotten to const qualify the call operator
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES((!::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>) )
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
+    noexcept(noexcept(::cuda::std::invoke(const_cast<_Fn&>(*__func_), *__current_)))
+  {
+    return ::cuda::std::invoke(const_cast<_Fn&>(*__func_), *__current_);
+  }
+  //! @endcond
+
+  //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator*() noexcept(noexcept(::cuda::std::invoke(*__func_, *__current_)))
   {
     return ::cuda::std::invoke(*__func_, *__current_);
+  }
+
+  //! @brief Subscripts the stored iterator by @c __n and applies the stored functor to the result
+  //! @param __n The additional offset
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>
+                   _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<_Iter2>>)
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
+    noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
+  {
+    return ::cuda::std::invoke(*__func_, __current_[__n]);
+  }
+
+  //! @cond
+  //! @brief Subscripts the stored iterator by @c __n and applies the stored functor to the result
+  //! @param __n The additional offset
+  //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
+  //! forgotten to const qualify the call operator
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2> _CCCL_AND(
+    !::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>))
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
+    noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
+  {
+    return ::cuda::std::invoke(const_cast<_Fn&>(*__func_), __current_[__n]);
+  }
+  //! @endcond
+
+  //! @brief Subscripts the stored iterator by an offset and applies the stored functor to the result
+  //! @param __n The additional offset
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>
+                   _CCCL_AND ::cuda::std::regular_invocable<_Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
+  {
+    return ::cuda::std::invoke(*__func_, __current_[__n]);
   }
 
   //! @brief Increments the stored iterator
@@ -292,31 +346,6 @@ public:
   {
     __current_ -= __n;
     return *this;
-  }
-
-  //! @brief Subscripts the stored iterator by \p __n and applies the stored functor to the result
-  //! @param __n The additional offset
-  //! @returns ::cuda::std::invoke(__func_, __current_[__n])
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>
-                   _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
-    noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
-  {
-    return ::cuda::std::invoke(*__func_, __current_[__n]);
-  }
-
-  //! @brief Subscripts the stored iterator by \p __n and applies the stored functor to the result
-  //! @param __n The additional offset
-  //! @returns ::cuda::std::invoke(__func_, __current_[__n])
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>)
-  [[nodiscard]] _CCCL_API constexpr decltype(auto)
-  operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
-  {
-    return ::cuda::std::invoke(*__func_, __current_[__n]);
   }
 
   //! @brief Compares two \c transform_iterator for equality, directly comparing the stored iterators

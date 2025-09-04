@@ -349,10 +349,6 @@ host_compilers:
 #   - E.g. "force_producer_ctk: '12.0'" on a test step will force the generated build step to use CTK 12.0.
 
 jobs:
-  # Only used for generating devcontainers. No scripts actually exist for these:
-  dc:     { gpu: false }
-  dc_ext: { gpu: false, cuda_ext: true }
-
   # General:
   build:        { gpu: false }
   test:         { gpu: true, needs: 'build' }
