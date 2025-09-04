@@ -602,7 +602,8 @@ protected:
     ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
     ::std::mutex pending_freeze_mutex;
 
-    // Resources associated to the context (e.g.  allocator resources, host
+  public:
+    // Resources associated to the context (e.g. allocator resources, host
     // callbacks argument buffers)
     ctx_resource_set ctx_resources;
   };

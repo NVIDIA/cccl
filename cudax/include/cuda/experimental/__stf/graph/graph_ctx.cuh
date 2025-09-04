@@ -321,6 +321,10 @@ public:
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
+
+    // Make sure we release resources attached to this context
+    state.ctx_resources.release(state.submitted_stream);
+
     state.submitted_stream = nullptr;
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
