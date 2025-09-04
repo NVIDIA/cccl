@@ -367,7 +367,7 @@ auto all_convertible(P&&... p)
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
 
-  [[maybe_unused]] auto rollback = [&result, &i]() {
+  auto rollback = [&result, &i]() {
     for (size_t j = 0; j < i; ++j)
     {
       result[j].~T();
