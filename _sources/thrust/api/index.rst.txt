@@ -865,8 +865,6 @@ Variables
    group__function__object__adaptors
    group__placeholder__objects
    group__gathering
-   group__container__classes
-   group__host__containers
    group__transformed__reductions
    group__iterators
    group__fancyiterator
