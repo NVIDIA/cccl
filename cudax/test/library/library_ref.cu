@@ -108,6 +108,8 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
   CUlibrary lib1 = _CUDA_DRIVER::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
   CUlibrary lib2 = _CUDA_DRIVER::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
 
+  const cuda::device_ref device{0};
+
   // Types
   {
     STATIC_REQUIRE(cuda::std::is_same_v<typename cudax::library_ref::value_type, CUlibrary>);
@@ -166,32 +168,28 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
   // Has global symbol
   {
     STATIC_REQUIRE(
-      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_global(global_symbol_name)), bool>);
-
-    // Getting a global symbol requires the current device to be set
-    cuda::device_ref device{0};
-    cudax::__ensure_current_device device_guard{device};
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().has_global(global_symbol_name, device)),
+                           bool>);
 
     cudax::library_ref lib_ref{lib1};
-    CUDAX_REQUIRE(lib_ref.has_global(global_symbol_name));
-    CUDAX_REQUIRE(lib_ref.has_global(const_symbol_name));
-    CUDAX_REQUIRE(!lib_ref.has_global("non_existent_global"));
+    CUDAX_REQUIRE(lib_ref.has_global(global_symbol_name, device));
+    CUDAX_REQUIRE(lib_ref.has_global(const_symbol_name, device));
+    CUDAX_REQUIRE(!lib_ref.has_global("non_existent_global", device));
   }
 
   // Get global symbol
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().global(global_symbol_name)),
-                                        cudax::library_symbol_info>);
-
-    // Getting a global symbol requires the current device to be set
-    cuda::device_ref device{0};
-    cudax::__ensure_current_device device_guard{device};
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(cuda::std::declval<cudax::library_ref>().global(global_symbol_name, device)),
+                           cudax::library_symbol_info>);
 
     cudax::library_ref lib_ref{lib1};
 
     // Test global_symbol_name
     {
-      auto global_sym = lib_ref.global(global_symbol_name);
+      auto global_sym = lib_ref.global(global_symbol_name, device);
+
+      cuda::__ensure_current_context context_guard{device};
 
       CUdeviceptr global_symbol_ptr;
       cuda::std::size_t global_symbol_size;
@@ -206,7 +204,9 @@ C2H_CCCLRT_TEST("Library reference", "[library_ref]")
 
     // Test const_symbol_name
     {
-      auto const_sym = lib_ref.global(const_symbol_name);
+      auto const_sym = lib_ref.global(const_symbol_name, device);
+
+      cuda::__ensure_current_context context_guard{device};
 
       CUdeviceptr const_symbol_ptr;
       cuda::std::size_t const_symbol_size;

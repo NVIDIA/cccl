@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/cuda_error.h>
 
@@ -104,15 +106,18 @@ public:
     return kernel_ref<_Signature>{__kernel};
   }
 
-  //! @brief Checks if the library contains a global symbol with the given name
+  //! @brief Checks if the library contains a global symbol with the given name on a device
   //!
   //! @param __name The name of the global symbol to check for
+  //! @param __device The device on which to check for the global symbol
   //!
   //! @return true if the library contains a global symbol with the given name, false otherwise
   //!
   //! @throws cuda_error if the library could not be queried for the global symbol
-  [[nodiscard]] bool has_global(const char* __name) const
+  [[nodiscard]] bool has_global(const char* __name, ::cuda::device_ref __device) const
   {
+    ::cuda::__ensure_current_context __ctx_guard(__device);
+
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
     switch (const auto __res = _CUDA_DRIVER::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name))
@@ -126,15 +131,18 @@ public:
     }
   }
 
-  //! @brief Gets a pointer and size of a global symbol from the library
+  //! @brief Gets a pointer and size of a global symbol from the library on a device
   //!
   //! @param __name The name of the global symbol to retrieve
+  //! @param __device The device on which to retrieve the global symbol
   //!
   //! @return A pair containing a device pointer to the global symbol and its size
   //!
   //! @throws cuda_error if the global symbol could not be found in the library
-  [[nodiscard]] library_symbol_info global(const char* __name) const
+  [[nodiscard]] library_symbol_info global(const char* __name, ::cuda::device_ref __device) const
   {
+    ::cuda::__ensure_current_context __ctx_guard(__device);
+
     ::CUdeviceptr __dptr{};
     ::cuda::std::size_t __size{};
     if (const auto __res = _CUDA_DRIVER::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
@@ -152,6 +160,8 @@ public:
   //! @return true if the library contains a managed symbol with the given name, false otherwise
   //!
   //! @throws cuda_error if the library could not be queried for the managed symbol
+  //!
+  //! @note Managed memory is shared across devices
   [[nodiscard]] bool has_managed(const char* __name) const
   {
     ::CUdeviceptr __dptr{};
@@ -174,6 +184,8 @@ public:
   //! @return A pair containing a pointer to the managed symbol and its size
   //!
   //! @throws cuda_error if the managed symbol could not be found in the library
+  //!
+  //! @note Managed memory is shared across devices
   [[nodiscard]] library_symbol_info managed(const char* __name) const
   {
     ::CUdeviceptr __dptr{};
