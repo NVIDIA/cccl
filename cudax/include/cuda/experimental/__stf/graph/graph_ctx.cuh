@@ -383,6 +383,7 @@ public:
     state._graph = shared_cuda_graph();
 
     state.graph_stage++;
+
     // fprintf(stderr, "Starting stage %ld : previous graph %p new graph %p\n", state.graph_stage, prev_graph,
     //         new_graph);
   }

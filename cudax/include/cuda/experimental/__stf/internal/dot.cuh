@@ -8,19 +8,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-/**
- * @file
- *
- * @brief Implements the generation of a DOT file to visualize the task graph
- *
- * CUDASTF_DOT_FILE
- * CUDASTF_DOT_IGNORE_PREREQS
- * CUDASTF_DOT_COLOR_BY_DEVICE
- * CUDASTF_DOT_REMOVE_DATA_DEPS
- * CUDASTF_DOT_TIMING
- * CUDASTF_DOT_MAX_DEPTH
- * CUDASTF_DOT_SHOW_FENCE
- */
+//! \file
+//!
+//! \brief Implements the generation of a DOT file to visualize the task graph
+//!
+//! Environment variables:
+//! - CUDASTF_DOT_FILE: Path to output DOT file. If not set, DOT generation is disabled.
+//! - CUDASTF_DOT_IGNORE_PREREQS: Set to 1 to disable tracing of prerequisite nodes (default: 0)
+//! - CUDASTF_DOT_COLOR_BY_DEVICE: Set to 1 to color nodes by CUDA device (default: 0)
+//! - CUDASTF_DOT_REMOVE_DATA_DEPS: Set to 1 to hide data dependencies in task labels (default: 0)
+//! - CUDASTF_DOT_TIMING: Set to 1 to enable timing measurement and color-coding (default: 0)
+//! - CUDASTF_DOT_MAX_DEPTH: Maximum section nesting depth to display before collapsing
+//! - CUDASTF_DOT_SHOW_FENCE: Set to 1 to display fence vertices in the graph (default: 0)
+//! - CUDASTF_DOT_KEEP_REDUNDANT: Set to 1 to preserve transitive edges (default: 0, removes redundant edges)
+//! - CUDASTF_DOT_STATS_FILE: Path to output statistics file (edge count, vertex count, timing metrics)
+//! - CUDASTF_DOT_KEEP_FREEZE: Set to 1 to display freeze/unfreeze vertices (default: 0, removes them)
 
 #pragma once
 
@@ -51,27 +53,28 @@
 #include <stack>
 #include <unordered_set>
 
-/**
- * @file
- * @brief Generation of the DOT file to visualize task DAGs
- */
+//! \file
+//!
+//! \brief Generation of the DOT file to visualize task DAGs
 
 namespace cuda::experimental::stf::reserved
 {
 
 int get_next_prereq_unique_id();
 
-/**
- * @brief Some helper type
- */
+//! Sets of integer pairs used to represent edges
 using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimental::stf::hash<::std::pair<int, int>>>;
 
 class dot;
 
-// edge represent dependencies, but we sometimes want to visualize differently
-// dependencies which are related to actual task dependencies, and "internal"
-// dependencies between asynchronous operations (eg. a task depends on an
-// allocation) which are not necessarily useful to visualize.
+//! Type of the edge
+//!
+//! Edges represent dependencies, but we want to visualize different types of
+//! dependencies in different manners:
+//! - Task-to-task dependencies (actual computational dependencies)
+//! - Prerequisite dependencies (internal async operations like allocations)
+//! - Fence dependencies (synchronization barriers)
+//! This allows filtering or styling edges based on their semantic meaning.
 enum edge_type
 {
   plain   = 0,
@@ -90,24 +93,36 @@ enum vertex_type
   cluster_proxy_vertex // start or end of clusters (invisible nodes)
 };
 
-// Information for every vertex (task, prereq, ...), so that we can eventually generate a node for the DAG
+//! Vertex metadata
+//!
+//! Store information for every vertex (task, prereq, ...), so that we can
+//! eventually generate a node for the DAG
 struct per_vertex_info
 {
-  // This color can for example be computed according to the duration of the task, if measured
+  //! color of the vertex
+  //!
+  //! This color can for example be computed according to the duration of the task, if measured, or based on the device
+  //! which executes the task.
   ::std::string color;
+  //! text associated to the vertex
   ::std::string label;
+  //! measured duration of the vertex
   ::std::optional<float> timing;
-  // is that a task, fence or prereq ?
+  //! is that a task, fence or prereq ?
   vertex_type type;
 
-  // id of the vertex
+  //! id of the vertex
   int original_id;
 
-  // id of the vertex after collapsing : this is the id of the vertex that
-  // represents all nodes that were merged in a section.
+  //! id of the vertex after collapsing
+  //!
+  //! This is the id of the vertex that represents all nodes that were merged in a section.
   int representative_id;
 
+  //! id of the section in which the vertex belongs
   int dot_section_id;
+
+  //! id of the context in which the vertex belongs
   int ctx_id;
 };
 
@@ -117,11 +132,9 @@ inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id);
 
 class per_ctx_dot;
 
-/**
- * @brief A named section in the DOT output to potentially collapse multiple
- * nodes in the same section, this can also be created automatically when there
- * are nested contexts.
- */
+//! A named section in the DOT output to potentially collapse multiple
+//! nodes in the same section, this can also be created automatically when
+//! there are nested contexts.
 class dot_section
 {
 public:
@@ -133,9 +146,16 @@ public:
     static_assert(::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
   }
 
+  //! RAII guard class for managing DOT section lifecycle
+  //!
+  //! This guard automatically manages the push/pop operations for DOT sections,
+  //! ensuring proper nesting and cleanup even in the presence of exceptions.
   class guard
   {
   public:
+    //! \brief Construct a guard and push a new DOT section
+    //! \param pc_ The per-context DOT object
+    //! \param symbol The name/symbol for this section
     guard(::std::shared_ptr<per_ctx_dot> pc_, ::std::string symbol)
         : pc(mv(pc_))
     {
@@ -170,6 +190,10 @@ public:
     guard(const guard&)            = delete;
     guard& operator=(const guard&) = delete;
 
+    //! Manually end the section (alternative to destructor)
+    //!
+    //! This allows explicit control over when the section ends,
+    //! useful when the guard lifetime doesn't match the desired section lifetime.
     void end()
     {
       _CCCL_ASSERT(active, "Attempting to end the same section twice.");
@@ -197,28 +221,34 @@ public:
   static void push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string symbol);
   static void pop(::std::shared_ptr<per_ctx_dot>& pc);
 
-  /**
-   * @brief Get the unique ID of the section
-   *
-   * Note that returned values start at 1, not 0, we use 0 to designate the
-   * lack of a section.
-   */
+  //! Get the unique ID of the section
+  //!
+  //! Note that returned values start at 1, not 0, we use 0 to designate the
+  //! lack of a section.
   int get_id() const
   {
     return 1 + int(id);
   }
 
-  // rename to to_string()
+  //! Get the symbol/name of this section for DOT output
+  //!
+  //! \return The section's symbol string
   const ::std::string& get_symbol() const
   {
     return symbol;
   }
 
+  //! Get the nesting depth of this section
+  //!
+  //! \return The depth level (higher values = more deeply nested)
   int get_depth() const
   {
     return depth;
   }
 
+  //! Set the nesting depth of this section
+  //!
+  //! \param d The depth level to set
   void set_depth(int d)
   {
     depth = d;
@@ -240,12 +270,10 @@ private:
   unique_id<dot_section> id;
 };
 
-/**
- * @brief Store dot-related information per STF context.
- *
- * If multiple contexts are created, the specific state of each context is
- * saved here, and common state is stored in the dot singleton class
- */
+//! Store dot-related information per STF context.
+//!
+//! If multiple contexts are created, the specific state of each context is
+//! saved here, and common state is stored in the dot singleton class
 class per_ctx_dot
 {
 public:
@@ -257,8 +285,6 @@ public:
     auto sec       = ::std::make_shared<dot_section>("context");
     int id         = sec->get_id();
     sec->parent_id = 0; // until we call set_parent_ctx, this is a root node
-
-    // fprintf(stderr, "Creating per_ctx_dot section id %d ctx id %d\n", id, get_unique_id());
 
     // Save the section in the map
     dot_get_section_by_id(id) = sec;
@@ -287,8 +313,6 @@ public:
     }
 
     ::std::lock_guard<::std::mutex> guard(mtx);
-
-    vertices.push_back(unique_id);
 
     auto& m = metadata[unique_id];
     m.color = "red";
@@ -364,8 +388,6 @@ public:
     }
 
     ::std::lock_guard<::std::mutex> guard(mtx);
-
-    vertices.push_back(prereq_unique_id);
 
     set_current_color_by_device(guard);
 
@@ -463,8 +485,6 @@ public:
     }
 
     set_current_color_by_device(guard);
-
-    vertices.push_back(t.get_unique_id());
 
     auto& task_metadata = metadata[t.get_unique_id()];
 
@@ -588,8 +608,6 @@ public:
     int child_ctx_section_id = child_dot->section_id_stack[0];
     dot_get_section_by_id(parent_section_id)->children_ids.push_back(child_ctx_section_id);
     dot_get_section_by_id(child_ctx_section_id)->parent_id = parent_section_id;
-
-    // fprintf(stderr, "set_parent_ctx sec %d is parent of sec %d\n", parent_section_id, child_ctx_section_id);
   }
 
   const ::std::string& get_ctx_symbol() const
@@ -636,10 +654,10 @@ public:
   }
 
 public:
-  // per-context vertices
+  //! per-context vertices
   ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
-  // IDs of the sections in this context
+  //! IDs of the sections found in this context
   ::std::vector<int> section_id_stack;
 
   mutable ::std::mutex mtx;
@@ -647,10 +665,25 @@ public:
 private:
   mutable ::std::string ctx_symbol;
 
-  ::std::vector<int> vertices;
-
+  //! IDs of the tasks that have been discarded to avoid them being displayed in the graph
   ::std::unordered_set<int> discarded_tasks;
 
+  //! Virtual proxy vertices for context boundary representation
+  //!
+  //! These invisible proxy nodes are created on-demand to represent the
+  //! start/end boundaries of nested contexts in the dependency graph:
+  //!
+  //! - proxy_start_unique_id: Virtual entry point that aggregates all external
+  //!   dependencies flowing INTO this context. Created when ctx_add_input_id()
+  //!   is first called.
+  //!
+  //! - proxy_end_unique_id: Virtual exit point that aggregates all dependencies
+  //!   flowing OUT of this context. Created when ctx_add_output_id() is first called.
+  //!
+  //! These proxies enable:
+  //! - Proper critical path computation through nested contexts (even empty ones)
+  //! - Clean visualization of context boundaries in the DAG
+  //! - Correct dependency chaining between parent and child contexts
   ::std::optional<int> proxy_start_unique_id;
   ::std::optional<int> proxy_end_unique_id;
 };
@@ -711,7 +744,7 @@ public:
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
-    single_threaded_section guard(mtx);
+    ::std::lock_guard<::std::mutex> guard(mtx);
 
     if (dot_filename.empty())
     {
@@ -782,7 +815,8 @@ public:
         outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
       }
 
-      edge_count = all_edges.size();
+      edge_count   = all_edges.size();
+      vertex_count = all_vertices.size();
 
       outFile << "// Edge   count : " << edge_count << "\n";
       outFile << "// Vertex count : " << vertex_count << "\n";
@@ -838,7 +872,6 @@ private:
   void print_section(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
   {
     int section_id = sec->get_id();
-    // fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
 
     if (display_cluster)
     {
@@ -899,7 +932,11 @@ private:
     }
   }
 
-  // This will update colors if necessary
+  //! Update vertex colors based on timing using percentile-based thresholds
+  //!
+  //! This approach is more robust than average-based coloring because it's not
+  //! skewed by outliers. Tasks are colored based on their relative performance:
+  //! 25% will be green (fast), 50% yellow (average), 25% orange/red (slow).
   void update_colors_with_timing()
   {
     if (!enable_timing)
@@ -907,43 +944,38 @@ private:
       return;
     }
 
-    float sum  = 0.0;
-    size_t cnt = 0;
-
-    // First go over all tasks which have some timing and compute the average duration
+    // Collect all timing values for percentile computation
+    ::std::vector<float> all_durations;
     for (const auto& p : all_vertices)
     {
       if (p.second.timing.has_value())
       {
-        float ms = p.second.timing.value();
-        cnt++;
-        sum += ms;
+        all_durations.push_back(p.second.timing.value());
       }
     }
 
-    if (cnt > 0)
+    if (all_durations.empty())
     {
-      float avg = sum / cnt;
+      return;
+    }
 
-      // Update colors associated to tasks with timing now in order to
-      // illustrate how long they take to execute relative to the average
-      for (auto& p : all_vertices)
+    // Sort durations for percentile computation
+    ::std::sort(all_durations.begin(), all_durations.end());
+
+    // Update colors using percentile-based thresholds
+    for (auto& p : all_vertices)
+    {
+      if (p.second.timing.has_value())
       {
-        if (p.second.timing.has_value())
-        {
-          float ms       = p.second.timing.value();
-          p.second.color = get_color_for_duration(ms, avg);
-          p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
-        }
+        float ms       = p.second.timing.value();
+        p.second.color = get_color_for_duration_percentile(ms, all_durations);
+        p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
       }
     }
   }
-
-  /**
-   * @brief Combine two nodes identified by "src_id" and "dst_id" into a single
-   * updated one ("dst_id"), redirecting edges and combining timing if
-   * necessary
-   */
+  //! Combine two nodes identified by "src_id" and "dst_id" into a single
+  //! updated one ("dst_id"), redirecting edges and combining timing if
+  //! necessary
   void merge_nodes(int dst_id, int src_id)
   {
     // If there was some timing associated to either src or dst, update timing
@@ -956,7 +988,20 @@ private:
     }
   }
 
-  // Remove one vertex and replace incoming/outgoing edges
+  //! Remove a vertex while preserving graph connectivity
+  //!
+  //! This algorithm removes a vertex from the graph and maintains all dependency
+  //! relationships by connecting its predecessors directly to its successors.
+  //!
+  //! Algorithm:
+  //! 1. Identify all incoming edges (predecessors) to vertex_id
+  //! 2. Identify all outgoing edges (successors) from vertex_id
+  //! 3. Remove all edges involving vertex_id
+  //! 4. Create new edges connecting each predecessor to each successor
+  //! 5. Replace the edge set atomically
+  //!
+  //! This preserves the transitive closure of dependencies while removing
+  //! intermediate nodes (e.g., freeze/unfreeze operations).
   void collapse_vertex(int vertex_id)
   {
     /* We look for incoming edges, and outgoing edges */
@@ -1005,6 +1050,14 @@ private:
     {
       return;
     }
+  }
+
+  // Remove one vertex and replace incoming/outgoing edges
+  void collapse_vertex(int vertex_id)
+  {
+    /* We look for incoming edges, and outgoing edges */
+    ::std::vector<int> in;
+    ::std::vector<int> out;
 
     // Since we are going to potentially remove nodes, we create a copy first
     // to iterate on it, and remove from the original structure if necessary
@@ -1023,10 +1076,18 @@ private:
     }
   }
 
-  /**
-   * @brief Collapse nodes which are parts of sections deeper than the value
-   *        specified in CUDASTF_DOT_MAX_DEPTH
-   */
+  //! Hierarchical section collapsing to manage visual complexity
+  //!
+  //! When section nesting exceeds CUDASTF_DOT_MAX_DEPTH, this algorithm:
+  //! 1. Identifies all vertices in sections deeper than max_depth
+  //! 2. Groups vertices by their ancestor section at depth (max_depth + 1)
+  //! 3. Merges all vertices in each group into a single representative vertex
+  //! 4. Combines timing data from collapsed vertices (sum of durations)
+  //! 5. Redirects edges: internal edges removed, external edges preserved
+  //! 6. Updates representative vertex with section name and parent assignment
+  //!
+  //! This transforms deep hierarchies into manageable flat structures while
+  //! preserving the overall dependency relationships and timing information.
   void collapse_sections()
   {
     const char* env_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
@@ -1124,7 +1185,6 @@ private:
       // Remove edges internal to a section
       if (new_from != new_to)
       {
-        // XXX_CCCL_ASSERT(new_from < new_to, "invalid edge");
         // insert the edge (if it does not exist already)
         new_edges.insert(std::make_pair(new_from, new_to));
       }
@@ -1147,35 +1207,49 @@ private:
   }
 
 private:
-  // Function to get a color based on task duration relative to the average
-  ::std::string get_color_for_duration(double duration, double avg_duration)
+  //! Get color based on task duration using percentile thresholds (more robust than average)
+  //!
+  //! Uses percentile-based thresholds to provide better color distribution:
+  //! - Very fast: < 25th percentile (light green)
+  //! - Fast: 25th-50th percentile (green)
+  //! - Average: 50th-75th percentile (yellow)
+  //! - Slow: 75th-90th percentile (orange)
+  //! - Very slow: > 90th percentile (red)
+  ::std::string get_color_for_duration_percentile(double duration, const ::std::vector<float>& sorted_durations)
   {
-    // Define thresholds relative to the average duration
-    const double very_short_threshold = 0.5 * avg_duration; // < 50% of avg
-    const double short_threshold      = 0.8 * avg_duration; // < 80% of avg
-    const double long_threshold       = 1.5 * avg_duration; // > 150% of avg
-    const double very_long_threshold  = 2.0 * avg_duration; // > 200% of avg
+    if (sorted_durations.empty())
+    {
+      return "#ffd966"; // Default yellow if no data
+    }
 
-    // Return color based on duration thresholds
-    if (duration < very_short_threshold)
+    size_t n = sorted_durations.size();
+
+    // Compute percentile indices (using nearest-rank method)
+    double p25 = sorted_durations[n * 25 / 100]; // 25th percentile
+    double p50 = sorted_durations[n * 50 / 100]; // 50th percentile (median)
+    double p75 = sorted_durations[n * 75 / 100]; // 75th percentile
+    double p90 = sorted_durations[n * 90 / 100]; // 90th percentile
+
+    // Return color based on percentile thresholds
+    if (duration < p25)
     {
-      return "#b6e3b6"; // Light Green for Very Short tasks
+      return "#b6e3b6"; // Light Green for Very Fast tasks (< 25%)
     }
-    else if (duration < short_threshold)
+    else if (duration < p50)
     {
-      return "#69b369"; // Green for Short tasks
+      return "#69b369"; // Green for Fast tasks (25-50%)
     }
-    else if (duration <= long_threshold)
+    else if (duration < p75)
     {
-      return "#ffd966"; // Yellow for Around Average tasks
+      return "#ffd966"; // Yellow for Average tasks (50-75%)
     }
-    else if (duration <= very_long_threshold)
+    else if (duration < p90)
     {
-      return "#ffb84d"; // Orange for Long tasks
+      return "#ffb84d"; // Orange for Slow tasks (75-90%)
     }
     else
     {
-      return "#ff6666"; // Red for Very Long tasks
+      return "#ff6666"; // Red for Very Slow tasks (> 90%)
     }
   }
 
@@ -1204,11 +1278,24 @@ private:
     return false;
   }
 
-  // This method will check whether an edge can be removed when there is already a direct path
+  //! Remove transitive edges to simplify graph visualization (transitive reduction)
+  //!
+  //! This algorithm removes edges (A->C) when there exists an alternative path A->B->C,
+  //! making the graph cleaner while preserving all dependency relationships.
+  //!
+  //! Algorithm:
+  //! 1. Build predecessor map for each vertex
+  //! 2. For each edge (A->C), check if there's any intermediate vertex B where:
+  //!    - B is a predecessor of C (B->C exists)
+  //!    - A can reach B through some path (A->...->B)
+  //! 3. If such B exists, the edge A->C is redundant and can be removed
+  //! 4. Use visited set to avoid checking the same paths multiple times
+  //!
+  //! Time Complexity: O(V^3) in worst case, but optimized with caching
+  //!
+  //! @note This method assumes the caller already holds the mutex (mtx)
   void remove_redundant_edges()
   {
-    single_threaded_section guard(mtx);
-
     ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
     // We first dump the set of edges into a map of predecessors per node
@@ -1248,14 +1335,28 @@ private:
     ::std::swap(new_edges, all_edges);
   }
 
+  //! Compute the critical path (longest path) through the DAG using topological sort
+  //!
+  //! This algorithm implements the following steps:
+  //! 1. Gather timing data for all vertices (tasks with 0.0 duration for non-timed nodes)
+  //! 2. Build predecessor/successor maps from edges
+  //! 3. Use topological sort for vertex ordering
+  //! 4. During traversal, compute longest distances (critical path lengths)
+  //! 5. Find the vertex with maximum distance (end of critical path)
+  //! 6. Backtrack using path_predecessor to highlight critical path vertices
+  //!
+  //! The algorithm computes:
+  //! - T1 (total work): Sum of all task durations
+  //! - Tinf (critical path): Longest path through the DAG
+  //! - Parallelism ratio: T1/Tinf indicates maximum theoretical speedup
+  //!
+  //! @note This method assumes the caller already holds the mutex (mtx)
   void compute_critical_path(::std::ofstream& outFile)
   {
     if (!enable_timing)
     {
       return;
     }
-
-    single_threaded_section guard(mtx);
 
     // Total Work (T1) in Cilk terminology
     float t1 = 0.0f;
@@ -1303,7 +1404,7 @@ private:
       }
     }
 
-    // Topological sort using Kahn's algorithm
+    // Topological sort using in-degree counting
     ::std::queue<int> q;
     for (const auto& p : durations)
     {
@@ -1402,6 +1503,7 @@ protected:
 };
 
 inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id)
+
 {
   // Note that it may populate the map
   return dot::instance().section_map[id];
@@ -1427,18 +1529,19 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
 
   ::std::lock_guard<::std::mutex> guard(pc->mtx);
 
-  // This must at least contain the section of the context
+  // Get parent section ID from stack (must have at least the context section)
   auto& section_stack = pc->section_id_stack;
-  sec->parent_id      = section_stack.back();
+  _CCCL_ASSERT(!section_stack.empty(), "Section stack should never be empty");
+  sec->parent_id = section_stack.back();
 
-  // Save the section in the map
+  // Save the section in the global map
   dot_get_section_by_id(id) = sec;
 
   // Add the section to the children of its parent if that was not the root
   auto& parent_section = dot_get_section_by_id(sec->parent_id);
   parent_section->children_ids.push_back(id);
 
-  // Push the id in the current stack
+  // Push the new section ID onto the stack
   section_stack.push_back(id);
 }
 
@@ -1449,9 +1552,12 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
     return;
   }
 
-  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+  {
+    auto guard = ::std::lock_guard{pc->mtx};
 
-  pc->section_id_stack.pop_back();
+    _CCCL_ASSERT(!pc->section_id_stack.empty(), "Cannot pop from empty section stack");
+    pc->section_id_stack.pop_back();
+  } // Release lock before potentially expensive NVTX call
 
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePop();
