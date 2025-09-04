@@ -173,6 +173,7 @@ struct DeviceTransform
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Fills the output sequence by invoking a generator operation for each output element and writing the result to it.
   //! This is effectively calling Transform with no input sequences.
+  //! @endrst
   //!
   //! @param output An iterator to the output sequence where num_items results are written to.
   //! @param num_items The number of elements to write to the output sequence.
