@@ -8,7 +8,7 @@
 CCCL_BRANCH="${CCCL_BRANCH:-dev}"
 PACKAGE_VERSION_PREFIX="${PACKAGE_VERSION_PREFIX:-}"
 
-GIT_DESCRIBE_TAG=$(git describe --abbrev=0)
+GIT_DESCRIBE_TAG=$(git describe --tags --match "v[0-9]*" --abbrev=0)
 GIT_DESCRIBE_NUMBER=$(git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count)
 
 JSON_VERSION=$(jq -r .full /workspace/cccl-version.json)

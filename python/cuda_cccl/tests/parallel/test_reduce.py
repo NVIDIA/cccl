@@ -692,3 +692,23 @@ def test_device_reduce_well_known_multiplies():
     # Check the result is correct
     expected_output = 24  # 1*2*3*4
     assert (d_output == expected_output).all()
+
+
+def test_reduce_transform_output_iterator(floating_array):
+    """Test reduce with TransformOutputIterator."""
+    dtype = floating_array.dtype
+    h_init = np.array([0], dtype=dtype)
+
+    # Use the floating_array fixture which provides random floating-point data of size 1000
+    d_input = floating_array
+    d_output = cp.empty(1, dtype=dtype)
+
+    def sqrt(x):
+        return x**0.5
+
+    d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
+
+    parallel.reduce_into(d_input, d_out_it, parallel.OpKind.PLUS, len(d_input), h_init)
+
+    expected = cp.sqrt(cp.sum(d_input))
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
