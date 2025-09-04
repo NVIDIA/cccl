@@ -174,6 +174,7 @@ __host__ __device__ void test()
   _CCCL_TRY
   {
     _CCCL_THROW(HostException{});
+    assert(false);
   }
   _CCCL_CATCH (const HostException& e)
   {
