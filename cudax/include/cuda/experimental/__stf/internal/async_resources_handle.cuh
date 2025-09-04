@@ -394,7 +394,7 @@ private:
     mutable exec_affinity affinity;
   };
 
-  ::std::shared_ptr<impl> pimpl;
+  mutable ::std::shared_ptr<impl> pimpl;
 
 public:
   async_resources_handle()
@@ -408,7 +408,7 @@ public:
     return pimpl != nullptr;
   }
 
-  stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
+  stream_pool& get_device_stream_pool(int dev_id, bool for_computation) const
   {
     assert(pimpl);
     return pimpl->get_device_stream_pool(dev_id, for_computation);

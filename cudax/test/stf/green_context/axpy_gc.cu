@@ -83,7 +83,7 @@ int main()
   std::vector<green_context_helper> gc(ndevs);
   for (int devid = 0; devid < ndevs; devid++)
   {
-    gc[devid] = green_context_helper(num_sms, devid);
+    gc[devid] = green_context_helper(num_sms, ctx.async_resources(), devid);
   }
 
   for (int iter = 0; iter < NITER; iter++)

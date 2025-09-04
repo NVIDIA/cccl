@@ -195,7 +195,7 @@ private:
         // 8 SMs per green context is a granularity that should work on any arch.
         const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
         int sm_cnt      = env ? atoi(env) : 8;
-        h               = ::std::make_shared<green_context_helper>(sm_cnt, dev_id);
+        h               = ::std::make_shared<green_context_helper>(sm_cnt, handle, dev_id);
       }
 
       // Get views of green context out of the helper to create execution places

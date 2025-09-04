@@ -58,7 +58,7 @@ class green_context_helper
 {
 public:
   /* Create green contexts with sm_count SMs per context on a specific device (current device by default) */
-  green_context_helper(int sm_count, int devid = cuda_try<cudaGetDevice>())
+  green_context_helper(int sm_count, async_resources_handle& resources, int devid = cuda_try<cudaGetDevice>())
       : devid(devid)
       , numsm(sm_count)
   {
@@ -117,6 +117,7 @@ public:
         CUcontext green_primary;
         cuda_safe_call(cuCtxFromGreenCtx(&green_primary, ctxs[i]));
 
+        // Store pool in the helper
         pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size, devid, green_primary));
       }
     }
@@ -138,6 +139,13 @@ public:
   green_ctx_view get_view(size_t id)
   {
     return green_ctx_view(ctxs[id], pools[id], devid);
+  }
+
+  // Get stream pool by green context ID
+  stream_pool& get_pool(size_t gc_id) const
+  {
+    assert(gc_id < pools.size());
+    return *pools[gc_id];
   }
 
   size_t get_count() const
