@@ -353,12 +353,6 @@ public:
 
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
 
-    // Note that we comment this out for now, so that it is possible to use
-    // the print_to_dot method; but we may perhaps discard this graph to
-    // some dedicated member variable.
-    // Ensure nobody tries to use that graph again ...
-    // state.set_graph(nullptr);
-
     state.submitted = true;
     set_phase(backend_ctx_untyped::phase::submitted);
   }
