@@ -12,3 +12,4 @@ Allocators
    classthrust_1_1device__new__allocator
    classthrust_1_1mr_1_1allocator
    classthrust_1_1mr_1_1stateless__resource__allocator
+   group__allocators_1gaa3254521722da4dc78bc3ad9d8619ec0

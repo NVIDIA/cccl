@@ -54,7 +54,7 @@
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="thrust::system::tbb::reference" href="group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f.html" />
+    <link rel="next" title="thrust::system::cpp::pointer" href="group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4.html" />
     <link rel="prev" title="Systems" href="../api_docs/system/systems.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -612,19 +612,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">Thrust API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
-<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
@@ -1047,8 +1034,6 @@
 <li class="toctree-l4"><a class="reference internal" href="group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterators.html">Iterators</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator.html">Fancy Iterators</a></li>
@@ -1216,7 +1201,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1526,6 +1510,22 @@
                   
   <section id="systems">
 <h1>Systems<a class="headerlink" href="#systems" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4.html">thrust::system::cpp::pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga201d3b3fa98ce6de956fa217882e7ea2.html">thrust::system::cpp::universal_pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga95eda5ff5a87b7a92248a1545cac888a.html">thrust::system::cpp::universal_host_pinned_pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga98af9db6b72cb24c25132a9f5645a4a8.html">thrust::system::cpp::reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1gaf56e4e06b93f911b4a3101762458d621.html">thrust::system::omp::pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga30a9a8c84d5ca182999cde729150bcfa.html">thrust::system::omp::universal_pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1gaee3bfee1ef83bfa47b1a1d66d719aee2.html">thrust::system::omp::universal_host_pinned_pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga4e8ee99cde0e3768685b03ae854866d6.html">thrust::system::omp::reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga9b92fdb9b3ae543ca62565b34e14ddc7.html">thrust::system::tbb::pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1gab2fbe246530ce9dbaba115bc958530fb.html">thrust::system::tbb::universal_pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga31e803d636c86e85f1f89d4c11af1820.html">thrust::system::tbb::universal_host_pinned_pointer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f.html">thrust::system::tbb::reference</a></li>
+</ul>
+</div>
 </section>
 
 
@@ -1548,11 +1548,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f.html"
+       href="group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">thrust::system::tbb::reference</p>
+        <p class="prev-next-title">thrust::system::cpp::pointer</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -55,7 +55,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="thrust::adjacent_difference" href="group__transformations_1ga0f4d328d7b75f58901672a42591f4d3d.html" />
-    <link rel="prev" title="thrust::replace_if" href="group__replacing_1gaf8b9f969de96df1e286a1fa01facf696.html" />
+    <link rel="prev" title="thrust::replace_copy_if" href="group__replacing_1ga6c95b066219e71c8b8e4dbee6a249d8c.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -612,19 +612,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">Thrust API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
@@ -1047,8 +1034,6 @@
 <li class="toctree-l4"><a class="reference internal" href="group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterators.html">Iterators</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator.html">Fancy Iterators</a></li>
@@ -1216,7 +1201,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1526,6 +1510,19 @@
                   
   <section id="transformations">
 <h1>Transformations<a class="headerlink" href="#transformations" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1ga0f4d328d7b75f58901672a42591f4d3d.html">thrust::adjacent_difference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1gad0b2006831332def62d8a062eb40e706.html">thrust::generate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1ga74e57f5e00eddb0b52f712130a7e6de4.html">thrust::generate_n</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1gae449d575ab0dde81a717ad3847388b36.html">thrust::sequence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1gab61bfd92df1e3694f175fef4fb61a3e7.html">thrust::tabulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1gabbda6380c902223d777cc72d3b1b9d1a.html">thrust::transform</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1gaae05e9011a57f320e2899e668104dcd9.html">thrust::transform_if</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1ga172372017111c92f4736d3c8ff38f087.html">thrust::transform_n</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__transformations_1gade1f7ff3c72d7da046f1b251e2091da7.html">thrust::transform_if_n</a></li>
+</ul>
+</div>
 </section>
 
 
@@ -1539,12 +1536,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="group__replacing_1gaf8b9f969de96df1e286a1fa01facf696.html"
+       href="group__replacing_1ga6c95b066219e71c8b8e4dbee6a249d8c.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">thrust::replace_if</p>
+        <p class="prev-next-title">thrust::replace_copy_if</p>
       </div>
     </a>
     <a class="right-next"

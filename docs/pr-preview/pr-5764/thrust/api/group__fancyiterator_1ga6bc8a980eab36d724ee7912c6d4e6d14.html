@@ -54,8 +54,8 @@
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="thrust::make_discard_iterator" href="group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html" />
-    <link rel="prev" title="thrust::make_strided_iterator" href="group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html" />
+    <link rel="next" title="thrust::make_zip_iterator" href="group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html" />
+    <link rel="prev" title="thrust::make_transform_iterator" href="group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -616,19 +616,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">Thrust API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
-<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
@@ -1051,11 +1038,9 @@
 <li class="toctree-l4"><a class="reference internal" href="group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__fancyiterator.html">Fancy Iterators</a></li>
+<li class="toctree-l4 current active"><a class="reference internal" href="group__fancyiterator.html">Fancy Iterators</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterator__tags.html">Iterator Tags</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterator__tag__classes.html">Iterator Tag Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__logical.html">Logical</a></li>
@@ -1220,7 +1205,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1511,6 +1495,9 @@
     
     <li class="breadcrumb-item"><a href="../api_docs/iterators/fancy_iterators.html" class="nav-link">Fancy iterators</a></li>
     
+    
+    <li class="breadcrumb-item"><a href="group__fancyiterator.html" class="nav-link">Fancy Iterators</a></li>
+    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">thrust::make_transform_output_iterator</span></li>
   </ul>
 </nav>
@@ -1569,20 +1556,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"
+       href="group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">thrust::make_strided_iterator</p>
+        <p class="prev-next-title">thrust::make_transform_iterator</p>
       </div>
     </a>
     <a class="right-next"
-       href="group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"
+       href="group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">thrust::make_discard_iterator</p>
+        <p class="prev-next-title">thrust::make_zip_iterator</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

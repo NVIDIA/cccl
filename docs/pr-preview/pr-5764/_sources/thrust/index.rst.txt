@@ -11,7 +11,6 @@ Thrust
    developer_cmake_options
    releases
    release_process
-   api
    API documentation <api>
    API reference <api/index>
 

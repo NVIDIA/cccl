@@ -54,7 +54,7 @@
     <link rel="icon" href="../../_static/favicon.png"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="thrust::random::minstd_rand" href="group__predefined__random_1ga1c89beeeb2681026be374c4e0d6609f3.html" />
+    <link rel="next" title="thrust::random::ranlux24" href="group__predefined__random_1gaacaf3beafd00b7087532c98d9062778a.html" />
     <link rel="prev" title="Random Number Engines with Predefined Parameters" href="../api_docs/random/predefined.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -612,19 +612,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">Thrust API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
@@ -1047,8 +1034,6 @@
 <li class="toctree-l4"><a class="reference internal" href="group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterators.html">Iterators</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__fancyiterator.html">Fancy Iterators</a></li>
@@ -1216,7 +1201,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1526,6 +1510,18 @@
                   
   <section id="random-number-engines-with-predefined-parameters">
 <h1>Random Number Engines with Predefined Parameters<a class="headerlink" href="#random-number-engines-with-predefined-parameters" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1gaacaf3beafd00b7087532c98d9062778a.html">thrust::random::ranlux24</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1ga67a4f4c57c6d60aea077a947285cb7c5.html">thrust::random::ranlux48</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1gac781a23cdf5b0cdb48ec3fbe7cb4318c.html">thrust::random::taus88</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1ga8450c92f9d27a16992ca377f7d8dc75c.html">thrust::random::default_random_engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1gaf8dffb2a8bfaaa20d5c916d74c07dc98.html">thrust::random::minstd_rand0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1ga1c89beeeb2681026be374c4e0d6609f3.html">thrust::random::minstd_rand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1ga44ec779aead9b140b3fb332ea4c349bc.html">thrust::random::ranlux24_base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__predefined__random_1gaeb4bf97731c920bdf7cc80d2c2321f2f.html">thrust::random::ranlux48_base</a></li>
+</ul>
+</div>
 </section>
 
 
@@ -1548,11 +1544,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="group__predefined__random_1ga1c89beeeb2681026be374c4e0d6609f3.html"
+       href="group__predefined__random_1gaacaf3beafd00b7087532c98d9062778a.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">thrust::random::minstd_rand</p>
+        <p class="prev-next-title">thrust::random::ranlux24</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

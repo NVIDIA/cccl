@@ -55,7 +55,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Allocators" href="memory_management/allocators.html" />
-    <link rel="prev" title="thrust::reinterpret_tag" href="../api/group__iterator__tags_1gad9db2309839c1adf493522c6e879d0f5.html" />
+    <link rel="prev" title="thrust::retag" href="../api/group__iterator__tags_1ga931a99cbb9d6073f2d1bca493dda5163.html" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -612,19 +612,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">Thrust API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_objects.html">Function Objects</a></li>
-<li class="toctree-l4"><a class="reference internal" href="iterators.html">Iterators</a></li>
-<li class="toctree-l4 current active"><a class="current reference internal" href="#">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="random.html">Random Number Generators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="containers.html">Containers</a></li>
@@ -1047,8 +1034,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../api/group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api/group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api/group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/group__iterators.html">Iterators</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api/group__fancyiterator.html">Fancy Iterators</a></li>
@@ -1216,7 +1201,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1546,6 +1530,18 @@
 <li class="toctree-l2"><a class="reference internal" href="../api/classthrust_1_1device__reference.html">thrust::device_reference</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/classthrust_1_1device__ptr.html">thrust::device_ptr</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../api/classthrust_1_1pointer.html">thrust::pointer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc.html">thrust::device_delete</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga1a350740a6ade432f3781096df91f162.html">thrust::device_free</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga45b46200ffdb02a4ef9191103e6f12b9.html">thrust::device_malloc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga86a38bc1d1e0801e1a7b9abe186645ba.html">thrust::device_new</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html">thrust::device_pointer_cast</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga85e62452603ffae3dc05c681841aefba.html">thrust::swap</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105.html">thrust::malloc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga189f97174f9b5e61258d8bfc8315b087.html">thrust::get_temporary_buffer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31.html">thrust::free</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa.html">thrust::return_temporary_buffer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1ga4215d3848717050f7c47f36e43b7c19a.html">thrust::raw_pointer_cast</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/group__memory__management_1gae72a6da67baf8579e17836fe2c31a641.html">thrust::raw_reference_cast</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api/group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html">thrust::device_pointer_cast</a><ul>
@@ -1611,12 +1607,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../api/group__iterator__tags_1gad9db2309839c1adf493522c6e879d0f5.html"
+       href="../api/group__iterator__tags_1ga931a99cbb9d6073f2d1bca493dda5163.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">thrust::reinterpret_tag</p>
+        <p class="prev-next-title">thrust::retag</p>
       </div>
     </a>
     <a class="right-next"
