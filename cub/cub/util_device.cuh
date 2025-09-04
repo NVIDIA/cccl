@@ -141,7 +141,7 @@ _CCCL_HOST inline int DeviceCountCachedValue()
  */
 CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET (::nv::target::is_host)
   {
     return DeviceCountCachedValue();
   }
@@ -289,7 +289,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
   cudaError_t result = cudaSuccess;
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET (::nv::target::is_host)
   {
     cudaFuncAttributes empty_kernel_attrs;
 
@@ -370,7 +370,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET (::nv::target::is_host)
   {
     return PtxVersion(ptx_version, CurrentDevice());
   }
@@ -414,7 +414,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersionUncached(int& sm_version, int d
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = CurrentDevice())
 {
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET (::nv::target::is_host)
   {
     auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
       // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
@@ -439,7 +439,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET (::nv::target::is_host)
   {
     return CubDebug(cudaStreamSynchronize(stream));
   }
@@ -456,7 +456,7 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
 #  ifdef CUB_DEBUG_SYNC
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET (::nv::target::is_host)
   {
     _CubLog("%s", "Synchronizing...\n");
     return SyncStream(stream);

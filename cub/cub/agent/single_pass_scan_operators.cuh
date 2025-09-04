@@ -138,7 +138,7 @@ namespace detail
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     if (Delay > 0)
     {
@@ -157,7 +157,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     if (ns > 0)
     {
@@ -176,7 +176,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
 template <int Delay>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     ::__nanosleep(Delay);
   }
@@ -184,7 +184,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
 
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     ::__nanosleep(ns);
   }
@@ -193,7 +193,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     delay<Delay, GridThreshold>();
   }
@@ -206,7 +206,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     delay<GridThreshold>(ns);
   }
@@ -219,7 +219,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] i
 template <unsigned int Delay = 350>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     always_delay(Delay);
   }
@@ -231,7 +231,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  if _CCCL_TARGET_PROVIDES (70)
+  if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
   {
     always_delay(ns);
   }
@@ -248,7 +248,7 @@ struct no_delay_constructor_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      if _CCCL_TARGET_PROVIDES (70)
+      if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
       {
       }
       else
@@ -276,13 +276,18 @@ struct reduce_by_key_delay_constructor_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      NV_DISPATCH_TARGET(
-        NV_IS_EXACTLY_SM_80,
-        (delay<Delay, GridThreshold>();),
-        NV_PROVIDES_SM_70,
-        (delay<0, GridThreshold>();),
-        NV_IS_DEVICE,
-        (__threadfence_block();));
+      if _CCCL_TARGET (::nv::target::is_exactly(::nv::target::sm_80))
+      {
+        delay<Delay, GridThreshold>();
+      }
+      else if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
+      {
+        delay<0, GridThreshold>();
+      }
+      else if _CCCL_TARGET (::nv::target::is_device)
+      {
+        __threadfence_block();
+      }
     }
   };
 
@@ -768,7 +773,7 @@ private:
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
-    if _CCCL_TARGET_PROVIDES (70)
+    if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
     {
       return detail::load_acquire(ptr);
     }
@@ -787,7 +792,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   ThreadfenceForLoadAcqPreVolta()
   {
-    if _CCCL_TARGET_PROVIDES (70)
+    if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_70))
     {
     }
     else

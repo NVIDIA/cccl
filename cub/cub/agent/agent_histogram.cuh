@@ -424,7 +424,7 @@ struct AgentHistogram
         {
           if (bins[PIXEL] >= 0)
           {
-            if _CCCL_TARGET_PROVIDES (60)
+            if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_60))
             {
               atomicAdd_block(privatized_histograms[CHANNEL] + bins[PIXEL], accumulator);
             }
@@ -442,7 +442,7 @@ struct AgentHistogram
       // Last pixel
       if (bins[PIXELS_PER_THREAD - 1] >= 0)
       {
-        if _CCCL_TARGET_PROVIDES (60)
+        if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_60))
         {
           atomicAdd_block(privatized_histograms[CHANNEL] + bins[PIXELS_PER_THREAD - 1], accumulator);
         }
@@ -471,7 +471,7 @@ struct AgentHistogram
         privatized_decode_op[CHANNEL].template BinSelect<LOAD_MODIFIER>(samples[PIXEL][CHANNEL], bin, is_valid[PIXEL]);
         if (bin >= 0)
         {
-          if _CCCL_TARGET_PROVIDES (60)
+          if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_60))
           {
             atomicAdd_block(privatized_histograms[CHANNEL] + bin, 1);
           }

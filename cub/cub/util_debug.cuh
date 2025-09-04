@@ -128,7 +128,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 
   cudaError_t last_error = cudaSuccess;
 
-  if _CCCL_TARGET_IS_HOST
+  if _CCCL_TARGET(::nv::target::is_host)
   {
     last_error = cudaGetLastError();
   }
@@ -148,7 +148,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 #ifdef CUB_STDERR
   if (error)
   {
-    if _CCCL_TARGET_IS_HOST
+    if _CCCL_TARGET (::nv::target::is_host)
     {
       fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, cudaGetErrorString(error));
       fflush(stderr);
@@ -197,7 +197,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 #  define _CubLog(format, ...)                                   \
     do                                                           \
     {                                                            \
-      if _CCCL_TARGET_IS_HOST                                    \
+      if _CCCL_TARGET (::nv::target::is_host)                    \
       {                                                          \
         printf(format, __VA_ARGS__);                             \
       }                                                          \

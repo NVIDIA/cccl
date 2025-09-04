@@ -133,7 +133,7 @@ class AgentSubWarpSort
       // Need to explicitly cast to float for SM <= 52.
       if constexpr (IS_DESCENDING)
       {
-        if _CCCL_TARGET_PROVIDES (53)
+        if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_53))
         {
           return __hgt(lhs, rhs);
         }
@@ -144,7 +144,7 @@ class AgentSubWarpSort
       }
       else
       {
-        if _CCCL_TARGET_PROVIDES (53)
+        if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_53))
         {
           return __hlt(lhs, rhs);
         }
@@ -162,7 +162,7 @@ class AgentSubWarpSort
   _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
-    if _CCCL_TARGET_PROVIDES (53)
+    if _CCCL_TARGET (::nv::target::provides(::nv::target::sm_53))
     {
       return __heq(lhs, rhs);
     }
