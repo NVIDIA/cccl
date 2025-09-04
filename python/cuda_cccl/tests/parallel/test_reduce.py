@@ -148,8 +148,7 @@ def test_device_sum_cache_modified_input_it(
     dtype_inp = np.dtype(supported_value_type)
     dtype_out = dtype_inp
     input_devarr = numba.cuda.to_device(np.array(l_varr, dtype=dtype_inp))
-    i_input = parallel.CacheModifiedInputIterator(
-        input_devarr, modifier="stream")
+    i_input = parallel.CacheModifiedInputIterator(input_devarr, modifier="stream")
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -373,15 +372,13 @@ def test_reducer_caching():
 
     # inputs are TransformIterators
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -391,15 +388,13 @@ def test_reducer_caching():
     # inputs are TransformIterators with different
     # op:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op2),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op2),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -409,15 +404,13 @@ def test_reducer_caching():
     # inputs are TransformIterators with same op
     # but different name:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op3),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op3),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -461,15 +454,13 @@ def test_reducer_caching():
     # inputs are TransformIterators of same kind
     # but different state:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(1)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(1)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -478,15 +469,13 @@ def test_reducer_caching():
 
     # inputs are TransformIterators with different kind:
     reducer_1 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int32(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
     )
     reducer_2 = parallel.make_reduce_into(
-        parallel.TransformIterator(
-            parallel.CountingIterator(np.int64(0)), op1),
+        parallel.TransformIterator(parallel.CountingIterator(np.int64(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
         np.zeros(1, dtype="int64"),
@@ -547,8 +536,7 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    parallel.reduce_into(d_in, d_out, add_op, d_in.size,
-                         h_init, stream=cuda_stream)
+    parallel.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=cuda_stream)
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -624,8 +612,7 @@ def test_device_reduce_well_known_plus():
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    parallel.reduce_into(
-        d_input, d_output, parallel.OpKind.PLUS, len(d_input), h_init)
+    parallel.reduce_into(d_input, d_output, parallel.OpKind.PLUS, len(d_input), h_init)
 
     expected_output = 15
     assert (d_output == expected_output).all()
@@ -703,8 +690,7 @@ def test_counting_iterator():
     first_item = 10
     num_items = 3
 
-    first_it = parallel.CountingIterator(
-        np.int32(first_item))  # Input sequence
+    first_it = parallel.CountingIterator(np.int32(first_item))  # Input sequence
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
@@ -735,8 +721,7 @@ def test_transform_iterator():
     parallel.reduce_into(transform_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(
-        lambda a, b: a +
-        b, [a**2 for a in range(first_item, first_item + num_items)]
+        lambda a, b: a + b, [a**2 for a in range(first_item, first_item + num_items)]
     )
     assert (d_output == expected_output).all()
 
@@ -751,8 +736,7 @@ def test_reduce_struct_type():
     def max_g_value(x, y):
         return x if x.g > y.g else y
 
-    d_rgb = cp.random.randint(
-        0, 256, (10, 3), dtype=np.int32).view(Pixel.dtype)
+    d_rgb = cp.random.randint(0, 256, (10, 3), dtype=np.int32).view(Pixel.dtype)
     d_out = cp.empty(1, Pixel.dtype)
 
     h_init = Pixel(0, 0, 0)
@@ -822,8 +806,7 @@ def test_reduce_transform_output_iterator(floating_array):
 
     d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
 
-    parallel.reduce_into(
-        d_input, d_out_it, parallel.OpKind.PLUS, len(d_input), h_init)
+    parallel.reduce_into(d_input, d_out_it, parallel.OpKind.PLUS, len(d_input), h_init)
 
     expected = cp.sqrt(cp.sum(d_input))
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)

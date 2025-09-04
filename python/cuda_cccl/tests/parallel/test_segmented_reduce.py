@@ -27,8 +27,7 @@ def test_segmented_reduce(input_array, offset_dtype):
     h_offsets = cp.zeros(n_segments + 1, dtype="int64")
     h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
 
-    offsets = cp.cumsum(cp.asarray(
-        h_offsets, dtype=offset_dtype), dtype=offset_dtype)
+    offsets = cp.cumsum(cp.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
 
     start_offsets = offsets[:-1]
     end_offsets = offsets[1:]
@@ -54,7 +53,7 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     d_expected = cp.empty_like(d_out)
     for i in range(n_segments):
-        d_expected[i] = cp.sum(d_in[start_offsets[i]: end_offsets[i]])
+        d_expected[i] = cp.sum(d_in[start_offsets[i] : end_offsets[i]])
 
     assert cp.all(d_out == d_expected)
 
@@ -77,14 +76,12 @@ def test_segmented_reduce_struct_type():
 
     segment_size = 64
     n_pixels = align_up(4000, 64)
-    offsets = cp.arange(n_pixels + segment_size - 1,
-                        step=segment_size, dtype=np.int64)
+    offsets = cp.arange(n_pixels + segment_size - 1, step=segment_size, dtype=np.int64)
     start_offsets = offsets[:-1]
     end_offsets = offsets[1:]
     n_segments = start_offsets.size
 
-    d_rgb = cp.random.randint(0, 256, (n_pixels, 3),
-                              dtype=np.int32).view(Pixel.dtype)
+    d_rgb = cp.random.randint(0, 256, (n_pixels, 3), dtype=np.int32).view(Pixel.dtype)
     d_out = cp.empty(n_segments, Pixel.dtype)
 
     h_init = Pixel(0, 0, 0)
@@ -144,8 +141,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     try:
         res = cp.full(num_segments, fill_value=127, dtype=cp.uint8)
     except cp.cuda.memory.OutOfMemoryError:
-        pytest.skip(
-            "Insufficient memory to run the large number of segments test")
+        pytest.skip("Insufficient memory to run the large number of segments test")
     assert res.size == num_segments
 
     def my_add(a: np.uint8, b: np.uint8) -> np.uint8:
@@ -181,8 +177,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        parallel.binary_transform(
-            res[id:], expected + id, validate, cmp_op, num_items)
+        parallel.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
@@ -241,8 +236,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     try:
         res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
     except cp.cuda.memory.OutOfMemoryError:
-        pytest.skip(
-            "Insufficient memory to run the large number of segments test")
+        pytest.skip("Insufficient memory to run the large number of segments test")
     assert res.size == num_segments
 
     h_init = np.zeros(tuple(), dtype=np.int16)
@@ -269,8 +263,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     while id < res.size:
         id_next = min(id + validate.size, res.size)
         num_items = id_next - id
-        parallel.binary_transform(
-            res[id:], expected + id, validate, cmp_op, num_items)
+        parallel.binary_transform(res[id:], expected + id, validate, cmp_op, num_items)
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
@@ -340,7 +333,7 @@ def test_segmented_reduce_transform_output_iterator(floating_array):
         cp.array(
             [
                 cp.sum(d_input[0:segment_size]),
-                cp.sum(d_input[segment_size: d_input.size]),
+                cp.sum(d_input[segment_size : d_input.size]),
             ]
         )
     )
