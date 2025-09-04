@@ -153,11 +153,9 @@ public:
   class guard
   {
   public:
-    /**
-     * @brief Construct a guard and push a new DOT section
-     * @param pc_ The per-context DOT object
-     * @param symbol The name/symbol for this section
-     */
+     //! \brief Construct a guard and push a new DOT section
+     //! \param pc_ The per-context DOT object
+     //! \param symbol The name/symbol for this section
     guard(::std::shared_ptr<per_ctx_dot> pc_, ::std::string symbol)
         : pc(mv(pc_))
     {
