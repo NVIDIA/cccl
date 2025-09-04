@@ -281,8 +281,6 @@ public:
     int id         = sec->get_id();
     sec->parent_id = 0; // until we call set_parent_ctx, this is a root node
 
-    // fprintf(stderr, "Creating per_ctx_dot section id %d ctx id %d\n", id, get_unique_id());
-
     // Save the section in the map
     dot_get_section_by_id(id) = sec;
 
@@ -310,8 +308,6 @@ public:
     }
 
     ::std::lock_guard<::std::mutex> guard(mtx);
-
-    vertices.push_back(unique_id);
 
     auto& m = metadata[unique_id];
     m.color = "red";
@@ -387,8 +383,6 @@ public:
     }
 
     ::std::lock_guard<::std::mutex> guard(mtx);
-
-    vertices.push_back(prereq_unique_id);
 
     set_current_color_by_device(guard);
 
@@ -486,8 +480,6 @@ public:
     }
 
     set_current_color_by_device(guard);
-
-    vertices.push_back(t.get_unique_id());
 
     auto& task_metadata = metadata[t.get_unique_id()];
 
@@ -611,8 +603,6 @@ public:
     int child_ctx_section_id = child_dot->section_id_stack[0];
     dot_get_section_by_id(parent_section_id)->children_ids.push_back(child_ctx_section_id);
     dot_get_section_by_id(child_ctx_section_id)->parent_id = parent_section_id;
-
-    // fprintf(stderr, "set_parent_ctx sec %d is parent of sec %d\n", parent_section_id, child_ctx_section_id);
   }
 
   const ::std::string& get_ctx_symbol() const
@@ -669,8 +659,6 @@ public:
 
 private:
   mutable ::std::string ctx_symbol;
-
-  ::std::vector<int> vertices;
 
   ::std::unordered_set<int> discarded_tasks;
 
@@ -806,6 +794,7 @@ public:
       }
 
       edge_count = all_edges.size();
+      vertex_count = all_vertices.size();
 
       outFile << "// Edge   count : " << edge_count << "\n";
       outFile << "// Vertex count : " << vertex_count << "\n";
@@ -861,7 +850,6 @@ private:
   void print_section(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
   {
     int section_id = sec->get_id();
-    // fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
 
     if (display_cluster)
     {
@@ -1168,7 +1156,6 @@ private:
       // Remove edges internal to a section
       if (new_from != new_to)
       {
-        // XXX_CCCL_ASSERT(new_from < new_to, "invalid edge");
         // insert the edge (if it does not exist already)
         new_edges.insert(std::make_pair(new_from, new_to));
       }
