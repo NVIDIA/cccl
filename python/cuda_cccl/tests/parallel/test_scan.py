@@ -247,3 +247,29 @@ def test_exclusive_scan_well_known_maximum():
     # Check the result is correct
     expected = np.array([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
     np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_scan_transform_output_iterator(floating_array):
+    """Test scan with TransformOutputIterator."""
+    dtype = floating_array.dtype
+    h_init = np.array([0], dtype=dtype)
+
+    # Use the floating_array fixture which provides random floating-point data of size 1000
+    d_input = floating_array
+    d_output = cp.empty_like(d_input, dtype=dtype)
+
+    def square(x):
+        return x * x
+
+    d_out_it = parallel.TransformOutputIterator(d_output, square)
+
+    parallel.inclusive_scan(
+        d_input, d_out_it, parallel.OpKind.PLUS, h_init, d_input.size
+    )
+
+    expected = cp.cumsum(d_input) ** 2
+    # Use more lenient tolerance for float32 due to precision differences
+    if dtype == np.float32:
+        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
+    else:
+        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
