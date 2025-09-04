@@ -501,7 +501,8 @@ struct DispatchSegmentedSort
           max_num_segments_per_invocation,
           stream,
           partition_kernel_source,
-          launcher_factory);
+          launcher_factory,
+          partition_max_policy);
 
         device_partition_temp_storage.grow(three_way_partition_temp_storage_bytes);
       }
@@ -783,7 +784,8 @@ private:
         current_num_segments,
         stream,
         partition_kernel_source,
-        launcher_factory);
+        launcher_factory,
+        partition_max_policy);
 
       if (cudaSuccess != error)
       {
