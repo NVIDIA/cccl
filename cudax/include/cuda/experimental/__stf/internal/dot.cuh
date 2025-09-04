@@ -69,10 +69,12 @@ class dot;
 
 //! Type of the edge
 //!
-//! Edges represent dependencies, but we sometimes want to visualize
-//! differently dependencies which are related to actual task dependencies,
-//! and "internal" dependencies between asynchronous operations (eg. a task
-//! depends on an allocation) which are not necessarily useful to visualize.
+//! Edges represent dependencies, but we want to visualize different types of
+//! dependencies in different manners:
+//! - Task-to-task dependencies (actual computational dependencies)
+//! - Prerequisite dependencies (internal async operations like allocations)
+//! - Fence dependencies (synchronization barriers)
+//! This allows filtering or styling edges based on their semantic meaning.
 enum edge_type
 {
   plain   = 0,
