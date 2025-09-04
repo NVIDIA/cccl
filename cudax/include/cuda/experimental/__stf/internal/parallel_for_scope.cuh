@@ -23,6 +23,7 @@
 #include <cuda/std/__cccl/execution_space.h>
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
+#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 
@@ -397,6 +398,34 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
     per_block_redux_buffer[0].fill_results(targs);
   }
 }
+
+/**
+ * @brief Resource wrapper for managing parallel_for host callback arguments
+ *
+ * This manages the memory allocated for parallel_for host callback arguments using the
+ * ctx_resource system instead of manual delete in each callback.
+ */
+template <typename ArgsType>
+class parallel_for_args_resource : public ctx_resource
+{
+public:
+  explicit parallel_for_args_resource(ArgsType* args)
+      : args_(args)
+  {}
+
+  bool can_release_in_callback() const override
+  {
+    return true;
+  }
+
+  void release_in_callback() override
+  {
+    delete args_;
+  }
+
+private:
+  ArgsType* args_;
+};
 
 /**
  * @brief Supporting class for the parallel_for construct
@@ -943,16 +972,17 @@ public:
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
-    // that will be deleted by the callback
+    // that will be deleted by the resource system
     auto args = new args_t(mv(instances), n, mv(f), shape);
+
+    // Register the args as a resource to be cleaned as a context resource
+    auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
+    t.add_ctx_resource(resource);
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<decltype(args)>(untyped_args);
-      SCOPE(exit)
-      {
-        delete p;
-      };
+      // NOTE: We do NOT delete p here - it will be cleaned up by the resource system associated to the context
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
