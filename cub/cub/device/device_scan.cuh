@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -80,38 +81,6 @@ struct default_tuning : tuning<default_tuning>
 {
   template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
   using fn = policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
-};
-
-struct device_memory_resource
-{
-  void* allocate(size_t bytes, size_t /* alignment */)
-  {
-    void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMalloc, "allocate failed to allocate with cudaMalloc", &ptr, bytes);
-    return ptr;
-  }
-
-  void deallocate(void* ptr, size_t /* bytes */)
-  {
-    _CCCL_ASSERT_CUDA_API(::cudaFree, "deallocate failed", ptr);
-  }
-
-  void* allocate(::cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
-  {
-    return allocate(stream, bytes);
-  }
-
-  void* allocate(::cuda::stream_ref stream, size_t bytes)
-  {
-    void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(::cudaMallocAsync, "allocate failed to allocate with cudaMallocAsync", &ptr, bytes, stream.get());
-    return ptr;
-  }
-
-  void deallocate(const ::cuda::stream_ref stream, void* ptr, size_t /* bytes */)
-  {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
-  }
 };
 
 } // namespace scan
@@ -236,8 +205,7 @@ struct DeviceScan
 
     // Query relevant properties from the environment
     auto stream = _CUDA_STD_EXEC::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr =
-      _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::scan::device_memory_resource{});
+    auto mr     = _CUDA_STD_EXEC::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
