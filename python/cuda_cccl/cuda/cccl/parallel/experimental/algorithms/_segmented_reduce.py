@@ -32,7 +32,7 @@ class _SegmentedReduce:
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike,
+        d_out: DeviceArrayLike | IteratorBase,
         start_offsets_in: DeviceArrayLike | IteratorBase,
         end_offsets_in: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
@@ -134,14 +134,16 @@ def _to_key(d_in: DeviceArrayLike | IteratorBase):
 
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     d_in_key = _to_key(d_in)
-    d_out_key = protocols.get_dtype(d_out)
+    d_out_key = (
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+    )
     start_offsets_in_key = _to_key(start_offsets_in)
     end_offsets_in_key = _to_key(end_offsets_in)
 
@@ -166,7 +168,7 @@ def make_cache_key(
 @cache_with_key(make_cache_key)
 def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
@@ -199,7 +201,7 @@ def make_segmented_reduce(
 
 def segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,

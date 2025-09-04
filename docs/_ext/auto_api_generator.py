@@ -455,7 +455,7 @@ def generate_api_page(category, classes, project_name):
     return "\n".join(content)
 
 
-def generate_group_index_page(group_name, group_refid, project_name, xml_dir):
+def generate_group_index_page(group_name, group_refid, project_name, xml_dir, api_dir):
     """Generate RST content for a Doxygen group index page."""
     content = []
 
@@ -498,13 +498,18 @@ def generate_group_index_page(group_name, group_refid, project_name, xml_dir):
                 # Get all member functions, typedefs, variables, etc.
                 for sectiondef in compounddef.findall("sectiondef"):
                     for memberdef in sectiondef.findall("memberdef"):
-                        member_kind = memberdef.get("kind")
                         member_name = memberdef.find("name")
-                        if member_name is not None:
-                            member_refid = memberdef.get("id")
-                            members.append(
-                                (member_kind, member_name.text, member_refid)
-                            )
+                        if member_name is None:
+                            continue
+                        member_refid = memberdef.get("id")
+                        member_rst_file = Path(api_dir) / f"{member_refid}.rst"
+                        # only add refids for exists pages.
+                        # Refids corresponding to overloads
+                        # do not have associated RST file
+                        if not member_rst_file.exists():
+                            continue
+                        member_kind = memberdef.get("kind")
+                        members.append((member_kind, member_name.text, member_refid))
         except Exception as e:
             logger.warning(f"Failed to parse group XML {group_xml_file}: {e}")
 
@@ -521,15 +526,14 @@ def generate_group_index_page(group_name, group_refid, project_name, xml_dir):
     # Do NOT use doxygengroup directive to avoid duplicate declarations
     # Instead, just provide a simple page with links to members
 
-    # Add toctree for inner classes/structs
-    inner_classes = [m for m in members if m[0] == "class"]
-    if inner_classes:
+    # Add toctree for group members
+    if members:
         content.append(".. toctree::")
         content.append("   :maxdepth: 1")
         content.append("")
 
         # Add inner classes to toctree (they have their own pages)
-        for member_kind, member_name, member_refid in inner_classes:
+        for member_kind, member_name, member_refid in members:
             content.append(f"   {member_refid}")
         content.append("")
 
@@ -1289,7 +1293,7 @@ def generate_api_docs(app, config):
         # Generate group index pages
         for group_name, group_refid in items["groups"]:
             content = generate_group_index_page(
-                group_name, group_refid, project_name, xml_dir
+                group_name, group_refid, project_name, xml_dir, api_dir
             )
             output_file = api_dir / f"{group_refid}.rst"
             with open(output_file, "w") as f:
