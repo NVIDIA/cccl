@@ -19,6 +19,86 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
+
+// Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
+// partition
+using per_partition_offset_t = ::cuda::std::int32_t;
+
+using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
+using AccumPackT       = typename AccumPackHelperT::pack_t;
+using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
+
+template <typename TotalNumItemsT>
+class streaming_context_t
+{
+private:
+  bool first_partition = true;
+  bool last_partition  = false;
+  TotalNumItemsT total_previous_num_items{};
+
+  // We use a double-buffer for keeping track of the number of previously selected items
+  TotalNumItemsT* d_num_selected_in  = nullptr;
+  TotalNumItemsT* d_num_selected_out = nullptr;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  streaming_context_t(TotalNumItemsT* d_num_selected_in, TotalNumItemsT* d_num_selected_out, bool is_last_partition)
+      : last_partition(is_last_partition)
+      , d_num_selected_in(d_num_selected_in)
+      , d_num_selected_out(d_num_selected_out)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
+  {
+    ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
+    first_partition = false;
+    last_partition  = next_partition_is_the_last;
+    total_previous_num_items += num_items;
+  };
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  {
+    return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
+  {
+    return first_partition ? TotalNumItemsT{0} : d_num_selected_in[0];
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
+  {
+    return first_partition ? TotalNumItemsT{0} : d_num_selected_in[1];
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  {
+    return first_partition ? TotalNumItemsT{0} : d_num_selected_in[2];
+    ;
+  };
+
+  template <typename NumSelectedIteratorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void update_num_selected(
+    NumSelectedIteratorT user_num_selected_out_it,
+    TotalNumItemsT num_selected_first,
+    TotalNumItemsT num_selected_second,
+    TotalNumItemsT num_items_in_partition) const
+  {
+    if (last_partition)
+    {
+      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
+      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+    }
+    else
+    {
+      d_num_selected_out[0] = num_previously_selected_first() + num_selected_first;
+      d_num_selected_out[1] = num_previously_selected_second() + num_selected_second;
+      d_num_selected_out[2] =
+        num_previously_rejected() + (num_items_in_partition - num_selected_second - num_selected_first);
+    }
+  }
+};
+
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
