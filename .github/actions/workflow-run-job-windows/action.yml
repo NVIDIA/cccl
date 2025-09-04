@@ -63,6 +63,7 @@ runs:
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
+          --device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599 \
           --env COMMAND='& ${{inputs.command}}' \
           ${{ inputs.image }} \
           powershell -c "

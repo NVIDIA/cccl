@@ -10,11 +10,7 @@ workflows:
   override:
     # Reusable list of new Windows GPU runners
     # Define the anchor on first use and reuse below
-    - {jobs: ['test_nobuild'], project: 'packaging',  ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: &win_gpus ['a100', 'h100', 'l4', 'rtx2080', 'rtx4090', 'rtxa6000']}
-    - {jobs: ['test_nobuild'], project: 'thrust',     ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
-    - {jobs: ['test_nobuild'], project: 'libcudacxx', ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
-    - {jobs: ['test_nobuild'], project: 'cub',        ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
-    - {jobs: ['test_nobuild'], project: 'cudax',      ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: *win_gpus}
+    - {jobs: ['test_nobuild'], project: 'libcudacxx',  ctk: ['12.X', '13.X'], std: 20, cxx: 'msvc', gpu: &win_gpus ['a100', 'h100', 'l4', 'rtx2080', 'rtx4090', 'rtxa6000']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
