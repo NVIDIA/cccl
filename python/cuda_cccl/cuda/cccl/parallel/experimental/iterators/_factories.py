@@ -186,7 +186,7 @@ def ZipIterator(*iterators):
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/zip_iterator.py
             :language: python
-            :pyobject: zip_iterator_example
+            :pyobject: zip_iterator_elementwise_sum_example
 
     Args:
         *iterators: Variable number of iterators to zip (at least 1)

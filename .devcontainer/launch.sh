@@ -134,6 +134,9 @@ launch_docker() {
     # Update run arguments and container environment variables
     ###
 
+    # Always clean up docker containers run via this script.
+    RUN_ARGS+=("--rm")
+
     # Only pass `-it` if the shell is a tty
     if ! ${CI:-'false'} && tty >/dev/null 2>&1 && (exec </dev/tty); then
         RUN_ARGS+=("-it")

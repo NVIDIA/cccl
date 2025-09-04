@@ -45,6 +45,7 @@ runs:
         echo "::endgroup::"
 
     - name: Add NVCC problem matcher
+      continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
@@ -54,6 +55,28 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
+    - name: Print CI override matrix job def
+      env:
+        GH_TOKEN: ${{ github.token }}
+      continue-on-error: true
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        # Get the origin matrix job definition embedded in thw workflow artifact:
+        matrix_job=$(ci/util/workflow/get_job_def.sh | jq -c '.origin.matrix_job')
+
+        # Delete the cxx_family and cudacxx_family fields
+        matrix_job=$(echo "$matrix_job" | jq 'del(.cxx_family, .cudacxx_family, .job_name)')
+
+        # Convert to a single line of YAML, with unquoted keys:
+        matrix_job=$(
+          echo "- $matrix_job" |
+            yq -o=yaml |
+            sed -E 's/"([[:alnum:]_]+)"([[:space:]]*):/\1\2:/g' |
+            tr '"' "'"
+        )
+
+        echo -e "\e[1;34mOverride matrix entry:\e[0m"
+        echo -e "\e[1;34m    $matrix_job\e[0m"
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
