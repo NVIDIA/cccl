@@ -97,7 +97,6 @@ Classes
 * :doc:`cuda::experimental::stf::slice_reduction_op_sum_impl <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl>`
 * :doc:`cuda::experimental::stf::slice_stream_interface <classcuda_1_1experimental_1_1stf_1_1slice__stream__interface>`
 * :doc:`cuda::experimental::stf::small_vector <classcuda_1_1experimental_1_1stf_1_1small__vector>`
-* :doc:`cuda::experimental::stf::stopwatch <classcuda_1_1experimental_1_1stf_1_1stopwatch>`
 * :doc:`cuda::experimental::stf::stream_adapter <classcuda_1_1experimental_1_1stf_1_1stream__adapter>`
 * :doc:`cuda::experimental::stf::stream_and_event <classcuda_1_1experimental_1_1stf_1_1stream__and__event>`
 * :doc:`cuda::experimental::stf::stream_async_op <classcuda_1_1experimental_1_1stf_1_1stream__async__op>`
@@ -205,7 +204,7 @@ Functions
 * :doc:`cuda::experimental::launch <namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080>`
 * :doc:`cuda::experimental::make_any_resource <namespacecuda_1_1experimental_1ab598a4e04169bbd6fcf807954c04a94e>`
 * :doc:`cuda::experimental::make_any_synchronous_resource <namespacecuda_1_1experimental_1a327d9658cc608130377a047e6b5a8822>`
-* :doc:`cuda::experimental::make_async_buffer <namespacecuda_1_1experimental_1ac387364c8610b584beb5b7429fbf231f>`
+* :doc:`cuda::experimental::make_async_buffer <namespacecuda_1_1experimental_1ac034d65c7fa02b6ea678e9173358e3c7>`
 * :doc:`cuda::experimental::make_config <namespacecuda_1_1experimental_1afe420231beacc68eea61533757fb93fd>`
 * :doc:`cuda::experimental::make_hierarchy <namespacecuda_1_1experimental_1ab04039bc09c8136f3619e8e30ac739ab>`
 * :doc:`cuda::experimental::make_shared_resource <namespacecuda_1_1experimental_1a6bd77db8b90bae41aca5ae2cbb485f2f>`
@@ -416,7 +415,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl
    classcuda_1_1experimental_1_1stf_1_1slice__stream__interface
    classcuda_1_1experimental_1_1stf_1_1small__vector
-   classcuda_1_1experimental_1_1stf_1_1stopwatch
    classcuda_1_1experimental_1_1stf_1_1stream__adapter
    classcuda_1_1experimental_1_1stf_1_1stream__and__event
    classcuda_1_1experimental_1_1stf_1_1stream__async__op
@@ -499,7 +497,7 @@ Variables
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4
    structcuda_1_1experimental_1_1thread__level
-   namespacecuda_1_1experimental_1ac387364c8610b584beb5b7429fbf231f
+   namespacecuda_1_1experimental_1ac034d65c7fa02b6ea678e9173358e3c7
    namespacecuda_1_1experimental_1ae52f048fec5bb8c0e028ec6ee18e0ae4
    namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e
    namespacecuda_1_1experimental_1a173aac0f7accd9eef0e7c7d2e05da650

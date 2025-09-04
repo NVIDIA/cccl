@@ -345,7 +345,15 @@
 <li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/visibility.html">Symbol Visibility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
 
@@ -608,19 +616,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">Thrust API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
@@ -1043,8 +1038,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__iterators.html">Iterators</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../thrust/api/group__fancyiterator.html">Fancy Iterators</a></li>
@@ -1212,7 +1205,6 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1295,7 +1287,7 @@
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::streamed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::streamed_interface_of&lt; void_interface &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1thread__level.html">cuda::experimental::thread_level</a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1ac387364c8610b584beb5b7429fbf231f.html">cuda::experimental::make_async_buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1ac034d65c7fa02b6ea678e9173358e3c7.html">cuda::experimental::make_async_buffer</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1ae52f048fec5bb8c0e028ec6ee18e0ae4.html">cuda::experimental::depends_on</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e.html">cuda::experimental::start_path</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1a173aac0f7accd9eef0e7c7d2e05da650.html">cuda::experimental::get_launch_dimensions</a></li>
@@ -1622,6 +1614,57 @@
 </dd></dl>
 
 </section>
+<section id="id1">
+<h3><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">__kernel,</span> <span class="pre">__args)</span></code><a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_ExpArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_ActArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Submitter</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Config</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Dimensions</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">experimental</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">launch</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Submitter"><span class="n"><span class="pre">_Submitter</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__submitter</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="structcuda_1_1experimental_1_1kernel__config.html#_CPPv4I0DpEN4cuda12experimental13kernel_configE" title="cuda::experimental::kernel_config"><span class="n"><span class="pre">kernel_config</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Dimensions"><span class="n"><span class="pre">_Dimensions</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Config"><span class="n"><span class="pre">_Config</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__conf</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">kernel_ref</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="structcuda_1_1experimental_1_1kernel__config.html#_CPPv4I0DpEN4cuda12experimental13kernel_configE" title="cuda::experimental::kernel_config"><span class="n"><span class="pre">kernel_config</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Dimensions"><span class="n"><span class="pre">_Dimensions</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Config"><span class="n"><span class="pre">_Config</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_ExpArgs"><span class="n"><span class="pre">_ExpArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__kernel</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFv13kernel_configI11_DimensionsDp7_ConfigEDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_ActArgs"><span class="n"><span class="pre">_ActArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__args</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><br /></dt>
+<dd><p>Launch a kernel with specified configuration and arguments. </p>
+<p>Launches a kernel on the specified stream and with specified configuration. Kernel might or might not accept the configuration as its first argument.</p>
+<p><dl>
+<dt><strong>Snippet</strong></dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#include &lt;cstdio&gt;</span>
+<span class="c1">#include &lt;cuda/experimental/launch.cuh&gt;</span>
+
+<span class="n">template</span> <span class="o">&lt;</span><span class="n">typename</span> <span class="n">Configuration</span><span class="o">&gt;</span>
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">kernel</span><span class="p">(</span><span class="n">Configuration</span> <span class="n">conf</span><span class="p">,</span> <span class="n">unsigned</span> <span class="nb">int</span> <span class="n">thread_to_print</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">dims</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="n">cudax</span><span class="p">::</span><span class="n">thread</span><span class="p">,</span> <span class="n">cudax</span><span class="p">::</span><span class="n">grid</span><span class="p">)</span> <span class="o">==</span> <span class="n">thread_to_print</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;Hello from the GPU</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">void</span> <span class="n">launch_kernel</span><span class="p">(</span><span class="n">cuda</span><span class="p">::</span><span class="n">stream_ref</span> <span class="n">stream</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">auto</span> <span class="n">dims</span>    <span class="o">=</span> <span class="n">cudax</span><span class="p">::</span><span class="n">make_hierarchy</span><span class="p">(</span><span class="n">cudax</span><span class="p">::</span><span class="n">block_dims</span><span class="o">&lt;</span><span class="mi">128</span><span class="o">&gt;</span><span class="p">(),</span> <span class="n">cudax</span><span class="p">::</span><span class="n">grid_dims</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+    <span class="n">auto</span> <span class="n">config</span> <span class="o">=</span> <span class="n">cudax</span><span class="p">::</span><span class="n">make_config</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="n">cudax</span><span class="p">::</span><span class="n">launch_cooperative</span><span class="p">());</span>
+
+    <span class="n">cudax</span><span class="p">::</span><span class="n">launch</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">cudax</span><span class="p">::</span><span class="n">kernel_ref</span><span class="p">{</span><span class="n">kernel</span><span class="o">&lt;</span><span class="n">decltype</span><span class="p">(</span><span class="n">config</span><span class="p">)}</span><span class="o">&gt;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stream</strong> – cuda::stream_ref to launch the kernel into</p></li>
+<li><p><strong>conf</strong> – configuration for this launch</p></li>
+<li><p><strong>kernel</strong> – kernel to be launched</p></li>
+<li><p><strong>args</strong> – arguments to be passed into the kernel </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="launch-submitter-conf-void-kernel-expargs-args">
 <h3><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">void(*__kernel)(_ExpArgs...),</span> <span class="pre">__args)</span></code><a class="headerlink" href="#launch-submitter-conf-void-kernel-expargs-args" title="Link to this heading">#</a></h3>
 <dl class="cpp function">
@@ -1667,6 +1710,57 @@
 <li><p><strong>__conf</strong> – configuration for this launch</p></li>
 <li><p><strong>__kernel</strong> – kernel function to be launched</p></li>
 <li><p><strong>__args</strong> – arguments to be passed into the kernel function </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="id2">
+<h3><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">__kernel,</span> <span class="pre">__args)</span></code><a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_ExpArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_ActArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Submitter</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Config</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">_Dimensions</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">experimental</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">launch</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFvDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Submitter"><span class="n"><span class="pre">_Submitter</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__submitter</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="structcuda_1_1experimental_1_1kernel__config.html#_CPPv4I0DpEN4cuda12experimental13kernel_configE" title="cuda::experimental::kernel_config"><span class="n"><span class="pre">kernel_config</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFvDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Dimensions"><span class="n"><span class="pre">_Dimensions</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFvDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_Config"><span class="n"><span class="pre">_Config</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__conf</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">kernel_ref</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFvDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_ExpArgs"><span class="n"><span class="pre">_ExpArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__kernel</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpDp0Dp0EN4cuda12experimental6launchEDaRR10_SubmitterRK13kernel_configI11_DimensionsDp7_ConfigE10kernel_refIFvDp8_ExpArgsEEDpRR8_ActArgs" title="cuda::experimental::launch::_ActArgs"><span class="n"><span class="pre">_ActArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">__args</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><br /></dt>
+<dd><p>Launch a kernel with specified configuration and arguments. </p>
+<p>Launches a kernel on the specified stream and with specified configuration. Kernel might or might not accept the configuration as its first argument.</p>
+<p><dl>
+<dt><strong>Snippet</strong></dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#include &lt;cstdio&gt;</span>
+<span class="c1">#include &lt;cuda/experimental/launch.cuh&gt;</span>
+
+<span class="n">template</span> <span class="o">&lt;</span><span class="n">typename</span> <span class="n">Configuration</span><span class="o">&gt;</span>
+<span class="n">__global__</span> <span class="n">void</span> <span class="n">kernel</span><span class="p">(</span><span class="n">Configuration</span> <span class="n">conf</span><span class="p">,</span> <span class="n">unsigned</span> <span class="nb">int</span> <span class="n">thread_to_print</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">conf</span><span class="o">.</span><span class="n">dims</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="n">cudax</span><span class="p">::</span><span class="n">thread</span><span class="p">,</span> <span class="n">cudax</span><span class="p">::</span><span class="n">grid</span><span class="p">)</span> <span class="o">==</span> <span class="n">thread_to_print</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s2">&quot;Hello from the GPU</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">void</span> <span class="n">launch_kernel</span><span class="p">(</span><span class="n">cuda</span><span class="p">::</span><span class="n">stream_ref</span> <span class="n">stream</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">auto</span> <span class="n">dims</span>    <span class="o">=</span> <span class="n">cudax</span><span class="p">::</span><span class="n">make_hierarchy</span><span class="p">(</span><span class="n">cudax</span><span class="p">::</span><span class="n">block_dims</span><span class="o">&lt;</span><span class="mi">128</span><span class="o">&gt;</span><span class="p">(),</span> <span class="n">cudax</span><span class="p">::</span><span class="n">grid_dims</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+    <span class="n">auto</span> <span class="n">config</span> <span class="o">=</span> <span class="n">cudax</span><span class="p">::</span><span class="n">make_config</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="n">cudax</span><span class="p">::</span><span class="n">launch_cooperative</span><span class="p">());</span>
+
+    <span class="n">cudax</span><span class="p">::</span><span class="n">launch</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">cudax</span><span class="p">::</span><span class="n">kernel_ref</span><span class="p">{</span><span class="n">kernel</span><span class="o">&lt;</span><span class="n">decltype</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">&gt;</span><span class="p">},</span> <span class="mi">42</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>__stream</strong> – cuda::stream_ref to launch the kernel into</p></li>
+<li><p><strong>__conf</strong> – configuration for this launch</p></li>
+<li><p><strong>__kernel</strong> – kernel to be launched</p></li>
+<li><p><strong>__args</strong> – arguments to be passed into the kernel </p></li>
 </ul>
 </dd>
 </dl>
@@ -1744,7 +1838,9 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overloads">Overloads</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-submitter-conf-kernel-args"><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">__kernel,</span> <span class="pre">__args)</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-submitter-conf-expargs-args"><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">_ExpArgs...),</span> <span class="pre">__args)</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1"><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">__kernel,</span> <span class="pre">__args)</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-submitter-conf-void-kernel-expargs-args"><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">void(*__kernel)(_ExpArgs...),</span> <span class="pre">__args)</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2"><code class="docutils literal notranslate"><span class="pre">launch(__submitter,</span> <span class="pre">__conf,</span> <span class="pre">__kernel,</span> <span class="pre">__args)</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#launch-fn"><code class="docutils literal notranslate"><span class="pre">launch(&gt;,</span> <span class="pre">_Fn,</span> <span class="pre">&gt;)</span></code></a></li>
 </ul>
 </li>
