@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 import textwrap
+import uuid
 import warnings
 from typing import TYPE_CHECKING, Callable, List
 
@@ -41,7 +42,7 @@ from ._bindings import (
     make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase
+from .iterators._iterators import IteratorBase, cached_compile
 from .op import OpKind
 from .typing import DeviceArrayLike, GpuStruct
 
@@ -109,41 +110,6 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     )
 
 
-def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
-    context = cuda.descriptor.cuda_target.target_context
-    state_ptr_type = it.state_ptr_type
-    state_type = it.state_type
-    size = context.get_value_type(state_type).get_abi_size(context.target_data)
-    iterator_state = memoryview(it.state)
-    if not iterator_state.nbytes == size:
-        raise ValueError(
-            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
-            f"does not match size of numba type, {size} bytes"
-        )
-    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
-        context.target_data
-    )
-    (advance_abi_name, advance_ltoir), (deref_abi_name, deref_ltoir) = it.ltoirs.items()
-    advance_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=advance_abi_name,
-        ltoir=advance_ltoir,
-    )
-    deref_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=deref_abi_name,
-        ltoir=deref_ltoir,
-    )
-    return Iterator(
-        alignment,
-        IteratorKind.ITERATOR,
-        advance_op,
-        deref_op,
-        _numba_type_to_info(it.value_type),
-        state=it.state,
-    )
-
-
 def _none_to_cccl_iter() -> Iterator:
     # Any type could be used here, we just need to pass NULL.
     info = _numpy_type_to_info(np.uint8)
@@ -166,11 +132,125 @@ def type_enum_as_name(enum_value: int) -> str:
     )[enum_value]
 
 
-def to_cccl_iter(array_or_iterator) -> Iterator:
+def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
+    context = cuda.descriptor.cuda_target.target_context
+    state_ptr_type = it.state_ptr_type
+    state_type = it.state_type
+    size = context.get_value_type(state_type).get_abi_size(context.target_data)
+    iterator_state = memoryview(it.state)
+    if not iterator_state.nbytes == size:
+        raise ValueError(
+            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
+            f"does not match size of numba type, {size} bytes"
+        )
+    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
+        context.target_data
+    )
+
+    # Get advance function from ltoirs
+    advance_abi_name = None
+    advance_ltoir = None
+    for name, ltoir in it.ltoirs.items():
+        if name.startswith("advance_"):
+            advance_abi_name = name
+            advance_ltoir = ltoir
+            break
+
+    # Compile input_dereference function
+    input_deref_abi_name = f"input_dereference_{uuid.uuid4().hex}"
+    input_deref_ltoir, _ = cached_compile(
+        it.input_dereference,
+        (it.state_ptr_type, types.CPointer(it.value_type)),
+        abi_name=input_deref_abi_name,
+        output="ltoir",
+    )
+
+    advance_op = Op(
+        operator_type=OpKind.STATELESS,
+        name=advance_abi_name,
+        ltoir=advance_ltoir,
+    )
+    deref_op = Op(
+        operator_type=OpKind.STATELESS,
+        name=input_deref_abi_name,
+        ltoir=input_deref_ltoir,
+    )
+    return Iterator(
+        alignment,
+        IteratorKind.ITERATOR,
+        advance_op,
+        deref_op,
+        _numba_type_to_info(it.value_type),
+        state=it.state,
+    )
+
+
+def _iterator_to_cccl_output_iter(it: IteratorBase) -> Iterator:
+    context = cuda.descriptor.cuda_target.target_context
+    state_ptr_type = it.state_ptr_type
+    state_type = it.state_type
+    size = context.get_value_type(state_type).get_abi_size(context.target_data)
+    iterator_state = memoryview(it.state)
+    if not iterator_state.nbytes == size:
+        raise ValueError(
+            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
+            f"does not match size of numba type, {size} bytes"
+        )
+    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
+        context.target_data
+    )
+
+    # Get advance function from ltoirs
+    advance_abi_name = None
+    advance_ltoir = None
+    for name, ltoir in it.ltoirs.items():
+        if name.startswith("advance_"):
+            advance_abi_name = name
+            advance_ltoir = ltoir
+            break
+
+    # Compile output_dereference function
+    output_deref_abi_name = f"output_dereference_{uuid.uuid4().hex}"
+    output_deref_ltoir, _ = cached_compile(
+        it.output_dereference,
+        (it.state_ptr_type, it.value_type),
+        abi_name=output_deref_abi_name,
+        output="ltoir",
+    )
+
+    advance_op = Op(
+        operator_type=OpKind.STATELESS,
+        name=advance_abi_name,
+        ltoir=advance_ltoir,
+    )
+    deref_op = Op(
+        operator_type=OpKind.STATELESS,
+        name=output_deref_abi_name,
+        ltoir=output_deref_ltoir,
+    )
+    return Iterator(
+        alignment,
+        IteratorKind.ITERATOR,
+        advance_op,
+        deref_op,
+        _numba_type_to_info(it.value_type),
+        state=it.state,
+    )
+
+
+def to_cccl_input_iter(array_or_iterator) -> Iterator:
     if array_or_iterator is None:
         return _none_to_cccl_iter()
     if isinstance(array_or_iterator, IteratorBase):
-        return _iterator_to_cccl_iter(array_or_iterator)
+        return _iterator_to_cccl_input_iter(array_or_iterator)
+    return _device_array_to_cccl_iter(array_or_iterator)
+
+
+def to_cccl_output_iter(array_or_iterator) -> Iterator:
+    if array_or_iterator is None:
+        return _none_to_cccl_iter()
+    if isinstance(array_or_iterator, IteratorBase):
+        return _iterator_to_cccl_output_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)
 
 

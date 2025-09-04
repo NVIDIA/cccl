@@ -72,7 +72,8 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(d_input),
+                reduce_op, h_init, force_inclusive)
 
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
@@ -119,9 +120,8 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = parallel.ReverseInputIterator(
-        parallel.CountingIterator(np.int32(num_items))
-    )
+    d_input = parallel.ReverseIterator(
+        parallel.CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -159,10 +159,12 @@ def test_scan_struct_type(force_inclusive):
 
     got = d_output.get()
     expected_x = scan_host(
-        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
+        d_input.get()["x"], lambda a, b: a +
+        b, np.asarray([h_init.x]), force_inclusive
     )
     expected_y = scan_host(
-        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
+        d_input.get()["y"], lambda a, b: a +
+        b, np.asarray([h_init.y]), force_inclusive
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)
@@ -252,7 +254,7 @@ def test_scan_transform_output_iterator(floating_array):
     def square(x):
         return x * x
 
-    d_out_it = parallel.TransformOutputIterator(d_output, square)
+    d_out_it = parallel.TransformIterator(d_output, square)
 
     parallel.inclusive_scan(
         d_input, d_out_it, parallel.OpKind.PLUS, h_init, d_input.size
@@ -261,7 +263,8 @@ def test_scan_transform_output_iterator(floating_array):
     expected = cp.cumsum(d_input) ** 2
     # Use more lenient tolerance for float32 due to precision differences
     if dtype == np.float32:
-        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
+        np.testing.assert_allclose(
+            d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
     else:
         np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
 
@@ -301,7 +304,7 @@ def test_reverse_input_iterator():
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = parallel.ReverseInputIterator(d_input)
+    reverse_it = parallel.ReverseIterator(d_input)
 
     parallel.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
 
@@ -317,7 +320,7 @@ def test_reverse_output_iterator():
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = parallel.ReverseOutputIterator(d_output)
+    reverse_it = parallel.ReverseIterator(d_output)
 
     parallel.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
 
