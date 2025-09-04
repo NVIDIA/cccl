@@ -3,7 +3,7 @@ CUB Developer Overview
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
    developer/thread_level
    developer/warp_level
