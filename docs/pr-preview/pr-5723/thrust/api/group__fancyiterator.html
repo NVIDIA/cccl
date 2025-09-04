@@ -612,19 +612,6 @@
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
-<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">Thrust API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
-<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/system.html">System</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
-</ul>
-</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
@@ -1047,8 +1034,6 @@
 <li class="toctree-l4"><a class="reference internal" href="group__function__object__adaptors.html">Function Object Adaptors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__placeholder__objects.html">Placeholder Objects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__gathering.html">Gathering</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__container__classes.html">Container Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="group__host__containers.html">Host Containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__transformed__reductions.html">Transformed Reductions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="group__iterators.html">Iterators</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">Fancy Iterators</a></li>
@@ -1216,7 +1201,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl.html">cuda::experimental::stf::slice_reduction_op_sum_impl</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1slice__stream__interface.html">cuda::experimental::stf::slice_stream_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html">cuda::experimental::stf::small_vector</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stopwatch.html">cuda::experimental::stf::stopwatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__adapter.html">cuda::experimental::stf::stream_adapter</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__and__event.html">cuda::experimental::stf::stream_and_event</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__async__op.html">cuda::experimental::stf::stream_async_op</a></li>
@@ -1546,6 +1530,17 @@
 <li class="toctree-l1"><a class="reference internal" href="classthrust_1_1transform__iterator.html">thrust::transform_iterator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="classthrust_1_1transform__output__iterator.html">thrust::transform_output_iterator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="classthrust_1_1zip__iterator.html">thrust::zip_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga2265d864e1e8bd7f297559eb7f08b8e8.html">thrust::make_constant_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html">thrust::make_counting_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html">thrust::make_discard_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html">thrust::make_permutation_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html">thrust::make_shuffle_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html">thrust::make_strided_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html">thrust::make_tabulate_output_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga1f3d8a73d04fa5823eadb68308d3d810.html">thrust::make_transform_input_output_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html">thrust::make_transform_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1ga6bc8a980eab36d724ee7912c6d4e6d14.html">thrust::make_transform_output_iterator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html">thrust::make_zip_iterator</a></li>
 </ul>
 </div>
 </section>

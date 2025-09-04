@@ -97,7 +97,6 @@ Classes
 * :doc:`cuda::experimental::stf::slice_reduction_op_sum_impl <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl>`
 * :doc:`cuda::experimental::stf::slice_stream_interface <classcuda_1_1experimental_1_1stf_1_1slice__stream__interface>`
 * :doc:`cuda::experimental::stf::small_vector <classcuda_1_1experimental_1_1stf_1_1small__vector>`
-* :doc:`cuda::experimental::stf::stopwatch <classcuda_1_1experimental_1_1stf_1_1stopwatch>`
 * :doc:`cuda::experimental::stf::stream_adapter <classcuda_1_1experimental_1_1stf_1_1stream__adapter>`
 * :doc:`cuda::experimental::stf::stream_and_event <classcuda_1_1experimental_1_1stf_1_1stream__and__event>`
 * :doc:`cuda::experimental::stf::stream_async_op <classcuda_1_1experimental_1_1stf_1_1stream__async__op>`
@@ -416,7 +415,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl
    classcuda_1_1experimental_1_1stf_1_1slice__stream__interface
    classcuda_1_1experimental_1_1stf_1_1small__vector
-   classcuda_1_1experimental_1_1stf_1_1stopwatch
    classcuda_1_1experimental_1_1stf_1_1stream__adapter
    classcuda_1_1experimental_1_1stf_1_1stream__and__event
    classcuda_1_1experimental_1_1stf_1_1stream__async__op

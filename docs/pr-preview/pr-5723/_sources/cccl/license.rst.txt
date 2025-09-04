@@ -1,4 +1,4 @@
-.. _cccl-contributing:
+.. _cccl-license:
 
 License
 =======

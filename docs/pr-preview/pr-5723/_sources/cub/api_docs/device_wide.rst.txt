@@ -8,7 +8,7 @@ Device-Wide Primitives
    :hidden:
    :maxdepth: 2
 
-   api/device
+   ../api/device
 
 
 CUB device-level single-problem parallel algorithms:
