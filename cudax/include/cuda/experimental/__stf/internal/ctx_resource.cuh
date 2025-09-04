@@ -17,6 +17,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -37,8 +38,23 @@ namespace cuda::experimental::stf
 class ctx_resource
 {
 public:
-  //! Release asynchronously
-  virtual void release(cudaStream_t) = 0;
+  virtual ~ctx_resource() = default;
+  //! Release asynchronously (only called if can_release_in_callback() returns false)
+  virtual void release(cudaStream_t stream)
+  { /* Default implementation does nothing */
+  }
+  //! Returns true if this resource can be released in a host callback without using the stream
+  //! Resources that return true will be batched together into a single callback to avoid
+  //! the overhead of creating individual host callbacks for each resource release
+  virtual bool can_release_in_callback() const
+  {
+    return false;
+  }
+  //! Release synchronously on the host (only called if can_release_in_callback() returns true)
+  //! This will be called from within a batched host callback to minimize callback overhead
+  virtual void release_in_callback()
+  { /* Default implementation does nothing */
+  }
 };
 
 class ctx_resource_set
@@ -53,11 +69,44 @@ public:
   //! Release all resources asynchronously
   void release(cudaStream_t stream)
   {
+    // Separate resources into stream-dependent and callback-batched
+    ::std::vector<::std::shared_ptr<ctx_resource>> callback_resources;
+
     for (auto& r : resources)
     {
-      r->release(stream);
+      if (r->can_release_in_callback())
+      {
+        callback_resources.push_back(r);
+      }
+      else
+      {
+        r->release(stream);
+      }
     }
     resources.clear();
+
+    // Batch all callback resources into a single host callback for efficiency
+    if (!callback_resources.empty())
+    {
+      // Transfer ownership of callback resources to the callback
+      auto* callback_list = new ::std::vector<::std::shared_ptr<ctx_resource>>(mv(callback_resources));
+
+      // Add a single host callback using lambda that will release all callback resources
+      auto release_lambda = [](cudaStream_t /*stream*/, cudaError_t /*status*/, void* userData) -> void {
+        auto* resources = static_cast<::std::vector<::std::shared_ptr<ctx_resource>>*>(userData);
+
+        // Release all callback resources
+        for (auto& resource : *resources)
+        {
+          resource->release_in_callback();
+        }
+
+        // Clean up the callback list itself
+        delete resources;
+      };
+
+      cuda_safe_call(cudaStreamAddCallback(stream, release_lambda, callback_list, 0));
+    }
   }
 
 private:
