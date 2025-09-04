@@ -16,7 +16,6 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
 
@@ -38,43 +37,23 @@ class DoubleBuffer:
 
 
 def make_cache_key(
-    d_in_keys: DeviceArrayLike | DoubleBuffer | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-    d_out_values: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | DoubleBuffer,
+    d_out_keys: DeviceArrayLike | None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None,
+    d_out_values: DeviceArrayLike | None,
     order: SortOrder,
 ):
     d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
         _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
     )
 
-    d_in_keys_key = (
-        d_in_keys_array.kind
-        if isinstance(d_in_keys_array, IteratorBase)
-        else get_dtype(d_in_keys_array)
-    )
+    d_in_keys_key = get_dtype(d_in_keys_array)
     d_in_values_key = (
-        None
-        if d_in_values_array is None
-        else (
-            d_in_values_array.kind
-            if isinstance(d_in_values_array, IteratorBase)
-            else get_dtype(d_in_values_array)
-        )
+        None if d_in_values_array is None else get_dtype(d_in_values_array)
     )
-    d_out_keys_key = (
-        d_out_keys_array.kind
-        if isinstance(d_out_keys_array, IteratorBase)
-        else get_dtype(d_out_keys_array)
-    )
+    d_out_keys_key = get_dtype(d_out_keys_array)
     d_out_values_key = (
-        None
-        if d_out_values_array is None
-        else (
-            d_out_values_array.kind
-            if isinstance(d_out_values_array, IteratorBase)
-            else get_dtype(d_out_values_array)
-        )
+        None if d_out_values_array is None else get_dtype(d_out_values_array)
     )
 
     return (
@@ -87,10 +66,10 @@ def make_cache_key(
 
 
 def _get_arrays(
-    d_in_keys: DeviceArrayLike | DoubleBuffer | IteratorBase,
-    d_out_keys: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-    d_out_values: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | DoubleBuffer,
+    d_out_keys: DeviceArrayLike | DoubleBuffer | None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None,
+    d_out_values: DeviceArrayLike | None,
 ) -> Tuple:
     if isinstance(d_in_keys, DoubleBuffer):
         d_in_keys_array = d_in_keys.current()
@@ -124,10 +103,10 @@ class _RadixSort:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | DoubleBuffer | IteratorBase,
-        d_out_keys: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-        d_in_values: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-        d_out_values: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | DoubleBuffer | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
         order: SortOrder,
     ):
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
@@ -163,10 +142,10 @@ class _RadixSort:
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | DoubleBuffer | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase | None,
-        d_in_values: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-        d_out_values: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
         num_items: int,
         begin_bit: int | None = None,
         end_bit: int | None = None,
@@ -232,10 +211,10 @@ class _RadixSort:
 
 @cache_with_key(make_cache_key)
 def make_radix_sort(
-    d_in_keys: DeviceArrayLike | DoubleBuffer | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-    d_out_values: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | DoubleBuffer,
+    d_out_keys: DeviceArrayLike | None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None,
+    d_out_values: DeviceArrayLike | None,
     order: SortOrder,
 ):
     """Implements a device-wide radix sort using ``d_in_keys`` in the requested order.
@@ -271,10 +250,10 @@ def make_radix_sort(
 
 
 def radix_sort(
-    d_in_keys: DeviceArrayLike | DoubleBuffer | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | IteratorBase | None,
-    d_out_values: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | DoubleBuffer,
+    d_out_keys: DeviceArrayLike | None,
+    d_in_values: DeviceArrayLike | DoubleBuffer | None,
+    d_out_values: DeviceArrayLike | None,
     order: SortOrder,
     num_items: int,
     begin_bit: int | None = None,
