@@ -113,10 +113,10 @@ class _RadixSort:
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
         )
 
-        self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys_array)
-        self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys_array)
-        self.d_in_values_cccl = cccl.to_cccl_iter(d_in_values_array)
-        self.d_out_values_cccl = cccl.to_cccl_iter(d_out_values_array)
+        self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys_array)
+        self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys_array)
+        self.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values_array)
+        self.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
 
         # TODO: decomposer op is not supported for now
         self.decomposer_op = cccl.Op(

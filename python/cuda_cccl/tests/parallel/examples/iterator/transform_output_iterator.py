@@ -23,7 +23,8 @@ def sqrt(x):
 
 
 # Create transform output iterator
-d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
+d_out_it = parallel.TransformIterator(d_output, sqrt)
+
 
 # Apply a sum reduction into the transform output iterator
 parallel.reduce_into(

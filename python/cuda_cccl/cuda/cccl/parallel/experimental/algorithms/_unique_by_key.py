@@ -89,11 +89,11 @@ class _UniqueByKey:
         d_out_num_selected: DeviceArrayLike,
         op: Callable | OpKind,
     ):
-        self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
-        self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
-        self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
-        self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
-        self.d_out_num_selected_cccl = cccl.to_cccl_iter(d_out_num_selected)
+        self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
+        self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
+        self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
+        self.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
+        self.d_out_num_selected_cccl = cccl.to_cccl_output_iter(d_out_num_selected)
 
         value_type = cccl.get_value_type(d_in_keys)
 

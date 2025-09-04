@@ -84,10 +84,10 @@ class _MergeSort:
         present_out_values = d_out_items is not None
         assert present_in_values == present_out_values
 
-        self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
-        self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
-        self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
-        self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
+        self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
+        self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
+        self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
+        self.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
 
         value_type = cccl.get_value_type(d_in_keys)
 
