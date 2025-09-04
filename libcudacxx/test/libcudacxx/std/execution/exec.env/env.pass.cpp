@@ -54,7 +54,7 @@ struct derived_env : cuda::std::execution::env<>
 {
   using env::query;
 
-  auto query(query1_t) const
+  __host__ __device__ auto query(query1_t) const
   {
     return 42;
   }
