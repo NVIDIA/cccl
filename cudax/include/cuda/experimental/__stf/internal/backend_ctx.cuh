@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
@@ -600,6 +601,10 @@ protected:
     // cleaned when unfreezing which means it has been synchronized with.
     ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
     ::std::mutex pending_freeze_mutex;
+
+    // Resources associated to the context (e.g.  allocator resources, host
+    // callbacks argument buffers)
+    ctx_resource_set ctx_resources;
   };
 
 public:
