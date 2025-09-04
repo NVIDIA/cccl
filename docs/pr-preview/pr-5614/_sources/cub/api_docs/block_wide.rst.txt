@@ -8,7 +8,7 @@ Block-Wide "Collective" Primitives
    :hidden:
    :maxdepth: 2
 
-   api/block
+   ../api/block
 
 CUB block-level algorithms are specialized for execution by threads in the same CUDA thread block:
 

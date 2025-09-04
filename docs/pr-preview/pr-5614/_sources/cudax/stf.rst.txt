@@ -726,7 +726,7 @@ Lower-level task API
    stf/lower_level_api
 
 A lower-level API that does not rely on lambda functions is also
-available, and is described `here <stf_lower_level_api>`.
+available, and is described `here <stf/lower_level_api.rst>`__.
 
 Synchronization
 ---------------
@@ -1843,7 +1843,7 @@ the ``->*`` notation is only compatible with *statically-typed* tasks,
 as the user-provided lambda function needs to be passed data instances
 of the proper types (for example ``slice<double>``) by CUDASTF. As a
 consequence, the ``stream_task<>`` needs to be manipulated with the
-`low-level API <#lower-level-api>`__.
+`low-level API <stf/lower_level_api.rst>`__.
 
 Combining typed and untyped tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
