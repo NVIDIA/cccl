@@ -35,7 +35,7 @@ class _Reduce:
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike,
+        d_out: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
         h_init: np.ndarray | GpuStruct,
     ):
@@ -98,14 +98,16 @@ class _Reduce:
 
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     d_in_key = (
         d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
-    d_out_key = protocols.get_dtype(d_out)
+    d_out_key = (
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+    )
     # Handle well-known operations differently
     op_key: Union[tuple[str, int], CachableFunction]
     if isinstance(op, OpKind):
@@ -121,7 +123,7 @@ def make_cache_key(
 @cache_with_key(make_cache_key)
 def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     h_init: np.ndarray,
 ):
@@ -150,7 +152,7 @@ def make_reduce_into(
 
 def reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     num_items: int,
     h_init: np.ndarray | GpuStruct,
