@@ -510,7 +510,7 @@ public:
     }
 
     // Make sure we release resources attached to this context
-    state.ctx_resources.release(state.submitted_stream);
+    state.release_ctx_resources(state.submitted_stream);
 
     if (state.blocking_finalize)
     {

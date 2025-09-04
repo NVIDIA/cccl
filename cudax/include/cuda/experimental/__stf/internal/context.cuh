@@ -689,6 +689,20 @@ public:
     };
   }
 
+  //! Release context resources using the provided stream.
+  //!
+  //! Normally this is called automatically during finalize(), but when using
+  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
+  //! times, resources must be released manually once the graph will no longer
+  //! be used, since the same resources may be accessed repeatedly during graph replay.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
+    };
+  }
+
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");

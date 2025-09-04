@@ -972,17 +972,20 @@ public:
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
-    // that will be deleted by the resource system
+    // that will be deleted by the resource system or immediately in callback
     auto args = new args_t(mv(instances), n, mv(f), shape);
 
-    // Register the args as a resource to be cleaned as a context resource
-    auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
-    t.add_ctx_resource(resource);
+    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
+    // For stream contexts, delete immediately in callback (better memory efficiency)
+    if constexpr (::std::is_same_v<context, graph_ctx>)
+    {
+      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
+      ctx.add_ctx_resource(mv(resource));
+    }
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<decltype(args)>(untyped_args);
-      // NOTE: We do NOT delete p here - it will be cleaned up by the resource system associated to the context
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
@@ -1002,6 +1005,13 @@ public:
       for (size_t i = 0; i < n; ++i)
       {
         ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
+      }
+
+      // For stream contexts, delete immediately (no replay risk)
+      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+      if constexpr (!::std::is_same_v<context, graph_ctx>)
+      {
+        delete p;
       }
     };
 

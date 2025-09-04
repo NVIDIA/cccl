@@ -60,6 +60,16 @@ public:
 class ctx_resource_set
 {
 public:
+  ctx_resource_set() = default;
+
+  // Non-copyable
+  ctx_resource_set(const ctx_resource_set&)            = delete;
+  ctx_resource_set& operator=(const ctx_resource_set&) = delete;
+
+  // Move is fine
+  ctx_resource_set(ctx_resource_set&&)            = default;
+  ctx_resource_set& operator=(ctx_resource_set&&) = default;
+
   //! Store a resource until it is released
   void add(::std::shared_ptr<ctx_resource> r)
   {
@@ -69,6 +79,8 @@ public:
   //! Release all resources asynchronously
   void release(cudaStream_t stream)
   {
+    _CCCL_ASSERT(!resources_released, "Resources have already been released on this context");
+
     // Separate resources into stream-dependent and callback-batched
     ::std::vector<::std::shared_ptr<ctx_resource>> callback_resources;
 
@@ -107,10 +119,14 @@ public:
 
       cuda_safe_call(cudaStreamAddCallback(stream, release_lambda, callback_list, 0));
     }
+
+    // Mark as released to prevent double release
+    resources_released = true;
   }
 
 private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
+  bool resources_released = false; // Safety flag to prevent double release
 };
 
 } // end namespace cuda::experimental::stf

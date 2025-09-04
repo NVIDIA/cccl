@@ -183,13 +183,16 @@ public:
     }();
     auto* wrapper = new ::std::pair<Fun, decltype(payload)>{::std::forward<Fun>(f), mv(payload)};
 
-    // Register the wrapper as a resource to be cleaned up through the batched mechanism
-    auto resource = ::std::make_shared<host_callback_args_resource<decltype(*wrapper)>>(wrapper);
-    t.add_ctx_resource(resource);
+    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
+    // For stream contexts, delete immediately in callback (better memory efficiency)
+    if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+    {
+      auto resource = ::std::make_shared<host_callback_args_resource<decltype(*wrapper)>>(wrapper);
+      ctx.add_ctx_resource(mv(resource));
+    }
 
     auto callback = [](void* untyped_wrapper) {
       auto w = static_cast<decltype(wrapper)>(untyped_wrapper);
-      // NOTE: We do NOT delete w here - it will be cleaned up by the resource system
 
       constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
       constexpr bool fun_invocable_task_non_void_deps =
@@ -205,6 +208,13 @@ public:
       else if constexpr (fun_invocable_task_non_void_deps)
       {
         ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
+      }
+
+      // For stream contexts, delete immediately (no replay risk)
+      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+      if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+      {
+        delete w;
       }
     };
 

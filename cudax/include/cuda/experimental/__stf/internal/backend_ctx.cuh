@@ -602,10 +602,23 @@ protected:
     ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
     ::std::mutex pending_freeze_mutex;
 
-  public:
+  private:
     // Resources associated to the context (e.g. allocator resources, host
     // callbacks argument buffers)
     ctx_resource_set ctx_resources;
+
+  public:
+    // Release context resources using the provided stream
+    void release_ctx_resources(cudaStream_t stream)
+    {
+      ctx_resources.release(stream);
+    }
+
+    // Add a resource to be managed by the context
+    void add_ctx_resource(::std::shared_ptr<ctx_resource> resource)
+    {
+      ctx_resources.add(mv(resource));
+    }
   };
 
 public:
@@ -679,6 +692,19 @@ public:
   size_t task_count() const
   {
     return pimpl->total_task_cnt;
+  }
+
+  //! Release context resources using the provided stream
+  //! This should be called after graph execution completes to clean up resources
+  void release_resources(cudaStream_t stream)
+  {
+    pimpl->release_ctx_resources(stream);
+  }
+
+  //! Add a resource to be managed by this context
+  void add_ctx_resource(::std::shared_ptr<ctx_resource> resource)
+  {
+    pimpl->add_ctx_resource(mv(resource));
   }
 
   /* Customize the allocator used by all logical data */
