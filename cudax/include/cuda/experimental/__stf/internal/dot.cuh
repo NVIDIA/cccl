@@ -99,21 +99,29 @@ enum vertex_type
 //! eventually generate a node for the DAG
 struct per_vertex_info
 {
-  // This color can for example be computed according to the duration of the task, if measured
+  //! color of the vertex
+  //!
+  //! This color can for example be computed according to the duration of the task, if measured, or based on the device which executes the task.
   ::std::string color;
+  //! text associated to the vertex
   ::std::string label;
+  //! measured duration of the vertex
   ::std::optional<float> timing;
-  // is that a task, fence or prereq ?
+  //! is that a task, fence or prereq ?
   vertex_type type;
 
-  // id of the vertex
+  //! id of the vertex
   int original_id;
 
-  // id of the vertex after collapsing : this is the id of the vertex that
-  // represents all nodes that were merged in a section.
+  //! id of the vertex after collapsing
+  //!
+  //! This is the id of the vertex that represents all nodes that were merged in a section.
   int representative_id;
 
+  //! id of the section in which the vertex belongs
   int dot_section_id;
+
+  //! id of the context in which the vertex belongs
   int ctx_id;
 };
 
@@ -183,12 +191,10 @@ public:
     guard(const guard&)            = delete;
     guard& operator=(const guard&) = delete;
 
-    /**
-     * @brief Manually end the section (alternative to destructor)
-     *
-     * This allows explicit control over when the section ends,
-     * useful when the guard lifetime doesn't match the desired section lifetime.
-     */
+    //! Manually end the section (alternative to destructor)
+    //!
+    //! This allows explicit control over when the section ends,
+    //! useful when the guard lifetime doesn't match the desired section lifetime.
     void end()
     {
       _CCCL_ASSERT(active, "Attempting to end the same section twice.");
@@ -649,10 +655,10 @@ public:
   }
 
 public:
-  // per-context vertices
+  //! per-context vertices
   ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
-  // IDs of the sections in this context
+  //! IDs of the sections found in this context
   ::std::vector<int> section_id_stack;
 
   mutable ::std::mutex mtx;
@@ -660,8 +666,25 @@ public:
 private:
   mutable ::std::string ctx_symbol;
 
+  //! IDs of the tasks that have been discarded to avoid them being displayed in the graph
   ::std::unordered_set<int> discarded_tasks;
 
+  //! Virtual proxy vertices for context boundary representation
+  //!
+  //! These invisible proxy nodes are created on-demand to represent the
+  //! start/end boundaries of nested contexts in the dependency graph:
+  //!
+  //! - proxy_start_unique_id: Virtual entry point that aggregates all external
+  //!   dependencies flowing INTO this context. Created when ctx_add_input_id()
+  //!   is first called.
+  //!
+  //! - proxy_end_unique_id: Virtual exit point that aggregates all dependencies
+  //!   flowing OUT of this context. Created when ctx_add_output_id() is first called.
+  //!
+  //! These proxies enable:
+  //! - Proper critical path computation through nested contexts (even empty ones)
+  //! - Clean visualization of context boundaries in the DAG
+  //! - Correct dependency chaining between parent and child contexts
   ::std::optional<int> proxy_start_unique_id;
   ::std::optional<int> proxy_end_unique_id;
 };
