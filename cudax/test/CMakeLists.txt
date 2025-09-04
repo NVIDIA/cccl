@@ -124,7 +124,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target cuco ${cn_target}
-    cuco/utility/hash_test.cu
+    cuco/utility/test_hashers.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
