@@ -99,44 +99,6 @@ void segmented_reduce(
 //   Test section
 // ==============
 
-static std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
-  std::string_view index_ty_name,
-  std::string_view state_name,
-  std::string_view advance_fn_name,
-  std::string_view dereference_fn_name)
-{
-  static constexpr std::string_view it_state_src_tmpl = R"XXX(
-struct {0} {{
-  {1} linear_id;
-  {1} row_size;
-}};
-)XXX";
-
-  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
-
-  static constexpr std::string_view it_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
-{{
-  state->linear_id += offset;
-}}
-)XXX";
-
-  const std::string it_advance_fn_def_src =
-    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
-
-  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
-extern "C" __device__ {2} {0}({1}* state)
-{{
-  return (state->linear_id) * (state->row_size);
-}}
-)XXX";
-
-  const std::string it_deref_fn_def_src =
-    std::format(it_deref_src_tmpl, dereference_fn_name, state_name, index_ty_name);
-
-  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
-}
-
 struct SegmentedReduce_SumOverRows_Fixture_Tag;
 C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
               "[segmented_reduce]",
@@ -619,22 +581,6 @@ struct host_check_functor_state
   DataT* m_ptr;
 };
 
-template <typename StateT>
-void host_advance_transform_it_state(void* state, cccl_increment_t offset)
-{
-  auto st      = reinterpret_cast<StateT*>(state);
-  using IndexT = decltype(st->base_it_state.value);
-
-  if constexpr (std::is_signed_v<IndexT>)
-  {
-    st->base_it_state.value += offset.signed_offset;
-  }
-  else
-  {
-    st->base_it_state.value += offset.unsigned_offset;
-  }
-}
-
 namespace validate
 {
 
@@ -833,8 +779,8 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
   auto cccl_end_offsets_it   = static_cast<cccl_iterator_t>(end_offsets_it);
 
   // set host_advance functions
-  cccl_start_offsets_it.host_advance = &host_advance_transform_it_state<HostTransformStateT>;
-  cccl_end_offsets_it.host_advance   = &host_advance_transform_it_state<HostTransformStateT>;
+  cccl_start_offsets_it.host_advance = &host_advance_base_value<HostTransformStateT>;
+  cccl_end_offsets_it.host_advance   = &host_advance_base_value<HostTransformStateT>;
 
   value_t<DataT> h_init{DataT{0}};
 
