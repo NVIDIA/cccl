@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# TODO remove this or integrate it with the build system. Debugging for now.
+export ASAN_OPTIONS="verbosity=1:print_stats=1:log_path=asan"
+# export ASAN_OPTIONS="quarantine_size_mb=64:malloc_context_size=5:detect_leaks=0""
+
+
 set -eo pipefail
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
