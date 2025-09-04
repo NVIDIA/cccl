@@ -92,7 +92,7 @@ jobs:
           .devcontainer/launch.sh \
             --docker \
             --cuda 12.9 \
-            --host gcc13 \
+            --host gcc14 \
             --cuda-ext \
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \

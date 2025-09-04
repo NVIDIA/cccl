@@ -57,12 +57,12 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
       buf.stream().sync();
       auto& res = buf.get_unsynchronized(2);
-      CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
+      CUDAX_CHECK(compare_value<Buffer>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
-      assign_value<Buffer::__is_host_only>(res, T(4));
+      assign_value<Buffer>(res, T(4));
 
       auto& const_res = cuda::std::as_const(buf).get_unsynchronized(2);
-      CUDAX_CHECK(compare_value<Buffer::__is_host_only>(const_res, T(4)));
+      CUDAX_CHECK(compare_value<Buffer>(const_res, T(4)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
     }
   }
@@ -95,12 +95,12 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
 
     {
       cudax::stream other_stream{cuda::device_ref{0}};
-      buf.set_stream_unsynchronized(other_stream);
+      buf.set_stream(other_stream);
       CUDAX_CHECK(buf.stream() == other_stream);
-      // TODO swap to synchronized setter one cudax::stream_ref is moved to cuda namespace
-      buf.set_stream_unsynchronized(stream);
+      buf.set_stream(stream);
     }
 
     CUDAX_CHECK(buf.stream() == stream);
+    buf.destroy(stream);
   }
 }

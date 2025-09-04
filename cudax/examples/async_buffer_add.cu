@@ -16,6 +16,7 @@
  * of the programming guide with some additions like error checking.
  */
 
+#include <thrust/execution_policy.h>
 #include <thrust/generate.h>
 #include <thrust/random.h>
 #include <thrust/transform.h>

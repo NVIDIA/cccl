@@ -141,6 +141,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     green_context/green_ctx_smoke.cu
   )
 
+  cudax_add_catch2_test(test_target kernel ${cn_target}
+    kernel/kernel_ref.cu
+  )
+
   cudax_add_catch2_test(test_target algorithm ${cn_target}
     algorithm/fill.cu
     algorithm/copy.cu

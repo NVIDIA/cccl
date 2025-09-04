@@ -60,8 +60,10 @@ update_devcontainer() {
        --arg compiler_name "$compiler_name" \
        --arg compiler_exe "$compiler_exe" \
        --arg compiler_version "$compiler_version" \
+       --arg container_name "\${localEnv:USER:anon}-\${localWorkspaceFolderBasename}-${name}" \
        '.image = $image |
         .name = $name |
+        .runArgs = ["--init", "--name", $container_name] |
         .containerEnv.DEVCONTAINER_NAME = $name |
         .containerEnv.CCCL_BUILD_INFIX = $name |
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version |
@@ -124,6 +126,10 @@ fi
 # Get the devcontainer image version and define image tag root
 readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
 
+# Internal image compiler versions:
+readonly CUDA99_GCC_VERSION=$( echo "$matrix_json" | jq -r '.cuda99_gcc_version')
+readonly CUDA99_LLVM_VERSION=$(echo "$matrix_json" | jq -r '.cuda99_clang_version')
+
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
 readonly combinations=$(echo "$matrix_json" | jq -c '.combinations[]')
 
@@ -143,15 +149,8 @@ readonly DEFAULT_NAME=$(make_name "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_
 update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION" "false"
 mv "./temp_devcontainer.json" ${base_devcontainer_file}
 
-# Always create an extended version of the default devcontainer:
-readonly EXT_NAME=$(make_name "$DEFAULT_CUDA" true "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION")
-update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$EXT_NAME" "$DEFAULT_CUDA" true "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION" "false"
-mkdir -p "$EXT_NAME"
-mv "./temp_devcontainer.json" "$EXT_NAME/devcontainer.json"
-
-
 # Create an array to keep track of valid subdirectory names
-valid_subdirs=("$EXT_NAME")
+valid_subdirs=()
 
 # The img folder should not be removed:
 valid_subdirs+=("img")
@@ -162,10 +161,27 @@ for rapids_container in *rapids*; do
 done
 
 # Inject ctk version 99.9
-readonly cuda99_9_gcc=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -rsc '.[].cuda |= "99.9" | .[].internal |= true | .[-1]')
-readonly cuda99_8_gcc=$(echo "$NEWEST_GCC_CUDA_ENTRY" | jq -rsc '.[].cuda |= "99.8" | .[].internal |= true | .[-1]')
-readonly cuda99_9_llvm=$(echo "$NEWEST_LLVM_CUDA_ENTRY" | jq -rsc '.[].cuda |= "99.9" | .[].internal |= true | .[-1]')
-readonly cuda99_8_llvm=$(echo "$NEWEST_LLVM_CUDA_ENTRY" | jq -rsc '.[].cuda |= "99.8" | .[].internal |= true | .[-1]')
+make_compiler_entry() {
+    local compiler_name="$1"
+    local compiler_version="$2"
+    local compiler_exe="$3"
+    local cuda_version="$4"
+    local cuda_ext="$5"
+    local internal="${6:-false}"
+    echo "{
+        \"cuda\": \"$cuda_version\",
+        \"cuda_ext\": $cuda_ext,
+        \"compiler_name\": \"$compiler_name\",
+        \"compiler_exe\": \"$compiler_exe\",
+        \"compiler_version\": \"$compiler_version\",
+        \"internal\": $internal
+    }" | jq -c '.'
+}
+
+readonly cuda99_8_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.8" "false" "true")
+readonly cuda99_9_gcc=$( make_compiler_entry "gcc"  "$CUDA99_GCC_VERSION"  "gcc"   "99.9" "false" "true")
+readonly cuda99_8_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.8" "false" "true")
+readonly cuda99_9_llvm=$(make_compiler_entry "llvm" "$CUDA99_LLVM_VERSION" "clang" "99.9" "false" "true")
 
 readonly all_comb="$combinations $cuda99_9_gcc $cuda99_8_gcc $cuda99_9_llvm $cuda99_8_llvm"
 # For each unique combination

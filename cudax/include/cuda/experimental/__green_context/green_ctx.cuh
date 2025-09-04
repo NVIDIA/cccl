@@ -32,6 +32,13 @@
 namespace cuda::experimental
 {
 
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+//! @brief A unique identifier for a green context.
+enum class green_context_id : unsigned long long
+{
+};
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
 struct green_context
 {
   int __dev_id            = -1;
@@ -60,6 +67,13 @@ struct green_context
     ::cuda::__driver::__ctxPop();
     return green_context(__id, __gctx, __transformed);
   }
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  [[nodiscard]] _CCCL_HOST_API green_context_id id() const
+  {
+    return green_context_id{_CUDA_DRIVER::__greenCtxGetId(__green_ctx)};
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   [[nodiscard]] CUgreenCtx release() noexcept
   {

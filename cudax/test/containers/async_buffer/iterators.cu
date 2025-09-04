@@ -79,7 +79,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", te
 
   SECTION("cudax::async_buffer::begin/end no allocation")
   {
-    Buffer buf{env, 0};
+    Buffer buf = make_async_buffer(stream, Resource{}, 0, T());
     CUDAX_CHECK(buf.begin() == iterator{nullptr});
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
     CUDAX_CHECK(buf.cbegin() == const_iterator{nullptr});
@@ -132,7 +132,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer iterators", "[container][async_buffer]", te
 
   SECTION("cudax::async_buffer::rbegin/rend no allocation")
   {
-    Buffer buf{env, 0};
+    Buffer buf = make_async_buffer(stream, Resource{}, 0, T());
     CUDAX_CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
     CUDAX_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
     CUDAX_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
