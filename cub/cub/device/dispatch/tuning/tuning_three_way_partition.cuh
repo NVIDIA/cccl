@@ -69,6 +69,17 @@ struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, _CUDA_VSTD::void_t<typename
   {}
 
   CUB_DEFINE_SUB_POLICY_GETTER(ThreeWayPartition)
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    using DelayCtor = typename StaticPolicyT::ThreeWayPartitionPolicy::detail::delay_constructor_t;
+    return object<key<"ThreeWayPartitionPolicy">() = ThreeWayPartition().EncodedPolicy(),
+                  key<"ThreeWayPartitionPolicyDelayConstructor">() =
+                    typename detail::delay_constructor_json<DelayCtor>::type()>();
+  }
+#endif
 };
 
 template <typename PolicyT>

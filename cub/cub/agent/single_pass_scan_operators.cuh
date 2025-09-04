@@ -497,6 +497,36 @@ using default_reduce_by_key_delay_constructor_t =
                    reduce_by_key_delay_constructor_t<350, 450>,
                    default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
 
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/detail/ptx-json/json.h>
+
+// ptx-json encoders for delay constructor types. Unlike the other agent policy
+// member variables, this is defined as a type alias so we can't use the
+// CUB_DETAIL_POLICY_WRAPPER_DEFINE macro to embed it with ptx-json. To work
+// around this, we define the ptx-json encoders here. These can then be used in
+// the policy wrapper's EncodedPolicy member function to explicitly encode the
+// delay constructor.
+
+template <class DelayCtor>
+struct delay_constructor_json;
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+struct delay_constructor_json<fixed_delay_constructor_t<Delay, L2WriteLatency>>
+{
+  using type =
+    ptx_json::object<ptx_json::key<"type">()  = ptx_json::value<ptx_json::string("fixed_delay_constructor_t")>(),
+                     ptx_json::key<"delay">() = ptx_json::value<Delay>(),
+                     ptx_json::key<"l2_write_latency">() = ptx_json::value<L2WriteLatency>()>;
+};
+
+template <unsigned int L2WriteLatency>
+struct delay_constructor_json<no_delay_constructor_t<L2WriteLatency>>
+{
+  using type = ptx_json::object<ptx_json::key<"type">() = ptx_json::value<ptx_json::string("no_delay_constructor_t")>(),
+                                ptx_json::key<"l2_write_latency">() = ptx_json::value<L2WriteLatency>()>;
+};
+#endif // CUB_ENABLE_POLICY_PTX_JSON
+
 /**
  * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
  *
