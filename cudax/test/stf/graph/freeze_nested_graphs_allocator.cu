@@ -71,7 +71,7 @@ int main()
 
   // The child graph depends on the events to get the frozen data
   ::std::vector<cudaGraphNode_t> fX_ready_nodes = reserved::join_with_graph_nodes(ctx, fX_get_events, ctx.stage());
-  
+
   // Add the child graph as a node that depends on the frozen data being ready
   cudaGraphNode_t child_graph_node;
   cuda_safe_call(cudaGraphAddChildGraphNode(
@@ -81,7 +81,7 @@ int main()
   event_list child_graph_event;
   reserved::fork_from_graph_node(
     ctx, child_graph_node, ctx.get_graph(), ctx.stage(), child_graph_event, "child graph done");
-  
+
   // Unfreeze the data after the child graph completes
   fX.unfreeze(child_graph_event);
 

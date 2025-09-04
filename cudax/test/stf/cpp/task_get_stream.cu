@@ -8,11 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 //! \file
 //!
 //! \brief Test the behavior of the get_stream() method of the tasks in the different backends
-
 
 #include <cuda/experimental/stf.cuh>
 
@@ -20,7 +18,8 @@ using namespace cuda::experimental::stf;
 
 __global__ void dummy() {}
 
-void test_stream() {
+void test_stream()
+{
   // stream context
   context ctx;
 
@@ -34,7 +33,8 @@ void test_stream() {
   ctx.finalize();
 }
 
-void test_graph() {
+void test_graph()
+{
   context ctx = graph_ctx();
 
   auto token = ctx.token();
@@ -45,7 +45,7 @@ void test_graph() {
   EXPECT(s == nullptr);
   t.end();
 
-  auto t2     = ctx.task(token.rw());
+  auto t2 = ctx.task(token.rw());
   t2.enable_capture();
   t2.start();
   cudaStream_t s2 = t2.get_stream();
@@ -56,9 +56,9 @@ void test_graph() {
   ctx.finalize();
 }
 
-int main() {
+int main()
+{
   test_stream();
   test_graph();
   return 0;
 }
-
