@@ -173,7 +173,7 @@ struct DeviceScan
             typename NumItemsT,
             ::cuda::execution::determinism::__determinism_t Determinism,
             ForceInclusive EnforceInclusive = ForceInclusive::No>
-  CUB_RUNTIME_FUNCTION static cudaError_t dispatch_scan_tuning_env(
+  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_tuning_env(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -214,7 +214,7 @@ struct DeviceScan
             typename NumItemsT,
             ForceInclusive EnforceInclusive = ForceInclusive::No,
             typename EnvT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_scan_env(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
     InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, EnvT env)
   {
     static_assert(!_CUDA_STD_EXEC::__queryable_with<EnvT, _CUDA_EXEC::determinism::__get_determinism_t>,
@@ -245,7 +245,7 @@ struct DeviceScan
     using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
 
     // Query the required temporary storage size
-    cudaError_t error = dispatch_scan_tuning_env<tuning_t>(
+    cudaError_t error = scan_impl_tuning_env<tuning_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
 
     if (error != cudaSuccess)
@@ -261,7 +261,7 @@ struct DeviceScan
     }
 
     // Run the algorithm
-    error = dispatch_scan_tuning_env<tuning_t>(
+    error = scan_impl_tuning_env<tuning_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
@@ -402,7 +402,7 @@ struct DeviceScan
     // Initial value
     InitT init_value{};
 
-    return dispatch_scan_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
+    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -732,7 +732,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    return dispatch_scan_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
+    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
