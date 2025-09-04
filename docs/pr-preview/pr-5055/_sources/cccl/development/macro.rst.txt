@@ -351,6 +351,7 @@ When using these macros, there are some important constraints to keep in mind:
 #. The ``try``/``catch`` blocks mustn't be nested due to variable shadowing.
 #. When using ``try``/``catch`` block inside an ``if`` statement, always wrap it in a scope, otherwise it may lead to unexpected behavior.
 #. The ``catch`` clause must always bind to a named variable. If omitted, there will be an expected identifier error.
+#. None of the code inside the ``try``/``catch`` blocks can contain a loop control statement (``break`` or ``continue``) that refers to a loop outside the ``try``/``catch`` block.
 
 Example:
 
