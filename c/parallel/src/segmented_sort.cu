@@ -38,6 +38,7 @@
 #include <nvrtc/ltoir_list_appender.h>
 
 struct device_segmented_sort_policy;
+struct device_three_way_partition_policy;
 using OffsetT = long;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be long");
 
@@ -48,8 +49,6 @@ static_assert(sizeof(OffsetT) == sizeof(cuda::std::int64_t));
 namespace segmented_sort
 {
 std::string get_device_segmented_sort_fallback_kernel_name(
-  std::string_view /* key_iterator_t */,
-  std::string_view /* value_iterator_t */,
   std::string_view start_offset_iterator_t,
   std::string_view end_offset_iterator_t,
   std::string_view key_t,
@@ -84,8 +83,6 @@ std::string get_device_segmented_sort_fallback_kernel_name(
 }
 
 std::string get_device_segmented_sort_kernel_small_name(
-  std::string_view /* key_iterator_t */,
-  std::string_view /* value_iterator_t */,
   std::string_view start_offset_iterator_t,
   std::string_view end_offset_iterator_t,
   std::string_view key_t,
@@ -120,8 +117,6 @@ std::string get_device_segmented_sort_kernel_small_name(
 }
 
 std::string get_device_segmented_sort_kernel_large_name(
-  std::string_view /* key_iterator_t */,
-  std::string_view /* value_iterator_t */,
   std::string_view start_offset_iterator_t,
   std::string_view end_offset_iterator_t,
   std::string_view key_t,
@@ -171,7 +166,72 @@ struct segmented_sort_kernel_source
   {
     return build.segmented_sort_kernel_large;
   }
+
+  std::size_t KeySize() const
+  {
+    return build.key_type.size;
+  }
 };
+
+std::string get_three_way_partition_init_kernel_name()
+{
+  constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
+
+  constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
+
+  return std::format("cub::detail::three_way_partition::DeviceThreeWayPartitionInitKernel<{0}, {1}>",
+                     scan_tile_state_t, // 0
+                     num_selected_it_t); // 1
+}
+
+std::string
+get_three_way_partition_kernel_name(std::string_view start_offset_iterator_t, std::string_view end_offset_iterator_t)
+{
+  std::string chained_policy_t;
+  check(nvrtcGetTypeName<device_three_way_partition_policy>(&chained_policy_t));
+
+  constexpr std::string_view input_it_t =
+    "thrust::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>";
+  constexpr std::string_view first_out_it_t  = "cub::detail::segmented_sort::local_segment_index_t*";
+  constexpr std::string_view second_out_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
+  constexpr std::string_view unselected_out_it_t =
+    "thrust::reverse_iterator<cub::detail::segmented_sort::local_segment_index_t*>";
+  constexpr std::string_view num_selected_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
+  constexpr std::string_view scan_tile_state_t = "cub::detail::three_way_partition::ScanTileStateT";
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  std::string select_first_part_op_t = std::format(
+    "cub::detail::segmented_sort::LargeSegmentsSelectorT<{0}, {1}, {2}>",
+    offset_t, // 0
+    start_offset_iterator_t, // 1
+    end_offset_iterator_t); // 2
+
+  std::string select_second_part_op_t = std::format(
+    "cub::detail::segmented_sort::SmallSegmentsSelectorT<{0}, {1}, {2}>",
+    offset_t, // 0
+    start_offset_iterator_t, // 1
+    end_offset_iterator_t); // 2
+
+  constexpr std::string_view per_partition_offset_t = "cub::detail::three_way_partition::per_partition_offset_t";
+  constexpr std::string_view streaming_context_t =
+    "cub::detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>";
+
+  return std::format(
+    "cub::detail::three_way_partition::DeviceThreeWayPartitionKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
+    "{10}>",
+    chained_policy_t, // 0 (ChainedPolicyT)
+    input_it_t, // 1 (InputIteratorT)
+    first_out_it_t, // 2 (FirstOutputIteratorT)
+    second_out_it_t, // 3 (SecondOutputIteratorT)
+    unselected_out_it_t, // 4 (UnselectedOutputIteratorT)
+    num_selected_it_t, // 5 (NumSelectedIteratorT)
+    scan_tile_state_t, // 6 (ScanTileStateT)
+    select_first_part_op_t, // 7 (SelectFirstPartOp)
+    select_second_part_op_t, // 8 (SelectSecondPartOp)
+    per_partition_offset_t, // 9 (OffsetT)
+    streaming_context_t); // 10 (StreamingContextT)
+}
 
 struct partition_kernel_source
 {
@@ -297,6 +357,42 @@ struct partition_runtime_tuning_policy
     return op.template Invoke<partition_runtime_tuning_policy>(*this);
   }
 };
+
+std::string get_three_way_partition_policy_delay_constructor(const nlohmann::json& partition_policy)
+{
+  auto dc_json = partition_policy["ThreeWayPartitionPolicyDelayConstructor"]; // optional; not used further
+  auto delay_constructor_type = dc_json["type"].get<std::string>();
+
+  if (delay_constructor_type == "fixed_delay_constructor_t")
+  {
+    auto delay            = dc_json["delay"].get<int>();
+    auto l2_write_latency = dc_json["l2_write_latency"].get<int>();
+    return std::format("cub::detail::fixed_delay_constructor_t<{}, {}>", delay, l2_write_latency);
+  }
+  else if (delay_constructor_type == "no_delay_constructor_t")
+  {
+    auto l2_write_latency = dc_json["l2_write_latency"].get<int>();
+    return std::format("cub::detail::no_delay_constructor_t<{}>", l2_write_latency);
+  }
+  throw std::runtime_error("Invalid delay constructor type: " + delay_constructor_type);
+}
+
+std::string inject_delay_constructor_into_three_way_policy(
+  const std::string& three_way_partition_policy_str, const std::string& delay_constructor_type)
+{
+  // Insert before the final closing of the struct (right before the sequence "};")
+  const std::string needle = "};";
+  const auto pos           = three_way_partition_policy_str.rfind(needle);
+  if (pos == std::string::npos)
+  {
+    return three_way_partition_policy_str; // unexpected; return as-is
+  }
+  const std::string insertion =
+    std::format("\n  struct detail {{ using delay_constructor_t = {}; }}; \n", delay_constructor_type);
+  std::string out = three_way_partition_policy_str;
+  out.insert(pos, insertion);
+  return out;
+}
 } // namespace segmented_sort
 
 struct segmented_sort_keys_input_iterator_tag;
@@ -385,7 +481,7 @@ CUresult cccl_device_segmented_sort_build(
     const auto [end_offset_iterator_name, end_offset_iterator_src] =
       get_specialization<segmented_sort_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
-    const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
+    const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
     const std::string key_t   = cccl_type_enum_to_name(keys_in_it.value_type.type);
     const std::string value_t = keys_only ? "cub::NullType" : cccl_type_enum_to_name(values_in_it.value_type.type);
@@ -427,6 +523,7 @@ struct __align__({1}) storage_t {{
 
     static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 {0}
 {1}
 )XXXX";
@@ -447,11 +544,35 @@ struct __align__({1}) storage_t {{
     auto [medium_segment_policy, medium_segment_policy_str] =
       RuntimeSubWarpMergeSortAgentPolicy::from_json(runtime_policy, "MediumSegmentPolicy");
 
-    auto partitioning_threshold = static_cast<int>(runtime_policy["PartitioningThreshold"].get<int>());
+    auto partitioning_threshold = runtime_policy["PartitioningThreshold"].get<int>();
 
-    // agent_policy_t is to specify parameters like policy_hub does in dispatch_segmented_sort.cuh
+    static constexpr std::string_view partition_policy_wrapper_expr_tmpl =
+      R"XXXX(cub::detail::three_way_partition::MakeThreeWayPartitionPolicyWrapper(cub::detail::three_way_partition::policy_hub<{0}, {1}>::MaxPolicy::ActivePolicy{{}}))XXXX";
+    const auto partition_policy_wrapper_expr = std::format(
+      partition_policy_wrapper_expr_tmpl,
+      "::cuda::std::uint32_t", // This is local_segment_index_t defined in segmented_sort.cuh
+      "::cuda::std::int32_t"); // This is per_partition_offset_t defined in segmented_sort.cuh
+
+    nlohmann::json partition_policy = get_policy(partition_policy_wrapper_expr, ptx_query_tu_src, ptx_args);
+
+    using cub::detail::RuntimeThreeWayPartitionAgentPolicy;
+    auto [three_way_partition_policy, three_way_partition_policy_str] =
+      RuntimeThreeWayPartitionAgentPolicy::from_json(partition_policy, "ThreeWayPartitionPolicy");
+
+    const std::string three_way_partition_policy_delay_constructor =
+      segmented_sort::get_three_way_partition_policy_delay_constructor(partition_policy);
+
+    // Inject delay constructor alias into the ThreeWayPartitionPolicy struct string
+    const std::string injected_three_way_partition_policy_str =
+      segmented_sort::inject_delay_constructor_into_three_way_policy(
+        three_way_partition_policy_str, three_way_partition_policy_delay_constructor);
+
     constexpr std::string_view program_preamble_template = R"XXX(
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/three_way_partition.cuh>
+#include <thrust/iterator/counting_iterator.h> // used in three_way_partition kernel
+#include <thrust/iterator/reverse_iterator.h> // used in three_way_partition kernel
+#include <cub/detail/choose_offset.cuh> // used in three_way_partition kernel
 {0}
 {1}
 struct device_segmented_sort_policy {{
@@ -459,6 +580,11 @@ struct device_segmented_sort_policy {{
     {2}
     {3}
     {4}
+  }};
+}};
+struct device_three_way_partition_policy {{
+  struct ActivePolicy {{
+    {5}
   }};
 }};
 )XXX";
@@ -469,38 +595,28 @@ struct device_segmented_sort_policy {{
       dependent_definitions_src, // 1
       large_segment_policy_str, // 2
       small_segment_policy_str, // 3
-      medium_segment_policy_str); // 4
+      medium_segment_policy_str, // 4
+      injected_three_way_partition_policy_str); // 5
 
     std::string segmented_sort_fallback_kernel_name = segmented_sort::get_device_segmented_sort_fallback_kernel_name(
-      keys_in_iterator_name,
-      values_in_iterator_name,
-      start_offset_iterator_name,
-      end_offset_iterator_name,
-      key_t,
-      value_t,
-      sort_order);
+      start_offset_iterator_name, end_offset_iterator_name, key_t, value_t, sort_order);
 
     std::string segmented_sort_kernel_small_name = segmented_sort::get_device_segmented_sort_kernel_small_name(
-      keys_in_iterator_name,
-      values_in_iterator_name,
-      start_offset_iterator_name,
-      end_offset_iterator_name,
-      key_t,
-      value_t,
-      sort_order);
+      start_offset_iterator_name, end_offset_iterator_name, key_t, value_t, sort_order);
 
     std::string segmented_sort_kernel_large_name = segmented_sort::get_device_segmented_sort_kernel_large_name(
-      keys_in_iterator_name,
-      values_in_iterator_name,
-      start_offset_iterator_name,
-      end_offset_iterator_name,
-      key_t,
-      value_t,
-      sort_order);
+      start_offset_iterator_name, end_offset_iterator_name, key_t, value_t, sort_order);
+
+    std::string three_way_partition_init_kernel_name = segmented_sort::get_three_way_partition_init_kernel_name();
+
+    std::string three_way_partition_kernel_name =
+      segmented_sort::get_three_way_partition_kernel_name(start_offset_iterator_name, end_offset_iterator_name);
 
     std::string segmented_sort_fallback_kernel_lowered_name;
     std::string segmented_sort_kernel_small_lowered_name;
     std::string segmented_sort_kernel_large_lowered_name;
+    std::string three_way_partition_init_kernel_lowered_name;
+    std::string three_way_partition_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
@@ -540,10 +656,14 @@ struct device_segmented_sort_policy {{
         ->add_expression({segmented_sort_fallback_kernel_name})
         ->add_expression({segmented_sort_kernel_small_name})
         ->add_expression({segmented_sort_kernel_large_name})
+        ->add_expression({three_way_partition_init_kernel_name})
+        ->add_expression({three_way_partition_kernel_name})
         ->compile_program({args, num_args})
         ->get_name({segmented_sort_fallback_kernel_name, segmented_sort_fallback_kernel_lowered_name})
         ->get_name({segmented_sort_kernel_small_name, segmented_sort_kernel_small_lowered_name})
         ->get_name({segmented_sort_kernel_large_name, segmented_sort_kernel_large_lowered_name})
+        ->get_name({three_way_partition_init_kernel_name, three_way_partition_init_kernel_lowered_name})
+        ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name})
         ->link_program()
         ->add_link_list(ltoir_list)
         ->finalize_program();
@@ -557,13 +677,22 @@ struct device_segmented_sort_policy {{
       &build_ptr->segmented_sort_kernel_small, build_ptr->library, segmented_sort_kernel_small_lowered_name.c_str()));
     check(cuLibraryGetKernel(
       &build_ptr->segmented_sort_kernel_large, build_ptr->library, segmented_sort_kernel_large_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->three_way_partition_init_kernel,
+                             build_ptr->library,
+                             three_way_partition_init_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(
+      &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
 
-    build_ptr->cc         = cc;
-    build_ptr->cubin      = (void*) result.data.release();
-    build_ptr->cubin_size = result.size;
+    build_ptr->cc          = cc;
+    build_ptr->cubin       = (void*) result.data.release();
+    build_ptr->cubin_size  = result.size;
+    build_ptr->key_type    = keys_in_it.value_type;
+    build_ptr->offset_type = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
     // Use the runtime policy extracted via from_json
     build_ptr->runtime_policy = new segmented_sort::segmented_sort_runtime_tuning_policy{
       large_segment_policy, small_segment_policy, medium_segment_policy, partitioning_threshold};
+    build_ptr->partition_runtime_policy =
+      new segmented_sort::partition_runtime_tuning_policy{three_way_partition_policy};
     build_ptr->order = sort_order;
   }
   catch (const std::exception& exc)

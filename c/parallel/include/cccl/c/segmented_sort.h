@@ -29,6 +29,7 @@ typedef struct cccl_device_segmented_sort_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info key_type;
   cccl_type_info offset_type;
   CUkernel segmented_sort_fallback_kernel;
   CUkernel segmented_sort_kernel_small;
