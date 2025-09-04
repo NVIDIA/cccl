@@ -1548,7 +1548,7 @@ The API is subject to change without notice.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
-<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the result of the reduction</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array to store the result of the reduction</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Binary reduction operator</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Number of items to reduce</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><em>Any</em></a>) – Initial value for the reduction</p></li>
@@ -1604,7 +1604,7 @@ The API is subject to change without notice.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
-<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array (of size 1) that will store the result of the reduction</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array (of size 1) that will store the result of the reduction</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
 <li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
@@ -2605,7 +2605,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
-<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the result of the reduction for each segment</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array to store the result of the reduction for each segment</p></li>
 <li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the sequence of beginning offsets</p></li>
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the sequence of ending offsets</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Binary reduction operator</p></li>
@@ -2680,7 +2680,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
-<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array that will store the result of the reduction</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array that will store the result of the reduction</p></li>
 <li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing offsets to start of segments</p></li>
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing offsets to end of segments</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.13)"><em>Callable</em></a><em> | </em><em>cuda.cccl.parallel.experimental._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
@@ -3264,6 +3264,68 @@ by applying a transform operation before reducing the output:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="cuda.cccl.parallel.experimental.iterators.TransformOutputIterator">
+<span class="sig-prename descclassname"><span class="pre">cuda.cccl.parallel.experimental.iterators.</span></span><span class="sig-name descname"><span class="pre">TransformOutputIterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">it</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.cccl.parallel.experimental.iterators.TransformOutputIterator" title="Link to this definition">#</a></dt>
+<dd><p>Returns an Iterator representing a transformed sequence of output values.</p>
+<p>Similar to <a class="reference external" href="https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html">https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html</a></p>
+<p class="rubric">Example</p>
+<p>The code snippet below demonstrates the usage of <code class="docutils literal notranslate"><span class="pre">TransformOutputIterator</span></code>.
+Before the result of the reduction is written to the output iterator,
+it is transformed by the function <code class="docutils literal notranslate"><span class="pre">op</span></code>. Thus, the reduction operation
+computes the square root of the sum of of the input values.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copyright (c) 2025, NVIDIA CORPORATION &amp; AFFILIATES. ALL RIGHTS RESERVED.</span>
+<span class="c1">#</span>
+<span class="c1"># SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TransformOutputIterator example demonstrating reduction with transform output iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.cccl.parallel.experimental</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">parallel</span>
+
+<span class="c1"># Create input and output arrays</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="c1"># Define the transform operation to be applied</span>
+<span class="c1"># to the result of the sum reduction</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mf">0.5</span>
+
+
+<span class="c1"># Create transform output iterator</span>
+<span class="n">d_out_it</span> <span class="o">=</span> <span class="n">parallel</span><span class="o">.</span><span class="n">TransformOutputIterator</span><span class="p">(</span><span class="n">d_output</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">)</span>
+
+<span class="c1"># Apply a sum reduction into the transform output iterator</span>
+<span class="n">parallel</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_out_it</span><span class="p">,</span>
+    <span class="n">parallel</span><span class="o">.</span><span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">cp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">d_output</span><span class="p">,</span> <span class="n">cp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">d_input</span><span class="p">)),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>it</strong> – The iterator object to be transformed</p></li>
+<li><p><strong>op</strong> – The transform operation</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">TransformOutputIterator</span></code> object to transform the items in <code class="docutils literal notranslate"><span class="pre">it</span></code> using <code class="docutils literal notranslate"><span class="pre">op</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="cuda.cccl.parallel.experimental.iterators.ZipIterator">
 <span class="sig-prename descclassname"><span class="pre">cuda.cccl.parallel.experimental.iterators.</span></span><span class="sig-name descname"><span class="pre">ZipIterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">iterators</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.cccl.parallel.experimental.iterators.ZipIterator" title="Link to this definition">#</a></dt>
 <dd><p>Returns an Iterator representing a zipped sequence of values from N iterators.</p>
@@ -3526,6 +3588,7 @@ the smallest and the largest absolute values:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.ReverseInputIterator"><code class="docutils literal notranslate"><span class="pre">ReverseInputIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.ReverseOutputIterator"><code class="docutils literal notranslate"><span class="pre">ReverseOutputIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.TransformIterator"><code class="docutils literal notranslate"><span class="pre">TransformIterator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.TransformOutputIterator"><code class="docutils literal notranslate"><span class="pre">TransformOutputIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.ZipIterator"><code class="docutils literal notranslate"><span class="pre">ZipIterator()</span></code></a></li>
 </ul>
 </li>
