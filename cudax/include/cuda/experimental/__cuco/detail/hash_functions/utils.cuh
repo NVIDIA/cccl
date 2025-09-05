@@ -30,6 +30,13 @@
 namespace cuda::experimental::cuco::__detail
 {
 
+//! @brief Loads a chunk of type _Tp from a byte pointer at a given index, handling alignment
+//!
+//! @tparam _Tp The type of the chunk to load (must be 4 or 8 bytes)
+//! @tparam _Extent The index type
+//! @param __bytes Pointer to the byte array
+//! @param __index The index of the chunk to load
+//! @return The loaded chunk of type _Tp
 template <typename _Tp, typename _Extent>
 [[nodiscard]] _CCCL_API constexpr _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
 {
@@ -106,6 +113,7 @@ struct _Byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, fa
   //! The number of `_ChunkSize` chunks
   static constexpr size_t __num_chunks = _KeySize / _ChunkSize;
 
+  //! The number of `_BlockSize` blocks in a `_ChunkSize` chunk
   static constexpr size_t __blocks_per_chunk = _ChunkSize / _BlockSize;
 
   //! The number of `_BlockSize` blocks in a `_ChunkSize` chunk

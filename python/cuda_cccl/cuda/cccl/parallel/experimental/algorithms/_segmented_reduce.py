@@ -32,7 +32,7 @@ class _SegmentedReduce:
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike,
+        d_out: DeviceArrayLike | IteratorBase,
         start_offsets_in: DeviceArrayLike | IteratorBase,
         end_offsets_in: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
@@ -134,14 +134,16 @@ def _to_key(d_in: DeviceArrayLike | IteratorBase):
 
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     d_in_key = _to_key(d_in)
-    d_out_key = protocols.get_dtype(d_out)
+    d_out_key = (
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+    )
     start_offsets_in_key = _to_key(start_offsets_in)
     end_offsets_in_key = _to_key(end_offsets_in)
 
@@ -166,7 +168,7 @@ def make_cache_key(
 @cache_with_key(make_cache_key)
 def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
@@ -175,13 +177,12 @@ def make_segmented_reduce(
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``segmented_reduce`` is used to compute the minimum value of a sequence of integers.
+        Below, ``make_segmented_reduce`` is used to create a segmented reduction object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_segmented_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/segmented/segmented_reduce_object.py
             :language: python
-            :dedent:
-            :start-after: example-begin segmented-reduce-min
-            :end-before: example-end segmented-reduce-min
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -199,7 +200,7 @@ def make_segmented_reduce(
 
 def segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
+    d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
@@ -211,6 +212,14 @@ def segmented_reduce(
     Performs device-wide segmented reduction.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``segmented_reduce`` is used to compute the minimum value of segments in a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/segmented/segmented_reduce_basic.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items

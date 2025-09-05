@@ -378,11 +378,6 @@ public:
 
     state.graph_stage++;
 
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_stage();
-    }
     // fprintf(stderr, "Starting stage %ld : previous graph %p new graph %p\n", state.graph_stage, prev_graph,
     //         new_graph);
   }
