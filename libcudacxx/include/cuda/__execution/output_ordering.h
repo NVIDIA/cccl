@@ -43,9 +43,9 @@ enum class __output_ordering_t
 };
 
 template <__output_ordering_t _Guarantee>
-struct _CCCL_DECLSPEC_EMPTY_BASES __output_order_holder_t
+struct _CCCL_DECLSPEC_EMPTY_BASES __output_ordering_holder_t
     : __requirement
-    , integral_constant<__output_order_t, _Guarantee>
+    , ::cuda::std::integral_constant<__output_ordering_t, _Guarantee>
 {
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_output_ordering_t&) const noexcept
     -> __output_ordering_holder_t<_Guarantee>
