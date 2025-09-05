@@ -262,11 +262,9 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
   * Pull request (PR) runs typically spawn ~250 jobs.
   * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
-
     * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.sh` for dependency information.
     * A smaller subset of jobs is enough to validate the change (e.g. infra changes, targeted fixes).
   * Important rules:
-
     * PR merges are blocked while an override matrix is active.
     * The override must be reset to empty (not removed) before merging.
     * Only add overrides when starting a new draft that qualifies; never remove one without being asked.
