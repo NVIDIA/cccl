@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /******************************************************************************
- * Simple example of cub::DeviceTopK::TopKMinKeys().
+ * Simple example of cub::DeviceTopK::MinKeys().
  *
  * Find the top-k smallest float keys paired with a corresponding array of int values.
  *
@@ -96,11 +96,10 @@ int main(int argc, char** argv)
   // Initialize device
   CubDebugExit(args.DeviceInit());
 
-  printf("cub::DeviceTopK::TopKPairs() find %d largest items from %d items (%d-byte keys %d-byte values)\n",
+  printf("cub::DeviceTopK::MinKeys() find %d smallest items from %d items (%d-byte keys)\n",
          k,
          num_items,
-         int(sizeof(float)),
-         int(sizeof(int)));
+         int(sizeof(float)));
   fflush(stdout);
 
   // Allocate host arrays
@@ -126,14 +125,14 @@ int main(int argc, char** argv)
   size_t temp_storage_bytes = 0;
   void* d_temp_storage      = nullptr;
 
-  CubDebugExit(DeviceTopK::TopKMinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k));
+  CubDebugExit(DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
   // Initialize device arrays
   CubDebugExit(cudaMemcpy(d_keys_in, h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
 
   // Run
-  CubDebugExit(DeviceTopK::TopKMinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k));
+  CubDebugExit(DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k));
 
   // Check for correctness (and display results, if specified)
   SortUnorderedRes(h_res_keys, d_keys_out, k);

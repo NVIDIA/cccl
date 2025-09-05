@@ -20,9 +20,8 @@
 #include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::TopKKeys, topk_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::TopKMinKeys, topk_min_keys);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MaxKeys, topk_keys);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MinKeys, topk_min_keys);
 
 using key_types =
   c2h::type_list<cuda::std::uint8_t,
@@ -40,8 +39,7 @@ using key_types =
 // clang-format on
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
-
-C2H_TEST("DeviceTopK::TopKKeys: Basic testing", "[keys][topk][device]", key_types)
+C2H_TEST("DeviceTopK::MaxKeys: Basic testing", "[keys][topk][device]", key_types)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = cuda::std::uint32_t;
@@ -104,7 +102,7 @@ C2H_TEST("DeviceTopK::TopKKeys: Basic testing", "[keys][topk][device]", key_type
   REQUIRE(expected_results == device_results);
 }
 
-C2H_TEST("DeviceTopK::TopKKeys works with iterators", "[keys][topk][device]", key_types)
+C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", key_types)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = cuda::std::uint32_t;
@@ -156,7 +154,7 @@ C2H_TEST("DeviceTopK::TopKKeys works with iterators", "[keys][topk][device]", ke
   }
 }
 
-C2H_TEST("DeviceTopK::TopKKey works for large num_items", "[keys][topk][device]", num_items_types)
+C2H_TEST("DeviceTopK::MaxKeys: Test for large num_items", "[keys][topk][device]", num_items_types)
 {
   using key_t       = cuda::std::uint32_t;
   using num_items_t = c2h::get<0, TestType>;
@@ -215,7 +213,7 @@ C2H_TEST("DeviceTopK::TopKKey works for large num_items", "[keys][topk][device]"
   }
 }
 
-C2H_TEST("DeviceTopK::TopKKeys works for different data types for num_items and k",
+C2H_TEST("DeviceTopK::MaxKeys:  Test for different data types for num_items and k",
          "[keys][topk][device]",
          k_items_types)
 {

@@ -17,8 +17,8 @@
 #include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::TopKPairs, topk_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::TopKMinPairs, topk_min_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MaxPairs, topk_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MinPairs, topk_min_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, stable_sort_keys);
 
 template <typename key_t, typename value_t, typename num_items_t>
@@ -48,13 +48,13 @@ bool check_results(
   num_items_t k,
   bool is_descending)
 {
-  // Since the results of API TopKMinPairs() and TopKPairs() are not-sorted
+  // Since the results of API MinPairs() and MaxPairs() are not-sorted
   // We need to sort the results first.
   sort_keys_and_values(keys_out, values_out, k, is_descending);
   c2h::host_vector<key_t> h_keys_out(keys_out);
   c2h::host_vector<value_t> h_values_out(values_out);
 
-  // i for results from gpu (TopKMinPairs() and TopKPairs()); j for reference results
+  // i for results from gpu (MinPairs() and MaxPairs()); j for reference results
   num_items_t i = 0, j = 0;
   bool res = true;
   while (i < k && j < num_items)
@@ -68,7 +68,7 @@ bool check_results(
       }
       else if (is_descending ? h_values_out[i] < h_values_in[j] : h_values_out[i] > h_values_in[j])
       {
-        // Note: The results returned by the API functions TopKMinPairs() and TopKPairs() are not stable.
+        // Note: The results returned by the API functions MinPairs() and MaxPairs() are not stable.
         // If there are multiple items whose keys are equal to the key of the k-th element, any of those items may
         // appear in the results. Therefore, when the value does not match, we increment 'j' to continue searching for a
         // matching value with the same key.
@@ -143,7 +143,7 @@ using value_types     = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
-C2H_TEST("DeviceTopK::TopKPairs: Basic testing", "[pairs][topk][device]", key_types, value_types)
+C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_types, value_types)
 {
   using key_t       = c2h::get<0, TestType>;
   using value_t     = c2h::get<1, TestType>;
@@ -213,7 +213,7 @@ C2H_TEST("DeviceTopK::TopKPairs: Basic testing", "[pairs][topk][device]", key_ty
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::TopKPairs: Works with iterators", "[pairs][topk][device]", key_types, value_types, num_items_types)
+C2H_TEST("DeviceTopK::MaxPairs: Works with iterators", "[pairs][topk][device]", key_types, value_types, num_items_types)
 {
   using key_t       = c2h::get<0, TestType>;
   using value_t     = c2h::get<1, TestType>;
@@ -243,7 +243,7 @@ C2H_TEST("DeviceTopK::TopKPairs: Works with iterators", "[pairs][topk][device]",
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::TopKPairs: Test for large num_items", "[pairs][topk][device]", num_items_types)
+C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device]", num_items_types)
 {
   using key_t       = uint32_t;
   using value_t     = uint32_t;
@@ -273,7 +273,7 @@ C2H_TEST("DeviceTopK::TopKPairs: Test for large num_items", "[pairs][topk][devic
   REQUIRE(res == true);
 }
 
-C2H_TEST("DeviceTopK::TopKPairs: Test for different data types for num_items and k",
+C2H_TEST("DeviceTopK::MaxPairs: Test for different data types for num_items and k",
          "[pairs][topk][device]",
          k_items_types)
 {

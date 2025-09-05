@@ -113,7 +113,7 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t TopKPairs(
+  CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_keys_in,
@@ -124,7 +124,7 @@ struct DeviceTopK
     NumOutItemsT k,
     EnvT env = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKPairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
     static constexpr bool select_min = false;
     using offset_t                   = detail::choose_offset_t<NumItemsT>;
@@ -210,7 +210,7 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t TopKMinPairs(
+  CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_keys_in,
@@ -221,7 +221,7 @@ struct DeviceTopK
     NumOutItemsT k,
     EnvT env = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKMinPairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
     static constexpr bool select_min = true;
     using offset_t                   = detail::choose_offset_t<NumItemsT>;
@@ -292,7 +292,7 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t TopKKeys(
+  CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_keys_in,
@@ -301,7 +301,7 @@ struct DeviceTopK
     NumOutItemsT k,
     EnvT env = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKKeys");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
     static constexpr bool select_min = false;
     using offset_t                   = detail::choose_offset_t<NumItemsT>;
@@ -367,7 +367,7 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t TopKMinKeys(
+  CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_keys_in,
@@ -376,7 +376,7 @@ struct DeviceTopK
     NumOutItemsT k,
     EnvT env = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKMinKeys");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
     static constexpr bool select_min = true;
     using offset_t                   = detail::choose_offset_t<NumItemsT>;

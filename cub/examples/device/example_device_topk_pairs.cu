@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /******************************************************************************
- * Simple example of cub::DeviceTopK::TopKMinPairs().
+ * Simple example of cub::DeviceTopK::MinPairs().
  *
  * Find the top-k smallest float keys paired with a corresponding array of int values.
  *
@@ -146,7 +146,7 @@ int main(int argc, char** argv)
   // Initialize device
   CubDebugExit(args.DeviceInit());
 
-  printf("cub::DeviceTopK::TopKMinPairs() find %d largest items from %d items (%d-byte keys %d-byte values)\n",
+  printf("cub::DeviceTopK::MinPairs() find %d smallest items from %d items (%d-byte keys %d-byte values)\n",
          k,
          num_items,
          int(sizeof(float)),
@@ -184,7 +184,7 @@ int main(int argc, char** argv)
   size_t temp_storage_bytes = 0;
   void* d_temp_storage      = nullptr;
 
-  CubDebugExit(DeviceTopK::TopKMinPairs(
+  CubDebugExit(DeviceTopK::MinPairs(
     d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
@@ -193,7 +193,7 @@ int main(int argc, char** argv)
   CubDebugExit(cudaMemcpy(d_values_in, h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice));
 
   // Run
-  CubDebugExit(DeviceTopK::TopKMinPairs(
+  CubDebugExit(DeviceTopK::MinPairs(
     d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k));
 
   // Check for correctness (and display results, if specified)
