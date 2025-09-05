@@ -17,8 +17,8 @@
  */
 
 #include <thrust/execution_policy.h>
-#include <thrust/generate.h>
 #include <thrust/random.h>
+#include <thrust/tabulate.h>
 #include <thrust/transform.h>
 
 #include <cuda/experimental/container.cuh>
@@ -40,8 +40,9 @@ struct generator
       : gen{seed}
   {}
 
-  __host__ __device__ float operator()() noexcept
+  __host__ __device__ float operator()(cuda::std::size_t idx) noexcept
   {
+    gen.discard(idx);
     return dist(gen);
   }
 };
@@ -54,26 +55,26 @@ int main()
   // The execution policy we want to use to run all work on the same stream
   auto policy = thrust::cuda::par_nosync.on(stream.get());
 
-  // An environment we use to pass all necessary information to the containers
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cuda::device_ref{0}}, stream};
+  cudax::device_memory_resource device_resource{cuda::device_ref{0}};
 
   // Allocate the two inputs and output, but do not zero initialize via `cudax::no_init`
-  cudax::async_device_buffer<float> A{env, numElements, cudax::no_init};
-  cudax::async_device_buffer<float> B{env, numElements, cudax::no_init};
-  cudax::async_device_buffer<float> C{env, numElements, cudax::no_init};
+  cudax::async_device_buffer<float> A{stream, device_resource, numElements, cudax::no_init};
+  cudax::async_device_buffer<float> B{stream, device_resource, numElements, cudax::no_init};
+  cudax::async_device_buffer<float> C{stream, device_resource, numElements, cudax::no_init};
 
   // Fill both vectors on stream using a random number generator
-  thrust::generate(policy, A.begin(), A.end(), generator{42});
-  thrust::generate(policy, B.begin(), B.end(), generator{1337});
+  thrust::tabulate(policy, A.begin(), A.end(), generator{42});
+  thrust::tabulate(policy, B.begin(), B.end(), generator{1337});
 
   // Add the vectors together
   thrust::transform(policy, A.begin(), A.end(), B.begin(), C.begin(), cuda::std::plus<>{});
 
+  cudax::pinned_memory_resource pinned_resource{};
+
   // Verify that the result vector is correct, by copying it to host
-  cudax::env_t<cuda::mr::host_accessible> host_env{cudax::pinned_memory_resource{}, stream};
-  cudax::async_host_buffer<float> h_A{host_env, A};
-  cudax::async_host_buffer<float> h_B{host_env, B};
-  cudax::async_host_buffer<float> h_C{host_env, C};
+  cudax::async_host_buffer<float> h_A{stream, pinned_resource, A};
+  cudax::async_host_buffer<float> h_B{stream, pinned_resource, B};
+  cudax::async_host_buffer<float> h_C{stream, pinned_resource, C};
 
   // Do not forget to sync afterwards
   stream.sync();

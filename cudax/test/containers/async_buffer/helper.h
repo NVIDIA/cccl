@@ -91,14 +91,18 @@ void assign_value(T& value, const T& input)
 }
 
 // Helper to compare a range with all equal values
+template <class T>
 struct equal_to_value
 {
-  int value_;
+  T value_;
 
-  template <class T>
-  __host__ __device__ bool operator()(const T lhs, const int) const noexcept
+  explicit equal_to_value(T value) noexcept
+      : value_(value)
+  {}
+
+  __host__ __device__ bool operator()(const T lhs, const T) const noexcept
   {
-    return lhs == static_cast<T>(value_);
+    return lhs == value_;
   }
 };
 
@@ -109,7 +113,10 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
   {
     buf.stream().sync();
     return buf.size() == size
-        && cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), equal_to_value{value});
+        && cuda::std::equal(buf.begin(),
+                            buf.end(),
+                            cuda::std::begin(host_data),
+                            equal_to_value{static_cast<typename Buffer::value_type>(value)});
   }
   else
   {
@@ -119,7 +126,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
                          buf.begin(),
                          buf.end(),
                          cuda::std::begin(device_data),
-                         equal_to_value{value});
+                         equal_to_value{static_cast<typename Buffer::value_type>(value)});
   }
 }
 
@@ -153,11 +160,10 @@ struct dev0_device_memory_resource : cudax::device_memory_resource
 template <class>
 struct extract_properties;
 
-template <class... Properties>
-struct extract_properties<cuda::std::tuple<Properties...>>
+template <class T, class... Properties>
+struct extract_properties<cuda::std::tuple<T, Properties...>>
 {
-  using env          = cudax::env_t<other_property, Properties...>;
-  using async_buffer = cudax::async_buffer<int, Properties...>;
+  using async_buffer = cudax::async_buffer<T, Properties...>;
   using resource     = cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
                                             cudax::pinned_memory_resource,
@@ -165,10 +171,10 @@ struct extract_properties<cuda::std::tuple<Properties...>>
                                             void,
 #endif
                                             dev0_device_memory_resource>;
-  using iterator       = cudax::heterogeneous_iterator<int, Properties...>;
-  using const_iterator = cudax::heterogeneous_iterator<const int, Properties...>;
+  using iterator       = cudax::heterogeneous_iterator<T, Properties...>;
+  using const_iterator = cudax::heterogeneous_iterator<const T, Properties...>;
 
-  using matching_vector   = cudax::async_buffer<int, other_property, Properties...>;
+  using matching_vector   = cudax::async_buffer<T, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 
