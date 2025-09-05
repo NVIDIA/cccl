@@ -114,7 +114,7 @@ fi
 
 if [[ -n "${CTEST_TARGETS}" ]]; then
   for t in ${CTEST_TARGETS}; do
-    if ! (set -x; ctest --test-dir "${BUILD_DIR}" -R "$t" -V --output-on-failure); then
+    if ! (set -x; SCCACHE_NO_DIST_COMPILE=1 ctest --test-dir "${BUILD_DIR}" -R "$t" -V --output-on-failure); then
       echo "::endgroup::"
       echo "🔴🔎 CTest failed for target $t ($(elapsed_time))"
       exit 1
