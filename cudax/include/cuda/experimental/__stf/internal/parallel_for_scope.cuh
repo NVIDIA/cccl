@@ -986,7 +986,7 @@ public:
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<decltype(args)>(untyped_args);
-      
+
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
       Fun& f                   = ::std::get<2>(*p);
@@ -1024,18 +1024,6 @@ public:
       cudaHostNodeParams params;
       params.userData = args;
       params.fn       = host_func;
-
-      // If this is a CUDA graph callback, we want to retain this argument until
-      // the graph can be destroyed. It is possible that we launch the same graph
-      // multiple times, so we cannot simply delete the argument in the callback
-      // unless we know it is not going to be launched multiple times (as this is
-      // the case for the stream backend).
-      ::std::shared_ptr<void> void_wrapper{args, [](void* p) {
-                                             // custom deleter: cast back and delete
-                                             delete static_cast<args_t*>(p);
-                                           }};
-
-      ctx.callback_retain_arguments(mv(void_wrapper));
 
       // Put this host node into the child graph that implements the graph_task<>
       cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));

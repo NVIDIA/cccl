@@ -183,10 +183,7 @@ public:
         return deps.instance(t);
       }
     }();
-
-    using wrapper_t = ::std::pair<Fun, decltype(payload)>;
-
-    auto* raw_callback_arg = new wrapper_t{::std::forward<Fun>(f), mv(payload)};
+    auto* wrapper = new ::std::pair<Fun, decltype(payload)>{::std::forward<Fun>(f), mv(payload)};
 
     // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
     // For stream contexts, delete immediately in callback (better memory efficiency)
@@ -226,28 +223,15 @@ public:
 
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
-      cudaHostNodeParams params = {.fn = callback, .userData = raw_callback_arg};
+      cudaHostNodeParams params = {.fn = callback, .userData = wrapper};
 
       // Put this host node into the child graph that implements the graph_task<>
       auto lock = t.lock_ctx_graph();
-
-      // If this is a CUDA graph callback, we want to retain this argument until
-      // the graph can be destroyed. It is possible that we launch the same graph
-      // multiple times, so we cannot simply delete the argument in the callback
-      // unless we know it is not going to be launched multiple times (as this is
-      // the case for the stream backend).
-      ::std::shared_ptr<void> void_wrapper{raw_callback_arg, [](void* p) {
-                                             // custom deleter: cast back and delete
-                                             delete static_cast<wrapper_t*>(p);
-                                           }};
-
-      ctx.callback_retain_arguments(mv(void_wrapper));
-
       cuda_safe_call(cudaGraphAddHostNode(&t.get_node(), t.get_ctx_graph(), nullptr, 0, &params));
     }
     else
     {
-      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, raw_callback_arg));
+      cuda_safe_call(cudaLaunchHostFunc(t.get_stream(), callback, wrapper));
     }
   }
 
