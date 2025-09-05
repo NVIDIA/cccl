@@ -305,7 +305,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
+    SCCACHE_NO_DIST_COMPILE=1 run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
     popd > /dev/null
 
     print_test_time_summary ${ctest_log}

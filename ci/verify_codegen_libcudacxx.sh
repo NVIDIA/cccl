@@ -23,6 +23,6 @@ popd > /dev/null
 
 pushd .. > /dev/null
 GROUP_NAME="🚀  Test Libcudacxx Codegen"
-run_command "$GROUP_NAME" ctest --preset libcudacxx-codegen
+SCCACHE_NO_DIST_COMPILE=1 run_command "$GROUP_NAME" ctest --preset libcudacxx-codegen
 status=$?
 popd > /dev/null
