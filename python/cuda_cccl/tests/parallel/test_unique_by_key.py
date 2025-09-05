@@ -351,7 +351,6 @@ def test_unique_by_key_with_stream(cuda_stream):
 
 
 def test_unique_by_key_well_known_equal_to():
-    """Test unique by key with well-known EQUAL_TO operation."""
     dtype = np.int32
 
     # Create input keys and values: keys=[1,1,1,2,2,3] values=[10,20,30,40,50,60]
@@ -376,5 +375,6 @@ def test_unique_by_key_well_known_equal_to():
     assert d_num_selected.get()[0] == 3  # three unique keys
     expected_keys = [1, 2, 3]
     expected_values = [10, 40, 60]  # first occurrence of each key
+
     np.testing.assert_equal(d_out_keys.get()[:3], expected_keys)
     np.testing.assert_equal(d_out_values.get()[:3], expected_values)
