@@ -286,25 +286,18 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             policy_t,
             decltype(d_in),
             output_it_t,
-            offset_t,
             reduction_op_t,
             init_t,
             deterministic_accum_t,
             transform_t>),
         reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceKernel<
-            policy_t,
-            decltype(d_in),
-            offset_t,
-            reduction_op_t,
-            deterministic_accum_t,
-            transform_t>),
+          cub::detail::reduce::
+            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
         reinterpret_cast<void*>(
           cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
             policy_t,
             accumulator_t*,
             output_it_t,
-            int, // always used with int offset
             reduction_op_t,
             init_t,
             deterministic_accum_t,
@@ -417,25 +410,18 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             policy_t,
             decltype(d_in),
             output_it_t,
-            offset_t,
             reduction_op_t,
             init_t,
             deterministic_accum_t,
             transform_t>),
         reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceKernel<
-            policy_t,
-            decltype(d_in),
-            offset_t,
-            reduction_op_t,
-            deterministic_accum_t,
-            transform_t>),
+          cub::detail::reduce::
+            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
         reinterpret_cast<void*>(
           cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
             policy_t,
             accumulator_t*,
             output_it_t,
-            int, // always used with int offset
             reduction_op_t,
             init_t,
             deterministic_accum_t,
