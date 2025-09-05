@@ -58,10 +58,10 @@ __global__ void hash_bench_kernel(Hasher hash, size_t n, OutputIt out, bool mate
 }
 
 // benchmark evaluating performance of various hash functions
-template <typename StrategyTag, typename Key>
-void hash_eval(nvbench::state& state, nvbench::type_list<StrategyTag, Key>)
+template <typename HasherTag, typename Key>
+void hash_eval(nvbench::state& state, nvbench::type_list<HasherTag, Key>)
 {
-  using Hash = typename StrategyTag::template fn<Key>;
+  using Hash = typename HasherTag::template fn<Key>;
 
   bool const materialize_result = false;
   constexpr auto block_size     = 128;
@@ -82,13 +82,50 @@ void hash_eval(nvbench::state& state, nvbench::type_list<StrategyTag, Key>)
 struct xxhash_32_tag
 {
   template <typename Key>
-  using fn = cudax::cuco::Hash<Key, cudax::cuco::HashStrategy::XXHash_32>;
+  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::xxhash_32>;
 };
+
+struct xxhash_64_tag
+{
+  template <typename Key>
+  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::xxhash_64>;
+};
+
+struct murmurhash3_32_tag
+{
+  template <typename Key>
+  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::murmurhash3_32>;
+};
+
+#if _CCCL_HAS_INT128()
+
+struct murmurhash3_x86_128_tag
+{
+  template <typename Key>
+  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::murmurhash3_x86_128>;
+};
+
+struct murmurhash3_x64_128_tag
+{
+  template <typename Key>
+  using fn = cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::murmurhash3_x64_128>;
+};
+
+#endif // _CCCL_HAS_INT128()
 
 NVBENCH_BENCH_TYPES(
   hash_eval,
-  NVBENCH_TYPE_AXES(nvbench::type_list<xxhash_32_tag>,
-                    nvbench::type_list<cuda::std::int32_t, large_key<4>, large_key<8>, large_key<16>, large_key<32>>))
+  NVBENCH_TYPE_AXES(
+    nvbench::type_list<xxhash_32_tag,
+                       xxhash_64_tag,
+                       murmurhash3_32_tag
+#if _CCCL_HAS_INT128()
+                       ,
+                       murmurhash3_x86_128_tag,
+                       murmurhash3_x64_128_tag
+#endif // _CCCL_HAS_INT128()
+                       >,
+    nvbench::type_list<cuda::std::int32_t, large_key<4>, large_key<8>, large_key<16>, large_key<32>>))
   .set_name("hash_function_eval")
   .set_type_axes_names({"Hash", "Key"})
   .add_int64_power_of_two_axis("NumInputs", nvbench::range(18, 26, 4));
