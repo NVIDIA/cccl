@@ -25,7 +25,7 @@ include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
 cccl_build_compiler_targets()
 
 # Build and install C++ library first
-set(CCCL_ENABLE_C ON)
+set(CCCL_ENABLE_C_PARALLEL ON)
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 add_subdirectory(${_cccl_root} _parent_cccl)
 
