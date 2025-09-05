@@ -34,6 +34,8 @@ Classes
 * :doc:`cuda::experimental::stf::cached_block_allocator_fifo <classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo>`
 * :doc:`cuda::experimental::stf::constant_logical_data <classcuda_1_1experimental_1_1stf_1_1constant__logical__data>`
 * :doc:`cuda::experimental::stf::context <classcuda_1_1experimental_1_1stf_1_1context>`
+* :doc:`cuda::experimental::stf::ctx_resource <classcuda_1_1experimental_1_1stf_1_1ctx__resource>`
+* :doc:`cuda::experimental::stf::ctx_resource_set <classcuda_1_1experimental_1_1stf_1_1ctx__resource__set>`
 * :doc:`cuda::experimental::stf::cuda_exception <classcuda_1_1experimental_1_1stf_1_1cuda__exception>`
 * :doc:`cuda::experimental::stf::cyclic_partition <classcuda_1_1experimental_1_1stf_1_1cyclic__partition>`
 * :doc:`cuda::experimental::stf::cyclic_shape <classcuda_1_1experimental_1_1stf_1_1cyclic__shape>`
@@ -97,7 +99,6 @@ Classes
 * :doc:`cuda::experimental::stf::slice_reduction_op_sum_impl <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl>`
 * :doc:`cuda::experimental::stf::slice_stream_interface <classcuda_1_1experimental_1_1stf_1_1slice__stream__interface>`
 * :doc:`cuda::experimental::stf::small_vector <classcuda_1_1experimental_1_1stf_1_1small__vector>`
-* :doc:`cuda::experimental::stf::stopwatch <classcuda_1_1experimental_1_1stf_1_1stopwatch>`
 * :doc:`cuda::experimental::stf::stream_adapter <classcuda_1_1experimental_1_1stf_1_1stream__adapter>`
 * :doc:`cuda::experimental::stf::stream_and_event <classcuda_1_1experimental_1_1stf_1_1stream__and__event>`
 * :doc:`cuda::experimental::stf::stream_async_op <classcuda_1_1experimental_1_1stf_1_1stream__async__op>`
@@ -349,6 +350,8 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo
    classcuda_1_1experimental_1_1stf_1_1constant__logical__data
    classcuda_1_1experimental_1_1stf_1_1context
+   classcuda_1_1experimental_1_1stf_1_1ctx__resource
+   classcuda_1_1experimental_1_1stf_1_1ctx__resource__set
    classcuda_1_1experimental_1_1stf_1_1cuda__exception
    classcuda_1_1experimental_1_1stf_1_1cyclic__partition
    classcuda_1_1experimental_1_1stf_1_1cyclic__shape
@@ -416,7 +419,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl
    classcuda_1_1experimental_1_1stf_1_1slice__stream__interface
    classcuda_1_1experimental_1_1stf_1_1small__vector
-   classcuda_1_1experimental_1_1stf_1_1stopwatch
    classcuda_1_1experimental_1_1stf_1_1stream__adapter
    classcuda_1_1experimental_1_1stf_1_1stream__and__event
    classcuda_1_1experimental_1_1stf_1_1stream__async__op
