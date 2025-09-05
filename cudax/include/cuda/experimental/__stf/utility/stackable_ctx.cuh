@@ -33,7 +33,7 @@
 #include "cuda/experimental/__stf/utility/source_location.cuh"
 #include "cuda/experimental/stf.cuh"
 
-//! @brief Stackable Context Design Overview
+//! \brief Stackable Context Design Overview
 //!
 //! The stackable context allows nesting CUDA STF contexts to create hierarchical task graphs.
 //! This enables complex workflows where tasks can be organized in a tree-like structure.
@@ -1468,7 +1468,7 @@ class stackable_logical_data
     // stackable_logical_data::impl::~impl
     ~impl()
     {
-      // Maybe we moved it for example
+      // Nothing to clean up if moved or default-constructed
       if (!impl_state)
       {
         return;
@@ -1496,7 +1496,8 @@ class stackable_logical_data
       {
         if (c < int(impl_state->data_nodes.size()) && impl_state->data_nodes[c].has_value())
         {
-          // Save the shared_ptr into the children contexts using the data
+          // Transfer shared_ptr ownership to child context's retained_data vector.
+          // The child context will keep impl_state alive until it's popped.
           sctx.get_node(c).retain_data(impl_state);
         }
       }
@@ -1987,7 +1988,7 @@ UNITTEST("stackable fence")
   };
   ctx.fence();
   ctx.task(lA.read())->*[](cudaStream_t stream, auto a) {
-    reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 44);
+    reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 42);
   };
   ctx.pop();
   ctx.finalize();
@@ -2002,7 +2003,9 @@ UNITTEST("stackable host_launch")
   ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
     reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42);
   };
-  // ctx.host_launch(lA.read())->*[](auto a){ _CCCL_ASSERT(a(0) == 42, "invalid value"); };
+  ctx.host_launch(lA.read())->*[](auto a) {
+    _CCCL_ASSERT(a(0) == 42, "invalid value");
+  };
   ctx.pop();
   ctx.finalize();
 };
