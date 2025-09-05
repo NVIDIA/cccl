@@ -703,6 +703,15 @@ public:
     };
   }
 
+  //! Add a resource to be managed by this context
+  void add_resource(::std::shared_ptr<ctx_resource> resource)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[&resource](auto& self) {
+      self.add_ctx_resource(mv(resource));
+    };
+  }
+
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");

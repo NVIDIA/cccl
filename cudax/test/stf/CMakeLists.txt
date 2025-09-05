@@ -1,5 +1,7 @@
 set(stf_test_sources
   allocators/buddy_allocator.cu
+  context/context_resource_test.cu
+  context/simple_context_resource_test.cu
   cpp/concurrency_test.cu
   cpp/redundant_data.cu
   cpp/redundant_data_different_modes.cu
