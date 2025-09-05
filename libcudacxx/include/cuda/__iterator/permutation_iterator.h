@@ -47,9 +47,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! This iterator takes two arguments:
 //!
-//!   - an iterator to the range @c V on which the "permutation" will be applied
+//!   - an iterator to the range @c V on which the "permutation" will be applied, referred to as @c iter below
 //!   - an iterator to a range of indices defining the reindexing scheme that determines how the elements of @c V will
-//!   be permuted.
+//!   be permuted, referred to as @c index below
 //!
 //! Note that @c permutation_iterator is not limited to strict permutations of the given range @c V. The distance
 //! between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range @c V,
@@ -153,33 +153,37 @@ public:
       , __index_(__index)
   {}
 
-  //! @brief Returns a const reference to the stored iterator we are indexing from
+  //! @brief Returns a const reference to the stored base iterator @c iter
   [[nodiscard]] _CCCL_API constexpr const _Iter& base() const& noexcept
   {
     return __iter_;
   }
 
-  //! @brief Extracts the stored iterator we are indexing from
+  //! @brief Extracts the stored base iterator @c iter
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>)
   {
     return ::cuda::std::move(__iter_);
   }
 
-  //! @brief Returns a const reference to the index iterator
+  //! @cond
+  //! @brief Returns a const reference to the stored index iterator @c index
   [[nodiscard]] _CCCL_API constexpr const _Index& __index() const noexcept
   {
     return __index_;
   }
+  //! @endcond
 
   //! @brief Returns the current index
+  //! @return Equivalent to ``*index``
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr difference_type index() const noexcept
   {
     return static_cast<difference_type>(*__index_);
   }
 
-  //! @brief Dereferences the stored iterator advanced by the current index
+  //! @brief Dereferences the @c permutation_iterator
+  //! @return Equivalent to ``iter[*index]``
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator*() noexcept(noexcept(__iter_[static_cast<__iter_difference_t>(*__index_)]))
@@ -187,7 +191,8 @@ public:
     return __iter_[static_cast<__iter_difference_t>(*__index_)];
   }
 
-  //! @brief Dereferences the stored iterator advanced by the current index
+  //! @brief Dereferences the @c permutation_iterator
+  //! @return Equivalent to ``iter[*index]``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
@@ -197,8 +202,9 @@ public:
     return __iter_[static_cast<__iter_difference_t>(*__index_)];
   }
 
-  //! @brief Subscripts the stored iterator advanced by the index at offset __n
+  //! @brief Subscripts the @c permutation_iterator by an offset
   //! @param __n The additional offset
+  //! @return Equivalent to ``iter[index[__n]]``
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator[](difference_type __n) noexcept(noexcept(__iter_[static_cast<__iter_difference_t>(__index_[__n])]))
@@ -206,8 +212,9 @@ public:
     return __iter_[static_cast<__iter_difference_t>(__index_[__n])];
   }
 
-  //! @brief Subscripts the stored iterator advanced by the index at offset __n
+  //! @brief Subscripts the @c permutation_iterator by an offset
   //! @param __n The additional offset
+  //! @return Equivalent to ``iter[index[__n]]``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__dereferenceable<const _Iter2>)
@@ -217,7 +224,8 @@ public:
     return __iter_[static_cast<__iter_difference_t>(__index_[__n])];
   }
 
-  //! @brief Increments the stored index iterator
+  //! @brief Increments the @c permutation_iterator
+  //! @return Equivalent to ``++index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator& operator++() noexcept(noexcept(++__index_))
   {
@@ -225,7 +233,8 @@ public:
     return *this;
   }
 
-  //! @brief Increments the stored index iterator
+  //! @brief Increments the @c permutation_iterator
+  //! @return Equivalent to ``index++``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator operator++(int) noexcept(
     noexcept(++__index_)
@@ -236,7 +245,8 @@ public:
     return __tmp;
   }
 
-  //! @brief Decrements the stored index iterator
+  //! @brief Increments the @c permutation_iterator
+  //! @return Equivalent to ``--index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator& operator--() noexcept(noexcept(--__index_))
   {
@@ -244,7 +254,8 @@ public:
     return *this;
   }
 
-  //! @brief Decrements the stored index iterator
+  //! @brief Increments the @c permutation_iterator
+  //! @return Equivalent to ``index++``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator operator--(int) noexcept(
     noexcept(--__index_)
@@ -255,30 +266,35 @@ public:
     return __tmp;
   }
 
-  //! @brief Advances the stored index iterator by a given number of elements
+  //! @brief Advances a @c permutation_iterator by a given number of elements
+  //! @param __iter The original @c permutation_iterator
   //! @param __n The number of elements to advance
+  //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr permutation_iterator operator+(difference_type __n) const
-    noexcept(noexcept(__index_ + __n) && ::cuda::std::is_nothrow_copy_constructible_v<_Iter>
-             && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
+  operator+(const permutation_iterator& __iter, difference_type __n) noexcept( //
+    noexcept(__iter.__index_ + __n)
+    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
-    return permutation_iterator{__iter_, __index_ + __n};
+    return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
 
-  //! @brief Returns a copy of a @c permutation_iterator advanced by a given number of elements
+  //! @brief Advances a @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to advance
   //! @param __iter The original @c permutation_iterator
+  //! @return Equivalent to ``permutation_iterator{iter, index + __n}``
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
   operator+(difference_type __n, const permutation_iterator& __iter) noexcept(
-    noexcept(__index_ + __n)
+    noexcept(__iter.__index_ + __n)
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
-    return __iter + __n;
+    return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
 
   //! @brief Advances the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to advance
+  //! @return Equivalent to ``index + __n``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator& operator+=(difference_type __n) noexcept(noexcept(__index_ += __n))
   {
@@ -286,18 +302,22 @@ public:
     return *this;
   }
 
-  //! @brief Returns a copy of a @c permutation_iterator decremented by a given number of elements
+  //! @brief Decrements a @c permutation_iterator by a given number of elements
+  //! @param __iter The original @c permutation_iterator
   //! @param __n The number of elements to decrement
+  //! @return Equivalent to ``permutation_iterator{iter, index - __n}``
   _CCCL_EXEC_CHECK_DISABLE
-  [[nodiscard]] _CCCL_API constexpr permutation_iterator operator-(difference_type __n) const
-    noexcept(noexcept(__index_ - __n) && ::cuda::std::is_nothrow_copy_constructible_v<_Iter>
-             && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
+  [[nodiscard]] _CCCL_API friend constexpr permutation_iterator
+  operator-(const permutation_iterator& __iter, difference_type __n) noexcept( //
+    noexcept(__iter.__index_ - __n)
+    && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
-    return permutation_iterator{__iter_, __index_ - __n};
+    return permutation_iterator{__iter.__iter_, __iter.__index_ - __n};
   }
 
   //! @brief Decrements the @c permutation_iterator by a given number of elements
   //! @param __n The number of elements to decrement
+  //! @return Equivalent to ``index - __n``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr permutation_iterator& operator-=(difference_type __n) noexcept(noexcept(__index_ -= __n))
   {
@@ -306,6 +326,7 @@ public:
   }
 
   //! @brief Returns the distance between two @c permutation_iterators.
+  //! @return Equivalent to ``__lhs.index - __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API friend constexpr difference_type
   operator-(const permutation_iterator& __lhs, const permutation_iterator& __rhs) noexcept(__nothrow_difference<_Index>)
@@ -313,7 +334,8 @@ public:
     return __lhs.__index_ - __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for equality by comparing the indices
+  //! @brief Compares two @c permutation_iterator for equality by comparing @c index
+  //! @return Equivalent to ``__lhs.index == __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
@@ -325,7 +347,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two @c permutation_iterator for inequality by comparing the indices
+  //! @brief Compares two @c permutation_iterator for inequality by comparing @c index
+  //! @return Equivalent to ``__lhs.index != __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::equality_comparable_with<_Iter, _OtherIter>)
@@ -342,8 +365,9 @@ public:
   static constexpr bool __nothrow_three_way =
     noexcept(::cuda::std::declval<_Iter1>() <=> ::cuda::std::declval<_Iter2>());
 
-  //! @brief Three-way-compares two @c permutation_iterator for inequality by comparing the indices
+  //! @brief Three-way-compares two @c permutation_iterator for inequality by comparing @c index
   //! they point at
+  //! @return Equivalent to ``__lhs.index <=> __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::three_way_comparable_with<_Index, _OtherOffset>)
@@ -354,7 +378,8 @@ public:
     return __lhs.__index_ <=> __rhs.__index();
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  //! @brief Compares two @c permutation_iterator for less than by comparing the indices
+  //! @brief Compares two @c permutation_iterator for less than by comparing @c index
+  //! @return Equivalent to ``__lhs.index < __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -365,7 +390,8 @@ public:
     return __lhs.__index_ < __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for less equal by comparing the indices
+  //! @brief Compares two @c permutation_iterator for less equal by comparing @c index
+  //! @return Equivalent to ``__lhs.index <= __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -376,7 +402,8 @@ public:
     return __lhs.__index_ <= __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for greater than by comparing the indices
+  //! @brief Compares two @c permutation_iterator for greater than by comparing @c index
+  //! @return Equivalent to ``__lhs.index > __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
@@ -387,7 +414,8 @@ public:
     return __lhs.__index_ > __rhs.__index();
   }
 
-  //! @brief Compares two @c permutation_iterator for greater equal by comparing the indices
+  //! @brief Compares two @c permutation_iterator for greater equal by comparing @c index
+  //! @return Equivalent to ``__lhs.index >= __rhs.index``
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIter, class _OtherOffset)
   _CCCL_REQUIRES(::cuda::std::totally_ordered_with<_Index, _OtherOffset>)
