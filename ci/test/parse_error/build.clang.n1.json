@@ -1,0 +1,14 @@
+[
+  {
+    "error_short": "error: expected ';' at end of declaration",
+    "pattern_type": "build",
+    "pattern_name": "gcc/clang error",
+    "rel_filepath": "a.cpp",
+    "filename": "a.cpp",
+    "error_line": "a.cpp:2:14: error: expected ';' at end of declaration",
+    "error_context": "a.cpp:2:14: error: expected ';' at end of declaration",
+    "line": "2",
+    "location": "a.cpp:2",
+    "summary": "`a.cpp:2`: `error: expected ';' at end of declaration`"
+  }
+]

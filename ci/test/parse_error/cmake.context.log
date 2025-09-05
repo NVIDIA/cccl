@@ -1,0 +1,123 @@
+  -- Performing Test CXX_FLAG__Winit_self
+  -- Performing Test CXX_FLAG__Winit_self - Success
+  -- Performing Test CXX_FLAG__Woverloaded_virtual
+  -- Performing Test CXX_FLAG__Woverloaded_virtual - Success
+  -- Performing Test CXX_FLAG__Wcast_qual
+  -- Performing Test CXX_FLAG__Wcast_qual - Success
+  -- Performing Test CXX_FLAG__Wpointer_arith
+  -- Performing Test CXX_FLAG__Wpointer_arith - Success
+  -- Performing Test CXX_FLAG__Wunused_local_typedef
+  -- Performing Test CXX_FLAG__Wunused_local_typedef - Success
+  -- Performing Test CXX_FLAG__Wvla
+  -- Performing Test CXX_FLAG__Wvla - Success
+  -- Performing Test CXX_FLAG__Wgnu
+  -- Performing Test CXX_FLAG__Wgnu - Success
+  -- Performing Test CXX_FLAG__Wno_gnu_line_marker
+  -- Performing Test CXX_FLAG__Wno_gnu_line_marker - Success
+  -- Performing Test CXX_FLAG__Wno_gnu_zero_variadic_macro_arguments
+  -- Performing Test CXX_FLAG__Wno_gnu_zero_variadic_macro_arguments - Success
+  -- Performing Test CXX_FLAG__Wno_unused_function
+  -- Performing Test CXX_FLAG__Wno_unused_function - Success
+  -- Found libcudacxx: /home/coder/cccl/lib/cmake/libcudacxx/libcudacxx-config.cmake (found version "3.2.0.0")
+  -- Found CUB: /home/coder/cccl/lib/cmake/cub/cub-config.cmake (found version "3.2.0.0")
+  CMake Error at thrust/CMakeLists.txt:26 (if):
+    if given arguments:
+
+      "I'm" "Not" "a" "Valid" "expr..."
+
+    Unknown arguments specified
+
+
+  -- Configuring incomplete, errors occurred!
+  Command ''cmake' '--preset=thrust-cpp20' '--log-level=VERBOSE'' failed with status 1. Retrying in 30 seconds...
+  Attempt 2 of 5: Running command ''cmake' '--preset=thrust-cpp20' '--log-level=VERBOSE''
+  Preset CMake variables:
+
+    CCCL_ENABLE_C:BOOL="FALSE"
+    CCCL_ENABLE_CUB:BOOL="FALSE"
+    CCCL_ENABLE_CUDAX:BOOL="FALSE"
+    CCCL_ENABLE_EXAMPLES:BOOL="FALSE"
+    CCCL_ENABLE_LIBCUDACXX:BOOL="FALSE"
+    CCCL_ENABLE_TESTING:BOOL="FALSE"
+    CCCL_ENABLE_THRUST:BOOL="TRUE"
+    CCCL_ENABLE_UNSTABLE:BOOL="TRUE"
+    CMAKE_BUILD_TYPE="Release"
+    CMAKE_CUDA_ARCHITECTURES="all-major-cccl"
+    CUB_ENABLE_INSTALL_RULES:BOOL="TRUE"
+    THRUST_ENABLE_MULTICONFIG:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17:BOOL="FALSE"
+    THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB:BOOL="TRUE"
+    Thrust_ENABLE_INSTALL_RULES:BOOL="TRUE"
+    cudax_ENABLE_INSTALL_RULES:BOOL="TRUE"
+    libcudacxx_ENABLE_INSTALL_RULES:BOOL="TRUE"
+
+  -- Detected special CCCL arch request: CMAKE_CUDA_ARCHITECTURES=all-major-cccl
+  -- NVCC supports: 75;80;86;87;88;89;90;100;103;110;120;121
+  -- CCCL supported arches: 75;80;86;87;88;89;90;100;103;110;120;121
+  -- CCCL all-major arches: 75;80;90;100;110;120
+  -- CCCL tagged arches: 75-real;80-real;90-real;100-real;110-real;120-real;120-virtual
+  -- Replacing with CMAKE_CUDA_ARCHITECTURES=75-real;80-real;90-real;100-real;110-real;120-real;120-virtual
+  -- Creating symlink from /home/coder/cccl/compile_commands.json to /home/coder/cccl/build/cuda13.0-llvm19/thrust-cpp20/compile_commands.json...
+  CMake Error at thrust/CMakeLists.txt:26 (if):
+    if given arguments:
+
+      "I'm" "Not" "a" "Valid" "expr..."
+
+    Unknown arguments specified
+
+
+  -- Configuring incomplete, errors occurred!
+  Command ''cmake' '--preset=thrust-cpp20' '--log-level=VERBOSE'' failed with status 1. Retrying in 30 seconds...
+  Attempt 3 of 5: Running command ''cmake' '--preset=thrust-cpp20' '--log-level=VERBOSE''
+  Preset CMake variables:
+
+    CCCL_ENABLE_C:BOOL="FALSE"
+    CCCL_ENABLE_CUB:BOOL="FALSE"
+    CCCL_ENABLE_CUDAX:BOOL="FALSE"
+    CCCL_ENABLE_EXAMPLES:BOOL="FALSE"
+    CCCL_ENABLE_LIBCUDACXX:BOOL="FALSE"
+    CCCL_ENABLE_TESTING:BOOL="FALSE"
+    CCCL_ENABLE_THRUST:BOOL="TRUE"
+    CCCL_ENABLE_UNSTABLE:BOOL="TRUE"
+    CMAKE_BUILD_TYPE="Release"
+    CMAKE_CUDA_ARCHITECTURES="all-major-cccl"
+    CUB_ENABLE_INSTALL_RULES:BOOL="TRUE"
+    THRUST_ENABLE_MULTICONFIG:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17:BOOL="FALSE"
+    THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP:BOOL="TRUE"
+    THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB:BOOL="TRUE"
+    Thrust_ENABLE_INSTALL_RULES:BOOL="TRUE"
+    cudax_ENABLE_INSTALL_RULES:BOOL="TRUE"
+    libcudacxx_ENABLE_INSTALL_RULES:BOOL="TRUE"
+
+  -- Detected special CCCL arch request: CMAKE_CUDA_ARCHITECTURES=all-major-cccl
+  -- NVCC supports: 75;80;86;87;88;89;90;100;103;110;120;121
+  -- CCCL supported arches: 75;80;86;87;88;89;90;100;103;110;120;121
+  -- CCCL all-major arches: 75;80;90;100;110;120
+  -- CCCL tagged arches: 75-real;80-real;90-real;100-real;110-real;120-real;120-virtual
+  -- Replacing with CMAKE_CUDA_ARCHITECTURES=75-real;80-real;90-real;100-real;110-real;120-real;120-virtual
+  -- Creating symlink from /home/coder/cccl/compile_commands.json to /home/coder/cccl/build/cuda13.0-llvm19/thrust-cpp20/compile_commands.json...
+  CMake Error at thrust/CMakeLists.txt:26 (if):
+    if given arguments:
+
+      "I'm" "Not" "a" "Valid" "expr..."
+
+    Unknown arguments specified
+
+
+  -- Configuring incomplete, errors occurred!
+  Command ''cmake' '--preset=thrust-cpp20' '--log-level=VERBOSE'' failed with status 1. Retrying in 30 seconds...
+  Attempt 4 of 5: Running command ''cmake' '--preset=thrust-cpp20' '--log-level=VERBOSE''
+  Preset CMake variables:
+
+    CCCL_ENABLE_C:BOOL="FALSE"
+    CCCL_ENABLE_CUB:BOOL="FALSE"
+    CCCL_ENABLE_CUDAX:BOOL="FALSE"
+    CCCL_ENABLE_EXAMPLES:BOOL="FALSE"

@@ -1,0 +1,38 @@
+[
+  {
+    "error_short": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "pattern_type": "build",
+    "pattern_name": "gcc/clang error",
+    "rel_filepath": "a.cpp",
+    "filename": "a.cpp",
+    "error_line": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "error_context": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "line": "3",
+    "location": "a.cpp:3",
+    "summary": "`a.cpp:3`: `error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token`"
+  },
+  {
+    "error_short": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "pattern_type": "build",
+    "pattern_name": "gcc/clang error",
+    "rel_filepath": "b.cpp",
+    "filename": "b.cpp",
+    "error_line": "b.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "error_context": "b.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "line": "3",
+    "location": "b.cpp:3",
+    "summary": "`b.cpp:3`: `error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token`"
+  },
+  {
+    "error_short": "error: \u2018y\u2019 was not declared in this scope",
+    "pattern_type": "build",
+    "pattern_name": "gcc/clang error",
+    "rel_filepath": "c.cpp",
+    "filename": "c.cpp",
+    "error_line": "c.cpp:2:12: error: \u2018y\u2019 was not declared in this scope",
+    "error_context": "c.cpp:2:12: error: \u2018y\u2019 was not declared in this scope",
+    "line": "2",
+    "location": "c.cpp:2",
+    "summary": "`c.cpp:2`: `error: \u2018y\u2019 was not declared in this scope`"
+  }
+]

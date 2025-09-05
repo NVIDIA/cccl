@@ -198,6 +198,26 @@ function print_test_time_summary()
     fi
 }
 
+in_ci() {
+    [[ -n "${GITHUB_ACTIONS:-}" ]]
+}
+
+# Run a grouped command, appending console output to a logfile when in CI.
+# Usage: run_and_log_command "/path/to/log" "Group Name" cmd args...
+run_and_log_command() {
+    local logfile="$1"; shift
+    local group_name="$1"; shift
+    if in_ci; then
+        export RUN_COMMAND_LOGFILE="$logfile"
+    else
+        unset RUN_COMMAND_LOGFILE 2>/dev/null || :
+    fi
+    run_command "$group_name" "$@"
+    local status=$?
+    unset RUN_COMMAND_LOGFILE 2>/dev/null || :
+    return $status
+}
+
 function configure_preset()
 {
     local BUILD_NAME=$1
@@ -213,7 +233,8 @@ function configure_preset()
       export RUN_COMMAND_RETRY_PARAMS="5 30"
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    run_and_log_command "${BUILD_DIR}/${PRESET}/configure.log" "$GROUP_NAME" \
+        cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -251,7 +272,8 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
+    run_and_log_command "${preset_dir}/build.log" "$GROUP_NAME" \
+        cmake --build --preset=$PRESET -v || status=$?
     popd > /dev/null
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
@@ -301,13 +323,16 @@ function test_preset()
 
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local ctest_log="${preset_dir}/ctest.log"
+    local test_log="${preset_dir}/test.log"
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
+    # Always write a truncating ctest log; append console to test.log in CI
+    run_and_log_command "${test_log}" "$GROUP_NAME" \
+        ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
     popd > /dev/null
 
-    print_test_time_summary ${ctest_log}
+    print_test_time_summary "${ctest_log}"
 
     return $status
 }

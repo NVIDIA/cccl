@@ -1,0 +1,50 @@
+[
+  {
+    "error_short": "error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "pattern_type": "build",
+    "pattern_name": "nvcc error",
+    "rel_filepath": "d.cu",
+    "filename": "d.cu",
+    "error_line": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "error_context": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks\na.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"a.cu\".",
+    "line": "4",
+    "location": "d.cu:4",
+    "summary": "`d.cu:4`: `error: this is a very long error message that should be truncated...`"
+  },
+  {
+    "error_short": "error: expected a \";\"",
+    "pattern_type": "build",
+    "pattern_name": "nvcc error",
+    "rel_filepath": "a.cu",
+    "filename": "a.cu",
+    "error_line": "a.cu(3): error: expected a \";\"",
+    "error_context": "a.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"a.cu\".",
+    "line": "3",
+    "location": "a.cu:3",
+    "summary": "`a.cu:3`: `error: expected a \";\"`"
+  },
+  {
+    "error_short": "error: expected a \";\"",
+    "pattern_type": "build",
+    "pattern_name": "nvcc error",
+    "rel_filepath": "b.cu",
+    "filename": "b.cu",
+    "error_line": "b.cu(3): error: expected a \";\"",
+    "error_context": "b.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"b.cu\".",
+    "line": "3",
+    "location": "b.cu:3",
+    "summary": "`b.cu:3`: `error: expected a \";\"`"
+  },
+  {
+    "error_short": "error: identifier \"y\" is undefined",
+    "pattern_type": "build",
+    "pattern_name": "nvcc error",
+    "rel_filepath": "c.cu",
+    "filename": "c.cu",
+    "error_line": "c.cu(2): error: identifier \"y\" is undefined",
+    "error_context": "c.cu(2): error: identifier \"y\" is undefined\n      int x = y;\n              ^\n\n1 error detected in the compilation of \"c.cu\".",
+    "line": "2",
+    "location": "c.cu:2",
+    "summary": "`c.cu:2`: `error: identifier \"y\" is undefined`"
+  }
+]

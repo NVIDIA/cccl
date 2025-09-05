@@ -72,13 +72,30 @@ function run_command() {
     echo "Running command: ${command[*]}"
     set +e
     local start_time=$(date +%s)
-    # If RUN_COMMAND_RETRY_PARAMS is set to "<retries> <sleep_time>", use retry.sh to run the command:
+    status=0
+    # Build optional retry wrapper
+    local runner=( )
     if [[ -n "${RUN_COMMAND_RETRY_PARAMS:-}" ]]; then
-        status=0
-        "$ci_dir/util/retry.sh" $RUN_COMMAND_RETRY_PARAMS "${command[@]}" || status=$?
+        runner=("$ci_dir/util/retry.sh" ${RUN_COMMAND_RETRY_PARAMS})
+    fi
+
+    if [[ -n "${RUN_COMMAND_LOGFILE:-}" ]]; then
+        mkdir -p "$(dirname "${RUN_COMMAND_LOGFILE}")" 2>/dev/null || :
+        echo "Logging to: ${RUN_COMMAND_LOGFILE}"
+        set -o pipefail
+        if ((${#runner[@]})); then
+            "${runner[@]}" "${command[@]}" 2>&1 | tee -a "${RUN_COMMAND_LOGFILE}"
+        else
+            "${command[@]}" 2>&1 | tee -a "${RUN_COMMAND_LOGFILE}"
+        fi
+        status=${PIPESTATUS[0]}
+        set +o pipefail
     else
-        status=0
-        "${command[@]}" || status=$?
+        if ((${#runner[@]})); then
+            "${runner[@]}" "${command[@]}" || status=$?
+        else
+            "${command[@]}" || status=$?
+        fi
     fi
     local end_time=$(date +%s)
     set -e
