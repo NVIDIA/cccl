@@ -11,6 +11,9 @@ struct inc_t
   size_t num_item;
   double value_increment;
 
+  // Needs to be default constructible to qualify as forward iterator
+  inc_t() = default;
+
   inc_t(size_t num_item)
       : num_item(num_item)
   {
@@ -25,7 +28,7 @@ struct inc_t
   }
 
   template <typename IndexT>
-  __host__ __device__ T operator()(IndexT x) const
+  __host__ __device__ T operator()(IndexT x) 
   {
     return static_cast<T>(value_increment * x);
   }
