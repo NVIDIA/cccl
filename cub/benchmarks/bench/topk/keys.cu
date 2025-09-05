@@ -53,7 +53,6 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
                                offset_t,
                                cub::detail::choose_offset_t<OutOffsetT>>;
-  constexpr bool select_min = false;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<KeyT, OffsetT>;
@@ -64,11 +63,17 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     cub::NullType*,
     offset_t,
     out_offset_t,
-    select_min,
+    detail::topk::select::max,
     policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::detail::topk::
-    DispatchTopK<key_input_it_t, key_output_it_t, cub::NullType*, cub::NullType*, offset_t, out_offset_t, select_min>;
+  using dispatch_t = cub::detail::topk::DispatchTopK<
+    key_input_it_t,
+    key_output_it_t,
+    cub::NullType*,
+    cub::NullType*,
+    offset_t,
+    out_offset_t,
+    detail::topk::select::max>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters

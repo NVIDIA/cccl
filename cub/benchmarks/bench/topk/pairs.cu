@@ -56,8 +56,6 @@ void topk_pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT,
                                offset_t,
                                cub::detail::choose_offset_t<OutOffsetT>>;
 
-  constexpr bool select_min = false;
-
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<KeyT, OffsetT>;
   using dispatch_t = cub::detail::topk::DispatchTopK<
@@ -67,11 +65,17 @@ void topk_pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT,
     value_output_it_t,
     offset_t,
     out_offset_t,
-    select_min,
+    detail::topk::select::max,
     policy_t>;
 #else
-  using dispatch_t = cub::detail::topk::
-    DispatchTopK<key_input_it_t, key_output_it_t, value_input_it_t, value_output_it_t, offset_t, out_offset_t, select_min>;
+  using dispatch_t = cub::detail::topk::DispatchTopK<
+    key_input_it_t,
+    key_output_it_t,
+    value_input_it_t,
+    value_output_it_t,
+    offset_t,
+    out_offset_t,
+    detail::topk::select::max>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
