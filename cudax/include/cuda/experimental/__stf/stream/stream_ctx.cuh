@@ -508,6 +508,10 @@ public:
       submit();
       assert(state.submitted_stream);
     }
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));

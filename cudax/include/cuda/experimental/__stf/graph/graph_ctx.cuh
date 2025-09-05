@@ -317,10 +317,15 @@ public:
       submit();
     }
     assert(state.submitted_stream);
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
+
     state.submitted_stream = nullptr;
     state.cleanup();
     set_phase(backend_ctx_untyped::phase::finalized);
@@ -352,12 +357,6 @@ public:
     // cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
 
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
-
-    // Note that we comment this out for now, so that it is possible to use
-    // the print_to_dot method; but we may perhaps discard this graph to
-    // some dedicated member variable.
-    // Ensure nobody tries to use that graph again ...
-    // state.set_graph(nullptr);
 
     state.submitted = true;
     set_phase(backend_ctx_untyped::phase::submitted);
