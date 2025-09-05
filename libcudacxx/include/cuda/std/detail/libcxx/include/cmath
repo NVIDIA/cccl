@@ -346,8 +346,6 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/traits.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__cstdlib/abs.h>
-#include <cuda/std/limits>
-#include <cuda/std/type_traits>
 #include <cuda/std/version>
 
 #if _CCCL_COMPILER(NVRTC)
@@ -359,7 +357,12 @@ long double    truncl(long double x);
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_COMPILER(NVRTC)
+
+using double_t = double;
+using float_t  = float;
+
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 
 using ::double_t;
 using ::float_t;
