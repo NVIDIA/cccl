@@ -38,11 +38,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief A \p strided_iterator wraps another iterator and advances it by a specified stride each time it is
+//! @brief A @p strided_iterator wraps another iterator and advances it by a specified stride each time it is
 //! incremented or decremented.
 //!
 //! @param _Iter A random access iterator
-//! @param _Stride Either an \ref __integer-like__ or a \ref __integral-constant-like__ specifying the stride
+//! @param _Stride Either an @ref __integer-like__ or a @ref __integral-constant-like__ specifying the stride
 template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
 class strided_iterator
 {
@@ -69,8 +69,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI strided_iterator() = default;
 
-  // We want to avoid constructing a strided_iterator with a value constructed __integer like__ stride, because that
-  // would value construct to 0 and incrementing the iterator would do nothing.
+  //! @brief Constructs a @p strided_iterator from a base iterator @param __iter.
+  //! @note Requires @tparam _Stride to be @ref __integral-constant-like__
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Stride2 = _Stride)
   _CCCL_REQUIRES((!::cuda::std::__integer_like<_Stride2>) )
@@ -305,13 +305,24 @@ public:
 template <class _Iter, typename _Stride>
 _CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
 
-//! @brief make_strided_iterator creates a \p strided_iterator from a random access iterator and an optional stride
+//! @brief make_strided_iterator creates a @p strided_iterator from a random access iterator and an optional stride
 //! @param __iter The random_access iterator
 //! @param __stride The optional stride. Is value initialized if not provided
-template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
-[[nodiscard]] _CCCL_API constexpr auto make_strided_iterator(_Iter __iter, _Stride __stride = {})
+template <class _Iter, class _Stride>
+[[nodiscard]] _CCCL_API constexpr auto make_strided_iterator(_Iter __iter, _Stride __stride)
 {
-  return strided_iterator<_Iter, _Stride>{::cuda::std::move(__iter), ::cuda::std::move(__stride)};
+  return strided_iterator<_Iter, _Stride>{::cuda::std::move(__iter), __stride};
+}
+
+//! @brief make_strided_iterator creates a @p strided_iterator from a random access iterator
+//! @param __iter The random_access iterator
+//! @note Requires @tparam _Stride to be @ref __integral-constant-like__
+template <class _Stride, class _Iter>
+[[nodiscard]] _CCCL_API constexpr auto make_strided_iterator(_Iter __iter)
+{
+  static_assert(::cuda::std::__integral_constant_like<_Stride>,
+                "cuda::make_strided_iterator: Can only default a Stride that satisfies integral-constant-like");
+  return strided_iterator<_Iter, _Stride>{__iter};
 }
 
 _CCCL_END_NAMESPACE_CUDA

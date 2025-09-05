@@ -63,7 +63,7 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
 //! @tparam _BijectionFunc The bijection to use. This should be a bijective function that maps [0..n) -> [0..n). It must
 //! be deterministic and stateless. Defaults to cuda::random_biijection<_IndexType>
 //!
-//! @class shuffle_iterator is an iterator which generates a sequence of values representing a random permutation. This
+//! @p shuffle_iterator is an iterator which generates a sequence of values representing a random permutation. This
 //! iterator is useful for working with random permutations of a range without explicitly storing them in memory. The
 //! shuffle iterator is also useful for sampling from a range by selecting only a subset of the elements in the
 //! permutation.
