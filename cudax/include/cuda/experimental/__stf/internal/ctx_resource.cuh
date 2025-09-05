@@ -40,6 +40,11 @@ class ctx_resource
 {
 public:
   virtual ~ctx_resource() = default;
+
+  // Non-copyable
+  ctx_resource(const ctx_resource&)            = delete;
+  ctx_resource& operator=(const ctx_resource&) = delete;
+
   //! Release asynchronously (only called if can_release_in_callback() returns false)
   virtual void release(cudaStream_t)
   { /* Default implementation does nothing */
