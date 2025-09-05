@@ -380,6 +380,37 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
   return static_cast<::cudaError_t>(__driver_fn(__library));
 }
 
+#  if _CCCL_CTK_AT_LEAST(12, 5)
+[[nodiscard]] _CCCL_HOST_API inline ::CUlibrary __kernelGetLibrary(::CUkernel __kernel)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuKernelGetLibrary, cuKernelGetLibrary, 12, 5);
+  ::CUlibrary __lib;
+  _CUDA_DRIVER::__call_driver_fn(__driver_fn, "Failed to get the library from kernel", &__lib, __kernel);
+  return __lib;
+}
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__libraryGetKernelNoThrow(::CUkernel& __kernel, ::CUlibrary __lib, const char* __name)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetKernel);
+  return static_cast<cudaError_t>(__driver_fn(&__kernel, __lib, __name));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__libraryGetGlobalNoThrow(::CUdeviceptr& __dptr, ::cuda::std::size_t& __nbytes, ::CUlibrary __lib, const char* __name)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetGlobal);
+  return static_cast<::cudaError_t>(__driver_fn(&__dptr, &__nbytes, __lib, __name));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__libraryGetManagedNoThrow(::CUdeviceptr& __dptr, ::cuda::std::size_t& __nbytes, ::CUlibrary __lib, const char* __name)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetManaged);
+  return static_cast<::cudaError_t>(__driver_fn(&__dptr, &__nbytes, __lib, __name));
+}
+
 // Execution control
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
