@@ -136,6 +136,12 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   SortUnorderedRes(h_res_keys, d_keys_out, k);
+  if (g_verbose)
+  {
+    printf("Output keys:\n");
+    DisplayResults(h_res_keys, k);
+    printf("\n\n");
+  }
   int compare = CompareResults(h_reference_keys, h_res_keys, k, g_verbose);
   AssertEquals(0, compare);
 
