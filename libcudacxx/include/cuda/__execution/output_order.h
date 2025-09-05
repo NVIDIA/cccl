@@ -46,8 +46,8 @@ struct __output_order_holder_t : __requirement
 {
   static constexpr __output_order_t value = _Guarantee;
 
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto
-  query(const __get_output_order_t&) const noexcept -> __output_order_holder_t<_Guarantee>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_output_order_t&) const noexcept
+    -> __output_order_holder_t<_Guarantee>
   {
     return *this;
   }

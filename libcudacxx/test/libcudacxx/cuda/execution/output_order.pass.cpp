@@ -17,9 +17,9 @@ __host__ __device__ void test()
   static_assert(cuda::std::is_base_of_v<exec::__requirement, exec::output_order::unsorted_t>);
 
   static_assert(cuda::std::is_same_v<decltype(exec::output_order::__get_output_order(exec::output_order::sorted)),
-                                     exec::output_order::sorted>);
+                                     exec::output_order::sorted_t>);
   static_assert(cuda::std::is_same_v<decltype(exec::output_order::__get_output_order(exec::output_order::unsorted)),
-                                     exec::output_order::unsorted>);
+                                     exec::output_order::unsorted_t>);
 }
 
 int main(int, char**)
