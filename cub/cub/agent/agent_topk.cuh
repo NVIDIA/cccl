@@ -213,7 +213,7 @@ struct AgentTopK
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int num_buckets      = 1 << BITS_PER_PASS;
 
-  static constexpr bool KEYS_ONLY      = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
+  static constexpr bool KEYS_ONLY      = ::cuda::std::is_same<ValueInputIteratorT, NullType*>::value;
   static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, BLOCK_THREADS);
 
   // Parameterized BlockLoad type for input data

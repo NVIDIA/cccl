@@ -496,7 +496,7 @@ struct DispatchTopK : SelectedPolicy
   int ptx_version;
 
   using key_in_t                  = detail::it_value_t<KeyInputIteratorT>;
-  static constexpr bool keys_only = ::cuda::std::is_same<ValueInputIteratorT, NullType>::value;
+  static constexpr bool keys_only = ::cuda::std::is_same<ValueInputIteratorT, NullType*>::value;
   /*
    *
    * @param[in] d_temp_storage
