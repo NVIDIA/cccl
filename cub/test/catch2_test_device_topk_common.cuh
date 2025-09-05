@@ -28,7 +28,7 @@ struct inc_t
   }
 
   template <typename IndexT>
-  __host__ __device__ T operator()(IndexT x) 
+  __host__ __device__ T operator()(IndexT x)
   {
     return static_cast<T>(value_increment * x);
   }

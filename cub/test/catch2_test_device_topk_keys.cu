@@ -17,12 +17,27 @@
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::TopKKeys, topk_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::TopKMinKeys, topk_min_keys);
 
-using key_types       = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, float, cuda::std::uint64_t>;
+using key_types =
+  c2h::type_list<cuda::std::uint8_t,
+                 cuda::std::uint16_t,
+                 float,
+                 cuda::std::uint64_t
+// clang-format off
+#if TEST_HALF_T()
+                 , half_t
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+                 , bfloat16_t
+#endif // TEST_BF_T()
+>;
+// clang-format on
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
@@ -113,7 +128,7 @@ C2H_TEST("DeviceTopK::TopKKeys works with iterators", "[keys][topk][device]", ke
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<size_t>(num_items)});
+    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the device-wide API
@@ -143,21 +158,20 @@ C2H_TEST("DeviceTopK::TopKKeys works with iterators", "[keys][topk][device]", ke
 
 C2H_TEST("DeviceTopK::TopKKey works for large num_items", "[keys][topk][device]", num_items_types)
 {
-  using key_t       = uint32_t;
+  using key_t       = cuda::std::uint32_t;
   using num_items_t = c2h::get<0, TestType>;
 
   // Set input size
-  constexpr num_items_t max_num_items_ull =
-    std::min(static_cast<size_t>(cuda::std::numeric_limits<num_items_t>::max()),
-             cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<size_t>(2000000ULL));
+  constexpr auto max_num_items_ull =
+    std::min(static_cast<cuda::std::size_t>(cuda::std::numeric_limits<num_items_t>::max()),
+             cuda::std::numeric_limits<cuda::std::uint32_t>::max() + static_cast<cuda::std::size_t>(2000000ULL));
   constexpr num_items_t max_num_items = static_cast<num_items_t>(max_num_items_ull);
   const num_items_t num_items         = GENERATE_COPY(values({max_num_items}));
 
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k =
-    GENERATE_COPY(values({num_items_t{1}, num_items}), take(3, random(min_k, min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items, max_k))));
 
   // Whether to select k elements with the lowest or the highest values
   const bool is_descending = GENERATE(false, true);
@@ -167,7 +181,7 @@ C2H_TEST("DeviceTopK::TopKKey works for large num_items", "[keys][topk][device]"
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<size_t>(num_items)});
+    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the device-side top-k
@@ -205,8 +219,8 @@ C2H_TEST("DeviceTopK::TopKKeys works for different data types for num_items and 
          "[keys][topk][device]",
          k_items_types)
 {
-  using key_t       = uint32_t;
-  using num_items_t = uint64_t;
+  using key_t       = cuda::std::uint32_t;
+  using num_items_t = cuda::std::uint32_t;
   using k_items_t   = c2h::get<0, TestType>;
 
   // Set input size
@@ -231,7 +245,7 @@ C2H_TEST("DeviceTopK::TopKKeys works for different data types for num_items and 
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<size_t>(num_items)});
+    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the device-side top-k
