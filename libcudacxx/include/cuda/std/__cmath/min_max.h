@@ -24,11 +24,9 @@
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/promote.h>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -44,16 +42,16 @@ _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 {
   if constexpr (is_same_v<_Tp, float>)
   {
-    return __builtin_fmaxf(__x, __y);
+    return ::__builtin_fmaxf(__x, __y);
   }
   else if constexpr (is_same_v<_Tp, double>)
   {
-    return __builtin_fmax(__x, __y);
+    return ::__builtin_fmax(__x, __y);
   }
 #  if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (is_same_v<_Tp, long double>)
   {
-    return __builtin_fmaxl(__x, __y);
+    return ::__builtin_fmaxl(__x, __y);
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 }
@@ -100,17 +98,26 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
-#if _CCCL_USE_BUILTIN_FMAX()
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+#if _CCCL_HAS_FLOAT128()
+      if constexpr (is_same_v<_Tp, __float128>)
       {
+        NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
+      }
+#endif // _CCCL_HAS_FLOAT128()
+      if constexpr (is_floating_point_v<_Tp>)
+      {
+#if _CCCL_USE_BUILTIN_FMAX()
+        if (!::cuda::std::__cccl_default_is_constant_evaluated())
+        {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
-        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmax(__x, __y);))
+          NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmax(__x, __y);))
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
-        return ::cuda::std::__with_builtin_fmax(__x, __y);
+          return ::cuda::std::__with_builtin_fmax(__x, __y);
 #  endif // !_CCCL_COMPILER(GCC)
-      }
+        }
 #endif // _CCCL_USE_BUILTIN_FMAX
+      }
       if (::cuda::std::isnan(__x))
       {
         return __y;
@@ -157,16 +164,16 @@ _CCCL_REQUIRES(is_floating_point_v<_Tp>)
 {
   if constexpr (is_same_v<_Tp, float>)
   {
-    return __builtin_fminf(__x, __y);
+    return ::__builtin_fminf(__x, __y);
   }
   else if constexpr (is_same_v<_Tp, double>)
   {
-    return __builtin_fmin(__x, __y);
+    return ::__builtin_fmin(__x, __y);
   }
 #  if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (is_same_v<_Tp, long double>)
   {
-    return __builtin_fminl(__x, __y);
+    return ::__builtin_fminl(__x, __y);
   }
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 }
@@ -212,17 +219,26 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
-#if _CCCL_USE_BUILTIN_FMAX()
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+#if _CCCL_HAS_FLOAT128()
+      if constexpr (is_same_v<_Tp, __float128>)
       {
+        NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
+      }
+#endif // _CCCL_HAS_FLOAT128()
+      if constexpr (is_floating_point_v<_Tp>)
+      {
+#if _CCCL_USE_BUILTIN_FMAX()
+        if (!::cuda::std::__cccl_default_is_constant_evaluated())
+        {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
-        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
+          NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
-        return ::cuda::std::__with_builtin_fmin(__x, __y);
+          return ::cuda::std::__with_builtin_fmin(__x, __y);
 #  endif // !_CCCL_COMPILER(GCC)
-      }
+        }
 #endif // _CCCL_USE_BUILTIN_FMAX
+      }
       if (::cuda::std::isnan(__x))
       {
         return __y;

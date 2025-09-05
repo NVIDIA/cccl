@@ -158,7 +158,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
 #  if _CCCL_HAS_CTK()
-  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__lhs, __rhs);))
+  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);))
 #  endif
 #  if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
