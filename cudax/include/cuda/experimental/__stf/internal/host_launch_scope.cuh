@@ -34,6 +34,8 @@
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 
+#include <type_traits>
+
 namespace cuda::experimental::stf
 {
 
@@ -187,7 +189,8 @@ public:
     // For stream contexts, delete immediately in callback (better memory efficiency)
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
-      auto resource = ::std::make_shared<host_callback_args_resource<decltype(*wrapper)>>(wrapper);
+      using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
+      auto resource      = ::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper);
       ctx.add_ctx_resource(mv(resource));
     }
 
