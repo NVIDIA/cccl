@@ -34,6 +34,8 @@ Classes
 * :doc:`cuda::experimental::stf::cached_block_allocator_fifo <classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo>`
 * :doc:`cuda::experimental::stf::constant_logical_data <classcuda_1_1experimental_1_1stf_1_1constant__logical__data>`
 * :doc:`cuda::experimental::stf::context <classcuda_1_1experimental_1_1stf_1_1context>`
+* :doc:`cuda::experimental::stf::ctx_resource <classcuda_1_1experimental_1_1stf_1_1ctx__resource>`
+* :doc:`cuda::experimental::stf::ctx_resource_set <classcuda_1_1experimental_1_1stf_1_1ctx__resource__set>`
 * :doc:`cuda::experimental::stf::cuda_exception <classcuda_1_1experimental_1_1stf_1_1cuda__exception>`
 * :doc:`cuda::experimental::stf::cyclic_partition <classcuda_1_1experimental_1_1stf_1_1cyclic__partition>`
 * :doc:`cuda::experimental::stf::cyclic_shape <classcuda_1_1experimental_1_1stf_1_1cyclic__shape>`
@@ -348,6 +350,8 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo
    classcuda_1_1experimental_1_1stf_1_1constant__logical__data
    classcuda_1_1experimental_1_1stf_1_1context
+   classcuda_1_1experimental_1_1stf_1_1ctx__resource
+   classcuda_1_1experimental_1_1stf_1_1ctx__resource__set
    classcuda_1_1experimental_1_1stf_1_1cuda__exception
    classcuda_1_1experimental_1_1stf_1_1cyclic__partition
    classcuda_1_1experimental_1_1stf_1_1cyclic__shape

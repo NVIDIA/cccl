@@ -1138,6 +1138,8 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo.html">cuda::experimental::stf::cached_block_allocator_fifo</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1constant__logical__data.html">cuda::experimental::stf::constant_logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1context.html">cuda::experimental::stf::context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1ctx__resource.html">cuda::experimental::stf::ctx_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html">cuda::experimental::stf::ctx_resource_set</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cuda__exception.html">cuda::experimental::stf::cuda_exception</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cyclic__partition.html">cuda::experimental::stf::cyclic_partition</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cyclic__shape.html">cuda::experimental::stf::cyclic_shape</a></li>
@@ -1878,6 +1880,18 @@
 <dd></dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11backend_ctx17release_resourcesE12cudaStream_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a90c9c57a5ace54834c338c575b7d5b76"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">release_resources</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11backend_ctx17release_resourcesE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Release context resources using the provided stream This should be called after graph execution completes to clean up resources. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11backend_ctx12add_resourceENSt10shared_ptrI12ctx_resourceEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a658e64e96590244a5511959d0bea3d96"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_resource</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resourceE" title="cuda::experimental::stf::ctx_resource"><span class="n"><span class="pre">ctx_resource</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">resource</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11backend_ctx12add_resourceENSt10shared_ptrI12ctx_resourceEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add a resource to be managed by this context. </p>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11backend_ctx13set_allocatorE23block_allocator_untyped">
 <span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a033328034f8809e8b6608dbcfff6353a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_allocator</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped.html#_CPPv4N4cuda12experimental3stf23block_allocator_untypedE" title="cuda::experimental::stf::block_allocator_untyped"><span class="n"><span class="pre">block_allocator_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">custom</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11backend_ctx13set_allocatorE23block_allocator_untyped" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
@@ -2200,6 +2214,8 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx20increment_task_countEv"><code class="docutils literal notranslate"><span class="pre">increment_task_count()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx29increment_finished_task_countEv"><code class="docutils literal notranslate"><span class="pre">increment_finished_task_count()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11backend_ctx10task_countEv"><code class="docutils literal notranslate"><span class="pre">task_count()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx17release_resourcesE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">release_resources()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx12add_resourceENSt10shared_ptrI12ctx_resourceEE"><code class="docutils literal notranslate"><span class="pre">add_resource()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx13set_allocatorE23block_allocator_untyped"><code class="docutils literal notranslate"><span class="pre">set_allocator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx22set_uncached_allocatorE23block_allocator_untyped"><code class="docutils literal notranslate"><span class="pre">set_uncached_allocator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11backend_ctx13get_allocatorEv"><code class="docutils literal notranslate"><span class="pre">get_allocator()</span></code></a></li>

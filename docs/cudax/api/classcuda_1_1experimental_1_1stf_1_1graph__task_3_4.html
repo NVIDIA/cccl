@@ -1138,6 +1138,8 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo.html">cuda::experimental::stf::cached_block_allocator_fifo</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1constant__logical__data.html">cuda::experimental::stf::constant_logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1context.html">cuda::experimental::stf::context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1ctx__resource.html">cuda::experimental::stf::ctx_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html">cuda::experimental::stf::ctx_resource_set</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cuda__exception.html">cuda::experimental::stf::cuda_exception</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cyclic__partition.html">cuda::experimental::stf::cyclic_partition</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cyclic__shape.html">cuda::experimental::stf::cyclic_shape</a></li>
@@ -1879,7 +1881,7 @@
 <p>This function prepares a task for execution by setting up its execution context, sorting its dependencies to avoid deadlocks, and ensuring all necessary data dependencies are fulfilled. It handles both small and large tasks by checking the task size and adjusting its behavior accordingly. Dependencies are processed to mark data usage, allocate necessary resources, and update data instances for task execution. This function also handles the task’s transition from the setup phase to the running phase.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The function <code class="docutils literal notranslate"><span class="pre">EXPECT</span></code>s the task to be in the setup phase and the execution place not to be <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#classcuda_1_1experimental_1_1stf_1_1exec__place_1aca053b97a9271ffab0de370bae60713b"><span class="std std-ref"><span class="pre">exec_place::device_auto()</span></span></a></code>. </p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">EXPECT</span></code>s the task to be in the setup phase and the execution place not to be <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#classcuda_1_1experimental_1_1stf_1_1exec__place_1aca053b97a9271ffab0de370bae60713b"><span class="std std-ref"><span class="pre">exec_place::device_auto()</span></span></a></code>. </p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

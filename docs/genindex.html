@@ -1131,6 +1131,8 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo.html">cuda::experimental::stf::cached_block_allocator_fifo</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1constant__logical__data.html">cuda::experimental::stf::constant_logical_data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html">cuda::experimental::stf::context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html">cuda::experimental::stf::ctx_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html">cuda::experimental::stf::ctx_resource_set</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1cuda__exception.html">cuda::experimental::stf::cuda_exception</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1cyclic__partition.html">cuda::experimental::stf::cyclic_partition</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1cyclic__shape.html">cuda::experimental::stf::cyclic_shape</a></li>
@@ -3108,6 +3110,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4I0EN4cuda12experimental3stf11backend_ctxE">cuda::experimental::stf::backend_ctx (C++ class)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctx12add_resourceENSt10shared_ptrI12ctx_resourceEE">cuda::experimental::stf::backend_ctx::add_resource (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctx12add_transferERK10data_placeRK10data_place6size_t">cuda::experimental::stf::backend_ctx::add_transfer (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4NK4cuda12experimental3stf11backend_ctx15async_resourcesEv">cuda::experimental::stf::backend_ctx::async_resources (C++ function)</a>
@@ -3194,6 +3198,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4NK4cuda12experimental3stf11backend_ctx13push_affinityENSt10shared_ptrI10exec_placeEE">cuda::experimental::stf::backend_ctx::push_affinity (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4NK4cuda12experimental3stf11backend_ctx13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE">[1]</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctx17release_resourcesE12cudaStream_t">cuda::experimental::stf::backend_ctx::release_resources (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctx13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE">cuda::experimental::stf::backend_ctx::reorder_tasks (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4NK4cuda12experimental3stf11backend_ctx16reordering_tasksEv">cuda::experimental::stf::backend_ctx::reordering_tasks (C++ function)</a>
@@ -3231,6 +3237,8 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#_CPPv4N4cuda12experimental3stf11backend_ctxD0Ev">cuda::experimental::stf::backend_ctx::~backend_ctx (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE">cuda::experimental::stf::backend_ctx_untyped (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_resourceENSt10shared_ptrI12ctx_resourceEE">cuda::experimental::stf::backend_ctx_untyped::add_resource (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_transferERK10data_placeRK10data_place6size_t">cuda::experimental::stf::backend_ctx_untyped::add_transfer (C++ function)</a>
 </li>
@@ -3303,6 +3311,8 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12pop_affinityEv">cuda::experimental::stf::backend_ctx_untyped::pop_affinity (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt10shared_ptrI10exec_placeEE">cuda::experimental::stf::backend_ctx_untyped::push_affinity (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped17release_resourcesE12cudaStream_t">cuda::experimental::stf::backend_ctx_untyped::release_resources (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE">cuda::experimental::stf::backend_ctx_untyped::reorder_tasks (C++ function)</a>
 </li>
@@ -3478,6 +3488,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7contextE">cuda::experimental::stf::context (C++ class)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context12add_resourceENSt10shared_ptrI12ctx_resourceEE">cuda::experimental::stf::context::add_resource (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4NK4cuda12experimental3stf7context15async_resourcesEv">cuda::experimental::stf::context::async_resources (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context16attach_allocatorE23block_allocator_untyped">cuda::experimental::stf::context::attach_allocator (C++ function)</a>
@@ -3530,6 +3542,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4NK4cuda12experimental3stf7context13push_affinityENSt10shared_ptrI10exec_placeEE">cuda::experimental::stf::context::push_affinity (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4NK4cuda12experimental3stf7context13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE">[1]</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context17release_resourcesE12cudaStream_t">cuda::experimental::stf::context::release_resources (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context6repeatE6size_t">cuda::experimental::stf::context::repeat (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context6repeatENSt8functionIFbvEEE">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4N4cuda12experimental3stf7context13set_allocatorE23block_allocator_untyped">cuda::experimental::stf::context::set_allocator (C++ function)</a>
@@ -3579,6 +3593,30 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1context.html#_CPPv4I0EN4cuda12experimental3stf7context4waitEDaRN4cuda12experimental3stf12logical_dataI1TEE">cuda::experimental::stf::context::wait (C++ function)</a>
 </li>
       <li><a href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a6c8a14c350bd50f902ca929a7ed3964b.html#_CPPv4I0EN4cuda12experimental3stf15contiguous_dimsE6size_tRK1S">cuda::experimental::stf::contiguous_dims (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resourceE">cuda::experimental::stf::ctx_resource (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4NK4cuda12experimental3stf12ctx_resource23can_release_in_callbackEv">cuda::experimental::stf::ctx_resource::can_release_in_callback (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resource12ctx_resourceERK12ctx_resource">cuda::experimental::stf::ctx_resource::ctx_resource (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resource12ctx_resourceEv">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resourceaSERK12ctx_resource">cuda::experimental::stf::ctx_resource::operator= (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resource7releaseE12cudaStream_t">cuda::experimental::stf::ctx_resource::release (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resource19release_in_callbackEv">cuda::experimental::stf::ctx_resource::release_in_callback (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resourceD0Ev">cuda::experimental::stf::ctx_resource::~ctx_resource (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_setE">cuda::experimental::stf::ctx_resource_set (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_set3addENSt10shared_ptrI12ctx_resourceEE">cuda::experimental::stf::ctx_resource_set::add (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_set16ctx_resource_setERK16ctx_resource_set">cuda::experimental::stf::ctx_resource_set::ctx_resource_set (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_set16ctx_resource_setERR16ctx_resource_set">[1]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_set16ctx_resource_setEv">[2]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_setaSERK16ctx_resource_set">cuda::experimental::stf::ctx_resource_set::operator= (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_setaSERR16ctx_resource_set">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1ctx__resource__set.html#_CPPv4N4cuda12experimental3stf16ctx_resource_set7releaseE12cudaStream_t">cuda::experimental::stf::ctx_resource_set::release (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1cuda__exception.html#_CPPv4N4cuda12experimental3stf14cuda_exceptionE">cuda::experimental::stf::cuda_exception (C++ class)</a>
 </li>
@@ -4550,6 +4588,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data22set_automatic_unfreezeEb">cuda::experimental::stf::frozen_logical_data::set_automatic_unfreeze (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data8unfreezeE10event_list">cuda::experimental::stf::frozen_logical_data::unfreeze (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4N4cuda12experimental3stf19frozen_logical_data8unfreezeE12cudaStream_t">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1frozen__logical__data.html#_CPPv4NK4cuda12experimental3stf19frozen_logical_data21unfreeze_fake_task_idEv">cuda::experimental::stf::frozen_logical_data::unfreeze_fake_task_id (C++ function)</a>
@@ -4560,12 +4600,12 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctxE">cuda::experimental::stf::graph_ctx (C++ class)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12add_resourceENSt10shared_ptrI12ctx_resourceEE">cuda::experimental::stf::graph_ctx::add_resource (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12add_transferERK10data_placeRK10data_place6size_t">cuda::experimental::stf::graph_ctx::add_transfer (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctx15async_resourcesEv">cuda::experimental::stf::graph_ctx::async_resources (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx16attach_allocatorE23block_allocator_untyped">cuda::experimental::stf::graph_ctx::attach_allocator (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12change_stageEv">cuda::experimental::stf::graph_ctx::change_stage (C++ function)</a>
@@ -4675,6 +4715,8 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12print_to_dotERKNSt6stringE22cudaGraphDebugDotFlags">cuda::experimental::stf::graph_ctx::print_to_dot (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctx13push_affinityENSt10shared_ptrI10exec_placeEE">cuda::experimental::stf::graph_ctx::push_affinity (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctx13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx17release_resourcesE12cudaStream_t">cuda::experimental::stf::graph_ctx::release_resources (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE">cuda::experimental::stf::graph_ctx::reorder_tasks (C++ function)</a>
 </li>
@@ -5930,6 +5972,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctxE">cuda::experimental::stf::stream_ctx (C++ class)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx12add_resourceENSt10shared_ptrI12ctx_resourceEE">cuda::experimental::stf::stream_ctx::add_resource (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx12add_transferERK10data_placeRK10data_place6size_t">cuda::experimental::stf::stream_ctx::add_transfer (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4NK4cuda12experimental3stf10stream_ctx15async_resourcesEv">cuda::experimental::stf::stream_ctx::async_resources (C++ function)</a>
@@ -6051,6 +6095,8 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4NK4cuda12experimental3stf10stream_ctx12pop_affinityEv">cuda::experimental::stf::stream_ctx::pop_affinity (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4NK4cuda12experimental3stf10stream_ctx13push_affinityENSt10shared_ptrI10exec_placeEE">cuda::experimental::stf::stream_ctx::push_affinity (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4NK4cuda12experimental3stf10stream_ctx13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx17release_resourcesE12cudaStream_t">cuda::experimental::stf::stream_ctx::release_resources (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#_CPPv4N4cuda12experimental3stf10stream_ctx13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE">cuda::experimental::stf::stream_ctx::reorder_tasks (C++ function)</a>
 </li>
