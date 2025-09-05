@@ -91,6 +91,26 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::input_iterator<TIter>);
   }
 
+  {
+    // Ensure we can work with other cuda iterators
+    using TIter = cuda::transform_iterator<cuda::counting_iterator<int>, TimesTwo>;
+    static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::random_access_iterator<TIter>);
+  }
+
+  {
+    // Ensure we can work with other cuda iterators
+    using TIter = cuda::std::reverse_iterator<cuda::transform_iterator<cuda::counting_iterator<int>, TimesTwo>>;
+    static_assert(cuda::std::same_as<typename TIter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<typename TIter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<typename TIter::value_type, int>);
+    static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::random_access_iterator<TIter>);
+  }
+
   return true;
 }
 
