@@ -589,6 +589,10 @@ struct DispatchTopK : SelectedPolicy
     constexpr int num_passes       = calc_num_passes<key_in_t, policy_t::BITS_PER_PASS>();
     constexpr int num_buckets      = 1 << policy_t::BITS_PER_PASS;
 
+    // Define operators
+    using identify_candidates_op_t = IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS>;
+    using extract_bin_op_t         = ExtractBinOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS>;
+
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
     k                     = static_cast<OutOffsetT>(
@@ -684,9 +688,8 @@ struct DispatchTopK : SelectedPolicy
     for (; pass < num_passes; pass++)
     {
       // Set operator
-      ExtractBinOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS> extract_bin_op(pass);
-      IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS> identify_candidates_op(
-        &counter->kth_key_bits, pass);
+      extract_bin_op_t extract_bin_op(pass);
+      identify_candidates_op_t identify_candidates_op(&counter->kth_key_bits, pass);
 
       // Initialize address variables
       in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
@@ -752,8 +755,7 @@ struct DispatchTopK : SelectedPolicy
       }
     }
 
-    IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS> identify_candidates_op(
-      &counter->kth_key_bits, pass);
+    identify_candidates_op_t identify_candidates_op(&counter->kth_key_bits, pass);
     const auto last_filter_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
     const auto last_filter_grid_size            = ::cuda::std::min(
@@ -781,6 +783,10 @@ struct DispatchTopK : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
+
+    using identify_candidates_op_t = IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::BITS_PER_PASS>;
+    using extract_bin_op_t = ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
+
     return Invoke<ActivePolicyT>(
       detail::topk::DeviceTopKKernel<
         max_policy_t,
@@ -791,8 +797,8 @@ struct DispatchTopK : SelectedPolicy
         OffsetT,
         OutOffsetT,
         key_in_t,
-        ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
+        extract_bin_op_t,
+        identify_candidates_op_t,
         /*IsFirstPass*/ true>,
 
       detail::topk::DeviceTopKKernel<
@@ -804,8 +810,8 @@ struct DispatchTopK : SelectedPolicy
         OffsetT,
         OutOffsetT,
         key_in_t,
-        ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
+        extract_bin_op_t,
+        identify_candidates_op_t,
         /*IsFirstPass*/ false>,
 
       detail::topk::DeviceTopKLastFilterKernel<
@@ -817,7 +823,7 @@ struct DispatchTopK : SelectedPolicy
         OffsetT,
         OutOffsetT,
         key_in_t,
-        IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>>);
+        identify_candidates_op_t>);
   }
 
   /*
