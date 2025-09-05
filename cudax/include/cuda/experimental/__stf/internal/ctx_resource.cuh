@@ -40,7 +40,7 @@ class ctx_resource
 public:
   virtual ~ctx_resource() = default;
   //! Release asynchronously (only called if can_release_in_callback() returns false)
-  virtual void release(cudaStream_t stream)
+  virtual void release(cudaStream_t)
   { /* Default implementation does nothing */
   }
   //! Returns true if this resource can be released in a host callback without using the stream
