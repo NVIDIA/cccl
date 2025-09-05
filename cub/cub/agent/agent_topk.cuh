@@ -511,7 +511,6 @@ struct AgentTopK
     {
       OffsetT* p_filter_cnt   = &counter->filter_cnt;
       OutOffsetT* p_out_cnt   = &counter->out_cnt;
-      const auto kth_key_bits = counter->kth_key_bits;
 
       // Lambda for early_stop = true (i.e., we have identified the exact "splitter" key):
       // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into
