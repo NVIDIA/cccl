@@ -154,9 +154,9 @@ void test_graph_ctx_manual_resource_release()
 
   graph_ctx ctx;
 
-  // Add a simple host launch
-  ctx.host_launch()->*[]() {
-    static std::atomic<int> work_counter{0};
+  // Add a simple host launch with work counter
+  std::atomic<int> work_counter{0};
+  ctx.host_launch()->*[&work_counter]() {
     work_counter.fetch_add(1);
   };
 
@@ -171,29 +171,41 @@ void test_graph_ctx_manual_resource_release()
   EXPECT(stream_resource_construct_count.load() == num_resources);
   EXPECT(callback_resource_construct_count.load() == num_resources);
 
-  // Submit the context but don't finalize yet
-  ctx.submit();
-
   // Resources should not be released yet
   EXPECT(stream_resource_release_count.load() == 0);
   EXPECT(callback_resource_release_count.load() == 0);
 
-  // Create stream for manual resource release
+  // Generate the graph using finalize_as_graph
+  ::std::shared_ptr<cudaGraph_t> graph = ctx.finalize_as_graph();
+
+  // Create stream and instantiate graph for multiple launches
   cudaStream_t test_stream;
   cuda_safe_call(cudaStreamCreate(&test_stream));
 
-  // Manually release resources
+  cudaGraphExec_t graphExec;
+  cuda_safe_call(cudaGraphInstantiate(&graphExec, *graph, nullptr, nullptr, 0));
+
+  // Launch the graph multiple times
+  const int num_launches = 3;
+  for (int i = 0; i < num_launches; i++)
+  {
+    cuda_safe_call(cudaGraphLaunch(graphExec, test_stream));
+  }
+
+  // Manually release resources after graph executions
   ctx.release_resources(test_stream);
   cuda_safe_call(cudaStreamSynchronize(test_stream));
 
-  cuda_safe_call(cudaStreamDestroy(test_stream));
+  // Verify the work was executed
+  EXPECT(work_counter.load() == num_launches);
 
   // Now resources should be released
   EXPECT(stream_resource_release_count.load() == num_resources);
   EXPECT(callback_resource_release_count.load() == num_resources);
 
-  // Finalize without additional resource release
-  ctx.finalize();
+  // Clean up
+  cuda_safe_call(cudaGraphExecDestroy(graphExec));
+  cuda_safe_call(cudaStreamDestroy(test_stream));
 
   check_all_resources_released();
 }
