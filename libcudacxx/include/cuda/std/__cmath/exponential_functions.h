@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -28,6 +31,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 // MSVC and clang cuda need the host side functions included
 #if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
@@ -632,6 +636,92 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 {
   return ::cuda::std::scalbn((double) __x, __y);
 }
+
+#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
+template <class _Tp>
+_CCCL_API inline _Tp __constexpr_scalbn(_Tp __x, int __i)
+{
+  return static_cast<_Tp>(::scalbn(static_cast<double>(__x), __i));
+}
+
+template <>
+_CCCL_API inline float __constexpr_scalbn<float>(float __x, int __i)
+{
+  return ::scalbnf(__x, __i);
+}
+
+template <>
+_CCCL_API inline double __constexpr_scalbn<double>(double __x, int __i)
+{
+  return ::scalbn(__x, __i);
+}
+
+#  if _CCCL_HAS_LONG_DOUBLE()
+template <>
+_CCCL_API inline long double __constexpr_scalbn<long double>(long double __x, int __i)
+{
+  return ::scalbnl(__x, __i);
+}
+#  endif // _CCCL_HAS_LONG_DOUBLE()
+#else
+template <class _Tp>
+_CCCL_API inline _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_Tp __x, int __exp)
+{
+#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_COMPLEX_OPERATIONS()
+  if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
+  {
+    if (__x == _Tp(0))
+    {
+      return __x;
+    }
+
+    if (::cuda::std::isinf(__x))
+    {
+      return __x;
+    }
+
+    if (_Tp(__exp) == _Tp(0))
+    {
+      return __x;
+    }
+
+    if (::cuda::std::isnan(__x))
+    {
+      return numeric_limits<_Tp>::quiet_NaN();
+    }
+
+    _Tp __mult(1);
+    if (__exp > 0)
+    {
+      __mult = numeric_limits<_Tp>::radix;
+      --__exp;
+    }
+    else
+    {
+      ++__exp;
+      __exp = -__exp;
+      __mult /= numeric_limits<_Tp>::radix;
+    }
+
+    while (__exp > 0)
+    {
+      if (!(__exp & 1))
+      {
+        __mult *= __mult;
+        __exp >>= 1;
+      }
+      else
+      {
+        __x *= __mult;
+        --__exp;
+      }
+    }
+    return __x;
+  }
+#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+  return ::cuda::std::scalbn(__x, __exp);
+}
+#endif // !_CCCL_COMPILER(MSVC)
 
 // pow
 
