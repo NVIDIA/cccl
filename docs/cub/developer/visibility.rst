@@ -8,6 +8,7 @@ Symbol Visibility
    :maxdepth: 1
 
    visibility/host_stub_visibility
+   visibility/device_kernel_visibility
 
 Using CUB/Thrust in shared libraries is a known source of issues. This relates to the visibility of the kernel functions
 but also of the stub functions NVCC generates to actually call the kernel.
@@ -21,6 +22,17 @@ That stub function has weak linkage, so if both libraries try to launch ``kernel
 and the other kernel launch ^might silently fail.
 
 A more detailed description can be found :ref:`here <cub-developer-guide-visibility-host-stub-visibility>`.
+
+Problem 2: Calling kernels from inside a shared library
+--------------------------------------------------------
+
+This is quite similar to Problem 1 above. Again a project links two shared libraries ``lib_a`` and ``lib_b``. However,
+this time we call a library function ``foo`` that takes a function pointer to a kernel as an argument and invokes it.
+If ``foo`` has weak external linkage (e.g ``thrust::triple_chevron``) we might end up calling ``lib_a::foo`` from a
+inside ``lib_b`` instead of ``lib_b::foo``, or vice versa. The CUDA runtime from ``lib_a`` will not be able to call
+the kernel function pointer we passed from ``lib_b``.
+
+A more detailed description can be found :ref:`here <cub-developer-guide-visibility-device-kernel-visibility>`.
 
 Possible Solutions
 -------------------
