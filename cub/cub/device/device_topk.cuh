@@ -20,6 +20,10 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
 
+#include <cuda/__execution/require.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/std/__execution/env.h>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -112,7 +116,8 @@ struct DeviceTopK
             typename ValueInputIteratorT,
             typename ValueOutputIteratorT,
             typename NumItemsT,
-            typename NumOutItemsT>
+            typename NumOutItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t TopKPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -122,7 +127,7 @@ struct DeviceTopK
     ValueOutputIteratorT d_values_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    cudaStream_t stream = 0)
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKPairs");
 
@@ -132,6 +137,10 @@ struct DeviceTopK
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
                                  detail::choose_offset_t<NumOutItemsT>>;
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+
     return detail::topk::DispatchTopK<
       KeyInputIteratorT,
       KeyOutputIteratorT,
@@ -147,7 +156,7 @@ struct DeviceTopK
                             d_values_out,
                             static_cast<offset_t>(num_items),
                             k,
-                            stream);
+                            stream.get());
   }
 
   //! @tparam KeyInputIteratorT
@@ -204,7 +213,8 @@ struct DeviceTopK
             typename ValueInputIteratorT,
             typename ValueOutputIteratorT,
             typename NumItemsT,
-            typename NumOutItemsT>
+            typename NumOutItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t TopKMinPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -214,7 +224,7 @@ struct DeviceTopK
     ValueOutputIteratorT d_values_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    cudaStream_t stream = 0)
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKMinPairs");
 
@@ -224,6 +234,10 @@ struct DeviceTopK
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
                                  detail::choose_offset_t<NumOutItemsT>>;
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+
     return detail::topk::DispatchTopK<
       KeyInputIteratorT,
       KeyOutputIteratorT,
@@ -239,7 +253,7 @@ struct DeviceTopK
                             d_values_out,
                             static_cast<offset_t>(num_items),
                             k,
-                            stream);
+                            stream.get());
   }
 
   //! @tparam KeyInputIteratorT
@@ -278,7 +292,11 @@ struct DeviceTopK
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyInputIteratorT, typename KeyOutputIteratorT, typename NumItemsT, typename NumOutItemsT>
+  template <typename KeyInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename NumItemsT,
+            typename NumOutItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t TopKKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -286,7 +304,7 @@ struct DeviceTopK
     KeyOutputIteratorT d_keys_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    cudaStream_t stream = 0)
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKKeys");
 
@@ -296,6 +314,10 @@ struct DeviceTopK
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
                                  detail::choose_offset_t<NumOutItemsT>>;
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+
     return detail::topk::
       DispatchTopK<KeyInputIteratorT, KeyOutputIteratorT, NullType*, NullType*, offset_t, out_offset_t, select_min>::
         Dispatch(d_temp_storage,
@@ -306,7 +328,7 @@ struct DeviceTopK
                  static_cast<NullType*>(nullptr),
                  static_cast<offset_t>(num_items),
                  k,
-                 stream);
+                 stream.get());
   }
 
   //! @tparam KeyInputIteratorT
@@ -345,7 +367,11 @@ struct DeviceTopK
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyInputIteratorT, typename KeyOutputIteratorT, typename NumItemsT, typename NumOutItemsT>
+  template <typename KeyInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename NumItemsT,
+            typename NumOutItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t TopKMinKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -353,7 +379,7 @@ struct DeviceTopK
     KeyOutputIteratorT d_keys_out,
     NumItemsT num_items,
     NumOutItemsT k,
-    cudaStream_t stream = 0)
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::TopKMinKeys");
 
@@ -363,6 +389,10 @@ struct DeviceTopK
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
                                  detail::choose_offset_t<NumOutItemsT>>;
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+
     return detail::topk::
       DispatchTopK<KeyInputIteratorT, KeyOutputIteratorT, NullType*, NullType*, offset_t, out_offset_t, select_min>::
         Dispatch(d_temp_storage,
@@ -373,7 +403,7 @@ struct DeviceTopK
                  static_cast<NullType*>(nullptr),
                  static_cast<offset_t>(num_items),
                  k,
-                 stream);
+                 stream.get());
   }
 };
 
