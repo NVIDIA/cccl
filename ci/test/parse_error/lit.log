@@ -1,0 +1,52 @@
+-- Testing: 3 tests, 3 workers --
+XPASS: lit-tests :: xpass.test (1 of 3)
+******************** TEST 'lit-tests :: xpass.test' FAILED ********************
+Exit Code: 0
+
+Command Output (stderr):
+--
+RUN: at line 2: true
++ true
+
+--
+
+********************
+FAIL: lit-tests :: fail.test (2 of 3)
+******************** TEST 'lit-tests :: fail.test' FAILED ********************
+Exit Code: 1
+
+Command Output (stderr):
+--
+RUN: at line 1: false
++ false
+
+--
+
+********************
+FAIL: lit-tests :: fail_dup.test (3 of 3)
+******************** TEST 'lit-tests :: fail_dup.test' FAILED ********************
+Exit Code: 1
+
+Command Output (stderr):
+--
+RUN: at line 1: false
++ false
+
+--
+
+********************
+********************
+Failed Tests (2):
+  lit-tests :: fail.test
+  lit-tests :: fail_dup.test
+
+********************
+Unexpectedly Passed Tests (1):
+  lit-tests :: xpass.test
+
+
+Testing Time: 0.11s
+
+Total Discovered Tests: 3
+  Failed             : 2 (66.67%)
+  Unexpectedly Passed: 1 (33.33%)

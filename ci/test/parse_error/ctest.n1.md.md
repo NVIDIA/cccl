@@ -1,0 +1,1 @@
+- `fail1.cpp:10`: `error: first`

@@ -1,0 +1,38 @@
+[
+  {
+    "file": "fail1.cpp",
+    "line": "10",
+    "msg": "error: first",
+    "full": "fail1.cpp:10: error: first"
+  },
+  {
+    "file": "fail2.cpp",
+    "line": "20",
+    "msg": "error: second",
+    "full": "fail2.cpp:20: error: second"
+  },
+  {
+    "file": "fail1.cpp",
+    "line": "10",
+    "msg": "error: first",
+    "full": "fail1.cpp:10: error: first"
+  },
+  {
+    "line": "1",
+    "file": "fail1",
+    "msg": "Failed",
+    "full": "\t  1 - fail1 (Failed)"
+  },
+  {
+    "line": "2",
+    "file": "fail2",
+    "msg": "Failed",
+    "full": "\t  2 - fail2 (Failed)"
+  },
+  {
+    "line": "3",
+    "file": "fail1_dup",
+    "msg": "Failed",
+    "full": "\t  3 - fail1_dup (Failed)"
+  }
+]

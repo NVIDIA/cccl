@@ -1,0 +1,3 @@
+- `lit-tests :: xpass.test`: `XPASS`
+- `lit-tests :: fail.test`: `FAIL`
+- `lit-tests :: fail_dup.test`: `FAIL`

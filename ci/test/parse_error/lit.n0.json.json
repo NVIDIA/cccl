@@ -1,0 +1,17 @@
+[
+  {
+    "msg": "XPASS",
+    "file": "lit-tests :: xpass.test",
+    "full": "XPASS: lit-tests :: xpass.test (1 of 3)"
+  },
+  {
+    "msg": "FAIL",
+    "file": "lit-tests :: fail.test",
+    "full": "FAIL: lit-tests :: fail.test (2 of 3)"
+  },
+  {
+    "msg": "FAIL",
+    "file": "lit-tests :: fail_dup.test",
+    "full": "FAIL: lit-tests :: fail_dup.test (3 of 3)"
+  }
+]

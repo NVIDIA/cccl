@@ -1,0 +1,20 @@
+[
+  {
+    "file": "a.cpp",
+    "line": "3",
+    "msg": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "full": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token"
+  },
+  {
+    "file": "b.cpp",
+    "line": "3",
+    "msg": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "full": "b.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token"
+  },
+  {
+    "file": "c.cpp",
+    "line": "2",
+    "msg": "error: \u2018y\u2019 was not declared in this scope",
+    "full": "c.cpp:2:12: error: \u2018y\u2019 was not declared in this scope"
+  }
+]

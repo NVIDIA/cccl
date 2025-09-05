@@ -52,5 +52,8 @@ find_and_copy_job_artifact_from() {
 }
 
 find_and_copy_job_artifact_from "sccache_stats.json" build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from "configure.log" . || :
+find_and_copy_job_artifact_from "build.log" . || :
+find_and_copy_job_artifact_from "test.log" . || :
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
