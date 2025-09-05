@@ -63,7 +63,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     cub::NullType*,
     offset_t,
     out_offset_t,
-    detail::topk::select::max,
+    cub::detail::topk::select::max,
     policy_t>;
 #else // TUNE_BASE
   using dispatch_t = cub::detail::topk::DispatchTopK<
@@ -73,7 +73,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     cub::NullType*,
     offset_t,
     out_offset_t,
-    detail::topk::select::max>;
+    cub::detail::topk::select::max>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
