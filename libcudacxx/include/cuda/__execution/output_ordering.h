@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDA___EXECUTION_OUTPUT_ORDER_H
-#define __CUDA___EXECUTION_OUTPUT_ORDER_H
+#ifndef __CUDA___EXECUTION_OUTPUT_ORDERING_H
+#define __CUDA___EXECUTION_OUTPUT_ORDERING_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,46 +24,47 @@
 #include <cuda/__execution/require.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
-namespace output_order
+namespace output_ordering
 {
 
-struct __get_output_order_t;
+struct __get_output_ordering_t;
 
-enum class __output_order_t
+enum class __output_ordering_t
 {
   __sorted,
   __unsorted
 };
 
-template <__output_order_t _Guarantee>
-struct __output_order_holder_t : __requirement
+template <__output_ordering_t _Guarantee>
+struct _CCCL_DECLSPEC_EMPTY_BASES __output_order_holder_t
+    : __requirement
+    , integral_constant<__output_order_t, _Guarantee>
 {
-  static constexpr __output_order_t value = _Guarantee;
-
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_output_order_t&) const noexcept
-    -> __output_order_holder_t<_Guarantee>
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_output_ordering_t&) const noexcept
+    -> __output_ordering_holder_t<_Guarantee>
   {
     return *this;
   }
 };
 
-using sorted_t   = __output_order_holder_t<__output_order_t::__sorted>;
-using unsorted_t = __output_order_holder_t<__output_order_t::__unsorted>;
+using sorted_t   = __output_ordering_holder_t<__output_ordering_t::__sorted>;
+using unsorted_t = __output_ordering_holder_t<__output_ordering_t::__unsorted>;
 
 _CCCL_GLOBAL_CONSTANT sorted_t sorted{};
 _CCCL_GLOBAL_CONSTANT unsorted_t unsorted{};
 
-struct __get_output_order_t
+struct __get_output_ordering_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, __get_output_order_t>)
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, __get_output_ordering_t>)
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
@@ -77,9 +78,9 @@ struct __get_output_order_t
   }
 };
 
-_CCCL_GLOBAL_CONSTANT auto __get_output_order = __get_output_order_t{};
+_CCCL_GLOBAL_CONSTANT auto __get_output_ordering = __get_output_ordering_t{};
 
-} // namespace output_order
+} // namespace output_ordering
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
 

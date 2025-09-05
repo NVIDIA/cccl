@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_order.h>
+#include <cuda/__execution/output_ordering.h>
 
 __host__ __device__ void test()
 {
@@ -24,14 +24,16 @@ __host__ __device__ void test()
                          cuda::execution::determinism::not_guaranteed_t>);
 
   static_assert(
-    cuda::std::is_same_v<decltype(cuda::execution::output_order::__get_output_order(cuda::execution::__get_requirements(
-                           cuda::execution::require(cuda::execution::output_order::sorted)))),
-                         cuda::execution::output_order::sorted_t>);
+    cuda::std::is_same_v<
+      decltype(cuda::execution::output_ordering::__get_output_ordering(
+        cuda::execution::__get_requirements(cuda::execution::require(cuda::execution::output_ordering::sorted)))),
+      cuda::execution::output_ordering::sorted_t>);
 
   static_assert(
-    cuda::std::is_same_v<decltype(cuda::execution::output_order::__get_output_order(cuda::execution::__get_requirements(
-                           cuda::execution::require(cuda::execution::output_order::unsorted)))),
-                         cuda::execution::output_order::unsorted_t>);
+    cuda::std::is_same_v<
+      decltype(cuda::execution::output_ordering::__get_output_ordering(
+        cuda::execution::__get_requirements(cuda::execution::require(cuda::execution::output_ordering::unsorted)))),
+      cuda::execution::output_ordering::unsorted_t>);
 }
 
 int main(int, char**)
