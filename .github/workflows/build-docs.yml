@@ -119,7 +119,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./_site
           publish_branch: gh-pages
-          destination_dir: ${{ inputs.destination_dir }}
+          destination_dir: ${{ inputs.destination_dir || 'docs' }}
           keep_files: true
           commit_message: ${{ steps.commit-msg.outputs.message }}
 
