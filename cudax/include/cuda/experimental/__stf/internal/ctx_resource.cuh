@@ -88,7 +88,7 @@ public:
     _CCCL_ASSERT(!resources_released, "Resources have already been released on this context");
 
     // Separate resources into stream-dependent and callback-batched
-    ::std::vector<::std::shared_ptr<ctx_resource>> callback_resources;
+    decltype(resources) callback_resources;
 
     for (auto& r : resources)
     {
