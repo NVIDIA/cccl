@@ -9,6 +9,9 @@ from pathlib import Path
 
 FORMATS = {"md": ".md", "gh": ".md", "json": ".json"}
 
+# Intentional error:
+if 1 = 2:
+    print("This won't run")
 
 def main() -> int:
     root = Path(__file__).parent
