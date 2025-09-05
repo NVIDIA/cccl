@@ -115,6 +115,16 @@ struct alignas(128) Counter
   // especially for the segment version.
 };
 
+enum class candidate_class
+{
+  // The given candidate is definitely amongst the top-k items
+  selected,
+  // The given candidate may or may not be amongst the top-k items
+  candidate,
+  // The given candidate is definitely not amongst the top-k items
+  rejected
+};
+
 /**
  * Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
  */
@@ -148,81 +158,6 @@ _CCCL_DEVICE constexpr unsigned calc_mask(const int pass)
   int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
 }
-
-/**
- * Get the bin ID from the value of element
- */
-template <typename T, bool FlipBits, int BitsPerPass>
-struct ExtractBinOp
-{
-  int pass{};
-  int start_bit;
-  unsigned mask;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ExtractBinOp(int pass)
-      : pass(pass)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(pass);
-    mask      = calc_mask<T, BitsPerPass>(pass);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
-  {
-    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (FlipBits)
-    {
-      bits = ~bits;
-    }
-    int bucket = (bits >> start_bit) & mask;
-    return bucket;
-  }
-};
-
-enum class candidate_class
-{
-  // The given candidate is definitely amongst the top-k items
-  selected,
-  // The given candidate may or may not be amongst the top-k items
-  candidate,
-  // The given candidate is definitely not amongst the top-k items
-  rejected
-};
-
-/**
- * Check if the input element is still a candidate for the target pass.
- */
-template <typename T, bool FlipBits, int BitsPerPass>
-struct IdentifyCandidatesOp
-{
-  typename Traits<T>::UnsignedBits* kth_key_bits;
-  int pass;
-  int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IdentifyCandidatesOp(typename Traits<T>::UnsignedBits* kth_key_bits, int pass)
-      : kth_key_bits(kth_key_bits)
-      , pass(pass - 1)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(this->pass);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
-  {
-    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-
-    if constexpr (FlipBits)
-    {
-      bits = ~bits;
-    }
-
-    bits = (bits >> start_bit) << start_bit;
-
-    return (bits < *kth_key_bits) ? candidate_class::selected
-         : (bits == *kth_key_bits)
-           ? candidate_class::candidate
-           : candidate_class::rejected;
-  }
-};
 
 /**
  * @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
@@ -509,8 +444,8 @@ struct AgentTopK
     }
     else
     {
-      OffsetT* p_filter_cnt   = &counter->filter_cnt;
-      OutOffsetT* p_out_cnt   = &counter->out_cnt;
+      OffsetT* p_filter_cnt = &counter->filter_cnt;
+      OutOffsetT* p_out_cnt = &counter->out_cnt;
 
       // Lambda for early_stop = true (i.e., we have identified the exact "splitter" key):
       // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into

@@ -84,6 +84,79 @@ struct device_topk_policy_hub
   using max_policy = Policy900;
 };
 
+enum class select
+{
+  // Select the K elements with the lowest values
+  min,
+  // Select the K elements with the highest values
+  max
+};
+
+/**
+ * Get the bin ID from the value of element
+ */
+template <typename T, select SelectDirection, int BitsPerPass>
+struct ExtractBinOp
+{
+  int pass{};
+  int start_bit;
+  unsigned mask;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ExtractBinOp(int pass)
+      : pass(pass)
+  {
+    start_bit = calc_start_bit<T, BitsPerPass>(pass);
+    mask      = calc_mask<T, BitsPerPass>(pass);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
+  {
+    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
+    bits      = Traits<T>::TwiddleIn(bits);
+    if constexpr (SelectDirection != select::min)
+    {
+      bits = ~bits;
+    }
+    int bucket = (bits >> start_bit) & mask;
+    return bucket;
+  }
+};
+
+/**
+ * Check if the input element is still a candidate for the target pass.
+ */
+template <typename T, select SelectDirection, int BitsPerPass>
+struct IdentifyCandidatesOp
+{
+  typename Traits<T>::UnsignedBits* kth_key_bits;
+  int pass;
+  int start_bit;
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE IdentifyCandidatesOp(typename Traits<T>::UnsignedBits* kth_key_bits, int pass)
+      : kth_key_bits(kth_key_bits)
+      , pass(pass - 1)
+  {
+    start_bit = calc_start_bit<T, BitsPerPass>(this->pass);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
+  {
+    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
+    bits      = Traits<T>::TwiddleIn(bits);
+
+    if constexpr (SelectDirection != select::min)
+    {
+      bits = ~bits;
+    }
+
+    bits = (bits >> start_bit) << start_bit;
+
+    return (bits < *kth_key_bits) ? candidate_class::selected
+         : (bits == *kth_key_bits)
+           ? candidate_class::candidate
+           : candidate_class::rejected;
+  }
+};
+
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
@@ -118,9 +191,6 @@ struct device_topk_policy_hub
  *
  * @tparam IdentifyCandidatesOpT
  *   Operations to filter the input key value
- *
- * @tparam SelectMin
- *   Determine whether to select the smallest (SelectMin=true) or largest (SelectMin=false) K elements.
  *
  * @param[in] d_keys_in
  *   Pointer to the input data of key data
@@ -180,7 +250,6 @@ template <typename ChainedPolicyT,
           typename KeyInT,
           typename ExtractBinOpT,
           typename IdentifyCandidatesOpT,
-          bool SelectMin,
           bool IsFirstPass>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
@@ -257,9 +326,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
  * @tparam IdentifyCandidatesOpT
  *   Operations to filter the input key value
  *
- * @tparam SelectMin
- *   Determine whether to select the smallest (SelectMin=true) or largest (SelectMin=false) K elements.
- *
  * @param[in] d_keys_in
  *   Pointer to the input data of key data
  *
@@ -307,8 +373,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename OutOffsetT,
           typename KeyInT,
-          typename IdentifyCandidatesOpT,
-          bool SelectMin>
+          typename IdentifyCandidatesOpT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     const KeyInputIteratorT d_keys_in,
@@ -373,8 +438,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
  * @tparam OutOffsetT
  *  Data Type for variables: k
  *
- * @tparam SelectMin
- *   Determine whether to select the smallest (SelectMin=true) or largest (SelectMin=false) K elements.
+ * @tparam SelectDirection
+ *   Determines whether to select the smallest or largest K elements.
  */
 template <typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -382,7 +447,7 @@ template <typename KeyInputIteratorT,
           typename ValueOutputIteratorT,
           typename OffsetT,
           typename OutOffsetT,
-          bool SelectMin,
+          select SelectDirection,
           typename SelectedPolicy = detail::topk::device_topk_policy_hub<detail::it_value_t<KeyInputIteratorT>, OffsetT>>
 struct DispatchTopK : SelectedPolicy
 {
@@ -619,8 +684,8 @@ struct DispatchTopK : SelectedPolicy
     for (; pass < num_passes; pass++)
     {
       // Set operator
-      ExtractBinOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> extract_bin_op(pass);
-      IdentifyCandidatesOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> identify_candidates_op(
+      ExtractBinOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS> extract_bin_op(pass);
+      IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS> identify_candidates_op(
         &counter->kth_key_bits, pass);
 
       // Initialize address variables
@@ -687,7 +752,7 @@ struct DispatchTopK : SelectedPolicy
       }
     }
 
-    IdentifyCandidatesOp<key_in_t, !SelectMin, policy_t::BITS_PER_PASS> identify_candidates_op(
+    IdentifyCandidatesOp<key_in_t, SelectDirection, policy_t::BITS_PER_PASS> identify_candidates_op(
       &counter->kth_key_bits, pass);
     const auto last_filter_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
@@ -726,9 +791,8 @@ struct DispatchTopK : SelectedPolicy
         OffsetT,
         OutOffsetT,
         key_in_t,
-        ExtractBinOp<key_in_t, !SelectMin, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        IdentifyCandidatesOp<key_in_t, !SelectMin, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        SelectMin,
+        ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
+        IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
         /*IsFirstPass*/ true>,
 
       detail::topk::DeviceTopKKernel<
@@ -740,9 +804,8 @@ struct DispatchTopK : SelectedPolicy
         OffsetT,
         OutOffsetT,
         key_in_t,
-        ExtractBinOp<key_in_t, !SelectMin, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        IdentifyCandidatesOp<key_in_t, !SelectMin, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        SelectMin,
+        ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
+        IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
         /*IsFirstPass*/ false>,
 
       detail::topk::DeviceTopKLastFilterKernel<
@@ -754,8 +817,7 @@ struct DispatchTopK : SelectedPolicy
         OffsetT,
         OutOffsetT,
         key_in_t,
-        IdentifyCandidatesOp<key_in_t, !SelectMin, ActivePolicyT::topk_policy_t::BITS_PER_PASS>,
-        SelectMin>);
+        IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>>);
   }
 
   /*

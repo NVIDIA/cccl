@@ -126,8 +126,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
-    static constexpr bool select_min = false;
-    using offset_t                   = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using out_offset_t =
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
@@ -143,15 +142,15 @@ struct DeviceTopK
       ValueOutputIteratorT,
       offset_t,
       out_offset_t,
-      select_min>::Dispatch(d_temp_storage,
-                            temp_storage_bytes,
-                            d_keys_in,
-                            d_keys_out,
-                            d_values_in,
-                            d_values_out,
-                            static_cast<offset_t>(num_items),
-                            k,
-                            stream.get());
+      detail::topk::select::max>::Dispatch(d_temp_storage,
+                                           temp_storage_bytes,
+                                           d_keys_in,
+                                           d_keys_out,
+                                           d_values_in,
+                                           d_values_out,
+                                           static_cast<offset_t>(num_items),
+                                           k,
+                                           stream.get());
   }
 
   //! @tparam KeyInputIteratorT
@@ -223,8 +222,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
-    static constexpr bool select_min = true;
-    using offset_t                   = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using out_offset_t =
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
@@ -240,15 +238,15 @@ struct DeviceTopK
       ValueOutputIteratorT,
       offset_t,
       out_offset_t,
-      select_min>::Dispatch(d_temp_storage,
-                            temp_storage_bytes,
-                            d_keys_in,
-                            d_keys_out,
-                            d_values_in,
-                            d_values_out,
-                            static_cast<offset_t>(num_items),
-                            k,
-                            stream.get());
+      detail::topk::select::min>::Dispatch(d_temp_storage,
+                                           temp_storage_bytes,
+                                           d_keys_in,
+                                           d_keys_out,
+                                           d_values_in,
+                                           d_values_out,
+                                           static_cast<offset_t>(num_items),
+                                           k,
+                                           stream.get());
   }
 
   //! @tparam KeyInputIteratorT
@@ -303,8 +301,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
-    static constexpr bool select_min = false;
-    using offset_t                   = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using out_offset_t =
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
@@ -313,17 +310,22 @@ struct DeviceTopK
     // Query relevant properties from the environment
     auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
 
-    return detail::topk::
-      DispatchTopK<KeyInputIteratorT, KeyOutputIteratorT, NullType*, NullType*, offset_t, out_offset_t, select_min>::
-        Dispatch(d_temp_storage,
-                 temp_storage_bytes,
-                 d_keys_in,
-                 d_keys_out,
-                 static_cast<NullType*>(nullptr),
-                 static_cast<NullType*>(nullptr),
-                 static_cast<offset_t>(num_items),
-                 k,
-                 stream.get());
+    return detail::topk::DispatchTopK<
+      KeyInputIteratorT,
+      KeyOutputIteratorT,
+      NullType*,
+      NullType*,
+      offset_t,
+      out_offset_t,
+      detail::topk::select::max>::Dispatch(d_temp_storage,
+                                           temp_storage_bytes,
+                                           d_keys_in,
+                                           d_keys_out,
+                                           static_cast<NullType*>(nullptr),
+                                           static_cast<NullType*>(nullptr),
+                                           static_cast<offset_t>(num_items),
+                                           k,
+                                           stream.get());
   }
 
   //! @tparam KeyInputIteratorT
@@ -378,8 +380,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
-    static constexpr bool select_min = true;
-    using offset_t                   = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using out_offset_t =
       ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                  offset_t,
@@ -388,17 +389,22 @@ struct DeviceTopK
     // Query relevant properties from the environment
     auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
 
-    return detail::topk::
-      DispatchTopK<KeyInputIteratorT, KeyOutputIteratorT, NullType*, NullType*, offset_t, out_offset_t, select_min>::
-        Dispatch(d_temp_storage,
-                 temp_storage_bytes,
-                 d_keys_in,
-                 d_keys_out,
-                 static_cast<NullType*>(nullptr),
-                 static_cast<NullType*>(nullptr),
-                 static_cast<offset_t>(num_items),
-                 k,
-                 stream.get());
+    return detail::topk::DispatchTopK<
+      KeyInputIteratorT,
+      KeyOutputIteratorT,
+      NullType*,
+      NullType*,
+      offset_t,
+      out_offset_t,
+      detail::topk::select::min>::Dispatch(d_temp_storage,
+                                           temp_storage_bytes,
+                                           d_keys_in,
+                                           d_keys_out,
+                                           static_cast<NullType*>(nullptr),
+                                           static_cast<NullType*>(nullptr),
+                                           static_cast<offset_t>(num_items),
+                                           k,
+                                           stream.get());
   }
 };
 
