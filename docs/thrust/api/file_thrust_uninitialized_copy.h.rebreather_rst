@@ -1,0 +1,31 @@
+.. _`uninitialized__copy_8h`:
+
+thrust\/uninitialized\_copy.h
+=============================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_uninitialized_copy.h`
+
+.. doxygenfile:: thrust/uninitialized_copy.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_uninitialized_copy.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:uninitialized\_copy <group__copying_1ga50ecdff4f2b8c7606f837e1cfeb70f24>`
+- :ref:`thrust\:\:uninitialized\_copy <group__copying_1gad26f989a9260881c5df7707b57694fe9>`
+- :ref:`thrust\:\:uninitialized\_copy\_n <group__copying_1gabe36cff9b0dcf6a52869a725379eb726>`
+- :ref:`thrust\:\:uninitialized\_copy\_n <group__copying_1gacf44f607e6db43cd1acd0fc17ac5e988>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:exec\_affinity
+=============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/exec\_affinity.cuh <exec__affinity_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::exec_affinity

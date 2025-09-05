@@ -1,0 +1,6 @@
+cub\:\:BlockShuffle
+===================
+
+Defined in :ref:`cub\/block\/block\_shuffle.cuh <block__shuffle_8cuh>`
+
+.. doxygenclass:: cub::BlockShuffle

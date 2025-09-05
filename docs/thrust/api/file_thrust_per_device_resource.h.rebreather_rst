@@ -1,0 +1,33 @@
+.. _`per__device__resource_8h`:
+
+thrust\/per\_device\_resource.h
+===============================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_per_device_resource.h`
+
+.. doxygenfile:: thrust/per_device_resource.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_per_device_resource.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:per\_device\_allocator <classthrust_1_1per__device__allocator>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:get\_per\_device\_resource <per__device__resource_8h_1ae9af69261a4808eb00e1c4dbb1154ce0>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

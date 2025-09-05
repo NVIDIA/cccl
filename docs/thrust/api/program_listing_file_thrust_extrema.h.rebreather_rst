@@ -1,0 +1,101 @@
+thrust\/extrema.h
+=================
+
+File members: :ref:`thrust\/extrema.h <extrema_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/detail/execution_policy.h>
+   #include <thrust/pair.h>
+
+   #include <cuda/std/__algorithm/max.h>
+   #include <cuda/std/__algorithm/min.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   using ::cuda::std::max;
+   using ::cuda::std::min;
+
+   template <typename DerivedPolicy, typename ForwardIterator>
+   _CCCL_HOST_DEVICE ForwardIterator min_element(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
+
+   template <typename ForwardIterator>
+   ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
+
+   template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
+   _CCCL_HOST_DEVICE ForwardIterator min_element(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+     ForwardIterator first,
+     ForwardIterator last,
+     BinaryPredicate comp);
+
+   template <typename ForwardIterator, typename BinaryPredicate>
+   ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+
+   template <typename DerivedPolicy, typename ForwardIterator>
+   _CCCL_HOST_DEVICE ForwardIterator max_element(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
+
+   template <typename ForwardIterator>
+   ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
+
+   template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
+   _CCCL_HOST_DEVICE ForwardIterator max_element(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+     ForwardIterator first,
+     ForwardIterator last,
+     BinaryPredicate comp);
+
+   template <typename ForwardIterator, typename BinaryPredicate>
+   ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+
+   template <typename DerivedPolicy, typename ForwardIterator>
+   _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
+
+   template <typename ForwardIterator>
+   thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
+
+   template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
+   _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+     ForwardIterator first,
+     ForwardIterator last,
+     BinaryPredicate comp);
+
+   template <typename ForwardIterator, typename BinaryPredicate>
+   thrust::pair<ForwardIterator, ForwardIterator>
+   minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+
+   THRUST_NAMESPACE_END
+
+   #include <thrust/detail/extrema.inl>
+

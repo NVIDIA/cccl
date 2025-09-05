@@ -1,0 +1,90 @@
+include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_resource.cuh
+===============================================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_resource.cuh <device__memory__resource_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDA Experimental in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #ifndef _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE
+   #define _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE
+
+   #include <cuda/std/detail/__config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #if _CCCL_CUDA_COMPILER(CLANG)
+   #  include <cuda_runtime.h>
+   #  include <cuda_runtime_api.h>
+   #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+   #include <cuda/__memory_resource/get_property.h>
+   #include <cuda/__memory_resource/properties.h>
+   #include <cuda/std/__concepts/concept_macros.h>
+   #include <cuda/std/__cuda/api_wrapper.h>
+
+   #include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
+   #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
+
+   #include <cuda/std/__cccl/prologue.h>
+
+   namespace cuda::experimental
+   {
+
+   class device_memory_resource : public __memory_resource_base
+   {
+   private:
+     [[nodiscard]] static ::cudaMemPool_t __get_default_device_mem_pool(const int __device_id)
+     {
+       ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__device_id);
+
+       ::cudaMemPool_t __pool;
+       _CCCL_TRY_CUDA_API(
+         ::cudaDeviceGetDefaultMemPool, "Failed to call cudaDeviceGetDefaultMemPool", &__pool, __device_id);
+       return __pool;
+     }
+
+   public:
+     explicit device_memory_resource(::cuda::device_ref __device)
+         : __memory_resource_base(__get_default_device_mem_pool(__device.get()))
+     {}
+
+     device_memory_resource(int)                   = delete;
+     device_memory_resource(_CUDA_VSTD::nullptr_t) = delete;
+
+     explicit device_memory_resource(::cudaMemPool_t __pool) noexcept
+         : __memory_resource_base(__pool)
+     {}
+
+     explicit device_memory_resource(device_memory_pool& __pool) noexcept
+         : __memory_resource_base(__pool.get())
+     {}
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+     friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
+
+     using default_queries = properties_list<device_accessible>;
+   #endif // _CCCL_DOXYGEN_INVOKED
+   };
+   static_assert(_CUDA_VMR::synchronous_resource_with<device_memory_resource, device_accessible>, "");
+   } // namespace cuda::experimental
+
+   #include <cuda/std/__cccl/epilogue.h>
+
+   #endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE
+

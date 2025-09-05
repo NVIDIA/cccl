@@ -1,0 +1,28 @@
+.. _`warp__merge__sort_8cuh`:
+
+cub\/warp\/warp\_merge\_sort.cuh
+================================
+
+In directory: :ref:`cub\/warp <dir_cb3a671affffe7eeb3fdf5ae58e42cc8>`
+
+Source file: :doc:`program_listing_file_cub_warp_warp_merge_sort.cuh`
+
+.. doxygenfile:: cub/warp/warp_merge_sort.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_warp_warp_merge_sort.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:WarpMergeSort <classcub_1_1WarpMergeSort>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

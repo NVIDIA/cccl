@@ -1,0 +1,43 @@
+.. _`linear__congruential__engine_8h`:
+
+thrust\/random\/linear\_congruential\_engine.h
+==============================================
+
+In directory: :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+Source file: :doc:`program_listing_file_thrust_random_linear_congruential_engine.h`
+
+.. doxygenfile:: thrust/random/linear_congruential_engine.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random_linear_congruential_engine.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:random\:\:linear\_congruential\_engine <classthrust_1_1random_1_1linear__congruential__engine>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:random\:\:operator\!\= <group__random__number__engine__templates_1ga4380003923477d3ec1082c7c52c080b2>`
+- :ref:`thrust\:\:random\:\:operator\<\< <group__random__number__engine__templates_1gad12bc599f558bddd70b985b138a0db98>`
+- :ref:`thrust\:\:random\:\:operator\=\= <group__random__number__engine__templates_1gabc56fce25dfc7247a83b627c12109d43>`
+- :ref:`thrust\:\:random\:\:operator\>\> <group__random__number__engine__templates_1ga38014a7ad365c9aa9a03adaaf830c389>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:random\:\:minstd\_rand <group__predefined__random_1ga1c89beeeb2681026be374c4e0d6609f3>`
+- :ref:`thrust\:\:random\:\:minstd\_rand0 <group__predefined__random_1gaf8dffb2a8bfaaa20d5c916d74c07dc98>`
+

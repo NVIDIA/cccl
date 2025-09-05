@@ -1,0 +1,6 @@
+CUB\_DEBUG\_LOG
+===============
+
+Defined in :ref:`cub\/util\_debug.cuh <util__debug_8cuh>`
+
+.. doxygendefine:: CUB_DEBUG_LOG

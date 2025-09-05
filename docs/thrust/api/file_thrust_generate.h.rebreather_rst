@@ -1,0 +1,31 @@
+.. _`generate_8h`:
+
+thrust\/generate.h
+==================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_generate.h`
+
+.. doxygenfile:: thrust/generate.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_generate.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:generate <group__transformations_1gaa6d990b511b9a2d92599d35bd58e7e9f>`
+- :ref:`thrust\:\:generate <group__transformations_1gad0b2006831332def62d8a062eb40e706>`
+- :ref:`thrust\:\:generate\_n <group__transformations_1ga74e57f5e00eddb0b52f712130a7e6de4>`
+- :ref:`thrust\:\:generate\_n <group__transformations_1gaed80b4c08f4ebbd7598cd2cea418e2b3>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

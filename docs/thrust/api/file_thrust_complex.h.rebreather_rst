@@ -1,0 +1,90 @@
+.. _`complex_8h`:
+
+thrust\/complex.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_complex.h`
+
+.. doxygenfile:: thrust/complex.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_complex.h>
+
+Defines
+-------
+
+- :ref:`THRUST\_STD\_COMPLEX\_DEVICE <complex_8h_1a4187f5c585d6f74135338d01169206a0>`
+- :ref:`THRUST\_STD\_COMPLEX\_IMAG <complex_8h_1a34c6fc82096f4489a47e74973a6d8155>`
+- :ref:`THRUST\_STD\_COMPLEX\_REAL <complex_8h_1ab58ac3aa67f1e484c62ded4191c22431>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:abs <group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e>`
+- :ref:`thrust\:\:acos <group__complex__numbers_1gaae9bbb37fded9853c48c86ac9be343d3>`
+- :ref:`thrust\:\:acosh <group__complex__numbers_1gaa383ede36884eb8136b4029400415108>`
+- :ref:`thrust\:\:arg <group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669>`
+- :ref:`thrust\:\:asin <group__complex__numbers_1gadabb7d62f405c536c64b94fb75e62755>`
+- :ref:`thrust\:\:asinh <group__complex__numbers_1gafdbbce07a6404fcb09cbe0311496ea36>`
+- :ref:`thrust\:\:atan <group__complex__numbers_1ga3889a87fde6839018323e53ef340837c>`
+- :ref:`thrust\:\:atanh <group__complex__numbers_1ga0539be1fefccfe56bf7e1562ea14fb17>`
+- :ref:`thrust\:\:conj <group__complex__numbers_1ga1a5b0dae862aa4027d110c4655c7f5a9>`
+- :ref:`thrust\:\:cos <group__complex__numbers_1ga3b0d4d3f016c312adc28f620ba855939>`
+- :ref:`thrust\:\:cosh <group__complex__numbers_1gaceee32587eb750cceee9f1f0d79dbfab>`
+- :ref:`thrust\:\:exp <group__complex__numbers_1ga5201b11c109b16f2231fbce7be323a63>`
+- :ref:`thrust\:\:log <group__complex__numbers_1ga0bcfc8fdffa05f14a617cd4572a01f6c>`
+- :ref:`thrust\:\:log10 <group__complex__numbers_1ga434556b50022b17a33738876420fa885>`
+- :ref:`thrust\:\:norm <group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1>`
+- :ref:`thrust\:\:operator\!\= <group__complex__numbers_1ga2ead4607cef6219ec908d8e9ae93be8a>`
+- :ref:`thrust\:\:operator\!\= <group__complex__numbers_1ga8e08f0a26b2f4d94de8a11ad947362df>`
+- :ref:`thrust\:\:operator\!\= <group__complex__numbers_1ga9992cbb489359389dd46ae2656eeef3a>`
+- :ref:`thrust\:\:operator\!\= <group__complex__numbers_1gaaa0d52f6873d7cc2cb39bfa64040c69b>`
+- :ref:`thrust\:\:operator\!\= <group__complex__numbers_1gad5c03520802a654e7a0274477b4a3db4>`
+- :ref:`thrust\:\:operator\* <group__complex__numbers_1ga13586848a295118ba54398150b0a41e8>`
+- :ref:`thrust\:\:operator\* <group__complex__numbers_1ga3e9b7733e5303a0396f6df04e897b09e>`
+- :ref:`thrust\:\:operator\* <group__complex__numbers_1gaa00e9ec6be775f4d0c59a146d3cf6103>`
+- :ref:`thrust\:\:operator\+ <group__complex__numbers_1ga31afa36b743dd395cdee29f3b6a57df3>`
+- :ref:`thrust\:\:operator\+ <group__complex__numbers_1gaad355702bd23bd4135b33c2c665ba528>`
+- :ref:`thrust\:\:operator\+ <group__complex__numbers_1gac9a1c7beabe12bd239cb6e28ad465cbb>`
+- :ref:`thrust\:\:operator\+ <group__complex__numbers_1gafed04d10598aca365fdf0580315ce25b>`
+- :ref:`thrust\:\:operator\- <group__complex__numbers_1ga1c93890a3bd15c0e4b96c841f5fde975>`
+- :ref:`thrust\:\:operator\- <group__complex__numbers_1ga379371324f6182743d43bae9d12f1be3>`
+- :ref:`thrust\:\:operator\- <group__complex__numbers_1ga3fd1e1466a54fc8df857cd2d996c40f8>`
+- :ref:`thrust\:\:operator\- <group__complex__numbers_1gaa81ed7178413be19fb90fae7d7e53f83>`
+- :ref:`thrust\:\:operator\/ <group__complex__numbers_1ga17e0114a08e234bd4cc7c8f02e5edee7>`
+- :ref:`thrust\:\:operator\/ <group__complex__numbers_1ga8ee60ad67ae67b88fe0ce07d8667b597>`
+- :ref:`thrust\:\:operator\/ <group__complex__numbers_1gafeb82533f822551e00ab1c3bde047608>`
+- :ref:`thrust\:\:operator\<\< <group__complex__numbers_1ga10a44ed86884e496530c1982663b9e1b>`
+- :ref:`thrust\:\:operator\=\= <group__complex__numbers_1ga5858779608a32c5f85a718cf78749e09>`
+- :ref:`thrust\:\:operator\=\= <group__complex__numbers_1ga999d22f32e88807f5b629905eab61646>`
+- :ref:`thrust\:\:operator\=\= <group__complex__numbers_1gaa5981bf82d73cf69a78331cd97f8cbb5>`
+- :ref:`thrust\:\:operator\=\= <group__complex__numbers_1gab8541f004ebc27b4bc5691189a5601d5>`
+- :ref:`thrust\:\:operator\=\= <group__complex__numbers_1gaf49302f09b683afbe78396b86ed94f76>`
+- :ref:`thrust\:\:operator\>\> <group__complex__numbers_1ga64017ce08ee3797bd68236b20b74756e>`
+- :ref:`thrust\:\:polar <group__complex__numbers_1ga646c62764d7e65e80907e9d4364a4618>`
+- :ref:`thrust\:\:pow <group__complex__numbers_1ga289bde6048db9a10eef6931825e680cf>`
+- :ref:`thrust\:\:pow <group__complex__numbers_1ga96c3a7f2de8e4376e9ca4e887e7017dd>`
+- :ref:`thrust\:\:pow <group__complex__numbers_1gaa4ba8dcc344191e0b035c8d63a93344f>`
+- :ref:`thrust\:\:proj <group__complex__numbers_1ga105ba1aa5e70282d1564dd38213ae3b4>`
+- :ref:`thrust\:\:sin <group__complex__numbers_1ga629aed69f5e2625396cb615a5765b65c>`
+- :ref:`thrust\:\:sinh <group__complex__numbers_1ga00fe7621b052cf93eddd81e61717f97f>`
+- :ref:`thrust\:\:sqrt <group__complex__numbers_1ga987b9f3d799f53a31fb598da90c31a13>`
+- :ref:`thrust\:\:tan <group__complex__numbers_1ga4a0e47d98a2893867c9a94b9379a7ce2>`
+- :ref:`thrust\:\:tanh <group__complex__numbers_1ga38c89dd79273302c91c9eb76502987a0>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:complex <structthrust_1_1complex>`
+

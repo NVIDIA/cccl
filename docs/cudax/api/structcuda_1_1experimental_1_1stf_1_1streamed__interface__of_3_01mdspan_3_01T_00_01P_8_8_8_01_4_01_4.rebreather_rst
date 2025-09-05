@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< mdspan\< T\, P... \> \>
+================================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/slice.cuh <stream_2interfaces_2slice_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::streamed_interface_of< mdspan< T, P... > >

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op
+===================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/slice\_reduction\_ops.cuh <slice__reduction__ops_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::slice_reduction_op

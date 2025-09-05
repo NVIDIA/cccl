@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:task\_dep\_untyped
+=================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/task\_dep.cuh <task__dep_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::task_dep_untyped

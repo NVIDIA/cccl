@@ -1,0 +1,6 @@
+thrust\:\:operator\<\<
+======================
+
+Defined in :ref:`thrust\/device\_reference.h <device__reference_8h>`
+
+.. doxygenfunction:: thrust::operator<<(std::basic_ostream< charT, traits > &os, const device_reference< T > &y)

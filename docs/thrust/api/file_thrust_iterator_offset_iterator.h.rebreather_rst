@@ -1,0 +1,33 @@
+.. _`offset__iterator_8h`:
+
+thrust\/iterator\/offset\_iterator.h
+====================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_offset_iterator.h`
+
+.. doxygenfile:: thrust/iterator/offset_iterator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_offset_iterator.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:offset\_iterator <classthrust_1_1offset__iterator>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:offset\_iterator <group__fancyiterator_1ga14297e13eba7ed9dfb972e1232d24366>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

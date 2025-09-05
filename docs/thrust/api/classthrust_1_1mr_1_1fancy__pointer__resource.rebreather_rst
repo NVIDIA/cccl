@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:fancy\_pointer\_resource
+========================================
+
+Defined in :ref:`thrust\/mr\/fancy\_pointer\_resource.h <fancy__pointer__resource_8h>`
+
+.. doxygenclass:: thrust::mr::fancy_pointer_resource

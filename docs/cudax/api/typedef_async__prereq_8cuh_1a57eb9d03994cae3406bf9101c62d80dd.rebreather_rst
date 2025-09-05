@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:event
+====================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/async\_prereq.cuh <async__prereq_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::stf::event

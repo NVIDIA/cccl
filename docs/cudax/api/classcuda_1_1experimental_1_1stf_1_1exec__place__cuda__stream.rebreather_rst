@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:exec\_place\_cuda\_stream
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/cuda\_stream.cuh <cuda__stream_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::exec_place_cuda_stream

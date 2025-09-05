@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:basic\_any\_resource
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/any\_resource.cuh <any__resource_8cuh>`
+
+.. doxygenclass:: cuda::experimental::basic_any_resource

@@ -1,0 +1,48 @@
+.. _`configuration_8cuh`:
+
+include\/cuda\/experimental\/\_\_launch\/configuration.cuh
+==========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_launch <dir_813ed679672daa6d88aebb2c68559996>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___launch_configuration.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__launch/configuration.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___launch_configuration.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:distribute <configuration_8cuh_1a591c99d80c8d7f96a29174492e72a859>`
+- :ref:`cuda\:\:experimental\:\:dynamic\_shared\_memory <configuration_8cuh_1af2eb536aff6368aa41501ba8679a5d3e>`
+- :ref:`cuda\:\:experimental\:\:dynamic\_shared\_memory <configuration_8cuh_1af44d131129449cad99aeab01faaaca7d>`
+- :ref:`cuda\:\:experimental\:\:dynamic\_smem\_ref <configuration_8cuh_1af9eb5ce0521955cd40e34b71cd816b58>`
+- :ref:`cuda\:\:experimental\:\:dynamic\_smem\_span <configuration_8cuh_1a5b4677b4c5bc188a0144206ace982c58>`
+- :ref:`cuda\:\:experimental\:\:make\_config <configuration_8cuh_1a309e0829349c9d10e0dd54004b42eea6>`
+- :ref:`cuda\:\:experimental\:\:make\_config <configuration_8cuh_1afe420231beacc68eea61533757fb93fd>`
+- :ref:`cuda\:\:experimental\:\:operator\& <configuration_8cuh_1a1d24b80b5330c98dbf8386c0453364a8>`
+- :ref:`cuda\:\:experimental\:\:operator\& <configuration_8cuh_1a1e5e21d51aff260ccaab352563e6b795>`
+- :ref:`cuda\:\:experimental\:\:operator\& <configuration_8cuh_1a46ecc446c648045ea7a3d320f3210e12>`
+- :ref:`cuda\:\:experimental\:\:operator\& <configuration_8cuh_1a53bad4a28cf65066811fa4bae33f1ce7>`
+- :ref:`cuda\:\:experimental\:\:operator\& <configuration_8cuh_1a6885fad002736fd2c1e2bbcc81d395b5>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:cooperative\_launch <structcuda_1_1experimental_1_1cooperative__launch>`
+- :ref:`cuda\:\:experimental\:\:dynamic\_shared\_memory\_option <structcuda_1_1experimental_1_1dynamic__shared__memory__option>`
+- :ref:`cuda\:\:experimental\:\:kernel\_config <structcuda_1_1experimental_1_1kernel__config>`
+- :ref:`cuda\:\:experimental\:\:launch\_priority <structcuda_1_1experimental_1_1launch__priority>`
+

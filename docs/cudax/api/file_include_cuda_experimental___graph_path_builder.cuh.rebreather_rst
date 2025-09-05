@@ -1,0 +1,35 @@
+.. _`path__builder_8cuh`:
+
+include\/cuda\/experimental\/\_\_graph\/path\_builder.cuh
+=========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_graph <dir_58f95481ee3b5964d4a284a75c631d27>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___graph_path_builder.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__graph/path_builder.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___graph_path_builder.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:start\_path <path__builder_8cuh_1a3b541bb1dde3642a185638a8ad5dec93>`
+- :ref:`cuda\:\:experimental\:\:start\_path <path__builder_8cuh_1a587013ea961cd2d72ce2255c4a665e7e>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:path\_builder <structcuda_1_1experimental_1_1path__builder>`
+

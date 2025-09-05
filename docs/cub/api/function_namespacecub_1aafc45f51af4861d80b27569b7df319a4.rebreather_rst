@@ -1,0 +1,6 @@
+cub\:\:DeviceCountUncached
+==========================
+
+Defined in :ref:`cub\/util\_device.cuh <util__device_8cuh>`
+
+.. doxygenfunction:: cub::DeviceCountUncached()

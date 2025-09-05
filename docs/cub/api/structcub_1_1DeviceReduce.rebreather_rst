@@ -1,0 +1,6 @@
+cub\:\:DeviceReduce
+===================
+
+Defined in :ref:`cub\/device\/device\_reduce.cuh <device__reduce_8cuh>`
+
+.. doxygenstruct:: cub::DeviceReduce

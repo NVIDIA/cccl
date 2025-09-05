@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:exec\_place\_host
+================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/places.cuh <places_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::exec_place_host

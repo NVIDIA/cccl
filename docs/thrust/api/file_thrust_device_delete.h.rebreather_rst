@@ -1,0 +1,28 @@
+.. _`device__delete_8h`:
+
+thrust\/device\_delete.h
+========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_delete.h`
+
+.. doxygenfile:: thrust/device_delete.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_delete.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:device\_delete <group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

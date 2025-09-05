@@ -1,0 +1,6 @@
+cub\:\:WarpLoad
+===============
+
+Defined in :ref:`cub\/warp\/warp\_load.cuh <warp__load_8cuh>`
+
+.. doxygenclass:: cub::WarpLoad

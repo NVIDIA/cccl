@@ -1,0 +1,6 @@
+thrust\:\:make\_reverse\_iterator
+=================================
+
+Defined in :ref:`thrust\/iterator\/reverse\_iterator.h <reverse__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_reverse_iterator(BidirectionalIterator x)

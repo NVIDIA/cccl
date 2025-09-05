@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:device\_transform
+=========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stream\/device\_transform.cuh <device__transform_8cuh>`
+
+.. doxygenvariable:: cuda::experimental::device_transform

@@ -1,0 +1,40 @@
+.. _`place__partition_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/place\_partition.cuh
+==================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/places <dir_0d707c7b2e641cd4a4b5d76502f17fc3>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_places_place_partition.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/places/place_partition.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_places_place_partition.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition <classcuda_1_1experimental_1_1stf_1_1place__partition>`
+
+Enums
+-----
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition\_scope <place__partition_8cuh_1a5ae181afc51b82e614e9438af5705632>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition\_scope\_to\_string <place__partition_8cuh_1a58cda9cdc2010f7451a34efc10f8f3f2>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

@@ -1,0 +1,6 @@
+thrust\:\:unique
+================
+
+Defined in :ref:`thrust\/unique.h <unique_8h>`
+
+.. doxygenfunction:: thrust::unique(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)

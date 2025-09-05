@@ -1,0 +1,62 @@
+thrust\/version.h
+=================
+
+File members: :ref:`thrust\/version.h <version_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2022 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config/config.h> // IWYU pragma: export
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/version> // IWYU pragma: export
+
+   //  This is the only Thrust header that is guaranteed to
+   //  change with every Thrust release.
+   //
+   //  THRUST_VERSION % 100 is the sub-minor version
+   //  THRUST_VERSION / 100 % 1000 is the minor version
+   //  THRUST_VERSION / 100000 is the major version
+   //
+   //  Because this header does not #include <thrust/detail/config.h>,
+   //  it is the only Thrust header that does not cause
+   //  THRUST_HOST_SYSTEM and THRUST_DEVICE_SYSTEM to be defined.
+
+   #define THRUST_VERSION 300200 // macro expansion with ## requires this to be a single value
+
+   #define THRUST_MAJOR_VERSION (THRUST_VERSION / 100000)
+
+   #define THRUST_MINOR_VERSION (THRUST_VERSION / 100 % 1000)
+
+   #define THRUST_SUBMINOR_VERSION (THRUST_VERSION % 100)
+
+   #define THRUST_PATCH_NUMBER 0
+
+   static_assert(THRUST_MAJOR_VERSION == CCCL_MAJOR_VERSION, "");
+   static_assert(THRUST_MINOR_VERSION == CCCL_MINOR_VERSION, "");
+   static_assert(THRUST_SUBMINOR_VERSION == CCCL_PATCH_VERSION, "");
+

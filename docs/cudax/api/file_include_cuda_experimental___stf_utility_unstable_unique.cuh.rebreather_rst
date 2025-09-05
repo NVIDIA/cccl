@@ -1,0 +1,31 @@
+.. _`unstable__unique_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/utility\/unstable\_unique.cuh
+===================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/utility <dir_14105bc4e1d6df9ad9d3d55d2b993f2a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_utility_unstable_unique.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/utility/unstable_unique.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_utility_unstable_unique.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:unstable\_unique <unstable__unique_8cuh_1a4feca66d5a16fca2a086b3c4c15036f5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unstable\_unique <unstable__unique_8cuh_1ab6102f1f400fb5014573fd1424e1ae0c>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

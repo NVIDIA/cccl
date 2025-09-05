@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:fixed\_size\_allocator
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/pooled\_allocator.cuh <pooled__allocator_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::fixed_size_allocator

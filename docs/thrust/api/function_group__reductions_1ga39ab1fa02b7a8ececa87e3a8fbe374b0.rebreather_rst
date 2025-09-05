@@ -1,0 +1,6 @@
+thrust\:\:reduce\_by\_key
+=========================
+
+Defined in :ref:`thrust\/reduce.h <reduce_8h>`
+
+.. doxygenfunction:: thrust::reduce_by_key(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator1 keys_first, InputIterator1 keys_last, InputIterator2 values_first, OutputIterator1 keys_output, OutputIterator2 values_output, BinaryPredicate binary_pred, BinaryFunction binary_op)

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:get\_executor\_func\_t
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/places.cuh <places_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::stf::get_executor_func_t

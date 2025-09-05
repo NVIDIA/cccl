@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:tiled\_partition
+===============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/tiled\_partition.cuh <tiled__partition_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::tiled_partition

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:unregister\_stream
+=================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/async\_resources\_handle.cuh <async__resources__handle_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::unregister_stream(async_resources_handle &async_resources, decorated_stream &dstream)

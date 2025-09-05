@@ -1,0 +1,6 @@
+thrust\:\:inner\_product
+========================
+
+Defined in :ref:`thrust\/inner\_product.h <inner__product_8h>`
+
+.. doxygenfunction:: thrust::inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)

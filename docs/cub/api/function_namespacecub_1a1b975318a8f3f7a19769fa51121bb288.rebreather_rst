@@ -1,0 +1,6 @@
+cub\:\:ThreadExit
+=================
+
+Defined in :ref:`cub\/util\_ptx.cuh <util__ptx_8cuh>`
+
+.. doxygenfunction:: cub::ThreadExit()

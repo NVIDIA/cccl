@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:graph\_data\_interface
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/graph\_data\_interface.cuh <graph__data__interface_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::graph_data_interface

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:dynamic\_smem\_ref
+==========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/configuration.cuh <configuration_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::dynamic_smem_ref(const kernel_config< Dimensions, Options... > &config) noexcept

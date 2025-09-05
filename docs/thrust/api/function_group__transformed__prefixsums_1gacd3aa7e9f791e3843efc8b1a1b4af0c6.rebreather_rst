@@ -1,0 +1,6 @@
+thrust\:\:transform\_inclusive\_scan
+====================================
+
+Defined in :ref:`thrust\/transform\_scan.h <transform__scan_8h>`
+
+.. doxygenfunction:: thrust::transform_inclusive_scan(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, T init, AssociativeOperator binary_op)

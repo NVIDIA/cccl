@@ -1,0 +1,37 @@
+.. _`memory__resource_8h`:
+
+thrust\/mr\/memory\_resource.h
+==============================
+
+In directory: :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+Source file: :doc:`program_listing_file_thrust_mr_memory_resource.h`
+
+.. doxygenfile:: thrust/mr/memory_resource.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mr_memory_resource.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:mr\:\:memory\_resource <classthrust_1_1mr_1_1memory__resource>`
+- :ref:`thrust\:\:mr\:\:memory\_resource\< void \* \> <classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:mr\:\:get\_global\_resource <group__memory__resources_1ga2b829e47d6a68a87cb5e3c110383edc0>`
+- :ref:`thrust\:\:mr\:\:operator\!\= <group__memory__resources_1ga0bc87a510eced5d3238af53710410494>`
+- :ref:`thrust\:\:mr\:\:operator\=\= <group__memory__resources_1gadc88980300ea75f3a7740684fc8396da>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:mr <namespacethrust_1_1mr>`
+

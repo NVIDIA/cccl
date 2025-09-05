@@ -1,0 +1,6 @@
+thrust\:\:iterator\_system\<\:\:cuda\:\:permutation\_iterator\< Iter\, Offset \> \>
+===================================================================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_system<::cuda::permutation_iterator< Iter, Offset > >

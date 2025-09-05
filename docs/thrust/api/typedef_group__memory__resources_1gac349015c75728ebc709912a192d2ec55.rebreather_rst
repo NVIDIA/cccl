@@ -1,0 +1,6 @@
+thrust\:\:universal\_ptr
+========================
+
+Defined in :ref:`thrust\/universal\_allocator.h <universal__allocator_8h>`
+
+.. doxygentypedef:: thrust::universal_ptr

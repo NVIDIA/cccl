@@ -1,0 +1,38 @@
+.. _`____launch_2launch_8cuh`:
+
+include\/cuda\/experimental\/\_\_launch\/launch.cuh
+===================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_launch <dir_813ed679672daa6d88aebb2c68559996>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___launch_launch.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__launch/launch.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___launch_launch.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:launch <____launch_2launch_8cuh_1a6d0ff82bff53b6d48d3988f95aa217fd>`
+- :ref:`cuda\:\:experimental\:\:launch <____launch_2launch_8cuh_1aa8263d79aa1b3db93c6b40ca61634080>`
+- :ref:`cuda\:\:experimental\:\:launch <____launch_2launch_8cuh_1acae100559495db296b693eb32c8e7935>`
+- :ref:`cuda\:\:experimental\:\:launch <____launch_2launch_8cuh_1af60b8b4c46e6fd8aa409549080a5287c>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:execution <namespacecuda_1_1experimental_1_1execution>`
+
+Variables
+---------
+
+- :ref:`cuda\:\:experimental\:\:work\_submitter <____launch_2launch_8cuh_1ac2bd49a968880629779df2659e34459e>`
+

@@ -1,0 +1,6 @@
+thrust\:\:get\_per\_device\_resource
+====================================
+
+Defined in :ref:`thrust\/per\_device\_resource.h <per__device__resource_8h>`
+
+.. doxygenfunction:: thrust::get_per_device_resource(const thrust::detail::execution_policy_base< DerivedPolicy > &system)

@@ -1,0 +1,6 @@
+thrust\:\:tbb
+=============
+
+.. doxygennamespace:: thrust::tbb
+   :desc-only:
+

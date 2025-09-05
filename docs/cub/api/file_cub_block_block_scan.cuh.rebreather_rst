@@ -1,0 +1,33 @@
+.. _`block__scan_8cuh`:
+
+cub\/block\/block\_scan.cuh
+===========================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_scan.cuh`
+
+.. doxygenfile:: cub/block/block_scan.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_scan.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockScan <classcub_1_1BlockScan>`
+
+Enums
+-----
+
+- :ref:`cub\:\:BlockScanAlgorithm <namespacecub_1abec44bba36037c547e7e84906d0d23ab>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

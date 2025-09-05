@@ -1,0 +1,6 @@
+thrust\:\:random\:\:linear\_congruential\_engine
+================================================
+
+Defined in :ref:`thrust\/random\/linear\_congruential\_engine.h <linear__congruential__engine_8h>`
+
+.. doxygenclass:: thrust::random::linear_congruential_engine

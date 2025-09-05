@@ -1,0 +1,6 @@
+thrust\:\:iterator\_system\<\:\:cuda\:\:strided\_iterator\< Iter\, Stride \> \>
+===============================================================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_system<::cuda::strided_iterator< Iter, Stride > >

@@ -1,0 +1,32 @@
+.. _`random_8h`:
+
+thrust\/random.h
+================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_random.h`
+
+.. doxygenfile:: thrust/random.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:random\:\:default\_random\_engine <group__predefined__random_1ga8450c92f9d27a16992ca377f7d8dc75c>`
+- :ref:`thrust\:\:random\:\:ranlux24 <group__predefined__random_1gaacaf3beafd00b7087532c98d9062778a>`
+- :ref:`thrust\:\:random\:\:ranlux48 <group__predefined__random_1ga67a4f4c57c6d60aea077a947285cb7c5>`
+- :ref:`thrust\:\:random\:\:taus88 <group__predefined__random_1gac781a23cdf5b0cdb48ec3fbe7cb4318c>`
+

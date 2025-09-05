@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:void\_stream\_interface
+======================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/void\_interface.cuh <stream_2interfaces_2void__interface_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::void_stream_interface

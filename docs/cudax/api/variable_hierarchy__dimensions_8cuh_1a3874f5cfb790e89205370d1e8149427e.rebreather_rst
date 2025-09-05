@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:has\_level\_or\_unit
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_dimensions.cuh <hierarchy__dimensions_8cuh>`
+
+.. doxygenvariable:: cuda::experimental::has_level_or_unit

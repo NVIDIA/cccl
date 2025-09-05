@@ -1,0 +1,6 @@
+thrust\:\:is\_sorted
+====================
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::is_sorted(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, ForwardIterator last)

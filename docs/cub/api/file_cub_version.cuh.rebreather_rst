@@ -1,0 +1,27 @@
+.. _`version_8cuh`:
+
+cub\/version.cuh
+================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_version.cuh`
+
+.. doxygenfile:: cub/version.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_version.cuh>
+
+Defines
+-------
+
+- :ref:`CUB\_MAJOR\_VERSION <version_8cuh_1a825429c0c66c9beb903dc32bf0d83ae7>`
+- :ref:`CUB\_MINOR\_VERSION <version_8cuh_1a02f2d200a10c6cff76ecf6b6b536c647>`
+- :ref:`CUB\_PATCH\_NUMBER <version_8cuh_1afe68e00bac270dcd89b9fc8aed9a2eff>`
+- :ref:`CUB\_SUBMINOR\_VERSION <version_8cuh_1a756b2f33d0b0ca3390ea8a1643474d75>`
+- :ref:`CUB\_VERSION <version_8cuh_1a2b2410557fc1b0da14f3b2ba7c6dc5fb>`
+

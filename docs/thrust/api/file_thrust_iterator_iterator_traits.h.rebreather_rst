@@ -1,0 +1,68 @@
+.. _`iterator__traits_8h`:
+
+thrust\/iterator\/iterator\_traits.h
+====================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_iterator_traits.h`
+
+.. doxygenfile:: thrust/iterator/iterator_traits.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_iterator_traits.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:iterator\_difference <structthrust_1_1iterator__difference>`
+- :ref:`thrust\:\:iterator\_pointer <structthrust_1_1iterator__pointer>`
+- :ref:`thrust\:\:iterator\_reference <structthrust_1_1iterator__reference>`
+- :ref:`thrust\:\:iterator\_system <structthrust_1_1iterator__system>`
+- :ref:`thrust\:\:iterator\_system\< const void \* \> <structthrust_1_1iterator__system_3_01const_01void_01_5_01_4>`
+- :ref:`thrust\:\:iterator\_system\< void \* \> <structthrust_1_1iterator__system_3_01void_01_5_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:constant\_iterator\< T\, Index \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:counting\_iterator\< Start \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:discard\_iterator \> <structthrust_1_1iterator__system_3_1_1cuda_1_1discard__iterator_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:permutation\_iterator\< Iter\, Offset \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1permutation__iterator_3_01Iter_00_01Offset_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:std\:\:reverse\_iterator\< Iter \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1std_1_1reverse__iterator_3_01Iter_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:strided\_iterator\< Iter\, Stride \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1strided__iterator_3_01Iter_00_01Stride_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:tabulate\_output\_iterator\< Fn\, Index \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1tabulate__output__iterator_3_01Fn_00_01Index_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_input\_output\_iterator\< Iter\, InputFn\, OutputFn \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1transform__input__output__iterator_3_01Iter_00_01InputFn_00_01OutputFn_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1transform__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_output\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1transform__output__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:zip\_iterator\< Iterators... \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal <structthrust_1_1iterator__traversal>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:constant\_iterator\< T\, Index \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:counting\_iterator\< Start \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:discard\_iterator \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1discard__iterator_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:permutation\_iterator\< Iter\, Offset \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1permutation__iterator_3_01Iter_00_01Offset_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:std\:\:reverse\_iterator\< Iter \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1std_1_1reverse__iterator_3_01Iter_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:strided\_iterator\< Iter\, Stride \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1strided__iterator_3_01Iter_00_01Stride_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:tabulate\_output\_iterator\< Fn\, Index \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1tabulate__output__iterator_3_01Fn_00_01Index_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_input\_output\_iterator\< Iter\, InputFn\, OutputFn \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__input__output__iterator_3_01Iter_00_4904b004585dc3aea4e7c21395dc7fe1>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_output\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__output__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:zip\_iterator\< Iterators... \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4>`
+- :ref:`thrust\:\:iterator\_value <structthrust_1_1iterator__value>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:iterator\_difference\_t <iterator__traits_8h_1adffd965cb3b426d99eab1f6506c30ed6>`
+- :ref:`thrust\:\:iterator\_pointer\_t <iterator__traits_8h_1a9410f26f50e2038f458b0274dd0a39cf>`
+- :ref:`thrust\:\:iterator\_reference\_t <iterator__traits_8h_1a6bbc4f5672e0638f4fb040db3a3ea90b>`
+- :ref:`thrust\:\:iterator\_system\_t <iterator__traits_8h_1a582d0a9dd09f407b743a8dcea3e5a7cb>`
+- :ref:`thrust\:\:iterator\_traits <iterator__traits_8h_1ab3b88c040c1ef5d985cf3b360b6efdfe>`
+- :ref:`thrust\:\:iterator\_traversal\_t <iterator__traits_8h_1a07227760c8422364daec7a72d21803cd>`
+- :ref:`thrust\:\:iterator\_value\_t <iterator__traits_8h_1ae8bd11a16155201e9778f4c75680a299>`
+

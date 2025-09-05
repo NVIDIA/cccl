@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:stateless\_resource\_allocator
+==============================================
+
+Defined in :ref:`thrust\/mr\/allocator.h <allocator_8h>`
+
+.. doxygenclass:: thrust::mr::stateless_resource_allocator

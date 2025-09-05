@@ -1,0 +1,6 @@
+thrust\:\:merge\_by\_key
+========================
+
+Defined in :ref:`thrust\/merge.h <merge_8h>`
+
+.. doxygenfunction:: thrust::merge_by_key(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator1 keys_first1, InputIterator1 keys_last1, InputIterator2 keys_first2, InputIterator2 keys_last2, InputIterator3 values_first1, InputIterator4 values_first2, OutputIterator1 keys_result, OutputIterator2 values_result, Compare comp)

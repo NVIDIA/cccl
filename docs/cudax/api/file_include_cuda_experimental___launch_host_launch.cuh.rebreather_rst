@@ -1,0 +1,30 @@
+.. _`host__launch_8cuh`:
+
+include\/cuda\/experimental\/\_\_launch\/host\_launch.cuh
+=========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_launch <dir_813ed679672daa6d88aebb2c68559996>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___launch_host_launch.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__launch/host_launch.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___launch_host_launch.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:host\_launch <host__launch_8cuh_1a220f357be074348d480be71c228e1ccc>`
+- :ref:`cuda\:\:experimental\:\:host\_launch <host__launch_8cuh_1a9482d0d08d8106333ea64da402c74257>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+

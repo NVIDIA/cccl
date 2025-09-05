@@ -1,0 +1,6 @@
+cub\:\:TexObjInputIterator
+==========================
+
+Defined in :ref:`cub\/iterator\/tex\_obj\_input\_iterator.cuh <tex__obj__input__iterator_8cuh>`
+
+.. doxygenclass:: cub::TexObjInputIterator

@@ -1,0 +1,6 @@
+CUB\_NS\_PREFIX
+===============
+
+Defined in :ref:`cub\/util\_namespace.cuh <util__namespace_8cuh>`
+
+.. doxygendefine:: CUB_NS_PREFIX

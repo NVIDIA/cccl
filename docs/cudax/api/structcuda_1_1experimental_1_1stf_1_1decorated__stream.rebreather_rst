@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:decorated\_stream
+================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/async\_resources\_handle.cuh <async__resources__handle_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::decorated_stream

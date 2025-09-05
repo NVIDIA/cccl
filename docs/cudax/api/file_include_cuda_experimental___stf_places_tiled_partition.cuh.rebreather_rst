@@ -1,0 +1,35 @@
+.. _`tiled__partition_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/tiled\_partition.cuh
+==================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/places <dir_0d707c7b2e641cd4a4b5d76502f17fc3>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_places_tiled_partition.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/places/tiled_partition.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_places_tiled_partition.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:tiled\_partition <classcuda_1_1experimental_1_1stf_1_1tiled__partition>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:tiled <tiled__partition_8cuh_1a86294496235db5a1f8f573615fc6bc2f>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

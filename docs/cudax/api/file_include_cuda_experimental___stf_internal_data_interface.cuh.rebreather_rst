@@ -1,0 +1,50 @@
+.. _`data__interface_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/data\_interface.cuh
+===================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_data_interface.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/data_interface.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_data_interface.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_impl\_base <classcuda_1_1experimental_1_1stf_1_1data__impl__base>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_interface <classcuda_1_1experimental_1_1stf_1_1data__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of <classcuda_1_1experimental_1_1stf_1_1shape__of>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape <data__interface_8cuh_1a02e3c57fc10829f66888ed2549beee2a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_rw\_type\_of <data__interface_8cuh_1a55ea2a80ffc7e96fc732da1450dce1e4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_rw\_type\_of <data__interface_8cuh_1aeb34862395da382c0874ec513f4ec980>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of <structcuda_1_1experimental_1_1stf_1_1owning__container__of>`
+
+Typedefs
+--------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:readonly\_type\_of <data__interface_8cuh_1ab28afd99ed2c623ca757f24d3fc077a5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:rw\_type\_of <data__interface_8cuh_1a710d1dc1c682fc04bfe39904e906348e>`
+

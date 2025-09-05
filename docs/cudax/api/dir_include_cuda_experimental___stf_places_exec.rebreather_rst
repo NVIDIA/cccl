@@ -1,0 +1,31 @@
+.. _`dir_fc121962c2ae7923cd0f18a27646ba66`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/exec
+==================================================
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_include_cuda_experimental___stf_places_exec_host
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/host <dir_469814e8ed48e9a31eb954a5dcca2a00>`
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___stf_places_exec_cuda_stream.cuh
+   file_include_cuda_experimental___stf_places_exec_green_context.cuh
+   file_include_cuda_experimental___stf_places_exec_green_ctx_view.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/cuda\_stream.cuh <cuda__stream_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_context.cuh <green__context_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_ctx\_view.cuh <green__ctx__view_8cuh>`
+

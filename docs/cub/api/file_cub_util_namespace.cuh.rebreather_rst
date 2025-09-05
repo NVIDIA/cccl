@@ -1,0 +1,32 @@
+.. _`util__namespace_8cuh`:
+
+cub\/util\_namespace.cuh
+========================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_util_namespace.cuh`
+
+.. doxygenfile:: cub/util_namespace.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_util_namespace.cuh>
+
+Defines
+-------
+
+- :ref:`CUB\_NAMESPACE\_BEGIN <util__namespace_8cuh_1a4159c0878cc0b22304b8af3d7d234c57>`
+- :ref:`CUB\_NAMESPACE\_END <util__namespace_8cuh_1ad0c50062c393b6f693088aba672221d5>`
+- :ref:`CUB\_NS\_POSTFIX <util__namespace_8cuh_1a46a31fe0dc2a467cc1fa0c8de2b1b587>`
+- :ref:`CUB\_NS\_PREFIX <util__namespace_8cuh_1af3ddf9618820eddc668eb37757b2695c>`
+- :ref:`CUB\_NS\_QUALIFIER <util__namespace_8cuh_1ab73dffe3df22bf8ec798fcc92f8c0eba>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

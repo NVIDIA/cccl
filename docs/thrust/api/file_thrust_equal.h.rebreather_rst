@@ -1,0 +1,31 @@
+.. _`equal_8h`:
+
+thrust\/equal.h
+===============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_equal.h`
+
+.. doxygenfile:: thrust/equal.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_equal.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:equal <group__comparisons_1ga4e78ee4bcd8f90e3ff1dae8f59b9e153>`
+- :ref:`thrust\:\:equal <group__comparisons_1ga5cc3cccf9dead9670c62f2ab942c79a7>`
+- :ref:`thrust\:\:equal <group__comparisons_1ga6ee63d156e253d5db817c8bcc6a35bc4>`
+- :ref:`thrust\:\:equal <group__comparisons_1ga82ba7c515fe521e5b36eb7f94b391ee2>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

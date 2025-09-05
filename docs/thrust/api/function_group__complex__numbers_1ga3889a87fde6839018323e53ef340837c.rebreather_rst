@@ -1,0 +1,6 @@
+thrust\:\:atan
+==============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::atan(const complex< T > &z)

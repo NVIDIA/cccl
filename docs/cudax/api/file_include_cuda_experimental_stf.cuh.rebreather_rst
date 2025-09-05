@@ -1,0 +1,18 @@
+.. _`stf_8cuh`:
+
+include\/cuda\/experimental\/stf.cuh
+====================================
+
+In directory: :ref:`include\/cuda\/experimental <dir_50112f2f035c7ccf154633326c0ddcfe>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental_stf.cuh`
+
+.. doxygenfile:: include/cuda/experimental/stf.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental_stf.cuh>
+

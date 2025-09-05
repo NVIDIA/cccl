@@ -1,0 +1,51 @@
+.. _`traits_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh
+=========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/utility <dir_14105bc4e1d6df9ad9d3d55d2b993f2a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_utility_traits.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/utility/traits.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_utility_traits.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:print\_type\_name\_and\_fail <classcuda_1_1experimental_1_1stf_1_1print__type__name__and__fail>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:all\_convertible <traits_8cuh_1a90917dab8a4951bc67ffb566ffbfd319>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:only\_convertible <traits_8cuh_1a3dbb5ded86ef1308333b16fc1b1a4f5a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shuffled\_args\_check <traits_8cuh_1ad92f54f02b4dafee0f888d7b6cc2057f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shuffled\_array\_tuple <traits_8cuh_1a7769bac86e1a10e2b46241e166f27d4a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shuffled\_tuple <traits_8cuh_1a1669149d35ad1dd57888eb3f654a91d8>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_tuple <traits_8cuh_1a4343e02b1e60ac26c78b6739caf683a1>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:tuple2tuple <traits_8cuh_1a951bfbb3c570faec76d0a43206b7e485>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Typedefs
+--------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:array\_tuple <traits_8cuh_1ad79958209ea876e5dafe78f59ab52d79>`
+
+Variables
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:type\_name <traits_8cuh_1a03453c0becd124285de9dad062506ef6>`
+

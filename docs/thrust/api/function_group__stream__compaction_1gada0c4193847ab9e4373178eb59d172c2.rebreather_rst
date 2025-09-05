@@ -1,0 +1,6 @@
+thrust\:\:unique\_by\_key
+=========================
+
+Defined in :ref:`thrust\/unique.h <unique_8h>`
+
+.. doxygenfunction:: thrust::unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first, BinaryPredicate binary_pred)

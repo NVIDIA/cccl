@@ -1,0 +1,209 @@
+include\/cuda\/experimental\/\_\_graph\/graph\_node\_ref.cuh
+============================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_node\_ref.cuh <graph__node__ref_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDA Experimental in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #ifndef __CUDAX_GRAPH_GRAPH_NODE_REF
+   #define __CUDAX_GRAPH_GRAPH_NODE_REF
+
+   #include <cuda/std/detail/__config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/std/__algorithm/fill.h>
+   #include <cuda/std/__cuda/api_wrapper.h>
+   #include <cuda/std/__memory/unique_ptr.h>
+   #include <cuda/std/__ranges/size.h>
+   #include <cuda/std/__utility/swap.h>
+   #include <cuda/std/cstddef>
+   #include <cuda/std/span>
+
+   #include <cuda/experimental/__graph/fwd.cuh>
+   #include <cuda/experimental/__graph/graph_node_type.cuh>
+
+   #include <cuda_runtime_api.h>
+
+   #include <cuda/std/__cccl/prologue.h>
+
+   // work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
+   // See: https://github.com/breathe-doc/breathe/issues/916
+   #if defined(_CCCL_DOXYGEN_INVOKED)
+   #  define _CUDAX_CONSTEXPR_FRIEND friend
+   #else
+   #  define _CUDAX_CONSTEXPR_FRIEND constexpr friend
+   #endif
+
+   namespace cuda::experimental
+   {
+   struct graph_node_ref
+   {
+     _CCCL_HIDE_FROM_ABI graph_node_ref() = default;
+
+     graph_node_ref(int, int = 0) = delete;
+
+     graph_node_ref(_CUDA_VSTD::nullptr_t, _CUDA_VSTD::nullptr_t = nullptr) = delete;
+
+     _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node, cudaGraph_t __graph) noexcept
+         : __node_{__node}
+         , __graph_{__graph}
+     {
+       _CCCL_ASSERT(__node_ && __graph_, "construction of a graph_node_ref from a null cudaGraphNode_t handle");
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator==(const graph_node_ref& __lhs, const graph_node_ref& __rhs) noexcept
+     {
+       return __lhs.__node_ == __rhs.__node_ && __lhs.__graph_ == __rhs.__graph_;
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator!=(const graph_node_ref& __lhs, const graph_node_ref& __rhs) noexcept
+     {
+       return !(__lhs == __rhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator==(_CUDA_VSTD::nullptr_t, const graph_node_ref& __rhs) noexcept
+     {
+       return !static_cast<bool>(__rhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator==(const graph_node_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+     {
+       return !static_cast<bool>(__lhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator!=(_CUDA_VSTD::nullptr_t, const graph_node_ref& __rhs) noexcept
+     {
+       return static_cast<bool>(__rhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator!=(const graph_node_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+     {
+       return static_cast<bool>(__lhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API explicit constexpr operator bool() const noexcept
+     {
+       return __node_ != nullptr;
+     }
+
+     [[nodiscard]] _CCCL_HOST_API constexpr auto operator!() const noexcept -> bool
+     {
+       return !static_cast<bool>(*this);
+     }
+
+     _CCCL_HOST_API constexpr void swap(graph_node_ref& __other) noexcept
+     {
+       _CUDA_VSTD::swap(__node_, __other.__node_);
+       _CUDA_VSTD::swap(__graph_, __other.__graph_);
+     }
+
+     _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND void swap(graph_node_ref& __left, graph_node_ref& __right) noexcept
+     {
+       __left.swap(__right);
+     }
+
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraphNode_t
+     {
+       return __node_;
+     }
+
+     // internal for now because of a clash with get_graph() in path_builder. We could store the device in the
+     // graph_node_ref, but that feels like going a bit too far.
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_native_graph_handle() const noexcept -> cudaGraph_t
+     {
+       return __graph_;
+     }
+
+     [[nodiscard]] _CCCL_HOST_API auto type() const -> graph_node_type
+     {
+       _CCCL_ASSERT(__node_ != nullptr, "cannot get the type of a null graph node");
+       cudaGraphNodeType __type;
+       _CCCL_ASSERT_CUDA_API(cudaGraphNodeGetType, "cudaGraphNodeGetType failed", __node_, &__type);
+       return static_cast<graph_node_type>(__type);
+     }
+
+     template <class... _Nodes>
+     _CCCL_HOST_API constexpr void depends_on(const _Nodes&... __nodes)
+     {
+       cudaGraphNode_t __deps[]{__nodes.get()...};
+       return depends_on(_CUDA_VSTD::span{__deps});
+     }
+
+     template <size_t _Extent>
+     _CCCL_HOST_API _CCCL_CONSTEXPR_CXX23 void depends_on(_CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps)
+     {
+       _CCCL_ASSERT(__node_ != nullptr, "cannot add dependencies to a null graph node");
+       if (!__deps.empty())
+       {
+         // Initialize an array of "dependant" nodes that correspond to the dependencies. All
+         // dependant nodes are __node_; thus, each node in __deps becomes a dependency of the
+         // newly created node.
+         using __src_arr_t = _CUDA_VSTD::unique_ptr<cudaGraphNode_t[], void (*)(cudaGraphNode_t*) noexcept>;
+         cudaGraphNode_t __small_buffer[_Extent == _CUDA_VSTD::dynamic_extent ? 4 : _Extent];
+         bool const __is_small = __deps.size() <= _CUDA_VRANGES::size(__small_buffer);
+         auto const __src_arr  = __is_small ? __src_arr_t{__small_buffer, &__noop_deleter}
+                                            : __src_arr_t{::new cudaGraphNode_t[__deps.size()], &__array_deleter};
+         _CUDA_VSTD::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
+
+         // Add the dependencies using __src_arr array and the span of dependencies.
+         _CCCL_TRY_CUDA_API(
+           cudaGraphAddDependencies,
+           "cudaGraphAddDependencies failed",
+           __graph_,
+           __deps.data(), // dependencies
+           __src_arr.get(), // dependant nodes
+           __deps.size()); // number of dependencies
+       }
+     }
+
+   private:
+     friend struct graph_builder_ref;
+
+     template <class... _Nodes>
+     friend _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
+       -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
+
+     _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node) noexcept
+         : __node_{__node}
+     {}
+
+     _CCCL_HOST_API static constexpr void __noop_deleter(cudaGraphNode_t*) noexcept {}
+     _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20_ALLOCATION void __array_deleter(cudaGraphNode_t* __ptr) noexcept
+     {
+       delete[] __ptr;
+     }
+
+     cudaGraphNode_t __node_ = nullptr;
+     cudaGraph_t __graph_    = nullptr;
+   };
+   } // namespace cuda::experimental
+
+   #undef _CUDAX_CONSTEXPR_FRIEND
+
+   #include <cuda/std/__cccl/epilogue.h>
+
+   #endif // __CUDAX_GRAPH_GRAPH_NODE_REF
+

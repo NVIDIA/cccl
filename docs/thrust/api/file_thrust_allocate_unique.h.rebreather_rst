@@ -1,0 +1,45 @@
+.. _`allocate__unique_8h`:
+
+thrust\/allocate\_unique.h
+==========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_allocate_unique.h`
+
+.. doxygenfile:: thrust/allocate_unique.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_allocate_unique.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:allocate\_unique <allocate__unique_8h_1aa443cc2a4953364127486b154f90b875>`
+- :ref:`thrust\:\:allocate\_unique\_n <allocate__unique_8h_1a1542e94f27aa996d6950d94af5673389>`
+- :ref:`thrust\:\:make\_tagged\_deleter <allocate__unique_8h_1a18de15638546c0ff88df8208ae553ffc>`
+- :ref:`thrust\:\:uninitialized\_allocate\_unique <allocate__unique_8h_1ab8f8a3862b777df3fa8ea88b27b450ce>`
+- :ref:`thrust\:\:uninitialized\_allocate\_unique\_n <allocate__unique_8h_1ac5b3355e927c9e797ccd9ca8dfa8043f>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:allocator\_delete <structthrust_1_1allocator__delete>`
+- :ref:`thrust\:\:array\_allocator\_delete <structthrust_1_1array__allocator__delete>`
+- :ref:`thrust\:\:tagged\_deleter <structthrust_1_1tagged__deleter>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:uninitialized\_allocator\_delete <allocate__unique_8h_1a10d1145183f4acb796aebc6146b13220>`
+- :ref:`thrust\:\:uninitialized\_array\_allocator\_delete <allocate__unique_8h_1a8d7250260cdf48a33bf78f84e71db061>`
+

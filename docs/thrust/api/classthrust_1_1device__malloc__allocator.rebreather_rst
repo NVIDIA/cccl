@@ -1,0 +1,6 @@
+thrust\:\:device\_malloc\_allocator
+===================================
+
+Defined in :ref:`thrust\/device\_malloc\_allocator.h <device__malloc__allocator_8h>`
+
+.. doxygenclass:: thrust::device_malloc_allocator

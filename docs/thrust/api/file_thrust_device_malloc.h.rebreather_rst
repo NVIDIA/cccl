@@ -1,0 +1,28 @@
+.. _`device__malloc_8h`:
+
+thrust\/device\_malloc.h
+========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_malloc.h`
+
+.. doxygenfile:: thrust/device_malloc.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_malloc.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:device\_malloc <group__memory__management_1gaf1be085749bdb2cc83385c4f9e91a878>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

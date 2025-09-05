@@ -1,0 +1,35 @@
+.. _`unwrap__contiguous__iterator_8h`:
+
+thrust\/type\_traits\/unwrap\_contiguous\_iterator.h
+====================================================
+
+In directory: :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+Source file: :doc:`program_listing_file_thrust_type_traits_unwrap_contiguous_iterator.h`
+
+.. doxygenfile:: thrust/type_traits/unwrap_contiguous_iterator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_type_traits_unwrap_contiguous_iterator.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:try\_unwrap\_contiguous\_iterator <unwrap__contiguous__iterator_8h_1abfe82f1de1708a55e75b16f93ecc66c1>`
+- :ref:`thrust\:\:unwrap\_contiguous\_iterator <unwrap__contiguous__iterator_8h_1aed234a97960da6c79293cbf17ceafa33>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:try\_unwrap\_contiguous\_iterator\_t <unwrap__contiguous__iterator_8h_1accaa9d5a930a881ecaf171d077bfa701>`
+- :ref:`thrust\:\:unwrap\_contiguous\_iterator\_t <unwrap__contiguous__iterator_8h_1a0431fe8ba6dece7df59561b729a3c280>`
+

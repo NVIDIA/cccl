@@ -1,0 +1,6 @@
+thrust\:\:partition
+===================
+
+Defined in :ref:`thrust\/partition.h <partition_8h>`
+
+.. doxygenfunction:: thrust::partition(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, ForwardIterator last, Predicate pred)

@@ -1,0 +1,30 @@
+.. _`device__memory__resource_8h`:
+
+thrust\/mr\/device\_memory\_resource.h
+======================================
+
+In directory: :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+Source file: :doc:`program_listing_file_thrust_mr_device_memory_resource.h`
+
+.. doxygenfile:: thrust/mr/device_memory_resource.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mr_device_memory_resource.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:device\_memory\_resource <device__memory__resource_8h_1a80adc98b03906ca2beb5e8f1cc154f7e>`
+- :ref:`thrust\:\:universal\_host\_pinned\_memory\_resource <device__memory__resource_8h_1aacbddd01567276ad10210432d4c3a8ef>`
+- :ref:`thrust\:\:universal\_memory\_resource <device__memory__resource_8h_1aeb88051fea508b633883e45b9058d587>`
+

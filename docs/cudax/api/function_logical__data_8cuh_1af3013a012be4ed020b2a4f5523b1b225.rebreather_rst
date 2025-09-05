@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:unpack\_state
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/logical\_data.cuh <logical__data_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::unpack_state(const ::std::shared_ptr< void > &)

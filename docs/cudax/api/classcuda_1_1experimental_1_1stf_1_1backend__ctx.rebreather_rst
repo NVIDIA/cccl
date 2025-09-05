@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:backend\_ctx
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/backend\_ctx.cuh <backend__ctx_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::backend_ctx

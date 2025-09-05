@@ -1,0 +1,6 @@
+thrust\:\:system\:\:tbb\:\:pointer
+==================================
+
+Defined in :ref:`thrust\/system\/tbb\/pointer.h <system_2tbb_2pointer_8h>`
+
+.. doxygentypedef:: thrust::system::tbb::pointer

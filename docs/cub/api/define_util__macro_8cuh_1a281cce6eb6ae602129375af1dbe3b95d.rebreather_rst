@@ -1,0 +1,6 @@
+CUB\_DEFINE\_SUB\_POLICY\_GETTER
+================================
+
+Defined in :ref:`cub\/util\_macro.cuh <util__macro_8cuh>`
+
+.. doxygendefine:: CUB_DEFINE_SUB_POLICY_GETTER

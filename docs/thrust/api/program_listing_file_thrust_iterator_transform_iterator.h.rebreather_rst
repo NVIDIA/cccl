@@ -1,0 +1,210 @@
+thrust\/iterator\/transform\_iterator.h
+=======================================
+
+File members: :ref:`thrust\/iterator\/transform\_iterator.h <transform__iterator_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   /*
+    * (C) Copyright David Abrahams 2002.
+    * (C) Copyright Jeremy Siek    2002.
+    * (C) Copyright Thomas Witt    2002.
+    *
+    * Distributed under the Boost Software License, Version 1.0.
+    * (See accompanying NOTICE file for the complete license)
+    *
+    * For more information, see http://www.boost.org
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <thrust/detail/functional/actor.h>
+   #include <thrust/detail/type_traits.h>
+   #include <thrust/functional.h>
+   #include <thrust/iterator/iterator_adaptor.h>
+   #include <thrust/iterator/iterator_traits.h>
+
+   #include <cuda/std/__memory/construct_at.h>
+   #include <cuda/std/functional>
+   #include <cuda/std/type_traits>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <class UnaryFunction, class Iterator, class Reference, class Value>
+   class transform_iterator;
+
+   namespace detail
+   {
+
+   template <class UnaryFunc, class Iterator>
+   struct transform_iterator_reference
+   {
+     // by default, dereferencing the iterator yields the same as the function.
+     using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<it_value_t<Iterator>>()));
+   };
+
+   // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
+   // See the implementation of transform_iterator<...>::dereference() for several comments on why this is necessary.
+   template <class Iterator>
+   struct transform_iterator_reference<::cuda::std::identity, Iterator>
+   {
+     using type = it_value_t<Iterator>;
+   };
+   template <typename Eval, class Iterator>
+   struct transform_iterator_reference<functional::actor<Eval>, Iterator>
+   {
+     using type = ::cuda::std::remove_reference_t<decltype(::cuda::std::declval<functional::actor<Eval>>()(
+       ::cuda::std::declval<it_value_t<Iterator>>()))>;
+   };
+
+   // Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
+   template <class UnaryFunc, class Iterator, class Reference, class Value>
+   struct make_transform_iterator_base
+   {
+   private:
+     using reference  = replace_if_use_default<Reference, transform_iterator_reference<UnaryFunc, Iterator>>;
+     using value_type = replace_if_use_default<Value, ::cuda::std::remove_cvref<reference>>;
+
+   public:
+     using type =
+       iterator_adaptor<transform_iterator<UnaryFunc, Iterator, Reference, Value>,
+                        Iterator,
+                        value_type,
+                        use_default,
+                        typename ::cuda::std::iterator_traits<Iterator>::iterator_category,
+                        reference>;
+   };
+
+   } // namespace detail
+
+   template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
+   class transform_iterator
+       : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
+   {
+
+   public:
+     using super_t =
+       typename detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type;
+
+     friend class iterator_core_access;
+
+     transform_iterator() = default;
+
+     transform_iterator(transform_iterator const&) = default;
+
+     _CCCL_HOST_DEVICE transform_iterator(Iterator const& x, AdaptableUnaryFunction f)
+         : super_t(x)
+         , m_f(f)
+     {}
+
+     _CCCL_HOST_DEVICE explicit transform_iterator(Iterator const& x)
+         : super_t(x)
+     {}
+
+     template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
+     _CCCL_HOST_DEVICE transform_iterator(
+       const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
+       detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
+       detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
+         : super_t(other.base())
+         , m_f(other.functor())
+     {}
+
+     _CCCL_HOST_DEVICE transform_iterator& operator=(transform_iterator const& other)
+     {
+       super_t::operator=(other);
+       if constexpr (::cuda::std::is_copy_assignable_v<AdaptableUnaryFunction>)
+       {
+         m_f = other.m_f;
+       }
+       else if constexpr (::cuda::std::is_copy_constructible_v<AdaptableUnaryFunction>)
+       {
+         ::cuda::std::__destroy_at(&m_f);
+         ::cuda::std::__construct_at(&m_f, other.m_f);
+       }
+       else
+       {
+         static_assert(::cuda::std::is_copy_constructible_v<AdaptableUnaryFunction>,
+                       "Cannot use thrust::transform_iterator with a functor that is neither copy constructible nor "
+                       "copy assignable");
+       }
+       return *this;
+     }
+
+     _CCCL_HOST_DEVICE AdaptableUnaryFunction functor() const
+     {
+       return m_f;
+     }
+
+   private:
+     // MSVC 2013 and 2015 incorrectly warning about returning a reference to
+     // a local/temporary here.
+     // See goo.gl/LELTNp
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+     {
+       // TODO(bgruber): we should ideally do as `std::ranges::transform_view::iterator` does:
+       // `return std::invoke(m_f, *this->base());` and return `decltype(auto)`. However, `*this->base()` may return a
+       // wrapped reference (`device_reference<T>`), which is a temporary value. If `m_f` forwards this value, e.g. as a
+       // `device_reference<T>&&` if `m_f` is `identity<void>`, (and `super_t::reference` is thus deduced as
+       // `device_reference<T>&&` as well), we return a dangling reference. So we cannot do as
+       // `std::ranges::transform_view::iterator` does.
+
+       // Interestingly, C++20 ranges have the same bug. The following program crashes because the transform iterator also
+       // returns a reference to an expired temporary (given by the iota iterator upon dereferencing)
+       //   for (auto e : std::views::iota(10) | std::views::transform(std::identity{}))
+       //     std::cout << e << '\n';
+       // See: https://godbolt.org/z/jrKcnMqhK
+
+       // The workaround is to create a temporary to allow iterators with wrapped/proxy references to convert to their
+       // value type before calling m_f. This also loads values from a different memory space (cf. `device_reference`).
+       // Note that this disallows mutable operations through m_f.
+       detail::it_value_t<Iterator> const& x = *this->base();
+       // FIXME(bgruber): x may be a reference to a temporary (e.g. if the base iterator is a counting_iterator). If `m_f`
+       // does not produce an independent copy and super_t::reference is a reference, we return a dangling reference (e.g.
+       // for any `[thrust|::cuda::std]::identity` functor).
+       return m_f(x);
+     }
+
+     // tag this as mutable per Dave Abrahams in this thread:
+     // http://lists.boost.org/Archives/boost/2004/05/65332.php
+     mutable AdaptableUnaryFunction m_f;
+
+   };
+
+   template <class AdaptableUnaryFunction, class Iterator>
+   inline _CCCL_HOST_DEVICE transform_iterator<AdaptableUnaryFunction, Iterator>
+   make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
+   {
+     return transform_iterator<AdaptableUnaryFunction, Iterator>(it, fun);
+   } // end make_transform_iterator
+
+   THRUST_NAMESPACE_END
+

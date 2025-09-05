@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:data\_interface
+==============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/data\_interface.cuh <data__interface_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::data_interface

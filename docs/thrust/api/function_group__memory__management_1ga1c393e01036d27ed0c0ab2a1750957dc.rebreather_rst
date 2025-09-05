@@ -1,0 +1,6 @@
+thrust\:\:device\_delete
+========================
+
+Defined in :ref:`thrust\/device\_delete.h <device__delete_8h>`
+
+.. doxygenfunction:: thrust::device_delete(thrust::device_ptr< T > ptr, const size_t n=1)

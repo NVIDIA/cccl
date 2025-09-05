@@ -1,0 +1,6 @@
+thrust\:\:find
+==============
+
+Defined in :ref:`thrust\/find.h <find_8h>`
+
+.. doxygenfunction:: thrust::find(InputIterator first, InputIterator last, const T &value)

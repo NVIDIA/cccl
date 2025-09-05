@@ -1,0 +1,18 @@
+.. _`callback__queues_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/exec\/host\/callback\_queues.cuh
+==============================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/host <dir_469814e8ed48e9a31eb954a5dcca2a00>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_places_exec_host_callback_queues.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/places/exec/host/callback_queues.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_places_exec_host_callback_queues.cuh>
+

@@ -1,0 +1,30 @@
+.. _`device__new_8h`:
+
+thrust\/device\_new.h
+=====================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_new.h`
+
+.. doxygenfile:: thrust/device_new.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_new.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:device\_new <group__memory__management_1ga42229aba5a66dfaf58456bd8e393ec5a>`
+- :ref:`thrust\:\:device\_new <group__memory__management_1ga6a56463dcea00aaefa0371f80a462f4e>`
+- :ref:`thrust\:\:device\_new <group__memory__management_1ga96490187c73f6eea15dcabb2428b91bd>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,6 @@
+thrust\:\:remove\_copy
+======================
+
+Defined in :ref:`thrust\/remove.h <remove_8h>`
+
+.. doxygenfunction:: thrust::remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T &value)

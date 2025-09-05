@@ -1,0 +1,6 @@
+thrust\:\:distance
+==================
+
+Defined in :ref:`thrust\/distance.h <distance_8h>`
+
+.. doxygenfunction:: thrust::distance(InputIter first, InputIter last)

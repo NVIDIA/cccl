@@ -1,0 +1,6 @@
+thrust\:\:reduce\_into
+======================
+
+Defined in :ref:`thrust\/reduce.h <reduce_8h>`
+
+.. doxygenfunction:: thrust::reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op)

@@ -1,0 +1,6 @@
+thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_input\_output\_iterator\< Iter\, InputFn\, OutputFn \> \>
+============================================================================================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_system<::cuda::transform_input_output_iterator< Iter, InputFn, OutputFn > >

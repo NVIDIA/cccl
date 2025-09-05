@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\!\=
+================================
+
+Defined in :ref:`thrust\/random\/xor\_combine\_engine.h <xor__combine__engine_8h>`
+
+.. doxygenfunction:: thrust::random::operator!=(const xor_combine_engine< Engine1_, s1_, Engine2_, s2_ > &lhs, const xor_combine_engine< Engine1_, s1_, Engine2_, s2_ > &rhs)

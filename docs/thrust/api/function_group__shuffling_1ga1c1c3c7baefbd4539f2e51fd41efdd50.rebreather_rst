@@ -1,0 +1,6 @@
+thrust\:\:shuffle
+=================
+
+Defined in :ref:`thrust\/shuffle.h <shuffle_8h>`
+
+.. doxygenfunction:: thrust::shuffle(RandomIterator first, RandomIterator last, URBG &&g)

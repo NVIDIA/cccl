@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:optionally\_static
+=================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/core.cuh <core_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::optionally_static

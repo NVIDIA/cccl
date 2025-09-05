@@ -1,0 +1,6 @@
+thrust\:\:system\:\:system\_error
+=================================
+
+Defined in :ref:`thrust\/system\/system\_error.h <system_2system__error_8h>`
+
+.. doxygenclass:: thrust::system::system_error

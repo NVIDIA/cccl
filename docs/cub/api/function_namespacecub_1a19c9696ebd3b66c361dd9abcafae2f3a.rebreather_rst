@@ -1,0 +1,6 @@
+cub\:\:MidPoint
+===============
+
+Defined in :ref:`cub\/util\_math.cuh <util__math_8cuh>`
+
+.. doxygenfunction:: cub::MidPoint(T begin, T end)

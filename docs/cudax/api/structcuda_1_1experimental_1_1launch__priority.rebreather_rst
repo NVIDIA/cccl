@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:launch\_priority
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/configuration.cuh <configuration_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::launch_priority

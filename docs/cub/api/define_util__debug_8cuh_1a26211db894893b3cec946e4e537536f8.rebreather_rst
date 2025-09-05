@@ -1,0 +1,6 @@
+CubDebugExit
+============
+
+Defined in :ref:`cub\/util\_debug.cuh <util__debug_8cuh>`
+
+.. doxygendefine:: CubDebugExit

@@ -1,0 +1,6 @@
+thrust\:\:host\_vector
+======================
+
+Defined in :ref:`thrust\/host\_vector.h <host__vector_8h>`
+
+.. doxygenclass:: thrust::host_vector

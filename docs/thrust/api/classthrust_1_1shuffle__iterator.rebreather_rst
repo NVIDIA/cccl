@@ -1,0 +1,6 @@
+thrust\:\:shuffle\_iterator
+===========================
+
+Defined in :ref:`thrust\/iterator\/shuffle\_iterator.h <shuffle__iterator_8h>`
+
+.. doxygenclass:: thrust::shuffle_iterator

@@ -1,0 +1,29 @@
+.. _`transform__reduce_8h`:
+
+thrust\/transform\_reduce.h
+===========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_transform_reduce.h`
+
+.. doxygenfile:: thrust/transform_reduce.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_transform_reduce.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:transform\_reduce <group__transformed__reductions_1ga096f193143e236850baaf3369b861137>`
+- :ref:`thrust\:\:transform\_reduce <group__transformed__reductions_1ga0d4232a9685675f488c3cc847111e48d>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

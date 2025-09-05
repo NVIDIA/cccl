@@ -1,0 +1,28 @@
+.. _`pair_8h`:
+
+thrust\/pair.h
+==============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_pair.h`
+
+.. doxygenfile:: thrust/pair.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_pair.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:pair <group__pair_1ga10f62e9b4cb1fd0953a57de605ebe922>`
+

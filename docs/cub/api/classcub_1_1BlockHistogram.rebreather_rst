@@ -1,0 +1,6 @@
+cub\:\:BlockHistogram
+=====================
+
+Defined in :ref:`cub\/block\/block\_histogram.cuh <block__histogram_8cuh>`
+
+.. doxygenclass:: cub::BlockHistogram

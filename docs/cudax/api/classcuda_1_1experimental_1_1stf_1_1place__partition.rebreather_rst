@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:place\_partition
+===============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/place\_partition.cuh <place__partition_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::place_partition

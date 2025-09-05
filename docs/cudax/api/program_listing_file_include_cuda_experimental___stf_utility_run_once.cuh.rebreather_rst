@@ -1,0 +1,85 @@
+include\/cuda\/experimental\/\_\_stf\/utility\/run\_once.cuh
+============================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/run\_once.cuh <run__once_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDASTF in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #pragma once
+
+   #include <cuda/__cccl_config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/experimental/__stf/utility/hash.cuh>
+
+   #include <unordered_map>
+
+   namespace cuda::experimental::stf
+   {
+
+   template <typename... Ts>
+   class run_once
+   {
+   public:
+     run_once(Ts... val)
+         : val(mv(val)...) {};
+
+     template <typename Fun>
+     auto& operator->*(Fun&& fun) &&
+     {
+       using ReturnType = std::invoke_result_t<Fun, Ts...>;
+
+       // Static assertions to ensure ReturnType meets the requirements
+       static_assert(
+         std::is_constructible_v<ReturnType, decltype(std::invoke(std::forward<Fun>(fun), std::declval<Ts>()...))>,
+         "ReturnType must be constructible from the result of fun()");
+       static_assert(std::is_move_constructible_v<ReturnType>, "ReturnType must be MoveConstructible");
+       static_assert(std::is_move_assignable_v<ReturnType>, "ReturnType must be MoveAssignable");
+
+       if constexpr (sizeof...(Ts) == 0)
+       {
+         static auto result = fun();
+         return result;
+       }
+       else
+       {
+         using ReturnType = ::std::invoke_result_t<decltype(fun), Ts...>;
+         static ::std::unordered_map<::std::tuple<Ts...>, ReturnType, ::cuda::experimental::stf::hash<::std::tuple<Ts...>>>
+           cache;
+
+         if (auto it = cache.find(val); it != cache.end())
+         {
+           return it->second;
+         }
+
+         // We only set the cache AFTER the end of the computation
+         auto result = ::std::apply(::std::forward<Fun&&>(fun), ::std::move(val));
+
+         return cache[val] = mv(result);
+       }
+     }
+
+   private:
+     // Stores the arguments used to invoke the function.
+     [[no_unique_address]] ::std::tuple<Ts...> val;
+   };
+
+   } // end namespace cuda::experimental::stf
+

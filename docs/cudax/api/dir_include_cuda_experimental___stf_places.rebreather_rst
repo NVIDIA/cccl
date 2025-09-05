@@ -1,0 +1,39 @@
+.. _`dir_0d707c7b2e641cd4a4b5d76502f17fc3`:
+
+include\/cuda\/experimental\/\_\_stf\/places
+============================================
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_include_cuda_experimental___stf_places_exec
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec <dir_fc121962c2ae7923cd0f18a27646ba66>`
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___stf_places_blocked_partition.cuh
+   file_include_cuda_experimental___stf_places_cyclic_shape.cuh
+   file_include_cuda_experimental___stf_places_inner_shape.cuh
+   file_include_cuda_experimental___stf_places_loop_dispatch.cuh
+   file_include_cuda_experimental___stf_places_place_partition.cuh
+   file_include_cuda_experimental___stf_places_places.cuh
+   file_include_cuda_experimental___stf_places_tiled_partition.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/blocked\_partition.cuh <blocked__partition_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/cyclic\_shape.cuh <cyclic__shape_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/inner\_shape.cuh <inner__shape_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/loop\_dispatch.cuh <loop__dispatch_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/place\_partition.cuh <place__partition_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/places.cuh <places_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/tiled\_partition.cuh <tiled__partition_8cuh>`
+

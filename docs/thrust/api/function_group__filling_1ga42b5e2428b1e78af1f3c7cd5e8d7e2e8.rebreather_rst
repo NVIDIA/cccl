@@ -1,0 +1,6 @@
+thrust\:\:uninitialized\_fill\_n
+================================
+
+Defined in :ref:`thrust\/uninitialized\_fill.h <uninitialized__fill_8h>`
+
+.. doxygenfunction:: thrust::uninitialized_fill_n(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, Size n, const T &x)

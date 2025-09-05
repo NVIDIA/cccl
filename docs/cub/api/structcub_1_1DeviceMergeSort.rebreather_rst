@@ -1,0 +1,6 @@
+cub\:\:DeviceMergeSort
+======================
+
+Defined in :ref:`cub\/device\/device\_merge\_sort.cuh <device__merge__sort_8cuh>`
+
+.. doxygenstruct:: cub::DeviceMergeSort

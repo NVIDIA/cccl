@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:pretty\_print\_bytes
+===================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/pretty\_print.cuh <pretty__print_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::pretty_print_bytes(size_t bytes)

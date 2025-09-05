@@ -1,0 +1,6 @@
+cub\:\:StoreDirectBlocked
+=========================
+
+Defined in :ref:`cub\/block\/block\_store.cuh <block__store_8cuh>`
+
+.. doxygenfunction:: cub::StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T(&items)[ITEMS_PER_THREAD], int valid_items)

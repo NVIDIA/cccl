@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:hash\< cuda\:\:experimental\:\:stf\:\:green\_ctx\_view \>
+========================================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_ctx\_view.cuh <green__ctx__view_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::hash< cuda::experimental::stf::green_ctx_view >

@@ -1,0 +1,35 @@
+.. _`dir_8d1573554a2d822bef6ec5f1076cd11a`:
+
+include\/cuda\/experimental\/\_\_stf\/stream
+============================================
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_include_cuda_experimental___stf_stream_interfaces
+   dir_include_cuda_experimental___stf_stream_internal
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces <dir_51a4a9bc7ddf6057d2d89ef71916308f>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/internal <dir_b3334876d4c6cb266af58073db3fbfc3>`
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___stf_stream_reduction.cuh
+   file_include_cuda_experimental___stf_stream_stream_ctx.cuh
+   file_include_cuda_experimental___stf_stream_stream_data_interface.cuh
+   file_include_cuda_experimental___stf_stream_stream_task.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/reduction.cuh <reduction_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_ctx.cuh <stream__ctx_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_data\_interface.cuh <stream__data__interface_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_task.cuh <stream__task_8cuh>`
+

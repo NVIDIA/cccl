@@ -1,0 +1,6 @@
+cub\:\:LowerBound
+=================
+
+Defined in :ref:`cub\/thread\/thread\_search.cuh <thread__search_8cuh>`
+
+.. doxygenfunction:: cub::LowerBound(InputIteratorT input, OffsetT num_items, T val)

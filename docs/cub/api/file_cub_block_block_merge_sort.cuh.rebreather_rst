@@ -1,0 +1,36 @@
+.. _`block__merge__sort_8cuh`:
+
+cub\/block\/block\_merge\_sort.cuh
+==================================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_merge_sort.cuh`
+
+.. doxygenfile:: cub/block/block_merge_sort.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_merge_sort.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockMergeSort <classcub_1_1BlockMergeSort>`
+- :ref:`cub\:\:BlockMergeSortStrategy <classcub_1_1BlockMergeSortStrategy>`
+
+Functions
+---------
+
+- :ref:`cub\:\:MergePath <namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3>`
+- :ref:`cub\:\:SerialMerge <namespacecub_1a0edb062b8ef768ddee5948242652d67a>`
+- :ref:`cub\:\:SerialMerge <namespacecub_1ab55ed967bd04996def18b25688c4c1ff>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

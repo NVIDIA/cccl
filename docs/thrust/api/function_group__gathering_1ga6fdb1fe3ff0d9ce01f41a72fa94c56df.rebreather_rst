@@ -1,0 +1,6 @@
+thrust\:\:gather
+================
+
+Defined in :ref:`thrust\/gather.h <gather_8h>`
+
+.. doxygenfunction:: thrust::gather(InputIterator map_first, InputIterator map_last, RandomAccessIterator input_first, OutputIterator result)

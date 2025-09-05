@@ -1,0 +1,6 @@
+thrust\:\:system\:\:operator\!\=
+================================
+
+Defined in :ref:`thrust\/system\/error\_code.h <error__code_8h>`
+
+.. doxygenfunction:: thrust::system::operator!=(const error_code &lhs, const error_code &rhs)

@@ -1,0 +1,46 @@
+.. _`execution__policy_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/execution\_policy.cuh
+=====================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_execution_policy.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/execution_policy.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_execution_policy.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec\< can\_sync\, width\, lower\_levels... \> <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_01can__sync_00_01width_00_01lower__levels_8_8_8_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec\<\> <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_4>`
+
+Enums
+-----
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:hw\_scope <execution__policy_8cuh_1a82008bf924d44262d76e4dd3e923e196>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:mem <execution__policy_8cuh_1a843ff5e8d2e1f11de9bffbf6bb794ff2>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\& <execution__policy_8cuh_1ab2c0a36d560b5d94af5eea4073fa7d95>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\| <execution__policy_8cuh_1aaf4d681c72680f254ea272f17c2a4e64>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\~ <execution__policy_8cuh_1a60ecf9bfc15107583bff32163672d8c1>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

@@ -1,0 +1,6 @@
+thrust\:\:device\_free
+======================
+
+Defined in :ref:`thrust\/device\_free.h <device__free_8h>`
+
+.. doxygenfunction:: thrust::device_free(thrust::device_ptr< void > ptr)

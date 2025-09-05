@@ -1,0 +1,28 @@
+.. _`host__vector_8h`:
+
+thrust\/host\_vector.h
+======================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_host_vector.h`
+
+.. doxygenfile:: thrust/host_vector.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_host_vector.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:host\_vector <classthrust_1_1host__vector>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,51 @@
+.. _`sort_8h`:
+
+thrust\/sort.h
+==============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_sort.h`
+
+.. doxygenfile:: thrust/sort.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_sort.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:is\_sorted <group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9>`
+- :ref:`thrust\:\:is\_sorted <group__predicates_1ga875b0200f33e77e846f6148d47a031f5>`
+- :ref:`thrust\:\:is\_sorted <group__predicates_1gaa45997c2cf929bf5ddce1ca2e33d4769>`
+- :ref:`thrust\:\:is\_sorted <group__predicates_1gaf221abd8c79d647c7957a66be19d68d6>`
+- :ref:`thrust\:\:is\_sorted\_until <group__predicates_1ga2943fb1a51132798bb1b548a02874784>`
+- :ref:`thrust\:\:is\_sorted\_until <group__predicates_1ga4a38ef536df3bb59eb413b66a60ae8ca>`
+- :ref:`thrust\:\:is\_sorted\_until <group__predicates_1ga5587ccf7ee81a0f591567a1ae14c967f>`
+- :ref:`thrust\:\:is\_sorted\_until <group__predicates_1gac74f3dcb01dc6d861373297e8154ea5a>`
+- :ref:`thrust\:\:sort <group__sorting_1ga01621fff7b6eb24fb68944cc2f10af6a>`
+- :ref:`thrust\:\:sort <group__sorting_1ga7a399a3801f1684d465f4adbac462982>`
+- :ref:`thrust\:\:sort <group__sorting_1ga857dfc9b50a03888c5703699f0fbfcd4>`
+- :ref:`thrust\:\:sort <group__sorting_1gad39e37d88f8334cbdd3e047a53e5cfba>`
+- :ref:`thrust\:\:sort\_by\_key <group__sorting_1ga0dc590662c28fc6b36e830c2bd0f1673>`
+- :ref:`thrust\:\:sort\_by\_key <group__sorting_1ga2bb765aeef19f6a04ca8b8ba11efff24>`
+- :ref:`thrust\:\:sort\_by\_key <group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c>`
+- :ref:`thrust\:\:sort\_by\_key <group__sorting_1ga99f37e94fdfaf47489ad35b62851d314>`
+- :ref:`thrust\:\:stable\_sort <group__sorting_1ga1bf137e4504dab24744409b905350f7b>`
+- :ref:`thrust\:\:stable\_sort <group__sorting_1ga2e7ee14dd2878ad63ec1d6156a44e1a1>`
+- :ref:`thrust\:\:stable\_sort <group__sorting_1ga6993fa038e2cdb407bd1a754c6047cd3>`
+- :ref:`thrust\:\:stable\_sort <group__sorting_1ga77581e28069f26d1c21fc6c3f9d35b25>`
+- :ref:`thrust\:\:stable\_sort\_by\_key <group__sorting_1ga289fae2c9edaceba94c025beeb615ca2>`
+- :ref:`thrust\:\:stable\_sort\_by\_key <group__sorting_1ga59ef14dbecb7fb16b0a26cd0aee5588c>`
+- :ref:`thrust\:\:stable\_sort\_by\_key <group__sorting_1gac0210e19d68263b648a5558c78ae61ee>`
+- :ref:`thrust\:\:stable\_sort\_by\_key <group__sorting_1gaf1fe1e4c1f203dd6a0c5deaab9dd8541>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

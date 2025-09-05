@@ -1,0 +1,78 @@
+thrust\/random.h
+================
+
+File members: :ref:`thrust\/random.h <random_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <cuda/std/cstdint>
+
+   // RNGs
+   #include <thrust/random/discard_block_engine.h>
+   #include <thrust/random/linear_congruential_engine.h>
+   #include <thrust/random/linear_feedback_shift_engine.h>
+   #include <thrust/random/subtract_with_carry_engine.h>
+   #include <thrust/random/xor_combine_engine.h>
+
+   // distributions
+   #include <thrust/random/normal_distribution.h>
+   #include <thrust/random/uniform_int_distribution.h>
+   #include <thrust/random/uniform_real_distribution.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   namespace random
+   {
+
+   using ranlux24 = discard_block_engine<ranlux24_base, 223, 23>;
+
+   using ranlux48 = discard_block_engine<ranlux48_base, 389, 11>;
+
+   using taus88 =
+     xor_combine_engine<linear_feedback_shift_engine<std::uint32_t, 32U, 31U, 13U, 12U>,
+                        0,
+                        xor_combine_engine<linear_feedback_shift_engine<std::uint32_t, 32U, 29U, 2U, 4U>,
+                                           0,
+                                           linear_feedback_shift_engine<std::uint32_t, 32U, 28U, 3U, 17U>,
+                                           0>,
+                        0>;
+
+   using default_random_engine = minstd_rand;
+
+   } // namespace random
+
+   // import names into thrust::
+   using random::default_random_engine;
+   using random::ranlux24;
+   using random::ranlux48;
+   using random::taus88;
+
+   THRUST_NAMESPACE_END
+

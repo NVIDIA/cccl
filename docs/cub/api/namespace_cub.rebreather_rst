@@ -1,0 +1,304 @@
+cub
+===
+
+.. doxygennamespace:: cub
+   :desc-only:
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   classcub_1_1ArgIndexInputIterator
+   classcub_1_1BlockAdjacentDifference
+   classcub_1_1BlockDiscontinuity
+   classcub_1_1BlockExchange
+   classcub_1_1BlockHistogram
+   classcub_1_1BlockLoad
+   classcub_1_1BlockMergeSort
+   classcub_1_1BlockMergeSortStrategy
+   classcub_1_1BlockRadixRank
+   classcub_1_1BlockRadixRankMatch
+   classcub_1_1BlockRadixSort
+   classcub_1_1BlockReduce
+   classcub_1_1BlockRunLengthDecode
+   classcub_1_1BlockScan
+   classcub_1_1BlockShuffle
+   classcub_1_1BlockStore
+   classcub_1_1CacheModifiedInputIterator
+   classcub_1_1CacheModifiedOutputIterator
+   classcub_1_1GridQueue
+   classcub_1_1SwizzleScanOp
+   classcub_1_1TexObjInputIterator
+   classcub_1_1WarpExchange
+   classcub_1_1WarpLoad
+   classcub_1_1WarpMergeSort
+   classcub_1_1WarpReduce
+   classcub_1_1WarpScan
+   classcub_1_1WarpStore
+
+- :ref:`cub\:\:ArgIndexInputIterator <classcub_1_1ArgIndexInputIterator>`
+- :ref:`cub\:\:BlockAdjacentDifference <classcub_1_1BlockAdjacentDifference>`
+- :ref:`cub\:\:BlockDiscontinuity <classcub_1_1BlockDiscontinuity>`
+- :ref:`cub\:\:BlockExchange <classcub_1_1BlockExchange>`
+- :ref:`cub\:\:BlockHistogram <classcub_1_1BlockHistogram>`
+- :ref:`cub\:\:BlockLoad <classcub_1_1BlockLoad>`
+- :ref:`cub\:\:BlockMergeSort <classcub_1_1BlockMergeSort>`
+- :ref:`cub\:\:BlockMergeSortStrategy <classcub_1_1BlockMergeSortStrategy>`
+- :ref:`cub\:\:BlockRadixRank <classcub_1_1BlockRadixRank>`
+- :ref:`cub\:\:BlockRadixRankMatch <classcub_1_1BlockRadixRankMatch>`
+- :ref:`cub\:\:BlockRadixSort <classcub_1_1BlockRadixSort>`
+- :ref:`cub\:\:BlockReduce <classcub_1_1BlockReduce>`
+- :ref:`cub\:\:BlockRunLengthDecode <classcub_1_1BlockRunLengthDecode>`
+- :ref:`cub\:\:BlockScan <classcub_1_1BlockScan>`
+- :ref:`cub\:\:BlockShuffle <classcub_1_1BlockShuffle>`
+- :ref:`cub\:\:BlockStore <classcub_1_1BlockStore>`
+- :ref:`cub\:\:CacheModifiedInputIterator <classcub_1_1CacheModifiedInputIterator>`
+- :ref:`cub\:\:CacheModifiedOutputIterator <classcub_1_1CacheModifiedOutputIterator>`
+- :ref:`cub\:\:GridQueue <classcub_1_1GridQueue>`
+- :ref:`cub\:\:SwizzleScanOp <classcub_1_1SwizzleScanOp>`
+- :ref:`cub\:\:TexObjInputIterator <classcub_1_1TexObjInputIterator>`
+- :ref:`cub\:\:WarpExchange <classcub_1_1WarpExchange>`
+- :ref:`cub\:\:WarpLoad <classcub_1_1WarpLoad>`
+- :ref:`cub\:\:WarpMergeSort <classcub_1_1WarpMergeSort>`
+- :ref:`cub\:\:WarpReduce <classcub_1_1WarpReduce>`
+- :ref:`cub\:\:WarpScan <classcub_1_1WarpScan>`
+- :ref:`cub\:\:WarpStore <classcub_1_1WarpStore>`
+
+Enums
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   enum_namespacecub_1a845ca81ef9b346ef7429a35d4fdc80d2
+   enum_namespacecub_1a9d7e37497fdd99864c57adecda710401
+   enum_namespacecub_1add0251c713859b8974806079e498d10a
+   enum_namespacecub_1abec44bba36037c547e7e84906d0d23ab
+   enum_namespacecub_1a839b145451e9eec3d44172e3c3619700
+   enum_namespacecub_1ac5f2805ad56fdd0f2860a5421d76d9b9
+   enum_namespacecub_1a648d25a92a50ca41cf73e93a35f21f37
+   enum_namespacecub_1ab0872c68bb2f2deba92ae650a9aa3e97
+   enum_namespacecub_1a2c368203492792b87069aa553cddcc1f
+   enum_namespacecub_1a7cd3a577f1a3742f265863144cd69a04
+   enum_namespacecub_1a4eeeb4ce5215aa8f6f394db9b3ff0de1
+   enum_namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c
+   enum_namespacecub_1ab9f09b230f6c6566d12470872db88048
+
+- :ref:`cub\:\:BlockHistogramAlgorithm <namespacecub_1a845ca81ef9b346ef7429a35d4fdc80d2>`
+- :ref:`cub\:\:BlockLoadAlgorithm <namespacecub_1a9d7e37497fdd99864c57adecda710401>`
+- :ref:`cub\:\:BlockReduceAlgorithm <namespacecub_1add0251c713859b8974806079e498d10a>`
+- :ref:`cub\:\:BlockScanAlgorithm <namespacecub_1abec44bba36037c547e7e84906d0d23ab>`
+- :ref:`cub\:\:BlockStoreAlgorithm <namespacecub_1a839b145451e9eec3d44172e3c3619700>`
+- :ref:`cub\:\:CacheLoadModifier <namespacecub_1ac5f2805ad56fdd0f2860a5421d76d9b9>`
+- :ref:`cub\:\:CacheStoreModifier <namespacecub_1a648d25a92a50ca41cf73e93a35f21f37>`
+- :ref:`cub\:\:GridMappingStrategy <namespacecub_1ab0872c68bb2f2deba92ae650a9aa3e97>`
+- :ref:`cub\:\:RadixRankAlgorithm <namespacecub_1a2c368203492792b87069aa553cddcc1f>`
+- :ref:`cub\:\:WarpExchangeAlgorithm <namespacecub_1a7cd3a577f1a3742f265863144cd69a04>`
+- :ref:`cub\:\:WarpLoadAlgorithm <namespacecub_1a4eeeb4ce5215aa8f6f394db9b3ff0de1>`
+- :ref:`cub\:\:WarpMatchAlgorithm <namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c>`
+- :ref:`cub\:\:WarpStoreAlgorithm <namespacecub_1ab9f09b230f6c6566d12470872db88048>`
+
+Functions
+---------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   function_namespacecub_1a1d58d7c9bdbebe3c8ce82f47c881c418
+   function_namespacecub_1a85689ccce38dd4ad9213842690d9fbf9
+   function_namespacecub_1a29e1ebc7039ca57334b58887a75a9489
+   function_namespacecub_1aa96d0281d6dff12b954587c912da3f57
+   function_namespacecub_1adee0a9b46d5bc13981fda7697bf6e071
+   function_namespacecub_1aafc45f51af4861d80b27569b7df319a4
+   function_namespacecub_1a2bfb9e1b7af0b675f8a2082f0a5be378
+   function_namespacecub_1a5c8368c3db30b1c5dd28881f7449d504
+   function_namespacecub_1a9cb63aec76a4d6abbe42072b731117df
+   function_namespacecub_1addb4bc9c4240dc3ea54078e6ffc813f2
+   function_namespacecub_1a0d29b747a801255a57f3f0355569934d
+   function_namespacecub_1a1eadd141e1b2959d56082459a6d00b39
+   function_namespacecub_1a5d4044320d66bd6480aad12acbf35961
+   function_namespacecub_1aaa5af394d9290c46fef2f06edb6dc08e
+   function_namespacecub_1a45a43eaf0fdb84cc70c502588484ba5a
+   function_namespacecub_1aad4b046f6d3fe26e379216e7f54a7c4e
+   function_namespacecub_1adf5dc35a59ce2ca14f043b82dc5a8f5d
+   function_namespacecub_1a8dac1b15322b4ce6b75df7e1ef1a98ce
+   function_namespacecub_1ad69972e79ff49330e9a69ef2cc916ea3
+   function_namespacecub_1a8b6177c635dcc16dd321af6da3e538db
+   function_namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3
+   function_namespacecub_1ae5dc63782e74ff9978bec0ef1d12f2f8
+   function_namespacecub_1a19c9696ebd3b66c361dd9abcafae2f3a
+   function_namespacecub_1a92146627fb9025cf631ce6894da54068
+   function_namespacecub_1a91f7ed12997a1c479e6c40039816e94c
+   function_namespacecub_1a0152e6fc2c5fb16bcc72078fc97dc4c2
+   function_namespacecub_1ac734a40a70a31a6df64e609e2d0e6955
+   function_namespacecub_1adbc412e91b5a1ac2cef94a77bc4f776d
+   function_namespacecub_1a7ac1b807f2176cebde253043a25f7ec6
+   function_namespacecub_1a9c18197e2ddb2106f71ab0735abc60e5
+   function_namespacecub_1a767f6bb0f696ac8264755e2c5549ba52
+   function_namespacecub_1a0edb062b8ef768ddee5948242652d67a
+   function_namespacecub_1ab55ed967bd04996def18b25688c4c1ff
+   function_namespacecub_1a1d7023c04c3d5f501a83dd2992c550bf
+   function_namespacecub_1a896be0f0cb8ed423fb9e413143cf8e91
+   function_namespacecub_1a626277ec32b01a9d7a48f8ea945cd4d7
+   function_namespacecub_1a75d6eade310f187ff42915ae82e963d0
+   function_namespacecub_1ad79fa34a6d206203d5a611b450c4225a
+   function_namespacecub_1a7fbefdee9a2b826e71ea84be34d81c95
+   function_namespacecub_1a727a7c8ca5aa68345d99cf39c282d632
+   function_namespacecub_1aa04ff311936d3e0224ffcbf24190b831
+   function_namespacecub_1a31990743e30594516193a8adf77710ae
+   function_namespacecub_1a17705dce23e8dfed6dc4814e32a25bec
+   function_namespacecub_1a76050168e316d3d99ee8745d7e903f08
+   function_namespacecub_1a7a5ead0ddc690293225138bfc71ece6e
+   function_namespacecub_1ad47f931dc83eab368854eb28340ee55b
+   function_namespacecub_1a7dd94060eb47e8cd530372626d048160
+   function_namespacecub_1a1b975318a8f3f7a19769fa51121bb288
+   function_namespacecub_1aab1ed99f5352bee2208c79732965e4e5
+   function_namespacecub_1a5bc54df3b7da4260d8c1d8579f63f0c0
+   function_namespacecub_1a553633b74da5b2b77992aa60c1f278f3
+   function_namespacecub_1a9ce53dad7978b7158b23949f6cc959ee
+   function_namespacecub_1a40ad588fae6fbb0c9ac841f25c3f57d0
+
+- :ref:`cub\:\:BFE <namespacecub_1a1d58d7c9bdbebe3c8ce82f47c881c418>`
+- :ref:`cub\:\:CurrentDevice <namespacecub_1a85689ccce38dd4ad9213842690d9fbf9>`
+- :ref:`cub\:\:Debug <namespacecub_1a29e1ebc7039ca57334b58887a75a9489>`
+- :ref:`cub\:\:DeviceCount <namespacecub_1aa96d0281d6dff12b954587c912da3f57>`
+- :ref:`cub\:\:DeviceCountCachedValue <namespacecub_1adee0a9b46d5bc13981fda7697bf6e071>`
+- :ref:`cub\:\:DeviceCountUncached <namespacecub_1aafc45f51af4861d80b27569b7df319a4>`
+- :ref:`cub\:\:GetPerDeviceAttributeCache <namespacecub_1a2bfb9e1b7af0b675f8a2082f0a5be378>`
+- :ref:`cub\:\:LoadDirectBlocked <namespacecub_1a5c8368c3db30b1c5dd28881f7449d504>`
+- :ref:`cub\:\:LoadDirectBlocked <namespacecub_1a9cb63aec76a4d6abbe42072b731117df>`
+- :ref:`cub\:\:LoadDirectBlocked <namespacecub_1addb4bc9c4240dc3ea54078e6ffc813f2>`
+- :ref:`cub\:\:LoadDirectBlockedVectorized <namespacecub_1a0d29b747a801255a57f3f0355569934d>`
+- :ref:`cub\:\:LoadDirectStriped <namespacecub_1a1eadd141e1b2959d56082459a6d00b39>`
+- :ref:`cub\:\:LoadDirectStriped <namespacecub_1a5d4044320d66bd6480aad12acbf35961>`
+- :ref:`cub\:\:LoadDirectStriped <namespacecub_1aaa5af394d9290c46fef2f06edb6dc08e>`
+- :ref:`cub\:\:LoadDirectWarpStriped <namespacecub_1a45a43eaf0fdb84cc70c502588484ba5a>`
+- :ref:`cub\:\:LoadDirectWarpStriped <namespacecub_1aad4b046f6d3fe26e379216e7f54a7c4e>`
+- :ref:`cub\:\:LoadDirectWarpStriped <namespacecub_1adf5dc35a59ce2ca14f043b82dc5a8f5d>`
+- :ref:`cub\:\:LowerBound <namespacecub_1a8dac1b15322b4ce6b75df7e1ef1a98ce>`
+- :ref:`cub\:\:MatchAny <namespacecub_1ad69972e79ff49330e9a69ef2cc916ea3>`
+- :ref:`cub\:\:MaxSmOccupancy <namespacecub_1a8b6177c635dcc16dd321af6da3e538db>`
+- :ref:`cub\:\:MergePath <namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3>`
+- :ref:`cub\:\:MergePathSearch <namespacecub_1ae5dc63782e74ff9978bec0ef1d12f2f8>`
+- :ref:`cub\:\:MidPoint <namespacecub_1a19c9696ebd3b66c361dd9abcafae2f3a>`
+- :ref:`cub\:\:Nominal4BItemsToItems <namespacecub_1a92146627fb9025cf631ce6894da54068>`
+- :ref:`cub\:\:Nominal4BItemsToItemsCombined <namespacecub_1a91f7ed12997a1c479e6c40039816e94c>`
+- :ref:`cub\:\:Nominal8BItemsToItems <namespacecub_1a0152e6fc2c5fb16bcc72078fc97dc4c2>`
+- :ref:`cub\:\:PtxVersion <namespacecub_1ac734a40a70a31a6df64e609e2d0e6955>`
+- :ref:`cub\:\:PtxVersion <namespacecub_1adbc412e91b5a1ac2cef94a77bc4f776d>`
+- :ref:`cub\:\:PtxVersionUncached <namespacecub_1a7ac1b807f2176cebde253043a25f7ec6>`
+- :ref:`cub\:\:PtxVersionUncached <namespacecub_1a9c18197e2ddb2106f71ab0735abc60e5>`
+- :ref:`cub\:\:RowMajorTid <namespacecub_1a767f6bb0f696ac8264755e2c5549ba52>`
+- :ref:`cub\:\:SerialMerge <namespacecub_1a0edb062b8ef768ddee5948242652d67a>`
+- :ref:`cub\:\:SerialMerge <namespacecub_1ab55ed967bd04996def18b25688c4c1ff>`
+- :ref:`cub\:\:ShuffleDown <namespacecub_1a1d7023c04c3d5f501a83dd2992c550bf>`
+- :ref:`cub\:\:ShuffleIndex <namespacecub_1a896be0f0cb8ed423fb9e413143cf8e91>`
+- :ref:`cub\:\:ShuffleUp <namespacecub_1a626277ec32b01a9d7a48f8ea945cd4d7>`
+- :ref:`cub\:\:SmVersion <namespacecub_1a75d6eade310f187ff42915ae82e963d0>`
+- :ref:`cub\:\:SmVersionUncached <namespacecub_1ad79fa34a6d206203d5a611b450c4225a>`
+- :ref:`cub\:\:StableOddEvenSort <namespacecub_1a7fbefdee9a2b826e71ea84be34d81c95>`
+- :ref:`cub\:\:StoreDirectBlocked <namespacecub_1a727a7c8ca5aa68345d99cf39c282d632>`
+- :ref:`cub\:\:StoreDirectBlocked <namespacecub_1aa04ff311936d3e0224ffcbf24190b831>`
+- :ref:`cub\:\:StoreDirectBlockedVectorized <namespacecub_1a31990743e30594516193a8adf77710ae>`
+- :ref:`cub\:\:StoreDirectStriped <namespacecub_1a17705dce23e8dfed6dc4814e32a25bec>`
+- :ref:`cub\:\:StoreDirectStriped <namespacecub_1a76050168e316d3d99ee8745d7e903f08>`
+- :ref:`cub\:\:StoreDirectWarpStriped <namespacecub_1a7a5ead0ddc690293225138bfc71ece6e>`
+- :ref:`cub\:\:StoreDirectWarpStriped <namespacecub_1ad47f931dc83eab368854eb28340ee55b>`
+- :ref:`cub\:\:SyncStream <namespacecub_1a7dd94060eb47e8cd530372626d048160>`
+- :ref:`cub\:\:ThreadExit <namespacecub_1a1b975318a8f3f7a19769fa51121bb288>`
+- :ref:`cub\:\:ThreadLoad <namespacecub_1aab1ed99f5352bee2208c79732965e4e5>`
+- :ref:`cub\:\:ThreadReduce <namespacecub_1a5bc54df3b7da4260d8c1d8579f63f0c0>`
+- :ref:`cub\:\:ThreadStore <namespacecub_1a553633b74da5b2b77992aa60c1f278f3>`
+- :ref:`cub\:\:UpperBound <namespacecub_1a9ce53dad7978b7158b23949f6cc959ee>`
+- :ref:`cub\:\:WarpMask <namespacecub_1a40ad588fae6fbb0c9ac841f25c3f57d0>`
+
+Structs
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   structcub_1_1ArgMax
+   structcub_1_1ArgMin
+   structcub_1_1BFEDigitExtractor
+   structcub_1_1BaseDigitExtractor
+   structcub_1_1BaseDigitExtractor_3_01KeyT_00_01true_01_4
+   structcub_1_1BlockLoadType
+   structcub_1_1BlockRadixRankEmptyCallback
+   structcub_1_1BlockRadixRankMatchEarlyCounts
+   structcub_1_1BlockRakingLayout
+   structcub_1_1CachingDeviceAllocator
+   structcub_1_1CastOp
+   structcub_1_1ChainedPolicy
+   structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4
+   structcub_1_1DeviceAdjacentDifference
+   structcub_1_1DeviceCopy
+   structcub_1_1DeviceFor
+   structcub_1_1DeviceHistogram
+   structcub_1_1DeviceMemcpy
+   structcub_1_1DeviceMerge
+   structcub_1_1DeviceMergeSort
+   structcub_1_1DevicePartition
+   structcub_1_1DeviceRadixSort
+   structcub_1_1DeviceReduce
+   structcub_1_1DeviceRunLengthEncode
+   structcub_1_1DeviceScan
+   structcub_1_1DeviceSegmentedRadixSort
+   structcub_1_1DeviceSegmentedReduce
+   structcub_1_1DeviceSegmentedSort
+   structcub_1_1DeviceSelect
+   structcub_1_1DeviceTransform
+   structcub_1_1GridEvenShare
+   structcub_1_1InequalityWrapper
+   structcub_1_1PtxVersionCacheTag
+   structcub_1_1RadixSortTwiddle
+   structcub_1_1ReduceByKeyOp
+   structcub_1_1ReduceBySegmentOp
+   structcub_1_1ShiftDigitExtractor
+   structcub_1_1SmVersionCacheTag
+
+- :ref:`cub\:\:ArgMax <structcub_1_1ArgMax>`
+- :ref:`cub\:\:ArgMin <structcub_1_1ArgMin>`
+- :ref:`cub\:\:BFEDigitExtractor <structcub_1_1BFEDigitExtractor>`
+- :ref:`cub\:\:BaseDigitExtractor <structcub_1_1BaseDigitExtractor>`
+- :ref:`cub\:\:BaseDigitExtractor\< KeyT\, true \> <structcub_1_1BaseDigitExtractor_3_01KeyT_00_01true_01_4>`
+- :ref:`cub\:\:BlockLoadType <structcub_1_1BlockLoadType>`
+- :ref:`cub\:\:BlockRadixRankEmptyCallback <structcub_1_1BlockRadixRankEmptyCallback>`
+- :ref:`cub\:\:BlockRadixRankMatchEarlyCounts <structcub_1_1BlockRadixRankMatchEarlyCounts>`
+- :ref:`cub\:\:BlockRakingLayout <structcub_1_1BlockRakingLayout>`
+- :ref:`cub\:\:CachingDeviceAllocator <structcub_1_1CachingDeviceAllocator>`
+- :ref:`cub\:\:CastOp <structcub_1_1CastOp>`
+- :ref:`cub\:\:ChainedPolicy <structcub_1_1ChainedPolicy>`
+- :ref:`cub\:\:ChainedPolicy\< PolicyPtxVersion\, PolicyT\, PolicyT \> <structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4>`
+- :ref:`cub\:\:DeviceAdjacentDifference <structcub_1_1DeviceAdjacentDifference>`
+- :ref:`cub\:\:DeviceCopy <structcub_1_1DeviceCopy>`
+- :ref:`cub\:\:DeviceFor <structcub_1_1DeviceFor>`
+- :ref:`cub\:\:DeviceHistogram <structcub_1_1DeviceHistogram>`
+- :ref:`cub\:\:DeviceMemcpy <structcub_1_1DeviceMemcpy>`
+- :ref:`cub\:\:DeviceMerge <structcub_1_1DeviceMerge>`
+- :ref:`cub\:\:DeviceMergeSort <structcub_1_1DeviceMergeSort>`
+- :ref:`cub\:\:DevicePartition <structcub_1_1DevicePartition>`
+- :ref:`cub\:\:DeviceRadixSort <structcub_1_1DeviceRadixSort>`
+- :ref:`cub\:\:DeviceReduce <structcub_1_1DeviceReduce>`
+- :ref:`cub\:\:DeviceRunLengthEncode <structcub_1_1DeviceRunLengthEncode>`
+- :ref:`cub\:\:DeviceScan <structcub_1_1DeviceScan>`
+- :ref:`cub\:\:DeviceSegmentedRadixSort <structcub_1_1DeviceSegmentedRadixSort>`
+- :ref:`cub\:\:DeviceSegmentedReduce <structcub_1_1DeviceSegmentedReduce>`
+- :ref:`cub\:\:DeviceSegmentedSort <structcub_1_1DeviceSegmentedSort>`
+- :ref:`cub\:\:DeviceSelect <structcub_1_1DeviceSelect>`
+- :ref:`cub\:\:DeviceTransform <structcub_1_1DeviceTransform>`
+- :ref:`cub\:\:GridEvenShare <structcub_1_1GridEvenShare>`
+- :ref:`cub\:\:InequalityWrapper <structcub_1_1InequalityWrapper>`
+- :ref:`cub\:\:PtxVersionCacheTag <structcub_1_1PtxVersionCacheTag>`
+- :ref:`cub\:\:RadixSortTwiddle <structcub_1_1RadixSortTwiddle>`
+- :ref:`cub\:\:ReduceByKeyOp <structcub_1_1ReduceByKeyOp>`
+- :ref:`cub\:\:ReduceBySegmentOp <structcub_1_1ReduceBySegmentOp>`
+- :ref:`cub\:\:ShiftDigitExtractor <structcub_1_1ShiftDigitExtractor>`
+- :ref:`cub\:\:SmVersionCacheTag <structcub_1_1SmVersionCacheTag>`
+

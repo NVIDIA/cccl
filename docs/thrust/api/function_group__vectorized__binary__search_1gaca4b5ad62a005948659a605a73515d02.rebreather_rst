@@ -1,0 +1,6 @@
+thrust\:\:binary\_search
+========================
+
+Defined in :ref:`thrust\/binary\_search.h <binary__search_8h>`
+
+.. doxygenfunction:: thrust::binary_search(ForwardIterator first, ForwardIterator last, InputIterator values_first, InputIterator values_last, OutputIterator result)

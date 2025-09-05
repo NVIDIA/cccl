@@ -1,0 +1,28 @@
+.. _`block__exchange_8cuh`:
+
+cub\/block\/block\_exchange.cuh
+===============================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_exchange.cuh`
+
+.. doxygenfile:: cub/block/block_exchange.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_exchange.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockExchange <classcub_1_1BlockExchange>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

@@ -1,0 +1,6 @@
+SCOPE
+=====
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/scope\_guard.cuh <scope__guard_8cuh>`
+
+.. doxygendefine:: SCOPE

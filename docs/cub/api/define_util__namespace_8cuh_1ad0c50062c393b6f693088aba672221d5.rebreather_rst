@@ -1,0 +1,6 @@
+CUB\_NAMESPACE\_END
+===================
+
+Defined in :ref:`cub\/util\_namespace.cuh <util__namespace_8cuh>`
+
+.. doxygendefine:: CUB_NAMESPACE_END

@@ -1,0 +1,37 @@
+.. _`normal__distribution_8h`:
+
+thrust\/random\/normal\_distribution.h
+======================================
+
+In directory: :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+Source file: :doc:`program_listing_file_thrust_random_normal_distribution.h`
+
+.. doxygenfile:: thrust/random/normal_distribution.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random_normal_distribution.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:random\:\:normal\_distribution <classthrust_1_1random_1_1normal__distribution>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:random\:\:operator\!\= <group__random__number__distributions_1ga46a9a6e4c38815061851d43ed42ef6db>`
+- :ref:`thrust\:\:random\:\:operator\<\< <group__random__number__distributions_1gad2707410ccba0294a307d489003b9dc9>`
+- :ref:`thrust\:\:random\:\:operator\=\= <group__random__number__distributions_1gabb8b32d6708cb66b595fc4e3f1524368>`
+- :ref:`thrust\:\:random\:\:operator\>\> <group__random__number__distributions_1ga94a368cbdd00a86a8495a4f555e73eeb>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+

@@ -1,0 +1,6 @@
+thrust\:\:system\:\:omp\:\:universal\_pointer
+=============================================
+
+Defined in :ref:`thrust\/system\/omp\/pointer.h <system_2omp_2pointer_8h>`
+
+.. doxygentypedef:: thrust::system::omp::universal_pointer

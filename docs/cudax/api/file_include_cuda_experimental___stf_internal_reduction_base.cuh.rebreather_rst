@@ -1,0 +1,30 @@
+.. _`reduction__base_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/reduction\_base.cuh
+===================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_reduction_base.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/reduction_base.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_reduction_base.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:reduction\_operator\_base <classcuda_1_1experimental_1_1stf_1_1reduction__operator__base>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

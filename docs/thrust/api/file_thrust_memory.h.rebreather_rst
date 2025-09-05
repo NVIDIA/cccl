@@ -1,0 +1,34 @@
+.. _`memory_8h`:
+
+thrust\/memory.h
+================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_memory.h`
+
+.. doxygenfile:: thrust/memory.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_memory.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:free <group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31>`
+- :ref:`thrust\:\:get\_temporary\_buffer <group__memory__management_1gabcda45350b20634b8a9ca17721c6f3ef>`
+- :ref:`thrust\:\:malloc <group__memory__management_1ga42041a9a1ca7815838e9a2359bfc7cdb>`
+- :ref:`thrust\:\:raw\_pointer\_cast <group__memory__management_1ga727205bce1a42d06eb76a949f3986f0a>`
+- :ref:`thrust\:\:raw\_reference\_cast <group__memory__management_1ga1aaadad13bae1ced49cc65b58a269ee7>`
+- :ref:`thrust\:\:raw\_reference\_cast <group__memory__management_1gaafb2c31dcc172843213eb9c980a6833d>`
+- :ref:`thrust\:\:return\_temporary\_buffer <group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

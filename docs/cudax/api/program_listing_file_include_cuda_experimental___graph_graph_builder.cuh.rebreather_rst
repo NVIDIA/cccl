@@ -1,0 +1,125 @@
+include\/cuda\/experimental\/\_\_graph\/graph\_builder.cuh
+==========================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_builder.cuh <graph__builder_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDA Experimental in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #ifndef __CUDAX_GRAPH_GRAPH_BUILDER
+   #define __CUDAX_GRAPH_GRAPH_BUILDER
+
+   #include <cuda/std/detail/__config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/std/__utility/exchange.h>
+
+   #include <cuda/experimental/__graph/graph_builder_ref.cuh>
+
+   #include <cuda/std/__cccl/prologue.h>
+
+   namespace cuda::experimental
+   {
+   struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
+   {
+     _CCCL_HOST_API explicit graph_builder(device_ref __dev)
+         : graph_builder_ref(nullptr, __dev)
+     {
+       _CCCL_TRY_CUDA_API(cudaGraphCreate, "cudaGraphCreate failed", &__graph_, 0);
+     }
+
+     _CCCL_HOST_API explicit graph_builder()
+         : graph_builder(device_ref{0})
+     {}
+
+     graph_builder(int) = delete;
+
+     graph_builder(_CUDA_VSTD::nullptr_t) = delete;
+
+     _CCCL_HOST_API explicit constexpr graph_builder(no_init_t, device_ref __dev = device_ref{0}) noexcept
+         : graph_builder_ref(nullptr, __dev)
+     {}
+
+     _CCCL_HOST_API constexpr graph_builder(graph_builder&& __other) noexcept
+         : graph_builder_ref(_CUDA_VSTD::exchange(__other.__graph_, nullptr), __other.__dev_)
+     {}
+
+     _CCCL_HOST_API constexpr graph_builder(graph_builder_ref __other)
+         : graph_builder_ref(nullptr, __other.__dev_)
+     {
+       if (__other.__graph_)
+       {
+         _CCCL_TRY_CUDA_API(cudaGraphClone, "cudaGraphClone failed", &__graph_, __other.__graph_);
+       }
+     }
+
+     _CCCL_HOST_API _CCCL_CONSTEXPR_CXX20 ~graph_builder()
+     {
+       reset();
+     }
+
+     _CCCL_HOST_API constexpr auto operator=(graph_builder&& __other) noexcept -> graph_builder&
+     {
+       if (this != &__other)
+       {
+         swap(__other);
+         __other.reset();
+       }
+       return *this;
+     }
+
+     _CCCL_HOST_API _CCCL_CONSTEXPR_CXX20 auto operator=(graph_builder_ref __other) -> graph_builder&
+     {
+       if (this != &__other)
+       {
+         operator=(graph_builder(__other));
+       }
+       return *this;
+     }
+
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraph_t
+     {
+       return _CUDA_VSTD::exchange(__graph_, nullptr);
+     }
+
+     _CCCL_HOST_API constexpr void reset() noexcept
+     {
+       if (auto __graph = _CUDA_VSTD::exchange(__graph_, nullptr))
+       {
+         _CCCL_ASSERT_CUDA_API(cudaGraphDestroy, "cudaGraphDestroy failed", __graph);
+       }
+     }
+
+     [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto
+     from_native_handle(cudaGraph_t __graph, device_ref __dev) noexcept -> graph_builder
+     {
+       return graph_builder{__graph, __dev};
+     }
+
+   private:
+     _CCCL_HOST_API explicit constexpr graph_builder(cudaGraph_t __graph, device_ref __dev) noexcept
+         : graph_builder_ref(__graph, __dev)
+     {}
+   };
+   } // namespace cuda::experimental
+
+   #include <cuda/std/__cccl/epilogue.h>
+
+   #endif // __CUDAX_GRAPH_GRAPH_BUILDER
+

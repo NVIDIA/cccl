@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:start\_path
+===================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_graph\/path\_builder.cuh <path__builder_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::start_path(device_ref __dev, _FirstNode __first_node, _Nodes... __nodes)

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:make\_tuple\_indexwise
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/core.cuh <core_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::make_tuple_indexwise(F &&f, ::std::index_sequence< i... >={})

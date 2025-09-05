@@ -1,0 +1,47 @@
+.. _`transform_8h`:
+
+thrust\/transform.h
+===================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_transform.h`
+
+.. doxygenfile:: thrust/transform.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_transform.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:transform <group__transformations_1ga62a6227031c9c811c5b497b347398a8a>`
+- :ref:`thrust\:\:transform <group__transformations_1ga68a3ba7d332887f1332ca3bc04453792>`
+- :ref:`thrust\:\:transform <group__transformations_1gabbda6380c902223d777cc72d3b1b9d1a>`
+- :ref:`thrust\:\:transform <group__transformations_1gacbd546527729f24f27dc44e34a5b8f73>`
+- :ref:`thrust\:\:transform\_if <group__transformations_1ga4bee9c11e0802a939496b1a1dd048244>`
+- :ref:`thrust\:\:transform\_if <group__transformations_1ga4cace41496814acafa048ff5e14034d1>`
+- :ref:`thrust\:\:transform\_if <group__transformations_1ga7a231d3ed7e33397e36a20f788a0548c>`
+- :ref:`thrust\:\:transform\_if <group__transformations_1ga956fa9144805c2262b2c3a76163e4289>`
+- :ref:`thrust\:\:transform\_if <group__transformations_1gaae05e9011a57f320e2899e668104dcd9>`
+- :ref:`thrust\:\:transform\_if <group__transformations_1gab187a5244f279f5c9117e16eb4d5d10e>`
+- :ref:`thrust\:\:transform\_if\_n <group__transformations_1ga4e90bdef5e2ed0977064eb2b9fd128fa>`
+- :ref:`thrust\:\:transform\_if\_n <group__transformations_1ga9306c59245e6ef6c38d1570789cd6e7b>`
+- :ref:`thrust\:\:transform\_if\_n <group__transformations_1gaa07bb8f4a89e75b52f6b9284a36de8f8>`
+- :ref:`thrust\:\:transform\_if\_n <group__transformations_1gab05373333915cf49f90d3dfd05c3c183>`
+- :ref:`thrust\:\:transform\_if\_n <group__transformations_1gade1f7ff3c72d7da046f1b251e2091da7>`
+- :ref:`thrust\:\:transform\_if\_n <group__transformations_1gae379d315dfad1da644b2e007d5fe9787>`
+- :ref:`thrust\:\:transform\_n <group__transformations_1ga172372017111c92f4736d3c8ff38f087>`
+- :ref:`thrust\:\:transform\_n <group__transformations_1ga74c6654fe44cddd45bc8cfbe214dedc8>`
+- :ref:`thrust\:\:transform\_n <group__transformations_1gaa486449b409502203b504f7e9bf0bb4d>`
+- :ref:`thrust\:\:transform\_n <group__transformations_1gaeb31c292c270d663e112eb24ab56c5c0>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

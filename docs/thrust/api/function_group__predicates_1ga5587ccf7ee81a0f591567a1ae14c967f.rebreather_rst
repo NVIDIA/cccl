@@ -1,0 +1,6 @@
+thrust\:\:is\_sorted\_until
+===========================
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp)

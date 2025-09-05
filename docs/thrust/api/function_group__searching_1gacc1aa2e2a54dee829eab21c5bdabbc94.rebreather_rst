@@ -1,0 +1,6 @@
+thrust\:\:partition\_point
+==========================
+
+Defined in :ref:`thrust\/partition.h <partition_8h>`
+
+.. doxygenfunction:: thrust::partition_point(ForwardIterator first, ForwardIterator last, Predicate pred)

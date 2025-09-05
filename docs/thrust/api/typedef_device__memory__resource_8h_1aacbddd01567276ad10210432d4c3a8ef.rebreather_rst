@@ -1,0 +1,6 @@
+thrust\:\:universal\_host\_pinned\_memory\_resource
+===================================================
+
+Defined in :ref:`thrust\/mr\/device\_memory\_resource.h <device__memory__resource_8h>`
+
+.. doxygentypedef:: thrust::universal_host_pinned_memory_resource

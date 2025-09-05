@@ -1,0 +1,23 @@
+.. _`thread__scan_8cuh`:
+
+cub\/thread\/thread\_scan.cuh
+=============================
+
+In directory: :ref:`cub\/thread <dir_bb50a5ef59f19d030d06415663184d05>`
+
+Source file: :doc:`program_listing_file_cub_thread_thread_scan.cuh`
+
+.. doxygenfile:: cub/thread/thread_scan.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_thread_thread_scan.cuh>
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

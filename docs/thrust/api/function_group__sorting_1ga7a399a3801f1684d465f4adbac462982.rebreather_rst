@@ -1,0 +1,6 @@
+thrust\:\:sort
+==============
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::sort(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)

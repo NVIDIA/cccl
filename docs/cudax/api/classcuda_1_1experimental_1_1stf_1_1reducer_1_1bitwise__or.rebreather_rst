@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_or
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/reducer.cuh <reducer_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::reducer::bitwise_or

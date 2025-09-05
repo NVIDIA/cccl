@@ -1,0 +1,6 @@
+thrust\:\:uninitialized\_copy\_n
+================================
+
+Defined in :ref:`thrust\/uninitialized\_copy.h <uninitialized__copy_8h>`
+
+.. doxygenfunction:: thrust::uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result)

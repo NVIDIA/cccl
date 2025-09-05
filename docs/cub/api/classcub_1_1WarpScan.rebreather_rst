@@ -1,0 +1,6 @@
+cub\:\:WarpScan
+===============
+
+Defined in :ref:`cub\/warp\/warp\_scan.cuh <warp__scan_8cuh>`
+
+.. doxygenclass:: cub::WarpScan

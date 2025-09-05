@@ -1,0 +1,39 @@
+.. _`reducer_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/reducer.cuh
+===========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_reducer.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/reducer.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_reducer.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_and <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__and>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_or <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__or>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_xor <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__xor>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:logical\_and <classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:logical\_or <classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:maxval <classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:minval <classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:product <classcuda_1_1experimental_1_1stf_1_1reducer_1_1product>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:sum <classcuda_1_1experimental_1_1stf_1_1reducer_1_1sum>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer <namespacecuda_1_1experimental_1_1stf_1_1reducer>`
+

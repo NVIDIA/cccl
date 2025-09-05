@@ -1,0 +1,18 @@
+.. _`universal__ptr_8h`:
+
+thrust\/universal\_ptr.h
+========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_universal_ptr.h`
+
+.. doxygenfile:: thrust/universal_ptr.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_universal_ptr.h>
+

@@ -1,0 +1,33 @@
+cuda\:\:experimental\:\:stf\:\:reducer
+======================================
+
+.. doxygennamespace:: cuda::experimental::stf::reducer
+   :desc-only:
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__and
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__or
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__xor
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1product
+   classcuda_1_1experimental_1_1stf_1_1reducer_1_1sum
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_and <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__and>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_or <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__or>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_xor <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__xor>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:logical\_and <classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:logical\_or <classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:maxval <classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:minval <classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:product <classcuda_1_1experimental_1_1stf_1_1reducer_1_1product>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:sum <classcuda_1_1experimental_1_1stf_1_1reducer_1_1sum>`
+

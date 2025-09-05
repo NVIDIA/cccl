@@ -1,0 +1,6 @@
+thrust\:\:forward\_host\_iterator\_tag
+======================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_categories.h <iterator__categories_8h>`
+
+.. doxygentypedef:: thrust::forward_host_iterator_tag
