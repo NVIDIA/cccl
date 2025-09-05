@@ -104,6 +104,7 @@ set(stf_test_codegen_sources
   graph/freeze_nested_graphs.cu
   graph/freeze_while_graphs.cu
   # graph/graph_composition.cu
+  graph/graph_ctx_resource_test.cu
   graph/graph_tmp_data.cu
   graph/many.cu
   graph/multiple_graph_ctx.cu
