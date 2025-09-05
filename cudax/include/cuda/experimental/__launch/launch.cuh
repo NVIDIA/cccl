@@ -151,7 +151,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
     __config.attrs[__config.numAttrs++]    = __cluster_dims_attr;
   }
 
-  const void* __pArgs[] = {::cuda::std::addressof(__args)...};
+  const void* __pArgs[(sizeof...(__args) > 0) ? sizeof...(__args) : 1]{::cuda::std::addressof(__args)...};
   return __do_launch(::cuda::std::forward<_Dst>(__dst), __config, __kernel, const_cast<void**>(__pArgs));
 }
 
