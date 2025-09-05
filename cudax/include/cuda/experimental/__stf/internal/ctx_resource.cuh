@@ -89,7 +89,7 @@ public:
     {
       if (r->can_release_in_callback())
       {
-        callback_resources.push_back(r);
+        callback_resources.push_back(mv(r));
       }
       else
       {
