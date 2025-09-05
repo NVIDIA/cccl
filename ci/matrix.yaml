@@ -8,7 +8,14 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc'], gpu: 'rtx2080'}
+    # Really cheap to get to tests on packaging, introduced a test failure there.
+    - {jobs: ['test'], project: 'packaging', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
+    # Build error introduced in cudax testing.
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14']}
+    # Lit error introduced in libcudacxx:
+    - {jobs: ['build'], project: 'libcudacxx', ctk: '12.X', std: 'max', cxx: ['gcc', 'clang', 'msvc']}
+    # Config error in thrust:
+    - {jobs: ['build'], project: 'thrust', ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

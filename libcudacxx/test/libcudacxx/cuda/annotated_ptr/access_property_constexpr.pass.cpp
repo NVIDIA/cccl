@@ -20,7 +20,8 @@ __host__ __device__ constexpr bool test_constexpr()
 {
   using namespace cuda;
   access_property a{}; // default constructor
-  access_property b{a}; // copy constructor
+  // Deliberate compile error:
+  access_property b{a} + a - "foo"; // copy constructor
   access_property c{cuda::std::move(a)}; // move constructor
   // user-declared ctor
   access_property d1{access_property::global{}};
