@@ -1,4 +1,3 @@
-import copy
 import ctypes
 import operator
 import uuid
@@ -33,6 +32,8 @@ def cached_compile(func, sig, abi_name=None, **kwargs):
 
 
 class IteratorKind:
+    # The `.kind` of an iterator encapsulates additional metadata about the iterator,
+    # analogous to the `.dtype` of a NumPy array.
     def __init__(self, value_type, state_type):
         self.value_type = value_type
         self.state_type = state_type
@@ -59,16 +60,16 @@ def _get_abi_suffix(kind: IteratorKind):
 
 class IteratorBase:
     """
-    An Iterator is a wrapper around a pointer, and must define the following:
+    An Iterator is a wrapper around a state pointer, and must define the following:
 
-    - an `advance` property that returns a (static) method which receives the
-      pointer and performs an action that advances the pointer by the offset
+    - an `advance` property returning a (static) method which receives the
+      state pointer and performs an action that advances the state pointer by the offset
       `distance` (returns nothing).
     - `input_dereference` and `output_dereference` properties that return
-      (static) methods for reading from and writing to the iterator respectively.
+      (static) methods for reading from and writing to the state pointer respectively.
 
     Iterators are not meant to be used directly. They are constructed and passed
-    to algorithms (e.g., `reduce`), which internally invoke their methods.
+    to algorithms which internally invoke their methods.
 
     The `advance`, `input_dereference`, and `output_dereference` must be compilable
     to device code by numba.
@@ -98,42 +99,17 @@ class IteratorBase:
         self.state_ptr_type = types.CPointer(state_type)
         self.value_type = value_type
 
-        self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
-        self.state_ = IteratorState(self.cvalue)
-        self._ltoirs: Dict[str, bytes] | None = None
+        self._kind = self.__class__.iterator_kind_type(self.value_type, self.state_type)
+        self._state = IteratorState(self.cvalue)
+        self._ltoirs: Dict[str, Tuple[str, bytes]] = {}
 
     @property
     def kind(self):
-        return self.kind_
-
-    @property
-    def host_advance(self):
-        return None
-
-    @property
-    def ltoirs(self) -> Dict[str, bytes]:
-        if self._ltoirs is None:
-            abi_suffix = _get_abi_suffix(self.kind)
-            advance_abi_name = f"advance_{abi_suffix}"
-            advance_ltoir, _ = cached_compile(
-                self.advance,
-                self._get_advance_signature(),
-                output="ltoir",
-                abi_name=advance_abi_name,
-            )
-            self._ltoirs = {
-                advance_abi_name: advance_ltoir,
-            }
-        assert self._ltoirs is not None
-        return self._ltoirs
-
-    @ltoirs.setter
-    def ltoirs(self, value):
-        self._ltoirs = value
+        return self._kind
 
     @property
     def state(self) -> IteratorState:
-        return self.state_
+        return self._state
 
     @property
     def advance(state):
@@ -141,13 +117,74 @@ class IteratorBase:
 
     @property
     def input_dereference(state):
-        raise NotImplementedError("Subclasses must override input_dereference property")
+        return None
 
     @property
     def output_dereference(state):
-        raise NotImplementedError(
-            "Subclasses must override output_dereference property"
+        return None
+
+    @property
+    def host_advance(self):
+        return None
+
+    @property
+    def is_input_iterator(self) -> bool:
+        return self.input_dereference is not None
+
+    @property
+    def is_output_iterator(self) -> bool:
+        return self.output_dereference is not None
+
+    def get_advance_ltoir(self) -> Tuple:
+        if "advance" in self._ltoirs:
+            return self._ltoirs["advance"]
+        signature = (
+            self.state_ptr_type,
+            types.uint64,  # distance type
         )
+        abi_name = f"advance_{_get_abi_suffix(self.kind)}"
+        ltoir, _ = cached_compile(
+            self.advance,
+            signature,
+            output="ltoir",
+            abi_name=abi_name,
+        )
+        return (abi_name, ltoir)
+
+    def get_input_dereference_ltoir(self) -> Tuple:
+        if "input_dereference" in self._ltoirs:
+            return self._ltoirs["input_dereference"]
+        signature = (
+            self.state_ptr_type,
+            types.CPointer(self.value_type),
+        )
+        abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
+        ltoir, _ = cached_compile(
+            self.input_dereference,
+            signature,
+            output="ltoir",
+            abi_name=abi_name,
+        )
+        self._ltoirs["input_dereference"] = (abi_name, ltoir)
+        return self._ltoirs["input_dereference"]
+
+    def get_output_dereference_ltoir(self) -> Tuple:
+        if "output_dereference" in self._ltoirs:
+            return self._ltoirs["output_dereference"]
+
+        signature = (
+            self.state_ptr_type,
+            self.value_type,
+        )
+        abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
+        ltoir, _ = cached_compile(
+            self.output_dereference,
+            signature,
+            output="ltoir",
+            abi_name=abi_name,
+        )
+        self._ltoirs["output_dereference"] = (abi_name, ltoir)
+        return self._ltoirs["output_dereference"]
 
     def __add__(self, offset: int):
         # add the offset to the iterator's state, and return a new iterator
@@ -156,29 +193,12 @@ class IteratorBase:
         res.state_ptr_type = self.state_ptr_type
         res.state_type = self.state_type
         res.value_type = self.value_type
-        res.kind_ = self.kind_
+        res._kind = self._kind
         res._ltoirs = self._ltoirs
         res.cvalue = type(self.cvalue)(self.cvalue.value + offset)
-        res.state_ = IteratorState(res.cvalue)
+        res._state = IteratorState(res.cvalue)
 
         return res
-
-    def _get_advance_signature(self) -> Tuple:
-        return (
-            self.state_ptr_type,
-            types.uint64,  # distance type
-        )
-
-    def copy(self):
-        out = object.__new__(self.__class__)
-        IteratorBase.__init__(
-            out,
-            self.cvalue,
-            self.state_type,
-            self.value_type,
-        )
-        out.ltoirs = copy.copy(self._ltoirs)
-        return out
 
 
 def sizeof_pointee(context, ptr):
@@ -230,15 +250,14 @@ class RawPointer(IteratorBase):
 
     @property
     def host_advance(self):
-        """Raw pointer"""
-        return self.input_advance
+        return self._advance
 
     @property
     def advance(self):
-        return RawPointer.input_advance
+        return self._advance
 
     @staticmethod
-    def input_advance(state, distance):
+    def _advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
@@ -298,11 +317,11 @@ class CacheModifiedPointer(IteratorBase):
 
     @property
     def host_advance(self):
-        return self.input_advance
+        return self._advance
 
     @property
     def advance(self):
-        return self.input_advance
+        return self._advance
 
     @property
     def input_dereference(self):
@@ -315,7 +334,7 @@ class CacheModifiedPointer(IteratorBase):
         )
 
     @staticmethod
-    def input_advance(state, distance):
+    def _advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
@@ -342,11 +361,11 @@ class ConstantIterator(IteratorBase):
 
     @property
     def host_advance(self):
-        return self.input_advance
+        return self._advance
 
     @property
     def advance(self):
-        return self.input_advance
+        return self._advance
 
     @property
     def input_dereference(self):
@@ -357,7 +376,7 @@ class ConstantIterator(IteratorBase):
         raise AttributeError("ConstantIterator cannot be used as an output iterator")
 
     @staticmethod
-    def input_advance(state, distance):
+    def _advance(state, distance):
         pass
 
     @staticmethod
@@ -384,11 +403,11 @@ class CountingIterator(IteratorBase):
 
     @property
     def host_advance(self):
-        return self.input_advance
+        return self._advance
 
     @property
     def advance(self):
-        return self.input_advance
+        return self._advance
 
     @property
     def input_dereference(self):
@@ -399,7 +418,7 @@ class CountingIterator(IteratorBase):
         raise AttributeError("CountingIterator cannot be used as an output iterator")
 
     @staticmethod
-    def input_advance(state, distance):
+    def _advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
@@ -443,17 +462,17 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
                 state_type=it.state_type,
                 value_type=it.value_type,
             )
-            self.kind_ = self.__class__.iterator_kind_type(
+            self._kind = self.__class__.iterator_kind_type(
                 (it.kind, it.value_type), it.state_type
             )
 
         @property
         def host_advance(self):
-            return self.input_output_advance
+            return self._advance
 
         @property
         def advance(self):
-            return self.input_output_advance
+            return self._advance
 
         @property
         def input_dereference(self):
@@ -468,7 +487,7 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
             return ReverseIterator._output_dereference
 
         @staticmethod
-        def input_output_advance(state, distance):
+        def _advance(state, distance):
             return it_advance(state, -distance)
 
         @staticmethod
@@ -539,7 +558,7 @@ def make_transform_iterator(it, op: Callable):
                 state_type=state_type,
                 value_type=value_type,
             )
-            self.kind_ = self.__class__.iterator_kind_type(
+            self._kind = self.__class__.iterator_kind_type(
                 (value_type, self._it.kind, self._op), self.state_type
             )
 
@@ -549,7 +568,7 @@ def make_transform_iterator(it, op: Callable):
 
         @property
         def advance(self):
-            return self.input_advance
+            return self._advance
 
         @property
         def input_dereference(self):
@@ -564,7 +583,7 @@ def make_transform_iterator(it, op: Callable):
             return TransformIterator._output_dereference
 
         @staticmethod
-        def input_advance(state, distance):
+        def _advance(state, distance):
             return it_advance(state, distance)
 
         @staticmethod

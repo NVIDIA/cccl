@@ -4,12 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
+import enum
 import functools
 import os
 import subprocess
 import tempfile
 import textwrap
-import uuid
 import warnings
 from typing import TYPE_CHECKING, Callable, List
 
@@ -42,7 +42,7 @@ from ._bindings import (
     make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase, cached_compile
+from .iterators._iterators import IteratorBase
 from .op import OpKind
 from .typing import DeviceArrayLike, GpuStruct
 
@@ -132,7 +132,12 @@ def type_enum_as_name(enum_value: int) -> str:
     )[enum_value]
 
 
-def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
+class _IteratorIO(enum.Enum):
+    INPUT = 0
+    OUTPUT = 1
+
+
+def _iterator_to_cccl_iter(it: IteratorBase, io_kind: _IteratorIO) -> Iterator:
     context = cuda.descriptor.cuda_target.target_context
     state_ptr_type = it.state_ptr_type
     state_type = it.state_type
@@ -147,23 +152,13 @@ def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
         context.target_data
     )
 
-    # Get advance function from ltoirs
-    advance_abi_name = None
-    advance_ltoir = None
-    for name, ltoir in it.ltoirs.items():
-        if name.startswith("advance_"):
-            advance_abi_name = name
-            advance_ltoir = ltoir
-            break
-
-    # Compile input_dereference function
-    input_deref_abi_name = f"input_dereference_{uuid.uuid4().hex}"
-    input_deref_ltoir, _ = cached_compile(
-        it.input_dereference,
-        (it.state_ptr_type, types.CPointer(it.value_type)),
-        abi_name=input_deref_abi_name,
-        output="ltoir",
-    )
+    advance_abi_name, advance_ltoir = it.get_advance_ltoir()
+    if io_kind == _IteratorIO.INPUT:
+        deref_abi_name, deref_ltoir = it.get_input_dereference_ltoir()
+    elif io_kind == _IteratorIO.OUTPUT:
+        deref_abi_name, deref_ltoir = it.get_output_dereference_ltoir()
+    else:
+        raise ValueError(f"Invalid io_kind: {io_kind}")
 
     advance_op = Op(
         operator_type=OpKind.STATELESS,
@@ -172,8 +167,8 @@ def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
     )
     deref_op = Op(
         operator_type=OpKind.STATELESS,
-        name=input_deref_abi_name,
-        ltoir=input_deref_ltoir,
+        name=deref_abi_name,
+        ltoir=deref_ltoir,
     )
     return Iterator(
         alignment,
@@ -183,59 +178,14 @@ def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
         _numba_type_to_info(it.value_type),
         state=it.state,
     )
+
+
+def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
+    return _iterator_to_cccl_iter(it, _IteratorIO.INPUT)
 
 
 def _iterator_to_cccl_output_iter(it: IteratorBase) -> Iterator:
-    context = cuda.descriptor.cuda_target.target_context
-    state_ptr_type = it.state_ptr_type
-    state_type = it.state_type
-    size = context.get_value_type(state_type).get_abi_size(context.target_data)
-    iterator_state = memoryview(it.state)
-    if not iterator_state.nbytes == size:
-        raise ValueError(
-            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
-            f"does not match size of numba type, {size} bytes"
-        )
-    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
-        context.target_data
-    )
-
-    # Get advance function from ltoirs
-    advance_abi_name = None
-    advance_ltoir = None
-    for name, ltoir in it.ltoirs.items():
-        if name.startswith("advance_"):
-            advance_abi_name = name
-            advance_ltoir = ltoir
-            break
-
-    # Compile output_dereference function
-    output_deref_abi_name = f"output_dereference_{uuid.uuid4().hex}"
-    output_deref_ltoir, _ = cached_compile(
-        it.output_dereference,
-        (it.state_ptr_type, it.value_type),
-        abi_name=output_deref_abi_name,
-        output="ltoir",
-    )
-
-    advance_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=advance_abi_name,
-        ltoir=advance_ltoir,
-    )
-    deref_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=output_deref_abi_name,
-        ltoir=output_deref_ltoir,
-    )
-    return Iterator(
-        alignment,
-        IteratorKind.ITERATOR,
-        advance_op,
-        deref_op,
-        _numba_type_to_info(it.value_type),
-        state=it.state,
-    )
+    return _iterator_to_cccl_iter(it, _IteratorIO.OUTPUT)
 
 
 def to_cccl_input_iter(array_or_iterator) -> Iterator:
@@ -295,7 +245,8 @@ def _create_void_ptr_wrapper(op, sig):
             ret_type = context.get_value_type(sig.return_type)
 
             # Bitcast from void* to the appropriate pointer types
-            input_ptrs = [builder.bitcast(p, t.as_pointer()) for p, t in zip(args[:-1], arg_types)]
+            input_ptrs = [builder.bitcast(p, t.as_pointer())
+                                          for p, t in zip(args[:-1], arg_types)]
             ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
 
             # Load input values from pointers

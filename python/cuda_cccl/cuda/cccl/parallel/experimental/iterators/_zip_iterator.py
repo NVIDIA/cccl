@@ -193,10 +193,6 @@ def make_zip_iterator(*iterators):
             return advance_func
 
         @property
-        def input_advance(self):
-            return advance_func
-
-        @property
         def input_dereference(self):
             return dereference_func
 
