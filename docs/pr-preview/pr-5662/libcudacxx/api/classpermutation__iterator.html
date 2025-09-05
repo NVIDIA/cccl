@@ -1532,8 +1532,8 @@
 <p><code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> is an imprecise name; the reordered view need not be a strict permutation. This iterator is useful for fusing a scatter or gather operation with other algorithms.</p>
 <p>This iterator takes two arguments:</p>
 <p><ul class="simple">
-<li><p>an iterator to the range <code class="docutils literal notranslate"><span class="pre">V</span></code> on which the “permutation” will be applied</p></li>
-<li><p>an iterator to a range of indices defining the reindexing scheme that determines how the elements of <code class="docutils literal notranslate"><span class="pre">V</span></code> will be permuted.</p></li>
+<li><p>an iterator to the range <code class="docutils literal notranslate"><span class="pre">V</span></code> on which the “permutation” will be applied, referred to as <code class="docutils literal notranslate"><span class="pre">iter</span></code> below</p></li>
+<li><p>an iterator to a range of indices defining the reindexing scheme that determines how the elements of <code class="docutils literal notranslate"><span class="pre">V</span></code> will be permuted, referred to as <code class="docutils literal notranslate"><span class="pre">index</span></code> below</p></li>
 </ul>
 </p>
 <p>Note that <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> is not limited to strict permutations of the given range <code class="docutils literal notranslate"><span class="pre">V</span></code>. The distance between begin and end of the reindexing iterators is allowed to be smaller compared to the size of the range <code class="docutils literal notranslate"><span class="pre">V</span></code>, in which case the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> only provides a “permutation” of a subset of <code class="docutils literal notranslate"><span class="pre">V</span></code>. The indices do not need to be unique. In this same context, it must be noted that the past-the-end <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> is completely defined by means of the past-the-end iterator to the indices.</p>
@@ -1628,7 +1628,7 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NKR20permutation_iterator4baseEv">
 <span class="target" id="classpermutation__iterator_1abe12e417d8152092e93b67d43671fde8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">base</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NKR20permutation_iterator4baseEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Returns a const reference to the stored iterator we are indexing from. </p>
+<dd><p>Returns a const reference to the stored base iterator <code class="docutils literal notranslate"><span class="pre">iter</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1639,13 +1639,18 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_move_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4NO20permutation_iterator4baseEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Extracts the stored iterator we are indexing from. </p>
+<dd><p>Extracts the stored base iterator <code class="docutils literal notranslate"><span class="pre">iter</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK20permutation_iterator5indexEv">
 <span class="target" id="classpermutation__iterator_1a538e9ad80bcb6b0157664bfcc72b3e5b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N20permutation_iterator15difference_typeE" title="permutation_iterator::difference_type"><span class="n"><span class="pre">difference_type</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">index</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK20permutation_iterator5indexEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Returns the current index. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">*index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1656,7 +1661,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__iter_</span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">static_cast</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">__iter_difference_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratormlEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Dereferences the stored iterator advanced by the current index. </p>
+<dd><p>Dereferences the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">iter[*index]</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1667,7 +1677,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__iter_</span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">static_cast</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">__iter_difference_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I0_N4cudaSt11enable_if_tIN4cudaSt17__dereferenceableIK6_Iter2EEiEEENK20permutation_iteratormlEDcv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Dereferences the stored iterator advanced by the current index. </p>
+<dd><p>Dereferences the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">iter[*index]</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1679,10 +1694,13 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__iter_</span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">static_cast</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">__iter_difference_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N20permutation_iteratorixE15difference_type" title="permutation_iterator::operator[]::__n"><span class="n"><span class="pre">__n</span></span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratorixE15difference_type" title="Link to this definition">#</a><br /></dt>
-<dd><p>Subscripts the stored iterator advanced by the index at offset __n. </p>
+<dd><p>Subscripts the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> by an offset. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>__n</strong> – The additional offset </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">iter[index[__n]]</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1696,10 +1714,13 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__iter_</span></span><span class="p"><span class="pre">[</span></span><span class="k"><span class="pre">static_cast</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">__iter_difference_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_N4cudaSt11enable_if_tIN4cudaSt17__dereferenceableIK6_Iter2EEiEEENK20permutation_iteratorixEDc15difference_type" title="permutation_iterator::operator[]::__n"><span class="n"><span class="pre">__n</span></span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I0_N4cudaSt11enable_if_tIN4cudaSt17__dereferenceableIK6_Iter2EEiEEENK20permutation_iteratorixEDc15difference_type" title="Link to this definition">#</a><br /></dt>
-<dd><p>Subscripts the stored iterator advanced by the index at offset __n. </p>
+<dd><p>Subscripts the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> by an offset. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>__n</strong> – The additional offset </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">iter[index[__n]]</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1712,7 +1733,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">++</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratorppEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Increments the stored index iterator. </p>
+<dd><p>Increments the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">++index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1724,7 +1750,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">++</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratorppEi" title="Link to this definition">#</a><br /></dt>
-<dd><p>Increments the stored index iterator. </p>
+<dd><p>Increments the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">index++</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1735,7 +1766,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">--</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratormmEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Decrements the stored index iterator. </p>
+<dd><p>Increments the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">--index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1747,22 +1783,10 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">--</span></span><span class="n"><span class="pre">__index_</span></span><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratormmEi" title="Link to this definition">#</a><br /></dt>
-<dd><p>Decrements the stored index iterator. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK20permutation_iteratorplE15difference_type">
-<span class="target" id="classpermutation__iterator_1a5721fac1897c7ba7812301617698cb76"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator"><span class="n"><span class="pre">permutation_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">+</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N20permutation_iterator15difference_typeE" title="permutation_iterator::difference_type"><span class="n"><span class="pre">difference_type</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">__n</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__index_</span></span><span class="w"> </span><span class="o"><span class="pre">+</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4NK20permutation_iteratorplE15difference_type" title="permutation_iterator::operator+::__n"><span class="n"><span class="pre">__n</span></span></a><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4NK20permutation_iteratorplE15difference_type" title="Link to this definition">#</a><br /></dt>
-<dd><p>Advances the stored index iterator by a given number of elements. </p>
+<dd><p>Increments the <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code>. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>__n</strong> – The number of elements to advance </p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">index++</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1781,22 +1805,8 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>__n</strong> – The number of elements to advance </p>
 </dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK20permutation_iteratormiE15difference_type">
-<span class="target" id="classpermutation__iterator_1a6fc60b0e6f4f1819da26bae5964907c9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator"><span class="n"><span class="pre">permutation_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">-</span></span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N20permutation_iterator15difference_typeE" title="permutation_iterator::difference_type"><span class="n"><span class="pre">difference_type</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">__n</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__index_</span></span><span class="w"> </span><span class="o"><span class="pre">-</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4NK20permutation_iteratormiE15difference_type" title="permutation_iterator::operator-::__n"><span class="n"><span class="pre">__n</span></span></a><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4NK20permutation_iteratormiE15difference_type" title="Link to this definition">#</a><br /></dt>
-<dd><p>Returns a copy of a <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> decremented by a given number of elements. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>__n</strong> – The number of elements to decrement </p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">index</span> <span class="pre">+</span> <span class="pre">__n</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1815,6 +1825,9 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>__n</strong> – The number of elements to decrement </p>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">index</span> <span class="pre">-</span> <span class="pre">__n</span></code></p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -1822,22 +1835,59 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-friends">Friends</p>
 <dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classpermutation__iterator_1ad01ef95f5212c65ec9dc6563cf0b0afd"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">friend</span> <span class="pre">constexpr</span> <span class="pre">permutation_iterator</span> <span class="pre">operator+</span> <span class="pre">(const</span> <span class="pre">permutation_iterator</span> <span class="pre">&amp;__iter,</span> <span class="pre">difference_type</span> <span class="pre">__n)</span> <span class="pre">noexcept(//noexcept(__iter.__index_+__n)</span> <span class="pre">&amp;&amp;::cuda::std::is_nothrow_copy_constructible_v&lt;</span> <span class="pre">_Iter</span> <span class="pre">&gt;</span> <span class="pre">&amp;&amp;::cuda::std::is_nothrow_copy_constructible_v&lt;</span> <span class="pre">_Index</span> <span class="pre">&gt;)</span></span></dt>
+<dd><p>Advances a <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> by a given number of elements. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>__iter</strong> – The original <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code></p></li>
+<li><p><strong>__n</strong> – The number of elements to advance </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a><span class="pre">{iter,</span> <span class="pre">index</span> <span class="pre">+</span> <span class="pre">__n}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator">
-<span class="target" id="classpermutation__iterator_1af8584011efd058392974126f3b7f435e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator"><span class="n"><span class="pre">permutation_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">+</span></span></span><span class="sig-paren">(</span>
+<span class="target" id="classpermutation__iterator_1a0c24836b8dde31db2dbd200a02806522"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator"><span class="n"><span class="pre">permutation_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">+</span></span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N20permutation_iterator15difference_typeE" title="permutation_iterator::difference_type"><span class="n"><span class="pre">difference_type</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">__n</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator"><span class="n"><span class="pre">permutation_iterator</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">__iter</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__index_</span></span><span class="w"> </span><span class="o"><span class="pre">+</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator" title="permutation_iterator::operator+::__n"><span class="n"><span class="pre">__n</span></span></a><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator" title="Link to this definition">#</a><br /></dt>
-<dd><p>Returns a copy of a <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> advanced by a given number of elements. </p>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator" title="permutation_iterator::operator+::__iter"><span class="n"><span class="pre">__iter</span></span></a><span class="p"><span class="pre">.</span></span><span class="n"><span class="pre">__index_</span></span><span class="w"> </span><span class="o"><span class="pre">+</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator" title="permutation_iterator::operator+::__n"><span class="n"><span class="pre">__n</span></span></a><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Iter"><span class="n"><span class="pre">_Iter</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="o"><span class="pre">&amp;&amp;</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_nothrow_copy_constructible_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator" title="Link to this definition">#</a><br /></dt>
+<dd><p>Advances a <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> by a given number of elements. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>__n</strong> – The number of elements to advance </p></li>
 <li><p><strong>__iter</strong> – The original <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code></p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a><span class="pre">{iter,</span> <span class="pre">index</span> <span class="pre">+</span> <span class="pre">__n}</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classpermutation__iterator_1aada04f09154c8b23d1f9d6ae98e3dad8"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">friend</span> <span class="pre">constexpr</span> <span class="pre">permutation_iterator</span> <span class="pre">operator-</span> <span class="pre">(const</span> <span class="pre">permutation_iterator</span> <span class="pre">&amp;__iter,</span> <span class="pre">difference_type</span> <span class="pre">__n)</span> <span class="pre">noexcept(//noexcept(__iter.__index_</span> <span class="pre">-</span> <span class="pre">__n)</span> <span class="pre">&amp;&amp;::cuda::std::is_nothrow_copy_constructible_v&lt;</span> <span class="pre">_Iter</span> <span class="pre">&gt;</span> <span class="pre">&amp;&amp;::cuda::std::is_nothrow_copy_constructible_v&lt;</span> <span class="pre">_Index</span> <span class="pre">&gt;)</span></span></dt>
+<dd><p>Decrements a <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> by a given number of elements. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>__iter</strong> – The original <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code></p></li>
+<li><p><strong>__n</strong> – The number of elements to decrement </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Equivalent to <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a><span class="pre">{iter,</span> <span class="pre">index</span> <span class="pre">-</span> <span class="pre">__n}</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1853,6 +1903,11 @@
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__nothrow_difference</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N20permutation_iteratormiERK20permutation_iteratorRK20permutation_iterator" title="Link to this definition">#</a><br /></dt>
 <dd><p>Returns the distance between two <code class="docutils literal notranslate"><span class="pre">permutation_iterators</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">__lhs.index</span> <span class="pre">-</span> <span class="pre">__rhs.index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1865,7 +1920,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__nothrow_equality</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN20permutation_iteratoreqEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="permutation_iterator::operator==::_OtherOffset"><span class="n"><span class="pre">_OtherOffset</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I00EN20permutation_iteratoreqEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="Link to this definition">#</a><br /></dt>
-<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for equality by comparing the indices. </p>
+<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for equality by comparing <code class="docutils literal notranslate"><span class="pre">index</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">__lhs.index</span> <span class="pre">==</span> <span class="pre">__rhs.index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1878,7 +1938,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__nothrow_less_than</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN20permutation_iteratorltEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="permutation_iterator::operator&lt;::_OtherOffset"><span class="n"><span class="pre">_OtherOffset</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I00EN20permutation_iteratorltEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="Link to this definition">#</a><br /></dt>
-<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for less than by comparing the indices. </p>
+<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for less than by comparing <code class="docutils literal notranslate"><span class="pre">index</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">__lhs.index</span> <span class="pre">&lt;</span> <span class="pre">__rhs.index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1891,7 +1956,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__nothrow_less_equal</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN20permutation_iteratorleEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="permutation_iterator::operator&lt;=::_OtherOffset"><span class="n"><span class="pre">_OtherOffset</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I00EN20permutation_iteratorleEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="Link to this definition">#</a><br /></dt>
-<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for less equal by comparing the indices. </p>
+<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for less equal by comparing <code class="docutils literal notranslate"><span class="pre">index</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">__lhs.index</span> <span class="pre">&lt;=</span> <span class="pre">__rhs.index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1904,7 +1974,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__nothrow_greater_than</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN20permutation_iteratorgtEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="permutation_iterator::operator&gt;::_OtherOffset"><span class="n"><span class="pre">_OtherOffset</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I00EN20permutation_iteratorgtEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="Link to this definition">#</a><br /></dt>
-<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for greater than by comparing the indices. </p>
+<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for greater than by comparing <code class="docutils literal notranslate"><span class="pre">index</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">__lhs.index</span> <span class="pre">&gt;</span> <span class="pre">__rhs.index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1917,7 +1992,12 @@
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><span class="p"><span class="pre">(</span></span><span class="n"><span class="pre">__nothrow_greater_equal</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00E20permutation_iterator" title="permutation_iterator::_Index"><span class="n"><span class="pre">_Index</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN20permutation_iteratorgeEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="permutation_iterator::operator&gt;=::_OtherOffset"><span class="n"><span class="pre">_OtherOffset</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4I00EN20permutation_iteratorgeEbRK20permutation_iteratorRK20permutation_iteratorI10_OtherIter12_OtherOffsetE" title="Link to this definition">#</a><br /></dt>
-<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for greater equal by comparing the indices. </p>
+<dd><p>Compares two <code class="docutils literal notranslate"><a class="reference internal" href="#classpermutation__iterator"><span class="std std-ref"><span class="pre">permutation_iterator</span></span></a></code> for greater equal by comparing <code class="docutils literal notranslate"><span class="pre">index</span></code>. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">__lhs.index</span> <span class="pre">&gt;=</span> <span class="pre">__rhs.index</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -2017,9 +2097,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratorppEi"><code class="docutils literal notranslate"><span class="pre">operator++()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratormmEv"><code class="docutils literal notranslate"><span class="pre">operator--()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratormmEi"><code class="docutils literal notranslate"><span class="pre">operator--()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK20permutation_iteratorplE15difference_type"><code class="docutils literal notranslate"><span class="pre">operator+()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratorpLE15difference_type"><code class="docutils literal notranslate"><span class="pre">operator+=()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK20permutation_iteratormiE15difference_type"><code class="docutils literal notranslate"><span class="pre">operator-()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratormIE15difference_type"><code class="docutils literal notranslate"><span class="pre">operator-=()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratorplE15difference_typeRK20permutation_iterator"><code class="docutils literal notranslate"><span class="pre">operator+</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N20permutation_iteratormiERK20permutation_iteratorRK20permutation_iterator"><code class="docutils literal notranslate"><span class="pre">operator-</span></code></a></li>
