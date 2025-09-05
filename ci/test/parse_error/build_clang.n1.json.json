@@ -1,0 +1,8 @@
+[
+  {
+    "file": "a.cpp",
+    "line": "2",
+    "msg": "error: expected ';' at end of declaration",
+    "full": "a.cpp:2:14: error: expected ';' at end of declaration"
+  }
+]

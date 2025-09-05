@@ -1,0 +1,10 @@
+CMake Error at CMakeLists.txt:3 (message):
+  first error
+
+
+-- Configuring incomplete, errors occurred!
+CMake Error at CMakeLists.txt:4 (message):
+  second error
+
+
+-- Configuring incomplete, errors occurred!

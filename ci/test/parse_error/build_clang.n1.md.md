@@ -1,0 +1,1 @@
+- `a.cpp:2`: `error: expected ';' at end of declaration`

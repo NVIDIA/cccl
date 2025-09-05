@@ -1,0 +1,8 @@
+[
+  {
+    "file": "fail1.cpp",
+    "line": "10",
+    "msg": "error: first",
+    "full": "fail1.cpp:10: error: first"
+  }
+]

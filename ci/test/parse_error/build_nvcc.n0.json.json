@@ -1,0 +1,26 @@
+[
+  {
+    "file": "d.cu",
+    "line": "4",
+    "msg": "error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "full": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks"
+  },
+  {
+    "file": "a.cu",
+    "line": "3",
+    "msg": "error: expected a \";\"",
+    "full": "a.cu(3): error: expected a \";\""
+  },
+  {
+    "file": "b.cu",
+    "line": "3",
+    "msg": "error: expected a \";\"",
+    "full": "b.cu(3): error: expected a \";\""
+  },
+  {
+    "file": "c.cu",
+    "line": "2",
+    "msg": "error: identifier \"y\" is undefined",
+    "full": "c.cu(2): error: identifier \"y\" is undefined"
+  }
+]

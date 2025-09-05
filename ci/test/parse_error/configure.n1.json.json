@@ -1,0 +1,8 @@
+[
+  {
+    "file": "CMakeLists.txt",
+    "line": "3",
+    "msg": "message",
+    "full": "CMake Error at CMakeLists.txt:3 (message):"
+  }
+]

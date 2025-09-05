@@ -1,0 +1,6 @@
+- `fail1.cpp:10`: `error: first`
+- `fail2.cpp:20`: `error: second`
+- `fail1.cpp:10`: `error: first`
+- `fail1:1`: `Failed`
+- `fail2:2`: `Failed`
+- `fail1_dup:3`: `Failed`

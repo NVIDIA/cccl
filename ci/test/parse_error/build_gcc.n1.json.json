@@ -1,0 +1,8 @@
+[
+  {
+    "file": "a.cpp",
+    "line": "3",
+    "msg": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "full": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token"
+  }
+]
