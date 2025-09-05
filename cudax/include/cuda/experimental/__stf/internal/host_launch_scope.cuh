@@ -191,7 +191,7 @@ public:
     {
       using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
       auto resource      = ::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper);
-      ctx.add_ctx_resource(mv(resource));
+      ctx.add_resource(mv(resource));
     }
 
     auto callback = [](void* untyped_wrapper) {

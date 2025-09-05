@@ -980,7 +980,7 @@ public:
     if constexpr (::std::is_same_v<context, graph_ctx>)
     {
       auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
-      ctx.add_ctx_resource(mv(resource));
+      ctx.add_resource(mv(resource));
     }
 
     // The function which the host callback will execute

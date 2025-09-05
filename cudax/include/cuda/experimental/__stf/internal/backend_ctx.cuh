@@ -615,7 +615,7 @@ protected:
     }
 
     // Add a resource to be managed by the context
-    void add_ctx_resource(::std::shared_ptr<ctx_resource> resource)
+    void add_resource(::std::shared_ptr<ctx_resource> resource)
     {
       ctx_resources.add(mv(resource));
     }
@@ -702,9 +702,9 @@ public:
   }
 
   //! Add a resource to be managed by this context
-  void add_ctx_resource(::std::shared_ptr<ctx_resource> resource)
+  void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
-    pimpl->add_ctx_resource(mv(resource));
+    pimpl->add_resource(mv(resource));
   }
 
   /* Customize the allocator used by all logical data */

@@ -708,7 +708,7 @@ public:
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     payload->*[&resource](auto& self) {
-      self.add_ctx_resource(mv(resource));
+      self.add_resource(mv(resource));
     };
   }
 
