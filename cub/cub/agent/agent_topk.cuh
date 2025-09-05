@@ -488,7 +488,8 @@ struct AgentTopK
     OffsetT previous_len,
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
-    bool early_stop)
+    bool early_stop,
+    bool load_from_original_input)
   {
     // Initialize shared memory histogram
     init_histograms(temp_storage.histogram);
@@ -516,7 +517,7 @@ struct AgentTopK
       // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into
       // bins preceding the k-th item bin (i.e., 'selected' items), write them to output.
       // We can skip histogram computation because we don't need to further passes to refine the candidates.
-      auto f_early_stop = [in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
+      auto f_early_stop = [load_from_original_input, in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
         {
@@ -524,7 +525,7 @@ struct AgentTopK
           d_keys_out[pos] = key;
           if constexpr (!KEYS_ONLY)
           {
-            OffsetT index     = in_idx_buf ? in_idx_buf[i] : i;
+            OffsetT index     = load_from_original_input ? i : in_idx_buf[i];
             d_values_out[pos] = d_values_in[index];
           }
         }
@@ -532,7 +533,8 @@ struct AgentTopK
 
       // Lambda for early_stop = false, out_buf != nullptr (i.e., we need to further refine the candidates in the next
       // pass): Write out selected items to output, write candidates to out_buf, and build histogram for candidates.
-      auto f_with_out_buf = [in_idx_buf, out_buf, out_idx_buf, p_filter_cnt, p_out_cnt, this](key_in_t key, OffsetT i) {
+      auto f_with_out_buf = [load_from_original_input, in_idx_buf, out_buf, out_idx_buf, p_filter_cnt, p_out_cnt, this](
+                              key_in_t key, OffsetT i) {
         candidate_class pre_res = identify_candidates_op(key);
         if (pre_res == candidate_class::candidate)
         {
@@ -540,7 +542,7 @@ struct AgentTopK
           out_buf[pos] = key;
           if constexpr (!KEYS_ONLY)
           {
-            OffsetT index    = in_idx_buf ? in_idx_buf[i] : i;
+            OffsetT index    = load_from_original_input ? i : in_idx_buf[i];
             out_idx_buf[pos] = index;
           }
 
@@ -577,7 +579,7 @@ struct AgentTopK
       // Choose and invoke the appropriate lambda with the correct input source
       // If the input size exceeds the allocated buffer size, we know for sure we haven't started writing candidates to
       // the output buffer yet
-      if (previous_len > buffer_length)
+      if (load_from_original_input)
       {
         if (early_stop)
         {
@@ -699,9 +701,10 @@ struct AgentTopK
     OffsetT* in_idx_buf,
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
-    OutOffsetT k)
+    OutOffsetT k,
+    int pass)
   {
-    const bool load_from_original_input = counter->previous_len > buffer_length;
+    const bool load_from_original_input = (pass <= 1) || counter->previous_len > buffer_length;
     OffsetT current_len                 = load_from_original_input ? num_items : counter->previous_len;
     in_idx_buf = load_from_original_input ? nullptr : in_idx_buf; // ? out_idx_buf : in_idx_buf;
 
@@ -794,7 +797,13 @@ struct AgentTopK
     // stop the process right here.
     const bool early_stop = ((!IsFirstPass) && current_len == static_cast<OffsetT>(current_k));
 
-    if (previous_len > buffer_length)
+    // If previous_len > buffer_length, it means we haven't started writing candidates to out_buf yet,
+    // so have to make sure to load input directly from the original input.
+    // Also, unless we've had the chance to do at least one filtering pass, our input is definitely the original input
+    // (this is to guard against edge cases, e.g., buffer_length=num_items=1).
+    bool load_from_original_input = (pass <= 1) || previous_len > buffer_length;
+
+    if (load_from_original_input)
     {
       in_idx_buf   = nullptr;
       previous_len = num_items;
@@ -809,7 +818,7 @@ struct AgentTopK
 
     // Fused filtering of candidates and histogram computation over the output-candidates
     filter_and_histogram<IsFirstPass>(
-      in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, early_stop);
+      in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, early_stop, load_from_original_input);
 
     // We need this `__threadfence()` to make sure all writes to the global memory-histogram are visible to all
     // threads before we proceed to compute the prefix sum over the histogram.
