@@ -338,6 +338,7 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__cmath/modulo.h>
+#include <cuda/std/__cmath/nan.h>
 #include <cuda/std/__cmath/remainder.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
@@ -362,10 +363,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::double_t;
 using ::float_t;
-
-using ::nan;
-using ::nanf;
-using ::nanl;
 
 #endif // _CCCL_COMPILER(NVRTC)
 
