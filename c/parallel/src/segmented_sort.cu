@@ -360,7 +360,7 @@ struct partition_runtime_tuning_policy
 
 std::string get_three_way_partition_policy_delay_constructor(const nlohmann::json& partition_policy)
 {
-  auto dc_json = partition_policy["ThreeWayPartitionPolicyDelayConstructor"]; // optional; not used further
+  auto dc_json                = partition_policy["ThreeWayPartitionPolicyDelayConstructor"];
   auto delay_constructor_type = dc_json["type"].get<std::string>();
 
   if (delay_constructor_type == "fixed_delay_constructor_t")
@@ -850,6 +850,7 @@ CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_res
 
     // Clean up the runtime policy
     delete static_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build_ptr->runtime_policy);
+    delete static_cast<segmented_sort::partition_runtime_tuning_policy*>(build_ptr->partition_runtime_policy);
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
