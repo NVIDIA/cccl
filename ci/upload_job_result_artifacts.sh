@@ -49,8 +49,12 @@ find_and_copy_job_artifact_from() {
     return 1
   fi
   cp -v "$filepath" "$job_artifacts/"
+  echo "Copied result artifact: $filepath"
 }
 
-find_and_copy_job_artifact_from "sccache_stats.json" build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from "sccache_stats.json" "build/" || : # Nonfatal if not found
+find_and_copy_job_artifact_from "configure.log" "build/" || :
+find_and_copy_job_artifact_from "build.log" "build/" || :
+find_and_copy_job_artifact_from "test.log" "build/" || :
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"

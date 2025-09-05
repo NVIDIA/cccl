@@ -1,0 +1,14 @@
+[
+  {
+    "error_short": "if",
+    "pattern_type": "config",
+    "pattern_name": "cmake error",
+    "rel_filepath": "thrust/CMakeLists.txt",
+    "filename": "CMakeLists.txt",
+    "error_line": "  CMake Error at thrust/CMakeLists.txt:26 (if):",
+    "error_context": "  CMake Error at thrust/CMakeLists.txt:26 (if):\n    if given arguments:\n\n      \"I'm\" \"Not\" \"a\" \"Valid\" \"expr...\"\n\n    Unknown arguments specified\n\n\n  -- Configuring incomplete, errors occurred!",
+    "line": "26",
+    "location": "thrust/CMakeLists.txt:26",
+    "summary": "`CMakeLists.txt:26`: `if`"
+  }
+]

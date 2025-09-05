@@ -1,0 +1,121 @@
+ PASS: libcu++ :: cuda/memory_resource/get_memory_resource/get_memory_resource.pass.cpp (271 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/equality.fail.cpp (272 of 3039)
+  PASS: libcu++ :: cuda/memcpy_async/group_memcpy_async_16b.pass.cpp (273 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/get_property/forward_property.pass.cpp (274 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/get_property/has_property.pass.cpp (275 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/get_property/get_property.pass.cpp (276 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/allocate.pass.cpp (277 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/properties/properties.pass.cpp (278 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/construction.pass.cpp (279 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/conversion.pass.cpp (280 of 3039)
+  PASS: libcu++ :: cuda/numeric/overflow.arithmetic/overflow_result.pass.cpp (281 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/equality.pass.cpp (282 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/inheritance.pass.cpp (283 of 3039)
+  PASS: libcu++ :: cuda/memory_resource/resource_ref/properties.pass.cpp (284 of 3039)
+  PASS: libcu++ :: cuda/numeric/overflow.arithmetic/overflow_cast.pass.cpp (285 of 3039)
+  PASS: libcu++ :: cuda/numeric/narrow/narrow.pass.cpp (286 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_arrive_on.pass.cpp (287 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_divergent_threads.pass.cpp (288 of 3039)
+  PASS: libcu++ :: cuda/memcpy_async/group_memcpy_async_32b.pass.cpp (289 of 3039)
+  PASS: libcu++ :: cuda/memcpy_async/group_memcpy_async_64b.pass.cpp (290 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_producer_consumer.pass.cpp (291 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_16.pass.cpp (292 of 3039)
+  PASS: libcu++ :: cuda/numeric/overflow.arithmetic/add_overflow.pass.cpp (293 of 3039)
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_32.pass.cpp (294 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_32.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_32.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_block_32.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_32.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_32.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_32.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_8.pass.cpp (295 of 3039)
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_64.pass.cpp (296 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_64.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_64.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_block_64.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_64.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_64.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_block_64.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_device_16.pass.cpp (297 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_group_concept_thread_scope_system.pass.cpp (298 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_group_concept_thread_scope_device.pass.cpp (299 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_group_concept_thread_scope_block.pass.cpp (300 of 3039)
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_device_32.pass.cpp (301 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_device_32.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_32.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_device_32.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_32.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_32.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_32.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_thread_16.pass.cpp (302 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_device_8.pass.cpp (303 of 3039)
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_device_64.pass.cpp (304 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_device_64.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_64.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_device_64.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_64.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_64.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_device_64.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp (305 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_thread_32.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_thread_8.pass.cpp (306 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.bfind.compile.pass.cpp (307 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.barrier.cluster.compile.pass.cpp (308 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.bmsk.compile.pass.cpp (309 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_thread_large_type.pass.cpp (310 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_system_8.pass.cpp (311 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.clusterlaunchcontrol.compile.pass.cpp (312 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.bulk.commit_group.compile.pass.cpp (313 of 3039)
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_system_32.pass.cpp (314 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_system_32.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_32.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_system_32.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_32.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_32.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_32.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_block_large_type.pass.cpp (315 of 3039)
+  PASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_system_16.pass.cpp (316 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.bulk.compile.pass.cpp (317 of 3039)
+  XPASS: libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_system_64.pass.cpp (318 of 3039)
+  ******************** TEST 'libcu++ :: cuda/pipeline/pipeline_memcpy_async_thread_scope_system_64.pass.cpp' FAILED ********************
+  Compiled With: '/usr/bin/sccache /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_64.pass.cpp.o -x cu --cuda-path=/usr/local/cuda /home/coder/cccl/libcudacxx/test/libcudacxx/cuda/pipeline/pipeline_memcpy_async_thread_scope_system_64.pass.cpp -c -std=c++17 -include /home/coder/cccl/libcudacxx/test/support/nasty_macros.h -I/home/coder/cccl/libcudacxx/include -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -fno-rtti -I/home/coder/cccl/libcudacxx/test/support -D_CCCL_NO_SYSTEM_HEADER -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE -DCCCL_ENABLE_ASSERTIONS -DCCCL_ENABLE_OPTIONAL_REF -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT -DLIBCUDACXX_IGNORE_DEPRECATED_ABI -Xclang -fcuda-allow-variadic-functions -Xclang -Wno-unused-parameter -Wno-unknown-cuda-version -include /home/coder/cccl/libcudacxx/test/libcudacxx/force_include.h -I/home/coder/cccl/libcudacxx/include -O1 --cuda-gpu-arch=sm_75 --cuda-gpu-arch=sm_80 -D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER -Wall -Wextra -Werror -Wuser-defined-warnings -Wshadow -Wno-unused-command-line-argument -Wno-attributes -Wno-pessimizing-move -Wno-c++11-extensions -Wno-user-defined-literals -Wno-noexcept-type -Wsign-compare -Wunused-variable -Wunused-parameter -Wunreachable-code -c && /usr/bin/clang++ -o /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_64.pass.cpp.exe --cuda-path=/usr/local/cuda /home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_64.pass.cpp.o -std=c++17 -L/usr/local/cuda/lib64 -lcuda -lcudart -lm -lgcc_s -lgcc -lpthread -lrt -lc -lgcc_s -lgcc'
+  Command: "/home/coder/cccl/build/cuda12.9-llvm20/libcudacxx-cpp17/libcudacxx/test/libcudacxx/test/cuda/pipeline/Output/pipeline_memcpy_async_thread_scope_system_64.pass.cpp.exe"
+  Exit Code: 0
+
+
+  ********************
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.bulk.multicast.compile.pass.cpp (319 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.bulk.tensor.multicast.compile.pass.cpp (320 of 3039)
+  UNSUPPORTED: libcu++ :: cuda/ptx/ptx.get_sreg.compile.pass.cpp (321 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.reduce.async.bulk.tensor.compile.pass.cpp (322 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.bulk.tensor.compile.pass.cpp (323 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.bulk.wait_group.compile.pass.cpp (324 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.async.mbarrier.arrive.compile.pass.cpp (325 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.cp.reduce.async.bulk.compile.pass.cpp (326 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.exit.compile.pass.cpp (327 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.elect.sync.compile.pass.cpp (328 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.fence.compile.pass.cpp (329 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.getctarank.compile.pass.cpp (330 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.ld.compile.pass.cpp (331 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.mbarrier.expect_tx.compile.pass.cpp (332 of 3039)
+  UNSUPPORTED: libcu++ :: cuda/ptx/ptx.shfl.compile.pass.cpp (333 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.mbarrier.arrive.compile.pass.cpp (334 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.mbarrier.wait.compile.pass.cpp (335 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.mbarrier.init.compile.pass.cpp (336 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.multimem.ld_reduce.compile.pass.cpp (337 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.multimem.red.compile.pass.cpp (338 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.multimem.st.compile.pass.cpp (339 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.prmt.compile.pass.cpp (340 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.red.async.compile.pass.cpp (341 of 3039)
+  PASS: libcu++ :: cuda/ptx/ptx.st.bulk.compile.pass.cpp (342 of 3039)

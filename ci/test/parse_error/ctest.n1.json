@@ -1,0 +1,15 @@
+[
+  {
+    "error_short": "error: first",
+    "pattern_type": "test",
+    "pattern_name": "ctest failure",
+    "rel_filepath": "fail1.cpp",
+    "filename": "fail1.cpp",
+    "error_line": "fail1.cpp:10: error: first",
+    "error_context": "1/3 Test #1: fail1 ............................***Failed    0.01 sec\nfail1.cpp:10: error: first\n",
+    "line": "10",
+    "target_name": "fail1",
+    "location": "fail1.cpp:10",
+    "summary": "`fail1.cpp:10`: `error: first`"
+  }
+]
