@@ -17,10 +17,20 @@ as reductions, scans, sorts, and transforms.
 Here's a simple example showing how to use the :func:`reduce_into <cuda.cccl.parallel.experimental.algorithms.reduce_into>` algorithm to
 reduce an array of integers.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/basic_reduction.py
+.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/sum_reduction.py
    :language: python
-   :pyobject: sum_reduction_example
-   :caption: Basic reduction example. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/reduction/basic_reduction.py>`__
+   :start-after: # example-begin
+   :caption: Basic reduction example.
+
+Many algorithms, including reduction, require a temporary memory buffer.
+The library will allocate this buffer for you, but you can also use the
+object-based API for greater control.
+
+.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/reduce_object.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Reduction with object-based API.
+
 
 Iterators
 ---------
@@ -32,19 +42,19 @@ for them.
 Here's an example showing how to use reduction with a :func:`CountingIterator <cuda.cccl.parallel.experimental.iterators.CountingIterator>` that
 generates a sequence of numbers starting from a specified value.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator.py
+.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator_basic.py
    :language: python
-   :pyobject: counting_iterator_example
-   :caption: Counting iterator example. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator.py>`__
+   :start-after: # example-begin
+   :caption: Counting iterator example.
 
 Iterators also provide a way to compose operations. Here's an example showing
 how to use :func:`reduce_into <cuda.cccl.parallel.experimental.algorithms.reduce_into>` with a :func:`TransformIterator <cuda.cccl.parallel.experimental.iterators.TransformIterator>` to compute the sum of squares
 of a sequence of numbers.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator.py
+.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
    :language: python
-   :pyobject: transform_iterator_example
-   :caption: Transform iterator example. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator.py>`__
+   :start-after: # example-begin
+   :caption: Transform iterator example.
 
 Custom Types
 ------------
@@ -53,10 +63,10 @@ The ``parallel`` library supports defining custom data types,
 using the :func:`gpu_struct <cuda.cccl.parallel.experimental.struct.gpu_struct>` decorator.
 Here are some examples showing how to define and use custom types:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/custom_types.py
+.. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/pixel_reduction.py
    :language: python
-   :pyobject: pixel_reduction_example
-   :caption: Custom type reduction example. `View complete source on GitHub <https://github.com/NVIDIA/cccl/blob/main/python/cuda_cccl/tests/parallel/examples/reduction/custom_types.py>`__
+   :start-after: # example-begin
+   :caption: Custom type reduction example.
 
 
 Example Collections

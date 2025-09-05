@@ -104,12 +104,14 @@ public:
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));
   }
 
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
+  //! @tparam _Extent The extent type
+  //! @param __keys span of keys to hash
+  //! @return The resulting hash value
   template <size_t _Extent>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
-    // TODO: optimize when _Extent is known at compile time i.e
-    // _Extent != ::cuda::std::dynamic_extent, dispatch to bit_cast based implementation
     return __compute_hash_span(__keys);
   }
 
@@ -117,7 +119,7 @@ private:
   //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
   //!
   //! @tparam _Extent The extent type
-  //!
+  //! @param __holder The input argument to hash in form of a byte holder
   //! @return The resulting hash value
   template <class _Holder>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __compute_hash(_Holder __holder) const noexcept
@@ -175,6 +177,11 @@ private:
     return __finalize(__h32);
   }
 
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
+  //!
+  //! @tparam _Extent The extent type
+  //! @param __holder The input argument to hash in form of a span
+  //! @return The resulting hash value
   [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __compute_hash_span(::cuda::std::span<_Key> __keys) const noexcept
   {
     auto __bytes      = ::cuda::std::as_bytes(__keys).data();
@@ -294,16 +301,24 @@ public:
     }
   }
 
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint64_t`.
+  //!
+  //! @tparam _Extent The extent type
+  //! @param __keys span of keys to hash
+  //! @return The resulting hash value
   template <size_t _Extent>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
-    // TODO: optimize when _Extent is known at compile time i.e
-    // _Extent != ::cuda::std::dynamic_extent, dispatch to bit_cast based implementation
     return __compute_hash_span(__keys);
   }
 
 private:
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint64_t`.
+  //!
+  //! @tparam _Extent The extent type
+  //! @param __keys span of keys to hash
+  //! @return The resulting hash value
   [[nodiscard]] _CCCL_API ::cuda::std::uint64_t __compute_hash_span(::cuda::std::span<const _Key> __keys) const noexcept
   {
     auto __bytes      = ::cuda::std::as_bytes(__keys).data();
