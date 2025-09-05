@@ -45,32 +45,6 @@ class stream_ctx;
 namespace reserved
 {
 
-//! \brief Resource wrapper for managing host callback arguments
-//!
-//! This manages the memory allocated for host callback arguments using the
-//! ctx_resource system instead of manual delete in each callback.
-template <typename WrapperType>
-class host_callback_args_resource : public ctx_resource
-{
-public:
-  explicit host_callback_args_resource(WrapperType* wrapper)
-      : wrapper_(wrapper)
-  {}
-
-  bool can_release_in_callback() const override
-  {
-    return true;
-  }
-
-  void release_in_callback() override
-  {
-    delete wrapper_;
-  }
-
-private:
-  WrapperType* wrapper_;
-};
-
 /**
  * @brief Result of `host_launch` (below)
  *
@@ -190,12 +164,21 @@ public:
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
       using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
-      auto resource      = ::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper);
-      ctx.add_resource(mv(resource));
+      ctx.add_resource(::std::make_shared<ctx_pointer_resource<wrapper_type>>(wrapper));
     }
 
     auto callback = [](void* untyped_wrapper) {
       auto w = static_cast<decltype(wrapper)>(untyped_wrapper);
+
+      // For stream contexts, delete immediately (no replay risk)
+      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+      if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+      {
+        SCOPE(exit)
+        {
+          delete w;
+        };
+      }
 
       constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
       constexpr bool fun_invocable_task_non_void_deps =
@@ -211,13 +194,6 @@ public:
       else if constexpr (fun_invocable_task_non_void_deps)
       {
         ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
-      }
-
-      // For stream contexts, delete immediately (no replay risk)
-      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
-      {
-        delete w;
       }
     };
 
