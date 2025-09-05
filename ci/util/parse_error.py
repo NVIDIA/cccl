@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from typing import Dict, Iterable, Iterator, List, Optional
@@ -76,6 +77,18 @@ ERROR_PATTERNS: List[re.Pattern[str]] = (
 # Matching utilities
 # -----------------------------------------------------------------------------
 
+_BUILD_PREFIX_RE = re.compile(r"^.*?/cccl/build/[^/]+/[^/]+/")
+
+
+def _normalize_file(path: str) -> str:
+    """Strip workspace-specific build prefixes from file paths.
+
+    Removes any leading ".../cccl/build/*/*/" component to keep filenames
+    stable across environments.
+    """
+
+    return _BUILD_PREFIX_RE.sub("", path)
+
 
 def find_match(line: str) -> Optional[re.Match[str]]:
     """Return the first regex match for *line*, or ``None``."""
@@ -106,6 +119,22 @@ def iter_matches(
         match = find_match(line)
         if match:
             result = match.groupdict()
+            # Preserve absolute path as captured, and provide normalized + basename variants.
+            abs_filepath = result.get("file", "") or ""
+            rel_filepath = _normalize_file(abs_filepath) if abs_filepath else ""
+            filename = (
+                os.path.basename(rel_filepath or abs_filepath)
+                if (rel_filepath or abs_filepath)
+                else ""
+            )
+
+            # For legacy consumers, keep 'file' as the normalized relative path if available.
+            if abs_filepath:
+                result["file"] = rel_filepath or abs_filepath
+            result["abs_filepath"] = abs_filepath
+            result["rel_filepath"] = rel_filepath
+            result["filename"] = filename
+
             result["full"] = line
             yield result
             count += 1
@@ -151,9 +180,33 @@ def format_gh(matches: List[Dict[str, str]]) -> str:
 
 
 def format_json(matches: List[Dict[str, str]]) -> str:
-    """Return matches encoded as JSON."""
+    """Return matches encoded as JSON, with extras for consumers.
 
-    return json.dumps(matches, indent=2) + "\n"
+    Adds:
+      - "loc":   "file:line" convenience field
+      - "summary": truncated message suitable for compact displays
+    """
+
+    SUMMARY_LIMIT = 80
+    out: List[Dict[str, str]] = []
+    for m in matches:
+        loc = f"{m.get('file', '')}:{m.get('line', '')}".strip(":")
+        msg = m.get("msg", "").strip()
+        fname = m.get("filename", "")
+        # Build a compact summary using just the final filename and a truncated message
+        # so that downstream UIs can deduplicate on visually similar errors.
+        sum_prefix = f"{fname}: " if fname else ""
+        max_msg = max(8, SUMMARY_LIMIT - len(sum_prefix))
+        msg_display = msg
+        if len(msg_display) > max_msg:
+            msg_display = msg_display[: max_msg - 3] + "..."
+        enriched = dict(m)
+        enriched["loc"] = loc
+        enriched["summary"] = (
+            f"{sum_prefix}{msg_display}" if msg_display else sum_prefix.rstrip()
+        )
+        out.append(enriched)
+    return json.dumps(out, indent=2) + "\n"
 
 
 FORMATTERS = {

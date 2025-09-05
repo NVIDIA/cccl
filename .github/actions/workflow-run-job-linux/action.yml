@@ -114,7 +114,7 @@ runs:
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
         fi
 
-        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code
 
         exit $exit_code
         EOF

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -40,6 +41,24 @@ def main() -> int:
                 output = result.stdout
                 expected = ref.read_text()
                 label = f"{fmt}, n{n}"
+                # Be lenient for JSON: actual may include extra fields.
+                if fmt == "json":
+                    try:
+                        got = json.loads(output)
+                        want = json.loads(expected)
+                        if len(got) != len(want):
+                            raise AssertionError("length mismatch")
+                        for g, w in zip(got, want):
+                            for k, v in w.items():
+                                if g.get(k) != v:
+                                    raise AssertionError(
+                                        f"key {k} mismatch: {g.get(k)} != {v}"
+                                    )
+                        print(f"{log.name} ({label}) ok")
+                        continue
+                    except Exception as e:
+                        print(f"json compare failed for {log.name} ({label}): {e}")
+                        # fall through to raw compare for debugging output
                 if output != expected:
                     print(f"mismatch for {log.name} ({label})")
                     print("--- expected ---\n" + expected + "--- got ---\n" + output)
