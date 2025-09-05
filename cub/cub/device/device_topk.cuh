@@ -27,27 +27,22 @@
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! @brief DeviceTopK provides device-wide, parallel operations for
-//!        finding the largest (or smallest) K items from sequences of unordered data
-//!        items residing within device-accessible memory.
+//! @brief DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from
+//! sequences of unordered data items residing within device-accessible memory.
 //!
 //! @par Overview
 //! TopK problem tries to find the largest (or smallest) K items in an unordered list. A related problem is called
 //! [*K selection problem*](https://en.wikipedia.org/wiki/Selection_algorithm), which finds the Kth largest
 //! (or smallest) values in a list.
-//! DeviceTopK will return K items as results (ordered or unordered). It is
+//! DeviceTopK will return K items as results (currently, only unordered results are returned). It is
 //! based on an algorithm called [*AIR TopK*](https://dl.acm.org/doi/10.1145/3581784.3607062).
 //!
-//! @par Note
-//! We only support the case where the variable K is smaller than the variable N.
-//!
 //! @par Supported Types
-//! DeviceTopK can process all of the built-in C++ numeric primitive types
-//! (`unsigned char`, `int`, `double`, etc.) as well as CUDA's `__half`
-//! and `__nv_bfloat16` 16-bit floating-point types.
+//! DeviceTopK can process all of the built-in C++ numeric primitive types (`unsigned char`, `int`, `double`, etc.) as
+//! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types.
 //!
 //! @par Stability
-//! DeviceTopK provides stable and unstable version.
+//! DeviceTopK currently only provides an unstable version.
 //! Usage Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -107,9 +102,9 @@ struct DeviceTopK
   //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
   //!   `num_items`.
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
@@ -204,9 +199,9 @@ struct DeviceTopK
   //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
   //!   `num_items`.
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
@@ -288,9 +283,9 @@ struct DeviceTopK
   //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
   //!   `num_items`.
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
@@ -363,9 +358,9 @@ struct DeviceTopK
   //!   The K value. Will find K elements from num_items elements. If K exceeds `num_items`, K is capped at a maximum of
   //!   `num_items`.
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
