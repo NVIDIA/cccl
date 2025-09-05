@@ -320,6 +320,7 @@ long double    truncl(long double x);
 
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/error_functions.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/fma.h>
 #include <cuda/std/__cmath/fpclassify.h>
@@ -361,18 +362,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 using ::double_t;
 using ::float_t;
 
-using ::erf;
-using ::erfc;
-using ::erfcf;
-using ::erff;
 using ::fdim;
 using ::fdimf;
 
 using ::nan;
 using ::nanf;
 
-using ::erfcl;
-using ::erfl;
 using ::fdiml;
 using ::nanl;
 
