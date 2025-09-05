@@ -26,6 +26,7 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
@@ -187,18 +188,15 @@ public:
   {
     _CCCL_ASSERT(__count_ > 0, "Iterator already at or past end.");
     --__count_;
-#if _CCCL_HAS_EXCEPTIONS()
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (
-        try { return __current_++; } catch (...) {
-          ++__count_;
-          throw;
-        }),
-      (return __current_++;))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    return __current_++;
-#endif // !_CCCL_HAS_EXCEPTIONS()
+    _CCCL_TRY
+    {
+      return __current_++;
+    }
+    _CCCL_CATCH_ALL
+    {
+      ++__count_;
+      _CCCL_RETHROW;
+    }
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)

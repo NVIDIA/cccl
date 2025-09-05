@@ -43,6 +43,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <nv/target>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -206,9 +208,8 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 
 #endif
 
-    NV_IF_TARGET(NV_IS_HOST,
-                 (throw thrust::system_error(status, thrust::cuda_category());),
-                 (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
+    NV_IF_TARGET(NV_IS_DEVICE, (THRUST_TEMP_DEVICE_CODE;))
+    _CCCL_THROW(thrust::system_error(status, thrust::cuda_category()));
 
 #undef THRUST_TEMP_DEVICE_CODE
   }
@@ -239,9 +240,8 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
 
 #endif
 
-    NV_IF_TARGET(NV_IS_HOST,
-                 (throw thrust::system_error(status, thrust::cuda_category(), msg);),
-                 (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
+    NV_IF_TARGET(NV_IS_DEVICE, (THRUST_TEMP_DEVICE_CODE;))
+    _CCCL_THROW(thrust::system_error(status, thrust::cuda_category(), msg));
 
 #undef THRUST_TEMP_DEVICE_CODE
   }

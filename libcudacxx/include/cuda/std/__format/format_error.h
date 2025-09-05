@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  if __cpp_lib_format >= 201907L
@@ -62,11 +62,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[noreturn]] _CCCL_API inline void __throw_format_error(const char* __s)
 {
-#if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::std::format_error(__s);), (::cuda::std::terminate();))
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  ::cuda::std::terminate();
-#endif // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^
+  _CCCL_THROW(::cuda::std::format_error{__s});
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
