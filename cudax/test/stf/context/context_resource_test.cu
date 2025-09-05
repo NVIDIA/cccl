@@ -12,12 +12,14 @@
 //! \brief Test ctx_resource management with different context types
 
 #include <cuda/experimental/__stf/internal/context.cuh>
+
 #include <atomic>
 #include <memory>
 
 using namespace cuda::experimental::stf;
 
-namespace {
+namespace
+{
 
 // Counters for tracking resource lifecycle
 std::atomic<int> stream_resource_construct_count{0};
@@ -29,28 +31,28 @@ std::atomic<int> callback_resource_release_count{0};
 class test_stream_resource : public ctx_resource
 {
 public:
-  test_stream_resource() 
+  test_stream_resource()
   {
     stream_resource_construct_count.fetch_add(1);
   }
-  
+
   ~test_stream_resource() override = default;
-  
+
   void release(cudaStream_t stream) override
   {
     // Simulate async resource release that needs a stream
     cudaEvent_t event;
     cuda_safe_call(cudaEventCreate(&event));
     cuda_safe_call(cudaEventRecord(event, stream));
-    cuda_safe_call(cudaEventSynchronize(event));  // Wait for completion
+    cuda_safe_call(cudaEventSynchronize(event)); // Wait for completion
     cuda_safe_call(cudaEventDestroy(event));
-    
+
     stream_resource_release_count.fetch_add(1);
   }
-  
+
   bool can_release_in_callback() const override
   {
-    return false;  // This resource needs a stream
+    return false; // This resource needs a stream
   }
 };
 
@@ -58,24 +60,24 @@ public:
 class test_callback_resource : public ctx_resource
 {
 public:
-  test_callback_resource() 
+  test_callback_resource()
   {
     callback_resource_construct_count.fetch_add(1);
   }
-  
+
   ~test_callback_resource() override = default;
-  
+
   void release(cudaStream_t /*stream*/) override
   {
     // Should not be called for callback resources
     assert(false && "release() should not be called for callback resources");
   }
-  
+
   bool can_release_in_callback() const override
   {
-    return true;  // This resource can be released in a callback
+    return true; // This resource can be released in a callback
   }
-  
+
   void release_in_callback() override
   {
     // Simulate host-side resource cleanup
@@ -98,98 +100,101 @@ void check_all_resources_released()
   EXPECT(callback_resource_construct_count.load() == callback_resource_release_count.load());
 }
 
-template<typename CtxType>
+template <typename CtxType>
 void test_context_resources()
 {
   reset_counters();
-  
+
   CtxType ctx;
-  
+
   // Add a simple host launch to ensure context has some work
   ctx.host_launch()->*[]() {
     // Trivial workload - just increment a counter
     static std::atomic<int> work_counter{0};
     work_counter.fetch_add(1);
   };
-  
+
   // Add various types of resources
-  const int num_stream_resources = 3;
+  const int num_stream_resources   = 3;
   const int num_callback_resources = 2;
-  
+
   // Add stream-dependent resources
-  for (int i = 0; i < num_stream_resources; ++i) {
+  for (int i = 0; i < num_stream_resources; ++i)
+  {
     auto resource = ::std::make_shared<test_stream_resource>();
     ctx.add_resource(resource);
   }
-  
-  // Add callback resources  
-  for (int i = 0; i < num_callback_resources; ++i) {
+
+  // Add callback resources
+  for (int i = 0; i < num_callback_resources; ++i)
+  {
     auto resource = ::std::make_shared<test_callback_resource>();
     ctx.add_resource(resource);
   }
-  
+
   // Verify resources were constructed
   EXPECT(stream_resource_construct_count.load() == num_stream_resources);
   EXPECT(callback_resource_construct_count.load() == num_callback_resources);
-  EXPECT(stream_resource_release_count.load() == 0);  // Not released yet
-  EXPECT(callback_resource_release_count.load() == 0);  // Not released yet
-  
+  EXPECT(stream_resource_release_count.load() == 0); // Not released yet
+  EXPECT(callback_resource_release_count.load() == 0); // Not released yet
+
   // Finalize the context - this should release resources automatically
   ctx.finalize();
-  
+
   // Verify all resources were released
   EXPECT(stream_resource_release_count.load() == num_stream_resources);
   EXPECT(callback_resource_release_count.load() == num_callback_resources);
-  
+
   check_all_resources_released();
 }
 
 void test_graph_ctx_manual_resource_release()
 {
   reset_counters();
-  
+
   graph_ctx ctx;
-  
+
   // Add a simple host launch
   ctx.host_launch()->*[]() {
     static std::atomic<int> work_counter{0};
     work_counter.fetch_add(1);
   };
-  
+
   // Add resources
   const int num_resources = 2;
-  for (int i = 0; i < num_resources; ++i) {
+  for (int i = 0; i < num_resources; ++i)
+  {
     ctx.add_resource(std::make_shared<test_stream_resource>());
     ctx.add_resource(std::make_shared<test_callback_resource>());
   }
-  
+
   EXPECT(stream_resource_construct_count.load() == num_resources);
   EXPECT(callback_resource_construct_count.load() == num_resources);
-  
+
   // Submit the context but don't finalize yet
   ctx.submit();
-  
+
   // Resources should not be released yet
   EXPECT(stream_resource_release_count.load() == 0);
   EXPECT(callback_resource_release_count.load() == 0);
-  
+
   // Create stream for manual resource release
   cudaStream_t test_stream;
   cuda_safe_call(cudaStreamCreate(&test_stream));
-  
+
   // Manually release resources
   ctx.release_resources(test_stream);
   cuda_safe_call(cudaStreamSynchronize(test_stream));
-  
+
   cuda_safe_call(cudaStreamDestroy(test_stream));
-  
+
   // Now resources should be released
   EXPECT(stream_resource_release_count.load() == num_resources);
   EXPECT(callback_resource_release_count.load() == num_resources);
-  
+
   // Finalize without additional resource release
   ctx.finalize();
-  
+
   check_all_resources_released();
 }
 
@@ -201,7 +206,7 @@ int main()
   test_context_resources<context>();
   test_context_resources<stream_ctx>();
   test_context_resources<graph_ctx>();
-  
+
   // Test manual resource release (graph_ctx only for the sake of simplicity)
   test_graph_ctx_manual_resource_release();
 }
