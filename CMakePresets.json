@@ -21,7 +21,7 @@
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
-        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
@@ -64,7 +64,7 @@
         "CCCL_ENABLE_TESTING": true,
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
-        "CCCL_ENABLE_C": true,
+        "CCCL_ENABLE_C_PARALLEL": true,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
@@ -273,7 +273,7 @@
       "displayName": "CCCL C Parallel Library",
       "inherits": "base",
       "cacheVariables": {
-        "CCCL_ENABLE_C": true,
+        "CCCL_ENABLE_C_PARALLEL": true,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
@@ -284,7 +284,7 @@
       "displayName": "CCCL C CUDASTF Library",
       "inherits": "base",
       "cacheVariables": {
-        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
       }
@@ -310,7 +310,7 @@
         "CCCL_ENABLE_THRUST": false,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUDAX": false,
-        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
         "CUB_ENABLE_EXAMPLES": false,
