@@ -39,6 +39,7 @@ namespace cuda::experimental::stf
 class ctx_resource
 {
 public:
+  ctx_resource()          = default;
   virtual ~ctx_resource() = default;
 
   // Non-copyable
