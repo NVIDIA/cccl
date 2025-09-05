@@ -19,7 +19,7 @@ Classes
 * :doc:`transform_input_output_iterator <classtransform__input__output__iterator>`
 * :doc:`transform_iterator <classtransform__iterator>`
 * :doc:`transform_output_iterator <classtransform__output__iterator>`
-* :doc:`zip_functor <classzip__functor>`
+* :doc:`zip_function <classzip__function>`
 * :doc:`zip_iterator <classzip__iterator>`
 
 .. toctree::
@@ -36,6 +36,6 @@ Classes
    classtransform__input__output__iterator
    classtransform__iterator
    classtransform__output__iterator
-   classzip__functor
+   classzip__function
    classzip__iterator
    group__iterators

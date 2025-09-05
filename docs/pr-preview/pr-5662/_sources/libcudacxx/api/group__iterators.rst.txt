@@ -16,5 +16,5 @@ Iterators
    classtransform__input__output__iterator
    classtransform__iterator
    classtransform__output__iterator
-   classzip__functor
+   classzip__function
    classzip__iterator
