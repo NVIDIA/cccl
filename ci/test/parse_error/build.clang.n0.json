@@ -1,0 +1,38 @@
+[
+  {
+    "file": "a.cpp",
+    "line": "2",
+    "msg": "error: expected ';' at end of declaration",
+    "abs_filepath": "a.cpp",
+    "rel_filepath": "a.cpp",
+    "filename": "a.cpp",
+    "full": "a.cpp:2:14: error: expected ';' at end of declaration",
+    "context": "\u26a0\ufe0f\na.cpp:2:14: error: expected ';' at end of declaration",
+    "location": "a.cpp:2",
+    "summary": "`a.cpp:2`: `error: expected ';' at end of declaration`"
+  },
+  {
+    "file": "b.cpp",
+    "line": "2",
+    "msg": "error: expected ';' at end of declaration",
+    "abs_filepath": "b.cpp",
+    "rel_filepath": "b.cpp",
+    "filename": "b.cpp",
+    "full": "b.cpp:2:14: error: expected ';' at end of declaration",
+    "context": "\u26a0\ufe0f\nb.cpp:2:14: error: expected ';' at end of declaration",
+    "location": "b.cpp:2",
+    "summary": "`b.cpp:2`: `error: expected ';' at end of declaration`"
+  },
+  {
+    "file": "c.cpp",
+    "line": "2",
+    "msg": "error: use of undeclared identifier 'y'",
+    "abs_filepath": "c.cpp",
+    "rel_filepath": "c.cpp",
+    "filename": "c.cpp",
+    "full": "c.cpp:2:12: error: use of undeclared identifier 'y'",
+    "context": "\u26a0\ufe0f\nc.cpp:2:12: error: use of undeclared identifier 'y'",
+    "location": "c.cpp:2",
+    "summary": "`c.cpp:2`: `error: use of undeclared identifier 'y'`"
+  }
+]

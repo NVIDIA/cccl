@@ -1,0 +1,50 @@
+[
+  {
+    "file": "d.cu",
+    "line": "4",
+    "msg": "error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "abs_filepath": "d.cu",
+    "rel_filepath": "d.cu",
+    "filename": "d.cu",
+    "full": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "context": "\u26a0\ufe0f\nd.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks\na.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"a.cu\".",
+    "location": "d.cu:4",
+    "summary": "`d.cu:4`: `error: this is a very long error message that should be truncated...`"
+  },
+  {
+    "file": "a.cu",
+    "line": "3",
+    "msg": "error: expected a \";\"",
+    "abs_filepath": "a.cu",
+    "rel_filepath": "a.cu",
+    "filename": "a.cu",
+    "full": "a.cu(3): error: expected a \";\"",
+    "context": "\u26a0\ufe0f\na.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"a.cu\".",
+    "location": "a.cu:3",
+    "summary": "`a.cu:3`: `error: expected a \";\"`"
+  },
+  {
+    "file": "b.cu",
+    "line": "3",
+    "msg": "error: expected a \";\"",
+    "abs_filepath": "b.cu",
+    "rel_filepath": "b.cu",
+    "filename": "b.cu",
+    "full": "b.cu(3): error: expected a \";\"",
+    "context": "\u26a0\ufe0f\nb.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"b.cu\".",
+    "location": "b.cu:3",
+    "summary": "`b.cu:3`: `error: expected a \";\"`"
+  },
+  {
+    "file": "c.cu",
+    "line": "2",
+    "msg": "error: identifier \"y\" is undefined",
+    "abs_filepath": "c.cu",
+    "rel_filepath": "c.cu",
+    "filename": "c.cu",
+    "full": "c.cu(2): error: identifier \"y\" is undefined",
+    "context": "\u26a0\ufe0f\nc.cu(2): error: identifier \"y\" is undefined\n      int x = y;\n              ^\n\n1 error detected in the compilation of \"c.cu\".",
+    "location": "c.cu:2",
+    "summary": "`c.cu:2`: `error: identifier \"y\" is undefined`"
+  }
+]

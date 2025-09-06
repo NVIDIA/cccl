@@ -1,0 +1,14 @@
+[
+  {
+    "file": "fail1.cpp",
+    "line": "10",
+    "msg": "error: first",
+    "abs_filepath": "fail1.cpp",
+    "rel_filepath": "fail1.cpp",
+    "filename": "fail1.cpp",
+    "full": "fail1.cpp:10: error: first",
+    "context": "\u26a0\ufe0f\nfail1.cpp:10: error: first",
+    "location": "fail1.cpp:10",
+    "summary": "`fail1.cpp:10`: `error: first`"
+  }
+]

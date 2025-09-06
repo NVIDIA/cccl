@@ -1,0 +1,14 @@
+a.cpp:2:14: error: expected ';' at end of declaration
+    2 |     int x = 0
+      |              ^
+      |              ;
+1 error generated.
+b.cpp:2:14: error: expected ';' at end of declaration
+    2 |     int x = 0
+      |              ^
+      |              ;
+1 error generated.
+c.cpp:2:12: error: use of undeclared identifier 'y'
+    2 |     return y;
+      |            ^
+1 error generated.

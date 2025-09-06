@@ -117,7 +117,7 @@ def main():
 
     print("Writing unmapped jobs to workflow/unmapped_jobs.md")
     with open("workflow/unmapped_jobs.md", "w") as f:
-        f.write("<details><summary>🙈 Non-Matrix Jobs</summary>\n\n")
+        f.write("<details><summary><h2>🙈 Non-Matrix Jobs</h2></summary>\n\n")
         f.write("<pre>")
         f.write("\n".join([job["name"] for job in unknown_jobs]))
         f.write("</pre>\n")
@@ -125,7 +125,7 @@ def main():
 
     print("Writing job time table to workflow/job_times.md")
     with open("workflow/job_times.md", "w") as f:
-        f.write("<details><summary>⏱️ Job Times</summary>\n\n")
+        f.write("<details><summary><h2>⏱️ Job Times</h2></summary>\n\n")
         f.write("| Job Duration | Command Duration | Overhead (%) | Name |\n")
         f.write("|--------------|------------------|--------------|------|\n")
         for id, stats in result.items():
