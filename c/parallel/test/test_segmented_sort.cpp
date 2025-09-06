@@ -307,9 +307,7 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
   constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
   constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
 
-  // generate choices for n_segments: 0, 10 and random samples
-  const std::size_t n_segments = GENERATE(0, 10, take(2, random(30, 100)));
-  // generate choices for segment size
+  const std::size_t n_segments   = GENERATE(0, 10, take(2, random(30, 100)));
   const std::size_t segment_size = GENERATE(1, 15, take(2, random(5, 50)));
 
   const std::size_t n_elems = n_segments * segment_size;
@@ -396,7 +394,8 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
     test_key);
 
   // Create expected result by sorting each segment with key-value pairs
-  std::vector<std::pair<key_t, item_t>> key_value_pairs(n_elems);
+  std::vector<std::pair<key_t, item_t>> key_value_pairs;
+  key_value_pairs.reserve(n_elems);
   for (std::size_t i = 0; i < n_elems; ++i)
   {
     key_value_pairs.emplace_back(host_keys[i], host_values[i]);
@@ -412,19 +411,19 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
 
     if (is_descending)
     {
-      std::sort(key_value_pairs.begin() + segment_start,
-                key_value_pairs.begin() + segment_end,
-                [](const auto& a, const auto& b) {
-                  return b.first < a.first;
-                });
+      std::stable_sort(key_value_pairs.begin() + segment_start,
+                       key_value_pairs.begin() + segment_end,
+                       [](const auto& a, const auto& b) {
+                         return b.first < a.first;
+                       });
     }
     else
     {
-      std::sort(key_value_pairs.begin() + segment_start,
-                key_value_pairs.begin() + segment_end,
-                [](const auto& a, const auto& b) {
-                  return a.first < b.first;
-                });
+      std::stable_sort(key_value_pairs.begin() + segment_start,
+                       key_value_pairs.begin() + segment_end,
+                       [](const auto& a, const auto& b) {
+                         return a.first < b.first;
+                       });
     }
 
     // Extract sorted keys and values

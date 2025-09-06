@@ -1024,7 +1024,7 @@ inline std::tuple<std::string, std::string, std::string> make_step_counting_iter
   static constexpr std::string_view it_state_src_tmpl = R"XXX(
 struct {0} {{
   {1} linear_id;
-  {1} row_size;
+  {1} segment_size;
 }};
 )XXX";
 
@@ -1043,7 +1043,7 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
   static constexpr std::string_view it_deref_src_tmpl = R"XXX(
 extern "C" __device__ {2} {0}({1}* state)
 {{
-  return (state->linear_id) * (state->row_size);
+  return (state->linear_id) * (state->segment_size);
 }}
 )XXX";
 

@@ -112,8 +112,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   // generate 4 choices for number of columns
   const std::size_t n_cols = GENERATE(0, 12, take(2, random(1 << 10, 1 << 12)));
 
-  const std::size_t n_elems  = n_rows * n_cols;
-  const std::size_t row_size = n_cols;
+  const std::size_t n_elems      = n_rows * n_cols;
+  const std::size_t segment_size = n_cols;
 
   const std::vector<TestType> host_input = generate<TestType>(n_elems);
   std::vector<TestType> host_output(n_rows, 0);
@@ -130,7 +130,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
   struct row_offset_iterator_state_t
   {
     SizeT linear_id;
-    SizeT row_size;
+    SizeT segment_size;
   };
 
   static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
@@ -146,16 +146,16 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
     {advance_offset_method_name, offset_iterator_advance_src},
     {deref_offset_method_name, offset_iterator_deref_src});
 
-  start_offset_it.state.linear_id = 0;
-  start_offset_it.state.row_size  = row_size;
+  start_offset_it.state.linear_id    = 0;
+  start_offset_it.state.segment_size = segment_size;
 
   // a copy of offset iterator, so no need to define advance/dereference bodies,
   // just reused those defined above
   iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
     {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
 
-  end_offset_it.state.linear_id = 1;
-  end_offset_it.state.row_size  = row_size;
+  end_offset_it.state.linear_id    = 1;
+  end_offset_it.state.segment_size = segment_size;
 
   operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
@@ -170,7 +170,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * row_size;
+    std::size_t row_offset = i * segment_size;
     host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
@@ -190,8 +190,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
   // generate 4 choices for number of columns
   const std::size_t n_cols = GENERATE(0, 12, take(2, random(1 << 10, 1 << 12)));
 
-  const std::size_t n_elems  = n_rows * n_cols;
-  const std::size_t row_size = n_cols;
+  const std::size_t n_elems      = n_rows * n_cols;
+  const std::size_t segment_size = n_cols;
 
   const std::vector<TestType> host_input = generate<TestType>(n_elems);
   std::vector<TestType> host_output(n_rows, 0);
@@ -208,7 +208,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
   struct row_offset_iterator_state_t
   {
     SizeT linear_id;
-    SizeT row_size;
+    SizeT segment_size;
   };
 
   static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
@@ -224,16 +224,16 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
     {advance_offset_method_name, offset_iterator_advance_src},
     {deref_offset_method_name, offset_iterator_deref_src});
 
-  start_offset_it.state.linear_id = 0;
-  start_offset_it.state.row_size  = row_size;
+  start_offset_it.state.linear_id    = 0;
+  start_offset_it.state.segment_size = segment_size;
 
   // a copy of offset iterator, so no need to define advance/dereference bodies,
   // just reused those defined above
   iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
     {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
 
-  end_offset_it.state.linear_id = 1;
-  end_offset_it.state.row_size  = row_size;
+  end_offset_it.state.linear_id    = 1;
+  end_offset_it.state.segment_size = segment_size;
 
   cccl_op_t op = make_well_known_binary_operation();
   value_t<TestType> init{0};
@@ -248,7 +248,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * row_size;
+    std::size_t row_offset = i * segment_size;
     host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
