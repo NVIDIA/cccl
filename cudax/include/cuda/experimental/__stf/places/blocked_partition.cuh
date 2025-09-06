@@ -125,6 +125,12 @@ public:
   }
 };
 
+//! Partitions a multidimensional box or shape into contiguous blocks along a selected dimension.
+//!
+//! This partitioning strategy divides the data space into contiguous blocks, distributing them
+//! across execution places. By default, partitioning occurs along the last dimension, but a
+//! specific dimension can be selected using the template parameter. This approach ensures
+//! good spatial locality and is particularly effective for regular data access patterns.
 using blocked_partition = blocked_partition_custom<>;
 
 } // namespace cuda::experimental::stf
