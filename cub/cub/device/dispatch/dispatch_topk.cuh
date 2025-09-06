@@ -784,7 +784,8 @@ struct DispatchTopK : SelectedPolicy
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
 
-    using identify_candidates_op_t = IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::BITS_PER_PASS>;
+    using identify_candidates_op_t =
+      IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
     using extract_bin_op_t = ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
 
     return Invoke<ActivePolicyT>(
