@@ -12,8 +12,10 @@
 #   libcudacxx.compiler_interface and cccl.compiler_interface_cppXX.
 
 function(libcudacxx_build_compiler_targets)
-  set(cuda_compile_options)
+  set(c_compile_options)
   set(cxx_compile_options)
+  set(cuda_compile_options)
+  set(link_options)
   set(cxx_compile_definitions)
 
   # Set test specific flags
@@ -24,8 +26,10 @@ function(libcudacxx_build_compiler_targets)
   list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER")
 
   cccl_build_compiler_interface(libcudacxx.compiler_interface
-    "${cuda_compile_options}"
+    "${c_compile_options}"
     "${cxx_compile_options}"
+    "${cuda_compile_options}"
+    "${link_options}"
     "${cxx_compile_definitions}"
   )
 
