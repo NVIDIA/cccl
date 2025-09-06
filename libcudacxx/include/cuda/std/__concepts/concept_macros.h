@@ -196,9 +196,10 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 // GCC < 14 can't mangle noexcept expressions, so just check that the
 // expression is well-formed.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) __VA_ARGS__
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) static_cast<void>(__VA_ARGS__)
 #  else
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) ::__cccl_requires<noexcept(__VA_ARGS__)>
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) \
+      ::__cccl_requires<noexcept(static_cast<void>(__VA_ARGS__))>
 #  endif
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
     ::__cccl_requires<                              \
