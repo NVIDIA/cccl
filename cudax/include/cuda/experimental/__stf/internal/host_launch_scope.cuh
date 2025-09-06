@@ -45,6 +45,32 @@ class stream_ctx;
 namespace reserved
 {
 
+//! \brief Resource wrapper for managing host callback arguments
+//!
+//! This manages the memory allocated for host callback arguments using the
+//! ctx_resource system instead of manual delete in each callback.
+template <typename WrapperType>
+class host_callback_args_resource : public ctx_resource
+{
+public:
+  explicit host_callback_args_resource(WrapperType* wrapper)
+      : wrapper_(wrapper)
+  {}
+
+  bool can_release_in_callback() const override
+  {
+    return true;
+  }
+
+  void release_in_callback() override
+  {
+    delete wrapper_;
+  }
+
+private:
+  WrapperType* wrapper_;
+};
+
 /**
  * @brief Result of `host_launch` (below)
  *
@@ -164,6 +190,7 @@ public:
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
     {
       using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
+
       ctx.add_resource(::std::make_shared<ctx_pointer_resource<wrapper_type>>(wrapper));
     }
 
@@ -192,7 +219,6 @@ public:
       {
         ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
       }
-
     };
 
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
