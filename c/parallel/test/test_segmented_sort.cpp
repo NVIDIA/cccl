@@ -50,11 +50,11 @@ struct TestParameters
 
   constexpr TestParameters() {}
 
-  bool is_descending() const
+  constexpr bool is_descending() const
   {
     return m_descending;
   }
-  bool is_overwrite_okay() const
+  constexpr bool is_overwrite_okay() const
   {
     return m_overwrite_okay;
   }
@@ -185,13 +185,13 @@ void segmented_sort(
 struct SegmentedSort_KeysOnly_Fixture_Tag;
 C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", test_params_tuple)
 {
-  using T                         = c2h::get<0, TestType>;
-  using key_t                     = typename T::KeyT;
-  constexpr auto this_test_params = T();
-  const bool is_descending        = this_test_params.is_descending();
-  const auto order                = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  const bool is_overwrite_okay    = this_test_params.is_overwrite_okay();
-  int selector                    = -1;
+  using T     = c2h::get<0, TestType>;
+  using key_t = typename T::KeyT;
+
+  constexpr auto this_test_params  = T();
+  constexpr bool is_descending     = this_test_params.is_descending();
+  constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
 
   const std::size_t n_segments   = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
   const std::size_t segment_size = GENERATE(1, 12, take(2, random(1 << 10, 1 << 12)));
@@ -211,8 +211,9 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   pointer_t<item_t> values_in;
   pointer_t<item_t> values_out;
 
-  using SizeT                                     = unsigned long long;
-  static constexpr std::string_view index_ty_name = "unsigned long long";
+  // Always use signed long long for offset iterator since negative advances are possible
+  using SizeT                                     = signed long long;
+  static constexpr std::string_view index_ty_name = "signed long long";
 
   struct segment_offset_iterator_state_t
   {
@@ -258,6 +259,8 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
 
+  int selector = -1;
+
   segmented_sort(
     order,
     keys_in_ptr,
@@ -299,11 +302,10 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
   using T     = c2h::get<0, TestType>;
   using key_t = typename T::KeyT;
 
-  constexpr auto this_test_params = T();
-  const bool is_descending        = this_test_params.is_descending();
-  const auto order                = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  const bool is_overwrite_okay    = this_test_params.is_overwrite_okay();
-  int selector                    = -1;
+  constexpr auto this_test_params  = T();
+  constexpr bool is_descending     = this_test_params.is_descending();
+  constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
 
   // generate choices for n_segments: 0, 10 and random samples
   const std::size_t n_segments = GENERATE(0, 10, take(2, random(30, 100)));
@@ -313,15 +315,9 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
   const std::size_t n_elems = n_segments * segment_size;
 
   std::vector<int> host_keys_int = generate<int>(n_elems);
-  std::vector<key_t> host_keys(n_elems);
-  std::transform(host_keys_int.begin(), host_keys_int.end(), host_keys.begin(), [](int x) {
-    return static_cast<key_t>(x);
-  });
+  std::vector<key_t> host_keys(host_keys_int.begin(), host_keys_int.end());
   std::vector<int> host_values_int = generate<int>(n_elems);
-  std::vector<item_t> host_values(n_elems);
-  std::transform(host_values_int.begin(), host_values_int.end(), host_values.begin(), [](int x) {
-    return static_cast<item_t>(x);
-  });
+  std::vector<item_t> host_values(host_values_int.begin(), host_values_int.end());
 
   std::vector<key_t> host_keys_out(n_elems);
   std::vector<item_t> host_values_out(n_elems);
@@ -331,11 +327,12 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
 
   pointer_t<key_t> keys_in_ptr(host_keys);
   pointer_t<key_t> keys_out_ptr(host_keys_out);
+
   pointer_t<item_t> values_in_ptr(host_values);
   pointer_t<item_t> values_out_ptr(host_values_out);
 
-  using SizeT                                     = unsigned long long;
-  static constexpr std::string_view index_ty_name = "unsigned long long";
+  using SizeT                                     = signed long long;
+  static constexpr std::string_view index_ty_name = "signed long long";
 
   struct segment_offset_iterator_state_t
   {
@@ -367,6 +364,12 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
   end_offset_it.state.linear_id    = 1;
   end_offset_it.state.segment_size = segment_size;
 
+  // Provide host-advance callbacks for offset iterators
+  auto start_offsets_cccl         = static_cast<cccl_iterator_t>(start_offset_it);
+  auto end_offsets_cccl           = static_cast<cccl_iterator_t>(end_offset_it);
+  start_offsets_cccl.host_advance = &host_advance_linear_id<segment_offset_iterator_state_t>;
+  end_offsets_cccl.host_advance   = &host_advance_linear_id<segment_offset_iterator_state_t>;
+
   auto& build_cache             = get_cache<SegmentedSort_KeyValuePairs_Fixture_Tag>();
   const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
@@ -374,6 +377,8 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
+
+  int selector = -1;
 
   segmented_sort(
     order,
@@ -383,15 +388,15 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
     values_out_ptr,
     n_elems,
     n_segments,
-    start_offset_it,
-    end_offset_it,
+    start_offsets_cccl,
+    end_offsets_cccl,
     is_overwrite_okay,
     &selector,
     build_cache,
     test_key);
 
   // Create expected result by sorting each segment with key-value pairs
-  std::vector<std::pair<key_t, item_t>> key_value_pairs;
+  std::vector<std::pair<key_t, item_t>> key_value_pairs(n_elems);
   for (std::size_t i = 0; i < n_elems; ++i)
   {
     key_value_pairs.emplace_back(host_keys[i], host_values[i]);
@@ -458,11 +463,10 @@ C2H_TEST("SegmentedSort works with custom types as keys", "[segmented_sort][cust
   using T     = c2h::get<0, TestType>;
   using key_t = custom_pair;
 
-  constexpr auto this_test_params = T();
-  const bool is_descending        = this_test_params.is_descending();
-  const auto order                = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  const bool is_overwrite_okay    = this_test_params.is_overwrite_okay();
-  int selector                    = -1;
+  constexpr auto this_test_params  = T();
+  constexpr bool is_descending     = this_test_params.is_descending();
+  constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
 
   const std::size_t n_segments   = 25;
   const std::size_t segment_size = 20;
@@ -509,6 +513,8 @@ C2H_TEST("SegmentedSort works with custom types as keys", "[segmented_sort][cust
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
+
+  int selector = -1;
 
   segmented_sort(
     order,
@@ -611,11 +617,10 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   using T     = c2h::get<0, TestType>;
   using key_t = std::int32_t;
 
-  constexpr auto this_test_params = T();
-  const bool is_descending        = this_test_params.is_descending();
-  const auto order                = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  const bool is_overwrite_okay    = this_test_params.is_overwrite_okay();
-  int selector                    = -1;
+  constexpr auto this_test_params  = T();
+  constexpr bool is_descending     = this_test_params.is_descending();
+  constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
 
   const std::size_t n_segments = 20;
 
@@ -687,6 +692,8 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
+
+  int selector = -1;
 
   segmented_sort(
     order,
