@@ -4,8 +4,6 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
-#include "include/host_device.h"
-
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
 
@@ -30,7 +28,7 @@ struct bbox
   // construct an empty box
   __host__ __device__ bbox() {}
 
-  // construct a box from a single point
+  // construct a box from a single pointgit branch -a
   __host__ __device__ bbox(const point2d& point)
       : lower_left(point)
       , upper_right(point)
@@ -54,7 +52,7 @@ struct bbox
 };
 
 // reduce a pair of bounding boxes (a,b) to a bounding box containing a and b
-struct bbox_reduction
+struct bbox_union
 {
   __host__ __device__ bbox operator()(bbox a, bbox b)
   {
@@ -68,31 +66,38 @@ struct bbox_reduction
   }
 };
 
+// functor to generate random points
+struct random_point_generator
+{
+  mutable thrust::default_random_engine rng;
+  mutable thrust::uniform_real_distribution<float> u01;
+
+  random_point_generator()
+      : rng(0)
+      , u01(0.0f, 1.0f)
+  {}
+
+  __host__ __device__ point2d operator()() const
+  {
+    return point2d(u01(rng), u01(rng));
+  }
+};
+
 int main()
 {
   const size_t N = 40;
-  thrust::default_random_engine rng;
-  thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
 
   // allocate storage for points
   thrust::device_vector<point2d> points(N);
 
   // generate some random points in the unit square
-  for (size_t i = 0; i < N; i++)
-  {
-    float x   = u01(rng);
-    float y   = u01(rng);
-    points[i] = point2d(x, y);
-  }
+  thrust::generate(points.begin(), points.end(), random_point_generator());
 
   // initial bounding box contains first point
-  bbox init = bbox(points[0], points[0]);
-
-  // binary reduction operation
-  bbox_reduction binary_op;
+  bbox init(points[0], points[0]);
 
   // compute the bounding box for the point set
-  bbox result = thrust::reduce(points.begin(), points.end(), init, binary_op);
+  bbox result = thrust::reduce(points.begin(), points.end(), init, bbox_union{});
 
   // print output
   std::cout << "bounding box " << std::fixed;

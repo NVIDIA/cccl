@@ -1,11 +1,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/inner_product.h>
 #include <thrust/reduce.h>
 
 #include <iostream>
-
-#include "include/host_device.h"
 
 // This example computes the number of words in a text sample
 // with a single call to thrust::inner_product.  The algorithm
@@ -70,7 +69,8 @@ int main()
   std::cout << raw_input << std::endl;
 
   // transfer to device
-  thrust::device_vector<char> input(raw_input, raw_input + sizeof(raw_input));
+  thrust::host_vector<char> h_input(raw_input, raw_input + sizeof(raw_input));
+  thrust::device_vector<char> input(h_input);
 
   // count words
   int wc = word_count(input);

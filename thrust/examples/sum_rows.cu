@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include "include/host_device.h"
-
 // convert a linear index to a row index
 template <typename T>
 struct linear_index_to_row_index
@@ -33,11 +31,11 @@ int main()
   thrust::uniform_int_distribution<int> dist(10, 99);
 
   // initialize data
-  thrust::device_vector<int> array(R * C);
-  for (size_t i = 0; i < array.size(); i++)
-  {
-    array[i] = dist(rng);
-  }
+  thrust::host_vector<int> host_array(R * C);
+  thrust::generate(host_array.begin(), host_array.end(), [&]() {
+    return dist(rng);
+  });
+  thrust::device_vector<int> array = host_array;
 
   // allocate storage for row sums and indices
   thrust::device_vector<int> row_sums(R);
@@ -54,10 +52,10 @@ int main()
     ::cuda::std::plus<int>());
 
   // print data
-  for (int i = 0; i < R; i++)
+  for (size_t i = 0; i < static_cast<size_t>(R); i++)
   {
     std::cout << "[ ";
-    for (int j = 0; j < C; j++)
+    for (size_t j = 0; j < static_cast<size_t>(C); j++)
     {
       std::cout << array[i * C + j] << " ";
     }
