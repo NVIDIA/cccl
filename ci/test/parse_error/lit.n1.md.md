@@ -1,1 +1,0 @@
-- `lit-tests :: xpass.test`: `XPASS`

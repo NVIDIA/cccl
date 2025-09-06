@@ -1,0 +1,14 @@
+[
+  {
+    "file": "d.cu",
+    "line": "4",
+    "msg": "error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "abs_filepath": "d.cu",
+    "rel_filepath": "d.cu",
+    "filename": "d.cu",
+    "full": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "context": "\u26a0\ufe0f\nd.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks\na.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"a.cu\".",
+    "location": "d.cu:4",
+    "summary": "`d.cu:4`: `error: this is a very long error message that should be truncated...`"
+  }
+]

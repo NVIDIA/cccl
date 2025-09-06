@@ -1,3 +1,0 @@
-- `a.cpp:2`: `error: expected ';' at end of declaration`
-- `b.cpp:2`: `error: expected ';' at end of declaration`
-- `c.cpp:2`: `error: use of undeclared identifier 'y'`

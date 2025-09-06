@@ -1,0 +1,14 @@
+[
+  {
+    "file": "a.cpp",
+    "line": "2",
+    "msg": "error: expected ';' at end of declaration",
+    "abs_filepath": "a.cpp",
+    "rel_filepath": "a.cpp",
+    "filename": "a.cpp",
+    "full": "a.cpp:2:14: error: expected ';' at end of declaration",
+    "context": "\u26a0\ufe0f\na.cpp:2:14: error: expected ';' at end of declaration",
+    "location": "a.cpp:2",
+    "summary": "`a.cpp:2`: `error: expected ';' at end of declaration`"
+  }
+]

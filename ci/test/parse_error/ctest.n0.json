@@ -1,0 +1,74 @@
+[
+  {
+    "file": "fail1.cpp",
+    "line": "10",
+    "msg": "error: first",
+    "abs_filepath": "fail1.cpp",
+    "rel_filepath": "fail1.cpp",
+    "filename": "fail1.cpp",
+    "full": "fail1.cpp:10: error: first",
+    "context": "\u26a0\ufe0f\nfail1.cpp:10: error: first",
+    "location": "fail1.cpp:10",
+    "summary": "`fail1.cpp:10`: `error: first`"
+  },
+  {
+    "file": "fail2.cpp",
+    "line": "20",
+    "msg": "error: second",
+    "abs_filepath": "fail2.cpp",
+    "rel_filepath": "fail2.cpp",
+    "filename": "fail2.cpp",
+    "full": "fail2.cpp:20: error: second",
+    "context": "\u26a0\ufe0f\nfail2.cpp:20: error: second",
+    "location": "fail2.cpp:20",
+    "summary": "`fail2.cpp:20`: `error: second`"
+  },
+  {
+    "file": "fail1.cpp",
+    "line": "10",
+    "msg": "error: first",
+    "abs_filepath": "fail1.cpp",
+    "rel_filepath": "fail1.cpp",
+    "filename": "fail1.cpp",
+    "full": "fail1.cpp:10: error: first",
+    "context": "\u26a0\ufe0f\nfail1.cpp:10: error: first",
+    "location": "fail1.cpp:10",
+    "summary": "`fail1.cpp:10`: `error: first`"
+  },
+  {
+    "line": "1",
+    "file": "fail1",
+    "msg": "Failed",
+    "abs_filepath": "fail1",
+    "rel_filepath": "fail1",
+    "filename": "fail1",
+    "full": "\t  1 - fail1 (Failed)",
+    "context": "\t  \u26a0\ufe0f\n\t  1 - fail1 (Failed)",
+    "location": "fail1:1",
+    "summary": "`fail1:1`: `Failed`"
+  },
+  {
+    "line": "2",
+    "file": "fail2",
+    "msg": "Failed",
+    "abs_filepath": "fail2",
+    "rel_filepath": "fail2",
+    "filename": "fail2",
+    "full": "\t  2 - fail2 (Failed)",
+    "context": "\t  \u26a0\ufe0f\n\t  2 - fail2 (Failed)",
+    "location": "fail2:2",
+    "summary": "`fail2:2`: `Failed`"
+  },
+  {
+    "line": "3",
+    "file": "fail1_dup",
+    "msg": "Failed",
+    "abs_filepath": "fail1_dup",
+    "rel_filepath": "fail1_dup",
+    "filename": "fail1_dup",
+    "full": "\t  3 - fail1_dup (Failed)",
+    "context": "\t  \u26a0\ufe0f\n\t  3 - fail1_dup (Failed)",
+    "location": "fail1_dup:3",
+    "summary": "`fail1_dup:3`: `Failed`"
+  }
+]

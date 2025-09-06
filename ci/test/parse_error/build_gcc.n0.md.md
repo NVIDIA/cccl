@@ -1,3 +1,0 @@
-- `a.cpp:3`: `error: expected ‘,’ or ‘;’ before ‘}’ token`
-- `b.cpp:3`: `error: expected ‘,’ or ‘;’ before ‘}’ token`
-- `c.cpp:2`: `error: ‘y’ was not declared in this scope`

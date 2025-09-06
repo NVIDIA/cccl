@@ -1,1 +1,0 @@
-- `a.cpp:3`: `error: expected ‘,’ or ‘;’ before ‘}’ token`

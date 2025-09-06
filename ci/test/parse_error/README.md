@@ -13,14 +13,14 @@
 
 - `*.log`: Minimal sample logs for common failure modes:
   - `configure*.log` — CMake configure diagnostics
-  - `build_{clang,gcc,nvcc,etc}*.log` — compiler diagnostics
+  - `build.<tool>*.log` — compiler diagnostics (e.g., `build.clang.log`, `build.gcc.log`, `build.nvcc.log`, `build.nvcc.context.log`)
   - `ctest*.log` — CTest summary lines
   - `lit*.log` — LLVM lit failures and diagnostics
 - `*.n{0|1}.{fmt}.{ext}`: Reference outputs produced by `parse_error.py` for
   each log, format, and `-n` setting used by the tests.
-  - Formats: `md`, `gh`, `json`.
-  - Extensions: `.md` for `md` and `gh`; `.json` for `json`.
-  - Examples: `build_clang.n1.md.md`, `build_clang.n0.gh.md`, `build_clang.n0.json.json`.
+  - Formats: `md`, `json`.
+  - Extensions: `.md` for `md`; `.json` for `json` (single extension).
+  - Examples: `build.clang.n1.md`, `build.clang.n0.json`.
   - `nN`: `-n` arg; report first N errors; 0 is unlimited.
 - `run_tests.py`: Enumerates all `*.log` files, runs `parse_error.py` with
   `-n 1` and `-n 0` across all formats, and compares the results to the
@@ -42,8 +42,8 @@
 ## Output formats
 
 - `--format md`: One line per match, ``- `file:line`: `message```.
-- `--format gh`: GitHub Step Summary sections with a short, truncated summary
-  (80‑char limit, see `SUMMARY_LIMIT`) and a `<pre>` body showing the raw line.
+- `--format md`: Plain Markdown with a shared summary line, a Location line,
+  and a preformatted Full Error context block.
 - `--format json`: JSON array of captured groups per match (`file`, `line`,
   `msg`, `full`).
 
@@ -87,9 +87,9 @@
      - Markdown (`-n 1` then `-n 0`):
        - `python3 "ci/util/parse_error.py" --format md -n 1 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n1.md.md"`
        - `python3 "ci/util/parse_error.py" --format md -n 0 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n0.md.md"`
-     - GitHub summary:
-       - `python3 "ci/util/parse_error.py" --format gh -n 1 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n1.gh.md"`
-       - `python3 "ci/util/parse_error.py" --format gh -n 0 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n0.gh.md"`
+     - Markdown:
+       - `python3 "ci/util/parse_error.py" --format md -n 1 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n1.md.md"`
+       - `python3 "ci/util/parse_error.py" --format md -n 0 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n0.md.md"`
      - JSON:
        - `python3 "ci/util/parse_error.py" --format json -n 1 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n1.json.json"`
        - `python3 "ci/util/parse_error.py" --format json -n 0 "ci/test/parse_error/mycase.log" > "ci/test/parse_error/mycase.n0.json.json"`
@@ -99,9 +99,8 @@
    ```bash
    for log in ci/test/parse_error/*.log; do base=$(basename "$log" .log); \
      for n in 1 0; do \
-       python3 "ci/util/parse_error.py" --format md   -n "$n" "$log" > "ci/test/parse_error/${base}.n${n}.md.md"; \
-       python3 "ci/util/parse_error.py" --format gh   -n "$n" "$log" > "ci/test/parse_error/${base}.n${n}.gh.md"; \
-       python3 "ci/util/parse_error.py" --format json -n "$n" "$log" > "ci/test/parse_error/${base}.n${n}.json.json"; \
+       python3 "ci/util/parse_error.py" --format md   -n "$n" "$log" > "ci/test/parse_error/${base}.n${n}.md"; \
+       python3 "ci/util/parse_error.py" --format json -n "$n" "$log" > "ci/test/parse_error/${base}.n${n}.json"; \
       done; \
     done
     ```

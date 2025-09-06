@@ -8,11 +8,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-FORMATS = {"md": ".md", "gh": ".md", "json": ".json"}
+FORMATS = {"md": "", "json": ""}
 
-# Intentional error:
-if 1 = 2:
-    print("This won't run")
+# Intentional error (kept commented to avoid breaking tests):
+# if 1 == 2:
+#     print("This won't run")
+
 
 def main() -> int:
     root = Path(__file__).parent
@@ -23,7 +24,8 @@ def main() -> int:
         base = log.stem
         for fmt, ext in FORMATS.items():
             for n in (1, 0):
-                ref = root / f"{base}.n{n}.{fmt}{ext}"
+                # New filenames drop the duplicated extension: use '.md' or '.json' only once
+                ref = root / f"{base}.n{n}.{fmt}"
                 if not ref.exists():
                     print(f"missing reference: {ref}")
                     ok = False
@@ -41,8 +43,8 @@ def main() -> int:
                 output = result.stdout
                 expected = ref.read_text()
                 label = f"{fmt}, n{n}"
-                # Be lenient for JSON: actual may include extra fields.
                 if fmt == "json":
+                    # Lenient JSON compare: allow extra fields; enforce all expected keys/values
                     try:
                         got = json.loads(output)
                         want = json.loads(expected)
@@ -55,10 +57,13 @@ def main() -> int:
                                         f"key {k} mismatch: {g.get(k)} != {v}"
                                     )
                         print(f"{log.name} ({label}) ok")
-                        continue
                     except Exception as e:
-                        print(f"json compare failed for {log.name} ({label}): {e}")
-                        # fall through to raw compare for debugging output
+                        print(f"mismatch for {log.name} ({label})")
+                        print(f"json compare failed: {e}")
+                        print("--- expected ---\n" + expected + "--- got ---\n" + output)
+                        ok = False
+                    continue
+                # Markdown: raw compare only
                 if output != expected:
                     print(f"mismatch for {log.name} ({label})")
                     print("--- expected ---\n" + expected + "--- got ---\n" + output)
@@ -66,7 +71,7 @@ def main() -> int:
                 else:
                     print(f"{log.name} ({label}) ok")
 
-    # Multi-file order check
+    # Multi-file order check for Markdown output
     multi_cmd = [
         sys.executable,
         str(script),
@@ -74,12 +79,12 @@ def main() -> int:
         "0",
         "--format",
         "md",
-        str(root / "configure.log"),
-        str(root / "build_clang.log"),
+        str(root / "ctest.log"),
+        str(root / "build.clang.log"),
     ]
     result = subprocess.run(multi_cmd, capture_output=True, text=True, check=True)
-    expected_multi = (root / "configure.n0.md.md").read_text() + (
-        root / "build_clang.n0.md.md"
+    expected_multi = (root / "ctest.n0.md").read_text() + (
+        root / "build.clang.n0.md"
     ).read_text()
     if result.stdout != expected_multi:
         print("mismatch for multi-file md output")

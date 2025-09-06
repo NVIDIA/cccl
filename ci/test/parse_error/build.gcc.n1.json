@@ -1,0 +1,14 @@
+[
+  {
+    "file": "a.cpp",
+    "line": "3",
+    "msg": "error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "abs_filepath": "a.cpp",
+    "rel_filepath": "a.cpp",
+    "filename": "a.cpp",
+    "full": "a.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "context": "\u26a0\ufe0f\na.cpp:3:1: error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token",
+    "location": "a.cpp:3",
+    "summary": "`a.cpp:3`: `error: expected \u2018,\u2019 or \u2018;\u2019 before \u2018}\u2019 token`"
+  }
+]

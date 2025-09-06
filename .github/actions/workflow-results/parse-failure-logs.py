@@ -130,9 +130,9 @@ def main():
             "url": url,
         }
 
-    # errors[project][summary] -> { full, jobs:set(), location }
+    # errors[project][summary] -> { full, context, jobs:set(), location, file, abs }
     errors = defaultdict(
-        lambda: defaultdict(lambda: {"full": "", "jobs": set(), "location": ""})
+        lambda: defaultdict(lambda: {"full": "", "context": "", "jobs": set(), "location": "", "file": "", "abs": ""})
     )
     unmatched = defaultdict(set)
 
@@ -150,15 +150,22 @@ def main():
             match = _first_match_via_parser(parser, Path(log_path))
             if match:
                 found = True
-                filepath = match.get("rel_filepath") or match.get("file", "")
-                line_no = match.get("line", "")
+                filepath = (match.get("rel_filepath") or match.get("file", "") or "").strip()
+                abs_path = (match.get("abs_filepath") or "").strip()
+                line_no = (match.get("line", "") or "").strip()
                 summary = (match.get("summary") or "").strip()
                 location = f"{filepath}:{line_no}".strip(":")
                 entry = errors[info["project"]][summary]
                 if not entry["full"]:
                     entry["full"] = match.get("full", "")
+                if not entry["context"]:
+                    entry["context"] = match.get("context", "") or match.get("full", "")
                 if not entry["location"]:
                     entry["location"] = location
+                if not entry["file"]:
+                    entry["file"] = filepath
+                if not entry["abs"]:
+                    entry["abs"] = abs_path
                 entry["jobs"].add((info.get("display", info["name"]), info["url"]))
                 break
             if found:
@@ -171,24 +178,79 @@ def main():
     if not errors and not unmatched:
         return
 
-    print("<details><summary><h3>🚨 Failure log</h3></summary>\n")
+    print("<details><summary><h2>🚨 Failure Log</h2></summary>\n")
+    # Build repo/SHA context for deep links to file locations in GitHub UI.
+    repo = (os.environ.get("GITHUB_REPOSITORY") or "NVIDIA/cccl").strip()
+    sha = (os.environ.get("GITHUB_SHA") or "").strip()
+    # Collect compact error rows for PR comment
+    compact_rows: list[str] = []
     for project in sorted(errors):
-        print(f"<details><summary><h4>📄 {project}</h4></summary>\n")
+        print(f"<details><summary><h3>📄 {project}</h3></summary>\n")
         for summary in sorted(errors[project]):
             data = errors[project][summary]
             heading = textwrap.shorten(summary, width=120, placeholder="...")
-            print(f"<details><summary><h5>⚠️ {heading}</h5></summary>\n")
+            print(f"<details><summary><h4>⚠️ {heading}</h4></summary>\n")
             if data.get("location"):
-                print(f"<p><code>{data['location']}</code></p>")
+                # Try to build a deep link to the file and line on GitHub.
+                loc_disp = data["location"].strip()
+                loc_file = data.get("file", "").strip()
+                # Extract line from the displayed location if possible.
+                line = ""
+                if ":" in loc_disp:
+                    try:
+                        line = loc_disp.rsplit(":", 1)[1].strip()
+                    except Exception:
+                        line = ""
+                if repo and sha and loc_file and line:
+                    url = f"https://github.com/{repo}/blob/{sha}/{loc_file}#L{line}"
+                    print(f"📍 Location: [`{loc_disp}`]({url})\n")
+                else:
+                    # Fallback to plain text if any component is missing.
+                    print(f"📍 Location: `{loc_disp}`\n")
+
+            # Nested details for Full Error context
+            print("<details><summary>🔍 Full Error</summary>\n")
             print("<pre>")
-            print(data["full"])
-            print("</pre>\n")
+            print(data.get("context") or data.get("full") or "")
+            print("</pre>\n</details>\n")
+
+            # Non-collapsed Links section (placed after Full Error)
+            print("🔗 Links:")
             for job_name, url in sorted(data["jobs"], key=lambda x: x[0]):
                 if url:
                     print(f"- [{job_name}]({url})")
                 else:
                     print(f"- {job_name}")
+            print("")
             print("\n</details>\n")
+
+            # Build compact row: "<project>: <summary> [log] [loc]"
+            # Choose last job alphabetically by display name
+            job_link = "[log]"
+            if data["jobs"]:
+                last_job = sorted(data["jobs"], key=lambda x: x[0])[-1]
+                _, job_url = last_job
+                if job_url:
+                    job_link = f"[log]({job_url})"
+            # Deep link for loc
+            loc_disp = data.get("location", "").strip()
+            loc_file = data.get("file", "").strip()
+            line = ""
+            if ":" in loc_disp:
+                try:
+                    line = loc_disp.rsplit(":", 1)[1].strip()
+                except Exception:
+                    line = ""
+            loc_link = "[loc]"
+            if repo and sha and loc_file and line:
+                # Verify the file exists in the source tree (not build tree)
+                workspace = os.environ.get("GITHUB_WORKSPACE") or os.getcwd()
+                candidate = os.path.join(workspace, loc_file.lstrip("/"))
+                is_build_path = loc_file.split("/", 1)[0] == "build"
+                if os.path.isfile(candidate) and not is_build_path:
+                    loc_url = f"https://github.com/{repo}/blob/{sha}/{loc_file}#L{line}"
+                    loc_link = f"[loc]({loc_url})"
+            compact_rows.append(f"{project}: {summary} {job_link} {loc_link}")
         print("</details>\n")
     if unmatched:
         for project in sorted(unmatched):
@@ -200,6 +262,15 @@ def main():
                     print(f"- {job_name}")
             print("\n</details>\n")
     print("</details>")
+
+    # Write compact rows for PR comment consumption
+    try:
+        os.makedirs("workflow", exist_ok=True)
+        with open("workflow/errors_list.md", "w") as f:
+            for row in compact_rows:
+                f.write(row + "\n")
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
