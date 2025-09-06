@@ -41,8 +41,8 @@ namespace cuda::experimental
 {
 using ::cuda::std::decay_t;
 
-template <class _Ty>
-using __declfn = _Ty && (*) () noexcept;
+template <class _Ty, bool _Nothrow = true>
+using __declfn = _Ty (*)() noexcept(_Nothrow);
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;

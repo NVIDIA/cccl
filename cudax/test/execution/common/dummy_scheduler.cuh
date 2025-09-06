@@ -52,7 +52,7 @@ struct _sndr_t
   using sender_concept = ex::sender_t;
 
   template <class Self>
-  _CCCL_HOST_DEVICE static constexpr auto get_completion_signatures() noexcept
+  _CCCL_HOST_DEVICE static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     return ex::completion_signatures<ex::set_value_t()>();
   }

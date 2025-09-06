@@ -100,7 +100,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr>
-  [[nodiscard]] static _CCCL_API constexpr auto transform_sender(_Sndr&& __sndr, ::cuda::std::__ignore_t)
+  [[nodiscard]] static _CCCL_API constexpr auto transform_sender(start_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
     auto&& [__ign, __sch, __child] = __sndr;
     return sequence(continues_on(just(), __sch), ::cuda::std::forward_like<_Sndr>(__child));
@@ -220,16 +220,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 template <class _Sch, class _Sndr>
 [[nodiscard]] _CCCL_NODEBUG_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
-  if constexpr (__callable<get_completion_domain_t<set_value_t>, _Sch>)
-  {
-    constexpr auto __domain = __call_result_t<get_completion_domain_t<set_value_t>, _Sch>{};
-    return execution::transform_sender(
-      __domain, __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
-  }
-  else
-  {
-    return __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)};
-  }
+  return __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)};
 }
 
 template <class _Sch, class _Sndr>
