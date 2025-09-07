@@ -12,6 +12,8 @@
 
 int main()
 {
+  static_assert(1 == 9, "Intentional error to test CI error reporting");
+
   printf("Expected version: %d\n"
          "Detected version: %d\n",
          EXPECTED_VERSION,
