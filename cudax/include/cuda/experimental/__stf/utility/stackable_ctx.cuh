@@ -1896,6 +1896,16 @@ template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep
 {
 public:
+  // STF-compatible typedefs (required by parallel_for_scope and other STF templates)
+  using data_t      = T;
+  using dep_type    = T;
+  using op_and_init = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type     = reduce_op;
+  enum : bool
+  {
+    does_work = !::std::is_same_v<reduce_op, ::std::monostate>
+  };
+
   stackable_task_dep(stackable_logical_data<T> _d, task_dep<T, reduce_op, initialize> _dep)
       : d(mv(_d))
       , dep(mv(_dep))
