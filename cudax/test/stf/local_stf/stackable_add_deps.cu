@@ -10,8 +10,10 @@
 
 /**
  * @file
- * @brief Ensure we can use the same logical data multiple times in the same
- *        task even with different access modes (which should be combined)
+ * @brief Ensure we can use the add_deps mechanism on tasks in stackable contexts.
+ *        This test verifies that dependencies can be added one by one to tasks
+ *        using add_deps() in stackable contexts, with proper automatic data
+ *        pushing and validation.
  */
 
 #include <cuda/experimental/__stf/utility/stackable_ctx.cuh>
