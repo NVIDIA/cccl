@@ -118,13 +118,13 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 // We use this macro to ignore the result of required expressions. It is needed because
 // gcc < 10 complains about ignored [[nodiscard]] expressions when emulating concepts.
 #if _CCCL_COMPILER(GCC, <, 10)
-#  define _CCCL_REQUIRES_IGNORE_RESULT(...) static_cast<void>(__VA_ARGS__)
+#  define _CCCL_CONCEPT_IGNORE_RESULT_(...) static_cast<void>(__VA_ARGS__)
 #else
-#  define _CCCL_REQUIRES_IGNORE_RESULT(...) __VA_ARGS__
+#  define _CCCL_CONCEPT_IGNORE_RESULT_(...) __VA_ARGS__
 #endif
 
 #define _CCCL_CONCEPT_FRAGMENT_REQS_M0(_REQ) _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
-#define _CCCL_CONCEPT_FRAGMENT_REQS_M1(_REQ) _CCCL_REQUIRES_IGNORE_RESULT _REQ
+#define _CCCL_CONCEPT_FRAGMENT_REQS_M1(_REQ) _CCCL_CONCEPT_IGNORE_RESULT_ _REQ
 #define _CCCL_CONCEPT_FRAGMENT_REQS_(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
 #define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)    \
   _CCCL_PP_CAT3(_CCCL_CONCEPT_FRAGMENT_REQS_SELECT_, \
@@ -135,7 +135,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_typename _CCCL_PP_PROBE_N(~, 3)
 #define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE__Same_as _CCCL_PP_PROBE_N(~, 4)
 
-#define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_0 _CCCL_REQUIRES_IGNORE_RESULT
+#define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_0 _CCCL_CONCEPT_IGNORE_RESULT_
 #define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_1 _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
 #define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_2 _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
 #define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_3 _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
@@ -203,10 +203,10 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  if _CCCL_COMPILER(GCC, <, 14)
 // GCC < 14 can't mangle noexcept expressions, so just check that the expression is
 // well-formed. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790.
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) _CCCL_REQUIRES_IGNORE_RESULT(__VA_ARGS__)
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) _CCCL_CONCEPT_IGNORE_RESULT_(__VA_ARGS__)
 #  else
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) \
-      ::__cccl_requires<noexcept(_CCCL_REQUIRES_IGNORE_RESULT(__VA_ARGS__))>
+      ::__cccl_requires<noexcept(_CCCL_CONCEPT_IGNORE_RESULT_(__VA_ARGS__))>
 #  endif
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
     ::__cccl_requires<                              \
