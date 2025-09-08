@@ -171,6 +171,7 @@ template <class... Types>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -414,7 +415,7 @@ public:
 };
 
 template <size_t _Ip, class _Hp>
-class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private _Hp
+class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private remove_const_t<_Hp>
 {
 public:
   _CCCL_EXEC_CHECK_DISABLE
