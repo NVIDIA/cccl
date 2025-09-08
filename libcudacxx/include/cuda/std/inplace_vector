@@ -737,7 +737,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value _CCCL_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_REQUIRES(__has_input_traversal<_Iter> _CCCL_AND(!__has_forward_traversal<_Iter>))
   _CCCL_API constexpr inplace_vector(_Iter __first, _Iter __last)
       : __base()
   {
@@ -748,7 +748,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_REQUIRES(__has_forward_traversal<_Iter>)
   _CCCL_API constexpr inplace_vector(_Iter __first, _Iter __last)
       : __base()
   {
@@ -874,7 +874,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value _CCCL_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_REQUIRES(__has_input_traversal<_Iter> _CCCL_AND(!__has_forward_traversal<_Iter>))
   _CCCL_API constexpr void assign(_Iter __first, _Iter __last)
   {
     iterator __end = this->end();
@@ -895,7 +895,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_REQUIRES(__has_forward_traversal<_Iter>)
   _CCCL_API constexpr void assign(_Iter __first, _Iter __last)
   {
     const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
@@ -1183,7 +1183,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value _CCCL_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_REQUIRES(__has_input_traversal<_Iter> _CCCL_AND(!__has_forward_traversal<_Iter>))
   _CCCL_API constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
     // add all new elements to the back then rotate
@@ -1199,7 +1199,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_REQUIRES(__has_forward_traversal<_Iter>)
   _CCCL_API constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
     const auto __pos   = static_cast<size_type>(__cpos - this->cbegin());
@@ -1739,7 +1739,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _CCCL_REQUIRES(__has_input_traversal<_Iter>)
   _CCCL_API constexpr inplace_vector(_Iter __first, _Iter __last)
       : __base()
   {
@@ -1789,7 +1789,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _CCCL_REQUIRES(__has_input_traversal<_Iter>)
   _CCCL_API constexpr void assign(_Iter __first, _Iter __last)
   {
     if (__first != __last)
@@ -1945,7 +1945,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _CCCL_REQUIRES(__has_input_traversal<_Iter>)
   _CCCL_API constexpr iterator insert(const_iterator, _Iter __first, _Iter __last)
   {
     if (__first != __last)

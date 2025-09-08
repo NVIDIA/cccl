@@ -115,6 +115,7 @@ __host__ __device__ void test()
     static_assert(sizeof(Iter::difference_type) > sizeof(char));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
     using Iter = cuda::counting_iterator<short>;
@@ -124,6 +125,7 @@ __host__ __device__ void test()
     static_assert(sizeof(Iter::difference_type) > sizeof(short));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
     using Iter = cuda::counting_iterator<int>;
@@ -139,6 +141,7 @@ __host__ __device__ void test()
 #else
     static_assert(cuda::std::same_as<Iter::difference_type, long>);
 #endif
+    static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
     using Iter = cuda::counting_iterator<long>;
@@ -149,6 +152,7 @@ __host__ __device__ void test()
     static_assert(sizeof(Iter::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
     using Iter = cuda::counting_iterator<long long>;
@@ -160,6 +164,7 @@ __host__ __device__ void test()
     static_assert(sizeof(Iter::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
     static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
     using Iter = cuda::counting_iterator<Decrementable>;
