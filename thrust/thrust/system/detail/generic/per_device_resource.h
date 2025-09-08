@@ -30,11 +30,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename MR, typename DerivedPolicy>
@@ -43,7 +39,5 @@ _CCCL_HOST MR* get_per_device_resource(thrust::detail::execution_policy_base<Der
   return mr::get_global_resource<MR>();
 }
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -30,11 +30,7 @@
 #include <thrust/transform_reduce.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename InputType, typename Predicate, typename CountType>
@@ -84,7 +80,5 @@ count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inp
   return thrust::transform_reduce(exec, first, last, unary_op, CountType(0), binary_op);
 } // end count_if()
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

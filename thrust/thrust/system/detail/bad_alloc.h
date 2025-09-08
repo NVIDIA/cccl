@@ -30,9 +30,7 @@
 #include <string>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
+namespace system::detail
 {
 
 // define our own bad_alloc so we can set its .what()
@@ -59,6 +57,5 @@ private:
   std::string m_what;
 }; // end bad_alloc
 
-} // namespace detail
-} // namespace system
+} // namespace system::detail
 THRUST_NAMESPACE_END
