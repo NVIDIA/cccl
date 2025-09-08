@@ -164,28 +164,6 @@ runs:
         ) | tee -a "${GITHUB_STEP_SUMMARY}"
         echo "::endgroup::"
 
-        # Keep this brief -- github notification emails don't collapse <details>.
-        # Just link to the summary where the above step summary will be available.
-        echo "::group::PR Comment"
-        (
-          echo "## ⏳ CI Workflow Running"
-          echo ""
-          echo "$num_jobs jobs submitted. See progress [here]($(cat workflow/summary_url.txt))."
-        ) | tee pr_comment.md
-        echo "::endgroup::"
-
-    - name: Comment on PR
-      if: ${{ inputs.pr_number != '' && inputs.github_token != ''}}
-      continue-on-error: true
-      uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-      with:
-        github_token: ${{ inputs.github_token }}
-        header: ci-results
-        number: ${{ inputs.pr_number }}
-        path: pr_comment.md
-        hide_and_recreate: true
-        hide_classify: "OUTDATED"
-
     - name: Create dispatch workflows
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
