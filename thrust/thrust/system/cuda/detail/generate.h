@@ -15,6 +15,7 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <cub/device/device_transform.cuh>
 
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
 #  include <cuda/std/iterator>
@@ -28,23 +29,23 @@ template <class Derived, class OutputIt, class Size, class Generator>
 OutputIt _CCCL_HOST_DEVICE
 generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Generator generator)
 {
-  using Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate;
-
-  cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
-      CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
-      decltype(count_fixed),
-      ::cuda::std::tuple<>,
-      OutputIt,
-      Predicate,
-      Generator>::dispatch),
-    count,
-    (::cuda::std::tuple<>{}, result, count_fixed, Predicate{}, generator, cuda_cub::stream(policy)));
-  throw_on_error(status, "generate_n: failed inside CUB");
-
-  return result + count;
+  THRUST_CDP_DISPATCH(
+    (using Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate; //
+     cudaError_t status;
+     THRUST_INDEX_TYPE_DISPATCH(
+       status,
+       (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
+         CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
+         decltype(count_fixed),
+         ::cuda::std::tuple<>,
+         OutputIt,
+         Predicate,
+         Generator>::dispatch),
+       count,
+       (::cuda::std::tuple<>{}, result, count_fixed, Predicate{}, generator, cuda_cub::stream(policy)));
+     throw_on_error(status, "generate_n: failed inside CUB");
+     return result + count;),
+    (return thrust::generate_n(cvt_to_seq(derived_cast(policy)), result, count, generator);));
 }
 
 template <class Derived, class OutputIt, class Generator>
