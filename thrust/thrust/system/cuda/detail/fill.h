@@ -37,45 +37,55 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER()
-#  include <thrust/distance.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
+#  include <cub/device/device_transform.cuh>
+
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/util.h>
+
+#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-namespace __fill
+template <typename T>
+struct __return_constant
 {
-// fill functor
-template <class Iterator, class T>
-struct functor
-{
-  Iterator it;
   T value;
 
-  template <class Size>
-  THRUST_DEVICE_FUNCTION void operator()(Size idx)
+  THRUST_DEVICE_FUNCTION auto operator()() const -> T
   {
-    it[idx] = value;
+    return value;
   }
-}; // struct functor
-} // namespace __fill
+};
 
 template <class Derived, class OutputIterator, class Size, class T>
 OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
 {
-  cuda_cub::parallel_for(policy, __fill::functor<OutputIterator, T>{first, value}, count);
+  using Predicate   = ::cub::detail::transform::always_true_predicate;
+  using TransformOp = __return_constant<T>;
 
+  cudaError_t status;
+  THRUST_INDEX_TYPE_DISPATCH(
+    status,
+    (::cub::detail::transform::dispatch_t<::cub::detail::transform::requires_stable_address::no,
+                                          decltype(count_fixed),
+                                          ::cuda::std::tuple<>,
+                                          OutputIterator,
+                                          Predicate,
+                                          TransformOp>::dispatch),
+    count,
+    (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
+  throw_on_error(status, "fill_n: failed inside CUB");
   return first + count;
-} // func fill_n
+}
 
 template <class Derived, class ForwardIterator, class T>
 void _CCCL_HOST_DEVICE
 fill(execution_policy<Derived>& policy, ForwardIterator first, ForwardIterator last, const T& value)
 {
   cuda_cub::fill_n(policy, first, ::cuda::std::distance(first, last), value);
-} // func fill
+}
 
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
