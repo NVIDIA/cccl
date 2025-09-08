@@ -40,13 +40,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-// cooperative groups do not support NVHPC yet
-#if !_CCCL_CUDA_COMPILER(NVHPC)
-#  include <cooperative_groups.h>
-
-#  include <cooperative_groups/memcpy_async.h>
-#endif // !_CCCL_CUDA_COMPILER(NVHPC)
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
