@@ -136,8 +136,8 @@ struct connect_t
 {
   template <class _Sndr, class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(noexcept(transform_sender(declval<_Sndr>(), get_env(__rcvr)).connect(declval<_Rcvr>())))
-      -> decltype(transform_sender(declval<_Sndr>(), get_env(__rcvr)).connect(declval<_Rcvr>()))
+    noexcept(noexcept(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>())))
+      -> decltype(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>()))
   {
     return transform_sender(static_cast<_Sndr&&>(__sndr), get_env(__rcvr)).connect(static_cast<_Rcvr&&>(__rcvr));
   }
