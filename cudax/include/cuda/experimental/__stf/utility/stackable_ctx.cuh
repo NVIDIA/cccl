@@ -1154,6 +1154,11 @@ public:
 template <typename T>
 class stackable_logical_data
 {
+public:
+  /// @brief Alias for `T` - matches logical_data<T> convention
+  using element_type = T;
+
+private:
   class impl
   {
     // We separate the impl and the state so that if the stackable logical data
