@@ -99,6 +99,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     accum_t
 #  if !TUNE_BASE
     ,
+    cuda::std::identity,
     policy_hub_t<accum_t, offset_t>
 #  endif // TUNE_BASE
     >;
