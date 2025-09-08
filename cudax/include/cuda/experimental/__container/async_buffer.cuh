@@ -59,6 +59,10 @@
 namespace cuda::experimental
 {
 
+// Once we add support from options taken from the env we can list them here in addition to using is_same_v
+template <class _Env>
+inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
+
 //! @rst
 //! .. _cudax-containers-async-vector:
 //!
@@ -193,7 +197,8 @@ public:
   //! @brief Constructs an empty async_buffer using an environment
   //! @param __env The environment providing the needed information
   //! @note No memory is allocated.
-  template <class _Env = ::cuda::std::execution::env<>>
+  _CCCL_TEMPLATE(class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(__buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI
   async_buffer(::cuda::stream_ref __stream, __resource_t __resource, [[maybe_unused]] const _Env& __env = {})
       : __buf_(__resource, __stream, 0)
@@ -657,7 +662,8 @@ auto make_async_buffer(
 }
 
 // Empty buffer make function
-template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
+_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(__buffer_compatible_env<_Env>)
 async_buffer<_Tp, _Properties...>
 make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, const _Env& __env = {})
 {
@@ -665,7 +671,8 @@ make_async_buffer(stream_ref __stream, any_resource<_Properties...> __mr, const 
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
+_CCCL_REQUIRES(
+  ::cuda::mr::resource<_Resource> _CCCL_AND __has_default_queries<_Resource> _CCCL_AND __buffer_compatible_env<_Env>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
