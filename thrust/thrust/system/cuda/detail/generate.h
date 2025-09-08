@@ -23,21 +23,23 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIt, class Size, class Generator>
 OutputIt _CCCL_HOST_DEVICE
 generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Generator generator)
 {
-  using Predicate = ::cub::detail::transform::always_true_predicate;
+  using Predicate = CUB_NS_QUALIFIER::detail::transform::always_true_predicate;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (::cub::detail::transform::dispatch_t<::cub::detail::transform::requires_stable_address::no,
-                                          decltype(count_fixed),
-                                          ::cuda::std::tuple<>,
-                                          OutputIt,
-                                          Predicate,
-                                          Generator>::dispatch),
+    (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
+      CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
+      decltype(count_fixed),
+      ::cuda::std::tuple<>,
+      OutputIt,
+      Predicate,
+      Generator>::dispatch),
     count,
     (::cuda::std::tuple<>{}, result, count_fixed, Predicate{}, generator, cuda_cub::stream(policy)));
   throw_on_error(status, "generate_n: failed inside CUB");
