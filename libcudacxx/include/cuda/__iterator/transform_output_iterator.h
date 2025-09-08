@@ -101,8 +101,8 @@ public:
 //! @brief @c transform_output_iterator is a special kind of output iterator which transforms a value written upon
 //! dereference. This iterator is useful for transforming an output from algorithms without explicitly storing the
 //! intermediate result in the memory and applying subsequent transformation, thereby avoiding wasting memory capacity
-//! and bandwidth. Using @c transform_iterator facilitates kernel fusion by expediting execution of transformation to
-//! before the value is written while saving both memory capacity and bandwidth.
+//! and bandwidth. Using @c transform_iterator facilitates kernel fusion by deferring execution of transformation until
+//! the value is written while saving both memory capacity and bandwidth.
 //!
 //! The following code snippet demonstrated how to create a @c transform_output_iterator which applies @c sqrtf to the
 //! assigning value.

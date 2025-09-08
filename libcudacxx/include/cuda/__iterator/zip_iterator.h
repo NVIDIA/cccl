@@ -126,7 +126,7 @@ _CCCL_API constexpr auto __get_zip_view_iterator_tag()
   _CCCL_UNREACHABLE();
 }
 
-//! @brief @c zip_iterator is an iterator which represents @c tuples of iterators. This iterator is useful for creating
+//! @brief @c zip_iterator is an iterator which represents a @c tuple of iterators. This iterator is useful for creating
 //! a virtual array of structures while achieving the same performance and bandwidth as the structure of arrays idiom.
 //! @c zip_iterator also facilitates kernel fusion by providing a convenient means of amortizing the execution of the
 //! same operation over multiple ranges.
@@ -136,26 +136,13 @@ _CCCL_API constexpr auto __get_zip_view_iterator_tag()
 //!
 //! @code
 //! #include <cuda/iterator>
-//! #include <cuda/std/tuple>
 //! #include <thrust/device_vector.h>
-//! ...
+//!
 //! thrust::device_vector<int> int_v{0, 1, 2};
 //! thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
 //! thrust::device_vector<char> char_v{'a', 'b', 'c'};
 //!
-//! // aliases for iterators
-//! using IntIterator   = thrust::device_vector<int>::iterator;
-//! using FloatIterator = thrust::device_vector<float>::iterator;
-//! using CharIterator  = thrust::device_vector<char>::iterator;
-//!
-//! // alias for a tuple of these iterators
-//! using IteratorTuple = cuda::std::tuple<IntIterator, FloatIterator, CharIterator>;
-//!
-//! // alias the zip_iterator of this tuple
-//! using ZipIterator = cuda::zip_iterator<IteratorTuple>;
-//!
-//! // finally, create the zip_iterator
-//! ZipIterator iter(cuda::std::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
+//! cuda::zip_iterator iter{int_v.begin(), float_v.begin(), char_v.begin()};
 //!
 //! *iter;   // returns (0, 0.0f, 'a')
 //! iter[0]; // returns (0, 0.0f, 'a')
@@ -169,9 +156,7 @@ _CCCL_API constexpr auto __get_zip_view_iterator_tag()
 //! // iter[3] is an out-of-bounds error
 //! @endcode
 //!
-//! Defining the type of a @c zip_iterator can be complex. The next code example demonstrates how to use
-//! @c make_zip_iterator function to avoid explicitly specifying the type of the @c zip_iterator. This example shows how
-//! to use @c zip_iterator to copy multiple ranges with a single call to @c thrust::copy.
+//! This example shows how to use @c zip_iterator to copy multiple ranges with a single call to @c thrust::copy.
 //!
 //! @code
 //! #include <cuda/iterator>

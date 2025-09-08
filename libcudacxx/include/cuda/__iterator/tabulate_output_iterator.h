@@ -46,7 +46,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! dereferenced iterator, calls the given callable with the index that corresponds to the offset of the dereferenced
 //! iterator and the assigned value.
 //!
-//! The following code snippet demonstrated how to create a @c tabulate_output_iterator which prints the index and the
+//! The following code snippet demonstrates how to create a @c tabulate_output_iterator which prints the index and the
 //! assigned value.
 //!
 //! @code

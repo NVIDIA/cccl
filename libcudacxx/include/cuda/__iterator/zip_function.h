@@ -39,7 +39,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @addtogroup iterators
 //! @{
 
-//! @brief Adaptor that transforms a N-ary functor into one accepting a @c tuple of size N
+//! @brief Adaptor that transforms a functor taking arguments of types @c Ts... into one accepting a @c tuple<Ts...>
 //! @tparam _Fn The functor to wrap
 //! @relates zip_iterator
 template <class _Fn>
