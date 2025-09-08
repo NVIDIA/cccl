@@ -32,7 +32,7 @@ def CacheModifiedInputIterator(device_array, modifier):
 
 
     Args:
-        device_array: CUDA device array storing the input sequence of data items
+        device_array: Array storing the input sequence of data items
         modifier: The PTX cache load modifier
 
     Returns:
@@ -93,24 +93,29 @@ def CountingIterator(offset):
 
 
 def ReverseIterator(sequence):
-    """Returns an Iterator over an array in reverse.
+    """Returns an Iterator over an array or another iterator in reverse.
 
-    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
+    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator).
 
-    Example:
-        The code snippet below demonstrates the usage of a ``ReverseIterator``:
+    Examples:
+        The code snippet below demonstrates the usage of a ``ReverseIterator`` as an input iterator:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_input_iterator.py
             :language: python
             :start-after: # example-begin
 
+        The code snippet below demonstrates the usage of a ``ReverseIterator`` as an output iterator:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_output_iterator.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
-        sequence: The iterator or CUDA device array to be reversed
+        sequence: The iterator or array to be reversed
 
     Returns:
-        A ``ReverseIterator`` object initialized with ``sequence`` that can be used as both input and output
-
+        A ``ReverseIterator`` object
     """
     return make_reverse_iterator(sequence)
 
@@ -118,24 +123,30 @@ def ReverseIterator(sequence):
 def TransformIterator(it, op):
     """Returns an Iterator representing a transformed sequence of values.
 
-    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html
+    Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html) and
+    [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
 
     Example:
-        The code snippet below demonstrates the usage of a ``TransformIterator``
-        composed with a ``CountingIterator``, transforming the sequence ``[10, 11, 12]``
-        by applying a transform operation before reducing the output:
+        The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
+        to transform the input before performing a reduction.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
             :language: python
             :start-after: # example-begin
 
+        The code snippet below demonstrates the usage of a ``TransformIterator`` to transform the output
+        of a reduction before writing to an output array.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+            :language: python
+            :start-after: # example-begin
 
     Args:
         it: The iterator object to be transformed
         op: The transform operation
 
     Returns:
-        A ``TransformIterator`` object to transform the items in ``it`` using ``op`` that can be used as both input and output
+        A ``TransformIterator`` object to transform the items in ``it`` using ``op``
     """
     return make_transform_iterator(it, op)
 
