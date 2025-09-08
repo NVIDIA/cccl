@@ -412,12 +412,26 @@ struct WarpScanShfl
     _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
 
     // Perform scan op if from a valid peer
-    _T output = scan_op(temp, input);
-    if (static_cast<int>(lane_id) < first_lane + offset)
+    _T output;
+    if constexpr (cub::detail::has_no_side_effects<ScanOpT, T>)
     {
-      output = input;
+      output = scan_op(temp, input);
+      if (static_cast<int>(lane_id) < first_lane + offset)
+      {
+        output = input;
+      }
     }
-
+    else
+    {
+      if (static_cast<int>(lane_id) < first_lane + offset)
+      {
+        output = input;
+      }
+      else
+      {
+        output = scan_op(temp, input);
+      }
+    }
     return output;
   }
 

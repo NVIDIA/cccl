@@ -1267,7 +1267,9 @@ struct TilePrefixCallbackOp
     // Perform a segmented reduction to get the prefix for the current window.
     // Use the swizzled scan operator because we are now scanning *down* towards thread0.
 
-    int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+    int tail_flag =
+      (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE)
+       || (!cub::detail::has_no_side_effects<ScanOpT, T> && predecessor_status == StatusWord(SCAN_TILE_OOB)));
     window_aggregate =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
@@ -1301,7 +1303,10 @@ struct TilePrefixCallbackOp
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-      exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      if (cub::detail::has_no_side_effects<ScanOpT, T> || threadIdx.x == 0)
+      {
+        exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      }
     }
 
     // Compute the inclusive tile prefix and update the status for this tile

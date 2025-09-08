@@ -566,6 +566,49 @@ inline constexpr bool is_cuda_binary_operator =
   is_cuda_std_bitwise_v<Op, T> || //
   is_cuda_std_logical_v<Op, T>;
 
+template <typename Op, typename T>
+inline constexpr bool has_no_side_effects = false;
+
+template <template <typename> typename Op, typename T>
+inline constexpr bool has_no_side_effects<Op<void>, T> =
+  cub::detail::is_cuda_binary_operator<Op<void>> && ::cuda::std::is_arithmetic_v<T>;
+
+template <template <typename> typename Op, typename U, typename T>
+inline constexpr bool has_no_side_effects<Op<U>, T> =
+  cub::detail::is_cuda_binary_operator<Op<U>> && ::cuda::std::is_arithmetic_v<U> && ::cuda::std::is_arithmetic_v<T>;
+
+template <typename Wrapped, typename Key, typename T>
+inline constexpr bool has_no_side_effects<cub::detail::ScanBySegmentOp<Wrapped>, cub::KeyValuePair<Key, T>> =
+  cub::detail::has_no_side_effects<Wrapped, T> && ::cuda::std::is_arithmetic_v<Key>;
+
+template <typename Wrapped, typename T>
+inline constexpr bool has_no_side_effects<cub::SwizzleScanOp<Wrapped>, T> =
+  cub::detail::has_no_side_effects<Wrapped, T>;
+
+template <typename Wrapped, typename Key, typename T>
+inline constexpr bool has_no_side_effects<cub::ReduceBySegmentOp<Wrapped>, cub::KeyValuePair<Key, T>> =
+  cub::detail::has_no_side_effects<Wrapped, T> && ::cuda::std::is_arithmetic_v<Key>;
+
+template <typename Wrapped, typename Key, typename T>
+inline constexpr bool has_no_side_effects<cub::ReduceByKeyOp<Wrapped>, cub::KeyValuePair<Key, T>> =
+  cub::detail::has_no_side_effects<Wrapped, T> && ::cuda::std::is_arithmetic_v<Key>;
+
+template <typename OffsetT, typename T>
+inline constexpr bool has_no_side_effects<cub::ArgMax, cub::KeyValuePair<OffsetT, T>> =
+  ::cuda::std::is_arithmetic_v<T> && ::cuda::std::is_arithmetic_v<OffsetT>;
+
+template <typename OffsetT, typename T>
+inline constexpr bool has_no_side_effects<cub::ArgMin, cub::KeyValuePair<OffsetT, T>> =
+  ::cuda::std::is_arithmetic_v<T> && ::cuda::std::is_arithmetic_v<OffsetT>;
+
+template <typename OffsetT, typename T>
+inline constexpr bool has_no_side_effects<cub::detail::arg_max, ::cuda::std::pair<OffsetT, T>> =
+  ::cuda::std::is_arithmetic_v<T> && ::cuda::std::is_arithmetic_v<OffsetT>;
+
+template <typename OffsetT, typename T>
+inline constexpr bool has_no_side_effects<cub::detail::arg_min, ::cuda::std::pair<OffsetT, T>> =
+  ::cuda::std::is_arithmetic_v<T> && ::cuda::std::is_arithmetic_v<OffsetT>;
+
 //----------------------------------------------------------------------------------------------------------------------
 // Generalize Operator
 

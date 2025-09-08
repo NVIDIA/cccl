@@ -141,7 +141,7 @@ struct merge_segments_op
 };
 
 // Expected to fail for the current implementation.
-C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", element_types)
+C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device]", element_types)
 {
   using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
