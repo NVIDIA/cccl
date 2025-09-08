@@ -297,6 +297,22 @@ public:
       };
     }
 
+    // Get the underlying task base class - both stream_task and graph_task inherit from task. This is convenient when
+    // we do not need the "typed" task, for example when using the "low-level" add_deps method.
+    ::cuda::experimental::stf::task& get_base_task()
+    {
+      return payload->*[](auto& self) -> ::cuda::experimental::stf::task& {
+        return self.get_base_task();
+      };
+    }
+
+    const ::cuda::experimental::stf::task& get_base_task() const
+    {
+      return payload->*[](auto& self) -> const ::cuda::experimental::stf::task& {
+        return self.get_base_task();
+      };
+    }
+
   private:
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
