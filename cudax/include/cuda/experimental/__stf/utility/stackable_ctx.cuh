@@ -159,6 +159,9 @@ public:
     // Store the concrete task (base class)
     mutable ::std::optional<::cuda::experimental::stf::task> concrete_task_;
 
+    // Optional symbol to be applied to the underlying task when concretized
+    ::std::optional<::std::string> symbol_;
+
     deferred_task_builder(stackable_ctx& sctx, int offset, InitialPack&&... pack)
         : sctx_(sctx)
         , offset_(offset)
@@ -267,6 +270,12 @@ public:
             task.add_deps(info.create_task_dep_op(combined_mode));
           }
 
+          // Apply symbol if it was set
+          if (symbol_.has_value())
+          {
+            task.set_symbol(*symbol_);
+          }
+
           // Extract the base task from unified_task using the new get_base_task() method
           concrete_task_ = task.get_base_task();
 
@@ -294,6 +303,19 @@ public:
         return 0; // dummy return for consistency
       });
       return *this;
+    }
+
+    // Set symbol for the task - store for later application when concretized
+    auto& set_symbol(::std::string s) &
+    {
+      symbol_ = ::std::move(s);
+      return *this;
+    }
+
+    auto&& set_symbol(::std::string s) &&
+    {
+      symbol_ = ::std::move(s);
+      return ::std::move(*this);
     }
 
     // Add get method for compatibility with test code
@@ -1153,14 +1175,12 @@ public:
 
         // If the logical data was not at the appropriate level, we may
         // automatically push it. In this case, we need to update the logical data
-        // referred stored in the task_dep object.
-        bool need_update = arg.get_d().validate_access(offset, *this, combined_m);
-        //    if (need_update)
+        // referenced in the task_dep object to point to the correct context level.
+        arg.get_d().validate_access(offset, *this, combined_m);
         {
-          // The underlying dep eg. obtained when calling l.read() was resulting in
-          // an task_dep_untyped where the logical data was the one at the "top of
-          // the stack". Since a push method was done automatically, the logical
-          // data that needs to be used was incorrect, and we update it.
+          // Update the underlying task_dep to reference the correct logical_data
+          // after automatic push. This uses the existing update_data mechanism
+          // which is designed for in-place mutation in immediate processing contexts.
           arg.underlying_dep().update_data(arg.get_d().get_ld(offset));
         }
       }
