@@ -51,13 +51,14 @@ template <auto Value>
 inline constexpr bool is_compile_time_value<compile_time_value<Value>> = true;
 } // namespace detail
 
-//! A \p strided_iterator wraps another iterator and moves it by a specified stride each time it is incremented or
+//! A @p strided_iterator wraps another iterator and moves it by a specified stride each time it is incremented or
 //! decremented.
 //!
-//! \param RandomAccessIterator A random access iterator
-//! \param StrideHolder Either a \ref runtime_value or a \ref compile_time_value specifying the stride
+//! @param RandomAccessIterator A random access iterator
+//! @param StrideHolder Either a @ref runtime_value or a @ref compile_time_value specifying the stride
+//! @deprecated Use @p cuda::strided_iterator instead
 template <typename RandomAccessIterator, typename StrideHolder>
-class _CCCL_DECLSPEC_EMPTY_BASES strided_iterator
+class _CCCL_DECLSPEC_EMPTY_BASES CCCL_DEPRECATED_BECAUSE("Use cuda::strided_iterator instead") strided_iterator
     : public iterator_adaptor<strided_iterator<RandomAccessIterator, StrideHolder>, RandomAccessIterator>
     , StrideHolder
 {
@@ -77,7 +78,7 @@ public:
 
   strided_iterator() = default;
 
-  //! Creates a strided_iterator from an existing iterator and a stride.
+  //! @brief Creates a strided_iterator from an existing iterator and a stride.
   _CCCL_HOST_DEVICE strided_iterator(RandomAccessIterator it, StrideHolder stride = {})
       : super_t(it)
       , StrideHolder(stride)
@@ -85,20 +86,20 @@ public:
 
   static constexpr bool has_static_stride = detail::is_compile_time_value<StrideHolder>;
 
-  //! Returns either the \ref runtime_value or the \ref compile_time_value holding the stride's value
+  //! @brief Returns either the @ref runtime_value or the @ref compile_time_value holding the stride's value
   _CCCL_HOST_DEVICE const auto& stride_holder() const
   {
     return static_cast<const StrideHolder&>(*this);
   }
 
-  //! Returns the stride's value
+  //! @brief Returns the stride's value
   _CCCL_HOST_DEVICE auto stride() const -> difference_type
   {
     return static_cast<detail::it_difference_t<RandomAccessIterator>>(stride_holder().value);
   }
 
 private:
-  //! \cond
+  //! @cond
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void advance(difference_type n)
   {
@@ -129,19 +130,21 @@ private:
     _CCCL_ASSERT(dist % stride() == 0, "Underlying iterator difference must be divisible by the stride");
     return dist / stride();
   }
-  //! \endcond
+  //! @endcond
 };
 
-//! Constructs a strided_iterator with a runtime stride
+//! @brief Constructs a strided_iterator from an iterator @param it with a given @param stride
 template <typename Iterator, typename Stride>
-_CCCL_HOST_DEVICE auto make_strided_iterator(Iterator it, Stride stride)
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead")
+_CCCL_API auto make_strided_iterator(Iterator it, Stride stride)
 {
   return strided_iterator<Iterator, runtime_value<Stride>>(it, {stride});
 }
 
-//! Constructs a strided_iterator with a compile-time stride
+//! @brief Constructs a strided_iterator from an iterator @param it with a value-initialized compile-time @tparam Stride
 template <auto Stride, typename Iterator>
-_CCCL_HOST_DEVICE auto make_strided_iterator(Iterator it)
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead")
+_CCCL_API auto make_strided_iterator(Iterator it)
 {
   return strided_iterator<Iterator, compile_time_value<Stride>>(it, {});
 }
