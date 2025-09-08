@@ -577,14 +577,14 @@ public:
       return root_offset;
     }
 
-    auto& get_root_ctx()
+    context& get_root_ctx()
     {
       _CCCL_ASSERT(root_offset != -1, "invalid state");
       _CCCL_ASSERT(nodes[root_offset].has_value(), "invalid state");
       return nodes[root_offset].value().ctx;
     }
 
-    const auto& get_root_ctx() const
+    const context& get_root_ctx() const
     {
       _CCCL_ASSERT(root_offset != -1, "invalid state");
       _CCCL_ASSERT(nodes[root_offset].has_value(), "invalid state");
@@ -607,12 +607,12 @@ public:
       return nodes[offset].value();
     }
 
-    auto& get_ctx(int offset)
+    context& get_ctx(int offset)
     {
       return get_node(offset).ctx;
     }
 
-    const auto& get_ctx(int offset) const
+    const context& get_ctx(int offset) const
     {
       return get_node(offset).ctx;
     }
@@ -804,12 +804,12 @@ public:
     return pimpl->get_children_offsets(parent);
   }
 
-  auto& get_root_ctx()
+  context& get_root_ctx()
   {
     return pimpl->get_root_ctx();
   }
 
-  const auto& get_root_ctx() const
+  const context& get_root_ctx() const
   {
     return pimpl->get_root_ctx();
   }
@@ -819,12 +819,12 @@ public:
     return pimpl->get_root_offset();
   }
 
-  auto& get_ctx(int offset)
+  context& get_ctx(int offset)
   {
     return pimpl->get_ctx(offset);
   }
 
-  const auto& get_ctx(int offset) const
+  const context& get_ctx(int offset) const
   {
     return pimpl->get_ctx(offset);
   }
