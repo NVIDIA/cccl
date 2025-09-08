@@ -72,8 +72,7 @@ def test_scan_array_input(force_inclusive, input_array, monkeypatch):
     h_init = np.array([42], dtype=dtype)
     d_output = cp.empty_like(d_input)
 
-    scan_device(d_input, d_output, len(d_input),
-                reduce_op, h_init, force_inclusive)
+    scan_device(d_input, d_output, len(d_input), reduce_op, h_init, force_inclusive)
 
     got = d_output.get()
     expected = scan_host(d_input.get(), op, h_init, force_inclusive)
@@ -120,8 +119,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = parallel.ReverseIterator(
-        parallel.CountingIterator(np.int32(num_items)))
+    d_input = parallel.ReverseIterator(parallel.CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -159,12 +157,10 @@ def test_scan_struct_type(force_inclusive):
 
     got = d_output.get()
     expected_x = scan_host(
-        d_input.get()["x"], lambda a, b: a +
-        b, np.asarray([h_init.x]), force_inclusive
+        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
     )
     expected_y = scan_host(
-        d_input.get()["y"], lambda a, b: a +
-        b, np.asarray([h_init.y]), force_inclusive
+        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)
@@ -263,8 +259,7 @@ def test_scan_transform_output_iterator(floating_array):
     expected = cp.cumsum(d_input) ** 2
     # Use more lenient tolerance for float32 due to precision differences
     if dtype == np.float32:
-        np.testing.assert_allclose(
-            d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
+        np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-4, rtol=1e-4)
     else:
         np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
 
