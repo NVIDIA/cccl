@@ -59,7 +59,6 @@ template <typename Offset,
           typename TransformOp,
           typename PolicyHub>
 struct TransformKernelSource;
-;
 
 template <typename Offset,
           typename... RandomAccessIteratorsIn,
