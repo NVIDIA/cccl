@@ -2,7 +2,7 @@ import ctypes
 import operator
 import uuid
 from functools import lru_cache
-from typing import Callable, Dict, Tuple
+from typing import Callable, Tuple
 
 import numba
 import numpy as np
@@ -101,7 +101,6 @@ class IteratorBase:
 
         self._kind = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self._state = IteratorState(self.cvalue)
-        self._ltoirs: Dict[str, Tuple[str, bytes]] = {}
 
     @property
     def kind(self):
@@ -136,13 +135,11 @@ class IteratorBase:
         return self.output_dereference is not None
 
     def get_advance_ltoir(self) -> Tuple:
-        if "advance" in self._ltoirs:
-            return self._ltoirs["advance"]
+        abi_name = f"advance_{_get_abi_suffix(self.kind)}"
         signature = (
             self.state_ptr_type,
             types.uint64,  # distance type
         )
-        abi_name = f"advance_{_get_abi_suffix(self.kind)}"
         ltoir, _ = cached_compile(
             self.advance,
             signature,
@@ -152,39 +149,32 @@ class IteratorBase:
         return (abi_name, ltoir)
 
     def get_input_dereference_ltoir(self) -> Tuple:
-        if "input_dereference" in self._ltoirs:
-            return self._ltoirs["input_dereference"]
+        abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
         signature = (
             self.state_ptr_type,
             types.CPointer(self.value_type),
         )
-        abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
         ltoir, _ = cached_compile(
             self.input_dereference,
             signature,
             output="ltoir",
             abi_name=abi_name,
         )
-        self._ltoirs["input_dereference"] = (abi_name, ltoir)
-        return self._ltoirs["input_dereference"]
+        return (abi_name, ltoir)
 
     def get_output_dereference_ltoir(self) -> Tuple:
-        if "output_dereference" in self._ltoirs:
-            return self._ltoirs["output_dereference"]
-
+        abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
         signature = (
             self.state_ptr_type,
             self.value_type,
         )
-        abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
         ltoir, _ = cached_compile(
             self.output_dereference,
             signature,
             output="ltoir",
             abi_name=abi_name,
         )
-        self._ltoirs["output_dereference"] = (abi_name, ltoir)
-        return self._ltoirs["output_dereference"]
+        return (abi_name, ltoir)
 
     def __add__(self, offset: int):
         # add the offset to the iterator's state, and return a new iterator
@@ -194,7 +184,6 @@ class IteratorBase:
         res.state_type = self.state_type
         res.value_type = self.value_type
         res._kind = self._kind
-        res._ltoirs = self._ltoirs
         res.cvalue = type(self.cvalue)(self.cvalue.value + offset)
         res._state = IteratorState(res.cvalue)
 
