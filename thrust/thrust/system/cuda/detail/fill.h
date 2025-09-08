@@ -58,6 +58,7 @@ struct __return_constant
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIterator, class Size, class T>
 OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
