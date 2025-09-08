@@ -47,6 +47,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! @addtogroup iterators
+//! @{
+
 template <class, class, class = void>
 struct __transform_iterator_category_base
 {};
@@ -71,14 +74,14 @@ template <class _Fn, class _Iter>
 inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
   noexcept(::cuda::std::invoke(::cuda::std::declval<_Fn&>(), ::cuda::std::declval<_Iter&>()[0]));
 
-//! @brief \p transform_iterator is an iterator which represents a pointer into a range of values after transformation
-//! by a function. This iterator is useful for creating a range filled with the result of applying an operation to
+//! @brief @c transform_iterator is an iterator which represents a pointer into a range of values after transformation
+//! by a functor. This iterator is useful for creating a range filled with the result of applying an operation to
 //! another range without either explicitly storing it in memory, or explicitly executing the transformation. Using
-//! \p transform_iterator facilitates kernel fusion by deferring the execution of a transformation until the value is
+//! @c transform_iterator facilitates kernel fusion by deferring the execution of a transformation until the value is
 //! needed while saving both memory capacity and bandwidth.
 //!
-//! The following code snippet demonstrates how to create a \p transform_iterator which represents the result of
-//! \c sqrtf applied to the contents of a \p thrust::device_vector.
+//! The following code snippet demonstrates how to create a @c transform_iterator which represents the result of
+//! @c sqrtf applied to the contents of a @c thrust::device_vector.
 //!
 //! @code
 //! #include <cuda/iterator>
@@ -111,8 +114,8 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //! }
 //! @endcode
 //!
-//! This next example demonstrates how to use a \p transform_iterator with the \p thrust::reduce function to compute the
-//! sum of squares of a sequence. We will create temporary \p transform_iterators utilising class template argument
+//! This next example demonstrates how to use a @c transform_iterator with the @c thrust::reduce functor to compute the
+//! sum of squares of a sequence. We will create temporary @c transform_iterators utilising class template argument
 //! deduction avoid explicitly specifying their type:
 //!
 //! @code
@@ -148,7 +151,7 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 template <class _Iter, class _Fn>
 class transform_iterator : public __transform_iterator_category_base<_Iter, _Fn>
 {
-  static_assert(::cuda::std::is_object_v<_Fn>, "cuda::transform_iterator requires that _Fn is a function object");
+  static_assert(::cuda::std::is_object_v<_Fn>, "cuda::transform_iterator requires that _Fn is a functor object");
   static_assert(::cuda::std::regular_invocable<_Fn&, ::cuda::std::iter_reference_t<_Iter>>,
                 "cuda::transform_iterator requires that _Fn is invocable with iter_reference_t<_Iter>");
   static_assert(::cuda::std::__can_reference<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>,
@@ -170,7 +173,7 @@ public:
     ::cuda::std::remove_cvref_t<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>;
   using difference_type = ::cuda::std::iter_difference_t<_Iter>;
 
-  //! @brief Default constructs a \p transform_iterator with a value initialized iterator and functor
+  //! @brief Default constructs a @c transform_iterator with a value initialized iterator and functor
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI transform_iterator()
@@ -185,23 +188,23 @@ public:
   {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-  //! @brief Constructs a \p transform_iterator with a given \p __iter iterator and \p __func functor
+  //! @brief Constructs a @c transform_iterator with a given iterator and functor
   //! @param __iter The iterator to transform
   //! @param __func The functor to apply to the iterator
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr transform_iterator(_Iter __current, _Fn __func_) noexcept(
+  _CCCL_API constexpr transform_iterator(_Iter __iter, _Fn __func) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Iter> && ::cuda::std::is_nothrow_move_constructible_v<_Fn>)
-      : __current_(::cuda::std::move(__current))
-      , __func_(::cuda::std::in_place, ::cuda::std::move(__func_))
+      : __current_(::cuda::std::move(__iter))
+      , __func_(::cuda::std::in_place, ::cuda::std::move(__func))
   {}
 
-  //! @brief Returns a const reference to the iterator stored in this \p transform_iterator
+  //! @brief Returns a const reference to the stored iterator
   [[nodiscard]] _CCCL_API constexpr const _Iter& base() const& noexcept
   {
     return __current_;
   }
 
-  //! @brief Extracts the iterator stored in this \p transform_iterator
+  //! @brief Extracts the stored iterator
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>)
   {
@@ -240,12 +243,12 @@ public:
     return ::cuda::std::invoke(*__func_, *__current_);
   }
 
-  //! @brief Subscripts the stored iterator by @c __n and applies the stored functor to the result
-  //! @param __n The additional offset
+  //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
+  //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>
-                   _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<_Iter2>>)
+                   _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
   {
@@ -253,8 +256,8 @@ public:
   }
 
   //! @cond
-  //! @brief Subscripts the stored iterator by @c __n and applies the stored functor to the result
-  //! @param __n The additional offset
+  //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
+  //! @param __n The number of elements to advance by
   //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
   //! forgotten to const qualify the call operator
   _CCCL_EXEC_CHECK_DISABLE
@@ -268,12 +271,11 @@ public:
   }
   //! @endcond
 
-  //! @brief Subscripts the stored iterator by an offset and applies the stored functor to the result
-  //! @param __n The additional offset
+  //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
+  //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>
-                   _CCCL_AND ::cuda::std::regular_invocable<_Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
+  _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
@@ -326,8 +328,8 @@ public:
     return __tmp;
   }
 
-  //! @brief Advances this \c transform_iterator by \p __n
-  //! @param __n The number of elements to advance
+  //! @brief Increments the @c transform_iterator by a given number of elements
+  //! @param __n The number of elements to increment
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::random_access_iterator<_Iter2>)
@@ -337,7 +339,29 @@ public:
     return *this;
   }
 
-  //! @brief Decrements this \c transform_iterator by \p __n
+  //! @brief Returns a copy of a @c transform_iterator advanced by a given number of elements
+  //! @param __iter The @c transform_iterator to advance
+  //! @param __n The amount of elements to increment
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator+(const transform_iterator& __iter, difference_type __n)
+    _CCCL_TRAILING_REQUIRES(transform_iterator)(::cuda::std::random_access_iterator<_Iter2>)
+  {
+    return transform_iterator{__iter.__current_ + __n, *__iter.__func_};
+  }
+
+  //! @brief Returns a copy of a @c transform_iterator advanced by a given number of elements
+  //! @param __n The amount of elements to increment
+  //! @param __iter The @c transform_iterator to advance
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator+(difference_type __n, const transform_iterator& __iter)
+    _CCCL_TRAILING_REQUIRES(transform_iterator)(::cuda::std::random_access_iterator<_Iter2>)
+  {
+    return transform_iterator{__iter.__current_ + __n, *__iter.__func_};
+  }
+
+  //! @brief Decrements the @c transform_iterator by a given number of elements
   //! @param __n The number of elements to decrement
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
@@ -348,7 +372,28 @@ public:
     return *this;
   }
 
-  //! @brief Compares two \c transform_iterator for equality, directly comparing the stored iterators
+  //! @brief Returns a copy of a @c transform_iterator decremented by a given number of elements
+  //! @param __iter The @c transform_iterator to decrement
+  //! @param __n The amount of elements to decrement
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator-(const transform_iterator& __iter, difference_type __n)
+    _CCCL_TRAILING_REQUIRES(transform_iterator)(::cuda::std::random_access_iterator<_Iter2>)
+  {
+    return transform_iterator{__iter.__current_ - __n, *__iter.__func_};
+  }
+
+  //! @brief Returns the distance between two @c transform_iterator
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator-(const transform_iterator& __lhs, const transform_iterator& __rhs)
+    _CCCL_TRAILING_REQUIRES(difference_type)(::cuda::std::sized_sentinel_for<_Iter2, _Iter2>)
+  {
+    return __lhs.__current_ - __rhs.__current_;
+  }
+
+  //! @brief Compares two @c transform_iterator for equality by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -360,7 +405,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two \c transform_iterator for inequality, directly comparing the stored iterators
+  //! @brief Compares two @c transform_iterator for inequality by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -372,52 +417,8 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Compares two \c transform_iterator for less than, directly comparing the stored iterators
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator<(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return __lhs.__current_ < __rhs.__current_;
-  }
-
-  //! @brief Compares two \c transform_iterator for greater than, directly comparing the stored iterators
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return __lhs.__current_ > __rhs.__current_;
-  }
-
-  //! @brief Compares two \c transform_iterator for less equal, directly comparing the stored iterators
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator<=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return __lhs.__current_ <= __rhs.__current_;
-  }
-
-  //! @brief Compares two \c transform_iterator for greater equal, directly comparing the stored iterators
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto
-  operator>=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
-    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
-    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return __lhs.__current_ >= __rhs.__current_;
-  }
-
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two \c transform_iterator, directly three-way-comparing the stored iterators
+  //! @brief Three-way-compares two @c transform_iterator, directly three-way-comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
@@ -428,66 +429,64 @@ public:
   {
     return __lhs.__current_ <=> __rhs.__current_;
   }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-
-  //! @brief Returns a copy of the \c transform_iterator \p __i advanced by \p __n
-  //! @param __i The \c transform_iterator to advance
-  //! @param __n The number of elements to advance
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator+(const transform_iterator& __i, difference_type __n)
-    _CCCL_TRAILING_REQUIRES(transform_iterator)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return transform_iterator{__i.__current_ + __n, *__i.__func_};
-  }
-
-  //! @brief Returns a copy of the \c transform_iterator \p __i advanced by \p __n
-  //! @param __n The number of elements to advance
-  //! @param __i The \c transform_iterator to advance
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator+(difference_type __n, const transform_iterator& __i)
-    _CCCL_TRAILING_REQUIRES(transform_iterator)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return transform_iterator{__i.__current_ + __n, *__i.__func_};
-  }
-
-  //! @brief Returns a copy of the the \c transform_iterator \p __i decremented by \p __n
-  //! @param __i The \c transform_iterator to decrement
-  //! @param __n The number of elements to decrement
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter2 = _Iter>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator-(const transform_iterator& __i, difference_type __n)
-    _CCCL_TRAILING_REQUIRES(transform_iterator)(::cuda::std::random_access_iterator<_Iter2>)
-  {
-    return transform_iterator{__i.__current_ - __n, *__i.__func_};
-  }
-
-  //! @brief Returns the distance between \p __lhs and \p __rhs
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return The distance between the stored iterators
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+  //! @brief Compares two @c transform_iterator for less than by comparing the stored iterators
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2 = _Iter>
   [[nodiscard]] _CCCL_API friend constexpr auto
-  operator-(const transform_iterator& __lhs, const transform_iterator& __rhs)
-    _CCCL_TRAILING_REQUIRES(difference_type)(::cuda::std::sized_sentinel_for<_Iter2, _Iter2>)
+  operator<(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
+    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
   {
-    return __lhs.__current_ - __rhs.__current_;
+    return __lhs.__current_ < __rhs.__current_;
   }
+
+  //! @brief Compares two @c transform_iterator for greater than by comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
+    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
+  {
+    return __lhs.__current_ > __rhs.__current_;
+  }
+
+  //! @brief Compares two @c transform_iterator for less equal by comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator<=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
+    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
+  {
+    return __lhs.__current_ <= __rhs.__current_;
+  }
+
+  //! @brief Compares two @c transform_iterator for greater equal by comparing the stored iterators
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2 = _Iter>
+  [[nodiscard]] _CCCL_API friend constexpr auto
+  operator>=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
+    noexcept(::cuda::std::declval<const _Iter2&>() < ::cuda::std::declval<const _Iter2&>()))
+    _CCCL_TRAILING_REQUIRES(bool)(::cuda::std::random_access_iterator<_Iter2>)
+  {
+    return __lhs.__current_ >= __rhs.__current_;
+  }
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
-//! @brief make_transform_iterator creates a \p transform_iterator from an \c _Iter and a \c _Fn.
-//!
-//! @param __iter The \c Iterator pointing to the input range of the newly created \p transform_iterator.
-//! @param __fun The \c _Fn used to transform the range pointed to by @param __iter in the newly created
-//! \p transform_iterator.
-//! @return A new \p transform_iterator which transforms the range at @param __iter by @param __fun.
+//! @brief Creates a @c transform_iterator from a base iterator and a functor
+//! @param __iter The iterator of the input range
+//! @param __fun The functor used to transform the input range
+//! @relates transform_iterator
 template <class _Iter, class _Fn>
 [[nodiscard]] _CCCL_API constexpr auto make_transform_iterator(_Iter __iter, _Fn __fun)
 {
   return transform_iterator<_Iter, _Fn>{__iter, __fun};
 }
+
+//! @}
 
 _CCCL_END_NAMESPACE_CUDA
 
