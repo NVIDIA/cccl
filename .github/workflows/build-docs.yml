@@ -113,41 +113,41 @@ jobs:
           keep_files: true
           commit_message: "Deploy .nojekyll to disable Jekyll processing"
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_site
-          publish_branch: gh-pages
-          destination_dir: ${{ inputs.destination_dir }}
-          keep_files: true
-          commit_message: ${{ steps.commit-msg.outputs.message }}
+#      - name: Deploy to GitHub Pages
+#        uses: peaceiris/actions-gh-pages@v3
+#        with:
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          publish_dir: ./_site
+#          publish_branch: gh-pages
+#          destination_dir: ${{ inputs.destination_dir || 'docs' }}
+#          keep_files: true
+#          commit_message: ${{ steps.commit-msg.outputs.message }}
 
-      - name: Leave PR preview comment
-        if: ${{ inputs.pr_number && !inputs.remove_pr_preview }}
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          header: pr-preview
-          number: ${{ inputs.pr_number }}
-          skip_unchanged: true
-          message: |
-            ## 📖 Doc Preview CI
+#      - name: Leave PR preview comment
+#        if: ${{ inputs.pr_number && !inputs.remove_pr_preview }}
+#        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+#        with:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          header: pr-preview
+#          number: ${{ inputs.pr_number }}
+#          skip_unchanged: true
+#          message: |
+#            ## 📖 Doc Preview CI
+#
+#            🚀 **Preview URL:** [${{ steps.set-preview-url.outputs.preview_url }}](${{ steps.set-preview-url.outputs.preview_url }})
+#
+#           _Preview will be available once GitHub Pages deployment completes._
 
-            🚀 **Preview URL:** [${{ steps.set-preview-url.outputs.preview_url }}](${{ steps.set-preview-url.outputs.preview_url }})
-
-            _Preview will be available once GitHub Pages deployment completes._
-
-      - name: Leave cleanup comment
-        if: ${{ inputs.pr_number && inputs.remove_pr_preview }}
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          header: pr-preview
-          number: ${{ inputs.pr_number }}
-          hide_and_recreate: true
-          hide_classify: "OUTDATED"
-          message: |
-            ## 📖 Doc Preview CI
-
-            Preview removed because the pull request was closed.
+#      - name: Leave cleanup comment
+#        if: ${{ inputs.pr_number && inputs.remove_pr_preview }}
+#        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+#        with:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          header: pr-preview
+#          number: ${{ inputs.pr_number }}
+#          hide_and_recreate: true
+#          hide_classify: "OUTDATED"
+#          message: |
+#            ## 📖 Doc Preview CI
+#
+#            Preview removed because the pull request was closed.

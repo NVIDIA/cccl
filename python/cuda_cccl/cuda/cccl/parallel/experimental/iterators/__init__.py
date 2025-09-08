@@ -5,6 +5,7 @@ from ._factories import (
     ReverseInputIterator,
     ReverseOutputIterator,
     TransformIterator,
+    TransformOutputIterator,
     ZipIterator,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "ReverseInputIterator",
     "ReverseOutputIterator",
     "TransformIterator",
+    "TransformOutputIterator",
     "ZipIterator",
 ]
