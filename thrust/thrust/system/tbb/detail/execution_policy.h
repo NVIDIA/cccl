@@ -100,11 +100,6 @@ inline constexpr detail::par_t par;
 
 // aliases:
 
-namespace system::tbb::detail // TODO(bgruber): can we drop the aliases into the detail namespace?
-{
-using thrust::tbb::execution_policy;
-using thrust::tbb::tag;
-} // namespace system::tbb::detail
 namespace system::tbb
 {
 using thrust::tbb::execution_policy;
