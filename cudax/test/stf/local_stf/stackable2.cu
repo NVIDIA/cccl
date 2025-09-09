@@ -36,7 +36,7 @@ int main()
   // repeat : {tmp = a, a++; tmp*=2; a+=tmp}
   for (size_t iter = 0; iter < 10; iter++)
   {
-    ctx.push();
+    stackable_ctx::graph_scope graph{ctx}; // RAII: automatic push/pop (lock_guard style)
 
     auto tmp = ctx.logical_data(lA.shape()).set_symbol("tmp");
 
@@ -56,7 +56,7 @@ int main()
       a(i) += tmp(i);
     };
 
-    ctx.pop();
+    // ctx.pop() is called automatically when 'graph' goes out of scope
   }
 
   ctx.finalize();

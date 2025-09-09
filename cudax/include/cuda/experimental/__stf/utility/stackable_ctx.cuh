@@ -1060,6 +1060,68 @@ public:
     pimpl->pop();
   }
 
+  //! \brief RAII wrapper for automatic push/pop management (lock_guard style)
+  //!
+  //! This class provides automatic scope management for nested contexts,
+  //! following the same semantics as std::lock_guard.
+  //! The constructor calls push() and the destructor calls pop().
+  //!
+  //! Usage (direct constructor style like std::lock_guard):
+  //! \code
+  //! {
+  //!   stackable_ctx::graph_scope scope{ctx};
+  //!   // nested context operations...
+  //!   // pop() called automatically when scope goes out of scope
+  //! }
+  //! \endcode
+  //!
+  //! Usage (factory method style):
+  //! \code
+  //! {
+  //!   auto scope = ctx.graph_scope();
+  //!   // nested context operations...
+  //! }
+  //! \endcode
+  class graph_scope
+  {
+  public:
+    using context_type = stackable_ctx;
+
+    explicit graph_scope(stackable_ctx& ctx,
+                         const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+        : ctx_(ctx)
+    {
+      ctx_.push(loc);
+    }
+
+    ~graph_scope()
+    {
+      ctx_.pop();
+    }
+
+    // Non-copyable, non-movable (like std::lock_guard)
+    graph_scope(const graph_scope&)            = delete;
+    graph_scope& operator=(const graph_scope&) = delete;
+    graph_scope(graph_scope&&)                 = delete;
+    graph_scope& operator=(graph_scope&&)      = delete;
+
+  private:
+    stackable_ctx& ctx_;
+  };
+
+  //! \brief Create RAII scope that automatically handles push/pop
+  //!
+  //! Creates a graph_scope object that calls push() on construction and pop() on destruction.
+  //! The [[nodiscard]] attribute ensures the returned object is stored (not discarded),
+  //! as discarding it would immediately call the destructor and pop() prematurely.
+  //!
+  //! \param loc Source location for debugging (defaults to call site)
+  //! \return graph_scope object that manages the nested context lifetime
+  [[nodiscard]] auto graph_scope(const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+  {
+    return graph_scope(*this, loc);
+  }
+
   auto pop_extract_graph()
   {
     return pimpl->pop_extract_graph();
@@ -2452,6 +2514,181 @@ UNITTEST("stackable host_launch")
     _CCCL_ASSERT(a(0) == 42, "invalid value");
   };
   ctx.pop();
+  ctx.finalize();
+};
+
+UNITTEST("graph_scope basic RAII")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+
+  // Test basic RAII behavior - scope automatically calls push/pop
+  {
+    auto scope = ctx.graph_scope(); // push() called here
+    lA.push(access_mode::write, data_place::current_device());
+    ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 42);
+    };
+    // pop() called automatically when scope goes out of scope
+  }
+
+  ctx.finalize();
+};
+
+UNITTEST("graph_scope direct constructor style")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+
+  // Test direct constructor style (like std::lock_guard)
+  {
+    stackable_ctx::graph_scope scope{ctx}; // Direct constructor, push() called here
+    lA.push(access_mode::write, data_place::current_device());
+    ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 24);
+    };
+    // pop() called automatically when scope goes out of scope
+  }
+
+  ctx.finalize();
+};
+
+UNITTEST("graph_scope nested scopes")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+  auto lB = ctx.logical_data(shape_of<slice<int>>(1024));
+
+  // Test nested scopes work correctly using direct constructor style
+  {
+    stackable_ctx::graph_scope outer_scope{ctx}; // outer push()
+    lA.push(access_mode::write, data_place::current_device());
+    ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 10);
+    };
+
+    {
+      stackable_ctx::graph_scope inner_scope{ctx}; // inner push() (nested)
+      lB.push(access_mode::write, data_place::current_device());
+      ctx.task(lB.write())->*[](cudaStream_t stream, auto b) {
+        reserved::kernel_set<<<1, 1, 0, stream>>>(b.data_handle(), 20);
+      };
+      // inner pop() called automatically here
+    }
+
+    // Verify outer scope still works after inner scope closed
+    ctx.task(lA.read())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 10);
+    };
+    // outer pop() called automatically here
+  }
+
+  ctx.finalize();
+};
+
+UNITTEST("graph_scope multiple sequential scopes")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+
+  // Test multiple sequential scopes
+  {
+    auto scope1 = ctx.graph_scope();
+    lA.push(access_mode::write, data_place::current_device());
+    ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 100);
+    };
+  } // pop() for scope1
+
+  {
+    auto scope2 = ctx.graph_scope();
+    ctx.task(lA.rw())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_add<<<1, 1, 0, stream>>>(a.data_handle(), 23);
+    };
+  } // pop() for scope2
+
+  {
+    auto scope3 = ctx.graph_scope();
+    ctx.task(lA.read())->*[](cudaStream_t stream, auto a) {
+      reserved::kernel_check_value<<<1, 1, 0, stream>>>(a.data_handle(), 123);
+    };
+  } // pop() for scope3
+
+  ctx.finalize();
+};
+
+UNITTEST("graph_scope with temporary data")
+{
+  stackable_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
+
+  {
+    auto scope = ctx.graph_scope();
+
+    // Create temporary data in nested context
+    auto temp = ctx.logical_data(shape_of<slice<int>>(1024));
+
+    ctx.task(temp.write(), lA.read())->*[](cudaStream_t stream, auto temp, auto a) {
+      // Copy data and modify
+      for (int i = 0; i < 1024; i++)
+      {
+        temp.data_handle()[i] = a.data_handle()[i] * 2;
+      }
+    };
+
+    ctx.task(lA.write(), temp.read())->*[](cudaStream_t stream, auto a, auto temp) {
+      // Copy back
+      for (int i = 0; i < 1024; i++)
+      {
+        a.data_handle()[i] = temp.data_handle()[i] + 1;
+      }
+    };
+
+    // temp automatically cleaned up when scope ends
+  }
+
+  ctx.finalize();
+};
+
+UNITTEST("graph_scope iterative pattern like stackable2")
+{
+  stackable_ctx ctx;
+
+  // Initialize array similar to stackable2.cu
+  int array[1024];
+  for (size_t i = 0; i < 1024; i++)
+  {
+    array[i] = 1 + i * i;
+  }
+
+  auto lA = ctx.logical_data(array).set_symbol("A");
+
+  // Test iterative pattern: {tmp = a, a++; tmp*=2; a+=tmp} using graph_scope RAII
+  for (size_t iter = 0; iter < 3; iter++) // Use fewer iterations for faster testing
+  {
+    auto graph = ctx.graph_scope(); // RAII: automatic push/pop (like stackable2.cu)
+
+    auto tmp = ctx.logical_data(lA.shape()).set_symbol("tmp");
+
+    ctx.parallel_for(tmp.shape(), tmp.write(), lA.read())->*[] __device__(size_t i, auto tmp, auto a) {
+      tmp(i) = a(i);
+    };
+
+    ctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+      a(i) += 1;
+    };
+
+    ctx.parallel_for(tmp.shape(), tmp.rw())->*[] __device__(size_t i, auto tmp) {
+      tmp(i) *= 2;
+    };
+
+    ctx.parallel_for(lA.shape(), tmp.read(), lA.rw())->*[] __device__(size_t i, auto tmp, auto a) {
+      a(i) += tmp(i);
+    };
+
+    // ctx.pop() is called automatically when 'graph' goes out of scope
+  }
+
   ctx.finalize();
 };
 

@@ -26,13 +26,12 @@ void fma_lib(stackable_ctx& sctx,
              stackable_logical_data<slice<int>>& lY,
              stackable_logical_data<slice<int>>& lZ)
 {
-  sctx.push();
+  stackable_ctx::graph_scope scope{sctx};
   lX.push(access_mode::read);
   lY.push(access_mode::read);
   sctx.parallel_for(lZ.shape(), lZ.rw(), lX.read(), lY.read())->*[] __device__(size_t i, auto z, auto x, auto y) {
     z(i) += x(i) * y(i);
   };
-  sctx.pop();
 }
 
 // Z += (XiYi) for all i
@@ -41,16 +40,15 @@ void dot_lib(stackable_ctx& sctx,
              ::std::vector<stackable_logical_data<slice<int>>>& vecy,
              stackable_logical_data<slice<int>>& Z)
 {
-  sctx.push();
+  stackable_ctx::graph_scope scope{sctx};
   for (size_t i = 0; i < vecx.size(); i++)
   {
-    // We force a read push to ensure we "stress" the API by having nested push for both contexts and logical data
+    // Force read push to stress test nested context handling
     vecx[i].push(access_mode::read);
     vecy[i].push(access_mode::read);
 
     fma_lib(sctx, vecx[i], vecy[i], Z);
   }
-  sctx.pop();
 }
 
 int main()

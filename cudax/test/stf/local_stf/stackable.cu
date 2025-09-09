@@ -42,31 +42,31 @@ int main()
     a(i) = 42 + 2 * i;
   };
 
-  /* Start to use a graph */
-  sctx.push();
+  /* Create nested graph */
+  {
+    stackable_ctx::graph_scope scope{sctx};
 
-  auto lB = sctx.logical_data(shape_of<slice<int>>(512));
-  lB.set_symbol("B");
+    auto lB = sctx.logical_data(shape_of<slice<int>>(512));
+    lB.set_symbol("B");
 
-  sctx.parallel_for(lB.shape(), lB.write())->*[] __device__(size_t i, auto b) {
-    b(i) = 17 - 3 * i;
-  };
+    sctx.parallel_for(lB.shape(), lB.write())->*[] __device__(size_t i, auto b) {
+      b(i) = 17 - 3 * i;
+    };
 
-  sctx.parallel_for(lA2.shape(), lA2.write())->*[] __device__(size_t i, auto a2) {
-    a2(i) = 5 * i + 4;
-  };
+    sctx.parallel_for(lA2.shape(), lA2.write())->*[] __device__(size_t i, auto a2) {
+      a2(i) = 5 * i + 4;
+    };
 
-  sctx.parallel_for(lB.shape(), lA.read(), lB.rw())->*[] __device__(size_t i, auto a, auto b) {
-    b(i) += a(i);
-  };
+    sctx.parallel_for(lB.shape(), lA.read(), lB.rw())->*[] __device__(size_t i, auto a, auto b) {
+      b(i) += a(i);
+    };
 
-  sctx.parallel_for(lB.shape(), lB.read(), lC.rw())->*[] __device__(size_t i, auto b, auto c) {
-    c(i) += b(i);
-  };
+    sctx.parallel_for(lB.shape(), lB.read(), lC.rw())->*[] __device__(size_t i, auto b, auto c) {
+      c(i) += b(i);
+    };
 
-  sctx.print_logical_data_summary();
-
-  sctx.pop();
+    sctx.print_logical_data_summary();
+  }
 
   sctx.host_launch(lA2.read())->*[](auto a2) {
     for (size_t i = 0; i < a2.size(); i++)
@@ -76,15 +76,16 @@ int main()
   };
 
   // Do the same check in another graph
-  sctx.push();
-  lA2.push(access_mode::read);
-  sctx.host_launch(lA2.read())->*[](auto a2) {
-    for (size_t i = 0; i < a2.size(); i++)
-    {
-      EXPECT(a2(i) == 5 * i + 4);
-    }
-  };
-  sctx.pop();
+  {
+    stackable_ctx::graph_scope scope{sctx};
+    lA2.push(access_mode::read);
+    sctx.host_launch(lA2.read())->*[](auto a2) {
+      for (size_t i = 0; i < a2.size(); i++)
+      {
+        EXPECT(a2(i) == 5 * i + 4);
+      }
+    };
+  }
 
   sctx.finalize();
 }

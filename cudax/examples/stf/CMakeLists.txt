@@ -29,6 +29,7 @@ set(stf_example_codegen_sources
   graph_algorithms/jaccard.cu
   graph_algorithms/pagerank.cu
   graph_algorithms/tricount.cu
+  graph_scope.cu
   heat.cu
   heat_mgpu.cu
   jacobi.cu
