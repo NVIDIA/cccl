@@ -53,16 +53,16 @@ template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
-#  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
-#  define _CCCL_AND                         &&
+#  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>
+#  define _CCCL_REQUIRES(...)                requires __VA_ARGS__
+#  define _CCCL_AND                          &&
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) requires __VA_ARGS__
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND                         &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__
+#  define _CCCL_REQUIRES(...)                , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
+#  define _CCCL_AND                          &&__cccl_true_, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool
@@ -175,7 +175,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_EAT_SAME_AS_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SAME_AS_, __VA_ARGS__)
 #define _CCCL_CONCEPT_EAT_SAME_AS__Same_as(...)
 
-// Converts "_Same_as(TYPE) EXPR..." to "TYPE" (The rediculous concatenation of _CCCL_PP_
+// Converts "_Same_as(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL_PP_
 // with EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
 // expansion here.)
 #define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(...) \
