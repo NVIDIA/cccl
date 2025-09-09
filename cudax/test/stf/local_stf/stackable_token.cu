@@ -36,7 +36,7 @@ int main()
 
   /* Create nested graph */
   {
-    stackable_ctx::graph_scope scope{sctx};
+    stackable_ctx::graph_scope_guard scope{sctx};
 
     lA.push(access_mode::rw);
     ltoken.push(access_mode::rw);

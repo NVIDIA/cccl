@@ -26,7 +26,7 @@ void fma_lib(stackable_ctx& sctx,
              stackable_logical_data<slice<int>>& lY,
              stackable_logical_data<slice<int>>& lZ)
 {
-  stackable_ctx::graph_scope scope{sctx};
+  stackable_ctx::graph_scope_guard scope{sctx};
   lX.push(access_mode::read);
   lY.push(access_mode::read);
   sctx.parallel_for(lZ.shape(), lZ.rw(), lX.read(), lY.read())->*[] __device__(size_t i, auto z, auto x, auto y) {
@@ -40,7 +40,7 @@ void dot_lib(stackable_ctx& sctx,
              ::std::vector<stackable_logical_data<slice<int>>>& vecy,
              stackable_logical_data<slice<int>>& Z)
 {
-  stackable_ctx::graph_scope scope{sctx};
+  stackable_ctx::graph_scope_guard scope{sctx};
   for (size_t i = 0; i < vecx.size(); i++)
   {
     // Force read push to stress test nested context handling

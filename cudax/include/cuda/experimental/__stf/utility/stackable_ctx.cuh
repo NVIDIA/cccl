@@ -1069,7 +1069,7 @@ public:
   //! Usage (direct constructor style like std::lock_guard):
   //! \code
   //! {
-  //!   stackable_ctx::graph_scope scope{ctx};
+  //!   stackable_ctx::graph_scope_guard scope{ctx};
   //!   // nested context operations...
   //!   // pop() called automatically when scope goes out of scope
   //! }
@@ -1082,28 +1082,28 @@ public:
   //!   // nested context operations...
   //! }
   //! \endcode
-  class graph_scope
+  class graph_scope_guard
   {
   public:
     using context_type = stackable_ctx;
 
-    explicit graph_scope(stackable_ctx& ctx,
-                         const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+    explicit graph_scope_guard(stackable_ctx& ctx,
+                               const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
         : ctx_(ctx)
     {
       ctx_.push(loc);
     }
 
-    ~graph_scope()
+    ~graph_scope_guard()
     {
       ctx_.pop();
     }
 
     // Non-copyable, non-movable (like std::lock_guard)
-    graph_scope(const graph_scope&)            = delete;
-    graph_scope& operator=(const graph_scope&) = delete;
-    graph_scope(graph_scope&&)                 = delete;
-    graph_scope& operator=(graph_scope&&)      = delete;
+    graph_scope_guard(const graph_scope_guard&)            = delete;
+    graph_scope_guard& operator=(const graph_scope_guard&) = delete;
+    graph_scope_guard(graph_scope_guard&&)                 = delete;
+    graph_scope_guard& operator=(graph_scope_guard&&)      = delete;
 
   private:
     stackable_ctx& ctx_;
@@ -1111,15 +1111,15 @@ public:
 
   //! \brief Create RAII scope that automatically handles push/pop
   //!
-  //! Creates a graph_scope object that calls push() on construction and pop() on destruction.
+  //! Creates a graph_scope_guard object that calls push() on construction and pop() on destruction.
   //! The [[nodiscard]] attribute ensures the returned object is stored (not discarded),
   //! as discarding it would immediately call the destructor and pop() prematurely.
   //!
   //! \param loc Source location for debugging (defaults to call site)
-  //! \return graph_scope object that manages the nested context lifetime
+  //! \return graph_scope_guard object that manages the nested context lifetime
   [[nodiscard]] auto graph_scope(const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
   {
-    return graph_scope(*this, loc);
+    return graph_scope_guard(*this, loc);
   }
 
   auto pop_extract_graph()
@@ -2542,7 +2542,7 @@ UNITTEST("graph_scope direct constructor style")
 
   // Test direct constructor style (like std::lock_guard)
   {
-    stackable_ctx::graph_scope scope{ctx}; // Direct constructor, push() called here
+    stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 24);
@@ -2561,14 +2561,14 @@ UNITTEST("graph_scope nested scopes")
 
   // Test nested scopes work correctly using direct constructor style
   {
-    stackable_ctx::graph_scope outer_scope{ctx}; // outer push()
+    stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 10);
     };
 
     {
-      stackable_ctx::graph_scope inner_scope{ctx}; // inner push() (nested)
+      stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
       lB.push(access_mode::write, data_place::current_device());
       ctx.task(lB.write())->*[](cudaStream_t stream, auto b) {
         reserved::kernel_set<<<1, 1, 0, stream>>>(b.data_handle(), 20);

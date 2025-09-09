@@ -44,7 +44,7 @@ int main()
 
   /* Create nested graph */
   {
-    stackable_ctx::graph_scope scope{sctx};
+    stackable_ctx::graph_scope_guard scope{sctx};
 
     auto lB = sctx.logical_data(shape_of<slice<int>>(512));
     lB.set_symbol("B");
@@ -77,7 +77,7 @@ int main()
 
   // Do the same check in another graph
   {
-    stackable_ctx::graph_scope scope{sctx};
+    stackable_ctx::graph_scope_guard scope{sctx};
     lA2.push(access_mode::read);
     sctx.host_launch(lA2.read())->*[](auto a2) {
       for (size_t i = 0; i < a2.size(); i++)

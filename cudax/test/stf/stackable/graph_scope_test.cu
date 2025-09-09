@@ -34,7 +34,7 @@ int main()
 
   // Test 1: Direct constructor style (lock_guard style) - most idiomatic
   {
-    stackable_ctx::graph_scope scope{ctx}; // push() called here
+    stackable_ctx::graph_scope_guard scope{ctx}; // push() called here
 
     auto temp = ctx.logical_data(data.shape()).set_symbol("temp");
 
@@ -68,7 +68,7 @@ int main()
 
   // Test 3: Nested scopes with direct constructor style
   {
-    stackable_ctx::graph_scope outer_scope{ctx}; // outer push
+    stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push
 
     auto intermediate = ctx.logical_data(data.shape()).set_symbol("intermediate");
 
@@ -78,7 +78,7 @@ int main()
             };
 
     {
-      stackable_ctx::graph_scope inner_scope{ctx}; // inner push (nested)
+      stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push (nested)
 
       auto temp = ctx.logical_data(data.shape()).set_symbol("nested_temp");
 
@@ -99,7 +99,7 @@ int main()
   // Test 4: Iterative pattern (like stackable2.cu)
   for (int iter = 0; iter < 3; iter++)
   {
-    stackable_ctx::graph_scope iteration{ctx}; // New scope each iteration
+    stackable_ctx::graph_scope_guard iteration{ctx}; // New scope each iteration
 
     auto temp = ctx.logical_data(data.shape()).set_symbol("iter_temp");
 
@@ -129,7 +129,7 @@ int main()
   // Test 5: Mixed usage styles
   {
     // Outer scope using direct constructor
-    stackable_ctx::graph_scope outer{ctx};
+    stackable_ctx::graph_scope_guard outer{ctx};
 
     auto temp1 = ctx.logical_data(data.shape()).set_symbol("temp1");
 
@@ -160,7 +160,7 @@ int main()
   // Test 6: Exception safety - scope should clean up even if exceptions occur
   try
   {
-    stackable_ctx::graph_scope exception_scope{ctx};
+    stackable_ctx::graph_scope_guard exception_scope{ctx};
 
     auto temp = ctx.logical_data(data.shape()).set_symbol("exception_temp");
 
