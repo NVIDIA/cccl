@@ -39,7 +39,7 @@ int main()
   // First scope with first context push and first data push
   {
     stackable_ctx::graph_scope_guard scope1{sctx};
-    ldata.push(access_mode::read);
+    ldata.push(access_mode::rw);
 
     // NESTED second scope with second context push and second data push
     {
