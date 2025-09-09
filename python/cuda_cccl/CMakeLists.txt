@@ -25,9 +25,8 @@ include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
 cccl_build_compiler_targets()
 
 # Build and install C++ library first
-set(CCCL_ENABLE_C ON)                      # Master flag to enable c/ directory
-set(CCCL_ENABLE_C_PARALLEL ON)             # Enable C parallel library
-set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON)     # Enable C experimental STF library
+set(CCCL_ENABLE_C_PARALLEL ON)             # Enable C parallel library (triggers c/ directory)
+set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON)     # Enable C experimental STF library (triggers c/ directory)
 set(CCCL_C_PARALLEL_ENABLE_TESTING ON)     # Enable parallel C tests
 set(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING ON)  # Enable STF C tests
 set(CCCL_ENABLE_UNSTABLE ON)               # Enable unstable features
