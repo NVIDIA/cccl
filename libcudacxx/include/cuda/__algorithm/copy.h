@@ -45,7 +45,7 @@ enum class source_access_order
   any = cudaMemcpySrcAccessOrderAny,
 #  else
   any = 0x3,
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  endif // _CCCL_CTK_BELOW(13, 0)
 };
 
 //! @brief Configuration for copy_bytes
@@ -93,7 +93,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
     __dst.data(), __src.data(), __src.size_bytes(), __stream.get(), __attributes);
 #  else
   ::cuda::__driver::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  endif // _CCCL_CTK_BELOW(13, 0)
 }
 
 template <typename _SrcElem,

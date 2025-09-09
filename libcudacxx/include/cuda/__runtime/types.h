@@ -28,8 +28,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 using memory_location = ::cudaMemLocation;
-
+#  if _CCCL_CTK_AT_LEAST(12, 2)
 inline constexpr memory_location host_memory_location = {cudaMemLocationTypeHost, 0};
+#  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
 _CCCL_END_NAMESPACE_CUDA
 
