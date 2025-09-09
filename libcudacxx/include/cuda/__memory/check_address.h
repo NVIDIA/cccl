@@ -29,6 +29,7 @@
 #include <cuda/std/cstdint>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__memory/address_space.h>
+#  include <cuda/__ptx/instructions/get_sreg.h>
 #endif // _CCCL_CUDA_COMPILATION()
 
 #include <nv/target>
@@ -52,10 +53,17 @@ __is_smem_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexce
       })
     );
     // clang-format on
-    if (__n > ::cuda::std::size_t{UINT32_MAX})
+    // if __ptr is a shared memory pointer, __ptr + __n must also be a valid shared memory pointer
+    if (!::cuda::device::is_address_from(
+          reinterpret_cast<const char*>(__ptr) + __n, ::cuda::device::address_space::shared))
     {
       return false;
     }
+    if (__n > ::cuda::ptx::get_sreg_total_smem_size())
+    {
+      return false;
+    }
+    // check for overflow in 32-bit mode
     auto __limit = ::cuda::std::uintptr_t{UINT32_MAX} - static_cast<::cuda::std::uintptr_t>(__n);
     return reinterpret_cast<::cuda::std::uintptr_t>(__ptr) <= __limit;
   }
@@ -76,7 +84,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
     {
       return false;
     };),
-   (if (__ptr == nullptr)
+   (if (__ptr == nullptr) // this also includes cluster shared memory (available on sm_90 and later)
     {
       return false;
     })
