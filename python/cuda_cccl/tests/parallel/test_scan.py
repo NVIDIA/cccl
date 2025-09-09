@@ -119,9 +119,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = parallel.ReverseInputIterator(
-        parallel.CountingIterator(np.int32(num_items))
-    )
+    d_input = parallel.ReverseIterator(parallel.CountingIterator(np.int32(num_items)))
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -252,7 +250,7 @@ def test_scan_transform_output_iterator(floating_array):
     def square(x):
         return x * x
 
-    d_out_it = parallel.TransformOutputIterator(d_output, square)
+    d_out_it = parallel.TransformIterator(d_output, square)
 
     parallel.inclusive_scan(
         d_input, d_out_it, parallel.OpKind.PLUS, h_init, d_input.size
@@ -301,7 +299,7 @@ def test_reverse_input_iterator():
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = parallel.ReverseInputIterator(d_input)
+    reverse_it = parallel.ReverseIterator(d_input)
 
     parallel.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
 
@@ -317,7 +315,7 @@ def test_reverse_output_iterator():
     h_init = np.array([0], dtype="int32")
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
-    reverse_it = parallel.ReverseOutputIterator(d_output)
+    reverse_it = parallel.ReverseIterator(d_output)
 
     parallel.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
 
