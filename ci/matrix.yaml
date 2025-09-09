@@ -8,6 +8,9 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16']}
   #
   override:
+    # Python and c/parallel jobs:
+    - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: ['l4']}
+    - {jobs: ['test'], project: ['cccl_c_stf'], gpu: ['l4']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -46,6 +49,9 @@ workflows:
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    # c.experimental.stf-- pinned to gcc13 to match python
+    - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
     - {jobs: ['test_py_headers', 'test_py_coop'], ctk: ['12.5', '13.X'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_par', 'test_py_examples'], ctk: ['12.8', '13.X'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
@@ -122,6 +128,9 @@ workflows:
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    # c.experimental.stf -- pinned to gcc13 to match python
+    - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
     - {jobs: ['test_py_headers', 'test_py_coop'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_par', 'test_py_examples'], project: 'python', ctk: [                '12.8', '12.9', '13.0'], py_version: ['3.10', '3.13'], gpu: 'l4', cxx: 'gcc13'}
@@ -450,6 +459,9 @@ projects:
       test:  ['test_py_headers', 'test_py_coop', 'test_py_par', test_py_examples]
   cccl_c_parallel:
     name: 'CCCL C Parallel'
+    stds: [20]
+  cccl_c_stf:
+    name: 'CCCL C CUDASTF'
     stds: [20]
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
