@@ -20,7 +20,7 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace omp
+namespace system::omp
 {
 //! \addtogroup execution_policies
 //! \{
@@ -114,13 +114,13 @@ inline constexpr detail::par_t par;
 
 //! \}
 
-} // namespace omp
+} // namespace system::omp
 
 // aliases:
-namespace system::omp
+namespace omp
 {
-using thrust::omp::execution_policy;
-using thrust::omp::par;
-using thrust::omp::tag;
-} // namespace system::omp
+using system::omp::execution_policy;
+using system::omp::par;
+using system::omp::tag;
+} // namespace omp
 THRUST_NAMESPACE_END
