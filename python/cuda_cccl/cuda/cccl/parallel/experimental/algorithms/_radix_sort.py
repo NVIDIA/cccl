@@ -220,21 +220,12 @@ def make_radix_sort(
     """Implements a device-wide radix sort using ``d_in_keys`` in the requested order.
 
     Example:
-        Below, ``radix_sort`` is used to sort a sequence of keys. It also rearranges the values according to the keys' order.
+        Below, ``make_radix_sort`` is used to create a radix sort object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/radix_sort_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin radix-sort
-          :end-before: example-end radix-sort
+          :start-after: # example-begin
 
-        Instead of passing in arrays directly, we can use a ``DoubleBuffer``, which requires less temporary storage but could overwrite the input arrays
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_radix_sort_api.py
-          :language: python
-          :dedent:
-          :start-after: example-begin radix-sort-buffer
-          :end-before: example-end radix-sort-buffer
 
     Args:
         d_in_keys: Device array or DoubleBuffer containing the input keys to be sorted
@@ -244,7 +235,7 @@ def make_radix_sort(
         op: Callable representing the comparison operator
 
     Returns:
-        A callable object that can be used to perform the merge sort
+        A callable object that can be used to perform the radix sort
     """
     return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
 
@@ -264,6 +255,21 @@ def radix_sort(
     Performs device-wide radix sort.
 
     This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``radix_sort`` is used to sort a sequence of keys. It also rearranges the values according to the keys' order.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/radix_sort_basic.py
+            :language: python
+            :start-after: # example-begin
+
+
+        In the following example, ``radix_sort`` is used to sort a sequence of keys with a ``DoubleBuffer` for reduced temporary storage.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/radix_sort_buffer.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
         d_in_keys: Device array or DoubleBuffer containing the input sequence of keys

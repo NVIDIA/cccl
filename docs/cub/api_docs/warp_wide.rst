@@ -8,7 +8,7 @@ Warp-Wide "Collective" Primitives
    :hidden:
    :maxdepth: 2
 
-   api/warp
+   ../api/warp
 
 CUB warp-level algorithms are specialized for execution by threads in the same CUDA warp.
 These algorithms may only be invoked by ``1 <= n <= 32`` *consecutive* threads in the same warp:

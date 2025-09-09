@@ -33,11 +33,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator>
@@ -64,9 +60,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/extrema.inl>

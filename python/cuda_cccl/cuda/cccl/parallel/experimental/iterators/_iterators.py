@@ -513,13 +513,26 @@ class TransformIteratorKind(IteratorKind):
     pass
 
 
-def make_transform_iterator(it, op: Callable):
+def make_transform_iterator(
+    it, op: Callable, io_kind: IteratorIOKind = IteratorIOKind.INPUT
+):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
 
     it_host_advance = it.host_advance
     it_advance = cuda.jit(it.advance, device=True)
-    it_dereference = cuda.jit(it.dereference, device=True)
+
+    if io_kind is IteratorIOKind.INPUT:
+        try:
+            it_input_dereference = cuda.jit(it.input_dereference, device=True)
+        except AttributeError:
+            raise TypeError("The wrapped iterator is not an input iterator")
+    else:
+        try:
+            it_output_dereference = cuda.jit(it.output_dereference, device=True)
+        except AttributeError:
+            raise TypeError("The wrapped iterator is not an output iterator")
+
     op = cuda.jit(op, device=True)
     underlying_value_type = it.value_type
 
@@ -536,7 +549,9 @@ def make_transform_iterator(it, op: Callable):
     class TransformIterator(IteratorBase):
         iterator_kind_type = TransformIteratorKind
 
-        def __init__(self, it: IteratorBase, op: CUDADispatcher):
+        def __init__(
+            self, it: IteratorBase, op: CUDADispatcher, iterator_io: IteratorIOKind
+        ):
             self._it = it
             self._op = CachableFunction(op.py_func)
             state_type = it.state_type
@@ -554,7 +569,7 @@ def make_transform_iterator(it, op: Callable):
                 cvalue=it.cvalue,
                 state_type=state_type,
                 value_type=value_type,
-                iterator_io=it.iterator_io,
+                iterator_io=iterator_io,
             )
             self.kind_ = self.__class__.iterator_kind_type(
                 (value_type, self._it.kind, self._op), self.state_type
@@ -570,7 +585,11 @@ def make_transform_iterator(it, op: Callable):
 
         @property
         def dereference(self):
-            return self.input_dereference
+            return (
+                TransformIterator.input_dereference
+                if self.iterator_io is IteratorIOKind.INPUT
+                else TransformIterator.output_dereference
+            )
 
         @staticmethod
         def input_advance(state, distance):
@@ -581,11 +600,15 @@ def make_transform_iterator(it, op: Callable):
             # Allocate temporary storage for the underlying type
             temp_ptr = alloca_temp_for_underlying_type()
             # Call underlying iterator's dereference with temp storage
-            it_dereference(state, temp_ptr)
+            it_input_dereference(state, temp_ptr)
             # Apply transformation and store in result
             result[0] = op(temp_ptr[0])
 
-    return TransformIterator(it, op)
+        @staticmethod
+        def output_dereference(state, x):
+            it_output_dereference(state, op(x))
+
+    return TransformIterator(it, op, io_kind)
 
 
 def _get_last_element_ptr(device_array) -> int:

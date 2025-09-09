@@ -21,6 +21,7 @@ function(libcudacxx_build_compiler_targets)
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_ASSERTIONS")
   list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_CPP_DIALECT")
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_OPTIONAL_REF")
+  list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_DISCARD_MEMORY_HEADER")
 
   cccl_build_compiler_interface(libcudacxx.compiler_interface
     "${cuda_compile_options}"
