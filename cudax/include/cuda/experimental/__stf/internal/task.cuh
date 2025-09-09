@@ -378,6 +378,17 @@ public:
     return pimpl->enable_capture;
   }
 
+  // Get the base task - for consistency with unified_task, stream_task, graph_task
+  ::cuda::experimental::stf::task& get_base_task()
+  {
+    return *this;
+  }
+
+  const ::cuda::experimental::stf::task& get_base_task() const
+  {
+    return *this;
+  }
+
   /**
    * @brief Start a task
    *

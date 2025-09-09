@@ -19,6 +19,7 @@ set(stf_example_codegen_sources
   01-axpy-launch.cu
   01-axpy-parallel_for.cu
   binary_fhe.cu
+  binary_fhe_stackable.cu
   09-dot-reduce.cu
   cfd.cu
   custom_data_interface.cu
@@ -28,6 +29,7 @@ set(stf_example_codegen_sources
   graph_algorithms/jaccard.cu
   graph_algorithms/pagerank.cu
   graph_algorithms/tricount.cu
+  graph_scope.cu
   heat.cu
   heat_mgpu.cu
   jacobi.cu
@@ -49,6 +51,7 @@ set(stf_example_codegen_sources
 # Examples using CUBLAS, CUSOLVER...
 set(stf_example_mathlib_sources
   linear_algebra/06-pdgemm.cu
+  linear_algebra/06-pdgemm-stackable.cu
   linear_algebra/07-cholesky.cu
   linear_algebra/07-potri.cu
   linear_algebra/cg_csr.cu

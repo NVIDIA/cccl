@@ -11,6 +11,7 @@ set(stf_test_sources
   dot/graph_print_to_dot.cu
   dot/sections.cu
   dot/sections_2.cu
+  dot/sections_stackable.cu
   dot/section_movable.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
@@ -20,6 +21,8 @@ set(stf_test_sources
   error_checks/misformed_tasks_dbl_end.cu
   error_checks/misformed_tasks_dbl_start.cu
   error_checks/non_managed_data.cu
+  error_checks/stackable_illegal_export.cu
+  error_checks/stackable_inconsistent_access_modes.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
   examples/cuda_kernels_driver.cu
@@ -44,6 +47,20 @@ set(stf_test_sources
 
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/stackable.cu
+  local_stf/stackable2.cu
+  local_stf/stackable_add_deps.cu
+  local_stf/stackable_export.cu
+  local_stf/stackable_export2.cu
+  local_stf/stackable_move.cu
+  local_stf/stackable_nested_lib.cu
+  local_stf/stackable_nested.cu
+  local_stf/stackable_extract_graph.cu
+  local_stf/fdtd_stackable.cu
+  local_stf/stackable_threads.cu
+  local_stf/stackable_token.cu
+  local_stf/stackable_write_back.cu
+  local_stf/stackable_redundant_deps.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
   places/managed.cu
@@ -65,6 +82,7 @@ set(stf_test_sources
   reductions/sum_array.cu
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
+  stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
   stress/empty_tasks_alloc.cu
@@ -133,6 +151,7 @@ set(stf_test_codegen_sources
   loop_dispatch/dispatch_on_streams.cu
   loop_dispatch/loop_dispatch.cu
   loop_dispatch/nested_loop_dispatch.cu
+  loop_dispatch/stackable_loop_dispatch.cu
   parallel_for/empty_shape_reduce.cu
   parallel_for/fdtd.cu
   parallel_for/parallel_for_all_devs.cu
@@ -193,6 +212,7 @@ set(stf_unittested_headers
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
   cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
   cuda/experimental/__stf/utility/unstable_unique.cuh
 )
