@@ -99,11 +99,13 @@ jobs:
           fi
 
       - name: Deploy .nojekyll to docs root
+        if: ${{ github.event_name == 'push' && !inputs.pr_number }} # Only create .nojekyll for main docs deployment
         run: |
           mkdir -p _nojekyll
           touch _nojekyll/.nojekyll
 
       - name: Ensure Jekyll is disabled for GitHub Pages
+        if: ${{ github.event_name == 'push' && !inputs.pr_number }} # Only deploy .nojekyll for main docs, not PR previews
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +116,7 @@ jobs:
           commit_message: "Deploy .nojekyll to disable Jekyll processing"
 
       - name: Deploy to GitHub Pages
-        if: ${{ github.event_name == 'push' }} # Don't deploy doc previews for now to avoid overflowing gh-pages branch
+        if: ${{ github.event_name == 'push' && !inputs.pr_number }} # Don't deploy doc previews for now to avoid overflowing gh-pages branch
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
