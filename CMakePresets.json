@@ -311,6 +311,7 @@
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_C_PARALLEL": false,
+        "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
         "CUB_ENABLE_EXAMPLES": false,
