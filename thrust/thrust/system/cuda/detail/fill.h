@@ -39,6 +39,7 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <cub/device/device_transform.cuh>
 
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/util.h>
 
@@ -63,23 +64,24 @@ template <class Derived, class OutputIterator, class Size, class T>
 OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
 {
-  using Predicate   = CUB_NS_QUALIFIER::detail::transform::always_true_predicate;
-  using TransformOp = __return_constant<T>;
-
-  cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
-      CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
-      decltype(count_fixed),
-      ::cuda::std::tuple<>,
-      OutputIterator,
-      Predicate,
-      TransformOp>::dispatch),
-    count,
-    (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
-  throw_on_error(status, "fill_n: failed inside CUB");
-  return first + count;
+  THRUST_CDP_DISPATCH(
+    (using Predicate   = CUB_NS_QUALIFIER::detail::transform::always_true_predicate;
+     using TransformOp = __return_constant<T>;
+     cudaError_t status;
+     THRUST_INDEX_TYPE_DISPATCH(
+       status,
+       (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
+         CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
+         decltype(count_fixed),
+         ::cuda::std::tuple<>,
+         OutputIterator,
+         Predicate,
+         TransformOp>::dispatch),
+       count,
+       (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
+     throw_on_error(status, "fill_n: failed inside CUB");
+     return first + count;),
+    (return thrust::fill_n(cvt_to_seq(derived_cast(policy)), first, count, value);));
 }
 
 template <class Derived, class ForwardIterator, class T>
