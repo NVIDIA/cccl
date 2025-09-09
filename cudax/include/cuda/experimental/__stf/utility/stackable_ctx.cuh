@@ -2145,6 +2145,46 @@ private:
         return;
       }
 
+      // Check if any ancestor context has this data pushed with an incompatible access mode
+      int ancestor_offset = parent_offset;
+      while (ancestor_offset != -1)
+      {
+        if (ancestor_offset < int(impl_state->data_nodes.size()) && impl_state->data_nodes[ancestor_offset].has_value())
+        {
+          auto& ancestor_node       = impl_state->data_nodes[ancestor_offset].value();
+          access_mode ancestor_mode = access_mode::none;
+
+          // Check for frozen data first (normal contexts)
+          if (ancestor_node.frozen_ld.has_value())
+          {
+            ancestor_mode = ancestor_node.frozen_ld.value().get_access_mode();
+          }
+          // For virtual contexts, check effective mode
+          else if (ancestor_node.effective_mode != access_mode::none)
+          {
+            ancestor_mode = ancestor_node.effective_mode;
+          }
+
+          if (ancestor_mode != access_mode::none && !access_mode_is_compatible(ancestor_mode, m))
+          {
+            fprintf(
+              stderr,
+              "Error: Invalid access mode escalation - ancestor at offset %d has mode %s, requesting %s at offset %d\n",
+              ancestor_offset,
+              access_mode_string(ancestor_mode),
+              access_mode_string(m),
+              ctx_offset);
+            abort();
+          }
+
+          if (ancestor_mode != access_mode::none)
+          {
+            break; // Found the ancestor with access mode info, no need to check further
+          }
+        }
+        ancestor_offset = sctx.get_parent_offset(ancestor_offset);
+      }
+
       // Check if this is a virtual context - use lightweight reference instead of freeze/unfreeze
       if (sctx.is_virtual_context(ctx_offset))
       {
