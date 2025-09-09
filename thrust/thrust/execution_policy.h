@@ -38,8 +38,8 @@ THRUST_NAMESPACE_BEGIN
 //! \cond
 namespace detail
 {
-using host_t   = thrust::__THRUST_HOST_SYSTEM_NAMESPACE::detail::par_t;
-using device_t = thrust::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t;
+using host_t   = thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::detail::par_t;
+using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t;
 } // namespace detail
 //! \endcond
 

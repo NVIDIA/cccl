@@ -243,17 +243,16 @@ auto _CCCL_HOST_DEVICE cvt_to_seq(Policy&) -> thrust::detail::seq_t
 
 // aliases:
 
-namespace cuda::detail
-{
-using cuda_cub::par_t;
-} // namespace cuda::detail
-
 namespace system::cuda
 {
 using thrust::cuda_cub::execution_policy;
 using thrust::cuda_cub::par;
 using thrust::cuda_cub::par_nosync;
 using thrust::cuda_cub::tag;
+namespace detail
+{
+using thrust::cuda_cub::par_t;
+}
 } // namespace system::cuda
 
 namespace cuda

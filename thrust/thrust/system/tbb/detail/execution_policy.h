@@ -17,7 +17,7 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace tbb
+namespace system::tbb
 {
 //! \addtogroup execution_policies
 //! \{
@@ -96,14 +96,13 @@ inline constexpr detail::par_t par;
 
 //! \}
 
-} // namespace tbb
+} // namespace system::tbb
 
 // aliases:
-
-namespace system::tbb
+namespace tbb
 {
-using thrust::tbb::execution_policy;
-using thrust::tbb::par;
-using thrust::tbb::tag;
-} // namespace system::tbb
+using system::tbb::execution_policy;
+using system::tbb::par;
+using system::tbb::tag;
+} // namespace tbb
 THRUST_NAMESPACE_END
