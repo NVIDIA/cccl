@@ -397,7 +397,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `_CUDA_STD_EXEC::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -410,12 +410,9 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `_CUDA_STD_EXEC::env{}`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT, typename EnvT = _CUDA_STD_EXEC::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -681,7 +678,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `_CUDA_STD_EXEC::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -700,14 +697,14 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `_CUDA_STD_EXEC::env{}`.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = _CUDA_STD_EXEC::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
