@@ -283,10 +283,10 @@ public:
   ///         `cudaError_t`.
   /// @throws error otherwise
   // clang-format on
-  template <class _Sndr, class... _Env>
-  _CCCL_API auto operator()(_Sndr&& __sndr, _Env&&... __env) const
+  template <class _Sndr, class _Env = env<>>
+  _CCCL_API auto operator()(_Sndr&& __sndr, _Env&& __env = {}) const
   {
-    using __env_t                = sync_wait_t::__env_t<__join_env_t<_Env..., env<>>>;
+    using __env_t                = sync_wait_t::__env_t<_Env>;
     constexpr auto __completions = get_completion_signatures<_Sndr, __env_t>();
     using __completions_t        = decltype(__completions);
 
@@ -301,8 +301,8 @@ public:
     }
     else
     {
-      using __dom_t _CCCL_NODEBUG_ALIAS = __completion_domain_of_t<set_value_t, _Sndr, __env_t>;
-      return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)...);
+      constexpr auto __domain = __completion_domain_of_t<set_value_t, _Sndr, __env_t>();
+      return execution::apply_sender(__domain, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
     }
   }
 };
