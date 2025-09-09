@@ -17,7 +17,7 @@ file(GLOB_RECURSE srcs
 
 add_library(cccl.c.experimental.stf SHARED ${srcs})
 set_property(TARGET cccl.c.experimental.stf PROPERTY POSITION_INDEPENDENT_CODE ON)
-cccl_configure_target(cccl.c.experimental.stf DIALECT 17)
+cccl_configure_target(cccl.c.experimental.stf DIALECT 20)
 
 # Override the properties set by cccl_configure_target:
 if (CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY)
