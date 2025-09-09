@@ -206,6 +206,9 @@ workflows:
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    # c.experimental.stf -- pinned to gcc13 to match python
+    - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
+    - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
     - {jobs: ['test_py_headers', 'test_py_coop'], project: 'python', ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_par', 'test_py_examples'], project: 'python', ctk: [                '12.8', '12.9', '13.0'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
