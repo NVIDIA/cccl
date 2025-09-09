@@ -274,7 +274,6 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_C_PARALLEL": true,
-        "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
       }
@@ -284,7 +283,6 @@
       "displayName": "CCCL C CUDASTF Library",
       "inherits": "base",
       "cacheVariables": {
-        "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
       }
