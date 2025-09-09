@@ -39,6 +39,7 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <cub/device/device_transform.cuh>
 
+#  include <thrust/fill.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>
