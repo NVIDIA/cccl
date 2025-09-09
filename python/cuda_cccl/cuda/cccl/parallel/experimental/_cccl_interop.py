@@ -153,12 +153,13 @@ def _iterator_to_cccl_iter(it: IteratorBase, io_kind: _IteratorIO) -> Iterator:
     )
 
     advance_abi_name, advance_ltoir = it.get_advance_ltoir()
-    if io_kind == _IteratorIO.INPUT:
-        deref_abi_name, deref_ltoir = it.get_input_dereference_ltoir()
-    elif io_kind == _IteratorIO.OUTPUT:
-        deref_abi_name, deref_ltoir = it.get_output_dereference_ltoir()
-    else:
-        raise ValueError(f"Invalid io_kind: {io_kind}")
+    match io_kind:
+        case _IteratorIO.INPUT:
+            deref_abi_name, deref_ltoir = it.get_input_dereference_ltoir()
+        case _IteratorIO.OUTPUT:
+            deref_abi_name, deref_ltoir = it.get_output_dereference_ltoir()
+        case _:
+            raise ValueError(f"Invalid io_kind: {io_kind}")
 
     advance_op = Op(
         operator_type=OpKind.STATELESS,
@@ -180,28 +181,22 @@ def _iterator_to_cccl_iter(it: IteratorBase, io_kind: _IteratorIO) -> Iterator:
     )
 
 
-def _iterator_to_cccl_input_iter(it: IteratorBase) -> Iterator:
-    return _iterator_to_cccl_iter(it, _IteratorIO.INPUT)
-
-
-def _iterator_to_cccl_output_iter(it: IteratorBase) -> Iterator:
-    return _iterator_to_cccl_iter(it, _IteratorIO.OUTPUT)
+def _to_cccl_iter(
+    it: IteratorBase | DeviceArrayLike | None, io_kind: _IteratorIO
+) -> Iterator:
+    if it is None:
+        return _none_to_cccl_iter()
+    if isinstance(it, IteratorBase):
+        return _iterator_to_cccl_iter(it, io_kind)
+    return _device_array_to_cccl_iter(it)
 
 
 def to_cccl_input_iter(array_or_iterator) -> Iterator:
-    if array_or_iterator is None:
-        return _none_to_cccl_iter()
-    if isinstance(array_or_iterator, IteratorBase):
-        return _iterator_to_cccl_input_iter(array_or_iterator)
-    return _device_array_to_cccl_iter(array_or_iterator)
+    return _to_cccl_iter(array_or_iterator, _IteratorIO.INPUT)
 
 
 def to_cccl_output_iter(array_or_iterator) -> Iterator:
-    if array_or_iterator is None:
-        return _none_to_cccl_iter()
-    if isinstance(array_or_iterator, IteratorBase):
-        return _iterator_to_cccl_output_iter(array_or_iterator)
-    return _device_array_to_cccl_iter(array_or_iterator)
+    return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
 def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
