@@ -326,7 +326,7 @@ void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index)
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
   auto* kernel_ptr  = static_cast<kernel_type*>(k);
   auto s            = kernel_ptr->template get<slice<const char>>(index);
-  return static_cast<void*>(s.data_handle());
+  return (void*) (s.data_handle());
 }
 
 void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
