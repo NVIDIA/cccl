@@ -1759,6 +1759,7 @@ private:
         dnode.unfreeze_prereqs.merge(finalize_prereqs);
 
         // Only unfreeze if there are no other subcontext still using it
+        _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
         if (dnode.get_cnt == 0)
         {
           dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
@@ -2180,8 +2181,15 @@ private:
       else
       {
         // Verify that the frozen mode is compatible with the requested access mode
-        _CCCL_ASSERT(access_mode_is_compatible(from_data_node.frozen_ld.value().get_access_mode(), m),
-                     "Incompatible access mode: existing frozen mode conflicts with requested mode");
+        access_mode existing_frozen_mode = from_data_node.frozen_ld.value().get_access_mode();
+        if (!access_mode_is_compatible(existing_frozen_mode, m))
+        {
+          fprintf(stderr,
+                  "Error: Incompatible access mode - existing frozen mode %s conflicts with requested mode %s\n",
+                  access_mode_string(existing_frozen_mode),
+                  access_mode_string(m));
+          abort();
+        }
       }
 
       _CCCL_ASSERT(from_data_node.frozen_ld.has_value(), "");
@@ -2442,13 +2450,34 @@ public:
     // read only variable)
     if (pimpl->was_imported(ctx_offset))
     {
-#ifndef NDEBUG
-      // Parent must be frozen, and current offset must not be frozen (otherwise a subcontext is accessing it)
+      // Always validate access modes - find the actual parent with frozen data
       int parent_offset = sctx.get_parent_offset(ctx_offset);
-      _CCCL_ASSERT(!pimpl->is_frozen(ctx_offset), "");
-      _CCCL_ASSERT(pimpl->is_frozen(parent_offset), "");
-      _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(parent_offset), m), "Invalid access mode");
-#endif
+
+      // For virtual contexts, traverse up to find the context with actual frozen data
+      while (parent_offset != -1 && sctx.is_virtual_context(parent_offset))
+      {
+        parent_offset = sctx.get_parent_offset(parent_offset);
+      }
+
+      if (parent_offset != -1 && pimpl->is_frozen(parent_offset))
+      {
+        access_mode parent_frozen_mode = pimpl->get_frozen_mode(parent_offset);
+        fprintf(
+          stderr,
+          "DEBUG: validate_access - parent frozen mode: %s, requesting mode: %s, ctx_offset: %d, parent_offset: %d\n",
+          access_mode_string(parent_frozen_mode),
+          access_mode_string(m),
+          ctx_offset,
+          parent_offset);
+        if (!access_mode_is_compatible(parent_frozen_mode, m))
+        {
+          fprintf(stderr,
+                  "Error: Invalid access mode transition - parent frozen with %s, requesting %s\n",
+                  access_mode_string(parent_frozen_mode),
+                  access_mode_string(m));
+          abort();
+        }
+      }
 
       // To potentially detect if we were overly cautious when importing data
       // in rw mode, we record how we access it in this construct

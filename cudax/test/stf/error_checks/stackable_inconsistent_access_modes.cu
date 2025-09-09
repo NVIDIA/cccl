@@ -12,7 +12,7 @@
  * @file
  *
  * @brief Test that ensures we catch programming errors with inconsistent access modes in nested contexts
- * 
+ *
  * This test verifies that attempting to escalate from read-only to read-write access mode
  * in nested stackable contexts is properly caught and produces a clear error message.
  *
@@ -62,7 +62,7 @@ int main()
 
   size_t sz = 1024;
   ::std::vector<int> data(sz);
-  
+
   // Initialize data
   for (size_t i = 0; i < sz; i++)
   {
@@ -76,16 +76,16 @@ int main()
   {
     stackable_ctx::graph_scope_guard scope1{sctx};
     ldata.push(access_mode::read);
-    
+
     // We are going to try to escalate from read to rw access mode in nested context:
     // this should raise an error.
     should_abort = true;
-    
+
     // NESTED second scope: attempt to push with RW access mode
     // This should be caught as an invalid access mode escalation
     {
       stackable_ctx::graph_scope_guard scope2{sctx};
-      ldata.push(access_mode::rw);  // This should trigger abort()!
+      ldata.push(access_mode::rw); // This should trigger abort()!
     }
   }
 
