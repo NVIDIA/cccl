@@ -26,7 +26,7 @@ __global__ void axpy(int cnt, double a, const double* x, double* y)
 
 double X0(int i)
 {
-  return sin((double) i);
+  return sin(static_cast<double>(i));
 }
 
 double Y0(int i)

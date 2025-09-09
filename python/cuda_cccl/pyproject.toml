@@ -15,7 +15,7 @@ classifiers = [
   "Environment :: GPU :: NVIDIA CUDA",
   "License :: OSI Approved :: Apache Software License",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
   "numba>=0.60.0",

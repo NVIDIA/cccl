@@ -25,12 +25,14 @@ include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
 cccl_build_compiler_targets()
 
 # Build and install C++ library first
-set(CCCL_ENABLE_C_PARALLEL OFF)            # Not needed for STF Python bindings
+set(CCCL_ENABLE_C_PARALLEL ON)
 set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON)     # Enable C experimental STF library (triggers c/ directory)
 set(CCCL_C_PARALLEL_ENABLE_TESTING OFF)    # Testing belongs in CI, not Python build
 set(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING OFF)  # Testing belongs in CI, not Python build
 set(CCCL_ENABLE_UNSTABLE ON)               # Enable unstable features
+set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
+
 add_subdirectory(${_cccl_root} _parent_cccl)
 
 # Now we can find CUB and other components
