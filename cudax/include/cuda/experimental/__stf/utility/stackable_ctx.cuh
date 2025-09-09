@@ -79,6 +79,9 @@ template <typename T, typename ReduceOp, bool Init>
 struct is_stackable_task_dep<stackable_task_dep<T, ReduceOp, Init>> : ::std::true_type
 {};
 
+template <typename T>
+inline constexpr bool is_stackable_task_dep_v = is_stackable_task_dep<T>::value;
+
 // This helper converts stackable_task_dep to the underlying task_dep. If we
 // have a stackable_logical_data A, A.read() is indeed a stackable_task_dep,
 // which we can pass to stream_ctx/graph_ctx constructs by extracting the
@@ -86,7 +89,7 @@ struct is_stackable_task_dep<stackable_task_dep<T, ReduceOp, Init>> : ::std::tru
 template <typename U>
 decltype(auto) to_task_dep(U&& u)
 {
-  if constexpr (is_stackable_task_dep<::std::decay_t<U>>::value)
+  if constexpr (is_stackable_task_dep_v<::std::decay_t<U>>)
   {
     return ::std::forward<U>(u).underlying_dep();
   }
@@ -173,7 +176,7 @@ public:
     auto& add_deps(Deps&&... deps)
     {
       auto store_dep = [this](const auto& dep) {
-        static_assert(reserved::is_stackable_task_dep<::std::decay_t<decltype(dep)>>::value,
+        static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(dep)>>,
                       "add_deps in stackable context only accepts stackable task dependencies");
 
         // Store metadata and create operations
@@ -212,7 +215,7 @@ public:
           if constexpr (sizeof...(initial_args) > 0)
           {
             auto process_initial = [&](const auto& arg) {
-              static_assert(reserved::is_stackable_task_dep<::std::decay_t<decltype(arg)>>::value,
+              static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>,
                             "Initial task arguments in stackable context must be stackable task dependencies");
               int id             = arg.get_d().get_unique_id();
               combined_modes[id] = combined_modes[id] | arg.get_access_mode();
@@ -1198,7 +1201,7 @@ public:
 
     // Lambda to combine argument access modes
     [[maybe_unused]] auto combine_access_modes = [&combined_accesses](const auto& arg) {
-      if constexpr (reserved::is_stackable_task_dep<::std::decay_t<decltype(arg)>>::value)
+      if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
       {
         int id        = arg.get_d().get_unique_id();
         access_mode m = arg.get_access_mode();
@@ -1222,7 +1225,7 @@ public:
 
     // Lambda to process individual arguments
     [[maybe_unused]] auto process_argument = [&combined_accesses, offset, this](const auto& arg) {
-      if constexpr (reserved::is_stackable_task_dep<::std::decay_t<decltype(arg)>>::value)
+      if constexpr (reserved::is_stackable_task_dep_v<::std::decay_t<decltype(arg)>>)
       {
         // If the stackable logical data appears in multiple deps of the same
         // task, we need to combine access modes to push the data automatically
@@ -1349,7 +1352,7 @@ public:
     void add_single_dep(Dep&& dep)
     {
       // In stackable context, add_deps only receives stackable task dependencies
-      static_assert(reserved::is_stackable_task_dep<::std::decay_t<Dep>>::value,
+      static_assert(reserved::is_stackable_task_dep_v<::std::decay_t<Dep>>,
                     "add_deps in stackable context only accepts stackable task dependencies");
 
       auto& stackable_dep = dep;
