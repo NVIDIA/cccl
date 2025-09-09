@@ -33,11 +33,7 @@
 #include <thrust/system/detail/generic/remove.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
@@ -121,7 +117,5 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   return thrust::copy_if(exec, first, last, stencil, result, ::cuda::std::not_fn(pred));
 } // end remove_copy_if()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
