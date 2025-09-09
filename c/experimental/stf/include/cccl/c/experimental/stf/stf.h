@@ -69,7 +69,6 @@
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
 #endif // !CCCL_C_EXPERIMENTAL
 
-#include <assert.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 
@@ -1028,6 +1027,8 @@ void stf_cuda_kernel_add_desc_cufunc(
 //! \param arg_cnt Number of kernel arguments
 //! \param args Array of pointers to kernel arguments
 //!
+//! \return cudaSuccess on success, or appropriate cudaError_t on failure
+//!
 //! \pre k must be valid kernel handle
 //! \pre stf_cuda_kernel_start() must have been called
 //! \pre func must be valid __global__ function pointer
@@ -1046,15 +1047,15 @@ void stf_cuda_kernel_add_desc_cufunc(
 //! float* d_y = (float*)stf_cuda_kernel_get_arg(kernel, 1);
 //! const void* args[] = {&alpha, &d_x, &d_y};
 //!
-//! // Launch kernel
-//! stf_cuda_kernel_add_desc(kernel, (void*)axpy,
-//! dim3(16), dim3(128), 0, 3, args);
+//! // Launch kernel (caller must handle return values != cudaSuccess)
+//! cudaError_t err = stf_cuda_kernel_add_desc(kernel, (void*)axpy,
+//!                                           dim3(16), dim3(128), 0, 3, args);
 //! stf_cuda_kernel_end(kernel);
 //! \endcode
 //!
 //! \see stf_cuda_kernel_add_desc_cufunc(), stf_cuda_kernel_get_arg()
 
-static inline void stf_cuda_kernel_add_desc(
+static inline cudaError_t stf_cuda_kernel_add_desc(
   stf_cuda_kernel_handle k,
   const void* func,
   dim3 grid_dim_,
@@ -1065,10 +1066,12 @@ static inline void stf_cuda_kernel_add_desc(
 {
   CUfunction cufunc;
   cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
-  assert(res == cudaSuccess);
-  (void) res; /* suppress unused variable warning in release builds */
+  if (res != cudaSuccess) {
+    return res;
+  }
 
   stf_cuda_kernel_add_desc_cufunc(k, cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args);
+  return cudaSuccess;
 }
 
 //!
