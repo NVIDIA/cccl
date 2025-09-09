@@ -49,8 +49,8 @@
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/cstdint>

@@ -73,8 +73,65 @@ constexpr _CCCL_HOST_DEVICE const DerivedPolicy& derived_cast(const execution_po
 
 } // namespace detail
 
+//! \addtogroup execution_policies
+//! \{
+
+//! \p execution_policy is the base class for all Thrust parallel execution policies like \p thrust::host, \p
+//! thrust::device, and each backend system's tag type.
+//!
+//! Custom user-defined backends should derive a policy from this type in order to interoperate with Thrust algorithm
+//! dispatch.
+//!
+//! The following code snippet demonstrates how to derive a standalone custom execution policy from \p
+//! thrust::execution_policy to implement a backend which only implements \p for_each:
+//!
+//! \code
+//! #include <thrust/execution_policy.h>
+//! #include <iostream>
+//!
+//! // define a type derived from thrust::execution_policy to distinguish our custom execution policy:
+//! struct my_policy : thrust::execution_policy<my_policy> {};
+//!
+//! // overload for_each on my_policy
+//! template<typename Iterator, typename Function>
+//! Iterator for_each(my_policy, Iterator first, Iterator last, Function f)
+//! {
+//!   std::cout << "Hello, world from for_each(my_policy)!" << std::endl;
+//!
+//!   for(; first < last; ++first)
+//!   {
+//!     f(*first);
+//!   }
+//!
+//!   return first;
+//! }
+//!
+//! struct ignore_argument
+//! {
+//!   void operator()(int) {}
+//! };
+//!
+//! int main()
+//! {
+//!   int data[4];
+//!
+//!   // dispatch thrust::for_each using our custom policy:
+//!   my_policy exec;
+//!   thrust::for_each(exec, data, data + 4, ignore_argument());
+//!
+//!   // can't dispatch thrust::transform because no overload exists for my_policy:
+//!   //thrust::transform(exec, data, data, + 4, data, ::cuda::std::identity{}); // error!
+//!
+//!   return 0;
+//! }
+//! \endcode
+//!
+//! \see host_execution_policy
+//! \see device_execution_policy
 template <typename DerivedPolicy>
-struct execution_policy : thrust::detail::execution_policy_base<DerivedPolicy>
+struct execution_policy : detail::execution_policy_base<DerivedPolicy>
 {};
+
+//! \}
 
 THRUST_NAMESPACE_END
