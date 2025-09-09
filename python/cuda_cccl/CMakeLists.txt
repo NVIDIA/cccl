@@ -27,7 +27,9 @@ cccl_build_compiler_targets()
 # Build and install C++ library first
 set(CCCL_ENABLE_C ON)                      # Master flag to enable c/ directory
 set(CCCL_ENABLE_C_PARALLEL ON)             # Enable C parallel library
-set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON)     # Enable C experimental STF library  
+set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON)     # Enable C experimental STF library
+set(CCCL_C_PARALLEL_ENABLE_TESTING ON)     # Enable parallel C tests
+set(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING ON)  # Enable STF C tests
 set(CCCL_ENABLE_UNSTABLE ON)               # Enable unstable features
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
