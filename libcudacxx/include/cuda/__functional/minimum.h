@@ -42,7 +42,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
     {
       return _CUDA_VSTD::fmin(__lhs, __rhs);
     }
-    return (__lhs < __rhs) ? __lhs : __rhs;
+    else
+    {
+      return (__lhs < __rhs) ? __lhs : __rhs;
+    }
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minimum);
@@ -61,7 +64,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
     {
       return _CUDA_VSTD::fmin(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));
     }
-    return (__lhs < __rhs) ? __lhs : __rhs;
+    else
+    {
+      return (__lhs < __rhs) ? __lhs : __rhs;
+    }
   }
 };
 
