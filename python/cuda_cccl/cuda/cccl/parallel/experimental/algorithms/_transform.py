@@ -30,8 +30,8 @@ class _UnaryTransform:
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
     ):
-        self.d_in_cccl = cccl.to_cccl_iter(d_in)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         in_value_type = cccl.get_value_type(d_in)
         out_value_type = cccl.get_value_type(d_out)
 
@@ -86,9 +86,9 @@ class _BinaryTransform:
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
     ):
-        self.d_in1_cccl = cccl.to_cccl_iter(d_in1)
-        self.d_in2_cccl = cccl.to_cccl_iter(d_in2)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
+        self.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         in1_value_type = cccl.get_value_type(d_in1)
         in2_value_type = cccl.get_value_type(d_in2)
         out_value_type = cccl.get_value_type(d_out)
