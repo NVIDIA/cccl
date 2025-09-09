@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\>\>
+================================
+
+Defined in :ref:`thrust\/random\/uniform\_real\_distribution.h <uniform__real__distribution_8h>`
+
+.. doxygenfunction:: thrust::random::operator>>(std::basic_istream< CharT, Traits > &is, uniform_real_distribution< RealType > &d)

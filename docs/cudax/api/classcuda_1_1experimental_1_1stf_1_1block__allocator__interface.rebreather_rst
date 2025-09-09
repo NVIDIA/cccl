@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:block\_allocator\_interface
+==========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/block\_allocator.cuh <block__allocator_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::block_allocator_interface

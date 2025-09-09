@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:shared\_resource
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/shared\_resource.cuh <shared__resource_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::shared_resource

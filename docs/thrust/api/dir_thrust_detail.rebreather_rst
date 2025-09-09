@@ -1,0 +1,16 @@
+.. _`dir_c1e84cbfa86fcbd3b5adf9dcf9da38fe`:
+
+thrust\/detail
+==============
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_thrust_detail_pointer.h
+
+- :ref:`thrust\/detail\/pointer.h <detail_2pointer_8h>`
+

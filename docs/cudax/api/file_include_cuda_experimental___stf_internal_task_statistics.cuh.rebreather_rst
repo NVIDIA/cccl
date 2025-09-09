@@ -1,0 +1,25 @@
+.. _`task__statistics_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/task\_statistics.cuh
+====================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_task_statistics.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/task_statistics.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_task_statistics.cuh>
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

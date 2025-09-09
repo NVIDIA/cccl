@@ -1,0 +1,47 @@
+.. _`unique_8h`:
+
+thrust\/unique.h
+================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_unique.h`
+
+.. doxygenfile:: thrust/unique.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_unique.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:unique <group__stream__compaction_1ga0981eb0b6034017ef622075d6612f68a>`
+- :ref:`thrust\:\:unique <group__stream__compaction_1gaa293fb5e4b4754527c6cd753f9736180>`
+- :ref:`thrust\:\:unique <group__stream__compaction_1gacc951d5d2780083d91639e6d98b8cd4b>`
+- :ref:`thrust\:\:unique <group__stream__compaction_1gaccf33f1e24f8526b003f8a679591ad65>`
+- :ref:`thrust\:\:unique\_by\_key <group__stream__compaction_1ga00d1fec5d05fbf98e2348d55cd08beb3>`
+- :ref:`thrust\:\:unique\_by\_key <group__stream__compaction_1ga36d3c448ab66ddfd756ec9bb4562cd09>`
+- :ref:`thrust\:\:unique\_by\_key <group__stream__compaction_1gabaff7a0645bac6210db5bae72ed9fb63>`
+- :ref:`thrust\:\:unique\_by\_key <group__stream__compaction_1gada0c4193847ab9e4373178eb59d172c2>`
+- :ref:`thrust\:\:unique\_by\_key\_copy <group__stream__compaction_1ga08fd657495d47f16379f92a6840d5872>`
+- :ref:`thrust\:\:unique\_by\_key\_copy <group__stream__compaction_1ga2d15459e324310c75a8f67a55cd15eb9>`
+- :ref:`thrust\:\:unique\_by\_key\_copy <group__stream__compaction_1ga44a76de362ed169d2b57005b03f2f611>`
+- :ref:`thrust\:\:unique\_by\_key\_copy <group__stream__compaction_1gaf0dfbcfba29188e5383b7086870529d9>`
+- :ref:`thrust\:\:unique\_copy <group__stream__compaction_1ga155c8c6cf6f1b282a3db3d5d376d4ed2>`
+- :ref:`thrust\:\:unique\_copy <group__stream__compaction_1ga302931215d14a792b6f00ee018af8e2d>`
+- :ref:`thrust\:\:unique\_copy <group__stream__compaction_1gad7d0b61d3bf4ed9995f69a722693973b>`
+- :ref:`thrust\:\:unique\_copy <group__stream__compaction_1gae51a1d24941cd0667e5d8b831dda3f90>`
+- :ref:`thrust\:\:unique\_count <group__stream__compaction_1ga18c13109910b9b4e6ef1a1316f055f07>`
+- :ref:`thrust\:\:unique\_count <group__stream__compaction_1ga1e7976c55a59537c5274c467c4ce23d9>`
+- :ref:`thrust\:\:unique\_count <group__stream__compaction_1ga840a3a7a0040a03b9a57840a70604058>`
+- :ref:`thrust\:\:unique\_count <group__stream__compaction_1gafc13264ad3ba55ee5b78c8af7e905465>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

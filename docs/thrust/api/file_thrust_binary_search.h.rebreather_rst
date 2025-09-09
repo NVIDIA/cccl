@@ -1,0 +1,55 @@
+.. _`binary__search_8h`:
+
+thrust\/binary\_search.h
+========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_binary_search.h`
+
+.. doxygenfile:: thrust/binary_search.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_binary_search.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:binary\_search <group__binary__search_1gaa855fdcf3942f95919bb712e26c7bfc6>`
+- :ref:`thrust\:\:binary\_search <group__binary__search_1gaca71baf79a6985712d8e5bdc1dcdbaa9>`
+- :ref:`thrust\:\:binary\_search <group__binary__search_1gae7231fe891e8070481f57f4cc9cdddbb>`
+- :ref:`thrust\:\:binary\_search <group__binary__search_1gaeb34fdc9da32ad2baa270b51cb769712>`
+- :ref:`thrust\:\:binary\_search <group__vectorized__binary__search_1gab589eadb4328d721ed6f0fe30ea53af0>`
+- :ref:`thrust\:\:binary\_search <group__vectorized__binary__search_1gac35a115642366fff80e85de54a9882c6>`
+- :ref:`thrust\:\:binary\_search <group__vectorized__binary__search_1gaca4b5ad62a005948659a605a73515d02>`
+- :ref:`thrust\:\:binary\_search <group__vectorized__binary__search_1gacf5ad90b7bb095d1c9d8295bdf2d2413>`
+- :ref:`thrust\:\:equal\_range <group__binary__search_1ga0042d84469e2606e7aafb0e3434d15f1>`
+- :ref:`thrust\:\:equal\_range <group__binary__search_1ga1ccd67cb0e378d441f38cea77ca3dfd5>`
+- :ref:`thrust\:\:equal\_range <group__binary__search_1ga2662d7a81c13da036ef9c2b3cbf637b6>`
+- :ref:`thrust\:\:equal\_range <group__binary__search_1ga5ff555e321537d07b241723e1f1be767>`
+- :ref:`thrust\:\:lower\_bound <group__binary__search_1ga1e475b6887f3dcbbb1bc0f68225d0cac>`
+- :ref:`thrust\:\:lower\_bound <group__binary__search_1ga2a43c68bb60d96d859d426307c672716>`
+- :ref:`thrust\:\:lower\_bound <group__binary__search_1gad1c957a4f437f5df70a86e13ea75ec5a>`
+- :ref:`thrust\:\:lower\_bound <group__binary__search_1gad2ac5a1c5091366144d6fdbf2ff5551e>`
+- :ref:`thrust\:\:lower\_bound <group__vectorized__binary__search_1ga30acecaad39c7d9f299f0cc515b762ce>`
+- :ref:`thrust\:\:lower\_bound <group__vectorized__binary__search_1ga5ba12b347191e74b246db4c68edf8733>`
+- :ref:`thrust\:\:lower\_bound <group__vectorized__binary__search_1gaaf7afebd00cd84b48c591a1144014e6c>`
+- :ref:`thrust\:\:lower\_bound <group__vectorized__binary__search_1gab6283107548915e5541be0e3efe958f1>`
+- :ref:`thrust\:\:upper\_bound <group__binary__search_1ga183fbd2f3d478f3e3d0dc97c5bce883b>`
+- :ref:`thrust\:\:upper\_bound <group__binary__search_1ga5d3e8f2af56dde127de4d1c54782b525>`
+- :ref:`thrust\:\:upper\_bound <group__binary__search_1gac85cc9ea00f4bdd8f80ad25fff16741d>`
+- :ref:`thrust\:\:upper\_bound <group__binary__search_1gacd5baa5c988501b9c8320e337d126827>`
+- :ref:`thrust\:\:upper\_bound <group__vectorized__binary__search_1ga5004612e3cf6910857bd7c696d8cf853>`
+- :ref:`thrust\:\:upper\_bound <group__vectorized__binary__search_1ga715aca1cdff3f5f945ae49019335eb2e>`
+- :ref:`thrust\:\:upper\_bound <group__vectorized__binary__search_1gaaedf46dd0857b3f31725eb2a13ee0e26>`
+- :ref:`thrust\:\:upper\_bound <group__vectorized__binary__search_1gabe5e2b1b20a3e1066d52a9831e20abe5>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

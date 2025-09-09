@@ -1,0 +1,133 @@
+thrust\/iterator\/offset\_iterator.h
+====================================
+
+File members: :ref:`thrust\/iterator\/offset\_iterator.h <offset__iterator_8h>`
+
+.. code-block:: c++
+
+   // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <thrust/iterator/counting_iterator.h>
+   #include <thrust/iterator/iterator_adaptor.h>
+   #include <thrust/iterator/iterator_facade.h>
+
+   #include <cuda/std/cstdint>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename Iterator, typename Offset = typename ::cuda::std::iterator_traits<Iterator>::difference_type>
+   class offset_iterator : public iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>
+   {
+     friend class iterator_core_access;
+     using super_t = iterator_adaptor<offset_iterator<Iterator, Offset>, Iterator>;
+
+   public:
+     using reference       = typename super_t::reference;
+     using difference_type = typename super_t::difference_type;
+
+     _CCCL_HOST_DEVICE offset_iterator(Iterator it = {}, Offset offset = {})
+         : super_t(::cuda::std::move(it))
+         , m_offset(offset)
+     {}
+
+     _CCCL_HOST_DEVICE const Offset& offset() const
+     {
+       return m_offset;
+     }
+
+     _CCCL_HOST_DEVICE Offset& offset()
+     {
+       return m_offset;
+     }
+
+   private:
+     static constexpr bool indirect_offset = ::cuda::std::indirectly_readable<Offset>;
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE auto offset_value() const
+     {
+       if constexpr (indirect_offset)
+       {
+         return static_cast<difference_type>(*m_offset);
+       }
+       else
+       {
+         return static_cast<difference_type>(m_offset);
+       }
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE reference dereference() const
+     {
+       return *(this->base() + offset_value());
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
+     {
+       return this->base() + offset_value() == other.base() + other.offset_value();
+     }
+
+     _CCCL_HOST_DEVICE void advance(difference_type n)
+     {
+       if constexpr (indirect_offset)
+       {
+         this->base_reference() += n;
+       }
+       else
+       {
+         m_offset += n;
+       }
+     }
+
+     _CCCL_HOST_DEVICE void increment()
+     {
+       if constexpr (indirect_offset)
+       {
+         ++this->base_reference();
+       }
+       else
+       {
+         ++m_offset;
+       }
+     }
+
+     _CCCL_HOST_DEVICE void decrement()
+     {
+       if constexpr (indirect_offset)
+       {
+         --this->base_reference();
+       }
+       else
+       {
+         --m_offset;
+       }
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
+     {
+       return (other.base() + other.offset_value()) - (this->base() + offset_value());
+     }
+
+     Offset m_offset;
+   };
+
+   template <typename Iterator>
+   _CCCL_HOST_DEVICE offset_iterator(Iterator) -> offset_iterator<Iterator>;
+
+   THRUST_NAMESPACE_END
+

@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\>\>
+================================
+
+Defined in :ref:`thrust\/random\/subtract\_with\_carry\_engine.h <subtract__with__carry__engine_8h>`
+
+.. doxygenfunction:: thrust::random::operator>>(std::basic_istream< CharT, Traits > &is, subtract_with_carry_engine< UIntType_, w_, s_, r_ > &e)

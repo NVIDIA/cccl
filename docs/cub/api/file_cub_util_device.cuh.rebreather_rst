@@ -1,0 +1,53 @@
+.. _`util__device_8cuh`:
+
+cub\/util\_device.cuh
+=====================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_util_device.cuh`
+
+.. doxygenfile:: cub/util_device.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_util_device.cuh>
+
+Defines
+-------
+
+- :ref:`CUB\_TEMP\_GET\_PTX <util__device_8cuh_1a121bba4bf0c0009196625772c01e899c>`
+
+Functions
+---------
+
+- :ref:`cub\:\:CurrentDevice <namespacecub_1a85689ccce38dd4ad9213842690d9fbf9>`
+- :ref:`cub\:\:DeviceCount <namespacecub_1aa96d0281d6dff12b954587c912da3f57>`
+- :ref:`cub\:\:DeviceCountCachedValue <namespacecub_1adee0a9b46d5bc13981fda7697bf6e071>`
+- :ref:`cub\:\:DeviceCountUncached <namespacecub_1aafc45f51af4861d80b27569b7df319a4>`
+- :ref:`cub\:\:GetPerDeviceAttributeCache <namespacecub_1a2bfb9e1b7af0b675f8a2082f0a5be378>`
+- :ref:`cub\:\:MaxSmOccupancy <namespacecub_1a8b6177c635dcc16dd321af6da3e538db>`
+- :ref:`cub\:\:PtxVersion <namespacecub_1ac734a40a70a31a6df64e609e2d0e6955>`
+- :ref:`cub\:\:PtxVersion <namespacecub_1adbc412e91b5a1ac2cef94a77bc4f776d>`
+- :ref:`cub\:\:PtxVersionUncached <namespacecub_1a7ac1b807f2176cebde253043a25f7ec6>`
+- :ref:`cub\:\:PtxVersionUncached <namespacecub_1a9c18197e2ddb2106f71ab0735abc60e5>`
+- :ref:`cub\:\:SmVersion <namespacecub_1a75d6eade310f187ff42915ae82e963d0>`
+- :ref:`cub\:\:SmVersionUncached <namespacecub_1ad79fa34a6d206203d5a611b450c4225a>`
+- :ref:`cub\:\:SyncStream <namespacecub_1a7dd94060eb47e8cd530372626d048160>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+
+Structs
+-------
+
+- :ref:`cub\:\:ChainedPolicy <structcub_1_1ChainedPolicy>`
+- :ref:`cub\:\:ChainedPolicy\< PolicyPtxVersion\, PolicyT\, PolicyT \> <structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4>`
+- :ref:`cub\:\:PtxVersionCacheTag <structcub_1_1PtxVersionCacheTag>`
+- :ref:`cub\:\:SmVersionCacheTag <structcub_1_1SmVersionCacheTag>`
+

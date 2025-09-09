@@ -1,0 +1,6 @@
+thrust\:\:pointer
+=================
+
+Defined in :ref:`thrust\/detail\/pointer.h <detail_2pointer_8h>`
+
+.. doxygenclass:: thrust::pointer

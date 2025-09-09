@@ -1,0 +1,42 @@
+.. _`hierarchy__dimensions_8cuh`:
+
+include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_dimensions.cuh
+=====================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_hierarchy <dir_0a41398667450a16ffec14b30a195e6f>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___hierarchy_hierarchy_dimensions.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__hierarchy/hierarchy_dimensions.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___hierarchy_hierarchy_dimensions.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:get\_launch\_dimensions <hierarchy__dimensions_8cuh_1a173aac0f7accd9eef0e7c7d2e05da650>`
+- :ref:`cuda\:\:experimental\:\:hierarchy\_add\_level <hierarchy__dimensions_8cuh_1af333881b536dd39765ae2f0e003eabcd>`
+- :ref:`cuda\:\:experimental\:\:make\_hierarchy <hierarchy__dimensions_8cuh_1ab04039bc09c8136f3619e8e30ac739ab>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:hierarchy\_dimensions <structcuda_1_1experimental_1_1hierarchy__dimensions>`
+
+Variables
+---------
+
+- :ref:`cuda\:\:experimental\:\:has\_level <hierarchy__dimensions_8cuh_1aac491cdac5f8fd626e8f4a56ad1247e0>`
+- :ref:`cuda\:\:experimental\:\:has\_level\_or\_unit <hierarchy__dimensions_8cuh_1a3874f5cfb790e89205370d1e8149427e>`
+

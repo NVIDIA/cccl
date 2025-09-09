@@ -1,0 +1,6 @@
+thrust\:\:reverse\_iterator
+===========================
+
+Defined in :ref:`thrust\/iterator\/reverse\_iterator.h <reverse__iterator_8h>`
+
+.. doxygenclass:: thrust::reverse_iterator

@@ -1,0 +1,6 @@
+thrust\:\:logical\_not
+======================
+
+Defined in :ref:`thrust\/functional.h <functional_8h>`
+
+.. doxygentypedef:: thrust::logical_not

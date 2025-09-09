@@ -1,0 +1,29 @@
+.. _`device__allocator_8h`:
+
+thrust\/device\_allocator.h
+===========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_allocator.h`
+
+.. doxygenfile:: thrust/device_allocator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_allocator.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:device\_allocator <classthrust_1_1device__allocator>`
+- :ref:`thrust\:\:device\_ptr\_memory\_resource <classthrust_1_1device__ptr__memory__resource>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

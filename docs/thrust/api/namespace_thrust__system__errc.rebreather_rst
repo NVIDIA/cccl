@@ -1,0 +1,17 @@
+thrust\:\:system\:\:errc
+========================
+
+.. doxygennamespace:: thrust::system::errc
+   :desc-only:
+
+Enums
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   enum_error__code_8h_1ae2217ff1b521ce9901d8953a82bef795
+
+- :ref:`thrust\:\:system\:\:errc\:\:errc\_t <error__code_8h_1ae2217ff1b521ce9901d8953a82bef795>`
+

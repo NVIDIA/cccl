@@ -1,0 +1,6 @@
+thrust\:\:min\_element
+======================
+
+Defined in :ref:`thrust\/extrema.h <extrema_8h>`
+
+.. doxygenfunction:: thrust::min_element(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, ForwardIterator last)

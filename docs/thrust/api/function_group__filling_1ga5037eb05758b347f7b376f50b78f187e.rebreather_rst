@@ -1,0 +1,6 @@
+thrust\:\:uninitialized\_fill
+=============================
+
+Defined in :ref:`thrust\/uninitialized\_fill.h <uninitialized__fill_8h>`
+
+.. doxygenfunction:: thrust::uninitialized_fill(ForwardIterator first, ForwardIterator last, const T &x)

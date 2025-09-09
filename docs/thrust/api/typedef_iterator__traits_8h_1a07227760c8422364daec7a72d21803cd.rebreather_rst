@@ -1,0 +1,6 @@
+thrust\:\:iterator\_traversal\_t
+================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygentypedef:: thrust::iterator_traversal_t

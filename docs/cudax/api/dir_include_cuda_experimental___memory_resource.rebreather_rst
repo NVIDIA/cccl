@@ -1,0 +1,38 @@
+.. _`dir_f5bb634f025bcd1aa086d4ae07d690be`:
+
+include\/cuda\/experimental\/\_\_memory\_resource
+=================================================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___memory_resource_any_resource.cuh
+   file_include_cuda_experimental___memory_resource_device_memory_pool.cuh
+   file_include_cuda_experimental___memory_resource_device_memory_resource.cuh
+   file_include_cuda_experimental___memory_resource_legacy_pinned_memory_resource.cuh
+   file_include_cuda_experimental___memory_resource_managed_memory_resource.cuh
+   file_include_cuda_experimental___memory_resource_memory_pool_base.cuh
+   file_include_cuda_experimental___memory_resource_memory_resource_base.cuh
+   file_include_cuda_experimental___memory_resource_pinned_memory_pool.cuh
+   file_include_cuda_experimental___memory_resource_pinned_memory_resource.cuh
+   file_include_cuda_experimental___memory_resource_properties.cuh
+   file_include_cuda_experimental___memory_resource_resource.cuh
+   file_include_cuda_experimental___memory_resource_shared_resource.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/any\_resource.cuh <any__resource_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_pool.cuh <device__memory__pool_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_resource.cuh <device__memory__resource_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/legacy\_pinned\_memory\_resource.cuh <legacy__pinned__memory__resource_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/managed\_memory\_resource.cuh <managed__memory__resource_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/memory\_pool\_base.cuh <memory__pool__base_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/memory\_resource\_base.cuh <memory__resource__base_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/pinned\_memory\_pool.cuh <pinned__memory__pool_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/pinned\_memory\_resource.cuh <pinned__memory__resource_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/properties.cuh <properties_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/resource.cuh <resource_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/shared\_resource.cuh <shared__resource_8cuh>`
+

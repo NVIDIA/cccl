@@ -1,0 +1,6 @@
+thrust\:\:device\_make\_unique
+==============================
+
+Defined in :ref:`thrust\/device\_make\_unique.h <device__make__unique_8h>`
+
+.. doxygenfunction:: thrust::device_make_unique(Args &&... args) -> decltype(uninitialized_allocate_unique< T >(::cuda::std::declval< device_allocator< T >>()))

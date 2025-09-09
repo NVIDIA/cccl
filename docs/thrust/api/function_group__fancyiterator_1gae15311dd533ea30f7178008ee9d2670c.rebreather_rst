@@ -1,0 +1,6 @@
+thrust\:\:make\_shuffle\_iterator
+=================================
+
+Defined in :ref:`thrust\/iterator\/shuffle\_iterator.h <shuffle__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_shuffle_iterator(IndexType n, URBG &&g)

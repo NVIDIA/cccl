@@ -1,0 +1,6 @@
+thrust\:\:copy\_if
+==================
+
+Defined in :ref:`thrust\/copy.h <copy_8h>`
+
+.. doxygenfunction:: thrust::copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)

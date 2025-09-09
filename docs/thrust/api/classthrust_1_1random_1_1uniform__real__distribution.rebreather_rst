@@ -1,0 +1,6 @@
+thrust\:\:random\:\:uniform\_real\_distribution
+===============================================
+
+Defined in :ref:`thrust\/random\/uniform\_real\_distribution.h <uniform__real__distribution_8h>`
+
+.. doxygenclass:: thrust::random::uniform_real_distribution

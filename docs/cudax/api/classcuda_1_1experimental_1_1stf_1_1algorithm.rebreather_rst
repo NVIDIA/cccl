@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:algorithm
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/algorithm.cuh <algorithm_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::algorithm

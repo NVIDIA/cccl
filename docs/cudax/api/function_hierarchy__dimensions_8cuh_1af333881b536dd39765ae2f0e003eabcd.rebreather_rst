@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:hierarchy\_add\_level
+=============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_dimensions.cuh <hierarchy__dimensions_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::hierarchy_add_level(const hierarchy_dimensions< Unit, Levels... > &hierarchy, NewLevel lnew)

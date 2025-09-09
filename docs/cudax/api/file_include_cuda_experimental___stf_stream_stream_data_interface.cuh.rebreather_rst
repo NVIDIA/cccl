@@ -1,0 +1,31 @@
+.. _`stream__data__interface_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/stream\/stream\_data\_interface.cuh
+=========================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/stream <dir_8d1573554a2d822bef6ec5f1076cd11a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_stream_stream_data_interface.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/stream/stream_data_interface.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_stream_stream_data_interface.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_data\_interface <classcuda_1_1experimental_1_1stf_1_1stream__data__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_data\_interface\_simple <classcuda_1_1experimental_1_1stf_1_1stream__data__interface__simple>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

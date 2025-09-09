@@ -1,0 +1,29 @@
+.. _`polymorphic__adaptor_8h`:
+
+thrust\/mr\/polymorphic\_adaptor.h
+==================================
+
+In directory: :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+Source file: :doc:`program_listing_file_thrust_mr_polymorphic_adaptor.h`
+
+.. doxygenfile:: thrust/mr/polymorphic_adaptor.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mr_polymorphic_adaptor.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:mr\:\:polymorphic\_adaptor\_resource <classthrust_1_1mr_1_1polymorphic__adaptor__resource>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:mr <namespacethrust_1_1mr>`
+

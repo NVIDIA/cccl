@@ -1,0 +1,6 @@
+cub\:\:CachingDeviceAllocator
+=============================
+
+Defined in :ref:`cub\/util\_allocator.cuh <util__allocator_8cuh>`
+
+.. doxygenstruct:: cub::CachingDeviceAllocator

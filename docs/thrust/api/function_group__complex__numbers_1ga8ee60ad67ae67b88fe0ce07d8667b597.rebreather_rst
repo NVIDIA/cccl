@@ -1,0 +1,6 @@
+thrust\:\:operator\/
+====================
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::operator/(const complex< T0 > &x, const T1 &y)

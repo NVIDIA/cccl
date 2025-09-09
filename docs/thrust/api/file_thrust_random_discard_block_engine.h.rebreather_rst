@@ -1,0 +1,37 @@
+.. _`discard__block__engine_8h`:
+
+thrust\/random\/discard\_block\_engine.h
+========================================
+
+In directory: :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+Source file: :doc:`program_listing_file_thrust_random_discard_block_engine.h`
+
+.. doxygenfile:: thrust/random/discard_block_engine.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random_discard_block_engine.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:random\:\:discard\_block\_engine <classthrust_1_1random_1_1discard__block__engine>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:random\:\:operator\!\= <group__random__number__engine__adaptors_1gab60abe478de48914b40e3b9e2414f5d6>`
+- :ref:`thrust\:\:random\:\:operator\<\< <group__random__number__engine__adaptors_1ga5c1baec0b17d3dc8b39c3d89a851bc14>`
+- :ref:`thrust\:\:random\:\:operator\=\= <group__random__number__engine__adaptors_1ga9de9139fb1d6af485d2a39c0269cbd93>`
+- :ref:`thrust\:\:random\:\:operator\>\> <group__random__number__engine__adaptors_1ga2b5d8cd6de99cd9d3b191c3e1051e508>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+

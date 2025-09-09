@@ -1,0 +1,6 @@
+thrust\:\:generate\_n
+=====================
+
+Defined in :ref:`thrust\/generate.h <generate_8h>`
+
+.. doxygenfunction:: thrust::generate_n(OutputIterator first, Size n, Generator gen)

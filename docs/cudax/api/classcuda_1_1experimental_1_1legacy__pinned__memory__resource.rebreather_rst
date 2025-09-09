@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:legacy\_pinned\_memory\_resource
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/legacy\_pinned\_memory\_resource.cuh <legacy__pinned__memory__resource_8cuh>`
+
+.. doxygenclass:: cuda::experimental::legacy_pinned_memory_resource

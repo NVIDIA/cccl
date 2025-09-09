@@ -1,0 +1,6 @@
+thrust\:\:transform\_if\_n
+==========================
+
+Defined in :ref:`thrust\/transform.h <transform_8h>`
+
+.. doxygenfunction:: thrust::transform_if_n(InputIterator1 first, ::cuda::std::iter_difference_t< InputIterator1 > count, InputIterator2 stencil, ForwardIterator result, UnaryFunction op, Predicate pred)

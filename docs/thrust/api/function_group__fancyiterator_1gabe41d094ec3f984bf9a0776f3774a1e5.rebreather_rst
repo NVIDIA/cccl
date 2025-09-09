@@ -1,0 +1,6 @@
+thrust\:\:make\_zip\_iterator
+=============================
+
+Defined in :ref:`thrust\/iterator\/zip\_iterator.h <zip__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_zip_iterator(::cuda::std::tuple< Iterators... > t)

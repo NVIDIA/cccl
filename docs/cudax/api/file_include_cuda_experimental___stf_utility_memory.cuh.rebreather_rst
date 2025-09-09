@@ -1,0 +1,47 @@
+.. _`memory_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/utility\/memory.cuh
+=========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/utility <dir_14105bc4e1d6df9ad9d3d55d2b993f2a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_utility_memory.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/utility/memory.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_utility_memory.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:small\_vector <classcuda_1_1experimental_1_1stf_1_1small__vector>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:address\_is\_pinned <memory_8cuh_1a88da6f8733f0777747a7c944949989cd>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:allocateHostMemory <memory_8cuh_1aba82754740a74ac58c56778ca65ee630>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:allocateManagedMemory <memory_8cuh_1aeb42c89112998e8f5e4d836bbd6a3b95>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateHostMemory <memory_8cuh_1a642240b2330f94133c16e8e4936868c8>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateHostMemory <memory_8cuh_1a71b1c304a516296e9b6bf5097dd8e11e>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateHostMemory <memory_8cuh_1a743b744487f5ecadafd4d14a19d8e788>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateManagedMemory <memory_8cuh_1a602b123aff6994380151bd06ae52bf31>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateManagedMemory <memory_8cuh_1a98117fa4eebc965a54f3ee691aea20b9>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin\_memory <memory_8cuh_1a2f1daa59a6c73b0dd45a5ec85c8cfa34>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin\_memory <memory_8cuh_1a96d0ffe602bbaadec70b5f02a1aae4b5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin\_memory <memory_8cuh_1abdd5f5fbdd731e4f8bef8f0414f9eca5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpin\_memory <memory_8cuh_1a04ac2553bd24371a68dde60b317a892d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpin\_memory <memory_8cuh_1a39dbada7c4c615040df569b0084cb8e1>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

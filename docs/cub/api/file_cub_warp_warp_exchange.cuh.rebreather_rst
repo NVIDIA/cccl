@@ -1,0 +1,33 @@
+.. _`warp__exchange_8cuh`:
+
+cub\/warp\/warp\_exchange.cuh
+=============================
+
+In directory: :ref:`cub\/warp <dir_cb3a671affffe7eeb3fdf5ae58e42cc8>`
+
+Source file: :doc:`program_listing_file_cub_warp_warp_exchange.cuh`
+
+.. doxygenfile:: cub/warp/warp_exchange.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_warp_warp_exchange.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:WarpExchange <classcub_1_1WarpExchange>`
+
+Enums
+-----
+
+- :ref:`cub\:\:WarpExchangeAlgorithm <namespacecub_1a7cd3a577f1a3742f265863144cd69a04>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

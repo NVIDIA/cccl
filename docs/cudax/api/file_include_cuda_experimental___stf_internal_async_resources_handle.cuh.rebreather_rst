@@ -1,0 +1,42 @@
+.. _`async__resources__handle_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/async\_resources\_handle.cuh
+============================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_async_resources_handle.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/async_resources_handle.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_async_resources_handle.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:async\_resources\_handle <classcuda_1_1experimental_1_1stf_1_1async__resources__handle>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:register\_stream <async__resources__handle_8cuh_1a15334df9162430aaae8d98d9f6614164>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unregister\_stream <async__resources__handle_8cuh_1ad4e01a86f130b065598ee6eccc017de9>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:decorated\_stream <structcuda_1_1experimental_1_1stf_1_1decorated__stream>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_pool <structcuda_1_1experimental_1_1stf_1_1stream__pool>`
+

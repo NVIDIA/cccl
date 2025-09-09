@@ -1,0 +1,6 @@
+thrust\:\:device\_pointer\_cast
+===============================
+
+Defined in :ref:`thrust\/device\_ptr.h <device__ptr_8h>`
+
+.. doxygenfunction:: thrust::device_pointer_cast(T *ptr)

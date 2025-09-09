@@ -1,0 +1,6 @@
+thrust\:\:set\_difference\_by\_key
+==================================
+
+Defined in :ref:`thrust\/set\_operations.h <set__operations_8h>`
+
+.. doxygenfunction:: thrust::set_difference_by_key(InputIterator1 keys_first1, InputIterator1 keys_last1, InputIterator2 keys_first2, InputIterator2 keys_last2, InputIterator3 values_first1, InputIterator4 values_first2, OutputIterator1 keys_result, OutputIterator2 values_result)

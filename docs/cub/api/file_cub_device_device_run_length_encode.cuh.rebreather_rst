@@ -1,0 +1,28 @@
+.. _`device__run__length__encode_8cuh`:
+
+cub\/device\/device\_run\_length\_encode.cuh
+============================================
+
+In directory: :ref:`cub\/device <dir_18fc672d63781b5a743137aee24ff656>`
+
+Source file: :doc:`program_listing_file_cub_device_device_run_length_encode.cuh`
+
+.. doxygenfile:: cub/device/device_run_length_encode.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_device_device_run_length_encode.cuh>
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+
+Structs
+-------
+
+- :ref:`cub\:\:DeviceRunLengthEncode <structcub_1_1DeviceRunLengthEncode>`
+

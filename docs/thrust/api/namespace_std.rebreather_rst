@@ -1,0 +1,6 @@
+std
+===
+
+.. doxygennamespace:: std
+   :desc-only:
+

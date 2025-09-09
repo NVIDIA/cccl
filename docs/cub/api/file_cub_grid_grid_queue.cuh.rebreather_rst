@@ -1,0 +1,28 @@
+.. _`grid__queue_8cuh`:
+
+cub\/grid\/grid\_queue.cuh
+==========================
+
+In directory: :ref:`cub\/grid <dir_f2530eaff2fd0556614e1cfc33864b65>`
+
+Source file: :doc:`program_listing_file_cub_grid_grid_queue.cuh`
+
+.. doxygenfile:: cub/grid/grid_queue.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_grid_grid_queue.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:GridQueue <classcub_1_1GridQueue>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

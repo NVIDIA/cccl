@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:polymorphic\_allocator
+======================================
+
+Defined in :ref:`thrust\/mr\/allocator.h <allocator_8h>`
+
+.. doxygentypedef:: thrust::mr::polymorphic_allocator

@@ -1,0 +1,6 @@
+thrust\:\:tabulate
+==================
+
+Defined in :ref:`thrust\/tabulate.h <tabulate_8h>`
+
+.. doxygenfunction:: thrust::tabulate(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)

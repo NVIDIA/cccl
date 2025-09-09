@@ -1,0 +1,6 @@
+cub\:\:CacheModifiedInputIterator
+=================================
+
+Defined in :ref:`cub\/iterator\/cache\_modified\_input\_iterator.cuh <cache__modified__input__iterator_8cuh>`
+
+.. doxygenclass:: cub::CacheModifiedInputIterator

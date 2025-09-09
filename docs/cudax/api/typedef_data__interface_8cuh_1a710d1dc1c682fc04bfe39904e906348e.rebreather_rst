@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:rw\_type\_of
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/data\_interface.cuh <data__interface_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::stf::rw_type_of

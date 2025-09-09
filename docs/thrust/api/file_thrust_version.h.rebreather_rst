@@ -1,0 +1,27 @@
+.. _`version_8h`:
+
+thrust\/version.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_version.h`
+
+.. doxygenfile:: thrust/version.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_version.h>
+
+Defines
+-------
+
+- :ref:`THRUST\_MAJOR\_VERSION <version_8h_1ad772136227823b7c5a728d4e895682ae>`
+- :ref:`THRUST\_MINOR\_VERSION <version_8h_1af34faa4e575256c27929734de4e7caf0>`
+- :ref:`THRUST\_PATCH\_NUMBER <version_8h_1a66479528a7d9de663bd5c61c029514a8>`
+- :ref:`THRUST\_SUBMINOR\_VERSION <version_8h_1adf68a426b10244fd3bd15dc4511b36b5>`
+- :ref:`THRUST\_VERSION <version_8h_1a140615d75aad46c9270b4186db25987b>`
+

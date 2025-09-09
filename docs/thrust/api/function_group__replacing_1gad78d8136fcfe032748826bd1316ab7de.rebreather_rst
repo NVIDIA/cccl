@@ -1,0 +1,6 @@
+thrust\:\:replace
+=================
+
+Defined in :ref:`thrust\/replace.h <replace_8h>`
+
+.. doxygenfunction:: thrust::replace(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, ForwardIterator last, const T &old_value, const T &new_value)

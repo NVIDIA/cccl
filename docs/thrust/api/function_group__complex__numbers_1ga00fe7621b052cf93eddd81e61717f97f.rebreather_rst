@@ -1,0 +1,6 @@
+thrust\:\:sinh
+==============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::sinh(const complex< T > &z)

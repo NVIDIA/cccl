@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:logical\_data
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/logical\_data.cuh <logical__data_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::logical_data

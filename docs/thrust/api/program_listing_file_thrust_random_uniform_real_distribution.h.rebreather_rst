@@ -1,0 +1,122 @@
+thrust\/random\/uniform\_real\_distribution.h
+=============================================
+
+File members: :ref:`thrust\/random\/uniform\_real\_distribution.h <uniform__real__distribution_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/pair.h>
+   #include <thrust/random/detail/random_core_access.h>
+
+   #include <iostream>
+
+   THRUST_NAMESPACE_BEGIN
+
+   namespace random
+   {
+
+   template <typename RealType = double>
+   class uniform_real_distribution
+   {
+   public:
+     // types
+
+     using result_type = RealType;
+
+     using param_type = thrust::pair<RealType, RealType>;
+
+     // constructors and reset functions
+
+     _CCCL_HOST_DEVICE explicit uniform_real_distribution(RealType a = 0.0, RealType b = 1.0);
+
+     _CCCL_HOST_DEVICE explicit uniform_real_distribution(const param_type& parm);
+
+     _CCCL_HOST_DEVICE void reset();
+
+     // generating functions
+
+     template <typename UniformRandomNumberGenerator>
+     _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng);
+
+     template <typename UniformRandomNumberGenerator>
+     _CCCL_HOST_DEVICE result_type operator()(UniformRandomNumberGenerator& urng, const param_type& parm);
+
+     // property functions
+
+     _CCCL_HOST_DEVICE result_type a() const;
+
+     _CCCL_HOST_DEVICE result_type b() const;
+
+     _CCCL_HOST_DEVICE param_type param() const;
+
+     _CCCL_HOST_DEVICE void param(const param_type& parm);
+
+     _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+
+     _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+
+   private:
+     param_type m_param;
+
+     friend struct thrust::random::detail::random_core_access;
+
+     _CCCL_HOST_DEVICE bool equal(const uniform_real_distribution& rhs) const;
+
+     template <typename CharT, typename Traits>
+     std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
+
+     template <typename CharT, typename Traits>
+     std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
+   }; // end uniform_real_distribution
+
+   template <typename RealType>
+   _CCCL_HOST_DEVICE bool
+   operator==(const uniform_real_distribution<RealType>& lhs, const uniform_real_distribution<RealType>& rhs);
+
+   template <typename RealType>
+   _CCCL_HOST_DEVICE bool
+   operator!=(const uniform_real_distribution<RealType>& lhs, const uniform_real_distribution<RealType>& rhs);
+
+   template <typename RealType, typename CharT, typename Traits>
+   std::basic_ostream<CharT, Traits>&
+   operator<<(std::basic_ostream<CharT, Traits>& os, const uniform_real_distribution<RealType>& d);
+
+   template <typename RealType, typename CharT, typename Traits>
+   std::basic_istream<CharT, Traits>&
+   operator>>(std::basic_istream<CharT, Traits>& is, uniform_real_distribution<RealType>& d);
+
+   } // namespace random
+
+   using random::uniform_real_distribution;
+
+   THRUST_NAMESPACE_END
+
+   #include <thrust/random/detail/uniform_real_distribution.inl>
+

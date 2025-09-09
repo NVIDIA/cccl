@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:get\_device\_from\_stream
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/stream\_to\_dev.cuh <stream__to__dev_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::get_device_from_stream(cudaStream_t stream)

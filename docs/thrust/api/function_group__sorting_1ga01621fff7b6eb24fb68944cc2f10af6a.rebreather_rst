@@ -1,0 +1,6 @@
+thrust\:\:sort
+==============
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::sort(RandomAccessIterator first, RandomAccessIterator last)

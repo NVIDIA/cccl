@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:shuffled\_array\_tuple
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::shuffled_array_tuple(ArgTypes... args)

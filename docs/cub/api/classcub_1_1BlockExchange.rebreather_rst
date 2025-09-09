@@ -1,0 +1,6 @@
+cub\:\:BlockExchange
+====================
+
+Defined in :ref:`cub\/block\/block\_exchange.cuh <block__exchange_8cuh>`
+
+.. doxygenclass:: cub::BlockExchange

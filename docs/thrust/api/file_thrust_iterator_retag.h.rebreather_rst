@@ -1,0 +1,29 @@
+.. _`retag_8h`:
+
+thrust\/iterator\/retag.h
+=========================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_retag.h`
+
+.. doxygenfile:: thrust/iterator/retag.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_retag.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:reinterpret\_tag <group__iterator__tags_1gad9db2309839c1adf493522c6e879d0f5>`
+- :ref:`thrust\:\:retag <group__iterator__tags_1ga931a99cbb9d6073f2d1bca493dda5163>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,16 @@
+.. _`dir_d77906c62e23ab1810d90a4407989853`:
+
+thrust\/system\/cpp
+===================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_thrust_system_cpp_pointer.h
+
+- :ref:`thrust\/system\/cpp\/pointer.h <system_2cpp_2pointer_8h>`
+

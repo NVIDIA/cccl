@@ -1,0 +1,6 @@
+thrust\:\:discard\_iterator
+===========================
+
+Defined in :ref:`thrust\/iterator\/discard\_iterator.h <discard__iterator_8h>`
+
+.. doxygenclass:: thrust::discard_iterator

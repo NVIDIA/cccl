@@ -1,0 +1,6 @@
+thrust\:\:host\_memory\_resource
+================================
+
+Defined in :ref:`thrust\/mr\/host\_memory\_resource.h <host__memory__resource_8h>`
+
+.. doxygentypedef:: thrust::host_memory_resource

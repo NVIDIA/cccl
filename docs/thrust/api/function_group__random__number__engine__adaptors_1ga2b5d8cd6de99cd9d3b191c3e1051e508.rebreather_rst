@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\>\>
+================================
+
+Defined in :ref:`thrust\/random\/discard\_block\_engine.h <discard__block__engine_8h>`
+
+.. doxygenfunction:: thrust::random::operator>>(std::basic_istream< CharT, Traits > &is, discard_block_engine< Engine, p, r > &e)

@@ -1,0 +1,72 @@
+.. _`functional_8h`:
+
+thrust\/functional.h
+====================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_functional.h`
+
+.. doxygenfile:: thrust/functional.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_functional.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:placeholders <namespacethrust_1_1placeholders>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:project1st <structthrust_1_1project1st>`
+- :ref:`thrust\:\:project1st\< void\, void \> <structthrust_1_1project1st_3_01void_00_01void_01_4>`
+- :ref:`thrust\:\:project2nd <structthrust_1_1project2nd>`
+- :ref:`thrust\:\:project2nd\< void\, void \> <structthrust_1_1project2nd_3_01void_00_01void_01_4>`
+- :ref:`thrust\:\:square <structthrust_1_1square>`
+- :ref:`thrust\:\:square\< void \> <structthrust_1_1square_3_01void_01_4>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:bit\_and <group__bitwise__operations_1ga2a31cf3d89bcbf180956d6fc22c7925c>`
+- :ref:`thrust\:\:bit\_or <group__bitwise__operations_1ga088b71d62502e09028451e7c4c902d1d>`
+- :ref:`thrust\:\:bit\_xor <group__bitwise__operations_1gaa17bfcdebcb4ea7d6830a51becd2d7bc>`
+- :ref:`thrust\:\:divides <group__arithmetic__operations_1ga7e522d9f613022102a25ea07cc502009>`
+- :ref:`thrust\:\:equal\_to <group__comparison__operations_1ga6016444d0d718bde9affbb83f86817cf>`
+- :ref:`thrust\:\:greater <group__comparison__operations_1gaa754375d213e68012957ea5fe58dc58b>`
+- :ref:`thrust\:\:greater\_equal <group__comparison__operations_1ga24ffdd7aba538c5561a8fa5225436a26>`
+- :ref:`thrust\:\:less <group__comparison__operations_1ga3df4350c6d907789cc6e9efdeb8fa8e8>`
+- :ref:`thrust\:\:less\_equal <group__comparison__operations_1ga1f83a200dfc94baf2238e9cc44b7d59d>`
+- :ref:`thrust\:\:logical\_and <group__logical__operations_1ga0cfd98f5bffe57c208869ea3651c9140>`
+- :ref:`thrust\:\:logical\_not <group__logical__operations_1ga731bd3f2f6fce802d1db185326805642>`
+- :ref:`thrust\:\:logical\_or <group__logical__operations_1gadddf6d85fb777f7b0c41447218ea8f71>`
+- :ref:`thrust\:\:maximum <group__generalized__identity__operations_1gad9173650fb6208469b97a740e8c48278>`
+- :ref:`thrust\:\:minimum <group__generalized__identity__operations_1gaae503790bd79e5ca6fa04ebb4258bdb1>`
+- :ref:`thrust\:\:minus <group__arithmetic__operations_1gaf224863e4ee90d830cba24acaef5de6a>`
+- :ref:`thrust\:\:modulus <group__arithmetic__operations_1ga2b5b457ade0dc7fb863c4dfca518bc8b>`
+- :ref:`thrust\:\:multiplies <group__arithmetic__operations_1ga73955b2463ad31b8b9b937edde0c0693>`
+- :ref:`thrust\:\:negate <group__arithmetic__operations_1ga0d4fe7df924272f46ec6391d579636a4>`
+- :ref:`thrust\:\:not\_equal\_to <group__comparison__operations_1ga1ebb8fb466381ae25d12dd30a8947576>`
+- :ref:`thrust\:\:plus <group__arithmetic__operations_1gaae7361f0dc565944c5c99ca7bdd8f37e>`
+
+Variables
+---------
+
+- :ref:`thrust\:\:placeholders\:\:\_1 <namespacethrust_1_1placeholders_1a51a401f02fea91efe9127a8e18a57336>`
+- :ref:`thrust\:\:placeholders\:\:\_10 <namespacethrust_1_1placeholders_1acc436709d1bf4b1141468e2956713878>`
+- :ref:`thrust\:\:placeholders\:\:\_2 <namespacethrust_1_1placeholders_1a7d2829ba7f75828382ef64ef2e2878eb>`
+- :ref:`thrust\:\:placeholders\:\:\_3 <namespacethrust_1_1placeholders_1aaa143d5425db32202de6fbecc8d40a2a>`
+- :ref:`thrust\:\:placeholders\:\:\_4 <namespacethrust_1_1placeholders_1a6a5f96b2bbbdea62838c96e23bbc110a>`
+- :ref:`thrust\:\:placeholders\:\:\_5 <namespacethrust_1_1placeholders_1a97aa8beefecc8df2edf80c4e04c55be7>`
+- :ref:`thrust\:\:placeholders\:\:\_6 <namespacethrust_1_1placeholders_1ab2154c3ddb439b75b82cda903e68345e>`
+- :ref:`thrust\:\:placeholders\:\:\_7 <namespacethrust_1_1placeholders_1a2fbdf2c557d89f0ad0430b656453fa47>`
+- :ref:`thrust\:\:placeholders\:\:\_8 <namespacethrust_1_1placeholders_1a2aa8f1149cd70c427f955fe289a1e3fa>`
+- :ref:`thrust\:\:placeholders\:\:\_9 <namespacethrust_1_1placeholders_1aa9a3ed3450fdd4612ec64c1b1b75e780>`
+

@@ -1,0 +1,6 @@
+cub\:\:BlockLoad
+================
+
+Defined in :ref:`cub\/block\/block\_load.cuh <block__load_8cuh>`
+
+.. doxygenclass:: cub::BlockLoad

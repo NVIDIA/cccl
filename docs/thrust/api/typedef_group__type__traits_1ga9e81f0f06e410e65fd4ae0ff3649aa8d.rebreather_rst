@@ -1,0 +1,6 @@
+thrust\:\:is\_operator\_less\_or\_greater\_function\_object
+===========================================================
+
+Defined in :ref:`thrust\/type\_traits\/is\_operator\_less\_or\_greater\_function\_object.h <is__operator__less__or__greater__function__object_8h>`
+
+.. doxygentypedef:: thrust::is_operator_less_or_greater_function_object

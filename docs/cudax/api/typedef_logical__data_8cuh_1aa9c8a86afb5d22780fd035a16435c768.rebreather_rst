@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:token
+====================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/logical\_data.cuh <logical__data_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::stf::token

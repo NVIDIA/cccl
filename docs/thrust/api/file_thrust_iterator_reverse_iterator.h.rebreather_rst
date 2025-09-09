@@ -1,0 +1,33 @@
+.. _`reverse__iterator_8h`:
+
+thrust\/iterator\/reverse\_iterator.h
+=====================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_reverse_iterator.h`
+
+.. doxygenfile:: thrust/iterator/reverse_iterator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_reverse_iterator.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:reverse\_iterator <classthrust_1_1reverse__iterator>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:make\_reverse\_iterator <group__fancyiterator_1ga88c319c5f823b524c69582cc35b9ce26>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

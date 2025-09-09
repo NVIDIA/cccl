@@ -1,0 +1,6 @@
+thrust\:\:find\_if
+==================
+
+Defined in :ref:`thrust\/find.h <find_8h>`
+
+.. doxygenfunction:: thrust::find_if(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator first, InputIterator last, Predicate pred)

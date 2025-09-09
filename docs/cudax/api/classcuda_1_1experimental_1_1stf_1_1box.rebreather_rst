@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:box
+==================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/dimensions.cuh <____stf_2utility_2dimensions_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::box

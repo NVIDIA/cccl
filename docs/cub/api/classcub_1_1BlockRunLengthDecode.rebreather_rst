@@ -1,0 +1,6 @@
+cub\:\:BlockRunLengthDecode
+===========================
+
+Defined in :ref:`cub\/block\/block\_run\_length\_decode.cuh <block__run__length__decode_8cuh>`
+
+.. doxygenclass:: cub::BlockRunLengthDecode

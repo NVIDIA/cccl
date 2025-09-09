@@ -1,0 +1,6 @@
+thrust\:\:random\:\:normal\_distribution
+========================================
+
+Defined in :ref:`thrust\/random\/normal\_distribution.h <normal__distribution_8h>`
+
+.. doxygenclass:: thrust::random::normal_distribution

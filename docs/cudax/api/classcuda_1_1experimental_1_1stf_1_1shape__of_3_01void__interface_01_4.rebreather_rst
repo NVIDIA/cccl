@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:shape\_of\< void\_interface \>
+=============================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/void\_interface.cuh <internal_2void__interface_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::shape_of< void_interface >

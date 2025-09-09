@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:layout\_stride
+=============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/slice.cuh <internal_2slice_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::layout_stride

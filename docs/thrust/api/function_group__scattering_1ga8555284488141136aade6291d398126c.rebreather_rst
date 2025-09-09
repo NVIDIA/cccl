@@ -1,0 +1,6 @@
+thrust\:\:scatter
+=================
+
+Defined in :ref:`thrust\/scatter.h <scatter_8h>`
+
+.. doxygenfunction:: thrust::scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result)

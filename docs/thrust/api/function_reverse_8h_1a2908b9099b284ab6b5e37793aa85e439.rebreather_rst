@@ -1,0 +1,6 @@
+thrust\:\:reverse
+=================
+
+Defined in :ref:`thrust\/reverse.h <reverse_8h>`
+
+.. doxygenfunction:: thrust::reverse(BidirectionalIterator first, BidirectionalIterator last)

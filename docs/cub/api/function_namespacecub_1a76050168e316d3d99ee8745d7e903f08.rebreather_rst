@@ -1,0 +1,6 @@
+cub\:\:StoreDirectStriped
+=========================
+
+Defined in :ref:`cub\/block\/block\_store.cuh <block__store_8cuh>`
+
+.. doxygenfunction:: cub::StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T(&items)[ITEMS_PER_THREAD])

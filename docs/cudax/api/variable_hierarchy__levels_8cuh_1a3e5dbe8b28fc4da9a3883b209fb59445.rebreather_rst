@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:is\_core\_cuda\_hierarchy\_level
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_levels.cuh <hierarchy__levels_8cuh>`
+
+.. doxygenvariable:: cuda::experimental::is_core_cuda_hierarchy_level

@@ -1,0 +1,39 @@
+.. _`extrema_8h`:
+
+thrust\/extrema.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_extrema.h`
+
+.. doxygenfile:: thrust/extrema.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_extrema.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:max\_element <group__extrema_1ga262a9771eb253a9587ab0690cae258a7>`
+- :ref:`thrust\:\:max\_element <group__extrema_1ga879a150e971c0d4f36a0a3cc2d853f47>`
+- :ref:`thrust\:\:max\_element <group__extrema_1gabc0550e56644df298a6b7a5824f1a166>`
+- :ref:`thrust\:\:max\_element <group__extrema_1gadd477c531dc4a4bf847f70ce73d01464>`
+- :ref:`thrust\:\:min\_element <group__extrema_1ga70a05eafeff24c0553adcbb51d8f052a>`
+- :ref:`thrust\:\:min\_element <group__extrema_1ga90f5158cab04adeb3f1b8b5e4acdbbcc>`
+- :ref:`thrust\:\:min\_element <group__extrema_1gaa9dcee5e36206a3ef7215a4b3984e002>`
+- :ref:`thrust\:\:min\_element <group__extrema_1gab17dd6fa29f87f9971b3be412d052e4b>`
+- :ref:`thrust\:\:minmax\_element <group__extrema_1ga227929cf789ca33c1757acf5c08ceb91>`
+- :ref:`thrust\:\:minmax\_element <group__extrema_1ga3d417c8600dd217f3d8550fea9bbf4a6>`
+- :ref:`thrust\:\:minmax\_element <group__extrema_1gab334614571edb0bad0c88de27797f6c5>`
+- :ref:`thrust\:\:minmax\_element <group__extrema_1gacf7322993ea5e0486d2db3f613a1be98>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

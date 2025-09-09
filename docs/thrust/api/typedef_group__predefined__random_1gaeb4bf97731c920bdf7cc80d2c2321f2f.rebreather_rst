@@ -1,0 +1,6 @@
+thrust\:\:random\:\:ranlux48\_base
+==================================
+
+Defined in :ref:`thrust\/random\/subtract\_with\_carry\_engine.h <subtract__with__carry__engine_8h>`
+
+.. doxygentypedef:: thrust::random::ranlux48_base

@@ -1,0 +1,6 @@
+cuda\:\:std
+===========
+
+.. doxygennamespace:: cuda::std
+   :desc-only:
+

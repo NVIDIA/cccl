@@ -1,0 +1,6 @@
+cub\:\:DeviceSegmentedReduce
+============================
+
+Defined in :ref:`cub\/device\/device\_segmented\_reduce.cuh <device__segmented__reduce_8cuh>`
+
+.. doxygenstruct:: cub::DeviceSegmentedReduce

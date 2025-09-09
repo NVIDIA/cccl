@@ -1,0 +1,28 @@
+.. _`block__run__length__decode_8cuh`:
+
+cub\/block\/block\_run\_length\_decode.cuh
+==========================================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_run_length_decode.cuh`
+
+.. doxygenfile:: cub/block/block_run_length_decode.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_run_length_decode.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockRunLengthDecode <classcub_1_1BlockRunLengthDecode>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

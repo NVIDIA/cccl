@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:green\_context\_helper
+=====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_context.cuh <green__context_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::green_context_helper

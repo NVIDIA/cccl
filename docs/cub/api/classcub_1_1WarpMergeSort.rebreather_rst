@@ -1,0 +1,6 @@
+cub\:\:WarpMergeSort
+====================
+
+Defined in :ref:`cub\/warp\/warp\_merge\_sort.cuh <warp__merge__sort_8cuh>`
+
+.. doxygenclass:: cub::WarpMergeSort

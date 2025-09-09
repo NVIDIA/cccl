@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:synchronous\_resource\_ref
+==================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/any\_resource.cuh <any__resource_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::synchronous_resource_ref

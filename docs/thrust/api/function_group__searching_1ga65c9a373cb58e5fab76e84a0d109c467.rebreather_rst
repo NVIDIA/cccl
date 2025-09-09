@@ -1,0 +1,6 @@
+thrust\:\:mismatch
+==================
+
+Defined in :ref:`thrust\/mismatch.h <mismatch_8h>`
+
+.. doxygenfunction:: thrust::mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred)

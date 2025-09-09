@@ -1,0 +1,6 @@
+CUB\_PATCH\_NUMBER
+==================
+
+Defined in :ref:`cub\/version.cuh <version_8cuh>`
+
+.. doxygendefine:: CUB_PATCH_NUMBER

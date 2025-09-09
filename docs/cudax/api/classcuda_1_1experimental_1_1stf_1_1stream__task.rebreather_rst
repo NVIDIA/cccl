@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:stream\_task
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_task.cuh <stream__task_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::stream_task

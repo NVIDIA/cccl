@@ -1,0 +1,31 @@
+.. _`reverse_8h`:
+
+thrust\/reverse.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_reverse.h`
+
+.. doxygenfile:: thrust/reverse.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_reverse.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:reverse <reverse_8h_1a2908b9099b284ab6b5e37793aa85e439>`
+- :ref:`thrust\:\:reverse <reverse_8h_1ac20b29a89a6fac38529d801b6bfc2b2f>`
+- :ref:`thrust\:\:reverse\_copy <reverse_8h_1a96a1db1860b1b0e7be7cf53856a9b456>`
+- :ref:`thrust\:\:reverse\_copy <reverse_8h_1ae689b285c63c567105d88e35f47e4b20>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

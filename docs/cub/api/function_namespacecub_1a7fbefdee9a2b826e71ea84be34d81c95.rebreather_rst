@@ -1,0 +1,6 @@
+cub\:\:StableOddEvenSort
+========================
+
+Defined in :ref:`cub\/thread\/thread\_sort.cuh <thread__sort_8cuh>`
+
+.. doxygenfunction:: cub::StableOddEvenSort(KeyT(&keys)[ITEMS_PER_THREAD], ValueT(&items)[ITEMS_PER_THREAD], CompareOp compare_op)

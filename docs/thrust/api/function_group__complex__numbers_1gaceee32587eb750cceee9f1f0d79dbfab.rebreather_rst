@@ -1,0 +1,6 @@
+thrust\:\:cosh
+==============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::cosh(const complex< T > &z)

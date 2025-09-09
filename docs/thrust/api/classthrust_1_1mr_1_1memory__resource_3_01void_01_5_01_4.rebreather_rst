@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:memory\_resource\< void \* \>
+=============================================
+
+Defined in :ref:`thrust\/mr\/memory\_resource.h <memory__resource_8h>`
+
+.. doxygenclass:: thrust::mr::memory_resource< void * >

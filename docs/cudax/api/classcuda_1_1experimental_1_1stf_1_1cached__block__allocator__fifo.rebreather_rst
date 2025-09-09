@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:cached\_block\_allocator\_fifo
+=============================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/cached\_allocator.cuh <cached__allocator_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::cached_block_allocator_fifo

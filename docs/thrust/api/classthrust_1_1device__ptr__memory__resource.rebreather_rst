@@ -1,0 +1,6 @@
+thrust\:\:device\_ptr\_memory\_resource
+=======================================
+
+Defined in :ref:`thrust\/device\_allocator.h <device__allocator_8h>`
+
+.. doxygenclass:: thrust::device_ptr_memory_resource

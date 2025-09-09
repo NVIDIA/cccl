@@ -1,0 +1,39 @@
+.. _`remove_8h`:
+
+thrust\/remove.h
+================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_remove.h`
+
+.. doxygenfile:: thrust/remove.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_remove.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:remove <group__stream__compaction_1ga3e0a48a2b03425d9b6ee92ca026e6cc4>`
+- :ref:`thrust\:\:remove <group__stream__compaction_1gaf6724a17d4f4d25bd0eb45714ed03063>`
+- :ref:`thrust\:\:remove\_copy <group__stream__compaction_1ga1cff040dfdb202bfc3b3bb20df9ee2a9>`
+- :ref:`thrust\:\:remove\_copy <group__stream__compaction_1ga95e6719fc01574bb30daf46102896e76>`
+- :ref:`thrust\:\:remove\_copy\_if <group__stream__compaction_1ga5ca0dab8bdfb53742f0fca18156c8987>`
+- :ref:`thrust\:\:remove\_copy\_if <group__stream__compaction_1ga68cd876b18d71b7dd4a8d9bcefbb7d2d>`
+- :ref:`thrust\:\:remove\_copy\_if <group__stream__compaction_1ga7bba0149f8e6ddff7e742e7494535400>`
+- :ref:`thrust\:\:remove\_copy\_if <group__stream__compaction_1gaeec02acfde68e411ca7d09063241f4d7>`
+- :ref:`thrust\:\:remove\_if <group__stream__compaction_1ga2e6f9b410f1ea32246cbb4890d636b7e>`
+- :ref:`thrust\:\:remove\_if <group__stream__compaction_1ga557e8dd3130229b1a6193b3acc82ee5e>`
+- :ref:`thrust\:\:remove\_if <group__stream__compaction_1ga5fa8f86717696de88ab484410b43829b>`
+- :ref:`thrust\:\:remove\_if <group__stream__compaction_1gaf01d45b30fecba794afae065d625f94f>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

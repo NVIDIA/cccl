@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:small\_vector
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/memory.cuh <memory_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::small_vector

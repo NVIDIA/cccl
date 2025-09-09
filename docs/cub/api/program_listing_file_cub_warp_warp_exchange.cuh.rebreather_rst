@@ -1,0 +1,123 @@
+cub\/warp\/warp\_exchange.cuh
+=============================
+
+File members: :ref:`cub\/warp\/warp\_exchange.cuh <warp__exchange_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/util_ptx.cuh>
+   #include <cub/util_type.cuh>
+   #include <cub/warp/specializations/warp_exchange_shfl.cuh>
+   #include <cub/warp/specializations/warp_exchange_smem.cuh>
+
+   #include <cuda/std/type_traits>
+
+   CUB_NAMESPACE_BEGIN
+
+   enum WarpExchangeAlgorithm
+   {
+     WARP_EXCHANGE_SMEM,
+     WARP_EXCHANGE_SHUFFLE,
+   };
+
+   namespace detail
+   {
+   template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
+   using InternalWarpExchangeImpl =
+     ::cuda::std::_If<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
+                      WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
+                      WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
+   } // namespace detail
+
+   template <typename InputT,
+             int ITEMS_PER_THREAD,
+             int LOGICAL_WARP_THREADS                      = detail::warp_threads,
+             WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
+   class WarpExchange
+       : private detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
+   {
+     using InternalWarpExchange =
+       detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
+
+   public:
+     using TempStorage = typename InternalWarpExchange::TempStorage;
+
+     WarpExchange() = delete;
+
+     explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchange(TempStorage& temp_storage)
+         : InternalWarpExchange(temp_storage)
+     {}
+
+     template <typename OutputT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+     {
+       InternalWarpExchange::BlockedToStriped(input_items, output_items);
+     }
+
+     template <typename OutputT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+     {
+       InternalWarpExchange::StripedToBlocked(input_items, output_items);
+     }
+
+     template <typename OffsetT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD])
+     {
+       InternalWarpExchange::ScatterToStriped(items, ranks);
+     }
+
+     template <typename OutputT, typename OffsetT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+       const InputT (&input_items)[ITEMS_PER_THREAD],
+       OutputT (&output_items)[ITEMS_PER_THREAD],
+       OffsetT (&ranks)[ITEMS_PER_THREAD])
+     {
+       InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
+     }
+
+   };
+
+   CUB_NAMESPACE_END
+

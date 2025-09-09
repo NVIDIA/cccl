@@ -1,0 +1,6 @@
+thrust\:\:transform
+===================
+
+Defined in :ref:`thrust\/transform.h <transform_8h>`
+
+.. doxygenfunction:: thrust::transform(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)

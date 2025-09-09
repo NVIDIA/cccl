@@ -1,0 +1,48 @@
+.. _`dir_18fc672d63781b5a743137aee24ff656`:
+
+cub\/device
+===========
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_cub_device_device_adjacent_difference.cuh
+   file_cub_device_device_copy.cuh
+   file_cub_device_device_for.cuh
+   file_cub_device_device_histogram.cuh
+   file_cub_device_device_memcpy.cuh
+   file_cub_device_device_merge.cuh
+   file_cub_device_device_merge_sort.cuh
+   file_cub_device_device_partition.cuh
+   file_cub_device_device_radix_sort.cuh
+   file_cub_device_device_reduce.cuh
+   file_cub_device_device_run_length_encode.cuh
+   file_cub_device_device_scan.cuh
+   file_cub_device_device_segmented_radix_sort.cuh
+   file_cub_device_device_segmented_reduce.cuh
+   file_cub_device_device_segmented_sort.cuh
+   file_cub_device_device_select.cuh
+   file_cub_device_device_transform.cuh
+
+- :ref:`cub\/device\/device\_adjacent\_difference.cuh <device__adjacent__difference_8cuh>`
+- :ref:`cub\/device\/device\_copy.cuh <device__copy_8cuh>`
+- :ref:`cub\/device\/device\_for.cuh <device__for_8cuh>`
+- :ref:`cub\/device\/device\_histogram.cuh <device__histogram_8cuh>`
+- :ref:`cub\/device\/device\_memcpy.cuh <device__memcpy_8cuh>`
+- :ref:`cub\/device\/device\_merge.cuh <device__merge_8cuh>`
+- :ref:`cub\/device\/device\_merge\_sort.cuh <device__merge__sort_8cuh>`
+- :ref:`cub\/device\/device\_partition.cuh <device__partition_8cuh>`
+- :ref:`cub\/device\/device\_radix\_sort.cuh <device__radix__sort_8cuh>`
+- :ref:`cub\/device\/device\_reduce.cuh <device__reduce_8cuh>`
+- :ref:`cub\/device\/device\_run\_length\_encode.cuh <device__run__length__encode_8cuh>`
+- :ref:`cub\/device\/device\_scan.cuh <device__scan_8cuh>`
+- :ref:`cub\/device\/device\_segmented\_radix\_sort.cuh <device__segmented__radix__sort_8cuh>`
+- :ref:`cub\/device\/device\_segmented\_reduce.cuh <device__segmented__reduce_8cuh>`
+- :ref:`cub\/device\/device\_segmented\_sort.cuh <device__segmented__sort_8cuh>`
+- :ref:`cub\/device\/device\_select.cuh <device__select_8cuh>`
+- :ref:`cub\/device\/device\_transform.cuh <device__transform_8cuh>`
+

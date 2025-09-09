@@ -1,0 +1,6 @@
+cub\:\:ThreadReduce
+===================
+
+Defined in :ref:`cub\/thread\/thread\_reduce.cuh <thread__reduce_8cuh>`
+
+.. doxygenfunction:: cub::ThreadReduce(const Input &input, ReductionOp reduction_op)

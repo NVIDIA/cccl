@@ -1,0 +1,6 @@
+thrust\:\:transform\_inclusive\_scan
+====================================
+
+Defined in :ref:`thrust\/transform\_scan.h <transform__scan_8h>`
+
+.. doxygenfunction:: thrust::transform_inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, AssociativeOperator binary_op)

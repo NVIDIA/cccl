@@ -1,0 +1,31 @@
+.. _`stream_2internal_2event__types_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/stream\/internal\/event\_types.cuh
+========================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/internal <dir_b3334876d4c6cb266af58073db3fbfc3>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_stream_internal_event_types.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/stream/internal/event_types.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_stream_internal_event_types.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_and\_event <classcuda_1_1experimental_1_1stf_1_1stream__and__event>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_async\_op <classcuda_1_1experimental_1_1stf_1_1stream__async__op>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

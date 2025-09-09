@@ -1,0 +1,6 @@
+CUB\_SUBMINOR\_VERSION
+======================
+
+Defined in :ref:`cub\/version.cuh <version_8cuh>`
+
+.. doxygendefine:: CUB_SUBMINOR_VERSION

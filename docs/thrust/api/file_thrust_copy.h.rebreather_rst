@@ -1,0 +1,35 @@
+.. _`copy_8h`:
+
+thrust\/copy.h
+==============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_copy.h`
+
+.. doxygenfile:: thrust/copy.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_copy.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:copy <group__copying_1ga24ccfaaa706a9163ec5117758fdb71b9>`
+- :ref:`thrust\:\:copy <group__copying_1ga83d834a518f336cc996e22639f5e4bee>`
+- :ref:`thrust\:\:copy\_if <group__stream__compaction_1ga291bd49963dc7d3d0529fb8ed05de66e>`
+- :ref:`thrust\:\:copy\_if <group__stream__compaction_1ga36d9d6ed8e17b442c1fd8dc40bd515d5>`
+- :ref:`thrust\:\:copy\_if <group__stream__compaction_1ga5ef681b2c51c35aa4e93fe9ad5e948c5>`
+- :ref:`thrust\:\:copy\_if <group__stream__compaction_1gafd4cd96b998ad2b3c336be1e24dc1f67>`
+- :ref:`thrust\:\:copy\_n <group__copying_1ga4eb33fdcfcf991eaf1c0ae209046922d>`
+- :ref:`thrust\:\:copy\_n <group__copying_1gab3d33f1aa1d078b5f6b579f07313d058>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

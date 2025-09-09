@@ -1,0 +1,6 @@
+CUB\_DEFINE\_KERNEL\_GETTER
+===========================
+
+Defined in :ref:`cub\/util\_macro.cuh <util__macro_8cuh>`
+
+.. doxygendefine:: CUB_DEFINE_KERNEL_GETTER

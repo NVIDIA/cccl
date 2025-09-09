@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:print\_type\_name\_and\_fail
+===========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::print_type_name_and_fail

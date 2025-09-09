@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:cuda\_try
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_safe\_call.cuh <cuda__safe__call_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::cuda_try(Status status, const cuda::std::source_location loc=cuda::std::source_location::current())

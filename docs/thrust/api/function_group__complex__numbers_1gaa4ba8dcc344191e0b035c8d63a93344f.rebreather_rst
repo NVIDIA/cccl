@@ -1,0 +1,6 @@
+thrust\:\:pow
+=============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::pow(const complex< T0 > &x, const T1 &y)

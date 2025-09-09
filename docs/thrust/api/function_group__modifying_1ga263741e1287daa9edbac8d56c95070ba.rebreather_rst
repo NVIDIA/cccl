@@ -1,0 +1,6 @@
+thrust\:\:for\_each
+===================
+
+Defined in :ref:`thrust\/for\_each.h <for__each_8h>`
+
+.. doxygenfunction:: thrust::for_each(InputIterator first, InputIterator last, UnaryFunction f)

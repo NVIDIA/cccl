@@ -1,0 +1,18 @@
+.. _`util__cpp__dialect_8cuh`:
+
+cub\/util\_cpp\_dialect.cuh
+===========================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_util_cpp_dialect.cuh`
+
+.. doxygenfile:: cub/util_cpp_dialect.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_util_cpp_dialect.cuh>
+

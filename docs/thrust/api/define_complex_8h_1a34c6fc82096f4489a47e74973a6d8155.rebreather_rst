@@ -1,0 +1,6 @@
+THRUST\_STD\_COMPLEX\_IMAG
+==========================
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygendefine:: THRUST_STD_COMPLEX_IMAG

@@ -1,0 +1,6 @@
+thrust\:\:omp
+=============
+
+.. doxygennamespace:: thrust::omp
+   :desc-only:
+

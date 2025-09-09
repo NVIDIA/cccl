@@ -1,0 +1,23 @@
+.. _`logical__metafunctions_8h`:
+
+thrust\/type\_traits\/logical\_metafunctions.h
+==============================================
+
+In directory: :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+Source file: :doc:`program_listing_file_thrust_type_traits_logical_metafunctions.h`
+
+.. doxygenfile:: thrust/type_traits/logical_metafunctions.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_type_traits_logical_metafunctions.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

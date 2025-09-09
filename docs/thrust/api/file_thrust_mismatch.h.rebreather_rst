@@ -1,0 +1,31 @@
+.. _`mismatch_8h`:
+
+thrust\/mismatch.h
+==================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_mismatch.h`
+
+.. doxygenfile:: thrust/mismatch.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mismatch.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:mismatch <group__searching_1ga376997712141e177c600c1c72ace4303>`
+- :ref:`thrust\:\:mismatch <group__searching_1ga3ef5e852820b4e368d0eb8b9992be8d8>`
+- :ref:`thrust\:\:mismatch <group__searching_1ga5f1d38ca2a67197796cf917f9b2ed0b0>`
+- :ref:`thrust\:\:mismatch <group__searching_1ga65c9a373cb58e5fab76e84a0d109c467>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,6 @@
+thrust\:\:raw\_pointer\_cast
+============================
+
+Defined in :ref:`thrust\/memory.h <memory_8h>`
+
+.. doxygenfunction:: thrust::raw_pointer_cast(Pointer ptr)

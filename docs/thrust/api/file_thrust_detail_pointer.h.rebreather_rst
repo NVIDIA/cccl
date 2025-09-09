@@ -1,0 +1,28 @@
+.. _`detail_2pointer_8h`:
+
+thrust\/detail\/pointer.h
+=========================
+
+In directory: :ref:`thrust\/detail <dir_c1e84cbfa86fcbd3b5adf9dcf9da38fe>`
+
+Source file: :doc:`program_listing_file_thrust_detail_pointer.h`
+
+.. doxygenfile:: thrust/detail/pointer.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_detail_pointer.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:pointer <classthrust_1_1pointer>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

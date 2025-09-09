@@ -1,0 +1,6 @@
+cub\:\:ThreadStore
+==================
+
+Defined in :ref:`cub\/thread\/thread\_store.cuh <thread__store_8cuh>`
+
+.. doxygenfunction:: cub::ThreadStore(OutputIteratorT itr, T val)

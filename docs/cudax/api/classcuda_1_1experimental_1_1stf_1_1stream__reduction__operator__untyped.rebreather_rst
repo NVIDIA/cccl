@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator\_untyped
+===================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/reduction.cuh <reduction_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::stream_reduction_operator_untyped

@@ -1,0 +1,6 @@
+cub\:\:Debug
+============
+
+Defined in :ref:`cub\/util\_debug.cuh <util__debug_8cuh>`
+
+.. doxygenfunction:: cub::Debug(cudaError_t error, [[maybe_unused]] const char *filename, [[maybe_unused]] int line)

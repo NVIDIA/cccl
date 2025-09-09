@@ -1,0 +1,63 @@
+.. _`error__code_8h`:
+
+thrust\/system\/error\_code.h
+=============================
+
+In directory: :ref:`thrust\/system <dir_aa94a12d43e5ba9deab857d2808a2f0a>`
+
+Source file: :doc:`program_listing_file_thrust_system_error_code.h`
+
+.. doxygenfile:: thrust/system/error_code.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_system_error_code.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:system\:\:error\_category <classthrust_1_1system_1_1error__category>`
+- :ref:`thrust\:\:system\:\:error\_code <classthrust_1_1system_1_1error__code>`
+- :ref:`thrust\:\:system\:\:error\_condition <classthrust_1_1system_1_1error__condition>`
+
+Enums
+-----
+
+- :ref:`thrust\:\:system\:\:errc\:\:errc\_t <error__code_8h_1ae2217ff1b521ce9901d8953a82bef795>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:system\:\:generic\_category <group__system__diagnostics_1ga0398745b1fc9ca63b4cc4a32fd5e2f37>`
+- :ref:`thrust\:\:system\:\:make\_error\_code <group__system__diagnostics_1gac5948a68bc203ae0ef498f763fb3f3d3>`
+- :ref:`thrust\:\:system\:\:make\_error\_condition <group__system__diagnostics_1gaedfa758a2df32ab767da9e6e7bfe10d2>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1ga39877e4c57f7292d957f21c1c9ab199a>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1ga82b3841cd11043ae9453075fc2b5b50b>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1ga94389734c6391e17195f8f7adc3642d2>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1gaebaba0aae2b27efc652c0dc51ba10a11>`
+- :ref:`thrust\:\:system\:\:operator\< <group__system__diagnostics_1ga1534a08dd66c4137efee36ddb2cc7f09>`
+- :ref:`thrust\:\:system\:\:operator\< <group__system__diagnostics_1ga77c6e455a675f6b94664459e1f9d2253>`
+- :ref:`thrust\:\:system\:\:operator\<\< <group__system__diagnostics_1ga8a52c1904e21d254f983bd16da9f59b6>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1ga80740ab857f3f3ded5ebb2b4257bbd27>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1ga92a3065a9c4bb790e3f40efb22560f55>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1gab6549b94fe86ed502c8c865add43fb77>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1gae7262a5915f79b141f4ebbc3b9485f9d>`
+- :ref:`thrust\:\:system\:\:system\_category <group__system__diagnostics_1ga31750883ef58fa71f12cc16147c66259>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:system <namespacethrust_1_1system>`
+- :ref:`thrust\:\:system\:\:errc <namespacethrust_1_1system_1_1errc>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:system\:\:is\_error\_code\_enum <structthrust_1_1system_1_1is__error__code__enum>`
+- :ref:`thrust\:\:system\:\:is\_error\_condition\_enum <structthrust_1_1system_1_1is__error__condition__enum>`
+- :ref:`thrust\:\:system\:\:is\_error\_condition\_enum\< errc\:\:errc\_t \> <structthrust_1_1system_1_1is__error__condition__enum_3_01errc_1_1errc__t_01_4>`
+

@@ -1,0 +1,6 @@
+thrust\:\:iterator\_system\<\:\:cuda\:\:std\:\:reverse\_iterator\< Iter \> \>
+=============================================================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_system<::cuda::std::reverse_iterator< Iter > >

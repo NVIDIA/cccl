@@ -1,0 +1,16 @@
+.. _`dir_0be56cf1bdd77d259a9ba8e1164da791`:
+
+include\/cuda\/experimental\/\_\_device
+=======================================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___device_logical_device.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_device\/logical\_device.cuh <logical__device_8cuh>`
+

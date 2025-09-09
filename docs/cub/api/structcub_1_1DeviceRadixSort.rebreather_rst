@@ -1,0 +1,6 @@
+cub\:\:DeviceRadixSort
+======================
+
+Defined in :ref:`cub\/device\/device\_radix\_sort.cuh <device__radix__sort_8cuh>`
+
+.. doxygenstruct:: cub::DeviceRadixSort

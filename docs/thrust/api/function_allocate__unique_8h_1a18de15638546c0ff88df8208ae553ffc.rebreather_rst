@@ -1,0 +1,6 @@
+thrust\:\:make\_tagged\_deleter
+===============================
+
+Defined in :ref:`thrust\/allocate\_unique.h <allocate__unique_8h>`
+
+.. doxygenfunction:: thrust::make_tagged_deleter(Lambda &&l)

@@ -1,0 +1,6 @@
+thrust\:\:prev
+==============
+
+Defined in :ref:`thrust\/advance.h <advance_8h>`
+
+.. doxygenfunction:: thrust::prev(InputIterator i, typename ::cuda::std::iterator_traits< InputIterator >::difference_type n=1)

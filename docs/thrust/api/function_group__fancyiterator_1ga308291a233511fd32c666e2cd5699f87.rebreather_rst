@@ -1,0 +1,6 @@
+thrust\:\:make\_transform\_iterator
+===================================
+
+Defined in :ref:`thrust\/iterator\/transform\_iterator.h <transform__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)

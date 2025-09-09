@@ -1,0 +1,390 @@
+
+Thrust\: The C\+\+ Parallel Algorithms Library API
+==================================================
+
+Directory hierarchy
+-------------------
+
+.. card::
+   :class-card: rebreather hierarchy
+
+   .. dropdown:: dir :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+      .. dropdown:: dir :ref:`thrust\/detail <dir_c1e84cbfa86fcbd3b5adf9dcf9da38fe>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`thrust\/detail\/pointer.h <detail_2pointer_8h>`
+
+      .. dropdown:: dir :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`thrust\/iterator\/constant\_iterator.h <constant__iterator_8h>`
+            - file :ref:`thrust\/iterator\/counting\_iterator.h <counting__iterator_8h>`
+            - file :ref:`thrust\/iterator\/discard\_iterator.h <discard__iterator_8h>`
+            - file :ref:`thrust\/iterator\/iterator\_adaptor.h <iterator__adaptor_8h>`
+            - file :ref:`thrust\/iterator\/iterator\_categories.h <iterator__categories_8h>`
+            - file :ref:`thrust\/iterator\/iterator\_facade.h <iterator__facade_8h>`
+            - file :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+            - file :ref:`thrust\/iterator\/offset\_iterator.h <offset__iterator_8h>`
+            - file :ref:`thrust\/iterator\/permutation\_iterator.h <permutation__iterator_8h>`
+            - file :ref:`thrust\/iterator\/retag.h <retag_8h>`
+            - file :ref:`thrust\/iterator\/reverse\_iterator.h <reverse__iterator_8h>`
+            - file :ref:`thrust\/iterator\/shuffle\_iterator.h <shuffle__iterator_8h>`
+            - file :ref:`thrust\/iterator\/strided\_iterator.h <strided__iterator_8h>`
+            - file :ref:`thrust\/iterator\/tabulate\_output\_iterator.h <tabulate__output__iterator_8h>`
+            - file :ref:`thrust\/iterator\/transform\_input\_output\_iterator.h <transform__input__output__iterator_8h>`
+            - file :ref:`thrust\/iterator\/transform\_iterator.h <transform__iterator_8h>`
+            - file :ref:`thrust\/iterator\/transform\_output\_iterator.h <transform__output__iterator_8h>`
+            - file :ref:`thrust\/iterator\/zip\_iterator.h <zip__iterator_8h>`
+
+      .. dropdown:: dir :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`thrust\/mr\/allocator.h <allocator_8h>`
+            - file :ref:`thrust\/mr\/device\_memory\_resource.h <device__memory__resource_8h>`
+            - file :ref:`thrust\/mr\/disjoint\_pool.h <disjoint__pool_8h>`
+            - file :ref:`thrust\/mr\/disjoint\_sync\_pool.h <disjoint__sync__pool_8h>`
+            - file :ref:`thrust\/mr\/disjoint\_tls\_pool.h <disjoint__tls__pool_8h>`
+            - file :ref:`thrust\/mr\/fancy\_pointer\_resource.h <fancy__pointer__resource_8h>`
+            - file :ref:`thrust\/mr\/host\_memory\_resource.h <host__memory__resource_8h>`
+            - file :ref:`thrust\/mr\/memory\_resource.h <memory__resource_8h>`
+            - file :ref:`thrust\/mr\/new.h <new_8h>`
+            - file :ref:`thrust\/mr\/polymorphic\_adaptor.h <polymorphic__adaptor_8h>`
+            - file :ref:`thrust\/mr\/pool.h <pool_8h>`
+            - file :ref:`thrust\/mr\/pool\_options.h <pool__options_8h>`
+            - file :ref:`thrust\/mr\/sync\_pool.h <sync__pool_8h>`
+            - file :ref:`thrust\/mr\/tls\_pool.h <tls__pool_8h>`
+            - file :ref:`thrust\/mr\/universal\_memory\_resource.h <universal__memory__resource_8h>`
+            - file :ref:`thrust\/mr\/validator.h <validator_8h>`
+
+      .. dropdown:: dir :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`thrust\/random\/discard\_block\_engine.h <discard__block__engine_8h>`
+            - file :ref:`thrust\/random\/linear\_congruential\_engine.h <linear__congruential__engine_8h>`
+            - file :ref:`thrust\/random\/linear\_feedback\_shift\_engine.h <linear__feedback__shift__engine_8h>`
+            - file :ref:`thrust\/random\/normal\_distribution.h <normal__distribution_8h>`
+            - file :ref:`thrust\/random\/subtract\_with\_carry\_engine.h <subtract__with__carry__engine_8h>`
+            - file :ref:`thrust\/random\/uniform\_int\_distribution.h <uniform__int__distribution_8h>`
+            - file :ref:`thrust\/random\/uniform\_real\_distribution.h <uniform__real__distribution_8h>`
+            - file :ref:`thrust\/random\/xor\_combine\_engine.h <xor__combine__engine_8h>`
+
+      .. dropdown:: dir :ref:`thrust\/system <dir_aa94a12d43e5ba9deab857d2808a2f0a>`
+
+         .. dropdown:: dir :ref:`thrust\/system\/cpp <dir_d77906c62e23ab1810d90a4407989853>`
+
+            .. container:: rebreather hierarchy
+
+               - file :ref:`thrust\/system\/cpp\/pointer.h <system_2cpp_2pointer_8h>`
+
+         .. dropdown:: dir :ref:`thrust\/system\/omp <dir_8d0f0be15f7a4ed2349bed8439c4d8f0>`
+
+            .. container:: rebreather hierarchy
+
+               - file :ref:`thrust\/system\/omp\/pointer.h <system_2omp_2pointer_8h>`
+
+         .. dropdown:: dir :ref:`thrust\/system\/tbb <dir_78ae1529b0a334eb96b24abaa7d23fd1>`
+
+            .. container:: rebreather hierarchy
+
+               - file :ref:`thrust\/system\/tbb\/pointer.h <system_2tbb_2pointer_8h>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`thrust\/system\/error\_code.h <error__code_8h>`
+            - file :ref:`thrust\/system\/system\_error.h <system_2system__error_8h>`
+
+      .. dropdown:: dir :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`thrust\/type\_traits\/integer\_sequence.h <integer__sequence_8h>`
+            - file :ref:`thrust\/type\_traits\/is\_contiguous\_iterator.h <is__contiguous__iterator_8h>`
+            - file :ref:`thrust\/type\_traits\/is\_execution\_policy.h <is__execution__policy_8h>`
+            - file :ref:`thrust\/type\_traits\/is\_operator\_less\_or\_greater\_function\_object.h <is__operator__less__or__greater__function__object_8h>`
+            - file :ref:`thrust\/type\_traits\/is\_operator\_plus\_function\_object.h <is__operator__plus__function__object_8h>`
+            - file :ref:`thrust\/type\_traits\/is\_trivially\_relocatable.h <is__trivially__relocatable_8h>`
+            - file :ref:`thrust\/type\_traits\/logical\_metafunctions.h <logical__metafunctions_8h>`
+            - file :ref:`thrust\/type\_traits\/unwrap\_contiguous\_iterator.h <unwrap__contiguous__iterator_8h>`
+
+      .. container:: rebreather hierarchy
+
+         - file :ref:`thrust\/addressof.h <addressof_8h>`
+         - file :ref:`thrust\/adjacent\_difference.h <adjacent__difference_8h>`
+         - file :ref:`thrust\/advance.h <advance_8h>`
+         - file :ref:`thrust\/allocate\_unique.h <allocate__unique_8h>`
+         - file :ref:`thrust\/binary\_search.h <binary__search_8h>`
+         - file :ref:`thrust\/complex.h <complex_8h>`
+         - file :ref:`thrust\/copy.h <copy_8h>`
+         - file :ref:`thrust\/count.h <count_8h>`
+         - file :ref:`thrust\/device\_allocator.h <device__allocator_8h>`
+         - file :ref:`thrust\/device\_delete.h <device__delete_8h>`
+         - file :ref:`thrust\/device\_free.h <device__free_8h>`
+         - file :ref:`thrust\/device\_make\_unique.h <device__make__unique_8h>`
+         - file :ref:`thrust\/device\_malloc.h <device__malloc_8h>`
+         - file :ref:`thrust\/device\_malloc\_allocator.h <device__malloc__allocator_8h>`
+         - file :ref:`thrust\/device\_new.h <device__new_8h>`
+         - file :ref:`thrust\/device\_new\_allocator.h <device__new__allocator_8h>`
+         - file :ref:`thrust\/device\_ptr.h <device__ptr_8h>`
+         - file :ref:`thrust\/device\_reference.h <device__reference_8h>`
+         - file :ref:`thrust\/device\_vector.h <device__vector_8h>`
+         - file :ref:`thrust\/distance.h <distance_8h>`
+         - file :ref:`thrust\/equal.h <equal_8h>`
+         - file :ref:`thrust\/execution\_policy.h <execution__policy_8h>`
+         - file :ref:`thrust\/extrema.h <extrema_8h>`
+         - file :ref:`thrust\/fill.h <fill_8h>`
+         - file :ref:`thrust\/find.h <find_8h>`
+         - file :ref:`thrust\/for\_each.h <for__each_8h>`
+         - file :ref:`thrust\/functional.h <functional_8h>`
+         - file :ref:`thrust\/gather.h <gather_8h>`
+         - file :ref:`thrust\/generate.h <generate_8h>`
+         - file :ref:`thrust\/host\_vector.h <host__vector_8h>`
+         - file :ref:`thrust\/inner\_product.h <inner__product_8h>`
+         - file :ref:`thrust\/logical.h <logical_8h>`
+         - file :ref:`thrust\/memory.h <memory_8h>`
+         - file :ref:`thrust\/merge.h <merge_8h>`
+         - file :ref:`thrust\/mismatch.h <mismatch_8h>`
+         - file :ref:`thrust\/pair.h <pair_8h>`
+         - file :ref:`thrust\/partition.h <partition_8h>`
+         - file :ref:`thrust\/per\_device\_resource.h <per__device__resource_8h>`
+         - file :ref:`thrust\/random.h <random_8h>`
+         - file :ref:`thrust\/reduce.h <reduce_8h>`
+         - file :ref:`thrust\/remove.h <remove_8h>`
+         - file :ref:`thrust\/replace.h <replace_8h>`
+         - file :ref:`thrust\/reverse.h <reverse_8h>`
+         - file :ref:`thrust\/scan.h <scan_8h>`
+         - file :ref:`thrust\/scatter.h <scatter_8h>`
+         - file :ref:`thrust\/sequence.h <sequence_8h>`
+         - file :ref:`thrust\/set\_operations.h <set__operations_8h>`
+         - file :ref:`thrust\/shuffle.h <shuffle_8h>`
+         - file :ref:`thrust\/sort.h <sort_8h>`
+         - file :ref:`thrust\/swap.h <swap_8h>`
+         - file :ref:`thrust\/system\_error.h <system__error_8h>`
+         - file :ref:`thrust\/tabulate.h <tabulate_8h>`
+         - file :ref:`thrust\/transform.h <transform_8h>`
+         - file :ref:`thrust\/transform\_reduce.h <transform__reduce_8h>`
+         - file :ref:`thrust\/transform\_scan.h <transform__scan_8h>`
+         - file :ref:`thrust\/tuple.h <tuple_8h>`
+         - file :ref:`thrust\/uninitialized\_copy.h <uninitialized__copy_8h>`
+         - file :ref:`thrust\/uninitialized\_fill.h <uninitialized__fill_8h>`
+         - file :ref:`thrust\/unique.h <unique_8h>`
+         - file :ref:`thrust\/universal\_allocator.h <universal__allocator_8h>`
+         - file :ref:`thrust\/universal\_ptr.h <universal__ptr_8h>`
+         - file :ref:`thrust\/universal\_vector.h <universal__vector_8h>`
+         - file :ref:`thrust\/version.h <version_8h>`
+         - file :ref:`thrust\/zip\_function.h <zip__function_8h>`
+
+Namespace hierarchy
+-------------------
+
+.. card::
+   :class-card: rebreather hierarchy
+
+   - namespace :ref:`std <namespacestd>`
+
+   .. dropdown:: namespace :ref:`thrust <namespacethrust>`
+
+      - namespace :ref:`thrust\:\:cpp <namespacethrust_1_1cpp>`
+
+      .. dropdown:: namespace :ref:`thrust\:\:mr <namespacethrust_1_1mr>`
+
+         .. container:: rebreather hierarchy
+
+            - class :ref:`thrust\:\:mr\:\:allocator <classthrust_1_1mr_1_1allocator>`
+            - struct :ref:`thrust\:\:mr\:\:disjoint\_synchronized\_pool\_resource <structthrust_1_1mr_1_1disjoint__synchronized__pool__resource>`
+            - class :ref:`thrust\:\:mr\:\:disjoint\_unsynchronized\_pool\_resource <classthrust_1_1mr_1_1disjoint__unsynchronized__pool__resource>`
+            - class :ref:`thrust\:\:mr\:\:fancy\_pointer\_resource <classthrust_1_1mr_1_1fancy__pointer__resource>`
+            - class :ref:`thrust\:\:mr\:\:memory\_resource <classthrust_1_1mr_1_1memory__resource>`
+            - class :ref:`thrust\:\:mr\:\:memory\_resource\< void \* \> <classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4>`
+            - class :ref:`thrust\:\:mr\:\:new\_delete\_resource <classthrust_1_1mr_1_1new__delete__resource>`
+            - class :ref:`thrust\:\:mr\:\:new\_delete\_resource\_base <classthrust_1_1mr_1_1new__delete__resource__base>`
+            - class :ref:`thrust\:\:mr\:\:polymorphic\_adaptor\_resource <classthrust_1_1mr_1_1polymorphic__adaptor__resource>`
+            - struct :ref:`thrust\:\:mr\:\:pool\_options <structthrust_1_1mr_1_1pool__options>`
+            - class :ref:`thrust\:\:mr\:\:stateless\_resource\_allocator <classthrust_1_1mr_1_1stateless__resource__allocator>`
+            - struct :ref:`thrust\:\:mr\:\:synchronized\_pool\_resource <structthrust_1_1mr_1_1synchronized__pool__resource>`
+            - class :ref:`thrust\:\:mr\:\:unsynchronized\_pool\_resource <classthrust_1_1mr_1_1unsynchronized__pool__resource>`
+            - struct :ref:`thrust\:\:mr\:\:validator <structthrust_1_1mr_1_1validator>`
+            - struct :ref:`thrust\:\:mr\:\:validator2 <structthrust_1_1mr_1_1validator2>`
+            - struct :ref:`thrust\:\:mr\:\:validator2\< T\, T \> <structthrust_1_1mr_1_1validator2_3_01T_00_01T_01_4>`
+
+      - namespace :ref:`thrust\:\:omp <namespacethrust_1_1omp>`
+
+      - namespace :ref:`thrust\:\:placeholders <namespacethrust_1_1placeholders>`
+
+      .. dropdown:: namespace :ref:`thrust\:\:random <namespacethrust_1_1random>`
+
+         .. container:: rebreather hierarchy
+
+            - class :ref:`thrust\:\:random\:\:discard\_block\_engine <classthrust_1_1random_1_1discard__block__engine>`
+            - class :ref:`thrust\:\:random\:\:linear\_congruential\_engine <classthrust_1_1random_1_1linear__congruential__engine>`
+            - class :ref:`thrust\:\:random\:\:linear\_feedback\_shift\_engine <classthrust_1_1random_1_1linear__feedback__shift__engine>`
+            - class :ref:`thrust\:\:random\:\:normal\_distribution <classthrust_1_1random_1_1normal__distribution>`
+            - class :ref:`thrust\:\:random\:\:subtract\_with\_carry\_engine <classthrust_1_1random_1_1subtract__with__carry__engine>`
+            - class :ref:`thrust\:\:random\:\:uniform\_int\_distribution <classthrust_1_1random_1_1uniform__int__distribution>`
+            - class :ref:`thrust\:\:random\:\:uniform\_real\_distribution <classthrust_1_1random_1_1uniform__real__distribution>`
+            - class :ref:`thrust\:\:random\:\:xor\_combine\_engine <classthrust_1_1random_1_1xor__combine__engine>`
+
+      .. dropdown:: namespace :ref:`thrust\:\:system <namespacethrust_1_1system>`
+
+         - namespace :ref:`thrust\:\:system\:\:cpp <namespacethrust_1_1system_1_1cpp>`
+
+         .. dropdown:: namespace :ref:`thrust\:\:system\:\:errc <namespacethrust_1_1system_1_1errc>`
+
+            .. container:: rebreather hierarchy
+
+               - enum :ref:`thrust\:\:system\:\:errc\:\:errc\_t <error__code_8h_1ae2217ff1b521ce9901d8953a82bef795>`
+
+         - namespace :ref:`thrust\:\:system\:\:omp <namespacethrust_1_1system_1_1omp>`
+
+         - namespace :ref:`thrust\:\:system\:\:tbb <namespacethrust_1_1system_1_1tbb>`
+
+         .. container:: rebreather hierarchy
+
+            - class :ref:`thrust\:\:system\:\:error\_category <classthrust_1_1system_1_1error__category>`
+            - class :ref:`thrust\:\:system\:\:error\_code <classthrust_1_1system_1_1error__code>`
+            - class :ref:`thrust\:\:system\:\:error\_condition <classthrust_1_1system_1_1error__condition>`
+            - struct :ref:`thrust\:\:system\:\:is\_error\_code\_enum <structthrust_1_1system_1_1is__error__code__enum>`
+            - struct :ref:`thrust\:\:system\:\:is\_error\_condition\_enum <structthrust_1_1system_1_1is__error__condition__enum>`
+            - struct :ref:`thrust\:\:system\:\:is\_error\_condition\_enum\< errc\:\:errc\_t \> <structthrust_1_1system_1_1is__error__condition__enum_3_01errc_1_1errc__t_01_4>`
+            - class :ref:`thrust\:\:system\:\:system\_error <classthrust_1_1system_1_1system__error>`
+
+      - namespace :ref:`thrust\:\:tbb <namespacethrust_1_1tbb>`
+
+      .. container:: rebreather hierarchy
+
+         - struct :ref:`thrust\:\:allocator\_delete <structthrust_1_1allocator__delete>`
+         - struct :ref:`thrust\:\:array\_allocator\_delete <structthrust_1_1array__allocator__delete>`
+         - struct :ref:`thrust\:\:bidirectional\_device\_iterator\_tag <structthrust_1_1bidirectional__device__iterator__tag>`
+         - struct :ref:`thrust\:\:compile\_time\_value <structthrust_1_1compile__time__value>`
+         - struct :ref:`thrust\:\:complex <structthrust_1_1complex>`
+         - class :ref:`thrust\:\:constant\_iterator <classthrust_1_1constant__iterator>`
+         - class :ref:`thrust\:\:counting\_iterator <classthrust_1_1counting__iterator>`
+         - class :ref:`thrust\:\:device\_allocator <classthrust_1_1device__allocator>`
+         - struct :ref:`thrust\:\:device\_execution\_policy <structthrust_1_1device__execution__policy>`
+         - class :ref:`thrust\:\:device\_malloc\_allocator <classthrust_1_1device__malloc__allocator>`
+         - class :ref:`thrust\:\:device\_new\_allocator <classthrust_1_1device__new__allocator>`
+         - class :ref:`thrust\:\:device\_ptr <classthrust_1_1device__ptr>`
+         - class :ref:`thrust\:\:device\_ptr\_memory\_resource <classthrust_1_1device__ptr__memory__resource>`
+         - class :ref:`thrust\:\:device\_reference <classthrust_1_1device__reference>`
+         - class :ref:`thrust\:\:device\_vector <classthrust_1_1device__vector>`
+         - class :ref:`thrust\:\:discard\_iterator <classthrust_1_1discard__iterator>`
+         - struct :ref:`thrust\:\:execution\_policy <structthrust_1_1execution__policy>`
+         - struct :ref:`thrust\:\:forward\_device\_iterator\_tag <structthrust_1_1forward__device__iterator__tag>`
+         - struct :ref:`thrust\:\:host\_execution\_policy <structthrust_1_1host__execution__policy>`
+         - class :ref:`thrust\:\:host\_vector <classthrust_1_1host__vector>`
+         - struct :ref:`thrust\:\:input\_device\_iterator\_tag <structthrust_1_1input__device__iterator__tag>`
+         - class :ref:`thrust\:\:iterator\_adaptor <classthrust_1_1iterator__adaptor>`
+         - class :ref:`thrust\:\:iterator\_core\_access <classthrust_1_1iterator__core__access>`
+         - struct :ref:`thrust\:\:iterator\_difference <structthrust_1_1iterator__difference>`
+         - class :ref:`thrust\:\:iterator\_facade <classthrust_1_1iterator__facade>`
+         - struct :ref:`thrust\:\:iterator\_pointer <structthrust_1_1iterator__pointer>`
+         - struct :ref:`thrust\:\:iterator\_reference <structthrust_1_1iterator__reference>`
+         - struct :ref:`thrust\:\:iterator\_system <structthrust_1_1iterator__system>`
+         - struct :ref:`thrust\:\:iterator\_system\< const void \* \> <structthrust_1_1iterator__system_3_01const_01void_01_5_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\< void \* \> <structthrust_1_1iterator__system_3_01void_01_5_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:constant\_iterator\< T\, Index \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:counting\_iterator\< Start \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:discard\_iterator \> <structthrust_1_1iterator__system_3_1_1cuda_1_1discard__iterator_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:permutation\_iterator\< Iter\, Offset \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1permutation__iterator_3_01Iter_00_01Offset_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:std\:\:reverse\_iterator\< Iter \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1std_1_1reverse__iterator_3_01Iter_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:strided\_iterator\< Iter\, Stride \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1strided__iterator_3_01Iter_00_01Stride_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:tabulate\_output\_iterator\< Fn\, Index \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1tabulate__output__iterator_3_01Fn_00_01Index_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_input\_output\_iterator\< Iter\, InputFn\, OutputFn \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1transform__input__output__iterator_3_01Iter_00_01InputFn_00_01OutputFn_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1transform__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:transform\_output\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1transform__output__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_system\<\:\:cuda\:\:zip\_iterator\< Iterators... \> \> <structthrust_1_1iterator__system_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal <structthrust_1_1iterator__traversal>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:constant\_iterator\< T\, Index \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:counting\_iterator\< Start \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:discard\_iterator \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1discard__iterator_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:permutation\_iterator\< Iter\, Offset \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1permutation__iterator_3_01Iter_00_01Offset_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:std\:\:reverse\_iterator\< Iter \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1std_1_1reverse__iterator_3_01Iter_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:strided\_iterator\< Iter\, Stride \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1strided__iterator_3_01Iter_00_01Stride_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:tabulate\_output\_iterator\< Fn\, Index \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1tabulate__output__iterator_3_01Fn_00_01Index_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_input\_output\_iterator\< Iter\, InputFn\, OutputFn \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__input__output__iterator_3_01Iter_00_4904b004585dc3aea4e7c21395dc7fe1>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_output\_iterator\< Iter\, Fn \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__output__iterator_3_01Iter_00_01Fn_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_traversal\<\:\:cuda\:\:zip\_iterator\< Iterators... \> \> <structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4>`
+         - struct :ref:`thrust\:\:iterator\_value <structthrust_1_1iterator__value>`
+         - class :ref:`thrust\:\:offset\_iterator <classthrust_1_1offset__iterator>`
+         - struct :ref:`thrust\:\:output\_device\_iterator\_tag <structthrust_1_1output__device__iterator__tag>`
+         - class :ref:`thrust\:\:per\_device\_allocator <classthrust_1_1per__device__allocator>`
+         - class :ref:`thrust\:\:permutation\_iterator <classthrust_1_1permutation__iterator>`
+         - class :ref:`thrust\:\:pointer <classthrust_1_1pointer>`
+         - struct :ref:`thrust\:\:proclaim\_contiguous\_iterator <structthrust_1_1proclaim__contiguous__iterator>`
+         - struct :ref:`thrust\:\:project1st <structthrust_1_1project1st>`
+         - struct :ref:`thrust\:\:project1st\< void\, void \> <structthrust_1_1project1st_3_01void_00_01void_01_4>`
+         - struct :ref:`thrust\:\:project2nd <structthrust_1_1project2nd>`
+         - struct :ref:`thrust\:\:project2nd\< void\, void \> <structthrust_1_1project2nd_3_01void_00_01void_01_4>`
+         - struct :ref:`thrust\:\:random\_access\_device\_iterator\_tag <structthrust_1_1random__access__device__iterator__tag>`
+         - class :ref:`thrust\:\:reverse\_iterator <classthrust_1_1reverse__iterator>`
+         - struct :ref:`thrust\:\:runtime\_value <structthrust_1_1runtime__value>`
+         - class :ref:`thrust\:\:shuffle\_iterator <classthrust_1_1shuffle__iterator>`
+         - struct :ref:`thrust\:\:square <structthrust_1_1square>`
+         - struct :ref:`thrust\:\:square\< void \> <structthrust_1_1square_3_01void_01_4>`
+         - class :ref:`thrust\:\:strided\_iterator <classthrust_1_1strided__iterator>`
+         - class :ref:`thrust\:\:tabulate\_output\_iterator <classthrust_1_1tabulate__output__iterator>`
+         - struct :ref:`thrust\:\:tagged\_deleter <structthrust_1_1tagged__deleter>`
+         - class :ref:`thrust\:\:transform\_input\_output\_iterator <classthrust_1_1transform__input__output__iterator>`
+         - class :ref:`thrust\:\:transform\_iterator <classthrust_1_1transform__iterator>`
+         - class :ref:`thrust\:\:transform\_output\_iterator <classthrust_1_1transform__output__iterator>`
+         - class :ref:`thrust\:\:zip\_function <classthrust_1_1zip__function>`
+         - class :ref:`thrust\:\:zip\_iterator <classthrust_1_1zip__iterator>`
+
+Defines
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   define_version_8h_1ad772136227823b7c5a728d4e895682ae
+   define_version_8h_1af34faa4e575256c27929734de4e7caf0
+   define_version_8h_1a66479528a7d9de663bd5c61c029514a8
+   define_group__type__traits_1ga6481610468498fdee166a05ec3f6e270
+   define_is__trivially__relocatable_8h_1afaa6e65861d2a568ea736856eca5d351
+   define_complex_8h_1a4187f5c585d6f74135338d01169206a0
+   define_complex_8h_1a34c6fc82096f4489a47e74973a6d8155
+   define_complex_8h_1ab58ac3aa67f1e484c62ded4191c22431
+   define_version_8h_1adf68a426b10244fd3bd15dc4511b36b5
+   define_version_8h_1a140615d75aad46c9270b4186db25987b
+
+- :ref:`THRUST\_MAJOR\_VERSION <version_8h_1ad772136227823b7c5a728d4e895682ae>`
+- :ref:`THRUST\_MINOR\_VERSION <version_8h_1af34faa4e575256c27929734de4e7caf0>`
+- :ref:`THRUST\_PATCH\_NUMBER <version_8h_1a66479528a7d9de663bd5c61c029514a8>`
+- :ref:`THRUST\_PROCLAIM\_CONTIGUOUS\_ITERATOR <group__type__traits_1ga6481610468498fdee166a05ec3f6e270>`
+- :ref:`THRUST\_PROCLAIM\_TRIVIALLY\_RELOCATABLE <is__trivially__relocatable_8h_1afaa6e65861d2a568ea736856eca5d351>`
+- :ref:`THRUST\_STD\_COMPLEX\_DEVICE <complex_8h_1a4187f5c585d6f74135338d01169206a0>`
+- :ref:`THRUST\_STD\_COMPLEX\_IMAG <complex_8h_1a34c6fc82096f4489a47e74973a6d8155>`
+- :ref:`THRUST\_STD\_COMPLEX\_REAL <complex_8h_1ab58ac3aa67f1e484c62ded4191c22431>`
+- :ref:`THRUST\_SUBMINOR\_VERSION <version_8h_1adf68a426b10244fd3bd15dc4511b36b5>`
+- :ref:`THRUST\_VERSION <version_8h_1a140615d75aad46c9270b4186db25987b>`
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_thrust
+
+- :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Namespaces
+----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   namespace_std
+   namespace_thrust
+
+- :ref:`std <namespacestd>`
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,6 @@
+thrust\:\:integer\_sequence\_push\_back
+=======================================
+
+Defined in :ref:`thrust\/type\_traits\/integer\_sequence.h <integer__sequence_8h>`
+
+.. doxygentypedef:: thrust::integer_sequence_push_back

@@ -1,0 +1,6 @@
+thrust\:\:scatter\_if
+=====================
+
+Defined in :ref:`thrust\/scatter.h <scatter_8h>`
+
+.. doxygenfunction:: thrust::scatter_if(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator1 first, InputIterator1 last, InputIterator2 map, InputIterator3 stencil, RandomAccessIterator output)

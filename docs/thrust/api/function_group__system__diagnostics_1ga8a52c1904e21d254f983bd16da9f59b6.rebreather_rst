@@ -1,0 +1,6 @@
+thrust\:\:system\:\:operator\<\<
+================================
+
+Defined in :ref:`thrust\/system\/error\_code.h <error__code_8h>`
+
+.. doxygenfunction:: thrust::system::operator<<(std::basic_ostream< charT, traits > &os, const error_code &ec)

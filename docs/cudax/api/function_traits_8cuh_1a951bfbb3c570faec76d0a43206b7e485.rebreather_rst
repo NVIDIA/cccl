@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:tuple2tuple
+==========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::tuple2tuple(const Tuple &t, Fun &&f)

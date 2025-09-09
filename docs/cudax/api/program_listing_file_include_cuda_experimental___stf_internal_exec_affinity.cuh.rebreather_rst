@@ -1,0 +1,84 @@
+include\/cuda\/experimental\/\_\_stf\/internal\/exec\_affinity.cuh
+==================================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/exec\_affinity.cuh <exec__affinity_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDASTF in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #pragma once
+
+   #include <cuda/__cccl_config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/experimental/__stf/utility/core.cuh>
+
+   #include <cassert>
+   #include <memory>
+   #include <stack>
+   #include <vector>
+
+   namespace cuda::experimental::stf
+   {
+
+   class exec_place;
+
+   class exec_affinity
+   {
+   public:
+     exec_affinity()  = default;
+     ~exec_affinity() = default;
+
+     void push(::std::vector<::std::shared_ptr<exec_place>> p)
+     {
+       s.push(mv(p));
+     }
+
+     void push(::std::shared_ptr<exec_place> p)
+     {
+       s.push(::std::vector<::std::shared_ptr<exec_place>>{::std::move(p)});
+     }
+
+     void pop()
+     {
+       s.pop();
+     }
+
+     bool has_affinity() const
+     {
+       return !s.empty();
+     }
+
+     const auto& top() const
+     {
+       return s.top();
+     }
+
+   private:
+     // A stack per thread
+     // (We use vectors of shared_ptr because exec_place implementation cannot
+     // be available so we rely on type erasure)
+     static thread_local ::std::stack<::std::vector<::std::shared_ptr<exec_place>>> s;
+   };
+
+   // Define the static thread_local member outside the class
+   inline thread_local ::std::stack<::std::vector<::std::shared_ptr<exec_place>>> exec_affinity::s;
+
+   } // end namespace cuda::experimental::stf
+

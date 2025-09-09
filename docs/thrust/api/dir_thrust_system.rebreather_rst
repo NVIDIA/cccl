@@ -1,0 +1,33 @@
+.. _`dir_aa94a12d43e5ba9deab857d2808a2f0a`:
+
+thrust\/system
+==============
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_thrust_system_cpp
+   dir_thrust_system_omp
+   dir_thrust_system_tbb
+
+- :ref:`thrust\/system\/cpp <dir_d77906c62e23ab1810d90a4407989853>`
+- :ref:`thrust\/system\/omp <dir_8d0f0be15f7a4ed2349bed8439c4d8f0>`
+- :ref:`thrust\/system\/tbb <dir_78ae1529b0a334eb96b24abaa7d23fd1>`
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_thrust_system_error_code.h
+   file_thrust_system_system_error.h
+
+- :ref:`thrust\/system\/error\_code.h <error__code_8h>`
+- :ref:`thrust\/system\/system\_error.h <system_2system__error_8h>`
+

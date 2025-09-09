@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:access\_mode\_string
+===================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/constants.cuh <constants_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::access_mode_string(access_mode mode)

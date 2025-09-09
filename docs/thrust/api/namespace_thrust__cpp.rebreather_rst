@@ -1,0 +1,6 @@
+thrust\:\:cpp
+=============
+
+.. doxygennamespace:: thrust::cpp
+   :desc-only:
+

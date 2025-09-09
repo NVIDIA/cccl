@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:hw\_scope
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/execution\_policy.cuh <execution__policy_8cuh>`
+
+.. doxygenenum:: cuda::experimental::stf::hw_scope
