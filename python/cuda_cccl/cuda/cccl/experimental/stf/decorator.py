@@ -59,7 +59,7 @@ class stf_kernel_decorator:
         for i, a in enumerate(args):
             # print(f"got one arg {a} is dep ? {isinstance(a, dep)}")
             if isinstance(a, dep):
-                if ctx is None:
+                if ctx == None:
                     ld = a.get_ld()
                     # This context will be used in the __call__ method itself
                     # so we can create a temporary object from the handle

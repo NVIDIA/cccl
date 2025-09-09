@@ -6,7 +6,7 @@ from numba import cuda
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-import cuda.cccl.experimental.stf as cudastf  # noqa: E402
+import cuda.cccl.experimental.stf as cudastf
 
 
 @cudastf.jit
