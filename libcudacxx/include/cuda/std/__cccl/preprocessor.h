@@ -43,10 +43,7 @@
 #define _CCCL_PP_THIRD(_1, _2, third)   third
 
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
-#define _CCCL_PP_EXPAND2(...) __VA_ARGS__
-
 #define _CCCL_PP_EAT(...)
-#define _CCCL_PP_EAT2(...)
 
 #define _CCCL_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
 #define _CCCL_PP_CAT(_Xp, ...)  _CCCL_PP_CAT_(_Xp, __VA_ARGS__)
