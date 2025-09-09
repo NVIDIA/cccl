@@ -17,7 +17,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cpp
+namespace system::cpp
 {
 //! \addtogroup execution_policies
 //! \{
@@ -96,14 +96,13 @@ _CCCL_GLOBAL_CONSTANT detail::par_t par;
 
 //! \}
 
-} // namespace cpp
-
-// aliases into the system namespace
-
-namespace system::cpp
-{
-using thrust::cpp::execution_policy;
-using thrust::cpp::par;
-using thrust::cpp::tag;
 } // namespace system::cpp
+
+// aliases:
+namespace cpp
+{
+using system::cpp::execution_policy;
+using system::cpp::par;
+using system::cpp::tag;
+} // namespace cpp
 THRUST_NAMESPACE_END
