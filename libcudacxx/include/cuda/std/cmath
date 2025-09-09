@@ -20,6 +20,68 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/cmath>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <math.h>
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#if _CCCL_COMPILER(NVHPC)
+#  include <cmath>
+#endif // _CCCL_COMPILER(NVHPC)
+
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/error_functions.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/fdim.h>
+#include <cuda/std/__cmath/fma.h>
+#include <cuda/std/__cmath/fpclassify.h>
+#include <cuda/std/__cmath/gamma.h>
+#include <cuda/std/__cmath/hyperbolic_functions.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/inverse_hyperbolic_functions.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/isfinite.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/isnormal.h>
+#include <cuda/std/__cmath/lerp.h>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__cmath/modulo.h>
+#include <cuda/std/__cmath/nan.h>
+#include <cuda/std/__cmath/remainder.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__cmath/signbit.h>
+#include <cuda/std/__cmath/traits.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/__cstdlib/abs.h>
+#include <cuda/std/limits>
+#include <cuda/std/version>
+
+#if _CCCL_COMPILER(NVRTC)
+#  define INFINITY ::cuda::std::numeric_limits<float>::infinity()
+#  define NAN      ::cuda::std::numeric_limits<float>::quiet_NaN()
+#endif // _CCCL_COMPILER(NVRTC)
+
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_COMPILER(NVRTC)
+
+using double_t = double;
+using float_t  = float;
+
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
+
+using ::double_t;
+using ::float_t;
+
+#endif // _CCCL_COMPILER(NVRTC)
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_CMATH
