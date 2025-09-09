@@ -101,12 +101,12 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     {
       if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
         if constexpr (is_same_v<_Tp, __float128>)
         {
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
         }
-#endif // _CCCL_HAS_FLOAT128()
+#endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
         if constexpr (is_floating_point_v<_Tp>)
         {
 #if _CCCL_USE_BUILTIN_FMAX()
@@ -224,12 +224,12 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     {
       if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
-#if _CCCL_HAS_FLOAT128()
+#if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
         if constexpr (is_same_v<_Tp, __float128>)
         {
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
         }
-#endif // _CCCL_HAS_FLOAT128()
+#endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
         if constexpr (is_floating_point_v<_Tp>)
         {
 #if _CCCL_USE_BUILTIN_FMAX()

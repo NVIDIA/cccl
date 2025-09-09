@@ -157,9 +157,12 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
-#  if _CCCL_HAS_CTK()
-  NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);))
-#  endif
+#  if _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);))
+  }
+#  endif // _CCCL_HAS_FLOAT128_CUDA_FUNCTIONS()
 #  if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
