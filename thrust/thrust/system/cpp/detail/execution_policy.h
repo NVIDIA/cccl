@@ -100,11 +100,6 @@ _CCCL_GLOBAL_CONSTANT detail::par_t par;
 
 // aliases into the system namespace
 
-namespace system::cpp::detail // TODO(bgruber): can we drop the aliases into the detail namespace?
-{
-using thrust::cpp::execution_policy;
-using thrust::cpp::tag;
-} // namespace system::cpp::detail
 namespace system::cpp
 {
 using thrust::cpp::execution_policy;

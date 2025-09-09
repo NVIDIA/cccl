@@ -117,12 +117,6 @@ inline constexpr detail::par_t par;
 } // namespace omp
 
 // aliases:
-
-namespace system::omp::detail // TODO(bgruber): can we drop the aliases into the detail namespace?
-{
-using thrust::omp::execution_policy;
-using thrust::omp::tag;
-} // namespace system::omp::detail
 namespace system::omp
 {
 using thrust::omp::execution_policy;

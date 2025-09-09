@@ -243,14 +243,9 @@ auto _CCCL_HOST_DEVICE cvt_to_seq(Policy&) -> thrust::detail::seq_t
 
 // aliases:
 
-namespace system::cuda::detail // TODO(bgruber): can we drop the aliases into the detail namespace?
+namespace cuda::detail
 {
-using thrust::cuda_cub::execution_policy;
-using thrust::cuda_cub::tag;
-} // namespace system::cuda::detail
-namespace cuda::detail // TODO(bgruber): can we drop the aliases into the detail namespace?
-{
-using thrust::cuda_cub::par_t;
+using cuda_cub::par_t;
 } // namespace cuda::detail
 
 namespace system::cuda
