@@ -43,9 +43,9 @@ struct alignas(16) _QueryCancelResult
 };
 
 template <int _Index>
-[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(_QueryCancelResult __result) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI unsigned __cluster_get_dim(_QueryCancelResult __result) noexcept
 {
-  int __r;
+  unsigned __r;
   if constexpr (_Index == 0)
   {
     asm volatile(
