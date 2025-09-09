@@ -48,11 +48,11 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)

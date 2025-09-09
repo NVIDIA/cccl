@@ -41,8 +41,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 

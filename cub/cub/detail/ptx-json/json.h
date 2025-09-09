@@ -32,9 +32,9 @@
 #include <cub/detail/ptx-json/string.h>
 #include <cub/detail/ptx-json/value.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 namespace ptx_json
 {

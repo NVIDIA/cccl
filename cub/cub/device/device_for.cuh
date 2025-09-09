@@ -45,9 +45,12 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 

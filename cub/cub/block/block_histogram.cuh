@@ -48,7 +48,7 @@
 #include <cub/block/specializations/block_histogram_sort.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 

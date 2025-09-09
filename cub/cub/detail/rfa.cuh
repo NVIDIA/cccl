@@ -37,10 +37,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/climits>
-#include <cuda/std/cmath>
 
 CUB_NAMESPACE_BEGIN
 
