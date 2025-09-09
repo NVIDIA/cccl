@@ -282,7 +282,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     // If the second sender does not have any _SetTag completions, we can look at the
     // first sender for a completion scheduler.
     _CCCL_TEMPLATE(class _SetTag, class... _Env, class _Env2 = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>)
-    _CCCL_REQUIRES((execution::get_completion_signatures<_Sndr2, __join_env_t<_Env2, _Env...>>().count(_SetTag{}) == 0))
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr2, __join_env_t<_Env2, _Env...>>) )
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr1>, __fwd_env_t<_Env>...>
     {
@@ -293,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     // If the second sender does not have any _SetTag completions, we can look at the
     // first sender for a completion domain.
     _CCCL_TEMPLATE(class _SetTag, class... _Env, class _Env2 = sequence_t::__env2_t<env_of_t<_Sndr1>, _Env...>)
-    _CCCL_REQUIRES((execution::get_completion_signatures<_Sndr2, __join_env_t<_Env2, _Env...>>().count(_SetTag{}) == 0))
+    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr2, __join_env_t<_Env2, _Env...>>) )
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
       -> decay_t<__call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr1>, __fwd_env_t<_Env>...>>
     {
