@@ -222,7 +222,7 @@ CUstream stf_task_get_custream(stf_task_handle t)
   assert(t);
 
   auto* task_ptr = static_cast<context::unified_task<>*>(t);
-  return (CUstream) task_ptr->get_stream();
+  return static_cast<CUstream>(task_ptr->get_stream());
 }
 
 void stf_task_destroy(stf_task_handle t)
@@ -326,7 +326,7 @@ void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index)
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
   auto* kernel_ptr  = static_cast<kernel_type*>(k);
   auto s            = kernel_ptr->template get<slice<const char>>(index);
-  return (void*) s.data_handle();
+  return static_cast<void*>(s.data_handle());
 }
 
 void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
