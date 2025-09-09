@@ -113,15 +113,16 @@ jobs:
           keep_files: true
           commit_message: "Deploy .nojekyll to disable Jekyll processing"
 
-#      - name: Deploy to GitHub Pages
-#        uses: peaceiris/actions-gh-pages@v3
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          publish_dir: ./_site
-#          publish_branch: gh-pages
-#          destination_dir: ${{ inputs.destination_dir || 'docs' }}
-#          keep_files: true
-#          commit_message: ${{ steps.commit-msg.outputs.message }}
+      - name: Deploy to GitHub Pages
+        if: ${{ github.event_name == 'push' }} # Don't deploy doc previews for now to avoid overflowing gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          destination_dir: ${{ inputs.destination_dir || 'docs' }}
+          keep_files: true
+          commit_message: ${{ steps.commit-msg.outputs.message }}
 
 #      - name: Leave PR preview comment
 #        if: ${{ inputs.pr_number && !inputs.remove_pr_preview }}
