@@ -59,7 +59,7 @@ install(
     DESTINATION ${_dest_incl_dir}
 )
 
-# ensure the destination directory exists  
+# ensure the destination directory exists
 file(MAKE_DIRECTORY "cuda/cccl/experimental/stf/${CUDA_VERSION_DIR}/cccl")
 
 install(
