@@ -76,9 +76,9 @@ copy_n(cross_system<System1, System2> systems, InputIterator first, Size n, Outp
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
+#include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/internal/copy_cross_system.h>
 #include <thrust/system/cuda/detail/internal/copy_device_to_device.h>
-#include <thrust/system/cuda/detail/par_to_seq.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
