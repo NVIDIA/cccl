@@ -12,7 +12,7 @@ torch = pytest.importorskip("torch")
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-from cuda.cccl.experimental.stf._stf_bindings import (
+from cuda.cccl.experimental.stf._stf_bindings import (  # noqa: E402
     context,
     rw,
 )
@@ -47,14 +47,12 @@ def test_pytorch():
         torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
     ):
         tX, tY = t.tensor_arguments()
-        tZ = tX * 4 + 1
 
     with (
         ctx.task(lY.read(), lZ.rw()) as t,
         torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
     ):
-        tX, tZ = t.tensor_arguments()
-        tZ = tY * 2 - 3
+        tX, _ = t.tensor_arguments()
 
     ctx.finalize()
 

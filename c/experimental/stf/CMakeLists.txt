@@ -27,12 +27,16 @@ if (CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
+find_package(cudax REQUIRED CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
+)
+
 find_package(CUDAToolkit REQUIRED)
 set_target_properties(cccl.c.experimental.stf PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
+target_compile_definitions(cccl.c.experimental.stf PUBLIC CCCL_C_EXPERIMENTAL=1)
 target_link_libraries(cccl.c.experimental.stf PRIVATE
   CUDA::cudart_static
-  CUDA::nvrtc
-  CUDA::nvJitLink
   CUDA::cuda_driver
   CCCL::cudax
 )
@@ -43,10 +47,6 @@ target_compile_options(cccl.c.experimental.stf PRIVATE $<$<COMPILE_LANG_AND_ID:C
 target_include_directories(cccl.c.experimental.stf PUBLIC "include")
 target_include_directories(cccl.c.experimental.stf PRIVATE "src")
 
-if (CCCL_C_Parallel_ENABLE_TESTING)
+if (CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
-
-# if (CCCL_C_Parallel_ENABLE_HEADER_TESTING)
-#   include(cmake/CParallelHeaderTesting.cmake)
-# endif()

@@ -11,7 +11,7 @@ from numba import cuda
 numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-from cuda.cccl.experimental.stf._stf_bindings import (
+from cuda.cccl.experimental.stf._stf_bindings import (  # noqa: E402
     context,
     data_place,
     exec_place,
