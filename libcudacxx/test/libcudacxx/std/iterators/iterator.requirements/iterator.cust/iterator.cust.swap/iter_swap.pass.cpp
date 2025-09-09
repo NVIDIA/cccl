@@ -205,10 +205,11 @@ __host__ __device__ constexpr bool test()
     assert(g.value && h.value);
   }
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  {
+#  if !TEST_COMPILER(MSVC) && TEST_STD_VER == 2017
+  { // MSVC has different behavior here
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
-    if (__builtin_is_constant_evaluated())
+    if (cuda::std::is_constant_evaluated())
     {
       assert(arr[0].moves() == 1 && arr[1].moves() == 3);
     }
@@ -217,6 +218,7 @@ __host__ __device__ constexpr bool test()
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
   }
+#  endif // !TEST_COMPILER(MSVC) && TEST_STD_VER == 2017
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   {
     int buff[2] = {1, 2};

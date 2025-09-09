@@ -77,12 +77,11 @@ using iter_common_reference_t = common_reference_t<iter_reference_t<_Tp>, iter_v
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
-  *__o                            = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  *_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be
-                                                                                    // equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
-    _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
+  *__o                                             = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  *static_cast<_Out&&>(__o)                        = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) =
+    static_cast<_Tp&&>(__t); // not required to be equality-preserving
 };
 
 // [iterator.concept.winc]
@@ -278,17 +277,11 @@ using iter_common_reference_t =
   enable_if_t<indirectly_readable<_Tp>, common_reference_t<iter_reference_t<_Tp>, iter_value_t<_Tp>&>>;
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __indirectly_writable_,
-  requires(_Out&& __o, _Tp&& __t)(
-    typename(decltype(*__o = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(*_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
-                        _CUDA_VSTD::forward<_Tp>(__t)))));
-
-template <class _Out, class _Tp>
-_CCCL_CONCEPT indirectly_writable = _CCCL_FRAGMENT(__indirectly_writable_, _Out, _Tp);
+_CCCL_CONCEPT indirectly_writable = _CCCL_REQUIRES_EXPR((_Out, _Tp), _Out&& __o, _Tp&& __t)(
+  (*__o = static_cast<_Tp&&>(__t)),
+  (*static_cast<_Out&&>(__o) = static_cast<_Tp&&>(__t)),
+  (const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t)),
+  (const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) = static_cast<_Tp&&>(__t)));
 
 // [iterator.concept.winc]
 template <class _Tp>
