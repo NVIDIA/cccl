@@ -88,19 +88,19 @@ def test_numba():
 @cuda.jit
 def laplacian_5pt_kernel(u_in, u_out, dx, dy):
     """
-    Compute a 5‑point Laplacian on u_in and write the result to u_out.
+    Compute a 5-point Laplacian on u_in and write the result to u_out.
 
-    Grid‑stride 2‑D kernel.  Assumes C‑contiguous (row‑major) inputs.
+    Grid-stride 2-D kernel.  Assumes C-contiguous (row-major) inputs.
     Boundary cells are copied unchanged.
     """
     coef_x = 1.0 / (dx * dx)
     coef_y = 1.0 / (dy * dy)
 
-    i, j = cuda.grid(2)  # i ↔ row (x‑index), j ↔ col (y‑index)
+    i, j = cuda.grid(2)  # i <-> row (x-index), j <-> col (y-index)
     nx, ny = u_in.shape
 
     if i >= nx or j >= ny:
-        return  # out‑of‑bounds threads do nothing
+        return  # out-of-bounds threads do nothing
 
     if 0 < i < nx - 1 and 0 < j < ny - 1:
         u_out[i, j] = (u_in[i - 1, j] - 2.0 * u_in[i, j] + u_in[i + 1, j]) * coef_x + (
