@@ -8,13 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cmath>
 #include <cuda/work_stealing>
-
-#if _CCCL_HAS_INT128()
 
 __device__ void vec_add_impl1(int* a, int* b, int* c, int n, dim3 block_idx)
 {
@@ -198,13 +195,8 @@ void test()
   }
 }
 
-#endif // _CCCL_HAS_INT128()
-
 int main(int argc, char** argv)
 {
-#if _CCCL_HAS_INT128()
   NV_IF_TARGET(NV_IS_HOST, (test();))
-#endif // _CCCL_HAS_INT128()
-
   return 0;
 }
