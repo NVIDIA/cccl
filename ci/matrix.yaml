@@ -8,9 +8,6 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16']}
   #
   override:
-    # Python and c/parallel jobs:
-    - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: ['l4']}
-    - {jobs: ['test'], project: ['cccl_c_stf'], gpu: ['l4']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
