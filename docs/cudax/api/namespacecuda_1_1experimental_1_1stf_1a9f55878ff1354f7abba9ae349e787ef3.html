@@ -1348,7 +1348,6 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1f897184dc7f58de3c5f56c456defe2d.html">cuda::experimental::stf::loop_dispatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a0f9eb25fdee0daf313384127f4b64d0d.html">cuda::experimental::stf::partition_cyclic</a></li>
@@ -1541,6 +1540,21 @@
 <dd><p>Throws a <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1cuda__exception.html#classcuda_1_1experimental_1_1stf_1_1cuda__exception"><span class="std std-ref"><span class="pre">cuda_exception</span></span></a></code> if the given <code class="docutils literal notranslate"><span class="pre">status</span></code> is an error code. </p>
 <p>
 The typical usage is to place a CUDA function call inside <code class="docutils literal notranslate"><span class="pre">cuda_try</span></code>, i.e. <code class="docutils literal notranslate"><span class="pre">cuda_try(cudaFunc(args))</span></code> (the same way <code class="docutils literal notranslate"><span class="pre">cuda_safe_call</span></code> would be called). For example, <code class="docutils literal notranslate"><span class="pre">cuda_try(cudaCreateStream(&amp;stream))</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">cudaCreateStream(&amp;stream)</span></code>, with the note that the former call throws an exception in case of error.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="n">cuda_try</span><span class="p">(</span><span class="n">CUDA_SUCCESS</span><span class="p">);</span><span class="w"> </span><span class="c1">// no effect, returns CUDA_SUCCESS</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">dev</span><span class="p">;</span>
+<span class="w">  </span><span class="n">cuda_try</span><span class="p">(</span><span class="n">cudaGetDevice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="p">));</span><span class="w"> </span><span class="c1">// equivalent to the line above</span>
+<span class="w">  </span><span class="n">try</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="n">cuda_try</span><span class="p">(</span><span class="n">CUDA_ERROR_INVALID_VALUE</span><span class="p">);</span><span class="w"> </span><span class="c1">// would abort application if called</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">catch</span><span class="w"> </span><span class="p">(...)</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// This point will be reached</span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">EXPECT</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Should not get here.&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Status</strong> – CUDA error code type, such as <code class="docutils literal notranslate"><span class="pre">cudaError_t</span></code>, <code class="docutils literal notranslate"><span class="pre">cublasStatus_t</span></code>, or <code class="docutils literal notranslate"><span class="pre">cusolverStatus_t</span></code></p>
@@ -1570,6 +1584,10 @@ The typical usage is to place a CUDA function call inside <code class="docutils 
 <p>
 In this overload of <code class="docutils literal notranslate"><span class="pre">cuda_try</span></code>, the function name is passed explicitly as a template argument and also the first argument is omitted, as in <code class="docutils literal notranslate"><span class="pre">cuda_try&lt;cudaCreateStream&gt;()</span></code>. <code class="docutils literal notranslate"><span class="pre">cuda_try</span></code> will create a temporary of the appropriate type internally, call the specified CUDA function with the address of that temporary, and then return the temporary. For example, in the call <code class="docutils literal notranslate"><span class="pre">cuda_try&lt;cudaCreateStream&gt;()</span></code>, the created stream object will be returned. That way you can write <code class="docutils literal notranslate"><span class="pre">auto</span> <span class="pre">stream</span> <span class="pre">=</span> <span class="pre">cuda_try&lt;cudaCreateStream&gt;();</span></code> instead of <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span> <span class="pre">stream;</span> <span class="pre">cudaCreateStream(&amp;stream);</span></code>. This invocation mode relies on the convention used by many CUDA functions with output parameters of specifying them in the first parameter position.</p>
 <p>Limitations: Does not work with overloaded functions.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda_try</span><span class="o">&lt;</span><span class="n">cudaGetDevice</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// continue execution if the call is successful</span>
+<span class="w">  </span><span class="n">cuda_try</span><span class="p">(</span><span class="n">cudaGetDevice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dev</span><span class="p">));</span><span class="w"> </span><span class="c1">// equivalent to the line above</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

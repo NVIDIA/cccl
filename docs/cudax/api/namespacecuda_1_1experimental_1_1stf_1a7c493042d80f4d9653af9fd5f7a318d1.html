@@ -1348,7 +1348,6 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1f897184dc7f58de3c5f56c456defe2d.html">cuda::experimental::stf::loop_dispatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a0f9eb25fdee0daf313384127f4b64d0d.html">cuda::experimental::stf::partition_cyclic</a></li>
@@ -1533,7 +1532,32 @@
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4IDpEN4cuda12experimental3stf8hash_allE6size_tDpRK2Ts" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
+<dd><p>Computes a combined hash value for one or more values. </p>
+<p>This function computes a hash value for a variable number of arguments.<ul class="simple">
+<li><p>If called with a single argument, it uses <code class="docutils literal notranslate"><span class="pre">std::hash</span></code> if available for the type, otherwise it falls back to a custom hash implementation.</p></li>
+<li><p>If called with multiple arguments, it combines the hash values of all arguments using <code class="docutils literal notranslate"><span class="pre">hash_combine</span></code>.</p></li>
+</ul>
+</p>
+<p>This utility is useful for creating composite hash values for tuples, structures, or multiple parameters, and is compatible with both standard and custom hash functions.</p>
+<p>note:<ul class="simple">
+<li><p>At least one argument must be provided.</p></li>
+<li><p>For single arguments, <code class="docutils literal notranslate"><span class="pre">std::hash</span></code> is preferred if available.</p></li>
+<li><p>For multiple arguments, the order of arguments affects the result.</p></li>
+<li><p>Requires <code class="docutils literal notranslate"><span class="pre">hash_combine</span></code> and <code class="docutils literal notranslate"><span class="pre">each_in_pack</span></code> utilities.</p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Ts</strong> – The types of the values to hash. </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>vals</strong> – <strong>[in]</strong> The values to hash and combine. </p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The combined hash value as a <code class="docutils literal notranslate"><span class="pre">size_t</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 

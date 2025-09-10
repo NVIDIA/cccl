@@ -1348,7 +1348,6 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1f897184dc7f58de3c5f56c456defe2d.html">cuda::experimental::stf::loop_dispatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a0f9eb25fdee0daf313384127f4b64d0d.html">cuda::experimental::stf::partition_cyclic</a></li>
@@ -1528,6 +1527,17 @@
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf14cuda_exceptionE">
 <span class="target" id="classcuda_1_1experimental_1_1stf_1_1cuda__exception"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cuda_exception</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">exception</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf14cuda_exceptionE" title="Link to this definition">#</a><br /></dt>
 <dd><p>Exception type across CUDA, CUBLAS, and CUSOLVER. </p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">UNITTEST</span><span class="p">(</span><span class="s">&quot;cuda_exception&quot;</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda_exception</span><span class="p">(</span><span class="n">CUDA_SUCCESS</span><span class="p">);</span>
+<span class="w">  </span><span class="n">EXPECT</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="cp">#  if _CCCL_HAS_INCLUDE(&lt;cusolverDn.h&gt;)</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda_exception</span><span class="p">(</span><span class="n">CUSOLVER_STATUS_ZERO_PIVOT</span><span class="p">);</span>
+<span class="w">  </span><span class="n">EXPECT</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">e1</span><span class="p">.</span><span class="n">what</span><span class="p">())</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0u</span><span class="p">);</span>
+<span class="cp">#  endif</span>
+<span class="p">};</span>
+</pre></div>
+</div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">

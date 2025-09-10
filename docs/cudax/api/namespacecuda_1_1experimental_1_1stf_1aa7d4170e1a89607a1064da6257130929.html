@@ -1348,7 +1348,6 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
-<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1f897184dc7f58de3c5f56c456defe2d.html">cuda::experimental::stf::loop_dispatch</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a0f9eb25fdee0daf313384127f4b64d0d.html">cuda::experimental::stf::partition_cyclic</a></li>
@@ -1527,7 +1526,9 @@
 <dl class="cpp type">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf17blocked_partitionE">
 <span class="target" id="namespacecuda_1_1experimental_1_1stf_1aa7d4170e1a89607a1064da6257130929"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">experimental</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stf</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">blocked_partition</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1blocked__partition__custom.html#_CPPv4I_NSt9ptrdiff_tEEN4cuda12experimental3stf24blocked_partition_customE" title="cuda::experimental::stf::blocked_partition_custom"><span class="n"><span class="pre">blocked_partition_custom</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf17blocked_partitionE" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
+<dd><p>Partitions a multidimensional box or shape into contiguous blocks along a selected dimension. </p>
+<p>This partitioning strategy divides the data space into contiguous blocks, distributing them across execution places. By default, partitioning occurs along the last dimension, but a specific dimension can be selected using the template parameter. This approach ensures good spatial locality and is particularly effective for regular data access patterns. </p>
+</dd></dl>
 
 </section>
 
