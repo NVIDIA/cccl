@@ -32,8 +32,8 @@
 #include <thrust/iterator/detail/iterator_category_to_system.h>
 #include <thrust/iterator/detail/iterator_category_to_traversal.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_categories.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
