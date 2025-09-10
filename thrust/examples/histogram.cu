@@ -5,9 +5,10 @@
 #include <thrust/host_vector.h>
 #include <thrust/inner_product.h>
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
+
+#include <cuda/iterator>
 
 #include <iomanip>
 #include <iostream>
@@ -81,7 +82,7 @@ void dense_histogram(const Vector1& input, Vector2& histogram)
   histogram.resize(num_bins);
 
   // find the end of each bin of values
-  thrust::counting_iterator<IndexType> search_begin(0);
+  cuda::counting_iterator<IndexType> search_begin(0);
   thrust::upper_bound(data.begin(), data.end(), search_begin, search_begin + num_bins, histogram.begin());
 
   // print the cumulative histogram

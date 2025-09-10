@@ -3,12 +3,14 @@
 // set THRUST_CUB_WRAPPED_NAMESPACE to set both).
 #define THRUST_WRAPPED_NAMESPACE wrap_thrust
 #define CUB_WRAPPED_NAMESPACE    wrap_cub
+#define CCCL_IGNORE_DEPRECATED_API
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 

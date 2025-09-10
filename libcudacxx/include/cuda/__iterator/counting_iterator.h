@@ -178,6 +178,13 @@ public:
   using value_type      = _Start;
   using difference_type = _IotaDiffT<_Start>;
 
+#if _CCCL_STD_VER <= 2017
+  // Those are technically not to spec, but C++17 iterator_traits do not work properly with iterators that do not define
+  // all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using pointer   = void;
+  using reference = _Start;
+#endif // _CCCL_STD_VER <= 2017
+
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI counting_iterator()
     requires ::cuda::std::default_initializable<_Start>

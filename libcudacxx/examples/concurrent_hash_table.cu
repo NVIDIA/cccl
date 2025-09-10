@@ -12,10 +12,11 @@
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/pair.h>
 #include <thrust/universal_allocator.h>
 #include <thrust/universal_vector.h>
+
+#include <cuda/iterator>
 
 #include <cassert>
 #include <cstdio>
@@ -104,8 +105,8 @@ public:
   __host__ ~concurrent_hash_table()
   {
     thrust::for_each(thrust::device,
-                     thrust::counting_iterator<size_type>(0),
-                     thrust::counting_iterator<size_type>(capacity_),
+                     ::cuda::counting_iterator<size_type>(0),
+                     ::cuda::counting_iterator<size_type>(capacity_),
                      element_destroyer(capacity_, keys_, values_, states_));
   }
 

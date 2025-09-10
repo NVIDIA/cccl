@@ -28,12 +28,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
