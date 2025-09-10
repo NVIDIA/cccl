@@ -36,56 +36,55 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #  if __cccl_ptx_isa >= 870
 
+#    if _CCCL_HAS_INT128()
+using _QueryCancelResult = __uint128_t;
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
 struct alignas(16) _QueryCancelResult
 {
   ::cuda::std::uint64_t __lo_;
   ::cuda::std::uint64_t __hi_;
 };
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
 
 template <int _Index>
 [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI unsigned __cluster_get_dim(_QueryCancelResult __result) noexcept
 {
   unsigned __r;
+
+  asm volatile("{\n\t"
+               ".reg .b128 query_result;");
+#    if _CCCL_HAS_INT128()
+  asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
+
   if constexpr (_Index == 0)
   {
-    asm volatile(
-      "{\n\t"
-      ".reg .b128 query_result;\n\t"
-      "mov.b128 query_result, {%1, %2};\n\t"
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, query_result;"
-      "}\n\t"
-      : "=r"(__r)
-      : "l"(__result.__lo_), "l"(__result.__hi_)
-      : "memory");
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, query_result;"
+                 : "=r"(__r)
+                 :
+                 : "memory");
   }
   else if constexpr (_Index == 1)
   {
-    asm volatile(
-      "{\n\t"
-      ".reg .b128 query_result;\n\t"
-      "mov.b128 query_result, {%1, %2};\n\t"
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, query_result;"
-      "}\n\t"
-      : "=r"(__r)
-      : "l"(__result.__lo_), "l"(__result.__hi_)
-      : "memory");
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, query_result;"
+                 : "=r"(__r)
+                 :
+                 : "memory");
   }
   else if constexpr (_Index == 2)
   {
-    asm volatile(
-      "{\n\t"
-      ".reg .b128 query_result;\n\t"
-      "mov.b128 query_result, {%1, %2};\n\t"
-      "clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, query_result;"
-      "}\n\t"
-      : "=r"(__r)
-      : "l"(__result.__lo_), "l"(__result.__hi_)
-      : "memory");
+    asm volatile("clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, query_result;"
+                 : "=r"(__r)
+                 :
+                 : "memory");
   }
   else
   {
     _CCCL_UNREACHABLE();
   }
+  asm volatile("}");
   return __r;
 }
 
@@ -152,16 +151,18 @@ __for_each_canceled_block_sm100(dim3 __block_idx, bool __is_leader, __UnaryFunct
     // the next query operations from being re-ordered above the poll loop.
     {
       int __success = 0;
-      asm volatile(
-        "{\n\t"
-        ".reg .pred p;\n\t"
-        ".reg .b128 query_result;\n\t"
-        "mov.b128 query_result, {%1, %2};\n\n"
-        "clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, query_result;\n\t"
-        "selp.b32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__success)
-        : "l"(__result.__lo_), "l"(__result.__hi_));
+      asm volatile("{\n\t"
+                   ".reg .pred p;\t\n"
+                   ".reg .b128 query_result;");
+#    if _CCCL_HAS_INT128()
+      asm volatile("mov.b128 query_result, %0;" : : "q"(__result));
+#    else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+      asm volatile("mov.b128 query_result, {%0, %1};" : : "l"(__result.__lo_), "l"(__result.__hi_));
+#    endif // ^^^ !_CCCL_HAS_INT128() ^^^
+      asm volatile("clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 p, query_result;\n\t"
+                   "selp.b32 %0, 1, 0, p;\n\t"
+                   "}\n\t"
+                   : "=r"(__success));
       if (__success != 1)
       {
         // Invalidating mbarrier and synchronizing before exiting not
