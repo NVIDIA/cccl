@@ -103,6 +103,11 @@ def test_pytorch_task():
     Z = np.ones(n, dtype=np.float32)
 
     ctx = context()
+
+    # Note: We could use ctx.logical_data_full instead of creating NumPy arrays first
+    # For example: lX = ctx.logical_data_full((n,), 1.0, dtype=np.float32)
+    # However, this would create logical data without underlying NumPy arrays,
+    # so we wouldn't be able to check results after ctx.finalize() in this test
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)

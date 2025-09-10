@@ -110,7 +110,12 @@ def fdtd_3d_pytorch_simplified(
         # -------------------------
         # update electric fields (Es)
         # Ex(i,j,k) += (dt/(ε*dx)) * [(Hz(i,j,k)-Hz(i,j-1,k)) - (Hy(i,j,k)-Hy(i,j,k-1))]
-        with ctx.pytorch_task(lex.rw(), lhy.read(), lhz.read(), lepsilon.read()) as (ex, hy, hz, epsilon):
+        with ctx.pytorch_task(lex.rw(), lhy.read(), lhz.read(), lepsilon.read()) as (
+            ex,
+            hy,
+            hz,
+            epsilon,
+        ):
             ex[i_es, j_es, k_es] = ex[i_es, j_es, k_es] + (
                 dt / (epsilon[i_es, j_es, k_es] * dx)
             ) * (
@@ -119,7 +124,12 @@ def fdtd_3d_pytorch_simplified(
             )
 
         # Ey(i,j,k) += (dt/(ε*dy)) * [(Hx(i,j,k)-Hx(i,j,k-1)) - (Hz(i,j,k)-Hz(i-1,j,k))]
-        with ctx.pytorch_task(ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as (ey, hx, hz, epsilon):
+        with ctx.pytorch_task(ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as (
+            ey,
+            hx,
+            hz,
+            epsilon,
+        ):
             ey[i_es, j_es, k_es] = ey[i_es, j_es, k_es] + (
                 dt / (epsilon[i_es, j_es, k_es] * dy)
             ) * (
@@ -128,7 +138,12 @@ def fdtd_3d_pytorch_simplified(
             )
 
         # Ez(i,j,k) += (dt/(ε*dz)) * [(Hy(i,j,k)-Hy(i-1,j,k)) - (Hx(i,j,k)-Hx(i,j-1,k))]
-        with ctx.pytorch_task(lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as (ez, hx, hy, epsilon):
+        with ctx.pytorch_task(lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as (
+            ez,
+            hx,
+            hy,
+            epsilon,
+        ):
             ez[i_es, j_es, k_es] = ez[i_es, j_es, k_es] + (
                 dt / (epsilon[i_es, j_es, k_es] * dz)
             ) * (
@@ -143,7 +158,12 @@ def fdtd_3d_pytorch_simplified(
         # -------------------------
         # update magnetic fields (Hs)
         # Hx(i,j,k) -= (dt/(μ*dy)) * [(Ez(i,j+1,k)-Ez(i,j,k)) - (Ey(i,j,k+1)-Ey(i,j,k))]
-        with ctx.pytorch_task(lhx.rw(), ley.read(), lez.read(), lmu.read()) as (hx, ey, ez, mu):
+        with ctx.pytorch_task(lhx.rw(), ley.read(), lez.read(), lmu.read()) as (
+            hx,
+            ey,
+            ez,
+            mu,
+        ):
             hx[i_hs, j_hs, k_hs] = hx[i_hs, j_hs, k_hs] - (
                 dt / (mu[i_hs, j_hs, k_hs] * dy)
             ) * (
@@ -152,7 +172,12 @@ def fdtd_3d_pytorch_simplified(
             )
 
         # Hy(i,j,k) -= (dt/(μ*dz)) * [(Ex(i,j,k+1)-Ex(i,j,k)) - (Ez(i+1,j,k)-Ez(i,j,k))]
-        with ctx.pytorch_task(lhy.rw(), lex.read(), lez.read(), lmu.read()) as (hy, ex, ez, mu):
+        with ctx.pytorch_task(lhy.rw(), lex.read(), lez.read(), lmu.read()) as (
+            hy,
+            ex,
+            ez,
+            mu,
+        ):
             hy[i_hs, j_hs, k_hs] = hy[i_hs, j_hs, k_hs] - (
                 dt / (mu[i_hs, j_hs, k_hs] * dz)
             ) * (
@@ -161,7 +186,12 @@ def fdtd_3d_pytorch_simplified(
             )
 
         # Hz(i,j,k) -= (dt/(μ*dx)) * [(Ey(i+1,j,k)-Ey(i,j,k)) - (Ex(i,j+1,k)-Ex(i,j,k))]
-        with ctx.pytorch_task(lhz.rw(), lex.read(), ley.read(), lmu.read()) as (hz, ex, ey, mu):
+        with ctx.pytorch_task(lhz.rw(), lex.read(), ley.read(), lmu.read()) as (
+            hz,
+            ex,
+            ey,
+            mu,
+        ):
             hz[i_hs, j_hs, k_hs] = hz[i_hs, j_hs, k_hs] - (
                 dt / (mu[i_hs, j_hs, k_hs] * dx)
             ) * (
