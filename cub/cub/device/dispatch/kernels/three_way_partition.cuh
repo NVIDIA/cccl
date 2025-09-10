@@ -1,9 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-<<<<<<< HEAD
-// SPDX-License-Identifier: BSD-3-Clause
-=======
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
->>>>>>> main
 
 #pragma once
 
@@ -23,7 +19,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
-<<<<<<< HEAD
 
 // Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
 // partition
@@ -104,8 +99,6 @@ public:
   }
 };
 
-=======
->>>>>>> main
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
