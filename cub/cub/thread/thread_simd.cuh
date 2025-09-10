@@ -52,17 +52,6 @@
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/type_traits> // cuda::std::common_type
 
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
-
 CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
