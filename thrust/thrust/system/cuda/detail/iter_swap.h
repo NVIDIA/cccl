@@ -46,7 +46,7 @@ template <typename Pointer1, typename Pointer2>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
 {
   using ::cuda::std::swap;
-  swap(*a, *b);
+  swap(*raw_pointer_cast(a), *raw_pointer_cast(b));
 }
 } // namespace detail
 
@@ -62,8 +62,7 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
     _CCCL_HOST void operator()(execution_policy<DerivedPolicy>& exec, Pointer1 a, Pointer2 b) const
     {
       const cudaError status =
-        detail::triple_chevron(1, 1, 0, stream(exec))
-          .doit(detail::iter_swap_kernel<Pointer1, Pointer2>, raw_pointer_cast(a), raw_pointer_cast(b));
+        detail::triple_chevron(1, 1, 0, stream(exec)).doit(detail::iter_swap_kernel<Pointer1, Pointer2>, a, b);
       throw_on_error(status, "iter_swap: calling iter_swap_kernel failed");
       throw_on_error(synchronize_optional(exec), "iter_swap: sync failed");
     }
