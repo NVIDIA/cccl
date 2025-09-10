@@ -1,7 +1,7 @@
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
 
+#include <cuda/iterator>
 #include <cuda/stream_ref>
 
 #include <unittest/unittest.h>

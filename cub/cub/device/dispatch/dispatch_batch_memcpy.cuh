@@ -53,10 +53,10 @@
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -190,7 +190,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       copy_items<MemcpyOpt == CopyAlg::Memcpy, BLOCK_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
         input_buffer_it[buffer_id],
         output_buffer_it[buffer_id],
-        (::cuda::std::min) (buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
+        (::cuda::std::min)(buffer_sizes[buffer_id] - tile_offset_within_buffer, TILE_SIZE),
         tile_offset_within_buffer);
     }
 

@@ -28,7 +28,7 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <cuda/iterator>
 
 #include <cstdint>
 

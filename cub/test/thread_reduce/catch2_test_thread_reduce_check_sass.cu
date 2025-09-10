@@ -32,9 +32,8 @@
 #  include <cub/thread/thread_reduce.cuh>
 #  include <cub/util_macro.cuh>
 
-#  include <thrust/iterator/constant_iterator.h>
-
 #  include <cuda/functional>
+#  include <cuda/iterator>
 #  include <cuda/std/functional>
 #  include <cuda/std/limits>
 #  include <cuda/std/type_traits>
