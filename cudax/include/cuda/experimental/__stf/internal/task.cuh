@@ -369,7 +369,6 @@ public:
 
   void enable_capture()
   {
-    fprintf(stderr, "task enable capture (generic task)\n");
     pimpl->enable_capture = true;
   }
 
