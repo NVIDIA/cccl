@@ -45,7 +45,7 @@ template <class _Ty, bool _Nothrow = true>
 using __declfn_t = _Ty (*)() noexcept(_Nothrow);
 
 template <class _Ty, bool _Nothrow = true>
-_CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
+_CCCL_HOST_DEVICE auto __declfn() noexcept(_Nothrow) -> _Ty;
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
