@@ -150,10 +150,8 @@ struct Log2<N, 0, COUNT>
 {
   enum
   {
-    VALUE = (1 << (COUNT - 1) < N) ? // Base case
-              COUNT
-                                   : COUNT - 1
-  };
+    VALUE = (1 << (COUNT - 1) < N) ? COUNT : COUNT - 1
+  }; // Base case
 };
 
 #  endif // _CCCL_DOXYGEN_INVOKED
