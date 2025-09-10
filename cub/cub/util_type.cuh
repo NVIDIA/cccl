@@ -414,19 +414,19 @@ struct UnitWord
       (sizeof(T) % sizeof(Unit) == 0) && (int(ALIGN_BYTES) % int(UNIT_ALIGN_BYTES) == 0);
   };
 
-  /// Biggest shuffle word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest shuffle word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using ShuffleWord =
     ::cuda::std::_If<IsMultiple<int>::IS_MULTIPLE,
                      unsigned int,
                      ::cuda::std::_If<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
 
-  /// Biggest volatile word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest volatile word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using VolatileWord = ::cuda::std::_If<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
 
-  /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest memory-access word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using DeviceWord = ::cuda::std::_If<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
 
-  /// Biggest texture reference word that T is a whole multiple of and is not larger than the alignment of T
+  /// Biggest texture reference word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using TextureWord = ::cuda::std::
     _If<IsMultiple<int4>::IS_MULTIPLE, uint4, ::cuda::std::_If<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
 };
@@ -668,7 +668,7 @@ CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
 template <typename T>
 struct Uninitialized
 {
-  /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest memory-access word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using DeviceWord = typename UnitWord<T>::DeviceWord;
 
   static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
