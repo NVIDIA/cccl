@@ -77,9 +77,11 @@ struct __nv_fp8_e4m3;
 struct __nv_fp8x2_e4m3;
 struct __nv_fp8x4_e4m3;
 
+#  if _CCCL_CTK_AT_LEAST(12, 8)
 struct __nv_fp8_e8m0;
 struct __nv_fp8x2_e8m0;
 struct __nv_fp8x4_e8m0;
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
 #endif
 
 #if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
