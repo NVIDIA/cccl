@@ -171,6 +171,23 @@ struct segmented_sort_kernel_source
   {
     return build.key_type.size;
   }
+
+  using LargeSegmentsSelectorT = cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, void*, void*>;
+  using SmallSegmentsSelectorT = cub::detail::segmented_sort::SmallSegmentsSelectorT<OffsetT, void*, void*>;
+
+  auto LargeSegmentsSelector(
+    OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
+  {
+    return LargeSegmentsSelectorT(
+      offset, *reinterpret_cast<void**>(begin_offset_iterator.ptr), *reinterpret_cast<void**>(end_offset_iterator.ptr));
+  }
+
+  auto SmallSegmentsSelector(
+    OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
+  {
+    return SmallSegmentsSelectorT(
+      offset, *reinterpret_cast<void**>(begin_offset_iterator.ptr), *reinterpret_cast<void**>(end_offset_iterator.ptr));
+  }
 };
 
 std::string get_three_way_partition_init_kernel_name()
@@ -465,6 +482,27 @@ CUresult cccl_device_segmented_sort_build(
         template_id<output_iterator_traits>(), values_out_it, values_in_it.value_type);
       values_out_iterator_name = vo_name;
       values_out_iterator_src  = vo_src;
+
+      // For STORAGE values, ensure pointer types in iterator names/sources use items_storage_t*
+      if (values_in_it.value_type.type == cccl_type_enum::CCCL_STORAGE)
+      {
+        auto replace_all = [](std::string& s, const std::string& from, const std::string& to) {
+          if (from.empty())
+          {
+            return;
+          }
+          size_t pos = 0;
+          while ((pos = s.find(from, pos)) != std::string::npos)
+          {
+            s.replace(pos, from.length(), to);
+            pos += to.length();
+          }
+        };
+        replace_all(values_in_iterator_src, "storage_t", "items_storage_t");
+        replace_all(values_out_iterator_src, "storage_t", "items_storage_t");
+        replace_all(values_in_iterator_name, "storage_t", "items_storage_t");
+        replace_all(values_out_iterator_name, "storage_t", "items_storage_t");
+      }
     }
     else
     {
@@ -483,29 +521,35 @@ CUresult cccl_device_segmented_sort_build(
 
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
-    const std::string key_t   = cccl_type_enum_to_name(keys_in_it.value_type.type);
-    const std::string value_t = keys_only ? "cub::NullType" : cccl_type_enum_to_name(values_in_it.value_type.type);
+    const std::string key_t = cccl_type_enum_to_name(keys_in_it.value_type.type);
+    const std::string value_t =
+      keys_only ? "cub::NullType" : cccl_type_enum_to_name<items_storage_t>(values_in_it.value_type.type);
 
     const std::string dependent_definitions_src = std::format(
       R"XXX(
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
-{2}
-{3}
+struct __align__({3}) items_storage_t {{
+  char data[{2}];
+}};
 {4}
 {5}
 {6}
 {7}
+{8}
+{9}
 )XXX",
       keys_in_it.value_type.size, // 0
       keys_in_it.value_type.alignment, // 1
-      keys_in_iterator_src, // 2
-      keys_out_iterator_src, // 3
-      values_in_iterator_src, // 4
-      values_out_iterator_src, // 5
-      start_offset_iterator_src, // 6
-      end_offset_iterator_src); // 7
+      values_in_it.value_type.size, // 2
+      values_in_it.value_type.alignment, // 3
+      keys_in_iterator_src, // 4
+      keys_out_iterator_src, // 5
+      values_in_iterator_src, // 6
+      values_out_iterator_src, // 7
+      start_offset_iterator_src, // 8
+      end_offset_iterator_src); // 9
 
     // Runtime parameter tuning
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
@@ -763,8 +807,8 @@ CUresult cccl_device_segmented_sort_impl(
         d_values_double_buffer,
         num_items,
         num_segments,
-        indirect_iterator_t{start_offset_in},
-        indirect_iterator_t{end_offset_in},
+        start_offset_in,
+        end_offset_in,
         is_overwrite_okay,
         stream,
         /* kernel_source */ {build},
