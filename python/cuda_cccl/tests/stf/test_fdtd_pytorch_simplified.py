@@ -4,7 +4,6 @@ from typing import Literal, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.cuda as tc
 
 from cuda.cccl.experimental.stf._stf_bindings import (
     context,
@@ -45,7 +44,7 @@ def show_slice(t3d, plane="xy", index=None):
     plt.pause(0.01)
 
 
-def fdtd_3d_pytorch(
+def fdtd_3d_pytorch_simplified(
     size_x: int = 150,
     size_y: int = 150,
     size_z: int = 150,
@@ -61,6 +60,10 @@ def fdtd_3d_pytorch(
 ) -> Tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]:
+    """
+    FDTD 3D implementation using pytorch_task for simplified syntax.
+    Demonstrates automatic stream and tensor management.
+    """
     ctx = context()
 
     # allocate and initialize fields
@@ -107,11 +110,7 @@ def fdtd_3d_pytorch(
         # -------------------------
         # update electric fields (Es)
         # Ex(i,j,k) += (dt/(ε*dx)) * [(Hz(i,j,k)-Hz(i,j-1,k)) - (Hy(i,j,k)-Hy(i,j,k-1))]
-        with (
-            ctx.task(lex.rw(), lhy.read(), lhz.read(), lepsilon.read()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            ex, hy, hz, epsilon = t.tensor_arguments()
+        with ctx.pytorch_task(lex.rw(), lhy.read(), lhz.read(), lepsilon.read()) as (ex, hy, hz, epsilon):
             ex[i_es, j_es, k_es] = ex[i_es, j_es, k_es] + (
                 dt / (epsilon[i_es, j_es, k_es] * dx)
             ) * (
@@ -120,11 +119,7 @@ def fdtd_3d_pytorch(
             )
 
         # Ey(i,j,k) += (dt/(ε*dy)) * [(Hx(i,j,k)-Hx(i,j,k-1)) - (Hz(i,j,k)-Hz(i-1,j,k))]
-        with (
-            ctx.task(ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            ey, hx, hz, epsilon = t.tensor_arguments()
+        with ctx.pytorch_task(ley.rw(), lhx.read(), lhz.read(), lepsilon.read()) as (ey, hx, hz, epsilon):
             ey[i_es, j_es, k_es] = ey[i_es, j_es, k_es] + (
                 dt / (epsilon[i_es, j_es, k_es] * dy)
             ) * (
@@ -133,11 +128,7 @@ def fdtd_3d_pytorch(
             )
 
         # Ez(i,j,k) += (dt/(ε*dz)) * [(Hy(i,j,k)-Hy(i-1,j,k)) - (Hx(i,j,k)-Hx(i,j-1,k))]
-        with (
-            ctx.task(lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            ez, hx, hy, epsilon = t.tensor_arguments()
+        with ctx.pytorch_task(lez.rw(), lhx.read(), lhy.read(), lepsilon.read()) as (ez, hx, hy, epsilon):
             ez[i_es, j_es, k_es] = ez[i_es, j_es, k_es] + (
                 dt / (epsilon[i_es, j_es, k_es] * dz)
             ) * (
@@ -146,21 +137,13 @@ def fdtd_3d_pytorch(
             )
 
         # source at center cell
-        with (
-            ctx.task(lez.rw()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            ez = t.tensor_arguments()
+        with ctx.pytorch_task(lez.rw()) as (ez,):
             ez[cx, cy, cz] = ez[cx, cy, cz] + source(n * dt, cx * dx, cy * dy, cz * dz)
 
         # -------------------------
         # update magnetic fields (Hs)
         # Hx(i,j,k) -= (dt/(μ*dy)) * [(Ez(i,j+1,k)-Ez(i,j,k)) - (Ey(i,j,k+1)-Ey(i,j,k))]
-        with (
-            ctx.task(lhx.rw(), ley.read(), lez.read(), lmu.read()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            hx, ey, ez, mu = t.tensor_arguments()
+        with ctx.pytorch_task(lhx.rw(), ley.read(), lez.read(), lmu.read()) as (hx, ey, ez, mu):
             hx[i_hs, j_hs, k_hs] = hx[i_hs, j_hs, k_hs] - (
                 dt / (mu[i_hs, j_hs, k_hs] * dy)
             ) * (
@@ -169,11 +152,7 @@ def fdtd_3d_pytorch(
             )
 
         # Hy(i,j,k) -= (dt/(μ*dz)) * [(Ex(i,j,k+1)-Ex(i,j,k)) - (Ez(i+1,j,k)-Ez(i,j,k))]
-        with (
-            ctx.task(lhy.rw(), lex.read(), lez.read(), lmu.read()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            hy, ex, ez, mu = t.tensor_arguments()
+        with ctx.pytorch_task(lhy.rw(), lex.read(), lez.read(), lmu.read()) as (hy, ex, ez, mu):
             hy[i_hs, j_hs, k_hs] = hy[i_hs, j_hs, k_hs] - (
                 dt / (mu[i_hs, j_hs, k_hs] * dz)
             ) * (
@@ -182,11 +161,7 @@ def fdtd_3d_pytorch(
             )
 
         # Hz(i,j,k) -= (dt/(μ*dx)) * [(Ey(i+1,j,k)-Ey(i,j,k)) - (Ex(i,j+1,k)-Ex(i,j,k))]
-        with (
-            ctx.task(lhz.rw(), lex.read(), ley.read(), lmu.read()) as t,
-            tc.stream(tc.ExternalStream(t.stream_ptr())),
-        ):
-            hz, ex, ey, mu = t.tensor_arguments()
+        with ctx.pytorch_task(lhz.rw(), lex.read(), ley.read(), lmu.read()) as (hz, ex, ey, mu):
             hz[i_hs, j_hs, k_hs] = hz[i_hs, j_hs, k_hs] - (
                 dt / (mu[i_hs, j_hs, k_hs] * dx)
             ) * (
@@ -195,14 +170,9 @@ def fdtd_3d_pytorch(
             )
 
         if output_freq > 0 and (n % output_freq) == 0:
-            with (
-                ctx.task(lez.read()) as t,
-                tc.stream(tc.ExternalStream(t.stream_ptr())),
-            ):
-                ez = t.tensor_arguments()
+            with ctx.pytorch_task(lez.read()) as (ez,):
                 print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
                 show_slice(ez, plane="xy")
-            pass
 
     ctx.finalize()
 
@@ -210,6 +180,7 @@ def fdtd_3d_pytorch(
 
 
 if __name__ == "__main__":
-    # Run FDTD simulation
-    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch(timesteps=1000, output_freq=5)
+    # Run simplified FDTD simulation using pytorch_task
+    print("Running FDTD simulation with pytorch_task syntax...")
+    ex, ey, ez, hx, hy, hz = fdtd_3d_pytorch_simplified(timesteps=1000, output_freq=5)
     print(f"Simulation completed; Ez(center) = {ez[75, 15, 75].item():.6e}")

@@ -473,6 +473,53 @@ cdef class task:
         self.end()
         return False
 
+cdef class pytorch_task_context:
+    """
+    Context manager for PyTorch-integrated STF tasks.
+
+    This class automatically handles:
+    - Task start/end
+    - PyTorch stream context
+    - Tensor argument conversion and unpacking
+    """
+    cdef task _task
+    cdef object _torch_stream_context
+
+    def __cinit__(self, task t):
+        self._task = t
+        self._torch_stream_context = None
+
+    def __enter__(self):
+        # Import torch here since we know it's available (checked in pytorch_task)
+        import torch.cuda as tc
+
+        # Start the underlying task
+        self._task.start()
+
+        # Create torch stream context from task stream
+        torch_stream = tc.ExternalStream(self._task.stream_ptr())
+        self._torch_stream_context = tc.stream(torch_stream)
+        self._torch_stream_context.__enter__()
+
+        # Get tensor arguments and return them
+        tensors = self._task.tensor_arguments()
+
+        # If only one tensor, return it directly; otherwise return tuple
+        if isinstance(tensors, tuple):
+            return tensors
+        else:
+            return (tensors,)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            # Exit torch stream context first
+            if self._torch_stream_context is not None:
+                self._torch_stream_context.__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            # Always end the task
+            self._task.end()
+        return False
+
 cdef class context:
     cdef stf_ctx_handle _ctx
     # Is this a context that we have borrowed ?
@@ -712,3 +759,36 @@ cdef class context:
                     "Arguments must be dependency objects or an exec_place"
                 )
         return t
+
+    def pytorch_task(self, *args):
+        """
+        Create a PyTorch-integrated task that returns tensors directly.
+        Only available if PyTorch is installed.
+
+        This is a convenience method that combines task creation with automatic
+        PyTorch stream management and tensor conversion.
+
+        Example
+        -------
+        >>> with ctx.pytorch_task(read(lX), rw(lY)) as (x_tensor, y_tensor):
+        >>>     # Automatic PyTorch stream context and tensor unpacking
+        >>>     y_tensor[:] = x_tensor * 2
+
+        Returns
+        -------
+        pytorch_task_context : Context manager that yields tensor arguments
+        """
+        # Check if PyTorch is available
+        try:
+            import torch
+        except ImportError:
+            raise RuntimeError(
+                "pytorch_task requires PyTorch to be installed. "
+                "Install PyTorch or use the regular task() method."
+            )
+
+        # Create the underlying task
+        t = self.task(*args)
+
+        # Return a PyTorch-specific context manager
+        return pytorch_task_context(t)
