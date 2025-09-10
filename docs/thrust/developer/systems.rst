@@ -99,11 +99,10 @@ The cpp system for example:
       namespace detail {
         struct par_t : execution_policy<par_t>, ... {};
       }
-      _CCCL_GLOBAL_CONSTANT detail::par_t par;
+      inline constexpr detail::par_t par;
     }
 
-These policies can be used by a user directly, to pick a sequential execution,
-or a parallel execution with a specific backend.
+These policies can be used by a user directly, to pick an execution order with a specific backend.
 Some systems also provide additional parallel execution policies,
 or member functions which can further configure a policy.
 The CUDA system for example also provides ``par_nosync_t``
@@ -119,10 +118,10 @@ Thrust further defines a single sequential policy, ``thrust::seq``:
       namespace detail {
         struct seq_t : system::detail::sequential::execution_policy<seq_t>, ... { ... };
       }
-      _CCCL_GLOBAL_CONSTANT detail::seq_t seq;
+      inline constexpr detail::seq_t seq;
     }
 
-which is essentially a global constant of the execution policy to the sequential system.
+which is a global constant of the execution policy to the sequential system.
 
 
 Host and device system policy
@@ -140,7 +139,7 @@ and alias to the corresponding system parallel policies:
         using device_t = thrust::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t;
       }
       inline constexpr detail::host_t host;
-      _CCCL_GLOBAL_CONSTANT detail::device_t device;
+      inline constexpr detail::device_t device;
     }
 
 Users most often use ``thrust::host`` and ``thrust::device`` to dispatch to the current host or device system.
