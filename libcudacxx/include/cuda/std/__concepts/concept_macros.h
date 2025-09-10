@@ -52,15 +52,15 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
-template <class>
+template <unsigned>
 struct __cccl_enable_
 {
   template <class _Tp>
-  using __cccl_enable = __cccl_enable_<_Tp>;
+  using __cccl_enable = __cccl_enable_<sizeof(_Tp (*)())>;
 };
 
 template <class _Tp>
-using __cccl_enable = __cccl_enable_<_Tp>;
+using __cccl_enable = __cccl_enable_<sizeof(_Tp (*)())>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>
