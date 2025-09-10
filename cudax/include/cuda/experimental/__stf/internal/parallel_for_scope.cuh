@@ -612,11 +612,6 @@ public:
       }
     }
 
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename context::task_type, logical_data_untyped>(t);
-    }
-
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
 #  if __NVCOMPILER

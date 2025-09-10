@@ -168,11 +168,6 @@ public:
       t.clear();
     };
 
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
-
     auto payload = [&]() {
       if constexpr (called_from_launch)
       {
