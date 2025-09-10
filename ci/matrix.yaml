@@ -8,61 +8,6 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16']}
   #
   override:
-    # -------------------------------------------------------------------------------------
-    # PR: modified cxx values (only new ones) and unversioned clang coverage
-    # - Include only new/modified cxx values for changed PR jobs
-    # - Include all PR jobs that use unversioned 'clang'
-    #
-    # PR — modified cxx values
-    - {jobs: ['build'],                         std: 'max',               cxx: ['clang18', 'clang19']}
-    - {jobs: ['build'], project: 'cudax',       std: 'max',               cxx: ['clang18', 'clang19']}
-    # PR — unversioned 'clang'
-    - {jobs: ['build'],                         std: 'minmax', ctk: '13.0',                           cxx: ['clang']}
-    - {jobs: ['build'], project: 'cudax',       std: 'minmax', ctk: '13.0',                           cxx: ['clang']}
-    - {jobs: ['test'],  project: 'thrust',      std: 'max',                gpu: 'rtx4090',            cxx: ['clang']}
-    - {jobs: ['test'],  project: 'libcudacxx',  std: 'max',                gpu: 'rtx2080',            cxx: ['clang']}
-    - {jobs: ['test'],  project: 'cudax',       std: 'max',                gpu: 'rtx2080',            cxx: ['clang']}
-    - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max',     gpu: 'rtxa6000',           cxx: ['clang']}
-    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'max', cxx: ['clang']}
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', sm: '75;80',           cxx: 'clang'}
-    - {jobs: ['test'],  project: 'packaging',   ctk: '13.0',               gpu: 'rtx2080',           cxx: ['clang']}
-    - {jobs: ['test'],  project: 'packaging',   ctk: '13.X',               gpu: 'rtx2080',           cxx: ['clang']}
-
-    # -------------------------------------------------------------------------------------
-    # Nightly: modified cxx values (clang20) and unversioned clang coverage
-    # - Include only 'clang20' for nightly jobs whose cxx lists added clang20
-    # - Include all nightly jobs that use unversioned 'clang'
-    #
-    # Nightly — modified cxx values (clang20)
-    - {jobs: ['build'],                         std: 'all',   ctk: '13.0',                           cxx: ['clang20']}
-    - {jobs: ['build'],                         std: 'all',   ctk: '13.X',                           cxx: ['clang20']}
-    - {jobs: ['build'], project: 'cudax',       std: 'all',   ctk: '13.0',                           cxx: ['clang20']}
-    - {jobs: ['build'], project: 'cudax',       std: 'all',   ctk: '13.X',                           cxx: ['clang20']}
-    # Nightly — unversioned 'clang'
-    - {jobs: ['test'],  project: 'libcudacxx',  std: 'max',   ctk: '13.X', gpu: 'rtx2080',           cxx: ['clang']}
-    - {jobs: ['test'],  project: 'cub',         std: 'max',   ctk: '13.X', gpu: 'rtxa6000',          cxx: ['clang']}
-    - {jobs: ['test'],  project: 'thrust',      std: 'max',   ctk: '13.X', gpu: 'rtx4090',           cxx: ['clang']}
-    - {jobs: ['test'],  project: 'cudax',       std: 'max',   ctk: '13.X', gpu: 'rtx2080',           cxx: ['clang']}
-    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['clang']}
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', sm: '75;80',           cxx: 'clang'}
-
-    # -------------------------------------------------------------------------------------
-    # Weekly: modified cxx values (clang20) and unversioned clang coverage
-    # - Include only 'clang20' for weekly jobs whose cxx lists added clang20
-    # - Include all weekly jobs that use unversioned 'clang'
-    #
-    # Weekly — modified cxx values (clang20)
-    - {jobs: ['build'],                         std: 'all',   ctk: '13.0',                           cxx: ['clang20']}
-    - {jobs: ['build'],                         std: 'all',   ctk: '13.X',                           cxx: ['clang20']}
-    - {jobs: ['build'], project: 'cudax',       std: 'all',   ctk: '13.0',                           cxx: ['clang20']}
-    - {jobs: ['build'], project: 'cudax',       std: 'all',   ctk: '13.X',                           cxx: ['clang20']}
-    # Weekly — unversioned 'clang'
-    - {jobs: ['test'],  project: 'libcudacxx',  std: 'minmax', ctk: '13.X', gpu: 'rtx2080',          cxx: ['clang']}
-    - {jobs: ['test'],  project: 'cub',         std: 'minmax', ctk: '13.X', gpu: 'rtxa6000',         cxx: ['clang']}
-    - {jobs: ['test'],  project: 'thrust',      std: 'minmax', ctk: '13.X', gpu: 'rtx4090',          cxx: ['clang']}
-    - {jobs: ['test'],  project: 'cudax',       std: 'minmax', ctk: '13.X', gpu: 'rtx2080',          cxx: ['clang']}
-    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: ['13.X'], std: 'all', cxx: ['clang']}
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', sm: '75;80',           cxx: 'clang'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
