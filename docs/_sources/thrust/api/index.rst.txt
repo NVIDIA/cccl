@@ -64,12 +64,15 @@ Structs
 * :doc:`thrust::allocator_delete <structthrust_1_1allocator__delete>`
 * :doc:`thrust::array_allocator_delete <structthrust_1_1array__allocator__delete>`
 * :doc:`thrust::bidirectional_device_iterator_tag <structthrust_1_1bidirectional__device__iterator__tag>`
+* :doc:`thrust::bidirectional_traversal_tag <structthrust_1_1bidirectional__traversal__tag>`
 * :doc:`thrust::compile_time_value <structthrust_1_1compile__time__value>`
 * :doc:`thrust::complex <structthrust_1_1complex>`
 * :doc:`thrust::device_execution_policy <structthrust_1_1device__execution__policy>`
 * :doc:`thrust::execution_policy <structthrust_1_1execution__policy>`
 * :doc:`thrust::forward_device_iterator_tag <structthrust_1_1forward__device__iterator__tag>`
+* :doc:`thrust::forward_traversal_tag <structthrust_1_1forward__traversal__tag>`
 * :doc:`thrust::host_execution_policy <structthrust_1_1host__execution__policy>`
+* :doc:`thrust::incrementable_traversal_tag <structthrust_1_1incrementable__traversal__tag>`
 * :doc:`thrust::input_device_iterator_tag <structthrust_1_1input__device__iterator__tag>`
 * :doc:`thrust::iterator_difference <structthrust_1_1iterator__difference>`
 * :doc:`thrust::iterator_pointer <structthrust_1_1iterator__pointer>`
@@ -109,6 +112,7 @@ Structs
 * :doc:`thrust::mr::validator <structthrust_1_1mr_1_1validator>`
 * :doc:`thrust::mr::validator2 <structthrust_1_1mr_1_1validator2>`
 * :doc:`structthrust_1_1mr_1_1validator2_3_01T_00_01T_01_4`
+* :doc:`thrust::no_traversal_tag <structthrust_1_1no__traversal__tag>`
 * :doc:`thrust::output_device_iterator_tag <structthrust_1_1output__device__iterator__tag>`
 * :doc:`thrust::proclaim_contiguous_iterator <structthrust_1_1proclaim__contiguous__iterator>`
 * :doc:`thrust::project1st <structthrust_1_1project1st>`
@@ -116,7 +120,9 @@ Structs
 * :doc:`thrust::project2nd <structthrust_1_1project2nd>`
 * :doc:`structthrust_1_1project2nd_3_01void_00_01void_01_4`
 * :doc:`thrust::random_access_device_iterator_tag <structthrust_1_1random__access__device__iterator__tag>`
+* :doc:`thrust::random_access_traversal_tag <structthrust_1_1random__access__traversal__tag>`
 * :doc:`thrust::runtime_value <structthrust_1_1runtime__value>`
+* :doc:`thrust::single_pass_traversal_tag <structthrust_1_1single__pass__traversal__tag>`
 * :doc:`thrust::square <structthrust_1_1square>`
 * :doc:`structthrust_1_1square_3_01void_01_4`
 * :doc:`thrust::system::cpp::execution_policy <structthrust_1_1system_1_1cpp_1_1execution__policy>`
@@ -235,7 +241,7 @@ Functions
 * :doc:`reduce <group__reductions_1ga6ffe364cb9c04b5ca4dfa92ead9bfc3a>`
 * :doc:`reduce_by_key <group__reductions_1ga4f2be29262626f9f41d29cda5e8d1887>`
 * :doc:`reduce_into <group__reductions_1gac4f1a13fe10dd1a2f4abf6ba347e09c8>`
-* :doc:`reinterpret_tag <group__iterator__tags_1gad9db2309839c1adf493522c6e879d0f5>`
+* :doc:`reinterpret_tag <group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5>`
 * :doc:`remove <group__stream__compaction_1ga3e0a48a2b03425d9b6ee92ca026e6cc4>`
 * :doc:`remove_copy <group__stream__compaction_1ga1cff040dfdb202bfc3b3bb20df9ee2a9>`
 * :doc:`remove_copy_if <group__stream__compaction_1gaeec02acfde68e411ca7d09063241f4d7>`
@@ -244,7 +250,7 @@ Functions
 * :doc:`replace_copy <group__replacing_1ga99f1bdd9209c27e78b0e749ee7cc792f>`
 * :doc:`replace_copy_if <group__replacing_1ga6c95b066219e71c8b8e4dbee6a249d8c>`
 * :doc:`replace_if <group__replacing_1gaf8b9f969de96df1e286a1fa01facf696>`
-* :doc:`retag <group__iterator__tags_1ga931a99cbb9d6073f2d1bca493dda5163>`
+* :doc:`retag <group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163>`
 * :doc:`return_temporary_buffer <group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa>`
 * :doc:`reverse <group__reordering_1gac20b29a89a6fac38529d801b6bfc2b2f>`
 * :doc:`reverse_copy <group__reordering_1ga96a1db1860b1b0e7be7cf53856a9b456>`
@@ -300,19 +306,19 @@ Functions
 Type Definitions
 ~~~~~~~~~~~~~~~~
 
-* :doc:`bidirectional_host_iterator_tag <group__iterator__tag__classes_1ga20e12ff89385c6c4658f39316e91e7ab>`
+* :doc:`bidirectional_host_iterator_tag <group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab>`
 * :doc:`bit_and <group__bitwise__operations_1ga2a31cf3d89bcbf180956d6fc22c7925c>`
 * :doc:`bit_or <group__bitwise__operations_1ga088b71d62502e09028451e7c4c902d1d>`
 * :doc:`bit_xor <group__bitwise__operations_1gaa17bfcdebcb4ea7d6830a51becd2d7bc>`
 * :doc:`device_memory_resource <namespacethrust_1a80adc98b03906ca2beb5e8f1cc154f7e>`
 * :doc:`divides <group__arithmetic__operations_1ga7e522d9f613022102a25ea07cc502009>`
 * :doc:`equal_to <group__comparison__operations_1ga6016444d0d718bde9affbb83f86817cf>`
-* :doc:`forward_host_iterator_tag <group__iterator__tag__classes_1gaf265cb57247c2f8b81477cdac757f252>`
+* :doc:`forward_host_iterator_tag <group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252>`
 * :doc:`greater <group__comparison__operations_1gaa754375d213e68012957ea5fe58dc58b>`
 * :doc:`greater_equal <group__comparison__operations_1ga24ffdd7aba538c5561a8fa5225436a26>`
 * :doc:`host_memory_resource <namespacethrust_1ad2124d9469c0cf7b2a30e91d2cdec51b>`
 * :doc:`index_sequence <group__type__traits_1ga6bb99ef51b7a2fc17feb93059c442f24>`
-* :doc:`input_host_iterator_tag <group__iterator__tag__classes_1gaaee0807fd12662c9c768a596c56224dd>`
+* :doc:`input_host_iterator_tag <group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd>`
 * :doc:`integer_sequence <group__type__traits_1ga9afb7f8af7061673f9eaff9a5a4d657f>`
 * :doc:`integer_sequence_push_back <group__type__traits_1ga9a0f2c1da32b7b14180366265894c192>`
 * :doc:`integer_sequence_push_front <group__type__traits_1ga30dd0858022330597b14a4c034e1936d>`
@@ -322,13 +328,13 @@ Type Definitions
 * :doc:`is_operator_less_function_object <group__type__traits_1ga89fa2cd21cf618ac3f6742e015347bd4>`
 * :doc:`is_operator_less_or_greater_function_object <group__type__traits_1ga9e81f0f06e410e65fd4ae0ff3649aa8d>`
 * :doc:`is_operator_plus_function_object <group__type__traits_1ga4951501a3c7337be79222a966d1f9d73>`
-* :doc:`iterator_difference_t <namespacethrust_1adffd965cb3b426d99eab1f6506c30ed6>`
-* :doc:`iterator_pointer_t <namespacethrust_1a9410f26f50e2038f458b0274dd0a39cf>`
-* :doc:`iterator_reference_t <namespacethrust_1a6bbc4f5672e0638f4fb040db3a3ea90b>`
-* :doc:`iterator_system_t <namespacethrust_1a582d0a9dd09f407b743a8dcea3e5a7cb>`
-* :doc:`iterator_traits <namespacethrust_1ab3b88c040c1ef5d985cf3b360b6efdfe>`
-* :doc:`iterator_traversal_t <namespacethrust_1a07227760c8422364daec7a72d21803cd>`
-* :doc:`iterator_value_t <namespacethrust_1ae8bd11a16155201e9778f4c75680a299>`
+* :doc:`iterator_difference_t <group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6>`
+* :doc:`iterator_pointer_t <group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf>`
+* :doc:`iterator_reference_t <group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b>`
+* :doc:`iterator_system_t <group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb>`
+* :doc:`iterator_traits <group__iterator__traits_1gab3b88c040c1ef5d985cf3b360b6efdfe>`
+* :doc:`iterator_traversal_t <group__iterator__traits_1ga07227760c8422364daec7a72d21803cd>`
+* :doc:`iterator_value_t <group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299>`
 * :doc:`less <group__comparison__operations_1ga3df4350c6d907789cc6e9efdeb8fa8e8>`
 * :doc:`less_equal <group__comparison__operations_1ga1f83a200dfc94baf2238e9cc44b7d59d>`
 * :doc:`logical_and <group__logical__operations_1ga0cfd98f5bffe57c208869ea3651c9140>`
@@ -345,21 +351,21 @@ Type Definitions
 * :doc:`multiplies <group__arithmetic__operations_1ga73955b2463ad31b8b9b937edde0c0693>`
 * :doc:`negate <group__arithmetic__operations_1ga0d4fe7df924272f46ec6391d579636a4>`
 * :doc:`not_equal_to <group__comparison__operations_1ga1ebb8fb466381ae25d12dd30a8947576>`
-* :doc:`output_host_iterator_tag <group__iterator__tag__classes_1gaaa2d3281a2028d43aa8a6ab49ec70f6d>`
+* :doc:`output_host_iterator_tag <group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d>`
 * :doc:`pair <group__pair_1ga7d34cdc2ff9b747ab930c6275cd44283>`
 * :doc:`plus <group__arithmetic__operations_1gaae7361f0dc565944c5c99ca7bdd8f37e>`
-* :doc:`random_access_host_iterator_tag <group__iterator__tag__classes_1ga52f67176b2139d334ad3fc1b93558fd6>`
-* :doc:`thrust::bidirectional_host_iterator_tag <group__iterator__tag__classes_1ga20e12ff89385c6c4658f39316e91e7ab>`
+* :doc:`random_access_host_iterator_tag <group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6>`
+* :doc:`thrust::bidirectional_host_iterator_tag <group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab>`
 * :doc:`thrust::bit_and <group__bitwise__operations_1ga2a31cf3d89bcbf180956d6fc22c7925c>`
 * :doc:`thrust::bit_or <group__bitwise__operations_1ga088b71d62502e09028451e7c4c902d1d>`
 * :doc:`thrust::bit_xor <group__bitwise__operations_1gaa17bfcdebcb4ea7d6830a51becd2d7bc>`
 * :doc:`thrust::divides <group__arithmetic__operations_1ga7e522d9f613022102a25ea07cc502009>`
 * :doc:`thrust::equal_to <group__comparison__operations_1ga6016444d0d718bde9affbb83f86817cf>`
-* :doc:`thrust::forward_host_iterator_tag <group__iterator__tag__classes_1gaf265cb57247c2f8b81477cdac757f252>`
+* :doc:`thrust::forward_host_iterator_tag <group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252>`
 * :doc:`thrust::greater <group__comparison__operations_1gaa754375d213e68012957ea5fe58dc58b>`
 * :doc:`thrust::greater_equal <group__comparison__operations_1ga24ffdd7aba538c5561a8fa5225436a26>`
 * :doc:`thrust::index_sequence <group__type__traits_1ga6bb99ef51b7a2fc17feb93059c442f24>`
-* :doc:`thrust::input_host_iterator_tag <group__iterator__tag__classes_1gaaee0807fd12662c9c768a596c56224dd>`
+* :doc:`thrust::input_host_iterator_tag <group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd>`
 * :doc:`thrust::integer_sequence <group__type__traits_1ga9afb7f8af7061673f9eaff9a5a4d657f>`
 * :doc:`thrust::integer_sequence_push_back <group__type__traits_1ga9a0f2c1da32b7b14180366265894c192>`
 * :doc:`thrust::integer_sequence_push_front <group__type__traits_1ga30dd0858022330597b14a4c034e1936d>`
@@ -369,6 +375,13 @@ Type Definitions
 * :doc:`thrust::is_operator_less_function_object <group__type__traits_1ga89fa2cd21cf618ac3f6742e015347bd4>`
 * :doc:`thrust::is_operator_less_or_greater_function_object <group__type__traits_1ga9e81f0f06e410e65fd4ae0ff3649aa8d>`
 * :doc:`thrust::is_operator_plus_function_object <group__type__traits_1ga4951501a3c7337be79222a966d1f9d73>`
+* :doc:`thrust::iterator_difference_t <group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6>`
+* :doc:`thrust::iterator_pointer_t <group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf>`
+* :doc:`thrust::iterator_reference_t <group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b>`
+* :doc:`thrust::iterator_system_t <group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb>`
+* :doc:`thrust::iterator_traits <group__iterator__traits_1gab3b88c040c1ef5d985cf3b360b6efdfe>`
+* :doc:`thrust::iterator_traversal_t <group__iterator__traits_1ga07227760c8422364daec7a72d21803cd>`
+* :doc:`thrust::iterator_value_t <group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299>`
 * :doc:`thrust::less <group__comparison__operations_1ga3df4350c6d907789cc6e9efdeb8fa8e8>`
 * :doc:`thrust::less_equal <group__comparison__operations_1ga1f83a200dfc94baf2238e9cc44b7d59d>`
 * :doc:`thrust::logical_and <group__logical__operations_1ga0cfd98f5bffe57c208869ea3651c9140>`
@@ -386,7 +399,7 @@ Type Definitions
 * :doc:`thrust::multiplies <group__arithmetic__operations_1ga73955b2463ad31b8b9b937edde0c0693>`
 * :doc:`thrust::negate <group__arithmetic__operations_1ga0d4fe7df924272f46ec6391d579636a4>`
 * :doc:`thrust::not_equal_to <group__comparison__operations_1ga1ebb8fb466381ae25d12dd30a8947576>`
-* :doc:`thrust::output_host_iterator_tag <group__iterator__tag__classes_1gaaa2d3281a2028d43aa8a6ab49ec70f6d>`
+* :doc:`thrust::output_host_iterator_tag <group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d>`
 * :doc:`thrust::pair <group__pair_1ga7d34cdc2ff9b747ab930c6275cd44283>`
 * :doc:`thrust::plus <group__arithmetic__operations_1gaae7361f0dc565944c5c99ca7bdd8f37e>`
 * :doc:`thrust::random::default_random_engine <group__predefined__random_1ga8450c92f9d27a16992ca377f7d8dc75c>`
@@ -397,7 +410,7 @@ Type Definitions
 * :doc:`thrust::random::ranlux48 <group__predefined__random_1ga67a4f4c57c6d60aea077a947285cb7c5>`
 * :doc:`thrust::random::ranlux48_base <group__predefined__random_1gaeb4bf97731c920bdf7cc80d2c2321f2f>`
 * :doc:`thrust::random::taus88 <group__predefined__random_1gac781a23cdf5b0cdb48ec3fbe7cb4318c>`
-* :doc:`thrust::random_access_host_iterator_tag <group__iterator__tag__classes_1ga52f67176b2139d334ad3fc1b93558fd6>`
+* :doc:`thrust::random_access_host_iterator_tag <group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6>`
 * :doc:`thrust::system::cpp::memory_resource <group__memory__resources_1gabc4f586a3d08bccc940bf4d6c770f53a>`
 * :doc:`thrust::system::cpp::pointer <group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4>`
 * :doc:`thrust::system::cpp::reference <group__system__backends_1ga98af9db6b72cb24c25132a9f5645a4a8>`
@@ -508,6 +521,7 @@ Variables
    structthrust_1_1allocator__delete
    structthrust_1_1array__allocator__delete
    structthrust_1_1bidirectional__device__iterator__tag
+   structthrust_1_1bidirectional__traversal__tag
    structthrust_1_1compile__time__value
    structthrust_1_1complex
    structthrust_1_1device__execution__policy
@@ -517,7 +531,9 @@ Variables
    structthrust_1_1system_1_1omp_1_1execution__policy
    structthrust_1_1system_1_1tbb_1_1execution__policy
    structthrust_1_1forward__device__iterator__tag
+   structthrust_1_1forward__traversal__tag
    structthrust_1_1host__execution__policy
+   structthrust_1_1incrementable__traversal__tag
    structthrust_1_1input__device__iterator__tag
    structthrust_1_1system_1_1is__error__code__enum
    structthrust_1_1system_1_1is__error__code__enum_3_01cuda_1_1errc_1_1errc__t_01_4
@@ -555,6 +571,7 @@ Variables
    structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__output__iterator_3_01Iter_00_01Fn_01_4_01_4
    structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4
    structthrust_1_1iterator__value
+   structthrust_1_1no__traversal__tag
    structthrust_1_1output__device__iterator__tag
    structthrust_1_1mr_1_1pool__options
    structthrust_1_1proclaim__contiguous__iterator
@@ -563,7 +580,9 @@ Variables
    structthrust_1_1project2nd
    structthrust_1_1project2nd_3_01void_00_01void_01_4
    structthrust_1_1random__access__device__iterator__tag
+   structthrust_1_1random__access__traversal__tag
    structthrust_1_1runtime__value
+   structthrust_1_1single__pass__traversal__tag
    structthrust_1_1square
    structthrust_1_1square_3_01void_01_4
    structthrust_1_1mr_1_1synchronized__pool__resource
@@ -574,8 +593,6 @@ Variables
    structthrust_1_1mr_1_1validator
    structthrust_1_1mr_1_1validator2
    structthrust_1_1mr_1_1validator2_3_01T_00_01T_01_4
-   group__iterator__tags_1gad9db2309839c1adf493522c6e879d0f5
-   group__iterator__tags_1ga931a99cbb9d6073f2d1bca493dda5163
    group__transformations_1ga0f4d328d7b75f58901672a42591f4d3d
    namespacethrust_1a1a067ddef0510e8b800535985b85af37
    namespacethrust_1ae268bfffafaa04f5a8a4cf902861367c
@@ -653,6 +670,8 @@ Variables
    group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac
    group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469
    group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e
+   group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5
+   group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163
    group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80
    group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02
    group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297
@@ -736,19 +755,19 @@ Variables
    group__stream__compaction_1gad6f62634dca9f277f9121fe03142b468
    group__stream__compaction_1ga9d5a88c8b9db5ff05bf54d896d294770
    group__function__object__adaptors_1gab539e564de3a7ab63ac1378470c77976
-   group__iterator__tag__classes_1ga20e12ff89385c6c4658f39316e91e7ab
+   group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab
    group__bitwise__operations_1ga2a31cf3d89bcbf180956d6fc22c7925c
    group__bitwise__operations_1ga088b71d62502e09028451e7c4c902d1d
    group__bitwise__operations_1gaa17bfcdebcb4ea7d6830a51becd2d7bc
    namespacethrust_1a80adc98b03906ca2beb5e8f1cc154f7e
    group__arithmetic__operations_1ga7e522d9f613022102a25ea07cc502009
    group__comparison__operations_1ga6016444d0d718bde9affbb83f86817cf
-   group__iterator__tag__classes_1gaf265cb57247c2f8b81477cdac757f252
+   group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252
    group__comparison__operations_1gaa754375d213e68012957ea5fe58dc58b
    group__comparison__operations_1ga24ffdd7aba538c5561a8fa5225436a26
    namespacethrust_1ad2124d9469c0cf7b2a30e91d2cdec51b
    group__type__traits_1ga6bb99ef51b7a2fc17feb93059c442f24
-   group__iterator__tag__classes_1gaaee0807fd12662c9c768a596c56224dd
+   group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd
    group__type__traits_1ga9afb7f8af7061673f9eaff9a5a4d657f
    group__type__traits_1ga9a0f2c1da32b7b14180366265894c192
    group__type__traits_1ga30dd0858022330597b14a4c034e1936d
@@ -758,13 +777,13 @@ Variables
    group__type__traits_1ga89fa2cd21cf618ac3f6742e015347bd4
    group__type__traits_1ga9e81f0f06e410e65fd4ae0ff3649aa8d
    group__type__traits_1ga4951501a3c7337be79222a966d1f9d73
-   namespacethrust_1adffd965cb3b426d99eab1f6506c30ed6
-   namespacethrust_1a9410f26f50e2038f458b0274dd0a39cf
-   namespacethrust_1a6bbc4f5672e0638f4fb040db3a3ea90b
-   namespacethrust_1a582d0a9dd09f407b743a8dcea3e5a7cb
-   namespacethrust_1ab3b88c040c1ef5d985cf3b360b6efdfe
-   namespacethrust_1a07227760c8422364daec7a72d21803cd
-   namespacethrust_1ae8bd11a16155201e9778f4c75680a299
+   group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6
+   group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf
+   group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b
+   group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb
+   group__iterator__traits_1gab3b88c040c1ef5d985cf3b360b6efdfe
+   group__iterator__traits_1ga07227760c8422364daec7a72d21803cd
+   group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299
    group__comparison__operations_1ga3df4350c6d907789cc6e9efdeb8fa8e8
    group__comparison__operations_1ga1f83a200dfc94baf2238e9cc44b7d59d
    group__logical__operations_1ga0cfd98f5bffe57c208869ea3651c9140
@@ -781,10 +800,10 @@ Variables
    group__arithmetic__operations_1ga73955b2463ad31b8b9b937edde0c0693
    group__arithmetic__operations_1ga0d4fe7df924272f46ec6391d579636a4
    group__comparison__operations_1ga1ebb8fb466381ae25d12dd30a8947576
-   group__iterator__tag__classes_1gaaa2d3281a2028d43aa8a6ab49ec70f6d
+   group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d
    group__pair_1ga7d34cdc2ff9b747ab930c6275cd44283
    group__arithmetic__operations_1gaae7361f0dc565944c5c99ca7bdd8f37e
-   group__iterator__tag__classes_1ga52f67176b2139d334ad3fc1b93558fd6
+   group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6
    group__allocators_1gaa3254521722da4dc78bc3ad9d8619ec0
    group__predefined__random_1ga8450c92f9d27a16992ca377f7d8dc75c
    group__predefined__random_1ga1c89beeeb2681026be374c4e0d6609f3
@@ -869,7 +888,9 @@ Variables
    group__iterators
    group__fancyiterator
    group__iterator__tags
-   group__iterator__tag__classes
+   group__iterator__traits
+   group__iterator__traversal__tags
+   group__iterator__tag__utilities
    group__logical
    group__merging
    group__memory__resources
