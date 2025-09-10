@@ -18,8 +18,9 @@ Users can define additional systems to add new backends.
 
 Each system lives in a directory under ``thrust/system/[detail/]``.
 
-Execution policies and tags
-***************************
+
+Execution policy base classes
+*****************************
 
 Thrust defines common base classes for execution policies:
 
@@ -40,7 +41,11 @@ There is an execution policy marker, which sits at the top of the inheritance ch
 Then, we have an execution policy base and the actual execution policy,
 both are templated on the derived policy type (CRTP).
 
-Furthermore, inside each system directory is a header file ``execution_policy.h``
+
+System execution policy base classes and tags
+*********************************************
+
+Inside each system directory is a header file ``execution_policy.h``
 which defines the execution policy and tag for that system,
 except for the generic system, which does not have a dedicated execution policy.
 The inheritance for a system, e.g. ``cpp``, looks like this:
@@ -67,8 +72,10 @@ The inheritance for a system, e.g. ``cpp``, looks like this:
 
 Each system has it's own execution policy, again templated on a further derived execution policy.
 The system's execution policy derives (directly or indirectly) from ``thrust::execution_policy``.
+System execution policies are templates and intended to be further derived from.
 Additionally, there is a tag for each system, without any template parameters,
 that derives from the system's execution policy.
+Tags are non-template class types.
 The system's execution policy is specialized for the tag type to have no members,
 otherwise it has an alias for the tag type and can convert to the tag type.
 Therefore, the execution policy can always be converted to a tag (either by downcasting or by a conversion).
@@ -79,19 +86,11 @@ The ``cpp::execution_policy<Derived>`` inherits from ``sequential::execution_pol
 so any dispatch to an algorithm in the cpp system may fall back to the sequential system.
 The cuda tag additionally inherits from ``allocator_aware_execution_policy`` to provide further functionality.
 
-Thrust further defines a few common execution policies, like ``thrust::seq``:
 
-.. code-block:: c++
+Parallel and sequential policy
+******************************
 
-    namespace thrust {
-      namespace detail {
-        struct seq_t : system::detail::sequential::execution_policy<seq_t>, ... { ... };
-      }
-      _CCCL_GLOBAL_CONSTANT detail::seq_t seq;
-    }
-
-which is essentially a global constant of the execution policy to the sequential system,
-and each system also defines a parallel policy ``thrust::system::*::detail::par_t``.
+Each system also defines an internal parallel policy ``thrust::system::*::detail::par_t``.
 The cpp system for example:
 
 .. code-block:: c++
@@ -112,9 +111,26 @@ or can customize ``par_t`` by calling ``par.on(stream)``.
 In any case, the type passed to a Thrust algorithm will always be
 a class derived from the system's ``execution_policy`` class template.
 
+Thrust further defines a single sequential policy, ``thrust::seq``:
+
+.. code-block:: c++
+
+    namespace thrust {
+      namespace detail {
+        struct seq_t : system::detail::sequential::execution_policy<seq_t>, ... { ... };
+      }
+      _CCCL_GLOBAL_CONSTANT detail::seq_t seq;
+    }
+
+which is essentially a global constant of the execution policy to the sequential system.
+
+
+Host and device system policy
+*****************************
+
 Thrust additionally defines an active host and device system,
-which are selected by the macros ``THRUST_HOST_SYSTEM`` and ``THRUST_DEVICE_SYSTEM``,
-and defines:
+which are selected by the macros ``THRUST_HOST_SYSTEM`` and ``THRUST_DEVICE_SYSTEM``
+and alias to the corresponding system parallel policies:
 
 .. code-block:: c++
 
