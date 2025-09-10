@@ -17,7 +17,6 @@
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/seq.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/version.h>
 
