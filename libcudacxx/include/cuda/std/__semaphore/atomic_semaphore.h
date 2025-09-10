@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
-#define _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#ifndef _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#define _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <thread_scope _Sco, ptrdiff_t __least_max_value>
 class __atomic_semaphore
@@ -74,7 +74,7 @@ class __atomic_semaphore
 
   [[nodiscard]] _CCCL_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
-    return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
+    return ::cuda::std::__cccl_thread_poll_with_backoff(
       [this]() {
         ptrdiff_t const __old = __count.load(memory_order_acquire);
         return __old != 0 && __fetch_sub_if_slow(__old);
@@ -157,7 +157,7 @@ class __atomic_semaphore<_Sco, 1>
 
   [[nodiscard]] _CCCL_API inline bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
-    return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
+    return ::cuda::std::__cccl_thread_poll_with_backoff(
       [this]() {
         return try_acquire();
       },
@@ -226,8 +226,8 @@ public:
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#endif // _CUDA_STD___SEMAPHORE_ATOMIC_SEMAPHORE_H

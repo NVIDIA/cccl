@@ -44,13 +44,13 @@ namespace cuda::experimental::execution
 template <class...>
 struct _DIAGNOSTIC;
 
-struct _WHERE;
+struct _UNKNOWN;
 
-struct _IN_ALGORITHM;
+struct _WHERE;
 
 struct _WHAT;
 
-struct _WHY;
+struct _IN_ALGORITHM;
 
 struct _WITH_FUNCTION;
 
@@ -69,20 +69,17 @@ struct _WITH_COMPLETION_SIGNATURE;
 
 struct _FUNCTION_IS_NOT_CALLABLE;
 
-struct _UNKNOWN;
+struct _FUNCTION_MUST_RETURN_A_SENDER;
+
+struct _FUNCTION_MUST_RETURN_SENDERS_THAT_ALL_COMPLETE_IN_A_COMMON_DOMAIN;
+
+struct _WITH_RETURN_TYPE;
 
 struct _SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
 
 struct _ARGUMENTS_ARE_NOT_DECAY_COPYABLE;
 
 struct _THE_ENVIRONMENT_OF_THE_RECEIVER_DOES_NOT_HAVE_A_SCHEDULER_FOR_ON_TO_RETURN_TO;
-
-template <class... _Sigs>
-struct _WITH_COMPLETIONS
-{};
-
-struct _NOT_ABLE_TO_DETERMINE_WHAT_STREAM_TO_USE_FOR_THIS_OPERATION
-{};
 
 struct __merror_base
 {
@@ -142,7 +139,7 @@ inline constexpr bool __type_contains_error =
 #if _CCCL_COMPILER(MSVC)
   (__type_is_error<_Ts> || ...);
 #else
-  __ustdex_unhandled_error(static_cast<_CUDA_VSTD::__type_list<_Ts...>*>(nullptr));
+  __ustdex_unhandled_error(static_cast<::cuda::std::__type_list<_Ts...>*>(nullptr));
 #endif
 
 template <class... _Ts>
@@ -164,7 +161,7 @@ struct __type_self_or_error_with_<true>
 
 template <class _Ty, class... _With>
 using __type_self_or_error_with _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
+  ::cuda::std::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
 
 template <bool>
 struct __type_try__;
@@ -224,9 +221,9 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename _CUDA_VSTD::conditional_t<_CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value, //
-                                       __type_try_quote<_Fn>,
-                                       _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
+    typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>, //
+                              __type_try_quote<_Fn>,
+                              ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 };
 
 template <class _Return>
@@ -259,7 +256,7 @@ struct __type_compose_quote
 struct __type_count
 {
   template <class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Ts)>;
+  using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::integral_constant<size_t, sizeof...(_Ts)>;
 };
 
 template <class _Continuation>
@@ -267,11 +264,11 @@ struct __type_concat_into
 {
   template <class... _Args>
   using __call _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::__type_call1<_CUDA_VSTD::__type_concat<_CUDA_VSTD::__as_type_list<_Args>...>, _Continuation>;
+    ::cuda::std::__type_call1<::cuda::std::__type_concat<::cuda::std::__as_type_list<_Args>...>, _Continuation>;
 };
 
 template <template <class...> class _Continuation>
-struct __type_concat_into_quote : __type_concat_into<_CUDA_VSTD::__type_quote<_Continuation>>
+struct __type_concat_into_quote : __type_concat_into<::cuda::std::__type_quote<_Continuation>>
 {};
 
 template <class _Ty>
@@ -280,6 +277,19 @@ struct __type_self_or
   template <class _Uy = _Ty>
   using __call _CCCL_NODEBUG_ALIAS = _Uy;
 };
+
+template <template <class...> class _Fn, class _Default, class... _Ts>
+using __type_call_or_q =
+  typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>,
+                            ::cuda::std::__type_quote<_Fn>,
+                            ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
+
+template <class _Fn, class _Default, class... _Ts>
+using __type_call_or =
+  typename ::cuda::std::_If<__is_instantiable_with<_Fn::template __call, _Ts...>,
+                            _Fn,
+                            ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
+
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

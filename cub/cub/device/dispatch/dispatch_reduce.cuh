@@ -58,8 +58,14 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
-#include <cuda/std/functional>
-#include <cuda/std/iterator>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -568,7 +574,7 @@ template <
   typename InitT,
   typename AccumT =
     ::cuda::std::__accumulator_t<ReductionOpT,
-                                 _CUDA_VSTD::invoke_result_t<TransformOpT, _CUDA_VSTD::iter_value_t<InputIteratorT>>,
+                                 ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                  InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<

@@ -70,7 +70,7 @@ using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t
 
 // define execution_policy for the purpose of Doxygenating it
 // it is actually defined elsewhere
-#if 0
+#if _CCCL_DOXYGEN_INVOKED
 /*! \p execution_policy is the base class for all Thrust parallel execution policies
  *  like \p thrust::host, \p thrust::device, and each backend system's tag type.
  *
@@ -124,7 +124,7 @@ using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t
  *  \see host_execution_policy
  *  \see device_execution_policy
  */
-template<typename DerivedPolicy>
+template <typename DerivedPolicy>
 struct execution_policy : thrust::detail::execution_policy_base<DerivedPolicy>
 {};
 #endif
@@ -340,7 +340,7 @@ _CCCL_GLOBAL_CONSTANT detail::device_t device;
 
 // define seq for the purpose of Doxygenating it
 // it is actually defined elsewhere
-#if 0
+#if _CCCL_DOXYGEN_INVOKED
 /*! \p thrust::seq is an execution policy which requires an algorithm invocation to execute sequentially
  *  in the current thread. It can not be configured by a compile-time macro.
  *

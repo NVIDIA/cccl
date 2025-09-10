@@ -28,11 +28,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator>
@@ -69,9 +65,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   ForwardIterator last,
   BinaryPredicate binary_pred);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/unique.inl>

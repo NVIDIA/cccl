@@ -59,11 +59,15 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/functional>
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__functional/proclaim_return_type.h>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include <nv/target>
 
@@ -175,10 +179,10 @@ struct dispatch_histogram
       // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
       int pixels_per_tile = block_threads * pixels_per_thread;
       int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-      int blocks_per_row  = _CUDA_VSTD::min(histogram_sweep_occupancy, tiles_per_row);
+      int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
       int blocks_per_col =
         (blocks_per_row > 0)
-          ? int(_CUDA_VSTD::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
+          ? int(::cuda::std::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
           : 0;
       int num_thread_blocks = blocks_per_row * blocks_per_col;
 
@@ -411,9 +415,6 @@ public:
    *
    * @param stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   *
-   * @param is_byte_sample
-   *   type indicating whether or not SampleT is a 8b type
    */
   // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
   template <typename MaxPolicyT = typename ::cuda::std::_If<
@@ -599,8 +600,6 @@ public:
    * @param stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
-   * @param is_byte_sample
-   *   Marker type indicating whether or not SampleT is a 8b type
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
@@ -744,8 +743,6 @@ public:
    * @param stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
-   * @param is_byte_sample
-   *   Marker type indicating whether or not SampleT is a 8b type
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
@@ -945,8 +942,6 @@ public:
    * @param stream
    *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
    *
-   * @param is_byte_sample
-   *   type indicating whether or not SampleT is a 8b type
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,

@@ -26,10 +26,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_and_op_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -42,10 +42,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_or_op_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -58,10 +58,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_xor_op_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -74,10 +74,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_min_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -90,10 +90,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_max_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -106,10 +106,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_add_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -122,10 +122,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_inc_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -138,10 +138,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_dec_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -154,10 +154,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_min_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -170,10 +170,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_max_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -186,10 +186,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_add_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -202,10 +202,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_add_t,
-                               uint64_t*,
-                               const uint64_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint64_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -218,10 +218,10 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_cluster_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_add_t,
-                               int64_t*,
-                               const int64_t*,
-                               uint32_t,
-                               uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::int64_t*,
+                               const cuda::std::int64_t*,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t*)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -233,17 +233,17 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_and_op_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));
           // cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b64  [dstMem], [srcMem], size; // 3.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
                                    cuda::ptx::op_and_op_t,
-                                   int64_t*,
-                                   const int64_t*,
-                                   uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                                   cuda::std::int64_t*,
+                                   const cuda::std::int64_t*,
+                                   cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -255,17 +255,17 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_or_op_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));
           // cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b64  [dstMem], [srcMem], size; // 3.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
                                    cuda::ptx::op_or_op_t,
-                                   int64_t*,
-                                   const int64_t*,
-                                   uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                                   cuda::std::int64_t*,
+                                   const cuda::std::int64_t*,
+                                   cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -277,17 +277,17 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_xor_op_t,
-                               int32_t*,
-                               const int32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));
           // cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b64  [dstMem], [srcMem], size; // 3.
             * fn_ptr++ = reinterpret_cast<void*>(
               static_cast<void (*)(cuda::ptx::space_global_t,
                                    cuda::ptx::space_shared_t,
                                    cuda::ptx::op_xor_op_t,
-                                   int64_t*,
-                                   const int64_t*,
-                                   uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                                   cuda::std::int64_t*,
+                                   const cuda::std::int64_t*,
+                                   cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -299,9 +299,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_min_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -313,9 +313,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_max_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -327,9 +327,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_add_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -341,9 +341,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_inc_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -355,9 +355,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_dec_t,
-                               uint32_t*,
-                               const uint32_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint32_t*,
+                               const cuda::std::uint32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -366,9 +366,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s32  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_min_t, int32_t*, const int32_t*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -377,9 +380,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s32  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_max_t, int32_t*, const int32_t*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -388,9 +394,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.add.s32  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_add_t, int32_t*, const int32_t*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               cuda::std::int32_t*,
+                               const cuda::std::int32_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -402,9 +411,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_min_t,
-                               uint64_t*,
-                               const uint64_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -416,9 +425,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_max_t,
-                               uint64_t*,
-                               const uint64_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -430,9 +439,9 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
           static_cast<void (*)(cuda::ptx::space_global_t,
                                cuda::ptx::space_shared_t,
                                cuda::ptx::op_add_t,
-                               uint64_t*,
-                               const uint64_t*,
-                               uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
+                               cuda::std::uint64_t*,
+                               const cuda::std::uint64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -441,9 +450,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s64  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_min_t, int64_t*, const int64_t*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_min_t,
+                               cuda::std::int64_t*,
+                               const cuda::std::int64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -452,9 +464,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s64  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_max_t, int64_t*, const int64_t*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_max_t,
+                               cuda::std::int64_t*,
+                               const cuda::std::int64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -463,9 +478,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_add_t, float*, const float*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               float*,
+                               const float*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -474,9 +492,12 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f64  [dstMem], [srcMem], size; // 4.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_add_t, double*, const double*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               double*,
+                               const double*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -485,8 +506,11 @@ __global__ void test_cp_reduce_async_bulk(void** fn_ptr)
     (
         // cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [dstMem], [srcMem], size; // 6.
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::space_global_t, cuda::ptx::space_shared_t, cuda::ptx::op_add_t, int64_t*, const int64_t*, uint32_t)>(
-            cuda::ptx::cp_reduce_async_bulk));));
+          static_cast<void (*)(cuda::ptx::space_global_t,
+                               cuda::ptx::space_shared_t,
+                               cuda::ptx::op_add_t,
+                               cuda::std::int64_t*,
+                               const cuda::std::int64_t*,
+                               cuda::std::uint32_t)>(cuda::ptx::cp_reduce_async_bulk));));
 #endif // __cccl_ptx_isa >= 800
 }

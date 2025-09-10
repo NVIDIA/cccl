@@ -99,6 +99,47 @@ void segmented_reduce(
 //   Test section
 // ==============
 
+<<<<<<< HEAD
+=======
+static std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
+  std::string_view index_ty_name,
+  std::string_view state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  static constexpr std::string_view it_state_src_tmpl = R"XXX(
+struct {0} {{
+  {1} linear_id;
+  {1} row_size;
+}};
+)XXX";
+
+  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
+
+  static constexpr std::string_view it_def_src_tmpl = R"XXX(
+extern "C" __device__ void {0}({1}* state, {2} offset)
+{{
+  state->linear_id += offset;
+}}
+)XXX";
+
+  const std::string it_advance_fn_def_src =
+    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
+
+  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
+extern "C" __device__ void {0}({1}* state, {2}* result)
+{{
+  *result = (state->linear_id) * (state->row_size);
+}}
+)XXX";
+
+  const std::string it_deref_fn_def_src =
+    std::format(it_deref_src_tmpl, dereference_fn_name, state_name, index_ty_name);
+
+  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
+}
+
+>>>>>>> main
 struct SegmentedReduce_SumOverRows_Fixture_Tag;
 C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
               "[segmented_reduce]",
@@ -454,10 +495,10 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_advance_fn_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_type_name);
 
   static constexpr std::string_view it_dereference_fn_src_tmpl = R"XXX(
-extern "C" __device__ {1} {0}({2} *state) {{
+extern "C" __device__ void {0}({2} *state, {1}* result) {{
   unsigned long long col_id = (state->linear_id) / (state->n_rows);
   unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);
-  return *(state->ptr + row_id * (state->n_cols) + col_id);
+  *result = *(state->ptr + row_id * (state->n_cols) + col_id);
 }}
 )XXX";
 
@@ -564,6 +605,80 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
 
   auto host_actual = std::vector<ValueT>(output_ptr);
   REQUIRE(host_actual == host_output);
+}
+
+struct SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag;
+C2H_TEST_LIST("segmented_reduce can work with floating point types",
+              "[segmented_reduce]",
+#if _CCCL_HAS_NVFP16()
+              __half,
+#endif
+              float,
+              double)
+{
+  constexpr std::size_t n_rows = 13;
+  constexpr std::size_t n_cols = 12;
+
+  constexpr std::size_t n_elems  = n_rows * n_cols;
+  constexpr std::size_t row_size = n_cols;
+
+  const std::vector<int> int_input = generate<int>(n_elems);
+  const std::vector<TestType> input(int_input.begin(), int_input.end());
+  std::vector<TestType> output(n_rows, 0);
+
+  pointer_t<TestType> input_ptr(input); // copy from host to device
+  pointer_t<TestType> output_ptr(output); // copy from host to device
+
+  using SizeT                                     = unsigned long long;
+  static constexpr std::string_view index_ty_name = "unsigned long long";
+
+  struct row_offset_iterator_state_t
+  {
+    SizeT linear_id;
+    SizeT row_size;
+  };
+
+  static constexpr std::string_view offset_iterator_state_name = "row_offset_iterator_state_t";
+  static constexpr std::string_view advance_offset_method_name = "advance_offset_it";
+  static constexpr std::string_view deref_offset_method_name   = "dereference_offset_it";
+
+  const auto& [offset_iterator_state_src, offset_iterator_advance_src, offset_iterator_deref_src] =
+    make_step_counting_iterator_sources(
+      index_ty_name, offset_iterator_state_name, advance_offset_method_name, deref_offset_method_name);
+
+  iterator_t<SizeT, row_offset_iterator_state_t> start_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    {offset_iterator_state_name, offset_iterator_state_src},
+    {advance_offset_method_name, offset_iterator_advance_src},
+    {deref_offset_method_name, offset_iterator_deref_src});
+
+  start_offset_it.state.linear_id = 0;
+  start_offset_it.state.row_size  = row_size;
+
+  // a copy of offset iterator, so no need to define advance/dereference bodies,
+  // just reused those defined above
+  iterator_t<SizeT, row_offset_iterator_state_t> end_offset_it = make_iterator<SizeT, row_offset_iterator_state_t>(
+    {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
+
+  end_offset_it.state.linear_id = 1;
+  end_offset_it.state.row_size  = row_size;
+
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
+  value_t<TestType> init{0};
+
+  auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_FloatingPointTypes_Fixture_Tag>();
+  const auto& test_key = make_key<TestType>();
+
+  segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
+
+  auto host_input_it  = input.begin();
+  auto host_output_it = output.begin();
+
+  for (std::size_t i = 0; i < n_rows; ++i)
+  {
+    std::size_t row_offset = i * row_size;
+    host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
+  }
+  REQUIRE(output == std::vector<TestType>(output_ptr));
 }
 
 template <typename ValueT>
@@ -732,6 +847,7 @@ extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
   auto start_offsets_it =
     make_stateful_transform_input_iterator<IndexT, counting_iterator_state_t<IndexT>, host_offset_functor_state<IndexT>>(
       index_ty_name,
+      index_ty_name,
       {counting_it_state_name, counting_it_state_src},
       {counting_it_advance_fn_name, counting_it_advance_fn_src},
       {counting_it_deref_fn_name, counting_it_deref_fn_src},
@@ -842,6 +958,7 @@ extern "C" __device__ {4} {0}({1} *functor_state, {2} n) {{
                                                          counting_iterator_state_t<IndexT>,
                                                          host_check_functor_state<IndexT, DataT>>(
     cmp_ty_name,
+    index_ty_name,
     {counting_it_state_name, counting_it_state_src},
     {counting_it_advance_fn_name, counting_it_advance_fn_src},
     {counting_it_deref_fn_name, counting_it_deref_fn_src},

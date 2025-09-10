@@ -30,90 +30,90 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[noreturn]] _CCCL_API inline void __throw_runtime_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::runtime_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::runtime_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_logic_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::logic_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::logic_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_domain_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::domain_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::domain_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_invalid_argument([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::invalid_argument(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::invalid_argument(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_length_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::length_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::length_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_out_of_range([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::out_of_range(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::out_of_range(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_range_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::range_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::range_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_overflow_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::overflow_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::overflow_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _CCCL_API inline void __throw_underflow_error([[maybe_unused]] const char* __msg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::underflow_error(__msg);), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::underflow_error(__msg);), (::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

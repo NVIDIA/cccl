@@ -29,14 +29,14 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-_CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
+_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
 {
-  return reinterpret_cast<_CUDA_VSTD::uint64_t*>(&__b.__barrier);
+  return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

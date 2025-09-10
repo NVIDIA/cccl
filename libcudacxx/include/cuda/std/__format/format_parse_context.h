@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMAT_PARSE_CONTEXT_H
-#define _LIBCUDACXX___FORMAT_FORMAT_PARSE_CONTEXT_H
+#ifndef _CUDA_STD___FORMAT_FORMAT_PARSE_CONTEXT_H
+#define _CUDA_STD___FORMAT_FORMAT_PARSE_CONTEXT_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_format_parse_context
@@ -71,13 +71,13 @@ public:
   {
     if (__indexing_ == _Indexing::__manual)
     {
-      _CUDA_VSTD::__throw_format_error("using automatic argument numbering in manual argument numbering mode");
+      ::cuda::std::__throw_format_error("using automatic argument numbering in manual argument numbering mode");
     }
     if (__indexing_ == _Indexing::__unknown)
     {
       __indexing_ = _Indexing::__automatic;
     }
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       _CCCL_VERIFY(__next_arg_id_ < __num_args_, "argument index outside the valid range");
     }
@@ -88,13 +88,13 @@ public:
   {
     if (__indexing_ == _Indexing::__automatic)
     {
-      _CUDA_VSTD::__throw_format_error("using manual argument numbering in automatic argument numbering mode");
+      ::cuda::std::__throw_format_error("using manual argument numbering in automatic argument numbering mode");
     }
     if (__indexing_ == _Indexing::__unknown)
     {
       __indexing_ = _Indexing::__manual;
     }
-    if (_CUDA_VSTD::is_constant_evaluated())
+    if (::cuda::std::is_constant_evaluated())
     {
       _CCCL_VERIFY(__id < __num_args_, "argument index outside the valid range");
     }
@@ -117,8 +117,8 @@ private:
 
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_format_parse_context);
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMAT_PARSE_CONTEXT_H
+#endif // _CUDA_STD___FORMAT_FORMAT_PARSE_CONTEXT_H

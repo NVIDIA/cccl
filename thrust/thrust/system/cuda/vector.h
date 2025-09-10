@@ -81,7 +81,7 @@ using vector = thrust::detail::vector_base<T, Allocator>;
 template <typename T, typename Allocator = thrust::system::cuda::universal_allocator<T>>
 using universal_vector = thrust::detail::vector_base<T, Allocator>;
 
-//! Like \ref cuda::universal_vector but uses pinned host memory (cudaMallocHost).
+//! Like \ref thrust::universal_vector but uses pinned host memory (cudaMallocHost).
 //! \see device_vector
 //! \see universal_vector
 template <typename T>

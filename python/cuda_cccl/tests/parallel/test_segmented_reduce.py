@@ -41,9 +41,14 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
+    if input_array.dtype == np.float16:
+        reduce_op = parallel.OpKind.PLUS
+    else:
+        reduce_op = binary_op
+
     # Call single-phase API directly with num_segments parameter
     parallel.segmented_reduce(
-        d_in, d_out, start_offsets, end_offsets, binary_op, h_init, n_segments
+        d_in, d_out, start_offsets, end_offsets, reduce_op, h_init, n_segments
     )
 
     d_expected = cp.empty_like(d_out)
@@ -262,3 +267,108 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
         assert id == (expected + id).cvalue.value
         assert cp.all(validate[:num_items].view(np.bool_))
         id = id_next
+
+
+def test_segmented_reduce_well_known_plus():
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+
+    # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
+    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, parallel.OpKind.PLUS, h_init, 3
+    )
+
+    expected = np.array([6, 9, 30])
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.xfail(reason="MAXIMUM op is not implemented. See GH #5515")
+def test_segmented_reduce_well_known_maximum():
+    dtype = np.int32
+    h_init = np.array([-100], dtype=dtype)
+
+    # Create segmented data: [1, 9, 3] | [4, 2] | [6, 7, 1, 8]
+    d_input = cp.array([1, 9, 3, 4, 2, 6, 7, 1, 8], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, parallel.OpKind.MAXIMUM, h_init, 3
+    )
+
+    expected = np.array([9, 4, 8])  # max of each segment
+    np.testing.assert_equal(d_output.get(), expected)
+
+
+def test_segmented_reduce_transform_output_iterator(floating_array):
+    """Test segmented reduce with TransformOutputIterator."""
+    dtype = floating_array.dtype
+    h_init = np.array([0], dtype=dtype)
+
+    # Use the floating_array fixture which provides random floating-point data of size 1000
+    d_input = floating_array
+
+    # Create 2 segments of roughly equal size
+    segment_size = d_input.size // 2
+    d_output = cp.empty(2, dtype=dtype)
+    start_offsets = cp.array([0, segment_size], dtype=np.int32)
+    end_offsets = cp.array([segment_size, d_input.size], dtype=np.int32)
+
+    def sqrt(x):
+        return x**0.5
+
+    d_out_it = parallel.TransformIterator(d_output, sqrt)
+
+    parallel.segmented_reduce(
+        d_input, d_out_it, start_offsets, end_offsets, parallel.OpKind.PLUS, h_init, 2
+    )
+
+    expected = cp.sqrt(
+        cp.array(
+            [
+                cp.sum(d_input[0:segment_size]),
+                cp.sum(d_input[segment_size : d_input.size]),
+            ]
+        )
+    )
+    np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
+
+
+def test_device_segmented_reduce_for_rowwise_sum():
+    def add_op(a, b):
+        return a + b
+
+    n_rows, n_cols = 67, 12345
+    rng = cp.random.default_rng()
+    mat = rng.integers(low=-31, high=32, dtype=np.int32, size=(n_rows, n_cols))
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    zero = np.int32(0)
+    row_offset = make_scaler(np.int32(n_cols))
+    start_offsets = parallel.TransformIterator(
+        parallel.CountingIterator(zero), row_offset
+    )
+
+    end_offsets = start_offsets + 1
+
+    d_input = mat
+    h_init = np.zeros(tuple(), dtype=np.int32)
+    d_output = cp.empty(n_rows, dtype=d_input.dtype)
+
+    parallel.segmented_reduce(
+        d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
+    )
+
+    expected = cp.sum(mat, axis=-1)
+    assert cp.all(d_output == expected)

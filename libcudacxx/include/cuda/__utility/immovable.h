@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_IMMOVABLE_H
-#define _LIBCUDACXX___UTILITY_IMMOVABLE_H
+#ifndef _CUDA___UTILITY_IMMOVABLE_H
+#define _CUDA___UTILITY_IMMOVABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 // BUG (gcc#98995): copy elision fails when initializing a [[no_unique_address]] field
 // from a function returning an object of class type by value.
@@ -43,8 +43,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __immovable
   _CCCL_IMMOVABLE(__immovable);
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_IMMOVABLE_H
+#endif // _CUDA___UTILITY_IMMOVABLE_H

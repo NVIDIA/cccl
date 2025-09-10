@@ -10,7 +10,7 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
-// cuda::mr::resource_ref properties
+// cuda::mr::synchronous_resource_ref properties
 
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
@@ -37,11 +37,11 @@ struct resource_base
   }
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
+  _CCCL_REQUIRES((!cuda::property_with_value<Property>) && ::cuda::std::__is_included_in_v<Property, Properties...>) //
   friend void get_property(const resource_base&, Property) noexcept {}
 
   _CCCL_TEMPLATE(class Property)
-  _CCCL_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
+  _CCCL_REQUIRES(cuda::property_with_value<Property>&& ::cuda::std::__is_included_in_v<Property, Properties...>) //
   friend typename Property::value_type get_property(const resource_base& res, Property) noexcept
   {
     return 42;
@@ -117,8 +117,8 @@ void test_resource_ref()
   resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
   resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
-  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate_sync(0, 0) == first.allocate_sync(0, 0));
@@ -130,7 +130,7 @@ void test_resource_ref()
 }
 
 template <class... Properties>
-cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...>
+cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...>
 indirection(resource_base<cuda::mr::host_accessible, Properties...>* res)
 {
   return {res};
@@ -143,8 +143,8 @@ void test_resource_ref_from_pointer()
   resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
   resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
-  cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate_sync(0, 0) == first.allocate_sync(0, 0));

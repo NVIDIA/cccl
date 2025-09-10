@@ -7,4 +7,4 @@ Random Number Engines with Predefined Parameters
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*typedef_group__predefined__random*
+   ../../api/group__predefined__random*

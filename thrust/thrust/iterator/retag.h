@@ -33,11 +33,12 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \ingroup iterator_tags
- *  \{
- */
+//! \addtogroup iterators
+//! \addtogroup iterator_tag_utilities Iterator Tag Utilities
+//! \ingroup iterators
+//! \{
 
-#if 0
+#if _CCCL_DOXYGEN_INVOKED
 /*! \p reinterpret_tag returns a copy of an iterator and changes the type of the result's system tag.
  *  \tparam Tag Any system tag.
  *  \tparam Iterator Any iterator type.
@@ -48,9 +49,8 @@ THRUST_NAMESPACE_BEGIN
  *        related to the converted-from system tag.
  *  \see retag
  */
-template<typename Tag, typename Iterator>
-_CCCL_HOST_DEVICE
-unspecified_iterator_type reinterpret_tag(Iterator iter);
+template <typename Tag, typename Iterator>
+_CCCL_HOST_DEVICE unspecified_iterator_type reinterpret_tag(Iterator iter);
 
 /*! \p retag returns a copy of an iterator and changes the type of the result's system tag.
  *  \tparam Tag \p Tag shall be convertible to <tt>thrust::iterator_system<Iterator>::type</tt>,
@@ -63,12 +63,10 @@ unspecified_iterator_type reinterpret_tag(Iterator iter);
  *        related to the converted-from system tag.
  *  \see reinterpret_tag
  */
-template<typename Tag, typename Iterator>
-_CCCL_HOST_DEVICE
-unspecified_iterator_type retag(Iterator iter);
+template <typename Tag, typename Iterator>
+_CCCL_HOST_DEVICE unspecified_iterator_type retag(Iterator iter);
 #endif
 
-/*! \} // iterator_tags
- */
+//! \} // iterator_tag_utilities
 
 THRUST_NAMESPACE_END

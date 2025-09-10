@@ -61,7 +61,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#operation-types
 enum class dot_sem
@@ -133,7 +133,7 @@ enum class dot_kind
 };
 
 template <dot_sem __sem>
-using sem_t         = _CUDA_VSTD::integral_constant<dot_sem, __sem>;
+using sem_t         = ::cuda::std::integral_constant<dot_sem, __sem>;
 using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
 using sem_acquire_t = sem_t<dot_sem::acquire>;
 using sem_relaxed_t = sem_t<dot_sem::relaxed>;
@@ -149,7 +149,7 @@ static constexpr sem_sc_t sem_sc{};
 static constexpr sem_weak_t sem_weak{};
 
 template <dot_space __spc>
-using space_t         = _CUDA_VSTD::integral_constant<dot_space, __spc>;
+using space_t         = ::cuda::std::integral_constant<dot_space, __spc>;
 using space_global_t  = space_t<dot_space::global>;
 using space_shared_t  = space_t<dot_space::shared>;
 using space_cluster_t = space_t<dot_space::cluster>;
@@ -159,7 +159,7 @@ static constexpr space_shared_t space_shared{};
 static constexpr space_cluster_t space_cluster{};
 
 template <dot_scope __scope>
-using scope_t         = _CUDA_VSTD::integral_constant<dot_scope, __scope>;
+using scope_t         = ::cuda::std::integral_constant<dot_scope, __scope>;
 using scope_cluster_t = scope_t<dot_scope::cluster>;
 using scope_cta_t     = scope_t<dot_scope::cta>;
 using scope_gpu_t     = scope_t<dot_scope::gpu>;
@@ -171,7 +171,7 @@ static constexpr scope_gpu_t scope_gpu{};
 static constexpr scope_sys_t scope_sys{};
 
 template <dot_op __op>
-using op_t        = _CUDA_VSTD::integral_constant<dot_op, __op>;
+using op_t        = ::cuda::std::integral_constant<dot_op, __op>;
 using op_add_t    = op_t<dot_op::add>;
 using op_dec_t    = op_t<dot_op::dec>;
 using op_inc_t    = op_t<dot_op::inc>;
@@ -195,7 +195,7 @@ static constexpr op_cas_t op_cas{};
 static constexpr op_exch_t op_exch{};
 
 template <dot_cta_group __cta_group>
-using cta_group_t   = _CUDA_VSTD::integral_constant<dot_cta_group, __cta_group>;
+using cta_group_t   = ::cuda::std::integral_constant<dot_cta_group, __cta_group>;
 using cta_group_1_t = cta_group_t<dot_cta_group::cta_group_1>;
 using cta_group_2_t = cta_group_t<dot_cta_group::cta_group_2>;
 
@@ -203,7 +203,7 @@ static constexpr cta_group_1_t cta_group_1{};
 static constexpr cta_group_2_t cta_group_2{};
 
 template <dot_kind __kind>
-using kind_t          = _CUDA_VSTD::integral_constant<dot_kind, __kind>;
+using kind_t          = ::cuda::std::integral_constant<dot_kind, __kind>;
 using kind_f16_t      = kind_t<dot_kind::f16>;
 using kind_f8f6f4_t   = kind_t<dot_kind::f8f6f4>;
 using kind_i8_t       = kind_t<dot_kind::i8>;
@@ -221,9 +221,9 @@ static constexpr kind_mxf8f6f4_t kind_mxf8f6f4{};
 static constexpr kind_tf32_t kind_tf32{};
 
 template <int n>
-using n32_t = _CUDA_VSTD::integral_constant<int, n>;
+using n32_t = ::cuda::std::integral_constant<int, n>;
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

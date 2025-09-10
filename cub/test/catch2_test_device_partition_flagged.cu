@@ -32,13 +32,13 @@
 #include <thrust/count.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
 #include <cuda/cmath>
+#include <cuda/std/iterator>
 
 #include <algorithm>
 
@@ -433,7 +433,7 @@ try
 
   // Prepare expected data
   auto expected_selected_it = thrust::make_counting_iterator(offset_t{0});
-  auto expected_rejected_it = thrust::make_reverse_iterator(
+  auto expected_rejected_it = cuda::std::make_reverse_iterator(
     thrust::make_counting_iterator(offset_t{cut_off_index}) + (num_items - cut_off_index));
   auto expected_result_op =
     make_index_to_expected_partition_op(expected_selected_it, expected_rejected_it, cut_off_index);

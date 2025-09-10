@@ -53,8 +53,12 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -172,7 +176,7 @@ template <typename AgentRlePolicyT,
 struct AgentRle
 {
   // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
-  static constexpr bool is_streaming_invocation = !_CUDA_VSTD::is_same_v<StreamingContextT, NullType>;
+  static constexpr bool is_streaming_invocation = !::cuda::std::is_same_v<StreamingContextT, NullType>;
 
   //---------------------------------------------------------------------
   // Types and constants

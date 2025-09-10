@@ -27,7 +27,6 @@
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/underlying_type.h>
@@ -35,6 +34,7 @@
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
@@ -66,7 +66,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   // The first template parameter is the receiver type.
   template <class _State>
   using __rcvr_from_state_t _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::__type_apply<_CUDA_VSTD::__detail::__type_at_fn<0>, _State>;
+    ::cuda::std::__type_apply<::cuda::std::__detail::__type_at_fn<0>, _State>;
 
   // Returns the completion signatures of a child sender. Throws an exception if
   // the child sender has more than one set_value completion signature.
@@ -95,33 +95,35 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       return __state_.__stop_token_;
     }
 
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>) -> __query_result_t<env_of_t<__rcvr_t>, _Query>
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query, class... _Args)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+      noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query, _Args...>)
+        -> __query_result_t<env_of_t<__rcvr_t>, _Query, _Args...>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Query{});
+      return execution::get_env(__state_.__rcvr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
   };
 
   template <class _StateZip, size_t _Index>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
-    using __state_t _CCCL_NODEBUG_ALIAS        = __unzip<_StateZip>;
+    using receiver_concept              = receiver_t;
+    using __state_t _CCCL_NODEBUG_ALIAS = __unzip<_StateZip>;
 
     __state_t& __state_;
 
     template <class... _Ts>
-    _CCCL_TRIVIAL_API constexpr void set_value(_Ts&&... __ts) noexcept
+    _CCCL_NODEBUG_API constexpr void set_value(_Ts&&... __ts) noexcept
     {
-      constexpr _CUDA_VSTD::index_sequence_for<_Ts...>* idx = nullptr;
+      constexpr ::cuda::std::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
       __state_.__arrive();
     }
 
     template <class _Error>
-    _CCCL_TRIVIAL_API constexpr void set_error(_Error&& __error) noexcept
+    _CCCL_NODEBUG_API constexpr void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
@@ -155,11 +157,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __state_t;
 
   template <class _Rcvr, class _CvFn, class _Ign0, class _Ign1, class... _Sndrs>
-  struct __state_t<_Rcvr, _CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>>
+  struct __state_t<_Rcvr, _CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>
   {
     using __env_t _CCCL_NODEBUG_ALIAS     = when_all_t::__env_t<__zip<__state_t>>;
     using __sndr_t _CCCL_NODEBUG_ALIAS    = when_all_t::__sndr_t<_Sndrs...>;
-    using __cv_sndr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call1<_CvFn, __sndr_t>;
+    using __cv_sndr_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1<_CvFn, __sndr_t>;
 
     static constexpr auto __completions_and_offsets =
       __sndr_t::template __get_completions_and_offsets<__cv_sndr_t, __env_t>();
@@ -182,9 +184,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     {}
 
     template <size_t _Index, size_t... _Jdx, class... _Ts>
-    _CCCL_API void __set_value(_CUDA_VSTD::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
+    _CCCL_API void __set_value(::cuda::std::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
     {
-      if constexpr (!_CUDA_VSTD::is_same_v<__values_t, __nil>)
+      if constexpr (!__same_as<__values_t, __nil>)
       {
         constexpr size_t _Offset = __completions_and_offsets.second[_Index];
         if constexpr (__nothrow_decay_copyable<_Ts...>)
@@ -216,13 +218,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
         // without worry.
         if constexpr (__nothrow_decay_copyable<_Error>)
         {
-          __errors_.template __emplace<_CUDA_VSTD::decay_t<_Error>>(static_cast<_Error&&>(__err));
+          __errors_.template __emplace<decay_t<_Error>>(static_cast<_Error&&>(__err));
         }
         else
         {
           _CCCL_TRY
           {
-            __errors_.template __emplace<_CUDA_VSTD::decay_t<_Error>>(static_cast<_Error&&>(__err));
+            __errors_.template __emplace<decay_t<_Error>>(static_cast<_Error&&>(__err));
           }
           _CCCL_CATCH_ALL
           {
@@ -234,12 +236,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 
     _CCCL_API void __set_stopped() noexcept
     {
-      _CUDA_VSTD::underlying_type_t<__estate_t> __expected = __started;
+      ::cuda::std::underlying_type_t<__estate_t> __expected = __started;
       // Transition to the "stopped" state if and only if we're in the
       // "started" state. (If this fails, it's because we're in an
       // error state, which trumps cancellation.)
       if (__state_.compare_exchange_strong(
-            __expected, static_cast<_CUDA_VSTD::underlying_type_t<__estate_t>>(__stopped)))
+            __expected, static_cast<::cuda::std::underlying_type_t<__estate_t>>(__stopped)))
       {
         __stop_source_.request_stop();
       }
@@ -258,10 +260,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       // Stop callback is no longer needed. Destroy it.
       __on_stop_.destroy();
       // All child operations have completed and arrived at the barrier.
-      switch (__state_.load(_CUDA_VSTD::memory_order_relaxed))
+      switch (__state_.load(::cuda::std::memory_order_relaxed))
       {
         case __started:
-          if constexpr (!_CUDA_VSTD::is_same_v<__values_t, __nil>)
+          if constexpr (!__same_as<__values_t, __nil>)
           {
             // All child operations completed successfully:
             __values_.__apply(execution::set_value, static_cast<__values_t&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
@@ -279,10 +281,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     }
 
     _Rcvr __rcvr_;
-    _CUDA_VSTD::atomic<size_t> __count_;
+    ::cuda::std::atomic<size_t> __count_;
     inplace_stop_source __stop_source_;
     inplace_stop_token __stop_token_;
-    _CUDA_VSTD::atomic<_CUDA_VSTD::underlying_type_t<__estate_t>> __state_;
+    ::cuda::std::atomic<::cuda::std::underlying_type_t<__estate_t>> __state_;
     __errors_t __errors_;
     __values_t __values_;
     __lazy<__stop_callback_t> __on_stop_;
@@ -291,7 +293,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   struct __start_all
   {
     template <class... _Ops>
-    _CCCL_TRIVIAL_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_NODEBUG_API void operator()(_Ops&... __ops) const noexcept
     {
       (execution::start(__ops), ...);
     }
@@ -301,17 +303,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   template <class _Rcvr,
             class _CvFn,
             class _Sndrs,
-            class = _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::__tuple_size_v<_Sndrs> - 2>>
+            class = ::cuda::std::make_index_sequence<::cuda::std::__tuple_size_v<_Sndrs> - 2>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t;
 
   template <class _Rcvr, class _CvFn, size_t... _Idx, class _Ign0, class _Ign1, class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT
-  __opstate_t<_Rcvr, _CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>, _CUDA_VSTD::index_sequence<_Idx...>>
+  __opstate_t<_Rcvr, _CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>, ::cuda::std::index_sequence<_Idx...>>
   {
-    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
-    using __sndrs_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<_CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>>;
+    using operation_state_concept = operation_state_t;
+    using __sndrs_t _CCCL_NODEBUG_ALIAS =
+      ::cuda::std::__type_call<_CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>;
     using __state_t _CCCL_NODEBUG_ALIAS =
-      when_all_t::__state_t<_Rcvr, _CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>>;
+      when_all_t::__state_t<_Rcvr, _CvFn, ::cuda::std::__tuple<_Ign0, _Ign1, _Sndrs...>>;
 
     // This function object is used to connect all the sub-operations with
     // receivers, each of which knows which elements in the values tuple it
@@ -320,23 +323,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     {
       template <class... _CvSndrs>
       _CCCL_API constexpr auto
-      operator()(__state_t& __state, _CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _CvSndrs&&... __sndrs_) const
+      operator()(__state_t& __state, ::cuda::std::__ignore_t, ::cuda::std::__ignore_t, _CvSndrs&&... __sndrs_) const
       {
         using __state_ref_t _CCCL_NODEBUG_ALIAS = __zip<__state_t>;
         // When there are no offsets, the when_all sender has no value
         // completions. All child senders can be connected to receivers
         // of the same type, saving template instantiations.
         [[maybe_unused]] constexpr bool __no_values =
-          _CUDA_VSTD::is_same_v<decltype(__state_t::__completions_and_offsets.second), __nil>;
+          __same_as<decltype(__state_t::__completions_and_offsets.second), __nil>;
         // The offsets are used to determine which elements in the values
         // tuple each receiver is responsible for setting.
-        return _CUDA_VSTD::__tuple{execution::connect(
+        return ::cuda::std::__tuple{execution::connect(
           static_cast<_CvSndrs&&>(__sndrs_), __rcvr_t<__state_ref_t, __no_values ? 0 : _Idx>{__state})...};
       }
     };
 
     // This is a tuple of operation states for the sub-operations.
-    using __sub_opstates_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__apply_result_t<__connect_subs_fn, __sndrs_t, __state_t&>;
+    using __sub_opstates_t _CCCL_NODEBUG_ALIAS =
+      ::cuda::std::__apply_result_t<__connect_subs_fn, __sndrs_t, __state_t&>;
 
     __state_t __state_;
     __sub_opstates_t __sub_ops_;
@@ -345,7 +349,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     /// save the resulting operation states in __sub_ops_.
     _CCCL_API constexpr explicit __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
-        , __sub_ops_{_CUDA_VSTD::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
+        , __sub_ops_{::cuda::std::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
 
     _CCCL_IMMOVABLE(__opstate_t);
@@ -370,7 +374,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
       else
       {
         // Start all the sub-operations.
-        _CUDA_VSTD::__apply(__start_all{}, __sub_ops_);
+        ::cuda::std::__apply(__start_all{}, __sub_ops_);
 
         // If there are no sub-operations, we're done.
         if constexpr (sizeof...(_Sndrs) == 0)
@@ -382,11 +386,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   };
 
   template <class... _Ts>
-  using __decay_all _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list<_CUDA_VSTD::decay_t<_Ts>...>;
+  using __decay_all _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_list<decay_t<_Ts>...>;
 
 public:
   template <class... _Sndrs>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
@@ -417,7 +421,7 @@ template <class... _Completions>
   // Use _CUDAX_LET_COMPLETIONS to ensure all completions are valid:
   _CUDAX_LET_COMPLETIONS(auto(__tmp) = (completion_signatures{}, ..., __cs)) // NB: uses overloaded comma operator
   {
-    _CUDA_VSTD::ignore           = __tmp; // silence unused variable warning
+    ::cuda::std::ignore          = __tmp; // silence unused variable warning
     auto __non_value_completions = concat_completion_signatures(
       completion_signatures<set_stopped_t()>{},
       transform_completion_signatures(__cs, __swallow_transform{}, __decay_transform<set_error_t>{})...);
@@ -427,26 +431,26 @@ template <class... _Completions>
       // at least one child sender has no value completions at all, so the
       // when_all will never complete with set_value. return just the error and
       // stopped completions.
-      return _CUDA_VSTD::__pair{__non_value_completions, __nil{}};
+      return ::cuda::std::__pair{__non_value_completions, __nil{}};
     }
     else
     {
       std::array<size_t, sizeof...(_Completions)> __offsets = {
-        __value_types<_Completions, _CUDA_VSTD::__type_list, _CUDA_VSTD::__type_list_size>::value...};
-      (void) _CUDA_VSTD::exclusive_scan(__offsets.begin(), __offsets.end(), __offsets.begin(), std::size_t(0));
+        __value_types<_Completions, ::cuda::std::__type_list, ::cuda::std::__type_list_size>::value...};
+      (void) ::cuda::std::exclusive_scan(__offsets.begin(), __offsets.end(), __offsets.begin(), std::size_t(0));
 
       // All child senders have exactly one value completion signature, each of
       // which may have multiple arguments. Concatenate all the arguments into a
       // single set_value_t completion signature.
-      using __values_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call< //
+      using __values_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call< //
         __type_concat_into<__type_function<set_value_t>>, //
-        __value_types<_Completions, __decay_all, _CUDA_VSTD::__type_self_t>...>;
+        __value_types<_Completions, __decay_all, ::cuda::std::__type_self_t>...>;
       // Add the value completion to the error and stopped completions.
       auto __local = __non_value_completions + completion_signatures<__values_t>();
       // Check if any of the values or errors are not nothrow decay-copyable.
       constexpr bool __all_nothrow_decay_copyable =
-        (__value_types<_Completions, __nothrow_decay_copyable_t, _CUDA_VSTD::type_identity_t>::value && ...);
-      return _CUDA_VSTD::__pair{__local + __eptr_completion_if<!__all_nothrow_decay_copyable>(), __offsets};
+        (__value_types<_Completions, __nothrow_decay_copyable_t, ::cuda::std::type_identity_t>::value && ...);
+      return ::cuda::std::__pair{__local + __eptr_completion_if<!__all_nothrow_decay_copyable>(), __offsets};
     }
   }
 
@@ -458,15 +462,15 @@ _CCCL_DIAG_POP
 // The sender for when_all
 template <class... _Sndrs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
-    : _CUDA_VSTD::__tuple<when_all_t, _CUDA_VSTD::__ignore_t, _Sndrs...>
+    : ::cuda::std::__tuple<when_all_t, ::cuda::std::__ignore_t, _Sndrs...>
 {
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  using __sndrs_t _CCCL_NODEBUG_ALIAS      = _CUDA_VSTD::__tuple<when_all_t, _CUDA_VSTD::__ignore_t, _Sndrs...>;
+  using sender_concept                = sender_t;
+  using __sndrs_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<when_all_t, ::cuda::std::__ignore_t, _Sndrs...>;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completions_and_offsets()
   {
-    return __merge_completions(__child_completions<_CUDA_VSTD::__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
+    return __merge_completions(__child_completions<::cuda::std::__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
   }
 
   template <class _Self, class... _Env>
@@ -487,36 +491,48 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    if constexpr (sizeof...(_Sndrs) == 0)
+    [[nodiscard]] _CCCL_API constexpr auto query(get_domain_t) const noexcept
     {
-      return prop{get_domain, default_domain{}};
+      if constexpr (sizeof...(_Sndrs) == 0)
+      {
+        return default_domain{};
+      }
+      else
+      {
+        return ::cuda::std::common_type_t<__early_domain_of_t<_Sndrs>...>{};
+      }
     }
-    else
+
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
     {
-      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
-      return prop{get_domain, __dom_t{}};
+      return (execution::min) (execution::get_completion_behavior<_Sndrs, _Env...>()...);
     }
-    _CCCL_UNREACHABLE();
+  };
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  {
+    return {};
   }
 };
 
 template <class... _Sndrs>
-_CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_NODEBUG_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {
     return __sndr_t{};
   }
-  else if constexpr (!__is_instantiable_with_v<_CUDA_VSTD::common_type_t, __early_domain_of_t<_Sndrs>...>)
+  else if constexpr (!__is_instantiable_with<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>)
   {
-    static_assert(__is_instantiable_with_v<_CUDA_VSTD::common_type_t, __early_domain_of_t<_Sndrs>...>,
+    static_assert(__is_instantiable_with<::cuda::std::common_type_t, __early_domain_of_t<_Sndrs>...>,
                   "when_all: all child senders must have the same domain");
   }
   else
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = ::cuda::std::common_type_t<__early_domain_of_t<_Sndrs>...>;
     // If the incoming senders are non-dependent, we can check the completion
     // signatures of the composed sender immediately.
     if constexpr (((!dependent_sender<_Sndrs>) && ...))

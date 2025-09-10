@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_COUNTED_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_COUNTED_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_COUNTED_ITERATOR_H
+#define _CUDA_STD___ITERATOR_COUNTED_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -50,7 +50,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class, class = void>
 struct __counted_iterator_concept
@@ -113,7 +113,7 @@ public:
 
   _CCCL_API constexpr counted_iterator(_Iter __iter,
                                        iter_difference_t<_Iter> __n) noexcept(is_nothrow_move_constructible_v<_Iter>)
-      : __current_(_CUDA_VSTD::move(__iter))
+      : __current_(::cuda::std::move(__iter))
       , __count_(__n)
   {
     _CCCL_ASSERT(__n >= 0, "__n must not be negative.");
@@ -144,7 +144,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr _Iter base() &&
   {
-    return _CUDA_VSTD::move(__current_);
+    return ::cuda::std::move(__current_);
   }
 
   [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Iter> count() const noexcept
@@ -170,7 +170,7 @@ public:
   _CCCL_REQUIRES(contiguous_iterator<_I2>)
   [[nodiscard]] _CCCL_API constexpr auto operator->() const noexcept
   {
-    return _CUDA_VSTD::to_address(__current_);
+    return ::cuda::std::to_address(__current_);
   }
 
   _CCCL_API constexpr counted_iterator& operator++()
@@ -406,11 +406,11 @@ public:
 
   template <class _I2>
   _CCCL_API friend constexpr auto iter_swap(const counted_iterator& __x, const counted_iterator<_I2>& __y) noexcept(
-    noexcept(_CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_)))
+    noexcept(::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_)))
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     _CCCL_ASSERT(__x.__count_ > 0 && __y.__count_ > 0, "Iterators must not be past end of range.");
-    return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
@@ -420,10 +420,10 @@ _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(counted_iterator)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(input_iterator<_Iter>)
 [[nodiscard]] _CCCL_API constexpr decltype(auto) iter_move(const counted_iterator<_Iter>& __i) noexcept(
-  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<const _Iter&>())))
+  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>())))
 {
   _CCCL_ASSERT(__i.count() > 0, "Iterator must not be past end of range.");
-  return _CUDA_VRANGES::iter_move(__i.base());
+  return ::cuda::std::ranges::iter_move(__i.base());
 }
 
 #if _CCCL_HAS_CONCEPTS()
@@ -452,13 +452,13 @@ struct pointer_traits<counted_iterator<_Iter>, enable_if_t<contiguous_iterator<_
 
   _CCCL_API static constexpr auto to_address(const pointer __iter) noexcept
   {
-    return _CUDA_VSTD::to_address(__iter.base());
+    return ::cuda::std::to_address(__iter.base());
   }
 };
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_COUNTED_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_COUNTED_ITERATOR_H

@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_SUBRANGE_H
-#define _LIBCUDACXX___FWD_SUBRANGE_H
+#ifndef _CUDA_STD___FWD_SUBRANGE_H
+#define _CUDA_STD___FWD_SUBRANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
 {
@@ -48,8 +48,8 @@ template <class _Iter,
 class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_SUBRANGE_H
+#endif // _CUDA_STD___FWD_SUBRANGE_H

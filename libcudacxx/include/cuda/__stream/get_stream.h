@@ -32,12 +32,12 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 class stream_ref;
 
 template <class _Tp>
-_CCCL_CONCEPT __convertible_to_stream_ref = _CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>;
+_CCCL_CONCEPT __convertible_to_stream_ref = ::cuda::std::convertible_to<_Tp, ::cuda::stream_ref>;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_stream = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
@@ -93,7 +93,7 @@ struct get_stream_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -101,7 +101,7 @@ struct get_stream_t
 
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

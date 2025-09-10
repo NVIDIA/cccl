@@ -38,10 +38,10 @@ namespace cuda::experimental
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
 template <class _Property>
-using __property_result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call1< //
-  _CUDA_VSTD::conditional_t<cuda::property_with_value<_Property>,
-                            _CUDA_VSTD::__type_quote1<__property_value_t>,
-                            _CUDA_VSTD::__type_always<void>>,
+using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
+  ::cuda::std::conditional_t<cuda::property_with_value<_Property>,
+                             ::cuda::std::__type_quote1<__property_value_t>,
+                             ::cuda::std::__type_always<void>>,
   _Property>;
 
 template <class _Property>
@@ -51,7 +51,7 @@ struct __with_property
   _CCCL_PUBLIC_HOST_API static auto __get_property(const _Ty& __obj) //
     -> __property_result_t<_Property>
   {
-    if constexpr (!_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
     {
       return get_property(__obj, _Property());
     }
@@ -67,7 +67,7 @@ struct __with_property
     _CCCL_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
       -> __property_result_t<_Property>
     {
-      if constexpr (!_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
+      if constexpr (!::cuda::std::is_same_v<__property_result_t<_Property>, void>)
       {
         return ::cuda::__virtcall<&__get_property<__iproperty>>(&__obj);
       }
@@ -110,14 +110,14 @@ __deallocate_async(_Resource& __mr, ::cuda::stream_ref __stream, void* __pv, siz
 template <class...>
 struct __ibasic_resource : __basic_interface<__ibasic_resource>
 {
-  _CCCL_PUBLIC_HOST_API void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CCCL_PUBLIC_HOST_API void* allocate_sync(size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
   {
     return ::cuda::__virtcall<&__ibasic_resource::allocate_sync>(this, __bytes, __alignment);
   }
 
   _CCCL_PUBLIC_HOST_API void
 
-  deallocate_sync(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  deallocate_sync(void* __pv, size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
   {
     return ::cuda::__virtcall<&__ibasic_resource::deallocate_sync>(this, __pv, __bytes, __alignment);
   }
@@ -137,7 +137,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   _CCCL_PUBLIC_HOST_API void* allocate(::cuda::stream_ref __stream, size_t __bytes)
   {
     return ::cuda::__virtcall<&__allocate_async<__ibasic_async_resource>>(
-      this, __stream, __bytes, alignof(_CUDA_VSTD::max_align_t));
+      this, __stream, __bytes, alignof(::cuda::std::max_align_t));
   }
 
   _CCCL_PUBLIC_HOST_API void deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes, size_t __alignment)
@@ -148,7 +148,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   _CCCL_PUBLIC_HOST_API void deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes)
   {
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(
-      this, __stream, __pv, __bytes, alignof(_CUDA_VSTD::max_align_t));
+      this, __stream, __pv, __bytes, alignof(::cuda::std::max_align_t));
   }
 
   template <class _Ty>
@@ -159,15 +159,16 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
 // from a new-style __basic_any resource type. It is used below by
 // __iresource_ref_conversions.
 template <class _Resource>
-_CCCL_PUBLIC_HOST_API const _CUDA_VMR::_Alloc_vtable* __get_resource_vptr(_Resource&) noexcept
+_CCCL_PUBLIC_HOST_API const ::cuda::mr::_Alloc_vtable* __get_resource_vptr(_Resource&) noexcept
 {
-  if constexpr (_CUDA_VMR::resource<_Resource>)
+  if constexpr (::cuda::mr::resource<_Resource>)
   {
-    return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Async, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
+    return &::cuda::mr::__alloc_vtable<::cuda::mr::_AllocType::_Default, ::cuda::mr::_WrapperType::_Reference, _Resource>;
   }
-  else if constexpr (_CUDA_VMR::synchronous_resource<_Resource>)
+  else if constexpr (::cuda::mr::synchronous_resource<_Resource>)
   {
-    return &_CUDA_VMR::__alloc_vtable<_CUDA_VMR::_AllocType::_Default, _CUDA_VMR::_WrapperType::_Reference, _Resource>;
+    return &::cuda::mr::
+      __alloc_vtable<::cuda::mr::_AllocType::_Synchronous, ::cuda::mr::_WrapperType::_Reference, _Resource>;
   }
   else
   {
@@ -185,8 +186,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wunused-but-set-parameter")
 // Given a list of properties and a __basic_any vptr, build a _Resource_vtable
 // for the properties as cuda::mr::basic_resource_ref expects.
 template <class _VPtr, class... _Properties>
-_CCCL_HOST_API auto __make_resource_vtable(_VPtr __vptr, _CUDA_VMR::_Resource_vtable<_Properties...>*) noexcept
-  -> _CUDA_VMR::_Resource_vtable<_Properties...>
+_CCCL_HOST_API auto __make_resource_vtable(_VPtr __vptr, ::cuda::mr::_Resource_vtable<_Properties...>*) noexcept
+  -> ::cuda::mr::_Resource_vtable<_Properties...>
 {
   return {__vptr->__query_interface(__iproperty<_Properties>())->__fn_...};
 }
@@ -198,32 +199,32 @@ _CCCL_DIAG_POP
 template <class... _Super>
 struct _CCCL_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
     : __basic_interface<__iresource_ref_conversions>
-    , _CUDA_VMR::_Resource_ref_base
+    , ::cuda::mr::_Resource_ref_base
 {
   using __self_t = __basic_any_from_t<__iresource_ref_conversions&>;
 
   template <class _Property>
   using __iprop = __rebind_interface<__iproperty<_Property>, _Super...>;
 
-  template <_CUDA_VMR::_AllocType _Alloc_type>
+  template <::cuda::mr::_AllocType _Alloc_type>
   using __iresource = __rebind_interface<
-    _CUDA_VSTD::
-      conditional_t<_Alloc_type == _CUDA_VMR::_AllocType::_Default, __ibasic_resource<>, __ibasic_async_resource<>>,
+    ::cuda::std::
+      conditional_t<_Alloc_type == ::cuda::mr::_AllocType::_Synchronous, __ibasic_resource<>, __ibasic_async_resource<>>,
     _Super...>;
 
-  _CCCL_TEMPLATE(_CUDA_VMR::_AllocType _Alloc_type, class... _Properties)
-  _CCCL_REQUIRES(_CUDA_VSTD::derived_from<__self_t, __iresource<_Alloc_type>>
-                 && (_CUDA_VSTD::derived_from<__self_t, __iprop<_Properties>> && ...))
-  operator _CUDA_VMR::basic_resource_ref<_Alloc_type, _Properties...>()
+  _CCCL_TEMPLATE(::cuda::mr::_AllocType _Alloc_type, class... _Properties)
+  _CCCL_REQUIRES(::cuda::std::derived_from<__self_t, __iresource<_Alloc_type>>
+                 && (::cuda::std::derived_from<__self_t, __iprop<_Properties>> && ...))
+  operator ::cuda::mr::basic_resource_ref<_Alloc_type, _Properties...>()
   {
     auto& __self = ::cuda::__basic_any_from(*this);
     auto* __vptr = ::cuda::__virtcall<&__get_resource_vptr<__iresource_ref_conversions>>(this);
-    auto* __vtag = static_cast<_CUDA_VMR::_Filtered_vtable<_Properties...>*>(nullptr);
+    auto* __vtag = static_cast<::cuda::mr::_Filtered_vtable<_Properties...>*>(nullptr);
     auto __props = ::cuda::experimental::__make_resource_vtable(__basic_any_access::__get_vptr(__self), __vtag);
 
-    return _CUDA_VMR::_Resource_ref_helper::_Construct<_Alloc_type, _Properties...>(
+    return ::cuda::mr::_Resource_ref_helper::_Construct<_Alloc_type, _Properties...>(
       __basic_any_access::__get_optr(__self),
-      static_cast<const _CUDA_VMR::_Vtable_store<_Alloc_type>*>(__vptr),
+      static_cast<const ::cuda::mr::_Vtable_store<_Alloc_type>*>(__vptr),
       __props);
   }
 
@@ -244,9 +245,9 @@ using __iasync_resource _CCCL_NODEBUG_ALIAS = __iset<__iresource<_Properties...>
 
 template <class _Property>
 using __try_property_result_t =
-  _CUDA_VSTD::conditional_t<!_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>, //
-                            _CUDA_VSTD::optional<__property_result_t<_Property>>, //
-                            bool>;
+  ::cuda::std::conditional_t<!::cuda::std::is_same_v<__property_result_t<_Property>, void>, //
+                             ::cuda::std::optional<__property_result_t<_Property>>, //
+                             bool>;
 
 template <class _Derived>
 struct __with_try_get_property
@@ -256,7 +257,7 @@ struct __with_try_get_property
     -> __try_property_result_t<_Property>
   {
     auto __prop = ::cuda::__dynamic_any_cast<const __iproperty<_Property>*>(&__self);
-    if constexpr (_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
+    if constexpr (::cuda::std::is_same_v<__property_result_t<_Property>, void>)
     {
       return __prop != nullptr;
     }
@@ -266,69 +267,70 @@ struct __with_try_get_property
     }
     else
     {
-      return _CUDA_VSTD::nullopt;
+      return ::cuda::std::nullopt;
     }
   }
 };
 
 template <class... _Properties>
-struct _CCCL_DECLSPEC_EMPTY_BASES any_async_resource;
+struct _CCCL_DECLSPEC_EMPTY_BASES any_resource;
 
 template <class... _Properties>
-struct _CCCL_DECLSPEC_EMPTY_BASES async_resource_ref;
+struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref;
 
-// `any_resource` wraps any given resource that satisfies the required
+// `any_synchronous_resource` wraps any given resource that satisfies the required
 // properties. It owns the contained resource, taking care of construction /
 // destruction. This makes it especially suited for use in e.g. container types
 // that need to ensure that the lifetime of the container exceeds the lifetime
 // of the memory resource used to allocate the storage
 template <class... _Properties>
-struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
+struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
     : __basic_any<__iresource<_Properties...>>
-    , __with_try_get_property<any_resource<_Properties...>>
+    , __with_try_get_property<any_synchronous_resource<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, experimental::__iresource<_Properties...>);
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+    any_synchronous_resource, ::cuda::__basic_any, experimental::__iresource<_Properties...>);
 
-  // any_async_resource is convertible to any_resource
+  // any_resource is convertible to any_synchronous_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
-  any_resource(experimental::any_async_resource<_OtherProperties...> __other) noexcept
-      : __base(_CUDA_VSTD::move(__other.__get_base()))
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  any_synchronous_resource(experimental::any_resource<_OtherProperties...> __other) noexcept
+      : __base(::cuda::std::move(__other.__get_base()))
   {}
 
   using default_queries = properties_list<_Properties...>;
 
 private:
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::any_resource must contain at least one execution space "
+  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::any_synchronous_resource must contain at least one execution "
+                "space "
                 "property!");
   using __base::interface;
 };
 
-// ``any_async_resource`` wraps any given resource that satisfies the
+// ``any_resource`` wraps any given resource that satisfies the
 // required properties. It owns the contained resource, taking care of
 // construction / destruction. This makes it especially suited for use in e.g.
 // container types that need to ensure that the lifetime of the container
 // exceeds the lifetime of the memory resource used to allocate the storage
 template <class... _Properties>
-struct _CCCL_DECLSPEC_EMPTY_BASES any_async_resource
+struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
     : __basic_any<__iasync_resource<_Properties...>>
-    , __with_try_get_property<any_async_resource<_Properties...>>
+    , __with_try_get_property<any_resource<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
-    any_async_resource, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>);
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>);
 
   using default_queries = properties_list<_Properties...>;
 
 private:
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::any_async_resource must contain at least one execution space "
+  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::any_resource must contain at least one execution space "
                 "property!");
 
   template <class...>
-  friend struct any_resource;
+  friend struct any_synchronous_resource;
 
   using __base::interface;
 
@@ -339,62 +341,63 @@ private:
 };
 
 //! @brief Type erased wrapper around a `synchronous_resource` that satisfies \tparam _Properties
-//! @tparam _Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
+//! @tparam _Properties The properties that any resource wrapped within the `synchronous_resource_ref` needs to satisfy
 template <class... _Properties>
-struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
+struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
     : __basic_any<__iresource<_Properties...>&>
-    , __with_try_get_property<resource_ref<_Properties...>>
+    , __with_try_get_property<synchronous_resource_ref<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, experimental::__iresource<_Properties...>&);
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+    synchronous_resource_ref, ::cuda::__basic_any, experimental::__iresource<_Properties...>&);
 
-  // async_resource_ref is convertible to resource_ref
+  // resource_ref is convertible to synchronous_resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
-  resource_ref(experimental::async_resource_ref<_OtherProperties...> __other) noexcept
+  _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
+  synchronous_resource_ref(experimental::resource_ref<_OtherProperties...> __other) noexcept
       : __base(__other.__get_base())
   {}
 
-  // Conversions from the resource_ref types in cuda::mr is not supported.
+  // Conversions from the synchronous_resource_ref types in cuda::mr is not supported.
   template <class... _OtherProperties>
-  resource_ref(_CUDA_VMR::resource_ref<_OtherProperties...>) = delete;
+  synchronous_resource_ref(::cuda::mr::synchronous_resource_ref<_OtherProperties...>) = delete;
 
   template <class... _OtherProperties>
-  resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
+  synchronous_resource_ref(::cuda::mr::resource_ref<_OtherProperties...>) = delete;
 
   using default_queries = properties_list<_Properties...>;
 
 private:
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::resource_ref must contain at least one execution space "
+  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::synchronous_resource_ref must contain at least one execution "
+                "space "
                 "property!");
   using __base::interface;
 };
 
 //! @brief Type erased wrapper around a `synchronous_resource` that satisfies \tparam _Properties
-//! @tparam _Properties The properties that any async resource wrapped within the `async_resource_ref` needs to satisfy
+//! @tparam _Properties The properties that any async resource wrapped within the `resource_ref` needs to satisfy
 template <class... _Properties>
-struct _CCCL_DECLSPEC_EMPTY_BASES async_resource_ref
+struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     : __basic_any<__iasync_resource<_Properties...>&>
-    , __with_try_get_property<async_resource_ref<_Properties...>>
+    , __with_try_get_property<resource_ref<_Properties...>>
 {
-  // Conversions from the resource_ref types in cuda::mr is not supported.
+  // Conversions from the synchronous_resource_ref types in cuda::mr is not supported.
   template <class... _OtherProperties>
-  async_resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
+  resource_ref(::cuda::mr::resource_ref<_OtherProperties...>) = delete;
 
   // Inherit other constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
-    async_resource_ref, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>&);
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, experimental::__iasync_resource<_Properties...>&);
 
   using default_queries = properties_list<_Properties...>;
 
 private:
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::async_resource_ref must contain at least one execution space "
+  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::resource_ref must contain at least one execution space "
                 "property!");
 
   template <class...>
-  friend struct resource_ref;
+  friend struct synchronous_resource_ref;
 
   using __base::interface;
 
@@ -406,25 +409,25 @@ private:
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
 _CCCL_REQUIRES(mr::synchronous_resource_with<_Resource, _Properties...>)
-resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
+synchronous_resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
 {
-  return resource_ref<_Properties...>(__mr);
+  return synchronous_resource_ref<_Properties...>(__mr);
 }
 
 template <class... _Properties>
-resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> const __mr) noexcept
+synchronous_resource_ref<_Properties...> __as_resource_ref(synchronous_resource_ref<_Properties...> const __mr) noexcept
 {
   return __mr;
 }
 
 template <class... _Properties>
-resource_ref<_Properties...> __as_resource_ref(async_resource_ref<_Properties...> const __mr) noexcept
+synchronous_resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> const __mr) noexcept
 {
   return __mr;
 }
 
 template <class... _Properties, mr::_AllocType _Alloc_type>
-mr::resource_ref<_Properties...>
+mr::synchronous_resource_ref<_Properties...>
 __as_resource_ref(mr::basic_resource_ref<_Alloc_type, _Properties...> const __mr) noexcept
 {
   return __mr;
@@ -452,16 +455,16 @@ enum class _ResourceKind
 //! ``basic_any_resource`` models the ``cuda::std::regular`` concept.
 //! @endrst
 //!
-//! @tparam _Kind Either `_ResourceKind::_Synchronous` for `any_resource`, or
-//! `_ResourceKind::_Asynchronous` for `any_async_resource`.
+//! @tparam _Kind Either `_ResourceKind::_Synchronous` for `any_synchronous_resource`, or
+//! `_ResourceKind::_Asynchronous` for `any_resource`.
 //! @tparam _Properties A pack of property types that a memory resource must
 //! provide in order to be storable in instances of this `basic_any_resource`
 //! type.
 //!
+//! @sa any_synchronous_resource
 //! @sa any_resource
-//! @sa any_async_resource
+//! @sa synchronous_resource_ref
 //! @sa resource_ref
-//! @sa async_resource_ref
 template <_ResourceKind _Kind, class... _Properties>
 class basic_any_resource
 {
@@ -603,7 +606,7 @@ public:
   [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size, size_t __align);
 
   //! @brief Equivalent to `allocate(__stream, __size,
-  //! alignof(_CUDA_VSTD::max_align_t))`.
+  //! alignof(::cuda::std::max_align_t))`.
   [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
 
   //! @brief Calls `deallocate` on the wrapped object with the specified
@@ -617,7 +620,7 @@ public:
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size, size_t __align);
 
   //! @brief Equivalent to `deallocate(__stream, __pv, __size,
-  //! alignof(_CUDA_VSTD::max_align_t), __stream)`.
+  //! alignof(::cuda::std::max_align_t), __stream)`.
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
 
   //! @brief Checks if `*this` holds a value.
@@ -766,7 +769,7 @@ public:
   [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size, size_t __align);
 
   //! @brief Equivalent to `allocate(__stream, __size,
-  //! alignof(_CUDA_VSTD::max_align_t))`.
+  //! alignof(::cuda::std::max_align_t))`.
   [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
 
   //! @brief Calls `deallocate` on the wrapped reference with the specified
@@ -779,7 +782,7 @@ public:
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size, size_t __align);
 
   //! @brief Equivalent to `deallocate(__stream, __pv, __size,
-  //! alignof(_CUDA_VSTD::max_align_t), __stream)`.
+  //! alignof(::cuda::std::max_align_t), __stream)`.
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
 
   //! @return A reference to the \c type_info object for the type of the object
@@ -800,7 +803,7 @@ public:
   //! returns a _`boolean-testable`_ object that contains the result, if any.
   //!
   //! @tparam _Property
-  //! @param __res The \c any_resource object
+  //! @param __res The \c any_synchronous_resource object
   //! @param __prop The property to query
   //! @pre `has_value()` is `true`.
   //! @return
@@ -829,7 +832,26 @@ public:
 //! Type erased wrapper around a `synchronous_resource`
 //! ----------------------------------------------------
 //!
-//! ``any_resource`` wraps any given :ref:`synchronous_resource
+//! ``any_synchronous_resource`` wraps any given :ref:`synchronous_resource
+//! <libcudacxx-extended-api-memory-resources-resource>` that satisfies the
+//! required properties. It owns the contained resource, taking care of
+//! construction / destruction. This makes it especially suited for use in e.g.
+//! container types that need to ensure that the lifetime of the container
+//! exceeds the lifetime of the memory resource used to allocate the storage
+//!
+//! ``any_synchronous_resource`` models the ``cuda::std::regular`` concept.
+//!
+//! @endrst
+template <class... _Properties>
+using any_synchronous_resource = basic_any_resource<_ResourceKind::_Synchronous, _Properties...>;
+
+//! @rst
+//! .. _cudax-memory-resource-any-async-resource:
+//!
+//! Type erased wrapper around an `resource`
+//! ----------------------------------------------
+//!
+//! ``any_resource`` wraps any given :ref:`resource
 //! <libcudacxx-extended-api-memory-resources-resource>` that satisfies the
 //! required properties. It owns the contained resource, taking care of
 //! construction / destruction. This makes it especially suited for use in e.g.
@@ -840,50 +862,31 @@ public:
 //!
 //! @endrst
 template <class... _Properties>
-using any_resource = basic_any_resource<_ResourceKind::_Synchronous, _Properties...>;
-
-//! @rst
-//! .. _cudax-memory-resource-any-async-resource:
-//!
-//! Type erased wrapper around an `resource`
-//! ----------------------------------------------
-//!
-//! ``any_async_resource`` wraps any given :ref:`resource
-//! <libcudacxx-extended-api-memory-resources-resource>` that satisfies the
-//! required properties. It owns the contained resource, taking care of
-//! construction / destruction. This makes it especially suited for use in e.g.
-//! container types that need to ensure that the lifetime of the container
-//! exceeds the lifetime of the memory resource used to allocate the storage
-//!
-//! ``any_async_resource`` models the ``cuda::std::regular`` concept.
-//!
-//! @endrst
-template <class... _Properties>
-using any_async_resource = basic_any_resource<_ResourceKind::_Asynchronous, _Properties...>;
+using any_resource = basic_any_resource<_ResourceKind::_Asynchronous, _Properties...>;
 
 //! @brief Type erased wrapper around a `synchronous_resource` that satisfies \c
 //! _Properties.
 //! @tparam _Properties The properties that any resource wrapped within the
-//! `resource_ref` needs to satisfy
+//! `synchronous_resource_ref` needs to satisfy
 template <class... _Properties>
-using resource_ref = basic_resource_ref<_ResourceKind::_Synchronous, _Properties...>;
+using synchronous_resource_ref = basic_resource_ref<_ResourceKind::_Synchronous, _Properties...>;
 
 //! @brief Type erased wrapper around a `resource` that satisfies \c
 //! _Properties
 //! @tparam _Properties The properties that any resource wrapped within
-//! the `async_resource_ref` needs to satisfy
+//! the `resource_ref` needs to satisfy
 template <class... _Properties>
-using async_resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Properties...>;
+using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Properties...>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! .. _cudax-memory-resource-make-any-resource:
 //!
-//! Factory function for `any_resource` objects
-//! -------------------------------------------
+//! Factory function for `any_synchronous_resource` objects
+//! -------------------------------------------------------
 //!
-//! ``make_any_resource`` constructs an :ref:`any_resource
+//! ``make_any_synchronous_resource`` constructs an :ref:`any_synchronous_resource
 //! <cudax-memory-resource-any-resource>` object that wraps a newly constructed
 //! instance of the given resource type. The resource type must satisfy the
 //! ``cuda::mr::synchronous_resource`` concept and provide all of the properties specified
@@ -894,22 +897,23 @@ using async_resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Pro
 //!
 //! @endrst
 template <class _Resource, class... _Properties, class... _Args>
-auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
+auto make_any_synchronous_resource(_Args&&... __args) -> any_synchronous_resource<_Properties...>
 {
-  static_assert(_CUDA_VMR::synchronous_resource<_Resource>,
+  static_assert(::cuda::mr::synchronous_resource<_Resource>,
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
-  static_assert(_CUDA_VMR::synchronous_resource_with<_Resource, _Properties...>,
+  static_assert(::cuda::mr::synchronous_resource_with<_Resource, _Properties...>,
                 "The provided _Resource type does not support the requested properties");
-  return any_resource<_Properties...>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
+  return any_synchronous_resource<_Properties...>{
+    ::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
 }
 
 //! @rst
 //! .. _cudax-memory-resource-make-any-async-resource:
 //!
-//! Factory function for `any_async_resource` objects
+//! Factory function for `any_resource` objects
 //! -------------------------------------------------
 //!
-//! ``make_any_async_resource`` constructs an :ref:`any_async_resource
+//! ``make_any_resource`` constructs an :ref:`any_resource
 //! <cudax-memory-resource-any-async-resource>` object that wraps a newly
 //! constructed instance of the given resource type. The resource type must
 //! satisfy the ``cuda::mr::resource`` concept and provide all of the
@@ -920,12 +924,12 @@ auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
 //!
 //! @endrst
 template <class _Resource, class... _Properties, class... _Args>
-auto make_any_async_resource(_Args&&... __args) -> any_async_resource<_Properties...>
+auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
-  static_assert(_CUDA_VMR::resource_with<_Resource, _Properties...>,
+  static_assert(::cuda::mr::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
+  static_assert(::cuda::mr::resource_with<_Resource, _Properties...>,
                 "The provided _Resource type does not support the requested properties");
-  return any_async_resource<_Properties...>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
+  return any_resource<_Properties...>{::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
 }
 
 } // namespace cuda::experimental

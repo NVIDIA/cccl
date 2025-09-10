@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H
-#define _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H
+#ifndef _CUDA_STD___RANGES_TAKE_WHILE_VIEW_H
+#define _CUDA_STD___RANGES_TAKE_WHILE_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,7 +48,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 template <class _View, class _Pred>
 _CCCL_CONCEPT __take_while_const_is_range = _CCCL_REQUIRES_EXPR((_View, _Pred))(
@@ -87,14 +87,14 @@ public:
     _CCCL_HIDE_FROM_ABI __sentinel() = default;
 
     _CCCL_API constexpr explicit __sentinel(sentinel_t<_Base> __end, const _Pred* __pred)
-        : __end_(_CUDA_VSTD::move(__end))
+        : __end_(::cuda::std::move(__end))
         , __pred_(__pred)
     {}
 
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
     _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base2<_OtherConst>>>)
     _CCCL_API constexpr __sentinel(__sentinel<!_OtherConst> __s)
-        : __end_(_CUDA_VSTD::move(__s.__end_))
+        : __end_(::cuda::std::move(__s.__end_))
         , __pred_(__s.__pred_)
     {}
 
@@ -105,20 +105,20 @@ public:
 
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const iterator_t<_Base>& __x, const __sentinel& __y)
     {
-      return __x == __y.__end_ || !_CUDA_VSTD::invoke(*__y.__pred_, *__x);
+      return __x == __y.__end_ || !::cuda::std::invoke(*__y.__pred_, *__x);
     }
 #if _CCCL_STD_VER <= 2017
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __sentinel& __x, const iterator_t<_Base>& __y)
     {
-      return __y == __x.__end_ || !_CUDA_VSTD::invoke(*__x.__pred_, *__y);
+      return __y == __x.__end_ || !::cuda::std::invoke(*__x.__pred_, *__y);
     }
     [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const iterator_t<_Base>& __x, const __sentinel& __y)
     {
-      return __x != __y.__end_ && _CUDA_VSTD::invoke(*__y.__pred_, *__x);
+      return __x != __y.__end_ && ::cuda::std::invoke(*__y.__pred_, *__x);
     }
     [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const __sentinel& __x, const iterator_t<_Base>& __y)
     {
-      return __y != __x.__end_ && _CUDA_VSTD::invoke(*__x.__pred_, *__y);
+      return __y != __x.__end_ && ::cuda::std::invoke(*__x.__pred_, *__y);
     }
 #endif // _CCCL_STD_VER <= 2017
 
@@ -127,7 +127,7 @@ public:
     operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
-      return __x == __y.__end_ || !_CUDA_VSTD::invoke(*__y.__pred_, *__x);
+      return __x == __y.__end_ || !::cuda::std::invoke(*__y.__pred_, *__x);
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
@@ -135,21 +135,21 @@ public:
     operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
-      return __y == __x.__end_ || !_CUDA_VSTD::invoke(*__x.__pred_, *__y);
+      return __y == __x.__end_ || !::cuda::std::invoke(*__x.__pred_, *__y);
     }
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _CCCL_API friend constexpr auto
     operator!=(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
-      return __x != __y.__end_ && _CUDA_VSTD::invoke(*__y.__pred_, *__x);
+      return __x != __y.__end_ && ::cuda::std::invoke(*__y.__pred_, *__x);
     }
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _CCCL_API friend constexpr auto
     operator!=(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
-      return __y != __x.__end_ && _CUDA_VSTD::invoke(*__x.__pred_, *__y);
+      return __y != __x.__end_ && ::cuda::std::invoke(*__x.__pred_, *__y);
     }
 #endif // _CCCL_STD_VER <= 2017
   };
@@ -168,8 +168,8 @@ public:
 
   _CCCL_API constexpr take_while_view(_View __base, _Pred __pred)
       : view_interface<take_while_view<_View, _Pred>>()
-      , __pred_(_CUDA_VSTD::in_place, _CUDA_VSTD::move(__pred))
-      , __base_(_CUDA_VSTD::move(__base))
+      , __pred_(::cuda::std::in_place, ::cuda::std::move(__pred))
+      , __base_(::cuda::std::move(__base))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -181,7 +181,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr _View base() &&
   {
-    return _CUDA_VSTD::move(__base_);
+    return ::cuda::std::move(__base_);
   }
 
   [[nodiscard]] _CCCL_API constexpr const _Pred& pred() const
@@ -193,47 +193,47 @@ public:
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto begin()
   {
-    return _CUDA_VRANGES::begin(__base_);
+    return ::cuda::std::ranges::begin(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
-    return _CUDA_VRANGES::begin(__base_);
+    return ::cuda::std::ranges::begin(__base_);
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return __sentinel</*_Const=*/false>(_CUDA_VRANGES::end(__base_), _CUDA_VSTD::addressof(*__pred_));
+    return __sentinel</*_Const=*/false>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto end() const
   {
-    return __sentinel</*_Const=*/true>(_CUDA_VRANGES::end(__base_), _CUDA_VSTD::addressof(*__pred_));
+    return __sentinel</*_Const=*/true>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
   }
 };
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE take_while_view(_Range&&, _Pred) -> take_while_view<_CUDA_VIEWS::all_t<_Range>, _Pred>;
+_CCCL_HOST_DEVICE take_while_view(_Range&&, _Pred) -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__take_while)
+_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CPO(__take_while)
 
 struct __fn
 {
   template <class _Range, class _Pred>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Pred&& __pred) const
-    noexcept(noexcept(take_while_view(_CUDA_VSTD::forward<_Range>(__range), _CUDA_VSTD::forward<_Pred>(__pred))))
+    noexcept(noexcept(take_while_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred))))
       -> take_while_view<all_t<_Range>, remove_cvref_t<_Pred>>
   {
-    return take_while_view(_CUDA_VSTD::forward<_Range>(__range), _CUDA_VSTD::forward<_Pred>(__pred));
+    return take_while_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred));
   }
 
   _CCCL_TEMPLATE(class _Pred)
@@ -241,19 +241,19 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Pred&& __pred) const
     noexcept(is_nothrow_constructible_v<decay_t<_Pred>, _Pred>)
   {
-    return __pipeable(_CUDA_VSTD::__bind_back(*this, _CUDA_VSTD::forward<_Pred>(__pred)));
+    return __pipeable(::cuda::std::__bind_back(*this, ::cuda::std::forward<_Pred>(__pred)));
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto take_while = __take_while::__fn{};
 } // namespace __cpo
-_LIBCUDACXX_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H
+#endif // _CUDA_STD___RANGES_TAKE_WHILE_VIEW_H

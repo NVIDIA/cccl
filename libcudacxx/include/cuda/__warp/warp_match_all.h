@@ -32,18 +32,18 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_70__();
 
-template <typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
+template <typename _Tp, typename _Up = ::cuda::std::remove_cv_t<_Tp>>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE bool
 warp_match_all(const _Tp& __data, lane_mask __lane_mask = lane_mask::all())
 {
   _CCCL_ASSERT(__lane_mask != lane_mask::none(), "lane_mask must be non-zero");
   constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
   uint32_t __array[__ratio];
-  _CUDA_VSTD::memcpy(__array, _CUDA_VSTD::addressof(__data), sizeof(_Up));
+  ::cuda::std::memcpy(__array, ::cuda::std::addressof(__data), sizeof(_Up));
   bool __ret = true;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < __ratio; ++i)
@@ -51,13 +51,13 @@ warp_match_all(const _Tp& __data, lane_mask __lane_mask = lane_mask::all())
     int __pred = false;
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
                       (::__match_all_sync(__lane_mask.value(), __array[i], &__pred);),
-                      (_CUDA_DEVICE::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
+                      (::cuda::device::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
     __ret = __ret && __pred;
   }
   return __ret;
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+_CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 

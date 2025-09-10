@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_EXECUTION
+_CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 class __requirement
 {};
@@ -37,14 +37,15 @@ struct __get_requirements_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
-  _CCCL_REQUIRES(_CUDA_STD_EXEC::__queryable_with<_Env, __get_requirements_t>)
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Env& __env) const noexcept
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, __get_requirements_t>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
+  [[nodiscard]]
+  _CCCL_NODEBUG_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -53,21 +54,21 @@ struct __get_requirements_t
 _CCCL_GLOBAL_CONSTANT auto __get_requirements = __get_requirements_t{};
 
 template <class... _Requirements>
-[[nodiscard]] _CCCL_TRIVIAL_API auto require(_Requirements...)
+[[nodiscard]] _CCCL_NODEBUG_API auto require(_Requirements...)
 {
-  static_assert((_CUDA_VSTD::is_base_of_v<__requirement, _Requirements> && ...),
+  static_assert((::cuda::std::is_base_of_v<__requirement, _Requirements> && ...),
                 "Only requirements can be passed to require");
-  static_assert((_CUDA_VSTD::is_empty_v<_Requirements> && ...), "Stateful requirements are not implemented");
+  static_assert((::cuda::std::is_empty_v<_Requirements> && ...), "Stateful requirements are not implemented");
 
   // clang < 19 doesn't like this code
   // since the only requirements we currently allow are in determinism.h and
   // all of them are stateless, let's ignore incoming parameters
-  _CUDA_STD_EXEC::env<_Requirements...> __env{};
+  ::cuda::std::execution::env<_Requirements...> __env{};
 
-  return _CUDA_STD_EXEC::prop{__get_requirements_t{}, __env};
+  return ::cuda::std::execution::prop{__get_requirements_t{}, __env};
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_EXECUTION
+_CCCL_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
 

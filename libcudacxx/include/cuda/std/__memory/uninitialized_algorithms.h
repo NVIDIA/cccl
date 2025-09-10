@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_UNINITIALIZED_ALGORITHMS_H
-#define _LIBCUDACXX___MEMORY_UNINITIALIZED_ALGORITHMS_H
+#ifndef _CUDA_STD___MEMORY_UNINITIALIZED_ALGORITHMS_H
+#define _CUDA_STD___MEMORY_UNINITIALIZED_ALGORITHMS_H
 
 #include <cuda/std/detail/__config>
 
@@ -50,7 +50,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __AlwaysFalse
 {
@@ -76,7 +76,7 @@ struct __simple_rollback
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline void operator()() const noexcept
   {
-    _CUDA_VSTD::__destroy(__first_, __current_);
+    ::cuda::std::__destroy(__first_, __current_);
   }
 };
 
@@ -91,11 +91,11 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator> __uninitialized_copy(
   auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __ifirst != __ilast && !__stop_copying(__idx); ++__ifirst, (void) ++__idx)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType(*__ifirst);
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType(*__ifirst);
   }
   __guard.__complete();
 
-  return pair<_InputIterator, _ForwardIterator>(_CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__idx));
+  return pair<_InputIterator, _ForwardIterator>(::cuda::std::move(__ifirst), ::cuda::std::move(__idx));
 }
 
 template <class _InputIterator, class _ForwardIterator>
@@ -103,9 +103,9 @@ _CCCL_API inline _ForwardIterator
 uninitialized_copy(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIterator __ofirst)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  auto __result    = _CUDA_VSTD::__uninitialized_copy<_ValueType>(
-    _CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__ilast), _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
-  return _CUDA_VSTD::move(__result.second);
+  auto __result    = ::cuda::std::__uninitialized_copy<_ValueType>(
+    ::cuda::std::move(__ifirst), ::cuda::std::move(__ilast), ::cuda::std::move(__ofirst), __AlwaysFalse{});
+  return ::cuda::std::move(__result.second);
 }
 
 // uninitialized_copy_n
@@ -119,20 +119,20 @@ __uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __of
   auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __n > 0 && !__stop_copying(__idx); ++__ifirst, (void) ++__idx, (void) --__n)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType(*__ifirst);
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType(*__ifirst);
   }
   __guard.__complete();
 
-  return pair<_InputIterator, _ForwardIterator>(_CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__idx));
+  return pair<_InputIterator, _ForwardIterator>(::cuda::std::move(__ifirst), ::cuda::std::move(__idx));
 }
 
 template <class _InputIterator, class _Size, class _ForwardIterator>
 _CCCL_API inline _ForwardIterator uninitialized_copy_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  auto __result    = _CUDA_VSTD::__uninitialized_copy_n<_ValueType>(
-    _CUDA_VSTD::move(__ifirst), __n, _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
-  return _CUDA_VSTD::move(__result.second);
+  auto __result    = ::cuda::std::__uninitialized_copy_n<_ValueType>(
+    ::cuda::std::move(__ifirst), __n, ::cuda::std::move(__ofirst), __AlwaysFalse{});
+  return ::cuda::std::move(__result.second);
 }
 
 // uninitialized_fill
@@ -145,7 +145,7 @@ _CCCL_API inline _ForwardIterator __uninitialized_fill(_ForwardIterator __first,
   auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __idx != __last; ++__idx)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType(__x);
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType(__x);
   }
   __guard.__complete();
 
@@ -156,7 +156,7 @@ template <class _ForwardIterator, class _Tp>
 _CCCL_API inline void uninitialized_fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __x)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  (void) _CUDA_VSTD::__uninitialized_fill<_ValueType>(__first, __last, __x);
+  (void) ::cuda::std::__uninitialized_fill<_ValueType>(__first, __last, __x);
 }
 
 // uninitialized_fill_n
@@ -169,7 +169,7 @@ _CCCL_API inline _ForwardIterator __uninitialized_fill_n(_ForwardIterator __firs
   auto __guard           = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __n > 0; ++__idx, (void) --__n)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType(__x);
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType(__x);
   }
   __guard.__complete();
 
@@ -180,7 +180,7 @@ template <class _ForwardIterator, class _Size, class _Tp>
 _CCCL_API inline _ForwardIterator uninitialized_fill_n(_ForwardIterator __first, _Size __n, const _Tp& __x)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  return _CUDA_VSTD::__uninitialized_fill_n<_ValueType>(__first, __n, __x);
+  return ::cuda::std::__uninitialized_fill_n<_ValueType>(__first, __n, __x);
 }
 
 // uninitialized_default_construct
@@ -193,7 +193,7 @@ _CCCL_API inline _ForwardIterator __uninitialized_default_construct(_ForwardIter
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __idx != __last; ++__idx)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType;
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType;
   }
   __guard.__complete();
 
@@ -204,7 +204,8 @@ template <class _ForwardIterator>
 _CCCL_API inline void uninitialized_default_construct(_ForwardIterator __first, _ForwardIterator __last)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  (void) _CUDA_VSTD::__uninitialized_default_construct<_ValueType>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
+  (void) ::cuda::std::__uninitialized_default_construct<_ValueType>(
+    ::cuda::std::move(__first), ::cuda::std::move(__last));
 }
 
 // uninitialized_default_construct_n
@@ -217,7 +218,7 @@ _CCCL_API inline _ForwardIterator __uninitialized_default_construct_n(_ForwardIt
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __n > 0; ++__idx, (void) --__n)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType;
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType;
   }
   __guard.__complete();
 
@@ -228,7 +229,7 @@ template <class _ForwardIterator, class _Size>
 _CCCL_API inline _ForwardIterator uninitialized_default_construct_n(_ForwardIterator __first, _Size __n)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  return _CUDA_VSTD::__uninitialized_default_construct_n<_ValueType>(_CUDA_VSTD::move(__first), __n);
+  return ::cuda::std::__uninitialized_default_construct_n<_ValueType>(::cuda::std::move(__first), __n);
 }
 
 // uninitialized_value_construct
@@ -241,7 +242,7 @@ _CCCL_API inline _ForwardIterator __uninitialized_value_construct(_ForwardIterat
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __idx != __last; ++__idx)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType();
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType();
   }
   __guard.__complete();
 
@@ -252,7 +253,7 @@ template <class _ForwardIterator>
 _CCCL_API inline void uninitialized_value_construct(_ForwardIterator __first, _ForwardIterator __last)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  (void) _CUDA_VSTD::__uninitialized_value_construct<_ValueType>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
+  (void) ::cuda::std::__uninitialized_value_construct<_ValueType>(::cuda::std::move(__first), ::cuda::std::move(__last));
 }
 
 // uninitialized_value_construct_n
@@ -265,7 +266,7 @@ _CCCL_API inline _ForwardIterator __uninitialized_value_construct_n(_ForwardIter
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__first, __idx});
   for (; __n > 0; ++__idx, (void) --__n)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType();
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType();
   }
   __guard.__complete();
 
@@ -276,7 +277,7 @@ template <class _ForwardIterator, class _Size>
 _CCCL_API inline _ForwardIterator uninitialized_value_construct_n(_ForwardIterator __first, _Size __n)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  return _CUDA_VSTD::__uninitialized_value_construct_n<_ValueType>(_CUDA_VSTD::move(__first), __n);
+  return ::cuda::std::__uninitialized_value_construct_n<_ValueType>(::cuda::std::move(__first), __n);
 }
 
 // uninitialized_move
@@ -295,11 +296,11 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator> __uninitialized_move(
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __ifirst != __ilast && !__stop_moving(__idx); ++__idx, (void) ++__ifirst)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType(_IterOps::__iter_move(__ifirst));
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType(_IterOps::__iter_move(__ifirst));
   }
   __guard.__complete();
 
-  return {_CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__idx)};
+  return {::cuda::std::move(__ifirst), ::cuda::std::move(__idx)};
 }
 
 template <class _InputIterator, class _ForwardIterator>
@@ -307,9 +308,9 @@ _CCCL_API inline _ForwardIterator
 uninitialized_move(_InputIterator __ifirst, _InputIterator __ilast, _ForwardIterator __ofirst)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  auto __result    = _CUDA_VSTD::__uninitialized_move<_ValueType, _IterOps<_ClassicAlgPolicy>>(
-    _CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__ilast), _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
-  return _CUDA_VSTD::move(__result.second);
+  auto __result    = ::cuda::std::__uninitialized_move<_ValueType, _IterOps<_ClassicAlgPolicy>>(
+    ::cuda::std::move(__ifirst), ::cuda::std::move(__ilast), ::cuda::std::move(__ofirst), __AlwaysFalse{});
+  return ::cuda::std::move(__result.second);
 }
 
 // uninitialized_move_n
@@ -323,11 +324,11 @@ __uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __of
   auto __guard = __make_exception_guard(__simple_rollback<_ForwardIterator>{__ofirst, __idx});
   for (; __n > 0 && !__stop_moving(__idx); ++__idx, (void) ++__ifirst, --__n)
   {
-    ::new (_CUDA_VSTD::__voidify(*__idx)) _ValueType(_IterOps::__iter_move(__ifirst));
+    ::new (::cuda::std::__voidify(*__idx)) _ValueType(_IterOps::__iter_move(__ifirst));
   }
   __guard.__complete();
 
-  return {_CUDA_VSTD::move(__ifirst), _CUDA_VSTD::move(__idx)};
+  return {::cuda::std::move(__ifirst), ::cuda::std::move(__idx)};
 }
 
 template <class _InputIterator, class _Size, class _ForwardIterator>
@@ -335,8 +336,8 @@ _CCCL_API inline pair<_InputIterator, _ForwardIterator>
 uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofirst)
 {
   using _ValueType = typename iterator_traits<_ForwardIterator>::value_type;
-  return _CUDA_VSTD::__uninitialized_move_n<_ValueType, _IterOps<_ClassicAlgPolicy>>(
-    _CUDA_VSTD::move(__ifirst), __n, _CUDA_VSTD::move(__ofirst), __AlwaysFalse{});
+  return ::cuda::std::__uninitialized_move_n<_ValueType, _IterOps<_ClassicAlgPolicy>>(
+    ::cuda::std::move(__ifirst), __n, ::cuda::std::move(__ofirst), __AlwaysFalse{});
 }
 
 // TODO: Rewrite this to iterate left to right and use reverse_iterators when calling
@@ -370,7 +371,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
     {
       --__last;
       auto&& __array = *__last;
-      _CUDA_VSTD::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + extent_v<_ValueType>);
+      ::cuda::std::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + extent_v<_ValueType>);
     } while (__last != __first);
   }
   else
@@ -378,7 +379,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
     do
     {
       --__last;
-      allocator_traits<_Alloc>::destroy(__alloc, _CUDA_VSTD::addressof(*__last));
+      allocator_traits<_Alloc>::destroy(__alloc, ::cuda::std::addressof(*__last));
     } while (__last != __first);
   }
 }
@@ -404,13 +405,13 @@ _CCCL_API constexpr void __allocator_construct_at_multidimensional(_Alloc& __all
     _Tp& __array = *__loc;
 
     // If an exception is thrown, destroy what we have constructed so far in reverse order.
-    auto __guard = _CUDA_VSTD::__make_exception_guard([&]() {
-      _CUDA_VSTD::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + __i);
+    auto __guard = ::cuda::std::__make_exception_guard([&]() {
+      ::cuda::std::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + __i);
     });
 
     for (; __i != extent_v<_Tp>; ++__i)
     {
-      _CUDA_VSTD::__allocator_construct_at_multidimensional(__elem_alloc, _CUDA_VSTD::addressof(__array[__i]));
+      ::cuda::std::__allocator_construct_at_multidimensional(__elem_alloc, ::cuda::std::addressof(__array[__i]));
     }
     __guard.__complete();
   }
@@ -448,13 +449,13 @@ _CCCL_API constexpr void __allocator_construct_at_multidimensional(_Alloc& __all
     _Tp& __array = *__loc;
 
     // If an exception is thrown, destroy what we have constructed so far in reverse order.
-    auto __guard = _CUDA_VSTD::__make_exception_guard([&]() {
-      _CUDA_VSTD::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + __i);
+    auto __guard = ::cuda::std::__make_exception_guard([&]() {
+      ::cuda::std::__allocator_destroy_multidimensional(__elem_alloc, __array, __array + __i);
     });
     for (; __i != extent_v<_Tp>; ++__i)
     {
-      _CUDA_VSTD::__allocator_construct_at_multidimensional(
-        __elem_alloc, _CUDA_VSTD::addressof(__array[__i]), __arg[__i]);
+      ::cuda::std::__allocator_construct_at_multidimensional(
+        __elem_alloc, ::cuda::std::addressof(__array[__i]), __arg[__i]);
     }
     __guard.__complete();
   }
@@ -480,12 +481,12 @@ __uninitialized_allocator_fill_n_multidimensional(_Alloc& __alloc, _BidirIter __
   _BidirIter __begin = __it;
 
   // If an exception is thrown, destroy what we have constructed so far in reverse order.
-  auto __guard = _CUDA_VSTD::__make_exception_guard([&]() {
-    _CUDA_VSTD::__allocator_destroy_multidimensional(__value_alloc, __begin, __it);
+  auto __guard = ::cuda::std::__make_exception_guard([&]() {
+    ::cuda::std::__allocator_destroy_multidimensional(__value_alloc, __begin, __it);
   });
   for (; __n != 0; --__n, ++__it)
   {
-    _CUDA_VSTD::__allocator_construct_at_multidimensional(__value_alloc, _CUDA_VSTD::addressof(*__it), __value);
+    ::cuda::std::__allocator_construct_at_multidimensional(__value_alloc, ::cuda::std::addressof(*__it), __value);
   }
   __guard.__complete();
 }
@@ -501,12 +502,12 @@ __uninitialized_allocator_value_construct_n_multidimensional(_Alloc& __alloc, _B
   _BidirIter __begin = __it;
 
   // If an exception is thrown, destroy what we have constructed so far in reverse order.
-  auto __guard = _CUDA_VSTD::__make_exception_guard([&]() {
-    _CUDA_VSTD::__allocator_destroy_multidimensional(__value_alloc, __begin, __it);
+  auto __guard = ::cuda::std::__make_exception_guard([&]() {
+    ::cuda::std::__allocator_destroy_multidimensional(__value_alloc, __begin, __it);
   });
   for (; __n != 0; --__n, ++__it)
   {
-    _CUDA_VSTD::__allocator_construct_at_multidimensional(__value_alloc, _CUDA_VSTD::addressof(*__it));
+    ::cuda::std::__allocator_construct_at_multidimensional(__value_alloc, ::cuda::std::addressof(*__it));
   }
   __guard.__complete();
 }
@@ -517,7 +518,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void __allocator_destroy(_Alloc& __alloc,
 {
   for (; __first != __last; ++__first)
   {
-    allocator_traits<_Alloc>::destroy(__alloc, _CUDA_VSTD::__to_address(__first));
+    allocator_traits<_Alloc>::destroy(__alloc, ::cuda::std::__to_address(__first));
   }
 }
 
@@ -533,8 +534,8 @@ public:
 
   _CCCL_API constexpr void operator()() const
   {
-    _CUDA_VSTD::__allocator_destroy(
-      __alloc_, _CUDA_VSTD::reverse_iterator<_Iter>(__last_), _CUDA_VSTD::reverse_iterator<_Iter>(__first_));
+    ::cuda::std::__allocator_destroy(
+      __alloc_, ::cuda::std::reverse_iterator<_Iter>(__last_), ::cuda::std::reverse_iterator<_Iter>(__first_));
   }
 
 private:
@@ -552,11 +553,11 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_copy_impl(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1, _Iter2 __first2)
 {
   auto __destruct_first = __first2;
-  auto __guard          = _CUDA_VSTD::__make_exception_guard(
+  auto __guard          = ::cuda::std::__make_exception_guard(
     _AllocatorDestroyRangeReverse<_Alloc, _Iter2>(__alloc, __destruct_first, __first2));
   while (__first1 != __last1)
   {
-    allocator_traits<_Alloc>::construct(__alloc, _CUDA_VSTD::__to_address(__first2), *__first1);
+    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::__to_address(__first2), *__first1);
     ++__first1;
     ++__first2;
   }
@@ -584,11 +585,11 @@ template <class _Alloc,
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
-  if (_CUDA_VSTD::is_constant_evaluated())
+  if (::cuda::std::is_constant_evaluated())
   {
     while (__first1 != __last1)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::__to_address(__first2), *__first1);
+      ::cuda::std::__construct_at(::cuda::std::__to_address(__first2), *__first1);
       ++__first1;
       ++__first2;
     }
@@ -596,7 +597,7 @@ __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* 
   }
   else
   {
-    return _CUDA_VSTD::copy(__first1, __last1, __first2);
+    return ::cuda::std::copy(__first1, __last1, __first2);
   }
 }
 
@@ -604,10 +605,10 @@ template <class _Alloc, class _Iter1, class _Sent1, class _Iter2>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_copy(_Alloc& __alloc, _Iter1 __first1, _Sent1 __last1, _Iter2 __first2)
 {
-  auto __unwrapped_range = _CUDA_VSTD::__unwrap_range(__first1, __last1);
-  auto __result          = _CUDA_VSTD::__uninitialized_allocator_copy_impl(
-    __alloc, __unwrapped_range.first, __unwrapped_range.second, _CUDA_VSTD::__unwrap_iter(__first2));
-  return _CUDA_VSTD::__rewrap_iter(__first2, __result);
+  auto __unwrapped_range = ::cuda::std::__unwrap_range(__first1, __last1);
+  auto __result          = ::cuda::std::__uninitialized_allocator_copy_impl(
+    __alloc, __unwrapped_range.first, __unwrapped_range.second, ::cuda::std::__unwrap_iter(__first2));
+  return ::cuda::std::__rewrap_iter(__first2, __result);
 }
 
 // Move-construct the elements [__first1, __last1) into [__first2, __first2 + N)
@@ -622,15 +623,15 @@ __uninitialized_allocator_move_if_noexcept(_Alloc& __alloc, _Iter1 __first1, _Se
   static_assert(__is_cpp17_move_insertable<_Alloc>::value,
                 "The specified type does not meet the requirements of Cpp17MoveInsertable");
   auto __destruct_first = __first2;
-  auto __guard          = _CUDA_VSTD::__make_exception_guard(
+  auto __guard          = ::cuda::std::__make_exception_guard(
     _AllocatorDestroyRangeReverse<_Alloc, _Iter2>(__alloc, __destruct_first, __first2));
   while (__first1 != __last1)
   {
 #if _CCCL_HAS_EXCEPTIONS()
     allocator_traits<_Alloc>::construct(
-      __alloc, _CUDA_VSTD::__to_address(__first2), _CUDA_VSTD::move_if_noexcept(*__first1));
+      __alloc, ::cuda::std::__to_address(__first2), ::cuda::std::move_if_noexcept(*__first1));
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    allocator_traits<_Alloc>::construct(__alloc, _CUDA_VSTD::__to_address(__first2), _CUDA_VSTD::move(*__first1));
+    allocator_traits<_Alloc>::construct(__alloc, ::cuda::std::__to_address(__first2), ::cuda::std::move(*__first1));
 #endif // !_CCCL_HAS_EXCEPTIONS()
     ++__first1;
     ++__first2;
@@ -657,11 +658,11 @@ template <class _Alloc,
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
-  if (_CUDA_VSTD::is_constant_evaluated())
+  if (::cuda::std::is_constant_evaluated())
   {
     while (__first1 != __last1)
     {
-      _CUDA_VSTD::__construct_at(_CUDA_VSTD::__to_address(__first2), _CUDA_VSTD::move(*__first1));
+      ::cuda::std::__construct_at(::cuda::std::__to_address(__first2), ::cuda::std::move(*__first1));
       ++__first1;
       ++__first2;
     }
@@ -669,13 +670,13 @@ __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __la
   }
   else
   {
-    return _CUDA_VSTD::move(__first1, __last1, __first2);
+    return ::cuda::std::move(__first1, __last1, __first2);
   }
 }
 #endif // !_CCCL_COMPILER(GCC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_UNINITIALIZED_ALGORITHMS_H
+#endif // _CUDA_STD___MEMORY_UNINITIALIZED_ALGORITHMS_H
