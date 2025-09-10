@@ -202,7 +202,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 // The following macros handle the various special forms of requirements:
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_DEFAULT(_REQ)  _REQ
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_REQUIRES(_REQ) requires _CCCL_CONCEPT_EAT_REQUIRES_(_REQ)
-#  define _CCCL_CONCEPT_REQUIREMENT_CASE_NOEXCEPT(_REQ) _CCCL_PP_EXPAND({ _REQ } noexcept)
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_NOEXCEPT(_REQ) _CCCL_PP_EXPAND({ _CCCL_CONCEPT_EAT_NOEXCEPT_(_REQ) } noexcept)
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_TYPENAME(_REQ) \
     _CCCL_CONCEPT_TRY_ADD_TYPENAME_(_CCCL_CONCEPT_EAT_TYPENAME_(_REQ))
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_SAME_AS(_REQ) \
