@@ -11,6 +11,8 @@ endif()
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
+set(atomic_codegen_cuda_arch 80)
+
 set(libcudacxx_atomic_codegen_tests)
 if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
@@ -29,9 +31,16 @@ foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
     set_target_properties(
         atomic_codegen_${test_name}
         PROPERTIES
-          CUDA_ARCHITECTURES "80"
+          CUDA_ARCHITECTURES "${atomic_codegen_cuda_arch}"
           COMPILE_DEFINITIONS "_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE=1"
     )
+
+    # Clang stopped emitting PTX in clang20. Add flags to re-enable it.
+    if (CMAKE_CUDA_COMPILER_ID STREQUAL Clang AND CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+      target_compile_options(atomic_codegen_${test_name} PRIVATE
+        "--cuda-include-ptx=sm_${atomic_codegen_cuda_arch}"
+      )
+    endif()
 
     target_compile_options(atomic_codegen_${test_name} PRIVATE "-Wno-comment")
 
