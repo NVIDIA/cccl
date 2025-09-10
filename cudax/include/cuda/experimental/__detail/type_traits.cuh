@@ -44,8 +44,13 @@ using ::cuda::std::decay_t;
 template <class _Ty, bool _Nothrow = true>
 using __declfn_t = _Ty (*)() noexcept(_Nothrow);
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(5046) // '__declfn': Symbol involving type with internal linkage not defined
+
 template <class _Ty, bool _Nothrow = true>
-_CCCL_HOST_DEVICE auto __declfn() noexcept(_Nothrow) -> _Ty;
+_CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
+
+_CCCL_DIAG_POP
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
