@@ -22,7 +22,11 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 

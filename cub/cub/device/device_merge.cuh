@@ -16,7 +16,8 @@
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/functional>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

@@ -97,6 +97,26 @@ void hash_combine(size_t& seed, const T& val)
   }
 }
 
+//! Computes a combined hash value for one or more values.
+//!
+//! This function computes a hash value for a variable number of arguments.
+//! - If called with a single argument, it uses `std::hash` if available for the type,
+//!   otherwise it falls back to a custom hash implementation.
+//! - If called with multiple arguments, it combines the hash values of all arguments
+//!   using `hash_combine`.
+//!
+//! This utility is useful for creating composite hash values for tuples, structures, or
+//! multiple parameters, and is compatible with both standard and custom hash functions.
+//!
+//! note:
+//!   - At least one argument must be provided.
+//!   - For single arguments, `std::hash` is preferred if available.
+//!   - For multiple arguments, the order of arguments affects the result.
+//!   - Requires `hash_combine` and `each_in_pack` utilities.
+//!
+//! \tparam Ts The types of the values to hash.
+//! \param[in] vals The values to hash and combine.
+//! \return The combined hash value as a `size_t`.
 template <typename... Ts>
 size_t hash_all(const Ts&... vals)
 {
