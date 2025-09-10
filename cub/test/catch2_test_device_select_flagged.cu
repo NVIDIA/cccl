@@ -457,7 +457,7 @@ try
 
   // Input
   constexpr offset_t match_every_nth = 1000000;
-  auto in                            = thrust::make_counting_iterator(static_cast<type>(0));
+  auto in                            = cuda::make_counting_iterator(static_cast<type>(0));
   auto flags_in = thrust::make_transform_iterator(in, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Needs to be device accessible

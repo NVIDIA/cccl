@@ -6,7 +6,7 @@
 
 #include <unittest/unittest.h>
 
-// ensure that we properly support thrust::counting_iterator from cuda::std
+// ensure that we properly support cuda::counting_iterator from cuda::std
 void TestOffsetIteratorTraits()
 {
   using base_it    = thrust::host_vector<int>::iterator;

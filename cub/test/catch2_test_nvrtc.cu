@@ -115,7 +115,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/util_vsmem.cuh>
 
     #include <thrust/iterator/constant_iterator.h>
-    #include <thrust/iterator/counting_iterator.h>
+    #include <cuda/iterator>
     #include <thrust/iterator/discard_iterator.h>
     #include <thrust/iterator/permutation_iterator.h>
     #include <cuda/std/iterator>
