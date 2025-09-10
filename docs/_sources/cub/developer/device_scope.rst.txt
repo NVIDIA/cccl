@@ -85,9 +85,9 @@ A more precise description is given later.
 
       static cudaError_t Invoke(int device_ptx_version, auto dispatch_closure) { // (2)
         if (device_ptx_version < PolicyPtxVersion) {
-          PrevPolicy::Invoke(device_ptx_version, dispatch_closure); // calls (2) of next policy
+          return PrevPolicy::Invoke(device_ptx_version, dispatch_closure); // calls (2) of next policy
         }
-        dispatch_closure.Invoke<Policy>(); // eventually calls (3)
+        return dispatch_closure.Invoke<Policy>(); // eventually calls (3)
       }
     };
 
@@ -164,9 +164,9 @@ to the nearest lower-or-equal compile-time policy available:
       CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
       static cudaError_t Invoke(int device_ptx_version, Functor dispatch_closure) {
         if (device_ptx_version < PolicyPtxVersion) {
-          PrevPolicy::Invoke(device_ptx_version, dispatch_closure);
+          return PrevPolicy::Invoke(device_ptx_version, dispatch_closure);
         }
-        dispatch_closure.Invoke<Policy>();
+        return dispatch_closure.Invoke<Policy>();
       }
     };
 
