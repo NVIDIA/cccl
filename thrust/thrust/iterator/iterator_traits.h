@@ -319,4 +319,4 @@ struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
 
 THRUST_NAMESPACE_END
 
-#include <iterator_traversal_tags.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
