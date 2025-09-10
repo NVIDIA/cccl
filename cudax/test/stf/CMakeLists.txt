@@ -6,6 +6,7 @@ set(stf_test_sources
   cpp/redundant_data.cu
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
+  cpp/task_get_stream.cu
   cpp/user_streams.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
