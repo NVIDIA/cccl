@@ -59,13 +59,8 @@ __is_smem_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexce
     {
       return false;
     }
-    if (__n > ::cuda::ptx::get_sreg_total_smem_size())
-    {
-      return false;
-    }
-    // check for overflow in 32-bit mode
-    auto __limit = ::cuda::std::uintptr_t{UINT32_MAX} - static_cast<::cuda::std::uintptr_t>(__n);
-    return reinterpret_cast<::cuda::std::uintptr_t>(__ptr) <= __limit;
+    return (__n <= ::cuda::ptx::get_sreg_total_smem_size());
+    // overflow check for 32-bit shared memory address doesn't work for generic addresses (64-bit)
   }
   return true;
 }
