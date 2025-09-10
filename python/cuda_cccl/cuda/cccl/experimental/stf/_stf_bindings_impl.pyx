@@ -523,8 +523,169 @@ cdef class context:
         """
         return logical_data(self, buf)
 
-    def logical_data_by_shape(self, shape, dtype):
+
+    def logical_data_empty(self, shape, dtype=None):
+        """
+        Create logical data with uninitialized values.
+
+        Equivalent to numpy.empty() but for STF logical data.
+
+        Parameters
+        ----------
+        shape : tuple
+            Shape of the array
+        dtype : numpy.dtype, optional
+            Data type. Defaults to np.float64.
+
+        Returns
+        -------
+        logical_data
+            New logical data with uninitialized values
+
+        Examples
+        --------
+        >>> # Create uninitialized array (fast but contains garbage)
+        >>> ld = ctx.logical_data_empty((100, 100), dtype=np.float32)
+
+        >>> # Fast allocation without initialization
+        >>> ld = ctx.logical_data_empty((50, 50, 50))
+        """
+        if dtype is None:
+            dtype = np.float64
         return logical_data.init_by_shape(self, shape, dtype)
+
+    def logical_data_full(self, shape, fill_value, dtype=None, where=None, exec_place=None):
+        """
+        Create logical data initialized with a constant value.
+
+        Similar to numpy.full(), this creates a new logical data with the given
+        shape and fills it with fill_value.
+
+        Parameters
+        ----------
+        shape : tuple
+            Shape of the array
+        fill_value : scalar
+            Value to fill the array with
+        dtype : numpy.dtype, optional
+            Data type. If None, infer from fill_value.
+        where : data_place, optional
+            Data placement for initialization. Defaults to current device.
+        exec_place : exec_place, optional
+            Execution place for the fill operation. Defaults to current device.
+            Note: exec_place.host() is not yet supported.
+
+        Returns
+        -------
+        logical_data
+            New logical data initialized with fill_value
+
+        Examples
+        --------
+        >>> # Create array filled with epsilon0 on current device
+        >>> ld = ctx.logical_data_full((100, 100), 8.85e-12, dtype=np.float64)
+
+        >>> # Create array on host memory
+        >>> ld = ctx.logical_data_full((50, 50), 1.0, where=data_place.host())
+
+        >>> # Create array on specific device, execute on device 1
+        >>> ld = ctx.logical_data_full((200, 200), 0.0, where=data_place.device(0),
+        ...                          exec_place=exec_place.device(1))
+        """
+        # Infer dtype from fill_value if not provided
+        if dtype is None:
+            dtype = np.array(fill_value).dtype
+        else:
+            dtype = np.dtype(dtype)
+
+        # Validate exec_place - host execution not yet supported
+        if exec_place is not None:
+            if hasattr(exec_place, 'kind') and exec_place.kind == "host":
+                raise NotImplementedError(
+                    "exec_place.host() is not yet supported for logical_data_full. "
+                    "Use exec_place.device() or omit exec_place parameter."
+                )
+
+        # Create empty logical data
+        ld = self.logical_data_empty(shape, dtype)
+
+        # Initialize with the specified value using NUMBA
+        # The numba code already handles None properly by calling ld.write() without data place
+        try:
+            from cuda.cccl.experimental.stf._adapters.numba_utils import init_logical_data
+            init_logical_data(self, ld, fill_value, where, exec_place)
+        except ImportError as e:
+            raise RuntimeError("NUMBA support is not available for logical_data_full") from e
+
+        return ld
+
+    def logical_data_zeros(self, shape, dtype=None, where=None, exec_place=None):
+        """
+        Create logical data filled with zeros.
+
+        Equivalent to numpy.zeros() but for STF logical data.
+
+        Parameters
+        ----------
+        shape : tuple
+            Shape of the array
+        dtype : numpy.dtype, optional
+            Data type. Defaults to np.float64.
+        where : data_place, optional
+            Data placement. Defaults to current device.
+        exec_place : exec_place, optional
+            Execution place for the fill operation. Defaults to current device.
+
+        Returns
+        -------
+        logical_data
+            New logical data filled with zeros
+
+        Examples
+        --------
+        >>> # Create zero-filled array
+        >>> ld = ctx.logical_data_zeros((100, 100), dtype=np.float32)
+
+        >>> # Create on host memory
+        >>> ld = ctx.logical_data_zeros((50, 50), where=data_place.host())
+        """
+        if dtype is None:
+            dtype = np.float64
+        return self.logical_data_full(shape, 0.0, dtype, where, exec_place)
+
+    def logical_data_ones(self, shape, dtype=None, where=None, exec_place=None):
+        """
+        Create logical data filled with ones.
+
+        Equivalent to numpy.ones() but for STF logical data.
+
+        Parameters
+        ----------
+        shape : tuple
+            Shape of the array
+        dtype : numpy.dtype, optional
+            Data type. Defaults to np.float64.
+        where : data_place, optional
+            Data placement. Defaults to current device.
+        exec_place : exec_place, optional
+            Execution place for the fill operation. Defaults to current device.
+
+        Returns
+        -------
+        logical_data
+            New logical data filled with ones
+
+        Examples
+        --------
+        >>> # Create ones-filled array
+        >>> ld = ctx.logical_data_ones((100, 100), dtype=np.float32)
+
+        >>> # Create on specific device
+        >>> ld = ctx.logical_data_ones((50, 50), exec_place=exec_place.device(1))
+        """
+        if dtype is None:
+            dtype = np.float64
+        return self.logical_data_full(shape, 1.0, dtype, where, exec_place)
 
     def task(self, *args):
         """

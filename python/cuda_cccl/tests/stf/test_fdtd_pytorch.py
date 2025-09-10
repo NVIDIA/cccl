@@ -44,18 +44,6 @@ def show_slice(t3d, plane="xy", index=None):
     plt.pause(0.01)
 
 
-def init_field(ctx, ld, value):
-    with (
-        ctx.task(ld.write()) as t,
-        torch.cuda.stream(torch.cuda.ExternalStream(t.stream_ptr())),
-    ):
-        field = t.tensor_arguments()
-        if value == 0:
-            field.zero_()
-        else:
-            field.fill_(value)
-
-
 def fdtd_3d_pytorch(
     size_x: int = 150,
     size_y: int = 150,
@@ -74,34 +62,22 @@ def fdtd_3d_pytorch(
 ]:
     ctx = context()
 
-    # allocate fields
+    # allocate and initialize fields
     shape = (size_x, size_y, size_z)
-    #    ex_ = torch.zeros(shape, dtype=dtype, device=device)
-    lex = ctx.logical_data_by_shape(shape, np.float64)
-    ley = ctx.logical_data_by_shape(shape, np.float64)
-    lez = ctx.logical_data_by_shape(shape, np.float64)
 
-    # epsilon_ = torch.full(shape, float(epsilon0), dtype=np.float64, device=device)
-    # mu_ = torch.full(shape, float(mu0), dtype=np.float64, device=device)
+    # Electric field components (initialized to zero)
+    lex = ctx.logical_data_zeros(shape, dtype=np.float64)
+    ley = ctx.logical_data_zeros(shape, dtype=np.float64)
+    lez = ctx.logical_data_zeros(shape, dtype=np.float64)
 
-    lhx = ctx.logical_data_by_shape(shape, np.float64)
-    lhy = ctx.logical_data_by_shape(shape, np.float64)
-    lhz = ctx.logical_data_by_shape(shape, np.float64)
+    # Magnetic field components (initialized to zero)
+    lhx = ctx.logical_data_zeros(shape, dtype=np.float64)
+    lhy = ctx.logical_data_zeros(shape, dtype=np.float64)
+    lhz = ctx.logical_data_zeros(shape, dtype=np.float64)
 
-    # lepsilon = ctx.logical_data()
-    # lmu = ctx.logical_data(mu_)
-    lepsilon = ctx.logical_data_by_shape(shape, np.float64)
-    lmu = ctx.logical_data_by_shape(shape, np.float64)
-
-    # TODO ctx.full(...)
-    init_field(ctx, lex, float(0.0))
-    init_field(ctx, ley, float(0.0))
-    init_field(ctx, lez, float(0.0))
-    init_field(ctx, lhx, float(0.0))
-    init_field(ctx, lhy, float(0.0))
-    init_field(ctx, lhz, float(0.0))
-    init_field(ctx, lepsilon, float(epsilon0))
-    init_field(ctx, lmu, float(mu0))
+    # Material properties
+    lepsilon = ctx.logical_data_full(shape, float(epsilon0), dtype=np.float64)
+    lmu = ctx.logical_data_full(shape, float(mu0), dtype=np.float64)
 
     # CFL (same formula as example)
     dt = 0.25 * min(dx, dy, dz) * math.sqrt(epsilon0 * mu0)
