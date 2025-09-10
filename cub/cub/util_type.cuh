@@ -48,28 +48,19 @@
 
 #include <thrust/iterator/detail/any_assign.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/iterator>
 #include <cuda/std/limits>
-#include <cuda/type_traits>
-
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
-
-// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
-#if _CCCL_HAS_NVFP8()
-_CCCL_DIAG_PUSH
-#  include <cuda_fp8.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP8()
 
 CUB_NAMESPACE_BEGIN
 

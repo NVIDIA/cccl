@@ -21,14 +21,36 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/aligned_size.h>
-#include <cuda/cmath>
-#include <cuda/memory>
-#include <cuda/ptx>
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/__ptx/instructions/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
+#include <cuda/__ptx/instructions/mbarrier_init.h>
+#include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
-#include <cuda/std/bit>
+#include <cuda/std/__cstring/memcpy.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivial.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
+#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 

@@ -49,7 +49,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
