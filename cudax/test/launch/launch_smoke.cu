@@ -11,6 +11,7 @@
 #include <cuda/memory>
 
 #include <cuda/experimental/graph.cuh>
+#include <cuda/experimental/kernel.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
 
@@ -59,6 +60,11 @@ struct functor_taking_config
     kernel_run_proof = true;
   }
 };
+
+__global__ void kernel_no_arguments()
+{
+  kernel_run_proof = true;
+}
 
 __global__ void kernel_int_argument(int dummy)
 {
@@ -166,6 +172,9 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
     // Not taking dims
     {
+      cudax::launch(dst, config, kernel_no_arguments);
+      check_kernel_run(dst);
+
       const int dummy = 1;
       cudax::launch(dst, config, kernel_int_argument, dummy);
       check_kernel_run(dst);
@@ -173,14 +182,25 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_int_argument, launch_transform_to_int_convertible{1});
       check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_int_argument, 1U);
+      check_kernel_run(dst);
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, dummy);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, launch_transform_to_int_convertible{1});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1U);
+      check_kernel_run(dst);
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
+
       cudax::launch(dst, config, functor_int_argument(), dummy);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), 1);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), launch_transform_to_int_convertible{1});
-      check_kernel_run(dst);
-
-      cudax::launch(dst, config, kernel_int_argument, 1U);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_int_argument(), 1U);
       check_kernel_run(dst);
@@ -190,12 +210,17 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     {
       auto functor_instance = functor_taking_config<block_size>();
       auto kernel_instance  = kernel_taking_config<decltype(config), block_size>;
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::kernel_ref kernel_ref_instance = kernel_instance;
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
 
       cudax::launch(dst, config, functor_instance, grid_size);
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_instance, ::cuda::std::move(grid_size));
       check_kernel_run(dst);
       cudax::launch(dst, config, functor_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
 
       cudax::launch(dst, config, kernel_instance, grid_size);
@@ -204,11 +229,19 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(dst);
-
-      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
-      check_kernel_run(dst);
       cudax::launch(dst, config, kernel_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
+
+#if _CCCL_CTK_AT_LEAST(12, 1)
+      cudax::launch(dst, config, kernel_ref_instance, grid_size);
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, ::cuda::std::move(grid_size));
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, launch_transform_to_int_convertible{grid_size});
+      check_kernel_run(dst);
+      cudax::launch(dst, config, kernel_ref_instance, static_cast<unsigned int>(grid_size));
+      check_kernel_run(dst);
+#endif // _CCCL_CTK_AT_LEAST(12, 1)
     }
   }
 
@@ -280,7 +313,12 @@ C2H_TEST("Launch smoke path builder", "[launch]")
 
   launch_smoke_test(pb);
 
-  CUDAX_REQUIRE(g.node_count() == 46);
+  // In CUDA 12.0 we don't test kernel_ref launches, so the node count is lower
+#if _CCCL_CTK_BELOW(12, 1)
+  CUDAX_REQUIRE(g.node_count() == 48);
+#else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
+  CUDAX_REQUIRE(g.node_count() == 64);
+#endif // _CCCL_CTK_BELOW(12, 1)
 
   auto exec = g.instantiate();
   cudax::stream s{cuda::device_ref{0}};

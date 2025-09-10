@@ -29,11 +29,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 template <typename DerivedPolicy, typename Pointer>
@@ -43,7 +39,5 @@ get_value(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
   return *thrust::raw_pointer_cast(ptr);
 } // end get_value()
 
-} // namespace sequential
-} // namespace detail
-} // namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

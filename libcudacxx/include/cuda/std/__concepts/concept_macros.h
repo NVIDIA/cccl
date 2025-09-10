@@ -115,6 +115,14 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_CONCEPT_VSTD ::cuda::std
 #endif
 
+// We use this macro to ignore the result of required expressions. It is needed because
+// gcc < 10 complains about ignored [[nodiscard]] expressions when emulating concepts.
+#if _CCCL_COMPILER(GCC, <, 10)
+#  define _CCCL_CONCEPT_IGNORE_RESULT_(...) static_cast<void>(__VA_ARGS__)
+#else
+#  define _CCCL_CONCEPT_IGNORE_RESULT_(...) __VA_ARGS__
+#endif
+
 #define _CCCL_CONCEPT_FRAGMENT_REQS_M0(_REQ) _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
 #define _CCCL_CONCEPT_FRAGMENT_REQS_M1(_REQ) _CCCL_PP_EXPAND _REQ
 #define _CCCL_CONCEPT_FRAGMENT_REQS_(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
@@ -193,12 +201,12 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_requires(...) ::__cccl_requires<__VA_ARGS__>
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...) static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr)
 #  if _CCCL_COMPILER(GCC, <, 14)
-// GCC < 14 can't mangle noexcept expressions, so just check that the
-// expression is well-formed.
-// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) __VA_ARGS__
+// GCC < 14 can't mangle noexcept expressions, so just check that the expression is
+// well-formed. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790.
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) _CCCL_CONCEPT_IGNORE_RESULT_(__VA_ARGS__)
 #  else
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) ::__cccl_requires<noexcept(__VA_ARGS__)>
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) \
+      ::__cccl_requires<noexcept(_CCCL_CONCEPT_IGNORE_RESULT_(__VA_ARGS__))>
 #  endif
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
     ::__cccl_requires<                              \

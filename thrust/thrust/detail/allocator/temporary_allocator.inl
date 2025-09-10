@@ -33,11 +33,9 @@
 
 #include <nv/target>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  if _CCCL_DEVICE_COMPILATION()
-#    include <thrust/system/cuda/detail/terminate.h>
-#  endif // _CCCL_DEVICE_COMPILATION()
-#endif // CUDA
+#if _CCCL_CUDA_COMPILATION() && _CCCL_DEVICE_COMPILATION()
+#  include <thrust/system/cuda/detail/terminate.h>
+#endif // _CCCL_CUDA_COMPILATION() && _CCCL_DEVICE_COMPILATION()
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -56,7 +54,7 @@ temporary_allocator<T, System>::allocate(typename temporary_allocator<T, System>
     // note that we pass cnt to deallocate, not a value derived from result.second
     deallocate(result.first, cnt);
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#if _CCCL_CUDA_COMPILATION()
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system::detail::bad_alloc("temporary_buffer::allocate: get_temporary_buffer failed");),
                  ( // NV_IS_DEVICE

@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__ptx/instructions/bfind.h>
-#include <cuda/__ptx/instructions/shl.h>
-#include <cuda/__ptx/instructions/shr.h>
+#if _CCCL_CUDA_COMPILATION()
+#  include <cuda/__ptx/instructions/bfind.h>
+#  include <cuda/__ptx/instructions/shl.h>
+#  include <cuda/__ptx/instructions/shr.h>
+#endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>

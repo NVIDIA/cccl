@@ -27,6 +27,7 @@
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>

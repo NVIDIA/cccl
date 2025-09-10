@@ -34,11 +34,7 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -206,7 +202,5 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   return thrust::copy(exec, first2, last2, thrust::copy(exec, first1, last1, result));
 } // end set_union()
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

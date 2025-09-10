@@ -28,13 +28,8 @@
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::sequential
 {
-namespace detail
-{
-namespace sequential
-{
-
 // this awkward sequence of definitions arises
 // from the desire both for tag to derive
 // from execution_policy and for execution_policy
@@ -72,7 +67,5 @@ struct execution_policy : thrust::execution_policy<Derived>
 
 _CCCL_GLOBAL_CONSTANT tag seq;
 
-} // namespace sequential
-} // namespace detail
-} // namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END
