@@ -282,6 +282,23 @@ struct DeviceSegmentedSortKernelSource
   {
     return sizeof(KeyT);
   }
+
+  using LargeSegmentsSelectorT =
+    cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+  using SmallSegmentsSelectorT =
+    cub::detail::segmented_sort::SmallSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
+
+  CUB_RUNTIME_FUNCTION static constexpr auto LargeSegmentsSelector(
+    OffsetT offset, BeginOffsetIteratorT begin_offset_iterator, EndOffsetIteratorT end_offset_iterator)
+  {
+    return LargeSegmentsSelectorT(offset, begin_offset_iterator, end_offset_iterator);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto SmallSegmentsSelector(
+    OffsetT offset, BeginOffsetIteratorT begin_offset_iterator, EndOffsetIteratorT end_offset_iterator)
+  {
+    return SmallSegmentsSelectorT(offset, begin_offset_iterator, end_offset_iterator);
+  }
 };
 } // namespace detail::segmented_sort
 
@@ -324,11 +341,6 @@ struct DispatchSegmentedSort
   using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
 
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
-
-  using LargeSegmentsSelectorT =
-    cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
-  using SmallSegmentsSelectorT =
-    cub::detail::segmented_sort::SmallSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
   // Partition selects large and small groups. The middle group is not selected.
   static constexpr size_t num_selected_groups = 2;
@@ -416,7 +428,6 @@ struct DispatchSegmentedSort
       //------------------------------------------------------------------------
 
       const bool partition_segments = num_segments > wrapped_policy.PartitioningThreshold();
-      // const bool partition_segments = num_segments > ActivePolicyT::PARTITIONING_THRESHOLD;
 
       cub::detail::temporary_storage::layout<5> temporary_storage_layout;
 
@@ -446,10 +457,9 @@ struct DispatchSegmentedSort
 
       size_t three_way_partition_temp_storage_bytes{};
 
-      LargeSegmentsSelectorT large_segments_selector(
-        wrapped_policy.MediumPolicyItemsPerTile(), d_begin_offsets, d_end_offsets);
-
-      SmallSegmentsSelectorT small_segments_selector(
+      auto large_segments_selector =
+        kernel_source.LargeSegmentsSelector(wrapped_policy.MediumPolicyItemsPerTile(), d_begin_offsets, d_end_offsets);
+      auto small_segments_selector = kernel_source.SmallSegmentsSelector(
         wrapped_policy.SmallPolicyItemsPerTile() + 1, d_begin_offsets, d_end_offsets);
 
       auto device_partition_temp_storage = keys_slot->create_alias<uint8_t>();
@@ -478,8 +488,8 @@ struct DispatchSegmentedSort
           decltype(small_segments_indices.get()),
           decltype(medium_indices_iterator),
           decltype(group_sizes.get()),
-          LargeSegmentsSelectorT,
-          SmallSegmentsSelectorT,
+          decltype(large_segments_selector),
+          decltype(small_segments_selector),
           PartitionOffsetT,
           PartitionPolicyHub,
           PartitionKernelSource,
@@ -597,8 +607,6 @@ struct DispatchSegmentedSort
         : (is_num_passes_odd) ? values_allocation.get()
                               : d_values.Alternate());
 
-      using MaxPolicyT = typename PolicyHub::MaxPolicy;
-
       if (partition_segments)
       {
         // Partition input segments into size groups and assign specialized
@@ -715,8 +723,8 @@ private:
     size_t three_way_partition_temp_storage_bytes,
     cub::detail::device_double_buffer<KeyT>& d_keys_double_buffer,
     cub::detail::device_double_buffer<ValueT>& d_values_double_buffer,
-    LargeSegmentsSelectorT& large_segments_selector,
-    SmallSegmentsSelectorT& small_segments_selector,
+    KernelSource::LargeSegmentsSelectorT& large_segments_selector,
+    KernelSource::SmallSegmentsSelectorT& small_segments_selector,
     cub::detail::temporary_storage::alias<uint8_t>& device_partition_temp_storage,
     cub::detail::temporary_storage::alias<local_segment_index_t>& large_and_medium_segments_indices,
     cub::detail::temporary_storage::alias<local_segment_index_t>& small_segments_indices,
@@ -761,8 +769,8 @@ private:
         decltype(small_segments_indices.get()),
         decltype(medium_indices_iterator),
         decltype(group_sizes.get()),
-        LargeSegmentsSelectorT,
-        SmallSegmentsSelectorT,
+        decltype(large_segments_selector),
+        decltype(small_segments_selector),
         PartitionOffsetT,
         PartitionPolicyHub,
         PartitionKernelSource,
