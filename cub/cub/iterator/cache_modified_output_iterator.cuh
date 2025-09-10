@@ -48,7 +48,7 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>

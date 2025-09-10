@@ -21,10 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -573,6 +577,39 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #else // ^^^ _CCCL_BUILTIN_LOGB ^^^ / vvv !_CCCL_BUILTIN_LOGB vvv
   return ::logb((double) __x);
 #endif // !_CCCL_BUILTIN_LOGB
+}
+
+template <class _Tp>
+_CCCL_API inline constexpr _Tp __constexpr_logb(_Tp __x)
+{
+  if (::cuda::std::is_constant_evaluated())
+  {
+    if (__x == _Tp(0))
+    {
+      // raise FE_DIVBYZERO
+      return -numeric_limits<_Tp>::infinity();
+    }
+
+    if (::cuda::std::isinf(__x))
+    {
+      return numeric_limits<_Tp>::infinity();
+    }
+
+    if (::cuda::std::isnan(__x))
+    {
+      return numeric_limits<_Tp>::quiet_NaN();
+    }
+
+    __x                      = ::cuda::std::fabs(__x);
+    unsigned long long __exp = 0;
+    while (__x >= _Tp(numeric_limits<_Tp>::radix))
+    {
+      __x /= numeric_limits<_Tp>::radix;
+      __exp += 1;
+    }
+    return static_cast<_Tp>(__exp);
+  }
+  return ::cuda::std::logb(__x);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -30,7 +30,7 @@
 #include <cub/detail/ptx-json/string.h>
 #include <cub/detail/ptx-json/value.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 namespace ptx_json
 {

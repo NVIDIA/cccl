@@ -38,11 +38,12 @@
 #include <cub/detail/type_traits.cuh> // static_size_v
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/array> // array
-#include <cuda/std/cstddef> // size_t
-#include <cuda/std/iterator> // ::cuda::std::iter_value_t
-#include <cuda/std/type_traits> // _If
-#include <cuda/std/utility> // index_sequence
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

@@ -28,10 +28,8 @@
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
 // put the canonical tag in the same ns as the backend's entry points
-namespace cpp
+namespace system::cpp
 {
 namespace detail
 {
@@ -76,8 +74,7 @@ struct execution_policy : thrust::system::detail::sequential::execution_policy<D
 using thrust::system::cpp::detail::execution_policy;
 using thrust::system::cpp::detail::tag;
 
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 // alias items at top-level
 namespace cpp

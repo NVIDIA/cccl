@@ -28,11 +28,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename ExecutionPolicy,
@@ -48,9 +44,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   OutputType init,
   BinaryFunction binary_op);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+}
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform_reduce.inl>

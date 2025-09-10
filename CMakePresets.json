@@ -21,7 +21,8 @@
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
-        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_C_PARALLEL": false,
+        "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
         "Thrust_ENABLE_INSTALL_RULES": true,
@@ -63,7 +64,8 @@
         "CCCL_ENABLE_TESTING": true,
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
-        "CCCL_ENABLE_C": true,
+        "CCCL_ENABLE_C_PARALLEL": true,
+        "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
@@ -88,7 +90,8 @@
         "cudax_ENABLE_DIALECT_CPP17": true,
         "cudax_ENABLE_DIALECT_CPP20": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
-        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
+        "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
       }
     },
     {
@@ -270,9 +273,18 @@
       "displayName": "CCCL C Parallel Library",
       "inherits": "base",
       "cacheVariables": {
-        "CCCL_ENABLE_C": true,
+        "CCCL_ENABLE_C_PARALLEL": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
+      }
+    },
+    {
+      "name": "cccl-c-stf",
+      "displayName": "CCCL C CUDASTF Library",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
+        "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
       }
     },
     {
@@ -296,7 +308,8 @@
         "CCCL_ENABLE_THRUST": false,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUDAX": false,
-        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_C_PARALLEL": false,
+        "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
         "CUB_ENABLE_EXAMPLES": false,
@@ -427,6 +440,10 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel"
+    },
+    {
+      "name": "cccl-c-stf",
+      "configurePreset": "cccl-c-stf"
     },
     {
       "name": "packaging",
@@ -719,6 +736,11 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
+    },
+    {
+      "name": "cccl-c-stf",
+      "configurePreset": "cccl-c-stf",
       "inherits": "base"
     },
     {

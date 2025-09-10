@@ -9,9 +9,7 @@ endmacro()
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-set(LIBCUDACXX_HIGHEST_COMPUTE_ARCH 90)
-
-message(STATUS "Enabled CUDA architectures:${_compute_message}")
+message(STATUS "Enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 option(LIBCUDACXX_TEST_WITH_NVRTC
   "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."

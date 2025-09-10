@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "gitlab-master.nvidia.com:5005/cccl/cccl-devcontainers:cpp-gcc13-cuda99.8",
+  "image": "rapidsai/devcontainers:25.10-cpp-llvm20-cuda13.0",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda99.8-gcc13",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-llvm20",
     "--ulimit",
     "nofile=500000"
   ],
@@ -39,7 +39,7 @@
     "SCCACHE_DIST_KEEPALIVE_INTERVAL": "${localEnv:SCCACHE_DIST_KEEPALIVE_INTERVAL:20}",
     "SCCACHE_DIST_KEEPALIVE_TIMEOUT": "${localEnv:SCCACHE_DIST_KEEPALIVE_TIMEOUT:600}",
     "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
-    "SCCACHE_DIST_REWRITE_INCLUDES_ONLY": "${localEnv:SCCACHE_DIST_REWRITE_INCLUDES_ONLY:false}",
+    "SCCACHE_DIST_REWRITE_INCLUDES_ONLY": "${localEnv:SCCACHE_DIST_REWRITE_INCLUDES_ONLY:true}",
     "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:7200}",
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
@@ -47,11 +47,11 @@
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda99.8-gcc13",
-    "CCCL_CUDA_VERSION": "99.8",
-    "CCCL_HOST_COMPILER": "gcc",
-    "CCCL_HOST_COMPILER_VERSION": "13",
-    "CCCL_BUILD_INFIX": "cuda99.8-gcc13",
+    "DEVCONTAINER_NAME": "cuda13.0-llvm20",
+    "CCCL_CUDA_VERSION": "13.0",
+    "CCCL_HOST_COMPILER": "llvm",
+    "CCCL_HOST_COMPILER_VERSION": "20",
+    "CCCL_BUILD_INFIX": "cuda13.0-llvm20",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -85,5 +85,5 @@
       }
     }
   },
-  "name": "cuda99.8-gcc13"
+  "name": "cuda13.0-llvm20"
 }

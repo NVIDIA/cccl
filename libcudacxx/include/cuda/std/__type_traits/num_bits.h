@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>

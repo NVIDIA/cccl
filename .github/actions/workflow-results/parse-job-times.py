@@ -128,7 +128,12 @@ def main():
         f.write("<details><summary>⏱️ Job Times</summary>\n\n")
         f.write("| Job Duration | Command Duration | Overhead (%) | Name |\n")
         f.write("|--------------|------------------|--------------|------|\n")
-        for id, stats in result.items():
+
+        sorted_stats = sorted(
+            result.values(), key=lambda s: s["job_seconds"], reverse=True
+        )
+
+        for stats in sorted_stats:
             job_seconds = stats["job_seconds"]
             command_seconds = stats["command_seconds"]
             overhead = (

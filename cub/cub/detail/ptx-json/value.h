@@ -29,7 +29,8 @@
 
 #include <cub/detail/ptx-json/string.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 namespace ptx_json
 {
@@ -86,8 +87,8 @@ struct value<V, cuda::std::index_sequence<Is...>>
 #pragma nv_diag_default 842
   __forceinline__ __device__ static void emit()
   {
-    // See the definition of storage_helper for why laundering the string through it is necessary.
-    asm volatile("\"%0\"" ::"C"(storage_helper<V.str[Is]...>::value) : "memory");
+    static constexpr char str[]{V.str[Is]...};
+    asm volatile("\"%0\"" ::"C"(str) : "memory");
   }
 };
 }; // namespace ptx_json

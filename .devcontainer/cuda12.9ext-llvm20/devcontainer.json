@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.10-cpp-llvm19-cuda12.9ext",
+  "image": "rapidsai/devcontainers:25.10-cpp-llvm20-cuda12.9ext",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9ext-llvm19",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9ext-llvm20",
     "--ulimit",
     "nofile=500000"
   ],
@@ -47,11 +47,11 @@
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_S3_KEY_PREFIX": "cccl-test-sccache-dist",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.9ext-llvm19",
+    "DEVCONTAINER_NAME": "cuda12.9ext-llvm20",
     "CCCL_CUDA_VERSION": "12.9",
     "CCCL_HOST_COMPILER": "llvm",
-    "CCCL_HOST_COMPILER_VERSION": "19",
-    "CCCL_BUILD_INFIX": "cuda12.9ext-llvm19",
+    "CCCL_HOST_COMPILER_VERSION": "20",
+    "CCCL_BUILD_INFIX": "cuda12.9ext-llvm20",
     "CCCL_CUDA_EXTENDED": "true",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -85,5 +85,5 @@
       }
     }
   },
-  "name": "cuda12.9ext-llvm19"
+  "name": "cuda12.9ext-llvm20"
 }

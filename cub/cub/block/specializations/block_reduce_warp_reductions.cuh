@@ -49,8 +49,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
-#include <cuda/ptx>
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
