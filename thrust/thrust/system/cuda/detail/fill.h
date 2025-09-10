@@ -45,7 +45,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cuda/std/iterator>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
