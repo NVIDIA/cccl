@@ -3,6 +3,8 @@
 #include <thrust/device_malloc.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 struct detect_wrong_difference

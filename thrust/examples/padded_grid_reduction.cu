@@ -7,6 +7,8 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/iterator>
+
 #include <cmath>
 #include <iomanip>
 

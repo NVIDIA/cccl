@@ -30,6 +30,8 @@
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/iterator>
+
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include <c2h/bfloat16.cuh>

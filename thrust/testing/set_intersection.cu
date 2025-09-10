@@ -5,6 +5,8 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>

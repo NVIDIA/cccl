@@ -4,6 +4,8 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>

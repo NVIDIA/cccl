@@ -35,6 +35,8 @@
 #include <thrust/sequence.h>
 #include <thrust/tuple.h>
 
+#include <cuda/iterator>
+
 #include <algorithm>
 #include <cstdint>
 #include <limits>

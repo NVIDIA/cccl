@@ -2,6 +2,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/partition.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <typename T>

@@ -35,6 +35,7 @@
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/iterator>
 
 #include <nv/target>
 

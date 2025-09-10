@@ -25,6 +25,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

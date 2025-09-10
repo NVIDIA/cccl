@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 
 #include "include/host_device.h"

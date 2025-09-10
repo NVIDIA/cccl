@@ -7,6 +7,8 @@
 #include <thrust/transform.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 
 #include <unittest/unittest.h>

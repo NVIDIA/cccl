@@ -1,9 +1,11 @@
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/partition.h>
 
-#include "thrust/detail/raw_pointer_cast.h"
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <typename T>

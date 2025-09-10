@@ -3,6 +3,7 @@
 
 #include <thrust/tabulate.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 

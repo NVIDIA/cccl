@@ -12,8 +12,6 @@
 
 #include <thrust/sort.h>
 
-#include <cuda/iterator>
-
 #include <algorithm>
 
 #include <test_util.h>

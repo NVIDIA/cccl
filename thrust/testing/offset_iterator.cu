@@ -2,6 +2,7 @@
 #include <thrust/distance.h>
 #include <thrust/iterator/offset_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/iterator>
 
 #include <unittest/unittest.h>

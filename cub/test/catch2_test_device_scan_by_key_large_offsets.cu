@@ -29,6 +29,10 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/iterator>
+
 #include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"

@@ -3,6 +3,8 @@
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 
 #include "include/host_device.h"

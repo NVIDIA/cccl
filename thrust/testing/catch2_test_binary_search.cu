@@ -3,6 +3,7 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstdint>
 
 #include "catch2_test_helper.h"

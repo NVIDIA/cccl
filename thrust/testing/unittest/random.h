@@ -4,6 +4,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/random.h>
 
+#include <cuda/iterator>
+
 #include <limits>
 
 namespace unittest

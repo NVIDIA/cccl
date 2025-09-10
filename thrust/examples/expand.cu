@@ -5,6 +5,8 @@
 #include <thrust/reduce.h>
 #include <thrust/scan.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 #include <iterator>
 

@@ -31,6 +31,8 @@
 
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/iterator>
+
 #include <algorithm>
 #include <numeric>
 

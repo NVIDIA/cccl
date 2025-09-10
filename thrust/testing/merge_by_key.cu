@@ -7,6 +7,8 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <typename Vector>

@@ -33,6 +33,8 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/iterator>
+
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"

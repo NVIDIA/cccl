@@ -32,6 +32,7 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/limits>
 
 #include <cstdint>

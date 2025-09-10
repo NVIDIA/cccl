@@ -35,6 +35,7 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>

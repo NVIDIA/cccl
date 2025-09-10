@@ -3,6 +3,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>

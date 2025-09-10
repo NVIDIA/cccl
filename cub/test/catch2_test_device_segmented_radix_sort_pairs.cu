@@ -33,6 +33,8 @@
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 
+#include <cuda/iterator>
+
 #include <algorithm>
 #include <limits>
 

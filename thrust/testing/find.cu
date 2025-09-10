@@ -2,6 +2,7 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstdint>
 
 #include <unittest/unittest.h>
