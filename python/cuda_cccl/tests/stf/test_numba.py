@@ -47,6 +47,13 @@ def test_numba_graph():
 
     ctx.finalize()
 
+    # Verify results after finalize (data written back to host)
+    # Expected: scale(2.0, 1.0) = 2.0
+    if np.allclose(X, 2.0):
+        print("✅ Graph test: X values correct: all 2.0")
+    else:
+        print(f"❌ Graph test: X values incorrect: expected 2.0, got {X[:5]}...")
+
 
 def test_numba():
     n = 1024 * 1024
@@ -83,6 +90,46 @@ def test_numba():
         axpy[32, 64, nb_stream](2.0, dY, dZ)
 
     ctx.finalize()
+
+    # Verify results after finalize (data written back to host)
+    print("Verifying results after finalize:")
+
+    # Expected values:
+    # X: scale(2.0, 1.0) = 2.0
+    # Y: axpy(2.0, X=2.0, Y=1.0) = 2.0*2.0 + 1.0 = 5.0
+    # Z: axpy(2.0, X=2.0, Z=1.0) = 5.0, then axpy(2.0, Y=5.0, Z=5.0) = 15.0
+    expected_X = 2.0
+    expected_Y = 5.0
+    expected_Z = 15.0
+
+    # Check X values
+    if np.allclose(X, expected_X, rtol=1e-6, atol=1e-6):
+        print(f"✅ X values correct: all {expected_X}")
+    else:
+        actual_x = X[0] if len(X) > 0 else "N/A"
+        print(
+            f"❌ X values incorrect: expected {expected_X}, got {actual_x} (diff: {abs(actual_x - expected_X):.2e})"
+        )
+
+    # Check Y values
+    if np.allclose(Y, expected_Y, rtol=1e-6, atol=1e-6):
+        print(f"✅ Y values correct: all {expected_Y}")
+    else:
+        actual_y = Y[0] if len(Y) > 0 else "N/A"
+        print(
+            f"❌ Y values incorrect: expected {expected_Y}, got {actual_y} (diff: {abs(actual_y - expected_Y):.2e})"
+        )
+
+    # Check Z values
+    if np.allclose(Z, expected_Z, rtol=1e-6, atol=1e-6):
+        print(f"✅ Z values correct: all {expected_Z}")
+    else:
+        actual_z = Z[0] if len(Z) > 0 else "N/A"
+        print(
+            f"❌ Z values incorrect: expected {expected_Z}, got {actual_z} (diff: {abs(actual_z - expected_Z):.2e})"
+        )
+
+    print(f"Sample values: X[0]={X[0]}, Y[0]={Y[0]}, Z[0]={Z[0]}")
 
 
 @cuda.jit
