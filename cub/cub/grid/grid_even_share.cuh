@@ -116,7 +116,7 @@ public:
   {}
 
   /**
-   * @brief Dispatch initializer. To be called prior prior to kernel launch.
+   * @brief Dispatch initializer. To be called prior to kernel launch.
    *
    * @param num_items_
    *   Total number of input items
