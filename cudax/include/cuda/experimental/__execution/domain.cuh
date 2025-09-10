@@ -58,7 +58,7 @@ _CCCL_CONCEPT __has_transform_sender =
 
 template <class _DomainOrTag, class _OpTag, class _Sndr, class... _Env>
 _CCCL_CONCEPT __nothrow_transform_sender =
-  _CCCL_REQUIRES_EXPR((_DomainOrTag, _OpTag, _Sndr, variadic _Env), __declfn<_Sndr> __sndr, const _Env&... __env) //
+  _CCCL_REQUIRES_EXPR((_DomainOrTag, _OpTag, _Sndr, variadic _Env), __declfn_t<_Sndr> __sndr, const _Env&... __env) //
   ( //
     noexcept(_DomainOrTag{}.transform_sender(_OpTag{}, __sndr(), __env...)) //
   );

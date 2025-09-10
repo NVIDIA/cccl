@@ -42,7 +42,10 @@ namespace cuda::experimental
 using ::cuda::std::decay_t;
 
 template <class _Ty, bool _Nothrow = true>
-using __declfn = _Ty (*)() noexcept(_Nothrow);
+using __declfn_t = _Ty (*)() noexcept(_Nothrow);
+
+template <class _Ty, bool _Nothrow = true>
+_CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
 
 template <class _Ty, class _Uy>
 _CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
@@ -62,7 +65,7 @@ template <template <class...> class _Fn, class... _Ts>
 _CCCL_CONCEPT __is_instantiable_with = requires { typename _Fn<_Ts...>; };
 
 template <class _Fn, class... _As>
-_CCCL_CONCEPT __callable = requires(__declfn<_Fn> __fn, __declfn<_As>... __as) { __fn()(__as()...); };
+_CCCL_CONCEPT __callable = requires(__declfn_t<_Fn> __fn, __declfn_t<_As>... __as) { __fn()(__as()...); };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 

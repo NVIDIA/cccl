@@ -56,7 +56,7 @@ private:
 
     if constexpr (__same_as<__result_t, _Sndr>)
     {
-      return __declfn<__result_t, __is_nothrow>();
+      return __declfn<__result_t, __is_nothrow>;
     }
     else
     {

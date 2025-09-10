@@ -247,26 +247,26 @@ private:
 
   template <class _Attrs, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto
-  __get_declfn(__declfn<const _Attrs&> __attrs, __declfn<const _Env&>... __env) noexcept
+  __get_declfn(__declfn_t<const _Attrs&> __attrs, __declfn_t<const _Env&>... __env) noexcept
   {
     // If __attrs has a completion scheduler, then return it (after checking the scheduler
     // for _its_ completion scheduler):
     if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
     {
-      return __declfn<decltype(__recurse_query_t{}(__read_query_t{}(__attrs(), __env()...), __env()...))>();
+      return __declfn<decltype(__recurse_query_t{}(__read_query_t{}(__attrs(), __env()...), __env()...))>;
     }
     // Otherwise, if __attrs indicates that its sender completes inline, then we can ask
     // the environment for the current scheduler and return that (after checking the
     // scheduler for _its_ completion scheduler).
     else if constexpr (__completes_inline<_Attrs, _Env...> && __callable<get_scheduler_t, const _Env&...>)
     {
-      return __declfn<decltype(__recurse_query_t{}(get_scheduler(__env()...), __hide_scheduler{__env()}...))>();
+      return __declfn<decltype(__recurse_query_t{}(get_scheduler(__env()...), __hide_scheduler{__env()}...))>;
     }
     // Otherwise, no completion scheduler can be determined. Return void.
   }
 
 public:
-  template <class _Attrs, class... _Env, auto _DeclFn = __get_declfn<_Attrs>({}, __declfn<const _Env&>()...)>
+  template <class _Attrs, class... _Env, auto _DeclFn = __get_declfn<_Attrs>({}, __declfn<const _Env&>...)>
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env&... __env) const noexcept
     -> __unless_one_of_t<decltype(_DeclFn()), void>
   {
