@@ -174,7 +174,7 @@ struct PerDeviceAttributeCache
 
   struct DeviceEntry
   {
-    std::atomic<DeviceEntryStatus> flag;
+    ::std::atomic<DeviceEntryStatus> flag;
     DevicePayload payload;
   };
 
