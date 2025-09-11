@@ -45,11 +45,15 @@ template <class _Ty, bool _Nothrow = true>
 using __declfn_t = _Ty (*)() noexcept(_Nothrow);
 
 _CCCL_DIAG_PUSH
+_CCCL_NV_DIAG_PUSH()
 _CCCL_DIAG_SUPPRESS_MSVC(5046) // '__declfn': Symbol involving type with internal linkage not defined
+_CCCL_DIAG_SUPPRESS_NVCC(114) // function 'declfn' was referenced but not defined
+_CCCL_DIAG_SUPPRESS_CLANG("-Wundefined-internal") // function 'declfn' has internal linkage but is not defined
 
 template <class _Ty, bool _Nothrow = true>
 _CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty;
 
+_CCCL_NV_DIAG_POP()
 _CCCL_DIAG_POP
 
 template <class _Ty, class _Uy>
