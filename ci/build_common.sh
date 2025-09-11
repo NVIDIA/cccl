@@ -125,7 +125,8 @@ check_required_dependencies
 # Begin processing unsets after option parsing
 set -u
 
-readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
+readonly N_CPUS="$(nproc)"
+readonly PARALLEL_LEVEL="${PARALLEL_LEVEL:=${N_CPUS}}"
 
 if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
@@ -156,7 +157,7 @@ function symlink_latest_preset {
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
 # Prepare environment for CMake:
-export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
+export CMAKE_BUILD_PARALLEL_LEVEL="$((PARALLEL_LEVEL > N_CPUS ? N_CPUS : PARALLEL_LEVEL))"
 export CTEST_PARALLEL_LEVEL="1"
 export CXX="${HOST_COMPILER}"
 export CUDACXX="${CUDA_COMPILER}"
@@ -248,7 +249,7 @@ function configure_preset()
       export RUN_COMMAND_RETRY_PARAMS="5 30"
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    SCCACHE_NO_DIST_COMPILE=1 run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -286,7 +287,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
+    run_command "$GROUP_NAME" cmake --build --parallel $PARALLEL_LEVEL --preset=$PRESET ${VERBOSE:+-v} || status=$?
     popd > /dev/null
 
     sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
@@ -339,7 +340,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
+    SCCACHE_NO_DIST_COMPILE=1 SCCACHE_NO_CACHE=1 run_command "$GROUP_NAME" ctest --output-on-failure --output-log "${ctest_log}" --preset=$PRESET --timeout 600 || status=$?
     popd > /dev/null
 
     print_test_time_summary ${ctest_log}
