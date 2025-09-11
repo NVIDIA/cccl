@@ -34,6 +34,9 @@
 //   void foo(A a, _Bp b)
 //   {}
 
+template <class...>
+struct __cccl_tag;
+
 // Barebones enable if implementation to use outside of cuda::std
 template <bool>
 struct __cccl_select
@@ -56,11 +59,11 @@ template <unsigned>
 struct __cccl_enable_
 {
   template <class _Tp>
-  using __cccl_enable = __cccl_enable_<sizeof(_Tp (*)())>;
+  using __cccl_enable = __cccl_enable_<sizeof(__cccl_tag<_Tp>*)>;
 };
 
 template <class _Tp>
-using __cccl_enable = __cccl_enable_<sizeof(_Tp (*)())>;
+using __cccl_enable = __cccl_enable_<sizeof(__cccl_tag<_Tp>*)>;
 
 #if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__>
@@ -80,24 +83,11 @@ using __cccl_enable = __cccl_enable_<sizeof(_Tp (*)())>;
 
 // The following concepts emulation macros need variable template support
 
-template <class...>
-struct __cccl_tag;
-
-template <class>
-_CCCL_API constexpr bool __cccl_is_true()
-{
-  return true;
-}
-
 template <class _Tp, class... _Args>
 extern _Tp __cccl_make_dependent;
 
 template <class _Impl, class... _Args>
 using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
-
-template <typename _Tp>
-_CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
-{}
 
 // So that we can refer to the ::cuda::std namespace below
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
