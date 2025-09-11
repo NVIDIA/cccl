@@ -428,6 +428,11 @@ def generate_dispatch_job_name(matrix_job, job_type):
     cmake_options = (
         (" " + matrix_job["cmake_options"]) if "cmake_options" in matrix_job else ""
     )
+    extra_args = (
+        (" " + matrix_job["args"])
+        if "args" in matrix_job and matrix_job["args"]
+        else ""
+    )
 
     ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])
@@ -441,8 +446,8 @@ def generate_dispatch_job_name(matrix_job, job_type):
     )
 
     extra_info = (
-        f":{cuda_compile_arch}{cmake_options}"
-        if cuda_compile_arch or cmake_options
+        f":{cuda_compile_arch}{cmake_options}{extra_args}"
+        if cuda_compile_arch or cmake_options or extra_args
         else ""
     )
 
@@ -510,6 +515,7 @@ def generate_dispatch_job_command(matrix_job, job_type):
     cmake_options = matrix_job["cmake_options"] if "cmake_options" in matrix_job else ""
 
     py_version = matrix_job["py_version"] if "py_version" in matrix_job else ""
+    extra_args = matrix_job["args"] if "args" in matrix_job else ""
 
     command = f'"{script_name}"'
     if job_args:
@@ -524,6 +530,8 @@ def generate_dispatch_job_command(matrix_job, job_type):
         command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
+    if extra_args:
+        command += f" {extra_args}"
 
     return command
 
@@ -561,6 +569,9 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
         origin_job["cudacxx"] = device_compiler["id"] + device_compiler["version"]
         origin_job["cudacxx_family"] = device_compiler["name"]
+
+    if "args" in origin_job and not origin_job["args"]:
+        del origin_job["args"]
 
     origin["matrix_job"] = origin_job
 
