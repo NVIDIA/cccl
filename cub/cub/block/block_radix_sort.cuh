@@ -175,8 +175,6 @@ CUB_NAMESPACE_BEGIN
 //!    .. code-block:: python
 //!
 //!        import cuda.cccl.cooperative.experimental as cudax
-//!        from pynvjitlink import patch
-//!        patch.patch_numba_linker(lto=True)
 //!
 //!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
 //!        block_radix_sort = cudax.block.radix_sort_keys(numba.int32, 128, 4)
