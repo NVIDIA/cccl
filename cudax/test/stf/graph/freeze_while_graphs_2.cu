@@ -13,8 +13,8 @@
 //! \brief Freeze a logical data in a graph to use it in the body of a "while" graph node, the resulting looping graph
 //! will be executed within a stream context.
 
-#include <cuda/experimental/stf.cuh>
 #include <cuda/experimental/__stf/internal/graph_utilities.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #include <vector>
 
@@ -31,7 +31,6 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
   static int count = 5;
   cudaGraphSetConditional(handle, --count ? 1 : 0);
 }
-
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 

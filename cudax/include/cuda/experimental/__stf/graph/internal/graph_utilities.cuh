@@ -34,7 +34,7 @@ namespace cuda::experimental::stf::reserved
 
 /**
  * @brief Template function to launch a graph executable
- * 
+ *
  * @tparam ctx_t Context type (stream_ctx, graph_ctx, or unified context)
  * @param ctx The execution context
  * @param graph_exec The executable graph to launch
@@ -60,10 +60,10 @@ event_list graph_exec_launch(ctx_t& ctx, cudaGraphExec_t graph_exec, event_list&
 
 /**
  * @brief Insert a CUDA graph into a context with appropriate backend handling
- * 
+ *
  * For graph contexts: Inserts the graph as a child graph node
  * For stream contexts: Instantiates and launches the graph
- * 
+ *
  * @tparam ctx_t Context type (stream_ctx, graph_ctx, or unified context)
  * @param ctx The execution context
  * @param graph The CUDA graph to insert
@@ -75,32 +75,35 @@ event_list insert_graph(ctx_t& ctx, cudaGraph_t graph, event_list& input_prereqs
 {
   // If this is a graph context, we will insert this graph as a child graph,
   // otherwise we instantiate it and launch it.
-  if (ctx.is_graph_ctx()) {
-      cudaGraph_t support_graph = ctx.graph();
-      size_t graph_stage = ctx.stage();
-      
-      // Insert assertions that the input_prereqs events are graph events
-      // that can be used in the support_graph
+  if (ctx.is_graph_ctx())
+  {
+    cudaGraph_t support_graph = ctx.graph();
+    size_t graph_stage        = ctx.stage();
+
+    // Insert assertions that the input_prereqs events are graph events
+    // that can be used in the support_graph
 #ifndef NDEBUG
-      for (const auto& e : input_prereqs) {
-        const auto ge = graph_event(e, use_dynamic_cast);
-        _CCCL_ASSERT(ge, "Expected graph event for graph context");
-        _CCCL_ASSERT(ge->g == support_graph, "Graph event must belong to the same graph");
-      }
+    for (const auto& e : input_prereqs)
+    {
+      const auto ge = graph_event(e, use_dynamic_cast);
+      _CCCL_ASSERT(ge, "Expected graph event for graph context");
+      _CCCL_ASSERT(ge->g == support_graph, "Graph event must belong to the same graph");
+    }
 #endif
 
-      ::std::vector<cudaGraphNode_t> ready_nodes = join_with_graph_nodes(ctx, input_prereqs, graph_stage);
+    ::std::vector<cudaGraphNode_t> ready_nodes = join_with_graph_nodes(ctx, input_prereqs, graph_stage);
 
-      // Create a child node from the graph that depends on ready_nodes and add it to support_graph
-      cudaGraphNode_t child_graph_node;
-      cuda_safe_call(cudaGraphAddChildGraphNode(&child_graph_node, support_graph, ready_nodes.data(), ready_nodes.size(), graph));
+    // Create a child node from the graph that depends on ready_nodes and add it to support_graph
+    cudaGraphNode_t child_graph_node;
+    cuda_safe_call(
+      cudaGraphAddChildGraphNode(&child_graph_node, support_graph, ready_nodes.data(), ready_nodes.size(), graph));
 
-      // Create an event that depends on the child graph node (convert it to an event itself)
-      auto child_event = graph_event(child_graph_node, graph_stage, support_graph);
-      child_event->set_symbol(ctx, "inserted_graph");
-      
-      // Return the event list from that single event
-      return event_list(mv(child_event));
+    // Create an event that depends on the child graph node (convert it to an event itself)
+    auto child_event = graph_event(child_graph_node, graph_stage, support_graph);
+    child_event->set_symbol(ctx, "inserted_graph");
+
+    // Return the event list from that single event
+    return event_list(mv(child_event));
   }
 
   cudaGraphExec_t graph_exec = NULL;
