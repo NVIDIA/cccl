@@ -53,6 +53,7 @@ class exec_place_cuda_stream;
 class exec_place_green_ctx;
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
+//! Function type for computing executor placement from data coordinates
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
 /**
@@ -821,6 +822,7 @@ UNITTEST("exec_place copyable")
 };
 #endif // UNITTESTED_FILE
 
+//! A multidimensional grid of execution places for structured parallel computation
 class exec_place_grid : public exec_place
 {
 public:
@@ -1120,11 +1122,13 @@ public:
   {}
 };
 
+//! Creates a grid of execution places with specified dimensions
 inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
   return exec_place_grid(mv(places), dims);
 }
 
+//! Creates a linear grid from a vector of execution places
 inline exec_place_grid make_grid(::std::vector<exec_place> places)
 {
   assert(!places.empty());
@@ -1143,6 +1147,7 @@ inline exec_place exec_place::iterator::operator*()
   return exec_place(it_impl);
 }
 
+//! Creates a grid by replicating an execution place multiple times
 inline exec_place_grid exec_place::repeat(const exec_place& e, size_t cnt)
 {
   return make_grid(::std::vector<exec_place>(cnt, e));
@@ -1196,6 +1201,7 @@ inline exec_place_grid exec_place::all_devices()
   return n_devices(cuda_try<cudaGetDeviceCount>());
 }
 
+//! Creates a cyclic partition of an execution place grid with specified strides
 inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 strides, pos4 tile_id)
 {
   const auto& g = e_place.as_grid();
@@ -1245,8 +1251,10 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
   return make_grid(mv(places), size);
 }
 
-// example :
-// auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
+//! Creates a tiled partition of an execution place grid with specified tile sizes
+//!
+//! example :
+//! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
 inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_sizes, pos4 tile_id)
 {
   const auto& g = e_place.as_grid();

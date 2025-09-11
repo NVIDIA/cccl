@@ -40,6 +40,7 @@
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/block/block_load.cuh>
 #  include <cub/device/device_reduce.cuh>
 #  include <cub/iterator/cache_modified_input_iterator.cuh>
 #  include <cub/util_math.cuh>
@@ -140,6 +141,10 @@ struct Tuning<core::detail::sm52, Key, Value>
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm52
 
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
+using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
+
 template <class KeysInputIt,
           class ValuesInputIt,
           class KeysOutputIt,
@@ -168,8 +173,8 @@ struct ReduceByKeyAgent
     using KeysLoadIt   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysInputIt>;
     using ValuesLoadIt = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesInputIt>;
 
-    using BlockLoadKeys   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt>::type;
-    using BlockLoadValues = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt>::type;
+    using BlockLoadKeys   = BlockLoad<PtxPlan, KeysLoadIt>;
+    using BlockLoadValues = BlockLoad<PtxPlan, ValuesLoadIt>;
 
     using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1>;
 

@@ -421,7 +421,12 @@ class CXXCompiler(object):
                 cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
 
         if rc != 0:
-            raise RuntimeError("Macros failed to dump")
+            err_str = "Macros failed to dump:\n\n"
+            err_str += f"Command: {' '.join(cmd)}\n\n"
+            err_str += f"Exit code: {rc}\n\n"
+            err_str += f"stdout:\n{out}\n\n"
+            err_str += f"stderr:\n{err}\n"
+            raise RuntimeError(err_str)
 
         parsed_macros = {}
         lines = [line.strip() for line in out.split("\n") if line.strip()]

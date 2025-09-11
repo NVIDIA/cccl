@@ -38,11 +38,7 @@
 #include <thrust/unique.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator>
@@ -113,7 +109,5 @@ unique_count(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator firs
   return thrust::unique_count(exec, first, last, ::cuda::std::equal_to<value_type>());
 } // end unique_copy()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

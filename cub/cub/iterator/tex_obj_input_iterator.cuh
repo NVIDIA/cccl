@@ -49,7 +49,7 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <nv/target>
 

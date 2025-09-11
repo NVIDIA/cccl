@@ -25,7 +25,6 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  include <cuda/std/__floating_point/cuda_fp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__tuple_dir/structured_bindings.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>

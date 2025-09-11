@@ -700,6 +700,7 @@ public:
   void operator,(T const&) = delete;
 };
 static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 

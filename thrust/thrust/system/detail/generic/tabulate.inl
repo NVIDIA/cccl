@@ -32,11 +32,7 @@
 #include <thrust/transform.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
@@ -54,7 +50,5 @@ _CCCL_HOST_DEVICE void tabulate(
   thrust::transform(exec, iter, iter + ::cuda::std::distance(first, last), first, unary_op);
 } // end tabulate()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

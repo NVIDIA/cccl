@@ -46,9 +46,13 @@
 
 #include <cub/util_type.cuh>
 
-#include <cuda/functional> // cuda::maximum, cuda::minimum
-#include <cuda/std/cstdint> // cuda::std::uint32_t
-#include <cuda/std/type_traits> // is_same_v
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/pair.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 

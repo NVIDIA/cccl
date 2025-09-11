@@ -59,11 +59,15 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/functional>
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__functional/proclaim_return_type.h>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include <nv/target>
 

@@ -17,7 +17,7 @@ h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
 d_input = cp.asarray(h_input)
 
 # Create the reverse input iterator.
-reverse_it = parallel.ReverseInputIterator(d_input)
+reverse_it = parallel.ReverseIterator(d_input)
 d_output = cp.empty(len(d_input), dtype=np.int32)
 
 # Prepare the initial value for the reduction.

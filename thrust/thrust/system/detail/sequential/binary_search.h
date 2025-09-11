@@ -36,11 +36,7 @@
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -136,7 +132,5 @@ _CCCL_HOST_DEVICE bool binary_search(
   return iter != last && !wrapped_comp(val, *iter);
 }
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

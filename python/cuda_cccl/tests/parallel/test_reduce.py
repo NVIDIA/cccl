@@ -804,7 +804,7 @@ def test_reduce_transform_output_iterator(floating_array):
     def sqrt(x):
         return x**0.5
 
-    d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
+    d_out_it = parallel.TransformIterator(d_output, sqrt)
 
     parallel.reduce_into(d_input, d_out_it, parallel.OpKind.PLUS, len(d_input), h_init)
 

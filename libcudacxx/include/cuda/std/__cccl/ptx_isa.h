@@ -36,13 +36,13 @@
 // We make sure that these get the highest known PTX ISA version.
 // For clang cuda check https://github.com/llvm/llvm-project/blob/release/<VER>.x/clang/lib/Driver/ToolChains/Cuda.cpp
 // getNVPTXTargetFeatures
-#if _CCCL_CUDACC_AT_LEAST(13, 1)
+#if _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 900ULL
 // PTX ISA 9.0 is available from CUDA 13.0, driver r580
-#elif _CCCL_CUDACC_AT_LEAST(13, 0)
+#elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 900ULL
 // PTX ISA 8.8 is available from CUDA 12.9, driver r575
-#elif _CCCL_CUDACC_AT_LEAST(12, 9)
+#elif _CCCL_CUDACC_AT_LEAST(12, 9) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 880ULL
 // PTX ISA 8.7 is available from CUDA 12.8, driver r570
 #elif _CCCL_CUDACC_AT_LEAST(12, 8) && !_CCCL_CUDA_COMPILER(CLANG, <, 20)

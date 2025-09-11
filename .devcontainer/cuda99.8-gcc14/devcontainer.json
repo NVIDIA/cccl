@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.10-cpp-llvm19-cuda12.9ext",
+  "image": "gitlab-master.nvidia.com:5005/cccl/cccl-devcontainers:cpp-gcc14-cuda99.8",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9ext-llvm19"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda99.8-gcc14"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -24,12 +24,12 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.9ext-llvm19",
-    "CCCL_CUDA_VERSION": "12.9",
-    "CCCL_HOST_COMPILER": "llvm",
-    "CCCL_HOST_COMPILER_VERSION": "19",
-    "CCCL_BUILD_INFIX": "cuda12.9ext-llvm19",
-    "CCCL_CUDA_EXTENDED": "true",
+    "DEVCONTAINER_NAME": "cuda99.8-gcc14",
+    "CCCL_CUDA_VERSION": "99.8",
+    "CCCL_HOST_COMPILER": "gcc",
+    "CCCL_HOST_COMPILER_VERSION": "14",
+    "CCCL_BUILD_INFIX": "cuda99.8-gcc14",
+    "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
   "workspaceFolder": "/home/coder/cccl",
@@ -62,5 +62,5 @@
       }
     }
   },
-  "name": "cuda12.9ext-llvm19"
+  "name": "cuda99.8-gcc14"
 }
