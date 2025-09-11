@@ -367,8 +367,7 @@ template <class _UponTag, class _SetTag>
 template <class _Sndr, class _Fn>
 _CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __sndr_t   = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
-  using __domain_t = __early_domain_of_t<_Sndr>;
+  using __sndr_t = typename _UponTag::template __sndr_t<_Sndr, _Fn>;
 
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -377,7 +376,7 @@ _CCCL_NODEBUG_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Sndr _
     __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
   }
 
-  return transform_sender(__domain_t{}, __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}});
+  return __sndr_t{{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)}};
 }
 
 template <class _UponTag, class _SetTag>
