@@ -190,6 +190,11 @@ protected:
       return nullptr;
     }
 
+    virtual bool is_graph_ctx() const
+    {
+      return false;
+    }
+
     void set_graph_cache_policy(::std::function<bool()> fn)
     {
       cache_policy = mv(fn);
@@ -774,6 +779,11 @@ public:
   cudaGraph_t graph() const
   {
     return pimpl->graph();
+  }
+
+  bool is_graph_ctx() const
+  {
+    return pimpl->is_graph_ctx();
   }
 
   void set_graph_cache_policy(::std::function<bool()> policy)

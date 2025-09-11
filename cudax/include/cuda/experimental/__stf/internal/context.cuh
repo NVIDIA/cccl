@@ -818,7 +818,9 @@ public:
   bool is_graph_ctx() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return (payload.index() == 1);
+    return payload->*[&](auto& self) {
+      return self.is_graph_ctx();
+    };
   }
 
   async_resources_handle& async_resources() const

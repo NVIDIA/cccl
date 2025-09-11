@@ -214,6 +214,11 @@ class graph_ctx : public backend_ctx<graph_ctx>
       return *_graph;
     }
 
+    bool is_graph_ctx() const override
+    {
+      return true;
+    }
+
     executable_graph_cache_stat* graph_get_cache_stat() override
     {
       return &cache_stats;

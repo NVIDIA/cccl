@@ -10,7 +10,8 @@
 
 //! \file
 //!
-//! \brief Freeze a logical data in a graph to use it in the body of a "while" graph node, the resulting looping graph will be executed within a stream context.
+//! \brief Freeze a logical data in a graph to use it in the body of a "while" graph node, the resulting looping graph
+//! will be executed within a stream context.
 
 #include <cuda/experimental/stf.cuh>
 
@@ -29,6 +30,43 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
   static int count = 5;
   cudaGraphSetConditional(handle, --count ? 1 : 0);
 }
+
+// TODO implement this for cudaGraph with automatic instantiation (with cache),
+// and for child graphs too
+// TODO implement for the graph_ctx backend too. Make it a virtual method ?
+template <typename ctx_t>
+event_list graph_exec_launch(ctx_t& ctx, cudaGraphExec_t graph_exec, event_list& input_prereqs)
+{
+  auto support_dstream = ctx.pick_dstream();
+
+  // The graph launch depends on the input events, the resulting events will be implied by the stream semantic so we can
+  // ignore them here
+  /* auto before_launch = */ reserved::join_with_stream(ctx, support_dstream, input_prereqs, "graph_launch", false);
+
+  cuda_safe_call(cudaGraphLaunch(graph_exec, support_dstream.stream));
+
+  event_list graph_launched;
+  graph_launched.sync_with_stream(ctx, support_dstream.stream);
+
+  return graph_launched;
+}
+
+template <typename ctx_t>
+event_list insert_graph(ctx_t& ctx, cudaGraph_t graph, event_list& input_prereqs)
+{
+  // If this is a graph context, we will insert this graph as a child graph,
+  // otherwise we instantiate it and launch it.
+  if (ctx.is_graph_ctx()) {
+      cudaGraph_t support_graph = ctx.graph();
+      // TODO: Implement child graph insertion logic here
+  }
+
+  cudaGraphExec_t graph_exec = NULL;
+  cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, NULL, NULL, 0));
+
+  return graph_exec_launch(ctx, graph_exec, input_prereqs);
+}
+
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 int main()
@@ -52,8 +90,6 @@ int main()
     x(i) *= 3;
   };
 
-  auto fX = ctx.freeze(lX, access_mode::rw, data_place::current_device());
-
   /* We are going to create a local context which is a graph, and we will populate it using a graph_ctx */
   cudaGraph_t graph;
   cuda_safe_call(cudaGraphCreate(&graph, 0));
@@ -69,6 +105,7 @@ int main()
   // Create a context based on this child graph which is the body of the
   graph_ctx sub_ctx(sub_graph);
 
+  auto fX                        = ctx.freeze(lX, access_mode::rw, data_place::current_device());
   auto [frozen_X, fX_get_events] = fX.get(data_place::current_device());
 
   auto lX_alias = sub_ctx.logical_data(frozen_X, data_place::current_device());
@@ -83,8 +120,6 @@ int main()
   };
 
   sub_ctx.finalize_as_graph();
-
-  auto support_dstream = ctx.pick_dstream();
 
   // We now create a conditional graph which depends on the same dependencies
   // as the inner ctx. We then insert the body of the graph as a child graph of
@@ -115,19 +150,9 @@ int main()
   cudaGraphNode_t child_graph_node;
   cuda_safe_call(cudaGraphAddChildGraphNode(&child_graph_node, bodyGraph, nullptr, 0, sub_ctx.get_graph()));
 
-  cudaGraphExec_t graphExec = NULL;
-  cuda_safe_call(cudaGraphInstantiate(&graphExec, graph, NULL, NULL, 0));
+  event_list graph_launched = insert_graph(ctx, graph, fX_get_events);
 
-  // The graph launch depends on the events associated to the get call
-  /* auto before_launch = */ reserved::join_with_stream(ctx, support_dstream, fX_get_events, "graph_launch", false);
-  
-  cuda_safe_call(cudaGraphLaunch(graphExec, support_dstream.stream));
-
-  // Create an event that depends on the conditional node (and on the graph), so that we unfreeze
-  // after the completion of the while loop
-  event_list child_graph_event;
-  child_graph_event.sync_with_stream(ctx, support_dstream.stream);
-  fX.unfreeze(child_graph_event);
+  fX.unfreeze(graph_launched);
 
   ctx.host_launch(lX.read())->*[](auto x) {
     for (int i = 0; i < static_cast<int>(x.size()); i++)
