@@ -74,8 +74,13 @@ struct scan_build
 
   static bool should_check_sass(int cc_major)
   {
-    // TODO: add a check for NVRTC version; ref nvbug 5243118
-    return (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
+    // Check compute capability (existing logic)
+    bool cc_allows_check = (!Disable75SassCheck || cc_major > 7) && cc_major < 9;
+
+    // Disable SASS checks for CTK < 13.1 due to nvrtc bug (nvbug 5243118)
+    bool ctk_allows_check = ctk_version_allows_sass_check();
+
+    return cc_allows_check && ctk_allows_check;
   }
 };
 

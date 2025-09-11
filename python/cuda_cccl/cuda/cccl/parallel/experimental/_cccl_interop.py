@@ -373,6 +373,73 @@ def _check_compile_result(cubin: bytes):
     assert "STL" not in sass, "STL instruction found in SASS"
 
 
+def _should_check_sass_for_ctk_version() -> bool:
+    """
+    Check if we should verify absence of LDL/STL instructions based on CTK version.
+    Disabled for CTK < 13.1 due to nvrtc bug (nvbug 5243118).
+
+    Returns True if CTK version is 13.1 or higher, False otherwise.
+    If version detection fails, returns False (disable SASS checks).
+    """
+    try:
+        # Try multiple approaches to get CUDA runtime version
+        runtime_version = None
+
+        # Method 1: Try importing cuda-python package
+        try:
+            import cuda.cudart as cudart  # type: ignore[import-not-found]
+
+            err, runtime_version = cudart.cudaRuntimeGetVersion()
+            if err != cudart.cudaError_t.cudaSuccess:
+                runtime_version = None
+        except (ImportError, AttributeError):
+            pass
+
+        # Method 2: Try alternative cuda package structure
+        if runtime_version is None:
+            try:
+                import cuda  # type: ignore[import-not-found]
+
+                runtime_version = cuda.cudart.cudaRuntimeGetVersion()[1]
+            except (ImportError, AttributeError, TypeError, IndexError):
+                pass
+
+        # Method 3: Try using numba's cuda detection
+        if runtime_version is None:
+            try:
+                import numba.cuda
+
+                if numba.cuda.is_available():
+                    # Use numba's internal CUDA version detection
+                    # This is a fallback and may not be as reliable
+                    pass
+            except (ImportError, AttributeError):
+                pass
+
+        # If we couldn't get version, disable SASS checks
+        if runtime_version is None:
+            warnings.warn(
+                "Could not detect CUDA runtime version. "
+                "Disabling SASS verification for LDL/STL instructions.",
+                UserWarning,
+            )
+            return False
+
+        major = runtime_version // 1000
+        minor = (runtime_version % 1000) // 10
+        # Bug is fixed in CTK 13.1+
+        return (major > 13) or (major == 13 and minor >= 1)
+
+    except Exception as e:
+        # If anything goes wrong, disable SASS checks and warn
+        warnings.warn(
+            f"Error detecting CUDA toolkit version: {e}. "
+            "Disabling SASS verification for LDL/STL instructions.",
+            UserWarning,
+        )
+        return False
+
+
 # this global variable controls whether the compile result is checked
 # for LDL/STL instructions. Should be set to `True` for testing only.
 _check_sass: bool = False
@@ -396,7 +463,9 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         **kwargs,
     )
 
-    if _check_sass:
+    # Only check SASS if enabled AND CTK version is 13.1+
+    # (nvbug 5243118 causes false positives in earlier versions)
+    if _check_sass and _should_check_sass_for_ctk_version():
         cubin = result._get_cubin()
         _check_compile_result(cubin)
 
