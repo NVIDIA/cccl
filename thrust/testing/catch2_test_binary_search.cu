@@ -3,6 +3,7 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstdint>
 
 #include "catch2_test_helper.h"
@@ -235,8 +236,8 @@ _CCCL_DIAG_POP
 
 void TestBoundsWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::counting_iterator<long long> begin(1);
+  cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   CHECK(::cuda::std::distance(begin, end) == 1ll << magnitude);
 
   ::cuda::std::intmax_t distance_low_value =

@@ -3,6 +3,8 @@
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 
 #include "include/host_device.h"
@@ -96,8 +98,8 @@ int main()
   print("B", B);
 
   // note: we must specify the System to ensure correct execution
-  thrust::for_each(thrust::counting_iterator<int, System>(0),
-                   thrust::counting_iterator<int, System>(5),
+  thrust::for_each(cuda::counting_iterator<int, System>(0),
+                   cuda::counting_iterator<int, System>(5),
                    copy_iterators<Iterator, Iterator>(A.begin(), B.begin()));
 
   std::cout << "After A->B Copy" << std::endl;

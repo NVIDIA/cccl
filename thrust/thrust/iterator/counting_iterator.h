@@ -41,7 +41,6 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/strided_iterator.h>
@@ -300,6 +299,7 @@ private:
 //! \param x The initial value of the new \p counting_iterator's counter.
 //! \return A new \p counting_iterator whose counter has been initialized to \p x.
 template <typename Incrementable>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_counting_iterator instead")
 inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable>(x);
@@ -311,6 +311,7 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 
 //! Constructs a counting_iterator with a runtime stride
 template <typename Incrementable, typename Stride>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_counting_iterator instead")
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
   return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, runtime_value<Stride>>(
@@ -319,6 +320,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 
 //! Constructs a counting_iterator with a compile-time stride
 template <auto Stride, typename Incrementable>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_strided_iterator instead")
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable,

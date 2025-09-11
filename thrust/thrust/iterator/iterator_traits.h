@@ -39,6 +39,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/any_system_tag.h>
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/iterator_category_to_system.h>
@@ -203,6 +204,13 @@ template <typename Iterator>
 using iterator_system_t = typename iterator_system<Iterator>::type;
 
 // specialize the respective cuda iterators
+// we need to be able to pass a system to `cuda::counting_iterator`.
+template <class System>
+using __cccl_translate_system = ::cuda::std::conditional_t<
+  ::cuda::std::is_same_v<System, ::cuda::__cccl_any_system_tag> || ::cuda::std::is_same_v<System, use_default>,
+  any_system_tag,
+  System>;
+
 template <>
 struct iterator_system<::cuda::discard_iterator>
 {
@@ -225,13 +233,13 @@ struct iterator_traversal<::cuda::constant_iterator<T, Index>>
   using type = random_access_traversal_tag;
 };
 
-template <class Start>
-struct iterator_system<::cuda::counting_iterator<Start>>
+template <class Start, class System>
+struct iterator_system<::cuda::counting_iterator<Start, System>>
 {
-  using type = any_system_tag;
+  using type = __cccl_translate_system<System>;
 };
-template <class Start>
-struct iterator_traversal<::cuda::counting_iterator<Start>>
+template <class Start, class System>
+struct iterator_traversal<::cuda::counting_iterator<Start, System>>
 {
   using type = random_access_traversal_tag;
 };
