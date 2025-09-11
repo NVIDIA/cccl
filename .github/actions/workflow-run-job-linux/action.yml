@@ -174,6 +174,13 @@ runs:
 
         declare -a extra_launch_args=()
 
+        if grep -q '"./ci/test_' <<< "$COMMAND"; then
+          extra_launch_args+=(
+            # Disable sccache for tests
+            --env "DISABLE_SCCACHE=1"
+          )
+        fi
+
         # Configure the sccache client to use the build cluster
         if test -n "${SCCACHE_DIST_TOKEN+x}"; then
           if grep -q '"./ci/build_' <<< "$COMMAND"; then
