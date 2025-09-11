@@ -14,6 +14,7 @@
 //! will be executed within a stream context.
 
 #include <cuda/experimental/stf.cuh>
+#include <cuda/experimental/__stf/internal/graph_utilities.cuh>
 
 #include <vector>
 
@@ -31,41 +32,6 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
   cudaGraphSetConditional(handle, --count ? 1 : 0);
 }
 
-// TODO implement this for cudaGraph with automatic instantiation (with cache),
-// and for child graphs too
-// TODO implement for the graph_ctx backend too. Make it a virtual method ?
-template <typename ctx_t>
-event_list graph_exec_launch(ctx_t& ctx, cudaGraphExec_t graph_exec, event_list& input_prereqs)
-{
-  auto support_dstream = ctx.pick_dstream();
-
-  // The graph launch depends on the input events, the resulting events will be implied by the stream semantic so we can
-  // ignore them here
-  /* auto before_launch = */ reserved::join_with_stream(ctx, support_dstream, input_prereqs, "graph_launch", false);
-
-  cuda_safe_call(cudaGraphLaunch(graph_exec, support_dstream.stream));
-
-  event_list graph_launched;
-  graph_launched.sync_with_stream(ctx, support_dstream.stream);
-
-  return graph_launched;
-}
-
-template <typename ctx_t>
-event_list insert_graph(ctx_t& ctx, cudaGraph_t graph, event_list& input_prereqs)
-{
-  // If this is a graph context, we will insert this graph as a child graph,
-  // otherwise we instantiate it and launch it.
-  if (ctx.is_graph_ctx()) {
-      cudaGraph_t support_graph = ctx.graph();
-      // TODO: Implement child graph insertion logic here
-  }
-
-  cudaGraphExec_t graph_exec = NULL;
-  cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, NULL, NULL, 0));
-
-  return graph_exec_launch(ctx, graph_exec, input_prereqs);
-}
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
@@ -150,7 +116,7 @@ int main()
   cudaGraphNode_t child_graph_node;
   cuda_safe_call(cudaGraphAddChildGraphNode(&child_graph_node, bodyGraph, nullptr, 0, sub_ctx.get_graph()));
 
-  event_list graph_launched = insert_graph(ctx, graph, fX_get_events);
+  event_list graph_launched = reserved::insert_graph(ctx, graph, fX_get_events);
 
   fX.unfreeze(graph_launched);
 
