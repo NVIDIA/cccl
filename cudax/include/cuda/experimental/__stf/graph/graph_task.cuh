@@ -108,6 +108,12 @@ public:
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
     }
 
+    auto& dot = *ctx.get_dot();
+    if (dot.is_tracing())
+    {
+      dot.template add_vertex<task, logical_data_untyped>(*this);
+    }
+
     return *this;
   }
 
@@ -597,11 +603,6 @@ public:
       }
       clear();
     };
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
     constexpr bool fun_invocable_stream_non_void_deps =
