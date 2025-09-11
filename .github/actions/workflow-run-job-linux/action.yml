@@ -174,9 +174,9 @@ runs:
 
         declare -a extra_launch_args=()
 
-        if grep -q '"./ci/test_' <<< "$COMMAND"; then
+        if grep -q '"./ci/test_cub.sh' <<< "$COMMAND"; then
           extra_launch_args+=(
-            # Disable sccache for tests
+            # Disable sccache for CUB tests
             --env "DISABLE_SCCACHE=1"
           )
         fi
