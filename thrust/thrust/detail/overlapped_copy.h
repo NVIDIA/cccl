@@ -66,7 +66,7 @@ namespace dispatch
 
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
 RandomAccessIterator2 overlapped_copy(
-  thrust::system::cpp::detail::execution_policy<DerivedPolicy>&,
+  cpp::execution_policy<DerivedPolicy>&,
   RandomAccessIterator1 first,
   RandomAccessIterator1 last,
   RandomAccessIterator2 result)

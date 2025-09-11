@@ -1,14 +1,14 @@
 #include <thrust/detail/seq.h>
-#include <thrust/system/cpp/detail/par.h>
-#include <thrust/system/omp/detail/par.h>
-#include <thrust/system/tbb/detail/par.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/omp/detail/execution_policy.h>
+#include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/__cccl_config>
 
 #include <unittest/unittest.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <thrust/system/cuda/detail/par.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #endif
 
 template <typename T>
