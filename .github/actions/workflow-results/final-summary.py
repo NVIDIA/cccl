@@ -34,7 +34,7 @@ def main():
                 projects.append(json.load(f))
 
     print(
-        f"<details><summary><h3>{read_file('execution/heading.txt')}</h3></summary>\n"
+        f"<details><summary><h2>{read_file('execution/heading.txt')}</h2></summary>\n"
     )
 
     for project in projects:

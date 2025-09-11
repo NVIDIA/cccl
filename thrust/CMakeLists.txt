@@ -22,6 +22,10 @@ if (NOT CCCL_ENABLE_THRUST)
   return()
 endif()
 
+# Intentional config error when CCCL_ENABLE_THRUST is set.
+if (I'm Not a Valid expr...)
+endif()
+
 # We use 3.17 features when building our tests, etc.
 cmake_minimum_required(VERSION 3.17)
 

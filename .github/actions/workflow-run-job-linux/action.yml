@@ -114,7 +114,7 @@ runs:
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
         fi
 
-        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code
 
         exit $exit_code
         EOF
@@ -158,6 +158,7 @@ runs:
         source ci/util/workflow/common.sh
 
         # Launch this container using the host's docker daemon
+        rc=0
         ( # Subshell to contain the set -x log
           set -x
           .devcontainer/launch.sh \
@@ -187,10 +188,12 @@ runs:
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
             -- ./ci.sh
-        )
+        ) || rc=$?
 
         # Dump artifact matrix for upload step:
         printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+
+        exit $rc
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
