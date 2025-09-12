@@ -207,7 +207,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
-// "_CCCL_CONCEPT_FRAGMENT(Foo, ARGS...)(REQ1, Req2, ...)" expands into:
+// "_CCCL_CONCEPT_FRAGMENT(Foo, ARGS...)(REQ1, REQ2, ...)" expands into:
 //
 // _CCCL_API inline auto Foo_CCCL_CONCEPT_FRAGMENT_impl_(ARGS...)
 //   -> typename ::__cccl_enable< a-type-that-is-dependent-on(REQ1) >::template
