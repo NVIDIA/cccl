@@ -301,6 +301,13 @@ struct DeviceSegmentedSortKernelSource
   {
     return SmallSegmentsSelectorT(offset, begin_offset_iterator, end_offset_iterator);
   }
+
+  template <typename SelectorT>
+  CUB_RUNTIME_FUNCTION static constexpr void
+  SetSegmentOffset(SelectorT& selector, global_segment_offset_t base_segment_offset)
+  {
+    selector.base_segment_offset = base_segment_offset;
+  }
 };
 } // namespace detail::segmented_sort
 
@@ -328,7 +335,7 @@ template <
     THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>,
     cub::detail::segmented_sort::local_segment_index_t*,
     cub::detail::segmented_sort::local_segment_index_t*,
-    THRUST_NS_QUALIFIER::reverse_iterator<cub::detail::segmented_sort::local_segment_index_t*>,
+    ::cuda::std::reverse_iterator<cub::detail::segmented_sort::local_segment_index_t*>,
     cub::detail::segmented_sort::local_segment_index_t*,
     detail::three_way_partition::ScanTileStateT,
     cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>,
@@ -748,8 +755,8 @@ private:
           ? static_cast<local_segment_index_t>(num_segments - current_seg_offset)
           : num_segments_per_invocation_limit;
 
-      large_segments_selector.base_segment_offset = current_seg_offset;
-      small_segments_selector.base_segment_offset = current_seg_offset;
+      kernel_source.SetSegmentOffset(large_segments_selector, current_seg_offset);
+      kernel_source.SetSegmentOffset(small_segments_selector, current_seg_offset);
 
       BeginOffsetIteratorT current_begin_offset = d_begin_offsets;
       EndOffsetIteratorT current_end_offset     = d_end_offsets;
