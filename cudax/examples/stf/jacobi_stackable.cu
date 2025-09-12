@@ -25,7 +25,7 @@ using namespace cuda::experimental::stf;
 
 int main(int argc, char** argv)
 {
-  stream_ctx ctx;
+  stackable_ctx ctx;
 
   size_t n   = 4096;
   size_t m   = 4096;
@@ -63,6 +63,8 @@ int main(int argc, char** argv)
 
   do
   {
+    stackable_ctx::graph_scope_guard s{ctx};
+
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lconverged.reduce(reducer::logical_and<bool>{}))
         ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& converged) {
               Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
