@@ -7,8 +7,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include "include/host_device.h"
-
 // we could vary M & N to find the perf sweet spot
 
 __host__ __device__ unsigned int hash(unsigned int a)

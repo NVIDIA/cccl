@@ -5,14 +5,8 @@
 
 int main()
 {
-  // H has storage for 4 integers
-  thrust::host_vector<int> H(4);
-
-  // initialize individual elements
-  H[0] = 14;
-  H[1] = 20;
-  H[2] = 38;
-  H[3] = 46;
+  // H holds 4 integers
+  thrust::host_vector<int> H{14, 20, 38, 46};
 
   // H.size() returns the size of vector H
   std::cout << "H has size " << H.size() << std::endl;

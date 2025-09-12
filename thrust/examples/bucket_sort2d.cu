@@ -9,8 +9,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include "include/host_device.h"
-
 // define a 2d float vector
 using vec2 = thrust::tuple<float, float>;
 
