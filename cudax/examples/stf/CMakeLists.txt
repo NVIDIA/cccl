@@ -34,6 +34,7 @@ set(stf_example_codegen_sources
   heat_mgpu.cu
   jacobi.cu
   jacobi_pfor.cu
+  jacobi_stackable.cu
   launch_histogram.cu
   launch_scan.cu
   launch_sum.cu
