@@ -41,8 +41,8 @@ void initialize(thrust::device_vector<thrust::pair<int, int>>& v)
   thrust::host_vector<thrust::pair<int, int>> host_data(v.size());
   for (size_t i = 0; i < host_data.size(); i++)
   {
-    int a = dist(rng);
-    int b = dist(rng);
+    int a        = dist(rng);
+    int b        = dist(rng);
     host_data[i] = thrust::make_pair(a, b);
   }
   v = host_data;

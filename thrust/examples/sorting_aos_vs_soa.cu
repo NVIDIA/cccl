@@ -52,7 +52,7 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
   for (size_t i = 0; i < h_structures.size(); i++)
   {
     MyStruct s;
-    s.key = dist(rng);
+    s.key           = dist(rng);
     h_structures[i] = s;
   }
 
