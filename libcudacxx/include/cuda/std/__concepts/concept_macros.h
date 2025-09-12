@@ -89,6 +89,10 @@ extern _Tp __cccl_make_dependent;
 template <class _Impl, class... _Args>
 using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
+template <typename _Tp>
+_CCCL_API constexpr void __cccl_unused(_Tp&&) noexcept
+{}
+
 // So that we can refer to the ::cuda::std namespace below
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_END_NAMESPACE_CUDA_STD
