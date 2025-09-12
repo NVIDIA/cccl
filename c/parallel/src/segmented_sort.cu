@@ -24,6 +24,7 @@
 #include <stdio.h> // printf
 
 #include "jit_templates/templates/input_iterator.h"
+#include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
 #include "util/context.h"
@@ -172,21 +173,130 @@ struct segmented_sort_kernel_source
     return build.key_type.size;
   }
 
-  using LargeSegmentsSelectorT = cub::detail::segmented_sort::LargeSegmentsSelectorT<OffsetT, void*, void*>;
-  using SmallSegmentsSelectorT = cub::detail::segmented_sort::SmallSegmentsSelectorT<OffsetT, void*, void*>;
+  using LargeSegmentsSelectorT = indirect_arg_t;
+  using SmallSegmentsSelectorT = indirect_arg_t;
 
-  auto LargeSegmentsSelector(
+  indirect_arg_t LargeSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    return LargeSegmentsSelectorT(
-      offset, *reinterpret_cast<void**>(begin_offset_iterator.ptr), *reinterpret_cast<void**>(end_offset_iterator.ptr));
+    cccl_op_t op = LargeSegmentsSelectorOp(offset, begin_offset_iterator, end_offset_iterator);
+    return indirect_arg_t{op};
   }
 
-  auto SmallSegmentsSelector(
+  indirect_arg_t SmallSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    return SmallSegmentsSelectorT(
-      offset, *reinterpret_cast<void**>(begin_offset_iterator.ptr), *reinterpret_cast<void**>(end_offset_iterator.ptr));
+    cccl_op_t op = SmallSegmentsSelectorOp(offset, begin_offset_iterator, end_offset_iterator);
+    return indirect_arg_t{op};
+  }
+
+  void SetSegmentOffset(cccl_op_t& selector, long long base_segment_offset) const
+  {
+    auto* st                = reinterpret_cast<selector_state_t*>(selector.state);
+    st->base_segment_offset = base_segment_offset;
+  }
+
+  void SetSegmentOffset(indirect_arg_t& selector, long long base_segment_offset) const
+  {
+    auto* st                = reinterpret_cast<selector_state_t*>(selector.ptr);
+    st->base_segment_offset = base_segment_offset;
+  }
+
+  struct selector_state_t
+  {
+    long long threshold;
+    const long long* begin_offsets;
+    const long long* end_offsets;
+    long long base_segment_offset;
+  };
+
+  // Return stateful cccl_op_t predicates equivalent to the CUB selectors above.
+  // These embed C++ source for a device function and capture state (threshold and offset arrays).
+  static cccl_op_t LargeSegmentsSelectorOp(
+    OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator)
+  {
+    // Persist state storage and code across the returned cccl_op_t lifetime
+    static selector_state_t state{};
+    state.threshold     = static_cast<long long>(offset);
+    state.begin_offsets = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(begin_offset_iterator.ptr));
+    state.end_offsets   = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(end_offset_iterator.ptr));
+    state.base_segment_offset = 0;
+
+    static std::string code;
+    code = std::string{
+      R"XXX(#include <cuda/std/cstdint>
+extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
+{
+  struct state_t {
+    long long threshold;
+    const long long* begin_offsets;
+    const long long* end_offsets;
+    long long base_segment_offset;
+  };
+
+  auto* st = static_cast<state_t*>(state_ptr);
+  using local_segment_index_t = ::cuda::std::uint32_t;
+  const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
+  const long long begin = st->begin_offsets[st->base_segment_offset + sid];
+  const long long end   = st->end_offsets[st->base_segment_offset + sid];
+  const bool pred       = (end - begin) > st->threshold;
+  *reinterpret_cast<bool*>(result_ptr) = pred;
+}
+)XXX"};
+
+    cccl_op_t op{};
+    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
+    op.name      = "cccl_large_segments_selector_op";
+    op.code      = code.c_str();
+    op.code_size = code.size();
+    op.code_type = CCCL_OP_CPP_SOURCE;
+    op.size      = sizeof(state);
+    op.alignment = alignof(selector_state_t);
+    op.state     = &state;
+    return op;
+  }
+
+  static cccl_op_t SmallSegmentsSelectorOp(
+    OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator)
+  {
+    static selector_state_t state{};
+    state.threshold     = static_cast<long long>(offset);
+    state.begin_offsets = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(begin_offset_iterator.ptr));
+    state.end_offsets   = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(end_offset_iterator.ptr));
+    state.base_segment_offset = 0;
+
+    static std::string code;
+    code = std::string{
+      R"XXX(#include <cuda/std/cstdint>
+extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
+{
+  struct state_t {
+    long long threshold;
+    const long long* begin_offsets;
+    const long long* end_offsets;
+    long long base_segment_offset;
+  };
+  auto* st = static_cast<state_t*>(state_ptr);
+  using local_segment_index_t = ::cuda::std::uint32_t;
+  const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
+  const long long begin = st->begin_offsets[st->base_segment_offset + sid];
+  const long long end   = st->end_offsets[st->base_segment_offset + sid];
+  const bool pred       = (end - begin) < st->threshold;
+
+  *reinterpret_cast<bool*>(result_ptr) = pred;
+}
+)XXX"};
+
+    cccl_op_t op{};
+    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
+    op.name      = "cccl_small_segments_selector_op";
+    op.code      = code.c_str();
+    op.code_size = code.size();
+    op.code_type = CCCL_OP_CPP_SOURCE;
+    op.size      = sizeof(state);
+    op.alignment = alignof(selector_state_t);
+    op.state     = &state;
+    return op;
   }
 };
 
@@ -201,8 +311,7 @@ std::string get_three_way_partition_init_kernel_name()
                      num_selected_it_t); // 1
 }
 
-std::string
-get_three_way_partition_kernel_name(std::string_view start_offset_iterator_t, std::string_view end_offset_iterator_t)
+std::string get_three_way_partition_kernel_name(std::string_view large_selector_t, std::string_view small_selector_t)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_three_way_partition_policy>(&chained_policy_t));
@@ -218,18 +327,6 @@ get_three_way_partition_kernel_name(std::string_view start_offset_iterator_t, st
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
-  std::string select_first_part_op_t = std::format(
-    "cub::detail::segmented_sort::LargeSegmentsSelectorT<{0}, {1}, {2}>",
-    offset_t, // 0
-    start_offset_iterator_t, // 1
-    end_offset_iterator_t); // 2
-
-  std::string select_second_part_op_t = std::format(
-    "cub::detail::segmented_sort::SmallSegmentsSelectorT<{0}, {1}, {2}>",
-    offset_t, // 0
-    start_offset_iterator_t, // 1
-    end_offset_iterator_t); // 2
-
   constexpr std::string_view per_partition_offset_t = "cub::detail::three_way_partition::per_partition_offset_t";
   constexpr std::string_view streaming_context_t =
     "cub::detail::three_way_partition::streaming_context_t<cub::detail::segmented_sort::global_segment_offset_t>";
@@ -244,8 +341,8 @@ get_three_way_partition_kernel_name(std::string_view start_offset_iterator_t, st
     unselected_out_it_t, // 4 (UnselectedOutputIteratorT)
     num_selected_it_t, // 5 (NumSelectedIteratorT)
     scan_tile_state_t, // 6 (ScanTileStateT)
-    select_first_part_op_t, // 7 (SelectFirstPartOp)
-    select_second_part_op_t, // 8 (SelectSecondPartOp)
+    large_selector_t, // 7 (SelectFirstPartOp)
+    small_selector_t, // 8 (SelectSecondPartOp)
     per_partition_offset_t, // 9 (OffsetT)
     streaming_context_t); // 10 (StreamingContextT)
 }
@@ -418,6 +515,8 @@ struct segmented_sort_values_input_iterator_tag;
 struct segmented_sort_values_output_iterator_tag;
 struct segmented_sort_start_offset_iterator_tag;
 struct segmented_sort_end_offset_iterator_tag;
+struct segmented_sort_large_selector_tag;
+struct segmented_sort_small_selector_tag;
 
 CUresult cccl_device_segmented_sort_build(
   cccl_device_segmented_sort_build_result_t* build_ptr,
@@ -525,6 +624,21 @@ CUresult cccl_device_segmented_sort_build(
     const std::string value_t =
       keys_only ? "cub::NullType" : cccl_type_enum_to_name<items_storage_t>(values_in_it.value_type.type);
 
+    // Build selector operations as cccl_op_t and generate their functor wrappers
+    cccl_op_t large_selector_op =
+      segmented_sort::segmented_sort_kernel_source::LargeSegmentsSelectorOp(0, start_offset_it, end_offset_it);
+    cccl_op_t small_selector_op =
+      segmented_sort::segmented_sort_kernel_source::SmallSegmentsSelectorOp(0, start_offset_it, end_offset_it);
+
+    cccl_type_info bool_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
+    cccl_type_info u32_t{sizeof(::cuda::std::uint32_t), alignof(::cuda::std::uint32_t), cccl_type_enum::CCCL_UINT32};
+
+    const auto [large_selector_name, large_selector_src] = get_specialization<segmented_sort_large_selector_tag>(
+      template_id<user_operation_traits>(), large_selector_op, bool_t, u32_t);
+
+    const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
+      template_id<user_operation_traits>(), small_selector_op, bool_t, u32_t);
+
     const std::string dependent_definitions_src = std::format(
       R"XXX(
 struct __align__({1}) storage_t {{
@@ -539,6 +653,8 @@ struct __align__({3}) items_storage_t {{
 {7}
 {8}
 {9}
+{10}
+{11}
 )XXX",
       keys_in_it.value_type.size, // 0
       keys_in_it.value_type.alignment, // 1
@@ -549,7 +665,9 @@ struct __align__({3}) items_storage_t {{
       values_in_iterator_src, // 6
       values_out_iterator_src, // 7
       start_offset_iterator_src, // 8
-      end_offset_iterator_src); // 9
+      end_offset_iterator_src, // 9
+      large_selector_src, // 10
+      small_selector_src); // 11
 
     // Runtime parameter tuning
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
@@ -654,7 +772,7 @@ struct device_three_way_partition_policy {{
     std::string three_way_partition_init_kernel_name = segmented_sort::get_three_way_partition_init_kernel_name();
 
     std::string three_way_partition_kernel_name =
-      segmented_sort::get_three_way_partition_kernel_name(start_offset_iterator_name, end_offset_iterator_name);
+      segmented_sort::get_three_way_partition_kernel_name(large_selector_name, small_selector_name);
 
     std::string segmented_sort_fallback_kernel_lowered_name;
     std::string segmented_sort_kernel_small_lowered_name;
@@ -680,8 +798,8 @@ struct device_three_way_partition_policy {{
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
+    nvrtc_linkable_list linkable_list;
+    nvrtc_linkable_list_appender appender{linkable_list};
 
     // add iterator definitions
     appender.add_iterator_definition(keys_in_it);
@@ -693,6 +811,9 @@ struct device_three_way_partition_policy {{
     }
     appender.add_iterator_definition(start_offset_it);
     appender.add_iterator_definition(end_offset_it);
+
+    appender.append_operation(large_selector_op);
+    appender.append_operation(small_selector_op);
 
     nvrtc_link_result result =
       begin_linking_nvrtc_program(num_lto_args, lopts)
@@ -709,7 +830,7 @@ struct device_three_way_partition_policy {{
         ->get_name({three_way_partition_init_kernel_name, three_way_partition_init_kernel_lowered_name})
         ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name})
         ->link_program()
-        ->add_link_list(ltoir_list)
+        ->add_link_list(linkable_list)
         ->finalize_program();
 
     // populate build struct members

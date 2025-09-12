@@ -612,7 +612,7 @@ C2H_TEST("SegmentedSort works with custom types as values", "[segmented_sort][cu
 }
 #endif
 
-using SizeT = unsigned long long;
+using SizeT = signed long long;
 
 struct variable_segment_offset_iterator_state_t
 {
@@ -821,7 +821,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
 //   constexpr auto order             = CCCL_ASCENDING;
 //   constexpr bool is_overwrite_okay = false;
 
-//   const std::size_t n_segments = 1;
+//   const std::size_t n_segments = 501;
 //   const std::size_t segment_size = 27;
 //   const std::size_t n_elems = n_segments * segment_size;
 
