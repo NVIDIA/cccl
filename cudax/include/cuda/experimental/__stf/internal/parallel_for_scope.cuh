@@ -22,10 +22,12 @@
 
 #include <cuda/std/__cccl/execution_space.h>
 
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -792,14 +794,36 @@ public:
     const size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
     _CCCL_ASSERT(n > 0, "Invalid empty shape here");
+
+    // XXX maybe this should only be !host, because that could be a green context for example
+    _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
+
+    // Use uncached allocator
+    auto dplace = sub_exec_place.affine_data_place();
+
+    // Get backend context and stream once
+    cudaStream_t stream = {};
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      cudaStream_t stream = t.get_stream();
+      stream = t.get_stream();
+    }
 
-      // One tuple per CUDA block
-      // TODO use CUDASTF facilities to replace this manual allocation
-      redux_vars<deps_tup_t, ops_and_inits>* d_redux_buffer;
-      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(*d_redux_buffer), stream));
+    // Allocation using uncached allocator directly
+    auto& allocator              = ctx.get_uncached_allocator();
+    ::std::ptrdiff_t buffer_size = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
+    event_list alloc_events      = t.get_input_events();
+    void* raw_buffer             = allocator.allocate(ctx, dplace, buffer_size, alloc_events);
+    auto* d_redux_buffer         = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(raw_buffer);
+
+    // Variable to hold the last kernel node for graph context
+    cudaGraphNode_t last_kernel_node = nullptr;
+
+    // Context-specific kernel execution and completion event preparation
+    event_list kernel_completion;
+    if constexpr (::std::is_same_v<context, stream_ctx>)
+    {
+      // Synchronize stream with allocation events
+      reserved::join_with_stream(ctx, decorated_stream(stream), alloc_events, "alloc_sync", false);
 
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>
@@ -809,28 +833,19 @@ public:
       reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
-      cuda_safe_call(cudaFreeAsync(d_redux_buffer, stream));
+      // Stream context: create event from stream to represent kernel completion
+      auto completion_event = reserved::record_event_in_stream(decorated_stream(stream));
+      completion_event->set_symbol(ctx, "kernel_done");
+      kernel_completion = event_list(completion_event);
     }
     else
     {
-      _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
-      const int dev_id = device_ordinal(sub_exec_place.affine_data_place());
+      auto lock = t.lock_ctx_graph();
+      auto g    = t.get_ctx_graph();
 
-      cudaMemAllocNodeParams allocParams{};
-      allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
-      allocParams.poolProps.handleTypes = cudaMemHandleTypeNone;
-      allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
-      allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
-
-      auto lock               = t.lock_ctx_graph();
-      auto g                  = t.get_ctx_graph();
-      const auto& input_nodes = t.get_ready_dependencies();
-
-      /* This first node depends on task's dependencies themselves */
-      cudaGraphNode_t allocNode;
-      cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
-
-      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(allocParams.dptr);
+      // The allocator already handled task dependencies, so we only need allocation dependencies
+      auto stage                                 = ctx.stage();
+      ::std::vector<cudaGraphNode_t> alloc_nodes = reserved::join_with_graph_nodes(ctx, alloc_events, stage);
 
       // Launch the main kernel
       // It is ok to use reference to local variables because the arguments
@@ -845,9 +860,9 @@ public:
       kernel_params.extra          = nullptr;
       kernel_params.sharedMemBytes = dyn_shmem_size;
 
-      // This new node will depend on the previous in the chain (allocation)
+      // This new node depends on allocation (which already incorporated task dependencies)
       cudaGraphNode_t kernel_1;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, &allocNode, 1, &kernel_params));
+      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, alloc_nodes.data(), alloc_nodes.size(), &kernel_params));
 
       // Launch the second kernel to reduce remaining values among original blocks
       // It is ok to use reference to local variables because the arguments
@@ -862,15 +877,31 @@ public:
       kernel2_params.kernelParams   = kernel2Args;
       kernel2_params.extra          = nullptr;
       kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
-      cudaGraphNode_t kernel_2;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_2, g, &kernel_1, 1, &kernel2_params));
 
-      // We can now free memory
-      cudaGraphNode_t free_node;
-      cuda_safe_call(cudaGraphAddMemFreeNode(&free_node, g, &kernel_2, 1, allocParams.dptr));
+      cuda_safe_call(cudaGraphAddKernelNode(&last_kernel_node, g, &kernel_1, 1, &kernel2_params));
 
-      // Make this the node which defines the end of the task
-      t.add_done_node(free_node);
+      // Graph context: create event from kernel completion graph node
+      auto completion_event = reserved::graph_event(last_kernel_node, stage, g);
+      completion_event->set_symbol(ctx, "kernel_done");
+      kernel_completion = event_list(completion_event);
+    }
+
+    // Common: Deallocation using uncached allocator directly
+    allocator.deallocate(ctx, dplace, kernel_completion, d_redux_buffer, buffer_size);
+    auto dealloc_events = kernel_completion;
+
+    if constexpr (::std::is_same_v<context, stream_ctx>)
+    {
+      reserved::join_with_stream(ctx, decorated_stream(stream), dealloc_events, "dealloc_sync", false);
+    }
+    else
+    {
+      auto stage                                   = ctx.stage();
+      ::std::vector<cudaGraphNode_t> dealloc_nodes = reserved::join_with_graph_nodes(ctx, dealloc_events, stage);
+      for (auto& n : dealloc_nodes)
+      {
+        t.add_done_node(n);
+      }
     }
   }
 
