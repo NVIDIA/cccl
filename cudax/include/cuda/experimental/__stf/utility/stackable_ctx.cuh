@@ -2490,8 +2490,7 @@ public:
     // Grab the lock of the data, note that we are already holding the context lock in read mode
     auto lock = pimpl->acquire_exclusive_lock();
 
-    _CCCL_ASSERT(m == access_mode::read || m == access_mode::rw || m == access_mode::write,
-                 "Unsupported access mode in nested context");
+    _CCCL_ASSERT(m != access_mode::none && m != access_mode::relaxed, "Unsupported access mode in nested context");
 
     _CCCL_ASSERT(!is_read_only() || m == access_mode::read, "read only data cannot be modified");
 
@@ -2546,7 +2545,8 @@ public:
 
     // The access mode will be very conservative for these implicit accesses
     access_mode push_mode =
-      is_read_only() ? access_mode::read : ((m == access_mode::write) ? access_mode::write : access_mode::rw);
+      is_read_only() ? access_mode::read
+                     : ((m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw);
 
     // Recurse from the target offset to its first imported(pushed) parent
     ::std::stack<int> path;
