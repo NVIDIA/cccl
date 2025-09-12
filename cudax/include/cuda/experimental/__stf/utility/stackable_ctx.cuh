@@ -1571,6 +1571,15 @@ public:
     return get_ctx(exec_offset).fence();
   }
 
+  template <typename T>
+  auto wait(::cuda::experimental::stf::stackable_logical_data<T>& ldata)
+  {
+    auto lock = pimpl->acquire_shared_lock();
+
+    int exec_offset = get_head_real_offset();
+    return get_ctx(exec_offset).wait(ldata.get_ld(exec_offset));
+  }
+
   auto get_dot()
   {
     auto lock = pimpl->acquire_shared_lock();
@@ -2407,6 +2416,12 @@ public:
   auto rw(Pack&&... pack)
   {
     return stackable_task_dep(*this, get_ld(get_data_root_offset()).rw(::std::forward<Pack>(pack)...));
+  }
+
+  template <typename... Pack>
+  auto reduce(Pack&&... pack)
+  {
+    return stackable_task_dep(*this, get_ld(get_data_root_offset()).reduce(::std::forward<Pack>(pack)...));
   }
 
   // Helper to create dependency with specific access mode - avoids cascade of if-else
