@@ -32,9 +32,10 @@ int main()
 
   // initialize data
   thrust::host_vector<int> host_array(R * C);
-  thrust::generate(host_array.begin(), host_array.end(), [&]() {
-    return dist(rng);
-  });
+  for (size_t i = 0; i < host_array.size(); i++)
+  {
+    host_array[i] = dist(rng);
+  }
   thrust::device_vector<int> array = host_array;
 
   // allocate storage for row sums and indices

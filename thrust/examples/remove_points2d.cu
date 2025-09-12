@@ -39,12 +39,11 @@ int main()
   thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
   thrust::host_vector<float> x(N);
   thrust::host_vector<float> y(N);
-  thrust::generate(x.begin(), x.end(), [&]() {
-    return u01(rng);
-  });
-  thrust::generate(y.begin(), y.end(), [&]() {
-    return u01(rng);
-  });
+  for (size_t i = 0; i < N; i++)
+  {
+    x[i] = u01(rng);
+    y[i] = u01(rng);
+  }
 
   // print the initial points
   std::cout << std::fixed;

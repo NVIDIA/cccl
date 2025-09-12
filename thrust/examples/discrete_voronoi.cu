@@ -124,9 +124,9 @@ void print(int m, int n, const thrust::device_vector<T>& d_data)
 {
   thrust::host_vector<T> h_data = d_data;
 
-  for (size_t i = 0; i < static_cast<size_t>(m); i++)
+  for (int i = 0; i < m; i++)
   {
-    for (size_t j = 0; j < static_cast<size_t>(n); j++)
+    for (int j = 0; j < n; j++)
     {
       std::cout << std::setw(4) << h_data[i * n + j] << " ";
     }

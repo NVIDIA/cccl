@@ -34,9 +34,10 @@ void initialize_keys(thrust::device_vector<int>& keys)
 
   thrust::host_vector<int> h_keys(keys.size());
 
-  thrust::generate(h_keys.begin(), h_keys.end(), [&]() {
-    return dist(rng);
-  });
+  for (size_t i = 0; i < h_keys.size(); i++)
+  {
+    h_keys[i] = dist(rng);
+  }
 
   keys = h_keys;
 }
@@ -48,11 +49,12 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
   thrust::host_vector<MyStruct> h_structures(structures.size());
 
-  thrust::generate(h_structures.begin(), h_structures.end(), [&]() {
+  for (size_t i = 0; i < h_structures.size(); i++)
+  {
     MyStruct s;
     s.key = dist(rng);
-    return s;
-  });
+    h_structures[i] = s;
+  }
 
   structures = h_structures;
 }

@@ -70,9 +70,10 @@ int main()
   thrust::host_vector<float> host_data(n);
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 10);
-  thrust::generate(host_data.begin(), host_data.end(), [&]() {
-    return static_cast<float>(dist(rng));
-  });
+  for (size_t i = 0; i < host_data.size(); i++)
+  {
+    host_data[i] = static_cast<float>(dist(rng));
+  }
   thrust::device_vector<float> data = host_data;
 
   // allocate storage for averages

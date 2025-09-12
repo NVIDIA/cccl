@@ -80,9 +80,9 @@ int main()
   thrust::device_vector<float> data(M * N, -1);
 
   // initialize valid values in grid
-  for (size_t i = 0; i < static_cast<size_t>(M); i++)
+  for (int i = 0; i < M; i++)
   {
-    for (size_t j = 0; j < static_cast<size_t>(n); j++)
+    for (int j = 0; j < n; j++)
     {
       data[i * N + j] = dist(rng);
     }
@@ -91,10 +91,10 @@ int main()
   // print full grid
   std::cout << "padded grid" << std::endl;
   std::cout << std::fixed << std::setprecision(4);
-  for (size_t i = 0; i < static_cast<size_t>(M); i++)
+  for (int i = 0; i < M; i++)
   {
     std::cout << " ";
-    for (size_t j = 0; j < static_cast<size_t>(N); j++)
+    for (int j = 0; j < N; j++)
     {
       std::cout << data[i * N + j] << " ";
     }

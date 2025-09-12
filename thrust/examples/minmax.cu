@@ -58,9 +58,10 @@ int main()
 
   // initialize data on host
   thrust::host_vector<int> host_data(N);
-  thrust::generate(host_data.begin(), host_data.end(), [&]() {
-    return dist(rng);
-  });
+  for (size_t i = 0; i < host_data.size(); i++)
+  {
+    host_data[i] = dist(rng);
+  }
   thrust::device_vector<int> data = host_data;
 
   // setup arguments

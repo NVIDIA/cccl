@@ -15,9 +15,10 @@ void initialize(thrust::device_vector<int>& v)
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
   thrust::host_vector<int> host_data(v.size());
-  thrust::generate(host_data.begin(), host_data.end(), [&]() {
-    return dist(rng);
-  });
+  for (size_t i = 0; i < host_data.size(); i++)
+  {
+    host_data[i] = dist(rng);
+  }
   v = host_data;
 }
 
@@ -26,9 +27,10 @@ void initialize(thrust::device_vector<float>& v)
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(2, 19);
   thrust::host_vector<float> host_data(v.size());
-  thrust::generate(host_data.begin(), host_data.end(), [&]() {
-    return dist(rng) / 2.0f;
-  });
+  for (size_t i = 0; i < host_data.size(); i++)
+  {
+    host_data[i] = dist(rng) / 2.0f;
+  }
   v = host_data;
 }
 
@@ -37,11 +39,12 @@ void initialize(thrust::device_vector<thrust::pair<int, int>>& v)
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(0, 9);
   thrust::host_vector<thrust::pair<int, int>> host_data(v.size());
-  thrust::generate(host_data.begin(), host_data.end(), [&]() {
+  for (size_t i = 0; i < host_data.size(); i++)
+  {
     int a = dist(rng);
     int b = dist(rng);
-    return thrust::make_pair(a, b);
-  });
+    host_data[i] = thrust::make_pair(a, b);
+  }
   v = host_data;
 }
 
@@ -50,9 +53,10 @@ void initialize(thrust::device_vector<int>& v1, thrust::device_vector<int>& v2)
   thrust::default_random_engine rng(123456);
   thrust::uniform_int_distribution<int> dist(10, 99);
   thrust::host_vector<int> host_data(v1.size());
-  thrust::generate(host_data.begin(), host_data.end(), [&]() {
-    return dist(rng);
-  });
+  for (size_t i = 0; i < host_data.size(); i++)
+  {
+    host_data[i] = dist(rng);
+  }
   v1 = host_data;
   thrust::sequence(v2.begin(), v2.end(), 0);
 }

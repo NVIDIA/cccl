@@ -28,7 +28,7 @@ struct bbox
   // construct an empty box
   __host__ __device__ bbox() {}
 
-  // construct a box from a single pointgit branch -a
+  // construct a box from a single point
   __host__ __device__ bbox(const point2d& point)
       : lower_left(point)
       , upper_right(point)
@@ -91,7 +91,11 @@ int main()
   thrust::device_vector<point2d> points(N);
 
   // generate some random points in the unit square
-  thrust::generate(points.begin(), points.end(), random_point_generator());
+  random_point_generator gen;
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    points[i] = gen();
+  }
 
   // initial bounding box contains first point
   bbox init(points[0], points[0]);

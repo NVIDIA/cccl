@@ -31,9 +31,10 @@ thrust::host_vector<float> random_vector(const size_t N, unsigned int seed = thr
   thrust::default_random_engine rng(seed);
   thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
   thrust::host_vector<float> temp(N);
-  thrust::generate(temp.begin(), temp.end(), [&]() {
-    return u01(rng);
-  });
+  for (size_t i = 0; i < N; ++i)
+  {
+    temp[i] = u01(rng);
+  }
   return temp;
 }
 

@@ -69,8 +69,7 @@ int main()
   std::cout << raw_input << std::endl;
 
   // transfer to device
-  thrust::host_vector<char> h_input(raw_input, raw_input + sizeof(raw_input));
-  thrust::device_vector<char> input(h_input);
+  thrust::device_vector<char> input(raw_input, raw_input + sizeof(raw_input));
 
   // count words
   int wc = word_count(input);
