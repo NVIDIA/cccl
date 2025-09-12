@@ -426,3 +426,149 @@ C2H_TEST("Scan works with input and output iterators", "[scan]")
     REQUIRE(expected == std::vector<int>(inner_output_it));
   }
 }
+
+C2H_TEST("Scan works with C++ source operations", "[scan]")
+{
+  using T = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337, 42000);
+
+  // Create operation from C++ source instead of LTO-IR
+  std::string cpp_source = R"(
+    extern "C" __device__ void op(void* a, void* b, void* out) {
+      int* ia = (int*)a;
+      int* ib = (int*)b;
+      int* iout = (int*)out;
+      *iout = *ia + *ib;
+    }
+  )";
+
+  operation_t op = make_cpp_operation("op", cpp_source);
+
+  const std::vector<T> input = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+  value_t<T> init{T{42}};
+
+  // Test key including flag that this uses C++ source
+  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
+
+  auto& cache                                 = get_cache<integral_types>();
+  std::optional<scan_build_cache_t> cache_opt = cache;
+  scan(input_ptr, output_ptr, num_items, op, init, false, cache_opt, test_key);
+
+  const std::vector<T> output = output_ptr;
+  std::vector<T> expected(num_items);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
+  REQUIRE(output == expected);
+}
+
+struct Scan_FloatingPointTypes_Fixture_Tag;
+using floating_point_types = c2h::type_list<
+#if _CCCL_HAS_NVFP16()
+  __half,
+#endif
+  float,
+  double>;
+C2H_TEST("Scan works with floating point types", "[scan]", floating_point_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  // Use small input sizes and values to avoid floating point precision issues.
+  const std::size_t num_items = GENERATE(10, 42, 1025);
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input(num_items, T{1});
+
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Scan_FloatingPointTypes_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
+
+  const std::vector<T> output = output_ptr;
+  std::vector<T> expected(num_items);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
+  REQUIRE_APPROX_EQ(output, expected);
+}
+
+C2H_TEST("Scan works with C++ source operations using custom headers", "[scan]")
+{
+  using T = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337, 42000);
+
+  // Create operation from C++ source that uses the identity function from header
+  std::string cpp_source = R"(
+    #include "test_identity.h"
+    extern "C" __device__ void op(void* a, void* b, void* out) {
+      int* ia = (int*)a;
+      int* ib = (int*)b;
+      int* iout = (int*)out;
+      int val_a = test_identity(*ia);
+      int val_b = test_identity(*ib);
+      *iout = val_a + val_b;
+    }
+  )";
+
+  operation_t op = make_cpp_operation("op", cpp_source);
+
+  const std::vector<T> input = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+  value_t<T> init{T{42}};
+
+  // Test _ex version with custom build configuration
+  cccl_build_config config;
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  config.extra_compile_flags     = extra_flags;
+  config.num_extra_compile_flags = 1;
+  config.extra_include_dirs      = extra_dirs;
+  config.num_extra_include_dirs  = 1;
+
+  // Build with _ex version
+  cccl_device_scan_build_result_t build;
+  const auto& build_info = BuildInformation<>::init();
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_build_ex(
+      &build,
+      input_ptr,
+      output_ptr,
+      op,
+      init,
+      true,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      &config));
+
+  // Execute the scan
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_inclusive_scan(
+            build, d_temp_storage, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, CU_STREAM_LEGACY));
+  pointer_t<char> temp_storage(temp_storage_bytes);
+  d_temp_storage = static_cast<void*>(temp_storage.ptr);
+  REQUIRE(CUDA_SUCCESS
+          == cccl_device_inclusive_scan(
+            build, d_temp_storage, &temp_storage_bytes, input_ptr, output_ptr, num_items, op, init, CU_STREAM_LEGACY));
+
+  // Verify results
+  std::vector<T> expected(num_items, 0);
+  std::inclusive_scan(input.begin(), input.end(), expected.begin(), std::plus<>{}, init.value);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+
+  // Cleanup
+  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+}

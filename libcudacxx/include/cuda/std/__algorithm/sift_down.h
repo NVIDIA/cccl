@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_SIFT_DOWN_H
-#define _LIBCUDACXX___ALGORITHM_SIFT_DOWN_H
+#ifndef _CUDA_STD___ALGORITHM_SIFT_DOWN_H
+#define _CUDA_STD___ALGORITHM_SIFT_DOWN_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
@@ -91,7 +91,7 @@ _CCCL_API constexpr void __sift_down(
 
     // check if we are in heap-order
   } while (!__comp(*__child_i, __top));
-  *__start = _CUDA_VSTD::move(__top);
+  *__start = ::cuda::std::move(__top);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -132,8 +132,8 @@ _CCCL_API constexpr _RandomAccessIterator __floyd_sift_down(
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_SIFT_DOWN_H
+#endif // _CUDA_STD___ALGORITHM_SIFT_DOWN_H

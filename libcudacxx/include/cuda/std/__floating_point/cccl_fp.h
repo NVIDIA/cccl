@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_CCCL_FP_H
-#define _LIBCUDACXX___FLOATING_POINT_CCCL_FP_H
+#ifndef _CUDA_STD___FLOATING_POINT_CCCL_FP_H
+#define _CUDA_STD___FLOATING_POINT_CCCL_FP_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <__fp_format _Fmt>
 class __cccl_fp
@@ -54,7 +54,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__fp_is_implicit_conversion_v<_Tp, __cccl_fp>))
+  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND __fp_is_explicit_conversion_v<_Tp, __cccl_fp>)
   _CCCL_API explicit constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
@@ -84,7 +84,7 @@ public:
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__is_ext_cccl_fp_v<_Tp>)
-                   _CCCL_AND(!__fp_is_implicit_conversion_v<__cccl_fp, _Tp>))
+                   _CCCL_AND __fp_is_explicit_conversion_v<__cccl_fp, _Tp>)
   _CCCL_API explicit constexpr operator _Tp() const noexcept
   {
     // todo: implement conversion to a floating-point type using __fp_cast
@@ -115,11 +115,11 @@ _CCCL_TEMPLATE(__fp_format _Fmt)
 _CCCL_REQUIRES(__fp_is_signed_v<_Fmt>)
 [[nodiscard]] _CCCL_API constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
 {
-  return _CUDA_VSTD::__fp_neg(__v);
+  return ::cuda::std::__fp_neg(__v);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_CCCL_FP_H
+#endif // _CUDA_STD___FLOATING_POINT_CCCL_FP_H

@@ -5,7 +5,7 @@
 
 from __future__ import annotations  # TODO: required for Python 3.7 docs env
 
-from typing import Callable
+from typing import Callable, Union
 
 import numba
 import numpy as np
@@ -18,6 +18,7 @@ from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
+from ..op import OpKind
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -34,18 +35,23 @@ class _Reduce:
     def __init__(
         self,
         d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike,
-        op: Callable,
+        d_out: DeviceArrayLike | IteratorBase,
+        op: Callable | OpKind,
         h_init: np.ndarray | GpuStruct,
     ):
-        self.d_in_cccl = cccl.to_cccl_iter(d_in)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)
         else:
             value_type = numba.typeof(h_init)
-        self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+
+        # For well-known operations, we don't need a signature
+        if isinstance(op, OpKind):
+            self.op_wrapper = cccl.to_cccl_op(op, None)
+        else:
+            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
         self.build_result = call_build(
             _bindings.DeviceReduceBuildResult,
             self.d_in_cccl,
@@ -92,15 +98,22 @@ class _Reduce:
 
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
-    op: Callable,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     d_in_key = (
         d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
-    d_out_key = protocols.get_dtype(d_out)
-    op_key = CachableFunction(op)
+    d_out_key = (
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+    )
+    # Handle well-known operations differently
+    op_key: Union[tuple[str, int], CachableFunction]
+    if isinstance(op, OpKind):
+        op_key = (op.name, op.value)
+    else:
+        op_key = CachableFunction(op)
     h_init_key = h_init.dtype
     return (d_in_key, d_out_key, op_key, h_init_key)
 
@@ -110,25 +123,24 @@ def make_cache_key(
 @cache_with_key(make_cache_key)
 def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
-    op: Callable,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``reduce_into`` is used to compute the minimum value of a sequence of integers.
+        Below, ``make_reduce_into`` is used to create a reduction object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/reduce_object.py
             :language: python
-            :dedent:
-            :start-after: example-begin reduce-min
-            :end-before: example-end reduce-min
+            :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array (of size 1) that will store the result of the reduction
-        op: Callable representing the binary operator to apply
+        op: Callable or OpKind representing the binary operator to apply
         init: Numpy array storing initial value of the reduction
 
     Returns:
@@ -139,12 +151,33 @@ def make_reduce_into(
 
 def reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike,
-    op: Callable,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable | OpKind,
     num_items: int,
     h_init: np.ndarray | GpuStruct,
     stream=None,
 ):
+    """
+    Performs device-wide reduction.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``reduce_into`` is used to compute the sum of a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/reduction/sum_reduction.py
+            :language: python
+            :start-after: # example-begin
+
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array to store the result of the reduction
+        op: Binary reduction operator
+        num_items: Number of items to reduce
+        h_init: Initial value for the reduction
+        stream: CUDA stream for the operation (optional)
+    """
     reducer = make_reduce_into(d_in, d_out, op, h_init)
     tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)

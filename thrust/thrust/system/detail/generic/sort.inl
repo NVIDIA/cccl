@@ -35,11 +35,7 @@
 #include <thrust/tuple.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename RandomAccessIterator>
@@ -175,7 +171,5 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
                 "unimplemented for this system");
 } // end stable_sort_by_key()
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -115,25 +115,36 @@ def main():
     os.makedirs("results", exist_ok=True)
     write_json("results/job_times.json", result)
 
-    print("::group::Unmapped jobs")
-    print("\n".join([job["name"] for job in unknown_jobs]))
-    print("::endgroup::")
+    print("Writing unmapped jobs to workflow/unmapped_jobs.md")
+    with open("workflow/unmapped_jobs.md", "w") as f:
+        f.write("<details><summary>🙈 Non-Matrix Jobs</summary>\n\n")
+        f.write("<pre>")
+        f.write("\n".join([job["name"] for job in unknown_jobs]))
+        f.write("</pre>\n")
+        f.write("\n</details>\n")
 
-    print("::group::Job times")
-    print(f"{'Job':^10} {'Command':^10} {'Overhead':^10} Name")
-    print(f"{'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
-    for id, stats in result.items():
-        job_seconds = stats["job_seconds"]
-        command_seconds = stats["command_seconds"]
-        overhead = (
-            (job_seconds - command_seconds) * 100 / command_seconds
-            if command_seconds > 0
-            else 100
+    print("Writing job time table to workflow/job_times.md")
+    with open("workflow/job_times.md", "w") as f:
+        f.write("<details><summary>⏱️ Job Times</summary>\n\n")
+        f.write("| Job Duration | Command Duration | Overhead (%) | Name |\n")
+        f.write("|--------------|------------------|--------------|------|\n")
+
+        sorted_stats = sorted(
+            result.values(), key=lambda s: s["job_seconds"], reverse=True
         )
-        print(
-            f"{stats['job_duration']:10} {stats['command_duration']:10} {overhead:10.0f} {stats['name']}"
-        )
-    print("::endgroup::")
+
+        for stats in sorted_stats:
+            job_seconds = stats["job_seconds"]
+            command_seconds = stats["command_seconds"]
+            overhead = (
+                (job_seconds - command_seconds) * 100 / command_seconds
+                if command_seconds > 0
+                else 100
+            )
+            f.write(
+                f"| {stats['job_duration']:12} | {stats['command_duration']:16} | {overhead:12.0f} | {stats['name']} |\n"
+            )
+        f.write("\n</details>\n")
 
 
 if __name__ == "__main__":

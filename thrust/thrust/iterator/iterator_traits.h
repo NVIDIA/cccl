@@ -78,6 +78,11 @@ struct lazy_trait
 };
 } // namespace detail
 
+//! \addtogroup iterators
+//! \addtogroup iterator_traits Iterator traits
+//! \ingroup iterators
+//! \{
+
 //! \p iterator_traits is a type trait class that provides a uniform interface for querying the properties of iterators
 //! at compile-time. You can specialize cuda::std::iterator_traits for your own iterator types if needed.
 //! deprecated [Since 3.0]
@@ -153,11 +158,13 @@ using iterator_difference_t CCCL_DEPRECATED_BECAUSE(
 
 // traversal
 
+//! Trait obtaining the iterator traversal category of an iterator type.
 template <typename Iterator>
 struct iterator_traversal
     : detail::iterator_category_to_traversal<typename iterator_traits<Iterator>::iterator_category>
 {};
 
+//! Alias to the iterator traversal category of an iterator type.
 template <typename Iterator>
 using iterator_traversal_t = typename iterator_traversal<Iterator>::type;
 
@@ -177,6 +184,7 @@ struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_trai
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+//! Trait obtaining the iterator system of an iterator type, usually as the systems tag type.
 template <typename Iterator>
 struct iterator_system : detail::iterator_system_impl<Iterator>
 {};
@@ -190,6 +198,7 @@ template <>
 struct iterator_system<const void*> : iterator_system<const int*>
 {};
 
+//! Alias to the iterator system (usually the tag type) of an iterator type
 template <typename Iterator>
 using iterator_system_t = typename iterator_system<Iterator>::type;
 
@@ -245,6 +254,17 @@ template <class Iter>
 struct iterator_traversal<::cuda::std::reverse_iterator<Iter>> : iterator_traversal<Iter>
 {};
 
+template <class IndexType, class Bijection>
+struct iterator_system<::cuda::shuffle_iterator<IndexType, Bijection>>
+{
+  using type = any_system_tag;
+};
+template <class IndexType, class Bijection>
+struct iterator_traversal<::cuda::shuffle_iterator<IndexType, Bijection>>
+{
+  using type = random_access_traversal_tag;
+};
+
 template <class Iter, class Stride>
 struct iterator_system<::cuda::strided_iterator<Iter, Stride>> : iterator_system<Iter>
 {};
@@ -295,6 +315,8 @@ struct iterator_traversal<::cuda::zip_iterator<Iterators...>>
   using type = detail::minimum_type<iterator_traversal_t<Iterators>...>;
 };
 
+//! \} // end iterator_traits
+
 THRUST_NAMESPACE_END
 
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
+#include <thrust/iterator/iterator_traversal_tags.h>

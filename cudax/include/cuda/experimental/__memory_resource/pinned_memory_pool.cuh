@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL
-#define _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL
+#ifndef _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL_CUH
+#define _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -102,7 +102,7 @@ public:
   static pinned_memory_pool from_native_handle(int) = delete;
 
   // Disallow construction from `nullptr`.
-  static pinned_memory_pool from_native_handle(_CUDA_VSTD::nullptr_t) = delete;
+  static pinned_memory_pool from_native_handle(::cuda::std::nullptr_t) = delete;
 };
 
 } // namespace cuda::experimental
@@ -111,4 +111,4 @@ public:
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
-#endif // _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL
+#endif // _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL_CUH

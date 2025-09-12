@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___RANGES_SUBRANGE_H
-#define _LIBCUDACXX___RANGES_SUBRANGE_H
+#ifndef _CUDA_STD___RANGES_SUBRANGE_H
+#define _CUDA_STD___RANGES_SUBRANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -57,7 +57,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _From, class _To>
@@ -75,8 +75,8 @@ concept __pair_like = !is_reference_v<_Tp> && requires(_Tp __t) {
   requires derived_from<tuple_size<_Tp>, integral_constant<size_t, 2>>;
   typename tuple_element_t<0, remove_const_t<_Tp>>;
   typename tuple_element_t<1, remove_const_t<_Tp>>;
-  { _CUDA_VSTD::get<0>(__t) } -> convertible_to<const tuple_element_t<0, _Tp>&>;
-  { _CUDA_VSTD::get<1>(__t) } -> convertible_to<const tuple_element_t<1, _Tp>&>;
+  { ::cuda::std::get<0>(__t) } -> convertible_to<const tuple_element_t<0, _Tp>&>;
+  { ::cuda::std::get<1>(__t) } -> convertible_to<const tuple_element_t<1, _Tp>&>;
 };
 
 template <class _Pair, class _Iter, class _Sent>
@@ -136,8 +136,8 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(tuple_size<_Tp>::value == 2),
     typename(tuple_element_t<0, remove_const_t<_Tp>>),
     typename(tuple_element_t<1, remove_const_t<_Tp>>),
-    requires(convertible_to<decltype(_CUDA_VSTD::get<0>(__t)), const tuple_element_t<0, _Tp>&>),
-    requires(convertible_to<decltype(_CUDA_VSTD::get<1>(__t)), const tuple_element_t<1, _Tp>&>)));
+    requires(convertible_to<decltype(::cuda::std::get<0>(__t)), const tuple_element_t<0, _Tp>&>),
+    requires(convertible_to<decltype(::cuda::std::get<1>(__t)), const tuple_element_t<1, _Tp>&>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __pair_like = _CCCL_FRAGMENT(__pair_like_, _Tp);
@@ -256,41 +256,41 @@ public:
   _CCCL_REQUIRES(__subrange_from_iter_sent<_Iter, _It, _StoreSize>)
   _CCCL_API constexpr subrange(_It __iter, _Sent __sent)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
-      , __begin_(_CUDA_VSTD::move(__iter))
-      , __end_(_CUDA_VSTD::move(__sent))
+      , __begin_(::cuda::std::move(__iter))
+      , __end_(::cuda::std::move(__sent))
   {}
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__subrange_from_iter_sent_size<_Iter, _Kind, _It>)
   _CCCL_API constexpr subrange(_It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
-      , __begin_(_CUDA_VSTD::move(__iter))
-      , __end_(_CUDA_VSTD::move(__sent))
+      , __begin_(::cuda::std::move(__iter))
+      , __end_(::cuda::std::move(__sent))
       , __size_(__n)
   {
     if constexpr (sized_sentinel_for<_Sent, _Iter>)
     {
       _CCCL_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                   "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
+                   "::cuda::std::cuda::std::ranges::subrange was passed an invalid size hint");
     }
   }
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))
+      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
   _CCCL_API constexpr subrange(_Range&& __range)
-      : subrange(__range, _CUDA_VRANGES::size(__range))
+      : subrange(__range, ::cuda::std::ranges::size(__range))
   {}
 
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
   _CCCL_API constexpr subrange(_Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
-      : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
+      : subrange(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range), __n)
   {}
 
   // This often ICEs all of clang and old gcc when it encounteres a rvalue subrange in a pipe
@@ -314,7 +314,7 @@ public:
   _CCCL_REQUIRES((!copyable<_It>) )
   [[nodiscard]] _CCCL_API constexpr _It begin()
   {
-    return _CUDA_VSTD::move(__begin_);
+    return ::cuda::std::move(__begin_);
   }
 
   [[nodiscard]] _CCCL_API constexpr _Sent end() const
@@ -337,7 +337,7 @@ public:
     }
     else
     {
-      return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
+      return ::cuda::std::__to_unsigned_like(__end_ - __begin_);
     }
   }
 
@@ -353,7 +353,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
   {
     advance(__n);
-    return _CUDA_VSTD::move(*this);
+    return ::cuda::std::move(*this);
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)
@@ -371,19 +371,19 @@ public:
     {
       if (__n < 0)
       {
-        _CUDA_VRANGES::advance(__begin_, __n);
+        ::cuda::std::ranges::advance(__begin_, __n);
         if constexpr (_StoreSize)
         {
-          __size_ += _CUDA_VSTD::__to_unsigned_like(-__n);
+          __size_ += ::cuda::std::__to_unsigned_like(-__n);
         }
         return *this;
       }
     }
 
-    [[maybe_unused]] const auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
+    [[maybe_unused]] const auto __d = __n - ::cuda::std::ranges::advance(__begin_, __n, __end_);
     if constexpr (_StoreSize)
     {
-      __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
+      __size_ -= ::cuda::std::__to_unsigned_like(__d);
     }
     return *this;
   }
@@ -466,48 +466,48 @@ inline constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 template <class _Rp>
 using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 // [range.subrange.general]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-using _CUDA_VRANGES::get;
+using ::cuda::std::ranges::get;
 
 // [ranges.syn]
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>> : integral_constant<size_t, 2>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_size<::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>> : integral_constant<size_t, 2>
 {};
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<0, _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<0, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
   using type = _Ip;
 };
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<1, _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<1, ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
   using type = _Sp;
 };
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<0, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<0, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
   using type = _Ip;
 };
 
-template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
-struct tuple_element<1, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+template <class _Ip, class _Sp, ::cuda::std::ranges::subrange_kind _Kp>
+struct tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 {
   using type = _Sp;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_SUBRANGE_H
+#endif // _CUDA_STD___RANGES_SUBRANGE_H

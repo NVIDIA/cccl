@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_FORWARD_H
-#define _LIBCUDACXX___UTILITY_FORWARD_H
+#ifndef _CUDA_STD___UTILITY_FORWARD_H
+#define _CUDA_STD___UTILITY_FORWARD_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_BUILTIN_STD_FORWARD()
 
@@ -52,8 +52,8 @@ template <class _Tp>
 
 #endif // _CCCL_HAS_BUILTIN_STD_FORWARD()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_FORWARD_H
+#endif // _CUDA_STD___UTILITY_FORWARD_H

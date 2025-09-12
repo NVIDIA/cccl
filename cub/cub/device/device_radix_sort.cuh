@@ -45,7 +45,9 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 
 CUB_NAMESPACE_BEGIN
 

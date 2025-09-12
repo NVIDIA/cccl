@@ -38,9 +38,9 @@ __host__ __device__ constexpr void test_range_deduct()
   {
     struct Widget
     {
-      __host__ __device__ static constexpr const CharT* data()
+      __host__ __device__ constexpr const CharT* data() const
       {
-        return TEST_STRLIT(CharT, "foo");
+        return data_;
       }
       __host__ __device__ constexpr contiguous_iterator<const CharT*> begin() const
       {
@@ -50,11 +50,14 @@ __host__ __device__ constexpr void test_range_deduct()
       {
         return contiguous_iterator<const CharT*>(data() + 3);
       }
+
+      const CharT* data_;
     };
-    cuda::std::basic_string_view bsv = cuda::std::basic_string_view(Widget());
+    const auto widget_data           = TEST_STRLIT(CharT, "foo");
+    cuda::std::basic_string_view bsv = cuda::std::basic_string_view(Widget{widget_data});
     static_assert(cuda::std::is_same_v<decltype(bsv), cuda::std::basic_string_view<CharT>>);
     assert(bsv.size() == 3);
-    assert(bsv.data() == Widget::data());
+    assert(bsv.data() == widget_data);
   }
 }
 

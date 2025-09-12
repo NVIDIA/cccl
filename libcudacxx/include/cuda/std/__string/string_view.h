@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___STRING_STRING_VIEW_H
-#define _LIBCUDACXX___STRING_STRING_VIEW_H
+#ifndef _CUDA_STD___STRING_STRING_VIEW_H
+#define _CUDA_STD___STRING_STRING_VIEW_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __string_view
 {
@@ -223,13 +223,13 @@ private:
 
   [[nodiscard]] _CCCL_API static constexpr size_t __strlen_(char const* __str) noexcept
   {
-    return _CUDA_VSTD::char_traits<char>::length(__str);
+    return ::cuda::std::char_traits<char>::length(__str);
   }
 
   [[nodiscard]] _CCCL_API static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
   {
     return __diff < 0 || static_cast<size_t>(__diff) > __len
-           ? (_CUDA_VSTD::__throw_out_of_range("__string_view index out of range"), size_t(0))
+           ? (::cuda::std::__throw_out_of_range("__string_view index out of range"), size_t(0))
            : static_cast<size_t>(__diff);
   }
 
@@ -237,8 +237,8 @@ private:
   size_t __len_;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___STRING_STRING_VIEW_H
+#endif // _CUDA_STD___STRING_STRING_VIEW_H

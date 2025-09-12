@@ -31,11 +31,7 @@
 #include <thrust/transform.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 namespace detail
 {
@@ -175,7 +171,5 @@ replace(thrust::execution_policy<DerivedPolicy>& exec,
   return thrust::replace_if(exec, first, last, _1 == old_value, new_value);
 } // end replace()
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

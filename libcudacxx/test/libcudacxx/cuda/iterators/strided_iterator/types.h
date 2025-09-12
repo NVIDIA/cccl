@@ -17,6 +17,6 @@
 template <cuda::std::ptrdiff_t Val = 2>
 struct Stride : cuda::std::integral_constant<cuda::std::ptrdiff_t, Val>
 {};
-static_assert(_CUDA_VSTD::__integral_constant_like<Stride<2>>);
+static_assert(::cuda::std::__integral_constant_like<Stride<2>>);
 
 #endif // TEST_CUDA_ITERATOR_STRIDED_ITERATOR_H

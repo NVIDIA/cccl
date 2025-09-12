@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/concepts.cuh>
@@ -43,11 +44,11 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-//! \file conditional.cuh
-//! This file defines the \c conditional sender. \c conditional is a sender that
+//! @file conditional.cuh
+//! This file defines the @c conditional sender. @c conditional is a sender that
 //! selects between two continuations based on the result of a predecessor. It
 //! accepts a predecessor, a predicate, and two continuations. It passes the
-//! result of the predecessor to the predicate. If the predicate returns \c true,
+//! result of the predecessor to the predicate. If the predicate returns @c true,
 //! the result is passed to the first continuation; otherwise, it is passed to
 //! the second continuation.
 //!
@@ -82,14 +83,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     template <class... _As>
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
-      if constexpr (!_CUDA_VSTD::__is_callable_v<_Pred, _As&...>)
+      if constexpr (!__callable<_Pred, _As&...>)
       {
         return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
                                             _WITH_FUNCTION(_Pred),
                                             _WITH_ARGUMENTS(_As & ...)>();
       }
-      else if constexpr (!_CUDA_VSTD::is_convertible_v<_CUDA_VSTD::__call_result_t<_Pred, _As&...>, bool>)
+      else if constexpr (!::cuda::std::is_convertible_v<__call_result_t<_Pred, _As&...>, bool>)
       {
         return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE),
@@ -99,8 +100,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
       else
       {
         return concat_completion_signatures(
-          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
-          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
+          get_completion_signatures<__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
+          get_completion_signatures<__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
       }
     }
   };
@@ -111,9 +112,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
     using __params_t = __closure_base_t<_Pred, _Then, _Else>;
 
     template <class... _As>
-    using __opstate_list_t = _CUDA_VSTD::__type_list<
-      connect_result_t<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
-      connect_result_t<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
+    using __opstate_list_t =
+      ::cuda::std::__type_list<connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
+                               connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
 
     using __next_ops_variant_t _CCCL_NODEBUG_ALIAS =
       __value_types<_Completions, __opstate_list_t, __type_concat_into_quote<__variant>::__call>;
@@ -205,10 +206,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_NODEBUG_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
@@ -259,7 +260,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   _Else on_false;
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_NODEBUG_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
     // If the incoming sender is non-dependent, we can check the completion signatures of
@@ -274,20 +275,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
   }
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_NODEBUG_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
   {
     return __mk_sender(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_NODEBUG_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
   {
     return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
   }
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS    = __early_domain_of_t<_Sndr>;
   using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
@@ -296,7 +297,7 @@ _CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred _
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure_base_t<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};

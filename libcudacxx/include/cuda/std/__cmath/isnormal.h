@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CMATH_ISNORMAL_H
-#define _LIBCUDACXX___CMATH_ISNORMAL_H
+#ifndef _CUDA_STD___CMATH_ISNORMAL_H
+#define _CUDA_STD___CMATH_ISNORMAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,12 +23,12 @@
 
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isnormal) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ISNORMAL(...) __builtin_isnormal(__VA_ARGS__)
@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 #endif // !_CCCL_BUILTIN_ISNORMAL
 }
 
@@ -53,7 +53,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 #endif // !_CCCL_BUILTIN_ISNORMAL
 }
 
@@ -63,7 +63,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #  else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 #  endif // !_CCCL_BUILTIN_ISNORMAL
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
@@ -71,56 +71,56 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_HAS_NVFP16()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__half __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_bfloat16 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e4m3 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e5m2 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp8_e8m0 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp6_e2m3 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp6_e3m2 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
 [[nodiscard]] _CCCL_API constexpr bool isnormal(__nv_fp4_e2m1 __x) noexcept
 {
-  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
+  return ::cuda::std::fpclassify(__x) == FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
@@ -131,8 +131,8 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
   return __x != 0;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CMATH_ISNORMAL_H
+#endif // _CUDA_STD___CMATH_ISNORMAL_H

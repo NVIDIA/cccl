@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_UNWRAP_REF_H
-#define _LIBCUDACXX___FUNCTIONAL_UNWRAP_REF_H
+#ifndef _CUDA_STD___FUNCTIONAL_UNWRAP_REF_H
+#define _CUDA_STD___FUNCTIONAL_UNWRAP_REF_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct unwrap_reference
@@ -49,8 +49,8 @@ struct unwrap_ref_decay : unwrap_reference<decay_t<_Tp>>
 template <class _Tp>
 using unwrap_ref_decay_t = typename unwrap_ref_decay<_Tp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_UNWRAP_REF_H
+#endif // _CUDA_STD___FUNCTIONAL_UNWRAP_REF_H

@@ -49,8 +49,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
-#include <cuda/ptx>
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
@@ -85,7 +85,7 @@ struct BlockReduceWarpReductions
   static constexpr int warps = ::cuda::ceil_div(block_threads, warp_threads);
 
   /// The logical warp size for warp reductions
-  static constexpr int logical_warp_size = _CUDA_VSTD::min(block_threads, warp_threads);
+  static constexpr int logical_warp_size = ::cuda::std::min(block_threads, warp_threads);
 
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool even_warp_multiple = (block_threads % logical_warp_size == 0);

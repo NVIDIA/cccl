@@ -7,4 +7,4 @@ Placeholder Objects
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*placeholder*
+   ../../api/*placeholder*

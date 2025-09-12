@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_TUPLE_H
-#define _LIBCUDACXX___COMPLEX_TUPLE_H
+#ifndef _CUDA_STD___COMPLEX_TUPLE_H
+#define _CUDA_STD___COMPLEX_TUPLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,14 +30,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct tuple_size<complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+struct tuple_size<complex<_Tp>> : ::cuda::std::integral_constant<size_t, 2>
 {};
 
 template <size_t _Index, class _Tp>
-  struct tuple_element<_Index, complex<_Tp>> : _CUDA_VSTD::enable_if < _Index<2, _Tp>
+  struct tuple_element<_Index, complex<_Tp>> : ::cuda::std::enable_if < _Index<2, _Tp>
 {};
 
 template <class _Tp>
@@ -52,7 +52,7 @@ struct __get_complex_impl
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr _Tp&& get(complex<_Tp>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__re_ : __z.__im_);
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
   }
 
   template <size_t _Index>
@@ -64,7 +64,7 @@ struct __get_complex_impl
   template <size_t _Index>
   [[nodiscard]] static _CCCL_API constexpr const _Tp&& get(const complex<_Tp>&& __z) noexcept
   {
-    return _CUDA_VSTD::move((_Index == 0) ? __z.__re_ : __z.__im_);
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
   }
 };
 
@@ -81,7 +81,7 @@ template <size_t _Index, class _Tp>
 {
   static_assert(_Index < 2, "Index value is out of range");
 
-  return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
+  return __get_complex_impl<_Tp>::template get<_Index>(::cuda::std::move(__z));
 }
 
 template <size_t _Index, class _Tp>
@@ -97,11 +97,11 @@ template <size_t _Index, class _Tp>
 {
   static_assert(_Index < 2, "Index value is out of range");
 
-  return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
+  return __get_complex_impl<_Tp>::template get<_Index>(::cuda::std::move(__z));
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_TUPLE_H
+#endif // _CUDA_STD___COMPLEX_TUPLE_H

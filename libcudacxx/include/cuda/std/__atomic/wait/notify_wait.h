@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H
-#define _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H
+#ifndef _CUDA_STD___ATOMIC_WAIT_NOTIFY_WAIT_H
+#define _CUDA_STD___ATOMIC_WAIT_NOTIFY_WAIT_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 extern "C" _CCCL_DEVICE void __atomic_try_wait_unsupported_before_SM_70__();
 
@@ -59,7 +59,7 @@ _CCCL_API inline bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __r
 #if _CCCL_CUDA_COMPILATION()
   return __lhs == __rhs;
 #else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-  return _CUDA_VSTD::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
+  return ::cuda::std::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 }
 
@@ -75,11 +75,11 @@ _CCCL_API inline void __atomic_wait(
     }
     if (__i < 12)
     {
-      _CUDA_VSTD::__cccl_thread_yield_processor();
+      ::cuda::std::__cccl_thread_yield_processor();
     }
     else
     {
-      _CUDA_VSTD::__cccl_thread_yield();
+      ::cuda::std::__cccl_thread_yield();
     }
   }
   while (__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
@@ -88,8 +88,8 @@ _CCCL_API inline void __atomic_wait(
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_WAIT_NOTIFY_WAIT_H
+#endif // _CUDA_STD___ATOMIC_WAIT_NOTIFY_WAIT_H

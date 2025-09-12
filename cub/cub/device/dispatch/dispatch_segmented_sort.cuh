@@ -49,13 +49,14 @@
 #include <cub/util_namespace.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/cmath>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -475,8 +476,7 @@ struct DispatchSegmentedSort
         small_segments_indices.grow(max_num_segments_per_invocation);
         group_sizes.grow(num_selected_groups);
 
-        auto medium_indices_iterator =
-          THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get());
+        auto medium_indices_iterator = ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get());
 
         // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
         // This approach propagates the type erasure to partition.
@@ -757,7 +757,7 @@ private:
       detail::advance_iterators_inplace_if_supported(current_end_offset, current_seg_offset);
 
       auto medium_indices_iterator =
-        THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
+        ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
 
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.

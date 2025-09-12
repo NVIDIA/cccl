@@ -1,0 +1,164 @@
+# Doxyfile for Thrust
+
+PROJECT_NAME           = Thrust
+OUTPUT_DIRECTORY       = ../_build/doxygen/thrust
+CREATE_SUBDIRS         = NO
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = YES
+
+INPUT                  = ../../thrust/thrust \
+                         ../../thrust/thrust/iterator \
+                         ../../thrust/thrust/mr \
+                         ../../thrust/thrust/random \
+                         ../../thrust/thrust/system \
+                         ../../thrust/thrust/system/cpp \
+                         ../../thrust/thrust/system/omp \
+                         ../../thrust/thrust/system/tbb \
+                         ../../thrust/thrust/type_traits \
+                         ../../thrust/thrust/detail/pointer.h
+
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */detail/* */test/* */examples/* */testing/*
+EXCLUDE_SYMBOLS        = *detail* *__* THRUST_NS_QUALIFIER optional
+
+FILE_PATTERNS          = *.h *.hpp
+EXTENSION_MAPPING      = cuh=C++ cu=C++
+
+# Documentation extraction settings
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+SHOW_INCLUDE_FILES     = YES
+INLINE_INHERITED_MEMB  = YES
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = ../../thrust
+SHORT_NAMES            = NO
+DISTRIBUTE_GROUP_DOC   = YES
+
+# Parsing settings
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = NO
+MULTILINE_CPP_IS_BRIEF = NO
+INHERIT_DOCS           = YES
+SEPARATE_MEMBER_PAGES  = NO
+TAB_SIZE               = 4
+BUILTIN_STL_SUPPORT    = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+SKIP_FUNCTION_MACROS   = YES
+
+# IMPORTANT: Aliases for custom commands
+# The rst alias enables embedding reStructuredText in doxygen comments
+ALIASES = "rst=\\verbatim embed:rst"
+ALIASES += "endrst=\\endverbatim"
+ALIASES += "rststar=\\verbatim embed:rst:leading-asterisk"
+ALIASES += "inlinerst=\\verbatim embed:rst:inline"
+
+# Predefined macros
+PREDEFINED             = __device__= \
+                        __host__= \
+                        __global__= \
+                        __forceinline__= \
+                        "__declspec(x)=" \
+                        "__align__(x)=" \
+                        __cccl_lib_mdspan \
+                        _CCCL_DOXYGEN_INVOKED \
+                        "_CCCL_AND=&&" \
+                        "_CCCL_CONCEPT=constexpr bool" \
+                        "_CCCL_CONSTEXPR_FRIEND=friend" \
+                        "_CCCL_CONSTEXPR_CXX20=constexpr" \
+                        "_CCCL_CONSTEXPR_CXX23=constexpr" \
+                        "_CCCL_CTK_AT_LEAST(x, y)=1" \
+                        "_CCCL_CTK_BELOW(x, y)=0" \
+                        "_CCCL_CUDACC_AT_LEAST(x, y)=1" \
+                        "_CCCL_CUDACC_BELOW(x, y)=0" \
+                        _CCCL_DEVICE= \
+                        _CCCL_DIAG_PUSH= \
+                        _CCCL_DIAG_POP= \
+                        "_CCCL_DIAG_SUPPRESS_CLANG(x)=" \
+                        "_CCCL_DIAG_SUPPRESS_GCC(x)=" \
+                        "_CCCL_DIAG_SUPPRESS_MSVC(x)=" \
+                        "_CCCL_DIAG_SUPPRESS_NVHPC(x)=" \
+                        _CCCL_EXEC_CHECK_DISABLE= \
+                        _CCCL_FORCEINLINE= \
+                        "_CCCL_GLOBAL_CONSTANT=inline constexpr" \
+                        "_CCCL_HAS_CTK()=1" \
+                        _CCCL_HIDE_FROM_ABI= \
+                        _CCCL_HOST= \
+                        _CCCL_HOST_DEVICE= \
+                        "_CCCL_IF_CONSTEVAL=if consteval" \
+                        "_CCCL_INLINE_VAR=inline" \
+                        "_CCCL_NODISCARD=[[nodiscard]]" \
+                        "_CCCL_NODISCARD_FRIEND=friend" \
+                        "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>" \
+                        _CCCL_STD_VER=2020 \
+                        _CCCL_SUPPRESS_DEPRECATED_PUSH= \
+                        _CCCL_SUPPRESS_DEPRECATED_POP= \
+                        "_CCCL_TEMPLATE(x)=template<x, " \
+                        "_CCCL_TRAIT(x, y)=x<y>::value" \
+                        "_CCCL_TRAILING_REQUIRES(x)=-> x requires " \
+                        _CCCL_TYPE_VISIBILITY_DEFAULT= \
+                        _CCCL_TYPE_VISIBILITY_HIDDEN= \
+                        _CCCL_API=inline \
+                        _CCCL_DEVICE_API=inline \
+                        _CCCL_HOST_API=inline \
+                        _CCCL_NODEBUG_API=inline \
+                        _CCCL_NODEBUG_DEVICE_API=inline \
+                        _CCCL_NODEBUG_HOST_API=inline \
+                        _CCCL_TRIVIAL_API=inline \
+                        _CCCL_TRIVIAL_DEVICE_API=inline \
+                        _CCCL_TRIVIAL_HOST_API=inline \
+                        _CCCL_PUBLIC_API=inline \
+                        _CCCL_PUBLIC_DEVICE_API=inline \
+                        _CCCL_PUBLIC_HOST_API=inline \
+                        _CCCL_VISIBILITY_DEFAULT= \
+                        _CCCL_VISIBILITY_HIDDEN= \
+                        _CCCL_TRY=try \
+                        _CCCL_CATCH=catch \
+                        "_CCCL_CATCH_ALL=catch (...)" \
+                        "_LIBCUDACXX_NOEXCEPT_RETURN(...)=noexcept(noexcept(...)) { return ...; }" \
+                        LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE \
+                        "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
+                        "THRUST_NAMESPACE_END=}" \
+                        THRUST_PREVENT_MACRO_SUBSTITUTION \
+                        "THRUST_FWD(x)=x" \
+                        "_CCCL_PUBLIC_API=inline" \
+                        "_CCCL_PUBLIC_DEVICE_API=inline" \
+                        "_CCCL_PUBLIC_HOST_API=inline" \
+                        "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
+                        "_CCCL_END_NAMESPACE_CUDA_STD=}" \
+                        "_CUDAX_CONSTEXPR_FRIEND=friend" \
+                        "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1" \
+                        "CCCL_DEPRECATED=" \
+                        "CCCL_DEPRECATED_BECAUSE(x)=" \
+                        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT" \
+                        "CUB_DISABLE_NAMESPACE_MAGIC" \
+                        "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
+                        "CUB_NAMESPACE_BEGIN=namespace cub {" \
+                        "CUB_NAMESPACE_END=}" \
+                        "CUB_RUNTIME_FUNCTION=" \
+                        "CUB_STATIC_ASSERT(cond,msg)="
+
+# Images and examples
+IMAGE_PATH             = ../img
+EXAMPLE_PATH           = ../../thrust/examples
+EXAMPLE_RECURSIVE      = NO
+EXAMPLE_PATTERNS       = *.cu
+
+# Output settings
+AUTOLINK_SUPPORT       = YES
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO

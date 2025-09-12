@@ -48,7 +48,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/functional>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__functional/invoke.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -82,7 +83,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 
   // It is OK to introspect the return type or parameter types of the
   // `operator()` function of `__device__` extended lambda within device code.
-  using OutputT = _CUDA_VSTD::invoke_result_t<DifferenceOpT, InputT, InputT>;
+  using OutputT = ::cuda::std::invoke_result_t<DifferenceOpT, InputT, InputT>;
 
   using Agent =
     AgentDifference<ActivePolicyT,

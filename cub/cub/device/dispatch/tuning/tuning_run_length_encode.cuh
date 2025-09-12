@@ -46,8 +46,9 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/cmath>
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -603,7 +604,7 @@ struct policy_hub
     static constexpr int nominal_4B_items_per_thread = 15;
     // TODO(bgruber): use clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
-      _CUDA_VSTD::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(KeyT)}, 1, nominal_4B_items_per_thread);
     using RleSweepPolicyT =
       AgentRlePolicy<96,
                      ITEMS_PER_THREAD,

@@ -22,7 +22,11 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -100,8 +104,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
 
   enum
   {
-    TILE_ITEMS = _CUDA_VSTD::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                                 ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
+    TILE_ITEMS = ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
+                                  ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
   };
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
@@ -260,8 +264,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
 
   enum
   {
-    TILE_ITEMS = _CUDA_VSTD::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                                 ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
+    TILE_ITEMS = ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
+                                  ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
   };
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration

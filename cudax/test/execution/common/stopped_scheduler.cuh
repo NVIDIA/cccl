@@ -18,25 +18,52 @@
 
 namespace
 {
+struct _stopped_scheduler_attrs_t
+{
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto
+  query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>, const _Env& env) const noexcept
+    -> decltype(cudax_async::get_completion_scheduler<cudax_async::set_value_t>(env, env))
+  {
+    return cudax_async::get_completion_scheduler<cudax_async::set_value_t>(env, env);
+  }
+
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto
+  query(cudax_async::get_completion_scheduler_t<cudax_async::set_stopped_t>, const _Env& env) const noexcept
+    -> decltype(cudax_async::get_completion_scheduler<cudax_async::set_stopped_t>(env, env))
+  {
+    return cudax_async::get_completion_scheduler<cudax_async::set_stopped_t>(env, env);
+  }
+
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto
+  query(cudax_async::get_completion_domain_t<cudax_async::set_value_t>, const _Env& env) const noexcept
+    -> decltype(cudax_async::get_completion_domain<cudax_async::set_value_t>(env, env))
+  {
+    return cudax_async::get_completion_domain<cudax_async::set_value_t>(env, env);
+  }
+
+  template <class _Env>
+  _CCCL_HOST_DEVICE auto
+  query(cudax_async::get_completion_domain_t<cudax_async::set_stopped_t>, const _Env& env) const noexcept
+    -> decltype(cudax_async::get_completion_domain<cudax_async::set_stopped_t>(env, env))
+  {
+    return cudax_async::get_completion_domain<cudax_async::set_stopped_t>(env, env);
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto query(cudax_async::get_completion_behavior_t) noexcept
+  {
+    return cudax_async::completion_behavior::inline_completion;
+  }
+};
+
 //! Scheduler that returns a sender that always completes with stopped.
-struct stopped_scheduler
+struct stopped_scheduler : _stopped_scheduler_attrs_t
 {
 private:
-  struct env_t
-  {
-    _CCCL_HOST_DEVICE auto query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) const noexcept
-    {
-      return stopped_scheduler{};
-    }
-
-    _CCCL_HOST_DEVICE auto query(cudax_async::get_completion_scheduler_t<cudax_async::set_stopped_t>) const noexcept
-    {
-      return stopped_scheduler{};
-    }
-  };
-
   template <class Rcvr>
-  struct opstate_t : cuda::__immovable
+  struct _opstate_t : cuda::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 
@@ -48,46 +75,46 @@ private:
     }
   };
 
-  struct sndr_t
+  struct _sndr_t
   {
     using sender_concept = cudax_async::sender_t;
 
-    template <class Self, class... Env>
+    template <class Self>
     _CCCL_HOST_DEVICE static constexpr auto get_completion_signatures()
     {
       return cudax_async::completion_signatures<cudax_async::set_value_t(), cudax_async::set_stopped_t()>();
     }
 
     template <class Rcvr>
-    _CCCL_HOST_DEVICE opstate_t<Rcvr> connect(Rcvr rcvr) const
+    _CCCL_HOST_DEVICE auto connect(Rcvr rcvr) const noexcept -> _opstate_t<Rcvr>
     {
       return {{}, static_cast<Rcvr&&>(rcvr)};
     }
 
-    _CCCL_HOST_DEVICE env_t get_env() const noexcept
+    _CCCL_HOST_DEVICE auto get_env() const noexcept -> _stopped_scheduler_attrs_t
     {
       return {};
     }
   };
-
-  _CCCL_HOST_DEVICE friend bool operator==(stopped_scheduler, stopped_scheduler) noexcept
-  {
-    return true;
-  }
-
-  _CCCL_HOST_DEVICE friend bool operator!=(stopped_scheduler, stopped_scheduler) noexcept
-  {
-    return false;
-  }
 
 public:
   using scheduler_concept = cudax_async::scheduler_t;
 
   stopped_scheduler() = default;
 
-  _CCCL_HOST_DEVICE sndr_t schedule() const noexcept
+  _CCCL_HOST_DEVICE auto schedule() const noexcept -> _sndr_t
   {
     return {};
+  }
+
+  _CCCL_HOST_DEVICE friend constexpr bool operator==(stopped_scheduler, stopped_scheduler) noexcept
+  {
+    return true;
+  }
+
+  _CCCL_HOST_DEVICE friend constexpr bool operator!=(stopped_scheduler, stopped_scheduler) noexcept
+  {
+    return false;
   }
 };
 } // namespace

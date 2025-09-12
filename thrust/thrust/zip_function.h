@@ -169,8 +169,8 @@ _CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function
 
 THRUST_NAMESPACE_END
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 template <typename F>
 struct proclaims_copyable_arguments<THRUST_NS_QUALIFIER::zip_function<F>> : proclaims_copyable_arguments<F>
 {};
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_COMMON_REFERENCE_H
-#define _LIBCUDACXX___TYPE_TRAITS_COMMON_REFERENCE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_COMMON_REFERENCE_H
+#define _CUDA_STD___TYPE_TRAITS_COMMON_REFERENCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -41,7 +41,7 @@
 
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // common_reference
 
@@ -73,7 +73,7 @@ template <class _Xp, class _Yp>
 using __cond_res = typename __cond_res_workaround<_Xp, _Yp>::type;
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Xp, class _Yp>
-using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_VSTD::declval<_Yp (&)()>()());
+using __cond_res = decltype(false ? ::cuda::std::declval<_Xp (&)()>()() : ::cuda::std::declval<_Yp (&)()>()());
 #endif // !_CCCL_COMPILER(MSVC)
 
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`
@@ -253,10 +253,10 @@ template <class...>
 struct common_reference
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_END_NV_DIAG_SUPPRESS()
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_REFERENCE_H
+#endif // _CUDA_STD___TYPE_TRAITS_COMMON_REFERENCE_H

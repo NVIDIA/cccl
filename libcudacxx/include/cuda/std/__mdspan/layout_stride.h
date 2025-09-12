@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
-#define _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
+#ifndef _CUDA_STD___MDSPAN_LAYOUT_STRIDE_H
+#define _CUDA_STD___MDSPAN_LAYOUT_STRIDE_H
 
 #include <cuda/std/detail/__config>
 
@@ -46,7 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __layout_stride_detail
 {
@@ -91,7 +91,7 @@ public:
 
 private:
   static constexpr rank_type __rank_    = extents_type::rank();
-  static constexpr auto __rank_sequence = _CUDA_VSTD::make_index_sequence<extents_type::rank()>();
+  static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
 
   using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
 
@@ -231,7 +231,7 @@ public:
     [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
   {
     // nvcc believes strides is unused here
-    return __stride_array{static_cast<index_type>(_CUDA_VSTD::as_const(__strides[_Pos]))...};
+    return __stride_array{static_cast<index_type>(::cuda::std::as_const(__strides[_Pos]))...};
   }
 
   template <class _OtherIndexType, size_t... _Pos>
@@ -446,7 +446,7 @@ public:
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
     //_CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
     //             "layout_stride::mapping: out of bounds indexing");
-    return __op_index(__strides(), _CUDA_VSTD::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
@@ -598,8 +598,8 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H
+#endif // _CUDA_STD___MDSPAN_LAYOUT_STRIDE_H

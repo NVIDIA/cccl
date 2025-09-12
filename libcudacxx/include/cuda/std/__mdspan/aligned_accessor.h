@@ -16,8 +16,8 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
-#define _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
+#ifndef _CUDA_STD___MDSPAN_ALIGNED_ACCESSOR_H
+#define _CUDA_STD___MDSPAN_ALIGNED_ACCESSOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _ElementType, size_t _ByteAlignment>
 class aligned_accessor
@@ -48,7 +48,7 @@ class aligned_accessor
 public:
   static constexpr auto byte_alignment = _ByteAlignment;
 
-  static_assert(_CUDA_VSTD::has_single_bit(byte_alignment), "byte_alignment must be a power of two.");
+  static_assert(::cuda::std::has_single_bit(byte_alignment), "byte_alignment must be a power of two.");
 
   static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
 
@@ -81,17 +81,17 @@ public:
 
   _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
-    return _CUDA_VSTD::assume_aligned<byte_alignment>(__p)[__i];
+    return ::cuda::std::assume_aligned<byte_alignment>(__p)[__i];
   }
 
   _CCCL_API constexpr typename offset_policy::data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
   {
-    return _CUDA_VSTD::assume_aligned<byte_alignment>(__p) + __i;
+    return ::cuda::std::assume_aligned<byte_alignment>(__p) + __i;
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_ALIGNED_ACCESSOR_H
+#endif // _CUDA_STD___MDSPAN_ALIGNED_ACCESSOR_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___STRING_CHAR_TRAITS_H
-#define _LIBCUDACXX___STRING_CHAR_TRAITS_H
+#ifndef _CUDA_STD___STRING_CHAR_TRAITS_H
+#define _CUDA_STD___STRING_CHAR_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _CharT, class _IntT, _IntT _EOFVal = _IntT(-1) /*todo: remove default argument*/>
 struct __cccl_char_traits_impl
@@ -75,13 +75,13 @@ struct __cccl_char_traits_impl
       _CCCL_ASSERT(__lhs != nullptr, "char_traits::compare: lhs pointer is null");
       _CCCL_ASSERT(__rhs != nullptr, "char_traits::compare: rhs pointer is null");
     }
-    return _CUDA_VSTD::__cccl_memcmp(__lhs, __rhs, __count);
+    return ::cuda::std::__cccl_memcmp(__lhs, __rhs, __count);
   }
 
   [[nodiscard]] _CCCL_API inline static size_t constexpr length(const char_type* __s) noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "char_traits::length: nullptr passed as an argument");
-    return _CUDA_VSTD::__cccl_strlen(__s);
+    return ::cuda::std::__cccl_strlen(__s);
   }
 
   [[nodiscard]] _CCCL_API static constexpr const char_type*
@@ -91,7 +91,7 @@ struct __cccl_char_traits_impl
     {
       _CCCL_ASSERT(__s != nullptr, "char_traits::find: nullptr passed as an argument");
     }
-    return _CUDA_VSTD::__cccl_memchr<const char_type>(__s, __a, __n);
+    return ::cuda::std::__cccl_memchr<const char_type>(__s, __a, __n);
   }
 
   _CCCL_API static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
@@ -101,7 +101,7 @@ struct __cccl_char_traits_impl
       _CCCL_ASSERT(__s1 != nullptr, "char_traits::move: destination pointer is null");
       _CCCL_ASSERT(__s2 != nullptr, "char_traits::move: source pointer is null");
     }
-    return _CUDA_VSTD::__cccl_memmove(__s1, __s2, __n);
+    return ::cuda::std::__cccl_memmove(__s1, __s2, __n);
   }
 
   _CCCL_API static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
@@ -111,7 +111,7 @@ struct __cccl_char_traits_impl
       _CCCL_ASSERT(__s1 != nullptr, "char_traits::copy: destination pointer is null");
       _CCCL_ASSERT(__s2 != nullptr, "char_traits::copy: source pointer is null");
     }
-    return _CUDA_VSTD::__cccl_memcpy(__s1, __s2, __n);
+    return ::cuda::std::__cccl_memcpy(__s1, __s2, __n);
   }
 
   _CCCL_API static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
@@ -120,7 +120,7 @@ struct __cccl_char_traits_impl
     {
       _CCCL_ASSERT(__s != nullptr, "char_traits::assign: destination pointer is null");
     }
-    return _CUDA_VSTD::__cccl_memset(__s, __a, __n);
+    return ::cuda::std::__cccl_memset(__s, __a, __n);
   }
 
   [[nodiscard]] _CCCL_API static constexpr char_type to_char_type(int_type __c) noexcept
@@ -184,8 +184,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t> : __cccl_char_traits_i
 {};
 #endif // _CCCL_HAS_WCHAR_T()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___STRING_CHAR_TRAITS_H
+#endif // _CUDA_STD___STRING_CHAR_TRAITS_H

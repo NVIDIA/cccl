@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_STREAM_REF
-#define _CUDAX__STREAM_STREAM_REF
+#ifndef _CUDAX__STREAM_STREAM_REF_CUH
+#define _CUDAX__STREAM_STREAM_REF_CUH
 
 #include <cuda/std/detail/__config>
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -76,10 +76,10 @@ struct stream_ref : ::cuda::stream_ref
 #if _CCCL_CTK_AT_LEAST(12, 5)
     if (__driver::__getVersion() >= 12050)
     {
-      auto __ctx = _CUDA_DRIVER::__streamGetCtx_v2(__stream);
-      if (__ctx.__ctx_kind_ == _CUDA_DRIVER::__ctx_from_stream::__kind::__green)
+      auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
+      if (__ctx.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = _CUDA_DRIVER::__ctxFromGreenCtx(__ctx.__ctx_green_);
+        __stream_ctx = ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
@@ -91,7 +91,7 @@ struct stream_ref : ::cuda::stream_ref
     else
 #endif // _CCCL_CTK_AT_LEAST(12, 5)
     {
-      __stream_ctx = _CUDA_DRIVER::__streamGetCtx(__stream);
+      __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
@@ -102,13 +102,13 @@ struct stream_ref : ::cuda::stream_ref
     return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_forward_progress_guarantee_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_forward_progress_guarantee_t&) const noexcept
     -> execution::forward_progress_guarantee
   {
     return execution::forward_progress_guarantee::weakly_parallel;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto query(const execution::get_domain_t&) noexcept
+  [[nodiscard]] _CCCL_API constexpr auto query(const execution::get_domain_t&) const noexcept
     -> execution::stream_domain;
 };
 
@@ -116,4 +116,4 @@ struct stream_ref : ::cuda::stream_ref
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_STREAM_REF
+#endif // _CUDAX__STREAM_STREAM_REF_CUH

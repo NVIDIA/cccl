@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_EQUAL_RANGE_H
-#define _LIBCUDACXX___ALGORITHM_EQUAL_RANGE_H
+#ifndef _CUDA_STD___ALGORITHM_EQUAL_RANGE_H
+#define _CUDA_STD___ALGORITHM_EQUAL_RANGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _Iter, class _Sent, class _Tp, class _Proj>
@@ -50,14 +50,14 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
   _Iter __end = _IterOps<_AlgPolicy>::next(__first, __last);
   while (__len != 0)
   {
-    auto __half_len = _CUDA_VSTD::__half_positive(__len);
+    auto __half_len = ::cuda::std::__half_positive(__len);
     _Iter __mid     = _IterOps<_AlgPolicy>::next(__first, __half_len);
-    if (_CUDA_VSTD::__invoke(__comp, _CUDA_VSTD::__invoke(__proj, *__mid), __value))
+    if (::cuda::std::__invoke(__comp, ::cuda::std::__invoke(__proj, *__mid), __value))
     {
       __first = ++__mid;
       __len -= __half_len + 1;
     }
-    else if (_CUDA_VSTD::__invoke(__comp, __value, _CUDA_VSTD::__invoke(__proj, *__mid)))
+    else if (::cuda::std::__invoke(__comp, __value, ::cuda::std::__invoke(__proj, *__mid)))
     {
       __end = __mid;
       __len = __half_len;
@@ -65,8 +65,8 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
     else
     {
       _Iter __mp1 = __mid;
-      return pair<_Iter, _Iter>(_CUDA_VSTD::__lower_bound<_AlgPolicy>(__first, __mid, __value, __comp, __proj),
-                                _CUDA_VSTD::__upper_bound<_AlgPolicy>(++__mp1, __end, __value, __comp, __proj));
+      return pair<_Iter, _Iter>(::cuda::std::__lower_bound<_AlgPolicy>(__first, __mid, __value, __comp, __proj),
+                                ::cuda::std::__upper_bound<_AlgPolicy>(++__mp1, __end, __value, __comp, __proj));
     }
   }
   return pair<_Iter, _Iter>(__first, __first);
@@ -79,23 +79,23 @@ equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
   static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
-  return _CUDA_VSTD::__equal_range<_ClassicAlgPolicy>(
-    _CUDA_VSTD::move(__first),
-    _CUDA_VSTD::move(__last),
+  return ::cuda::std::__equal_range<_ClassicAlgPolicy>(
+    ::cuda::std::move(__first),
+    ::cuda::std::move(__last),
     __value,
     static_cast<__comp_ref_type<_Compare>>(__comp),
-    _CUDA_VSTD::identity());
+    ::cuda::std::identity());
 }
 
 template <class _ForwardIterator, class _Tp>
 [[nodiscard]] _CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
-  return _CUDA_VSTD::equal_range(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __value, __less{});
+  return ::cuda::std::equal_range(::cuda::std::move(__first), ::cuda::std::move(__last), __value, __less{});
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_EQUAL_RANGE_H
+#endif // _CUDA_STD___ALGORITHM_EQUAL_RANGE_H

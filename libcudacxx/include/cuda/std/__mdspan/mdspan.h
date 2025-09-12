@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_MDSPAN_HPP
-#define _LIBCUDACXX___MDSPAN_MDSPAN_HPP
+#ifndef _CUDA_STD___MDSPAN_MDSPAN_H
+#define _CUDA_STD___MDSPAN_MDSPAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -61,7 +61,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
 class mdspan
@@ -152,7 +152,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES(__can_construct_from_handle_and_variadic<_OtherIndexTypes...>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, _OtherIndexTypes... __exts)
-      : __base(_CUDA_VSTD::move(__p), extents_type(static_cast<index_type>(_CUDA_VSTD::move(__exts))...))
+      : __base(::cuda::std::move(__p), extents_type(static_cast<index_type>(::cuda::std::move(__exts))...))
   {}
 
   template <class _OtherIndexType>
@@ -164,42 +164,42 @@ public:
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
-      : __base(_CUDA_VSTD::move(__p), extents_type{__exts})
+      : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES(__matches_static_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
-      : __base(_CUDA_VSTD::move(__p), extents_type{__exts})
+      : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
-      : __base(_CUDA_VSTD::move(__p), extents_type{__exts})
+      : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
   _CCCL_REQUIRES(__matches_static_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
-      : __base(_CUDA_VSTD::move(__p), extents_type{__exts})
+      : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy, class _Mapping2 = mapping_type)
   _CCCL_REQUIRES(
     is_default_constructible_v<_AccessorPolicy2> _CCCL_AND is_constructible_v<_Mapping2, const extents_type&>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const extents_type& __exts)
-      : __base(_CUDA_VSTD::move(__p), __exts)
+      : __base(::cuda::std::move(__p), __exts)
   {}
 
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy)
   _CCCL_REQUIRES(is_default_constructible_v<_AccessorPolicy2>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m)
-      : __base(_CUDA_VSTD::move(__p), __m)
+      : __base(::cuda::std::move(__p), __m)
   {}
 
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m, const accessor_type& __a)
-      : __base(_CUDA_VSTD::move(__p), __m, __a)
+      : __base(::cuda::std::move(__p), __m, __a)
   {}
 
   template <class _OtherExtents, class _OtherLayoutPolicy, class _OtherAccessor>
@@ -289,7 +289,7 @@ public:
     // check the precondition here
     _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
                  "mdspan: operator[] out of bounds access");
-    return accessor().access(data_handle(), mapping()(static_cast<index_type>(_CUDA_VSTD::move(__indices))...));
+    return accessor().access(data_handle(), mapping()(static_cast<index_type>(::cuda::std::move(__indices))...));
   }
 #else
   _CCCL_TEMPLATE(class _OtherIndexType)
@@ -297,7 +297,7 @@ public:
                    is_nothrow_constructible_v<index_type, _OtherIndexType>)
   [[nodiscard]] _CCCL_API constexpr reference operator[](_OtherIndexType __index) const
   {
-    return accessor().access(data_handle(), mapping()(static_cast<index_type>(_CUDA_VSTD::move(__index))));
+    return accessor().access(data_handle(), mapping()(static_cast<index_type>(::cuda::std::move(__index))));
   }
 #endif // _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
 
@@ -434,17 +434,17 @@ public:
   }
 
   [[nodiscard]] _CCCL_API constexpr bool is_unique() const
-    noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_unique()))
+    noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_unique()))
   {
     return mapping().is_unique();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const
-    noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_exhaustive()))
+    noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_exhaustive()))
   {
     return mapping().is_exhaustive();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_strided() const
-    noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_strided()))
+    noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_strided()))
   {
     return mapping().is_strided();
   }
@@ -492,8 +492,8 @@ _CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _
             typename _MappingType::layout_type,
             _AccessorType>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_MDSPAN_H
+#endif // _CUDA_STD___MDSPAN_MDSPAN_H

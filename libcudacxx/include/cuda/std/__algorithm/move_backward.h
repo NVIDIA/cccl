@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_MOVE_BACKWARD_H
-#define _LIBCUDACXX___ALGORITHM_MOVE_BACKWARD_H
+#ifndef _CUDA_STD___ALGORITHM_MOVE_BACKWARD_H
+#define _CUDA_STD___ALGORITHM_MOVE_BACKWARD_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator, class _OutputIterator>
@@ -56,7 +56,7 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __move_backward(_Tp* __first, _Tp* __last, 
   const ptrdiff_t __n = __last - __first;
   if (__n > 0)
   {
-    if (_CUDA_VSTD::__dispatch_memmove(__result - __n, __first, __n))
+    if (::cuda::std::__dispatch_memmove(__result - __n, __first, __n))
     {
       return {__last, __result - __n};
     }
@@ -72,13 +72,13 @@ template <class _BidirectionalIterator1, class _BidirectionalIterator2>
 _CCCL_API constexpr _BidirectionalIterator2
 move_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
-  return _CUDA_VSTD::__move_backward<_ClassicAlgPolicy>(
-           _CUDA_VSTD::__unwrap_iter(__first), _CUDA_VSTD::__unwrap_iter(__last), _CUDA_VSTD::__unwrap_iter(__result))
+  return ::cuda::std::__move_backward<_ClassicAlgPolicy>(
+           ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result))
     .second;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_MOVE_BACKWARD_H
+#endif // _CUDA_STD___ALGORITHM_MOVE_BACKWARD_H
