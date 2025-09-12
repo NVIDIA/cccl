@@ -768,8 +768,8 @@ public:
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    const auto block_size = conf.first;
-    const auto min_blocks = conf.second;
+    const auto block_size = conf.second;
+    const auto min_blocks = conf.first;
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
@@ -896,7 +896,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       auto res = reserved::compute_kernel_limits(&reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, 0, false);
-      return ::std::pair(size_t(res.min_grid_size), size_t(res.max_block_size));
+      return ::std::pair(size_t(res.max_block_size), size_t(res.min_grid_size));
     }();
 
     const auto [block_size, min_blocks] = conf;
