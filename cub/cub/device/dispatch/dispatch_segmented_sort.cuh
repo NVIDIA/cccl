@@ -50,11 +50,12 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/cmath>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 

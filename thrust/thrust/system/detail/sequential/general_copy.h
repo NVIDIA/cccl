@@ -33,11 +33,7 @@
 #include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 namespace general_copy_detail
 {
@@ -123,7 +119,5 @@ _CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, Out
   return result;
 } // end general_copy_n()
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

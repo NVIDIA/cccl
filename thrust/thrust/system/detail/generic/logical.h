@@ -31,11 +31,7 @@
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator, typename Predicate>
@@ -59,7 +55,5 @@ none_of(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, In
   return !thrust::any_of(exec, first, last, pred);
 }
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

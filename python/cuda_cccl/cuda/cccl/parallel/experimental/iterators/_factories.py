@@ -10,7 +10,6 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
-    IteratorIOKind,
     make_reverse_iterator,
     make_transform_iterator,
 )
@@ -27,16 +26,14 @@ def CacheModifiedInputIterator(device_array, modifier):
     Example:
         The code snippet below demonstrates the usage of a ``CacheModifiedInputIterator``:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/cache_modified_iterator_basic.py
             :language: python
-            :dedent:
-            :start-after: example-begin cache-iterator
-            :end-before: example-end cache-iterator
+            :start-after: # example-begin
+
 
     Args:
-        device_array: CUDA device array storing the input sequence of data items
+        device_array: Array storing the input sequence of data items
         modifier: The PTX cache load modifier
-        prefix: An optional prefix added to the iterator's methods to prevent name collisions.
 
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
@@ -56,13 +53,12 @@ def ConstantIterator(value):
 
     Example:
         The code snippet below demonstrates the usage of a ``ConstantIterator``
-        representing the sequence ``[10, 10, 10]``:
+        representing a sequence of constant values:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/constant_iterator_basic.py
             :language: python
-            :dedent:
-            :start-after: example-begin constant-iterator
-            :end-before: example-end constant-iterator
+            :start-after: # example-begin
+
 
     Args:
         value: The value of every item in the sequence
@@ -82,11 +78,10 @@ def CountingIterator(offset):
         The code snippet below demonstrates the usage of a ``CountingIterator``
         representing the sequence ``[10, 11, 12]``:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/counting_iterator_basic.py
             :language: python
-            :dedent:
-            :start-after: example-begin counting-iterator
-            :end-before: example-end counting-iterator
+            :start-after: # example-begin
+
 
     Args:
         offset: The initial value of the sequence
@@ -97,69 +92,54 @@ def CountingIterator(offset):
     return _CountingIterator(offset)
 
 
-def ReverseInputIterator(sequence):
-    """Returns an input Iterator over an array in reverse.
+def ReverseIterator(sequence):
+    """Returns an Iterator over an array or another iterator in reverse.
 
-    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
+    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator).
 
-    Example:
-        The code snippet below demonstrates the usage of a ``ReverseInputIterator``:
+    Examples:
+        The code snippet below demonstrates the usage of a ``ReverseIterator`` as an input iterator:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_input_iterator.py
             :language: python
-            :dedent:
-            :start-after: example-begin reverse-input-iterator
-            :end-before: example-end reverse-input-iterator
+            :start-after: # example-begin
+
+        The code snippet below demonstrates the usage of a ``ReverseIterator`` as an output iterator:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/reverse_output_iterator.py
+            :language: python
+            :start-after: # example-begin
+
 
     Args:
-        sequence: The iterator or CUDA device array to be reversed
+        sequence: The iterator or array to be reversed
 
     Returns:
-        A ``ReverseIterator`` object initialized with ``sequence`` to use as an input
-
+        A ``ReverseIterator`` object
     """
-    return make_reverse_iterator(sequence, IteratorIOKind.INPUT)
-
-
-def ReverseOutputIterator(sequence):
-    """Returns an output Iterator over an array in reverse.
-
-    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
-
-    Example:
-        The code snippet below demonstrates the usage of a ``ReverseIterator``:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin reverse-output-iterator
-            :end-before: example-end reverse-output-iterator
-
-    Args:
-        sequence: The iterator or CUDA device array to be reversed to use as an output
-
-    Returns:
-        A ``ReverseIterator`` object initialized with ``sequence`` to use as an output
-
-    """
-    return make_reverse_iterator(sequence, IteratorIOKind.OUTPUT)
+    return make_reverse_iterator(sequence)
 
 
 def TransformIterator(it, op):
     """Returns an Iterator representing a transformed sequence of values.
 
-    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html
+    Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html) and
+    [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
 
     Example:
-        The code snippet below demonstrates the usage of a ``TransformIterator``
-        composed with a ``CountingIterator``, transforming the sequence ``[10, 11, 12]``
-        by squaring each item before reducing the output:
+        The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
+        to transform the input before performing a reduction.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_iterator_basic.py
             :language: python
-            :dedent:
-            :start-after: example-begin transform-iterator
-            :end-before: example-end transform-iterator
+            :start-after: # example-begin
+
+        The code snippet below demonstrates the usage of a ``TransformIterator`` to transform the output
+        of a reduction before writing to an output array.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
+            :language: python
+            :start-after: # example-begin
 
     Args:
         it: The iterator object to be transformed
@@ -184,9 +164,9 @@ def ZipIterator(*iterators):
         The code snippet below demonstrates the usage of a ``ZipIterator``
         combining two device arrays:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/zip_iterator.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/zip_iterator_elementwise.py
             :language: python
-            :pyobject: zip_iterator_elementwise_sum_example
+            :start-after: # example-begin
 
     Args:
         *iterators: Variable number of iterators to zip (at least 1)

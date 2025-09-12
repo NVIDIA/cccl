@@ -34,11 +34,7 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 namespace copy_detail
 {
@@ -119,7 +115,5 @@ copy_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n
     first, n, result, typename thrust::is_indirectly_trivially_relocatable_to<InputIterator, OutputIterator>::type());
 } // end copy_n()
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

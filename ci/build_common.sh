@@ -45,6 +45,24 @@ function usage {
     exit 1
 }
 
+# Check for required dependencies
+function check_required_dependencies() {
+    local missing_deps=()
+
+    # Check for essential tools
+    local required_tools=("cmake" "git" "ninja" "nproc")
+    for tool in "${required_tools[@]}"; do
+        command -v "$tool" &>/dev/null || missing_deps+=("$tool")
+    done
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "❌ Error: Missing required dependencies:" >&2
+        printf "   • %s\n" "${missing_deps[@]}" >&2
+        echo >&2
+        exit 1
+    fi
+}
+
 # Parse options
 
 # Copy the args into a temporary array, since we will modify them and
@@ -75,9 +93,23 @@ while [ "${#args[@]}" -ne 0 ]; do
     esac
 done
 
-# Convert to full paths:
-HOST_COMPILER=$(which ${HOST_COMPILER})
-CUDA_COMPILER=$(which ${CUDA_COMPILER})
+# Convert to full paths and validate compilers exist:
+function validate_and_resolve_compiler() {
+    local compiler_name="$1"
+    local compiler_var="$2"
+    local compiler_path
+
+    compiler_path=$(which "${compiler_var}" 2>/dev/null)
+    if [ -z "$compiler_path" ]; then
+        echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
+        exit 1
+    fi
+
+    echo "$compiler_path"
+}
+
+HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
+CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
@@ -86,6 +118,9 @@ fi
 if [ $VERBOSE ]; then
     set -x
 fi
+
+# Check for required dependencies
+check_required_dependencies
 
 # Begin processing unsets after option parsing
 set -u

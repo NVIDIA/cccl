@@ -47,8 +47,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <cuda/cmath>
-#include <cuda/ptx>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

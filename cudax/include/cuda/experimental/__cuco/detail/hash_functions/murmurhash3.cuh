@@ -93,18 +93,23 @@ struct _MurmurHash3_32
       : __seed_{__seed}
   {}
 
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
+  //! @param __key The input argument to hash
+  //! @return The resulting hash value
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
+  //! @brief Returns a hash value for its argument, as a value of type `::cuda::std::uint32_t`.
+  //! @tparam _Extent The extent type
+  //! @param __keys span of keys to hash
+  //! @return The resulting hash value
   template <size_t _Extent>
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint64_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
   {
-    // TODO: optimize when _Extent is known at compile time i.e
-    // _Extent != ::cuda::std::dynamic_extent, dispatch to bit_cast based implementation
     return __compute_hash_span(__keys);
   }
 
@@ -227,12 +232,19 @@ public:
       : __seed_{__seed}
   {}
 
+  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @param __key The input argument to hash
+  //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
+  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @tparam _Extent The extent type
+  //! @param __keys span of keys to hash
+  //! @return The resulting hash value
   template <size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept
@@ -462,8 +474,6 @@ private:
     ::cuda::std::uint32_t __k3 = 0;
     ::cuda::std::uint32_t __k4 = 0;
 
-    // TODO: Do we need to reinterpret_cast here? __bytes is of type `const ::cuda::std::byte*`
-    // const auto __tail = reinterpret_cast<const uint8_t*>(__bytes) + __nblocks * __chunk_size;
     const auto __tail = __bytes + __nchunks * __chunk_size;
 
     switch (__size % __chunk_size)
@@ -580,12 +590,19 @@ public:
       : __seed_{__seed}
   {}
 
+  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @param __key The input argument to hash
+  //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
     using _Holder = _Byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
+  //! @brief Returns a hash value for its argument, as a value of type `__uint128_t`.
+  //! @tparam _Extent The extent type
+  //! @param __keys span of keys to hash
+  //! @return The resulting hash value
   template <size_t _Extent>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __uint128_t
   operator()(::cuda::std::span<_Key, _Extent> __keys) const noexcept

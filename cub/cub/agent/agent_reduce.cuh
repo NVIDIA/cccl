@@ -50,9 +50,12 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/memory>
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 
 CUB_NAMESPACE_BEGIN
 

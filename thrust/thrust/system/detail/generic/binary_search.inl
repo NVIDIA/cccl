@@ -39,17 +39,12 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // XXX WAR circular #inclusion with this forward declaration
 template <typename, typename>
 class temporary_array;
-
 } // namespace detail
-namespace system
-{
-namespace detail
-{
-namespace generic
+
+namespace system::detail::generic
 {
 namespace detail
 {
@@ -385,7 +380,5 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
   return thrust::make_pair(lb, ub);
 }
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

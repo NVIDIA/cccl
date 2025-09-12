@@ -29,9 +29,7 @@
 #include <thrust/system/cpp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace cpp
+namespace system::cpp
 {
 namespace detail
 {
@@ -49,8 +47,7 @@ struct par_t
 
 _CCCL_GLOBAL_CONSTANT detail::par_t par;
 
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 
 // alias par here
 namespace cpp

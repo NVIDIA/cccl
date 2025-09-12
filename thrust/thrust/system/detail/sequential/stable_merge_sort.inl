@@ -37,11 +37,7 @@
 #include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 namespace stable_merge_sort_detail
 {
@@ -356,7 +352,5 @@ _CCCL_HOST_DEVICE void stable_merge_sort_by_key(
                (stable_merge_sort_detail::recursive_stable_merge_sort_by_key(exec, first1, last1, first2, comp);));
 }
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END
