@@ -4,37 +4,64 @@
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
-#include <cub/device/device_merge_sort.cuh>
 #include <cub/device/device_topk.cuh>
+
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/sort.h>
 
 #include <cuda/iterator>
 
 #include <algorithm>
 
+#include "c2h/device_policy.h"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
+template <cub::detail::topk::select SelectDirection,
+          typename KeyInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueInputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumItemsT,
+          typename NumOutItemsT>
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_pairs(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputIteratorT d_keys_in,
+  KeyOutputIteratorT d_keys_out,
+  ValueInputIteratorT d_values_in,
+  ValueOutputIteratorT d_values_out,
+  NumItemsT num_items,
+  NumOutItemsT k,
+  cudaStream_t stream = 0)
+{
+  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
+  auto env        = cuda::std::execution::env{stream_env};
+
+  return cub::detail::dispatch_topk_hub<SelectDirection>(
+    d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
+}
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MaxPairs, topk_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MinPairs, topk_min_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, stable_sort_keys);
+DECLARE_LAUNCH_WRAPPER(dispatch_topk_pairs<cub::detail::topk::select::max>, topk_max_pairs);
+DECLARE_LAUNCH_WRAPPER(dispatch_topk_pairs<cub::detail::topk::select::min>, topk_min_pairs);
 
 template <typename key_t, typename value_t, typename num_items_t>
 void sort_keys_and_values(
   c2h::device_vector<key_t>& keys, c2h::device_vector<value_t>& values, num_items_t num_items, bool is_descending)
 {
-  auto zipped_it = cuda::make_zip_iterator(keys.begin(), values.begin());
-
-  // Perform sort
+  // Perform sort: primary sort on the keys, secondary sort on the values
   if (is_descending)
   {
-    stable_sort_keys(zipped_it, num_items, cuda::std::greater<>{});
+    thrust::sort_by_key(values.begin(), values.begin() + num_items, keys.begin(), cuda::std::greater<>{});
+    thrust::sort_by_key(keys.begin(), keys.begin() + num_items, values.begin(), cuda::std::greater<>{});
   }
   else
   {
-    stable_sort_keys(zipped_it, num_items, cuda::std::less<>{});
+    thrust::sort_by_key(values.begin(), values.begin() + num_items, keys.begin());
+    thrust::sort_by_key(keys.begin(), keys.begin() + num_items, values.begin());
   }
 }
 
@@ -111,12 +138,13 @@ bool topk_with_iterator(
   }
   else
   {
-    topk_pairs(keys_in,
-               thrust::raw_pointer_cast(keys_out.data()),
-               values_in,
-               thrust::raw_pointer_cast(values_out.data()),
-               num_items,
-               k);
+    topk_max_pairs(
+      keys_in,
+      thrust::raw_pointer_cast(keys_out.data()),
+      values_in,
+      thrust::raw_pointer_cast(values_out.data()),
+      num_items,
+      k);
   }
 
   // Verify results
@@ -188,12 +216,13 @@ C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_typ
   }
   else
   {
-    topk_pairs(thrust::raw_pointer_cast(keys_in.data()),
-               thrust::raw_pointer_cast(keys_out.data()),
-               thrust::raw_pointer_cast(values_in.data()),
-               thrust::raw_pointer_cast(values_out.data()),
-               num_items,
-               k);
+    topk_max_pairs(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      thrust::raw_pointer_cast(values_in.data()),
+      thrust::raw_pointer_cast(values_out.data()),
+      num_items,
+      k);
   }
 
   // Sort the entire input data as result reference
