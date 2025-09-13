@@ -182,7 +182,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_typ
   // Set the k value
   constexpr num_items_t min_k = 1 << 1;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items - 1, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items - 1, max_k))));
 
   // Allocate the device memory
   c2h::device_vector<key_t> keys_in(num_items);
@@ -254,7 +254,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Works with iterators", "[pairs][topk][device]", 
   // Set the k value
   constexpr num_items_t min_k = 1 << 1;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items - 1, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items - 1, max_k))));
 
   // Prepare input and output
   auto keys_in   = cuda::make_transform_iterator(cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{num_items});
@@ -284,7 +284,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
   // Set the k value
   constexpr num_items_t min_k = 1 << 3;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items - 1, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items - 1, max_k))));
 
   // Prepare input and output
   auto keys_in   = cuda::make_transform_iterator(cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{num_items});
@@ -316,10 +316,10 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for different data types for num_items and 
 
   // Set the k value
   constexpr k_items_t min_k = 1 << 1;
-  k_items_t limit_k         = min(cuda::std::numeric_limits<k_items_t>::max(), static_cast<k_items_t>(1 << 15));
+  k_items_t limit_k = cuda::std::min(cuda::std::numeric_limits<k_items_t>::max(), static_cast<k_items_t>(1 << 15));
   const k_items_t max_k =
     num_items - 1 < cuda::std::numeric_limits<k_items_t>::max()
-      ? min(static_cast<k_items_t>(num_items - 1), limit_k)
+      ? cuda::std::min(static_cast<k_items_t>(num_items - 1), limit_k)
       : limit_k;
   const k_items_t k = GENERATE_COPY(take(3, random(min_k, max_k)));
 

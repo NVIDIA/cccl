@@ -75,7 +75,7 @@ C2H_TEST("DeviceTopK::MaxKeys: Basic testing", "[keys][topk][device]", key_types
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
 
   // Whether to select k elements with the lowest or the highest values
   const bool is_descending = GENERATE(false, true);
@@ -138,7 +138,7 @@ C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", ke
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
 
   // Whether to select k elements with the lowest or the highest values
   const bool is_descending = GENERATE(false, true);
@@ -183,15 +183,15 @@ C2H_TEST("DeviceTopK::MaxKeys: Test for large num_items", "[keys][topk][device]"
 
   // Set input size
   constexpr auto max_num_items_ull =
-    std::min(static_cast<cuda::std::size_t>(cuda::std::numeric_limits<num_items_t>::max()),
-             cuda::std::numeric_limits<cuda::std::uint32_t>::max() + static_cast<cuda::std::size_t>(2000000ULL));
+    cuda::std::min(static_cast<cuda::std::size_t>(cuda::std::numeric_limits<num_items_t>::max()),
+                   cuda::std::numeric_limits<cuda::std::uint32_t>::max() + static_cast<cuda::std::size_t>(2000000ULL));
   constexpr num_items_t max_num_items = static_cast<num_items_t>(max_num_items_ull);
   const num_items_t num_items         = GENERATE_COPY(values({max_num_items}));
 
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
 
   // Whether to select k elements with the lowest or the highest values
   const bool is_descending = GENERATE(false, true);
@@ -251,9 +251,11 @@ C2H_TEST("DeviceTopK::MaxKeys:  Test for different data types for num_items and 
 
   // Set the k value
   constexpr k_items_t min_k = 1;
-  k_items_t limit_k         = min(cuda::std::numeric_limits<k_items_t>::max(), static_cast<k_items_t>(1 << 15));
+  k_items_t limit_k = cuda::std::min(cuda::std::numeric_limits<k_items_t>::max(), static_cast<k_items_t>(1 << 15));
   const k_items_t max_k =
-    num_items < cuda::std::numeric_limits<k_items_t>::max() ? min(static_cast<k_items_t>(num_items), limit_k) : limit_k;
+    num_items < cuda::std::numeric_limits<k_items_t>::max()
+      ? cuda::std::min(static_cast<k_items_t>(num_items), limit_k)
+      : limit_k;
   const k_items_t k = GENERATE_COPY(take(3, random(min_k, max_k)));
 
   // Whether to select k elements with the lowest or the highest values
