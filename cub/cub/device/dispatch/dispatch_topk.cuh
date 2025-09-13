@@ -585,7 +585,7 @@ struct DispatchTopK : SelectedPolicy
     constexpr int block_threads    = policy_t::BLOCK_THREADS; // Threads per block
     constexpr int items_per_thread = policy_t::ITEMS_PER_THREAD; // Items per thread
     constexpr int tile_size        = block_threads * items_per_thread; // Items per block
-    int num_tiles                  = static_cast<int>(::cuda::ceil_div(num_items, tile_size)); // Num of blocks
+    const auto num_tiles           = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)); // Num of blocks
     constexpr int num_passes       = calc_num_passes<key_in_t, policy_t::BITS_PER_PASS>();
     constexpr int num_buckets      = 1 << policy_t::BITS_PER_PASS;
 
@@ -651,8 +651,7 @@ struct DispatchTopK : SelectedPolicy
 
     const auto main_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
-    const auto topk_grid_size =
-      ::cuda::std::min(main_kernel_max_occupancy, static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)));
+    const auto topk_grid_size            = ::cuda::std::min(main_kernel_max_occupancy, num_tiles);
 
 // Log topk_kernel configuration @todo check the kernel launch
 #ifdef CUB_DEBUG_LOG
@@ -707,8 +706,7 @@ struct DispatchTopK : SelectedPolicy
         const auto first_pass_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_first_pass_kernel, block_threads);
         const auto first_pass_kernel_max_occupancy =
           static_cast<unsigned int>(first_pass_kernel_blocks_per_sm * num_sms);
-        const auto topk_first_pass_grid_size = ::cuda::std::min(
-          first_pass_kernel_max_occupancy, static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)));
+        const auto topk_first_pass_grid_size = ::cuda::std::min(first_pass_kernel_max_occupancy, num_tiles);
 
         // Compute histogram of the first pass
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_first_pass_grid_size, block_threads, 0, stream)
@@ -758,8 +756,7 @@ struct DispatchTopK : SelectedPolicy
     identify_candidates_op_t identify_candidates_op(&counter->kth_key_bits, pass);
     const auto last_filter_kernel_blocks_per_sm = calculate_blocks_per_sm(topk_kernel, block_threads);
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
-    const auto last_filter_grid_size            = ::cuda::std::min(
-      last_filter_kernel_max_occupancy, static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size)));
+    const auto last_filter_grid_size            = ::cuda::std::min(last_filter_kernel_max_occupancy, num_tiles);
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(last_filter_grid_size, block_threads, 0, stream)
       .doit(topk_last_filter_kernel,
             d_keys_in,
