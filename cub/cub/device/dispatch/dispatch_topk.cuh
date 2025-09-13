@@ -295,7 +295,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::BLOCK_THREADS
     buffer_length,
     extract_bin_op,
     identify_candidates_op)
-    .invoke_filter_and_histogram<IsFirstPass>(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
+    .template invoke_filter_and_histogram<IsFirstPass>(
+      in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
 }
 
 /**
@@ -573,10 +574,10 @@ struct DispatchTopK : SelectedPolicy
             typename TopKFirstPassKernelPtrT,
             typename TopKKernelPtrT,
             typename TopKLastFilterKernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  Invoke(TopKFirstPassKernelPtrT topk_first_pass_kernel,
-         TopKKernelPtrT topk_kernel,
-         TopKLastFilterKernelPtrT topk_last_filter_kernel)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokePasses(
+    TopKFirstPassKernelPtrT topk_first_pass_kernel,
+    TopKKernelPtrT topk_kernel,
+    TopKLastFilterKernelPtrT topk_last_filter_kernel)
   {
     using policy_t = typename ActivePolicyT::topk_policy_t;
 
@@ -785,7 +786,7 @@ struct DispatchTopK : SelectedPolicy
       IdentifyCandidatesOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
     using extract_bin_op_t = ExtractBinOp<key_in_t, SelectDirection, ActivePolicyT::topk_policy_t::BITS_PER_PASS>;
 
-    return Invoke<ActivePolicyT>(
+    return InvokePasses<ActivePolicyT>(
       detail::topk::DeviceTopKKernel<
         max_policy_t,
         KeyInputIteratorT,

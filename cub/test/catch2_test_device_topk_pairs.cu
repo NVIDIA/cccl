@@ -11,10 +11,6 @@
 
 #include <cuda/iterator>
 
-#include <algorithm>
-
-#include "c2h/device_policy.h"
-#include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
