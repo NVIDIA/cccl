@@ -19,9 +19,31 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 
+template <cub::detail::topk::select SelectDirection,
+          typename KeyInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename NumItemsT,
+          typename NumOutItemsT>
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputIteratorT d_keys_in,
+  KeyOutputIteratorT d_keys_out,
+  NumItemsT num_items,
+  NumOutItemsT k,
+  cudaStream_t stream = 0)
+{
+  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
+  auto env        = cuda::std::execution::env{stream_env};
+
+  auto values_it = static_cast<cub::NullType*>(nullptr);
+  return cub::detail::dispatch_topk_hub<SelectDirection>(
+    d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, values_it, values_it, num_items, k, env);
+}
+
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MaxKeys, topk_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceTopK::MinKeys, topk_min_keys);
+DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys<cub::detail::topk::select::max>, topk_max_keys);
+DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys<cub::detail::topk::select::min>, topk_min_keys);
 
 using key_types =
   c2h::type_list<cuda::std::uint8_t,
@@ -75,7 +97,7 @@ C2H_TEST("DeviceTopK::MaxKeys: Basic testing", "[keys][topk][device]", key_types
   }
   else
   {
-    topk_keys(thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+    topk_max_keys(thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
   }
 
   c2h::host_vector<key_t> expected_results(keys_out.size());
@@ -136,7 +158,7 @@ C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", ke
   }
   else
   {
-    topk_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+    topk_max_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
   }
 
   // Verify results
@@ -189,7 +211,7 @@ C2H_TEST("DeviceTopK::MaxKeys: Test for large num_items", "[keys][topk][device]"
   }
   else
   {
-    topk_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+    topk_max_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
   }
 
   // Verify results
@@ -253,7 +275,7 @@ C2H_TEST("DeviceTopK::MaxKeys:  Test for different data types for num_items and 
   }
   else
   {
-    topk_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
+    topk_max_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
   }
 
   // Verify results
