@@ -28,6 +28,8 @@ using item_t    = float;
 
 using BuildResultT = cccl_device_segmented_sort_build_result_t;
 
+using SizeT = long;
+
 struct segmented_sort_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -209,9 +211,8 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   pointer_t<item_t> values_in;
   pointer_t<item_t> values_out;
 
-  // // Always use signed long long for offset iterator since negative advances are possible
-  // using SizeT                                     = unsigned long long;
-  // static constexpr std::string_view index_ty_name = "unsigned long long";
+  // TODO: Using a step counting iterator does not work right now.
+  // static constexpr std::string_view index_ty_name = "signed long long";
 
   // struct segment_offset_iterator_state_t
   // {
@@ -249,9 +250,6 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   // auto end_offsets_cccl           = static_cast<cccl_iterator_t>(end_offset_it);
   // start_offsets_cccl.host_advance = &host_advance_linear_id<segment_offset_iterator_state_t>;
   // end_offsets_cccl.host_advance   = &host_advance_linear_id<segment_offset_iterator_state_t>;
-
-  // Provide device arrays of start/end offsets instead of custom iterators
-  using SizeT = unsigned long long;
 
   std::vector<SizeT> start_offsets(n_segments);
   std::vector<SizeT> end_offsets(n_segments);
@@ -342,48 +340,6 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
 
   pointer_t<item_t> values_in_ptr(host_values);
   pointer_t<item_t> values_out_ptr(host_values_out);
-
-  // using SizeT                                     = signed long long;
-  // static constexpr std::string_view index_ty_name = "signed long long";
-
-  // struct segment_offset_iterator_state_t
-  // {
-  //   SizeT linear_id;
-  //   SizeT segment_size;
-  // };
-
-  // static constexpr std::string_view offset_iterator_state_name = "segment_offset_iterator_state_t";
-  // static constexpr std::string_view advance_offset_method_name = "advance_offset_it";
-  // static constexpr std::string_view deref_offset_method_name   = "dereference_offset_it";
-
-  // const auto& [offset_iterator_state_src, offset_iterator_advance_src, offset_iterator_deref_src] =
-  //   make_step_counting_iterator_sources(
-  //     index_ty_name, offset_iterator_state_name, advance_offset_method_name, deref_offset_method_name);
-
-  // iterator_t<SizeT, segment_offset_iterator_state_t> start_offset_it =
-  //   make_iterator<SizeT, segment_offset_iterator_state_t>(
-  //     {offset_iterator_state_name, offset_iterator_state_src},
-  //     {advance_offset_method_name, offset_iterator_advance_src},
-  //     {deref_offset_method_name, offset_iterator_deref_src});
-
-  // start_offset_it.state.linear_id    = 0;
-  // start_offset_it.state.segment_size = segment_size;
-
-  // iterator_t<SizeT, segment_offset_iterator_state_t> end_offset_it =
-  //   make_iterator<SizeT, segment_offset_iterator_state_t>(
-  //     {offset_iterator_state_name, ""}, {advance_offset_method_name, ""}, {deref_offset_method_name, ""});
-
-  // end_offset_it.state.linear_id    = 1;
-  // end_offset_it.state.segment_size = segment_size;
-
-  // // Provide host-advance callbacks for offset iterators
-  // auto start_offsets_cccl         = static_cast<cccl_iterator_t>(start_offset_it);
-  // auto end_offsets_cccl           = static_cast<cccl_iterator_t>(end_offset_it);
-  // start_offsets_cccl.host_advance = &host_advance_linear_id<segment_offset_iterator_state_t>;
-  // end_offsets_cccl.host_advance   = &host_advance_linear_id<segment_offset_iterator_state_t>;
-
-  // Provide device arrays of start/end offsets instead of custom iterators
-  using SizeT = unsigned long long;
 
   std::vector<SizeT> start_offsets(n_segments);
   std::vector<SizeT> end_offsets(n_segments);
@@ -612,8 +568,6 @@ C2H_TEST("SegmentedSort works with custom types as values", "[segmented_sort][cu
 }
 #endif
 
-using SizeT = signed long long;
-
 struct variable_segment_offset_iterator_state_t
 {
   SizeT linear_id;
@@ -686,48 +640,6 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   pointer_t<key_t> keys_out_ptr(host_keys_out);
   pointer_t<item_t> values_in_ptr(host_values);
   pointer_t<item_t> values_out_ptr(host_values_out);
-
-  // // Create segment offset arrays
-  // std::vector<SizeT> start_offsets(n_segments);
-  // std::vector<SizeT> end_offsets(n_segments);
-
-  // SizeT current_offset = 0;
-  // for (std::size_t i = 0; i < n_segments; ++i)
-  // {
-  //   start_offsets[i] = current_offset;
-  //   current_offset += segment_sizes[i];
-  //   end_offsets[i] = current_offset;
-  // }
-
-  // pointer_t<SizeT> start_offsets_ptr(start_offsets);
-  // pointer_t<SizeT> end_offsets_ptr(end_offsets);
-
-  // const auto& [offset_state_src, offset_advance_src, offset_deref_src] = make_variable_segment_iterator_sources();
-
-  // iterator_t<SizeT, variable_segment_offset_iterator_state_t> start_offset_it =
-  //   make_iterator<SizeT, variable_segment_offset_iterator_state_t>(
-  //     {"variable_segment_offset_iterator_state_t", offset_state_src},
-  //     {"advance_variable_offset_it", offset_advance_src},
-  //     {"dereference_variable_offset_it", offset_deref_src});
-
-  // start_offset_it.state.linear_id = 0;
-  // start_offset_it.state.offsets   = start_offsets_ptr.ptr;
-
-  // iterator_t<SizeT, variable_segment_offset_iterator_state_t> end_offset_it =
-  //   make_iterator<SizeT, variable_segment_offset_iterator_state_t>(
-  //     {"variable_segment_offset_iterator_state_t", ""},
-  //     {"advance_variable_offset_it", ""},
-  //     {"dereference_variable_offset_it", ""});
-
-  // end_offset_it.state.linear_id = 0;
-  // end_offset_it.state.offsets   = end_offsets_ptr.ptr;
-
-  // auto cccl_start_offsets_it = static_cast<cccl_iterator_t>(start_offset_it);
-  // auto cccl_end_offsets_it   = static_cast<cccl_iterator_t>(end_offset_it);
-
-  // // set host_advance functions
-  // cccl_start_offsets_it.host_advance = &host_advance_linear_id<variable_segment_offset_iterator_state_t>;
-  // cccl_end_offsets_it.host_advance   = &host_advance_linear_id<variable_segment_offset_iterator_state_t>;
 
   std::vector<SizeT> start_offsets(n_segments);
   std::vector<SizeT> end_offsets(n_segments);
@@ -812,109 +724,3 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   REQUIRE(expected_keys == std::vector<key_t>(output_keys));
   REQUIRE(expected_values == std::vector<item_t>(output_vals));
 }
-
-// struct SegmentedSort_LargeNumSegments_Fixture_Tag;
-// C2H_TEST("SegmentedSort works with a large number of segments", "[segmented_sort][large_segments]") {
-//   using key_t = int;
-
-//   constexpr bool is_descending     = false;
-//   constexpr auto order             = CCCL_ASCENDING;
-//   constexpr bool is_overwrite_okay = false;
-
-//   const std::size_t n_segments = 501;
-//   const std::size_t segment_size = 27;
-//   const std::size_t n_elems = n_segments * segment_size;
-
-//   std::vector<key_t> host_keys = generate<key_t>(n_elems);
-//   std::vector<key_t> host_keys_out(n_elems);
-
-//   REQUIRE(host_keys.size() == n_elems);
-//   REQUIRE(host_keys_out.size() == n_elems);
-
-//   pointer_t<key_t> keys_in_ptr(host_keys);
-//   pointer_t<key_t> keys_out_ptr(host_keys_out);
-
-//   pointer_t<item_t> values_in_ptr;
-//   pointer_t<item_t> values_out_ptr;
-
-//   struct segment_offset_iterator_state_t
-//   {
-//     SizeT linear_id;
-//     SizeT segment_size;
-//   };
-
-//   static constexpr std::string_view index_ty_name                 = "unsigned long long";
-//   static constexpr std::string_view offset_iterator_state_name    = "segment_offset_iterator_state_t";
-//   static constexpr std::string_view advance_offset_method_name    = "advance_offset_it";
-//   static constexpr std::string_view deref_offset_method_name      = "dereference_offset_it";
-
-//   const auto& [offset_iterator_state_src, offset_iterator_advance_src, offset_iterator_deref_src] =
-//     make_step_counting_iterator_sources(
-//       index_ty_name, offset_iterator_state_name, advance_offset_method_name, deref_offset_method_name);
-
-//   // start = i * segment_size
-//   iterator_t<SizeT, segment_offset_iterator_state_t> start_offset_it =
-//     make_iterator<SizeT, segment_offset_iterator_state_t>(
-//       {offset_iterator_state_name, offset_iterator_state_src},
-//       {advance_offset_method_name, offset_iterator_advance_src},
-//       {deref_offset_method_name, offset_iterator_deref_src});
-//   start_offset_it.state.linear_id    = 0;
-//   start_offset_it.state.segment_size = segment_size;
-
-//   // end = (i + 1) * segment_size
-//   auto end_offset_it       =
-//   make_iterator<SizeT, segment_offset_iterator_state_t>(
-//     {offset_iterator_state_name, ""},
-//     {advance_offset_method_name, ""},
-//     {deref_offset_method_name, ""});
-//   end_offset_it.state.linear_id = 1;
-//   end_offset_it.state.segment_size = segment_size;
-
-//   cccl_iterator_t start_offsets_cccl(start_offset_it);
-//   cccl_iterator_t end_offsets_cccl(end_offset_it);
-//   start_offsets_cccl.host_advance = &host_advance_linear_id<segment_offset_iterator_state_t>;
-//   end_offsets_cccl.host_advance   = &host_advance_linear_id<segment_offset_iterator_state_t>;
-
-//   auto& build_cache             = get_cache<SegmentedSort_LargeNumSegments_Fixture_Tag>();
-//   const std::string& key_string = KeyBuilder::join(
-//     {KeyBuilder::bool_as_key(is_descending),
-//      KeyBuilder::type_as_key<key_t>(),
-//      KeyBuilder::type_as_key<item_t>(),
-//      KeyBuilder::bool_as_key(is_overwrite_okay)});
-//   const auto& test_key = std::make_optional(key_string);
-
-//   int selector = -1;
-
-//   segmented_sort(
-//     order,
-//     keys_in_ptr,
-//     keys_out_ptr,
-//     values_in_ptr,
-//     values_out_ptr,
-//     n_elems,
-//     n_segments,
-//     start_offsets_cccl,
-//     end_offsets_cccl,
-//     is_overwrite_okay,
-//     &selector,
-//     build_cache,
-//     test_key);
-
-//   std::vector<key_t> expected_keys = host_keys;
-//   for (std::size_t i = 0; i < n_segments; ++i)
-//   {
-//     const std::size_t segment_start = i * segment_size;
-//     const std::size_t segment_end   = segment_start + segment_size;
-//     if (is_descending)
-//     {
-//       std::sort(expected_keys.begin() + segment_start, expected_keys.begin() + segment_end, std::greater<key_t>());
-//     }
-//     else
-//     {
-//       std::sort(expected_keys.begin() + segment_start, expected_keys.begin() + segment_end);
-//     }
-//   }
-
-//   auto& output_keys = (is_overwrite_okay && selector == 0) ? keys_in_ptr : keys_out_ptr;
-//   REQUIRE(expected_keys == std::vector<key_t>(output_keys));
-// }
