@@ -139,7 +139,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
  * We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
  */
 template <typename T, int BitsPerPass>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
   int start_bit = static_cast<int>(sizeof(T) * 8) - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
@@ -153,7 +153,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
  * Used in the bin ID calculation to exclude bits unrelated to the current pass
  */
 template <typename T, int BitsPerPass>
-_CCCL_DEVICE constexpr unsigned calc_mask(const int pass)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
   int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
