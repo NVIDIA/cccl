@@ -1564,9 +1564,30 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1graph__ctx_1a19108613925e4ac1b994afcd3db5365f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">graph_ctx</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cudaGraph_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t22async_resources_handle">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1graph__ctx_1a118864cad150a275d77ea05427f70bf7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">graph_ctx</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">cudaGraph_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1async__resources__handle.html#_CPPv4N4cuda12experimental3stf22async_resources_handleE" title="cuda::experimental::stf::async_resources_handle"><span class="n"><span class="pre">async_resources_handle</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">handle</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1async__resources__handle.html#_CPPv4N4cuda12experimental3stf22async_resources_handleE" title="cuda::experimental::stf::async_resources_handle"><span class="n"><span class="pre">async_resources_handle</span></span></a><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">nullptr</span></span><span class="p"><span class="pre">)</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t22async_resources_handle" title="Link to this definition">#</a><br /></dt>
 <dd><p>Constructor taking a user-provided graph. User code is not supposed to destroy the graph later. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t12cudaStream_t22async_resources_handle">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1graph__ctx_1a0d37e57c7ef51a38f87bfb94887a7c5d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">graph_ctx</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">cudaGraph_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">user_stream</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1async__resources__handle.html#_CPPv4N4cuda12experimental3stf22async_resources_handleE" title="cuda::experimental::stf::async_resources_handle"><span class="n"><span class="pre">async_resources_handle</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">handle</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1async__resources__handle.html#_CPPv4N4cuda12experimental3stf22async_resources_handleE" title="cuda::experimental::stf::async_resources_handle"><span class="n"><span class="pre">async_resources_handle</span></span></a><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">nullptr</span></span><span class="p"><span class="pre">)</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t12cudaStream_t22async_resources_handle" title="Link to this definition">#</a><br /></dt>
+<dd><p>Constructor with explicit graph, support stream, and async resources. </p>
 </dd></dl>
 
 </div>
@@ -2287,7 +2308,8 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctxE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::graph_ctx</span></code></a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE22async_resources_handle"><code class="docutils literal notranslate"><span class="pre">graph_ctx()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE12cudaStream_t22async_resources_handle"><code class="docutils literal notranslate"><span class="pre">graph_ctx()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t"><code class="docutils literal notranslate"><span class="pre">graph_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t22async_resources_handle"><code class="docutils literal notranslate"><span class="pre">graph_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9graph_ctxE11cudaGraph_t12cudaStream_t22async_resources_handle"><code class="docutils literal notranslate"><span class="pre">graph_ctx()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx9task_typeE"><code class="docutils literal notranslate"><span class="pre">task_type</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf9graph_ctx14data_interfaceE"><code class="docutils literal notranslate"><span class="pre">data_interface</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf9graph_ctx5phaseE"><code class="docutils literal notranslate"><span class="pre">phase</span></code></a><ul class="nav section-nav flex-column">
