@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
   // Run
   CubDebugExit(DeviceTopK::MinPairs(
-    d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k));
+    d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, requirements));
 
   // Check for correctness (and display results, if specified)
   SortUnorderedRes(h_res_keys, d_keys_out, h_res_values, d_values_out, k);
