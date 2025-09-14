@@ -205,8 +205,8 @@ struct segmented_sort_kernel_source
   struct selector_state_t
   {
     OffsetT threshold;
-    const long long* begin_offsets;
-    const long long* end_offsets;
+    void* begin_offsets;
+    void* end_offsets;
     cub::detail::segmented_sort::global_segment_offset_t base_segment_offset;
   };
 
@@ -217,9 +217,11 @@ struct segmented_sort_kernel_source
   {
     // Persist state storage and code across the returned cccl_op_t lifetime
     static selector_state_t state{};
-    state.threshold     = offset;
-    state.begin_offsets = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(begin_offset_iterator.ptr));
-    state.end_offsets   = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(end_offset_iterator.ptr));
+    state.threshold = offset;
+    // If offsets are raw device pointers, unwrap the stored pointer-to-pointer
+    // from the iterator state so device code can index it directly.
+    state.begin_offsets       = *static_cast<void**>(begin_offset_iterator.ptr);
+    state.end_offsets         = *static_cast<void**>(end_offset_iterator.ptr);
     state.base_segment_offset = 0;
 
     static std::string code;
@@ -233,16 +235,16 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
 {
   struct state_t {
     long long threshold;
-    const long long* begin_offsets;
-    const long long* end_offsets;
+    void* begin_offsets;
+    void* end_offsets;
     global_segment_offset_t base_segment_offset;
   };
 
   auto* st = static_cast<state_t*>(state_ptr);
   using local_segment_index_t = ::cuda::std::uint32_t;
   const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
-  const long long begin = st->begin_offsets[st->base_segment_offset + sid];
-  const long long end   = st->end_offsets[st->base_segment_offset + sid];
+  const long long begin = static_cast<const long*>(st->begin_offsets)[st->base_segment_offset + sid];
+  const long long end   = static_cast<const long*>(st->end_offsets)[st->base_segment_offset + sid];
   const bool pred       = (end - begin) > st->threshold;
   *reinterpret_cast<bool*>(result_ptr) = pred;
 }
@@ -264,9 +266,9 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator)
   {
     static selector_state_t state{};
-    state.threshold     = offset;
-    state.begin_offsets = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(begin_offset_iterator.ptr));
-    state.end_offsets   = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(end_offset_iterator.ptr));
+    state.threshold           = offset;
+    state.begin_offsets       = *static_cast<void**>(begin_offset_iterator.ptr);
+    state.end_offsets         = *static_cast<void**>(end_offset_iterator.ptr);
     state.base_segment_offset = 0;
 
     static std::string code;
@@ -280,15 +282,15 @@ extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, cons
 {
   struct state_t {
     long long threshold;
-    const long long* begin_offsets;
-    const long long* end_offsets;
+    void* begin_offsets;
+    void* end_offsets;
     global_segment_offset_t base_segment_offset;
   };
   auto* st = static_cast<state_t*>(state_ptr);
   using local_segment_index_t = ::cuda::std::uint32_t;
   const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
-  const long long begin = st->begin_offsets[st->base_segment_offset + sid];
-  const long long end   = st->end_offsets[st->base_segment_offset + sid];
+  const long long begin = static_cast<const long*>(st->begin_offsets)[st->base_segment_offset + sid];
+  const long long end   = static_cast<const long*>(st->end_offsets)[st->base_segment_offset + sid];
   const bool pred       = (end - begin) < st->threshold;
 
   *reinterpret_cast<bool*>(result_ptr) = pred;
