@@ -204,7 +204,7 @@ struct segmented_sort_kernel_source
 
   struct selector_state_t
   {
-    long long threshold;
+    OffsetT threshold;
     const long long* begin_offsets;
     const long long* end_offsets;
     long long base_segment_offset;
@@ -217,7 +217,7 @@ struct segmented_sort_kernel_source
   {
     // Persist state storage and code across the returned cccl_op_t lifetime
     static selector_state_t state{};
-    state.threshold     = static_cast<long long>(offset);
+    state.threshold     = offset;
     state.begin_offsets = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(begin_offset_iterator.ptr));
     state.end_offsets   = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(end_offset_iterator.ptr));
     state.base_segment_offset = 0;
@@ -260,7 +260,7 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator)
   {
     static selector_state_t state{};
-    state.threshold     = static_cast<long long>(offset);
+    state.threshold     = offset;
     state.begin_offsets = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(begin_offset_iterator.ptr));
     state.end_offsets   = reinterpret_cast<const long long*>(*reinterpret_cast<void**>(end_offset_iterator.ptr));
     state.base_segment_offset = 0;
