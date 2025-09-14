@@ -76,7 +76,7 @@ C2H_TEST("DeviceTopK::MaxKeys: Basic testing", "[keys][topk][device]", key_types
   constexpr num_items_t min_num_items = 1;
   constexpr num_items_t max_num_items = 1 << 15;
   const num_items_t num_items =
-    GENERATE(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
+    GENERATE_COPY(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
 
   // Set the k value
   constexpr num_items_t min_k = 1;
@@ -139,7 +139,7 @@ C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", ke
   constexpr num_items_t min_num_items = 1;
   constexpr num_items_t max_num_items = 1 << 24;
   const num_items_t num_items =
-    GENERATE(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
+    GENERATE_COPY(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
 
   // Set the k value
   constexpr num_items_t min_k = 1;

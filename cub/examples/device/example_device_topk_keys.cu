@@ -125,14 +125,19 @@ int main(int argc, char** argv)
   size_t temp_storage_bytes = 0;
   void* d_temp_storage      = nullptr;
 
-  CubDebugExit(DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k));
+  // Specify that we do not require a specific output order and do not require deterministic results
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+  CubDebugExit(
+    DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k, requirements));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
   // Initialize device arrays
   CubDebugExit(cudaMemcpy(d_keys_in, h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
 
-  // Run
-  CubDebugExit(DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k));
+  CubDebugExit(
+    DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, k, requirements));
 
   // Check for correctness (and display results, if specified)
   SortUnorderedRes(h_res_keys, d_keys_out, k);

@@ -184,6 +184,10 @@ int main(int argc, char** argv)
   size_t temp_storage_bytes = 0;
   void* d_temp_storage      = nullptr;
 
+  // Specify that we do not require a specific output order and do not require deterministic results
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
   CubDebugExit(DeviceTopK::MinPairs(
     d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
