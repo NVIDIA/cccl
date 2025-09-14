@@ -35,31 +35,29 @@ int main()
   auto ltoken = sctx.token();
 
   /* Create nested graph */
-  {
-    stackable_ctx::graph_scope_guard scope{sctx};
+  sctx.push();
+  lA.push(access_mode::rw);
+  ltoken.push(access_mode::rw);
 
-    lA.push(access_mode::rw);
-    ltoken.push(access_mode::rw);
+  auto ltoken2 = sctx.token();
 
-    auto ltoken2 = sctx.token();
+  auto lB = sctx.logical_data(lA.shape());
+  lB.set_symbol("B");
 
-    auto lB = sctx.logical_data(lA.shape());
-    lB.set_symbol("B");
+  sctx.parallel_for(lB.shape(), lB.write(), lA.read(), ltoken.rw())->*[] __device__(size_t i, auto b, auto a) {
+    b(i) = 17 - 3 * a(i);
+  };
 
-    sctx.parallel_for(lB.shape(), lB.write(), lA.read(), ltoken.rw())->*[] __device__(size_t i, auto b, auto a) {
-      b(i) = 17 - 3 * a(i);
-    };
+  auto lC = mv(lB);
 
-    auto lC = mv(lB);
+  sctx.parallel_for(lC.shape(), lC.rw())->*[] __device__(size_t i, auto b) {
+    b(i) *= 2;
+  };
 
-    sctx.parallel_for(lC.shape(), lC.rw())->*[] __device__(size_t i, auto b) {
-      b(i) *= 2;
-    };
-
-    sctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
-      a(i) *= 3;
-    };
-  }
+  sctx.parallel_for(lA.shape(), lA.rw())->*[] __device__(size_t i, auto a) {
+    a(i) *= 3;
+  };
+  sctx.pop();
 
   /* Access C in a context below the context where it was created */
   sctx.host_launch(lC.read(), ltoken2.read())->*[](auto b, auto) {
