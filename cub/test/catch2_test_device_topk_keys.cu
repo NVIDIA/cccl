@@ -253,7 +253,7 @@ C2H_TEST("DeviceTopK::MaxKeys:  Test for different data types for num_items and 
   constexpr num_items_t min_num_items = 1;
   constexpr num_items_t max_num_items = 1 << 20;
   const num_items_t num_items =
-    GENERATE(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
+    GENERATE_COPY(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
 
   // Set the k value
   constexpr k_items_t min_k = 1;
