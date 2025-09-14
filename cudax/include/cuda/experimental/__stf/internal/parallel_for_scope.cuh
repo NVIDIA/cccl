@@ -779,8 +779,6 @@ public:
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
-    ////static_assert(::std::is_same_v<context, stream_ctx>);
-
     static const auto conf_finalize = [] {
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
@@ -819,7 +817,7 @@ public:
     cudaGraphNode_t last_kernel_node = nullptr;
 
     // Context-specific kernel execution and completion event preparation
-    event_list kernel_completion;
+    event_list completion_event;
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       // Synchronize stream with allocation events
@@ -834,9 +832,7 @@ public:
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
       // Stream context: create event from stream to represent kernel completion
-      auto completion_event = reserved::record_event_in_stream(decorated_stream(stream));
-      completion_event->set_symbol(ctx, "kernel_done");
-      kernel_completion = event_list(completion_event);
+      completion_event = event_list(reserved::record_event_in_stream(decorated_stream(stream)));
     }
     else
     {
@@ -881,23 +877,21 @@ public:
       cuda_safe_call(cudaGraphAddKernelNode(&last_kernel_node, g, &kernel_1, 1, &kernel2_params));
 
       // Graph context: create event from kernel completion graph node
-      auto completion_event = reserved::graph_event(last_kernel_node, stage, g);
-      completion_event->set_symbol(ctx, "kernel_done");
-      kernel_completion = event_list(completion_event);
+      completion_event = event_list(reserved::graph_event(last_kernel_node, stage, g));
     }
 
-    // Common: Deallocation using uncached allocator directly
-    allocator.deallocate(ctx, dplace, kernel_completion, d_redux_buffer, buffer_size);
-    auto dealloc_events = kernel_completion;
+    // Common: Deallocation using uncached allocator directly, completion_event list is used for input and output
+    // dependencies
+    allocator.deallocate(ctx, dplace, completion_event, d_redux_buffer, buffer_size);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::join_with_stream(ctx, decorated_stream(stream), dealloc_events, "dealloc_sync", false);
+      reserved::join_with_stream(ctx, decorated_stream(stream), completion_event, "dealloc_sync", false);
     }
     else
     {
       auto stage                                   = ctx.stage();
-      ::std::vector<cudaGraphNode_t> dealloc_nodes = reserved::join_with_graph_nodes(ctx, dealloc_events, stage);
+      ::std::vector<cudaGraphNode_t> dealloc_nodes = reserved::join_with_graph_nodes(ctx, completion_event, stage);
       for (auto& n : dealloc_nodes)
       {
         t.add_done_node(n);

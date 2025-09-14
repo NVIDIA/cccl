@@ -63,7 +63,17 @@ int main(int argc, char** argv)
 
   do
   {
-    stackable_ctx::graph_scope_guard s{ctx};
+    // Will pass a cudaGraphConditionalHandle *, with or without init val, filled by push
+    //  stackable_ctx::graph_scope_guard s{ctx};
+    ctx.push();
+
+    // Creating a conditional handle but not using it in a conditional node can make the graph instantiation fail.
+    // cudaGraphConditionalHandle handle;
+    // cudaGraphConditionalHandleCreate(&handle, ctx.get_ctx(ctx.get_head_offset()).graph(), 1,
+    // cudaGraphCondAssignDefault);
+
+    // ctx.push_while(&handle);
+    // ctx.push_while(&handle, 1, cudaGraphCondAssignDefault);
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lconverged.reduce(reducer::logical_and<bool>{}))
         ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& converged) {
@@ -76,7 +86,13 @@ int main(int argc, char** argv)
       A(i, j) = Anew(i, j);
     };
 
+    // ctx.parallel_for(box(1), lconverged.read())->*[handle]__device__(size_t, auto &converged)
+    //{
+    //   cudaGraphSetConditional(handle, !*converged);
+    // };
+
     iter++;
+    ctx.pop();
 
   } while (!ctx.wait(lconverged));
   fprintf(stderr, "ITER %zu: converged\n", iter++);

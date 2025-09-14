@@ -424,6 +424,14 @@ public:
     };
   }
 
+  cudaGraph_t graph() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.graph();
+    };
+  }
+
   /**
    * @brief Returns the number of tasks created since the context was created or since the last fence (if any)
    */

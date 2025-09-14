@@ -338,33 +338,30 @@ public:
 
   private:
     /*
-     * State of each nested context
+     * Base class for all nested context types
      */
-    struct ctx_node
+    class ctx_node_base
     {
-      ctx_node(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
+    public:
+      ctx_node_base(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
           : ctx(mv(ctx))
           , support_stream(mv(support_stream))
           , alloc_adapters(mv(alloc_adapters))
           , refcnt(1)
-          , is_virtual(false)
       {}
 
-      // Constructor for virtual context nodes (reference to parent's context)
-      ctx_node(ctx_node& parent_node)
-          : ctx(parent_node.ctx)
-          , support_stream(parent_node.support_stream)
-          , alloc_adapters(parent_node.alloc_adapters)
-          , refcnt(1)
-          , is_virtual(true)
-          , virtual_parent_offset(-1) // Will be set by caller
-      {
-        // Increment parent's refcount since we're sharing its resources
-        parent_node.refcnt++;
-      }
+      virtual ~ctx_node_base() = default;
 
-      ctx_node(ctx_node&&) noexcept            = default;
-      ctx_node& operator=(ctx_node&&) noexcept = default;
+      // Virtual methods for context-specific behavior
+      virtual void finalize() = 0;
+      virtual void cleanup()  = 0;
+      virtual bool is_virtual() const
+      {
+        return false;
+      } // Default: most contexts are not virtual
+
+      ctx_node_base(ctx_node_base&&) noexcept            = default;
+      ctx_node_base& operator=(ctx_node_base&&) noexcept = default;
 
       // To avoid prematurely destroying data created in a nested context, we
       // need to hold a reference to them. Since we do not store types the
@@ -414,13 +411,108 @@ public:
       // The async resource handle used in this context
       ::std::optional<async_resources_handle> async_handle;
 
-      // Virtual context support
-      bool is_virtual; // True if this is a virtual context (shares execution with parent)
-      int virtual_parent_offset; // Offset of the real context this virtual context references
-
-    private:
+    protected:
       // If we want to keep the state of some logical data implementations until this node is popped
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
+    };
+
+    /*
+     * Stream context node - uses regular stream context finalization
+     */
+    class stream_ctx_node : public ctx_node_base
+    {
+    public:
+      using ctx_node_base::ctx_node_base; // Inherit constructors
+
+      void finalize() override
+      {
+        ctx.finalize();
+      }
+
+      void cleanup() override
+      {
+        // Stream context cleanup is mostly handled by finalize()
+      }
+    };
+
+    /*
+     * Graph context node - uses explicit graph management
+     */
+    class graph_ctx_node : public ctx_node_base
+    {
+    public:
+      using ctx_node_base::ctx_node_base; // Inherit constructors
+
+      void finalize() override
+      {
+        // Use finalize_as_graph pattern for explicit graph management
+        _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
+
+        auto graph = ctx.to_graph_ctx().finalize_as_graph();
+
+        // Create executable graph
+        cuda_safe_call(cudaGraphInstantiate(&graph_exec, *graph, nullptr, nullptr, 0));
+
+        // Launch the graph
+        cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
+      }
+
+      void cleanup() override
+      {
+        // Release context resources after graph execution
+        ctx.release_resources(support_stream);
+
+        // Cleanup executable graph
+        if (graph_exec != nullptr)
+        {
+          cuda_safe_call(cudaGraphExecDestroy(graph_exec));
+          graph_exec = nullptr;
+        }
+      }
+
+    private:
+      cudaGraphExec_t graph_exec = nullptr;
+    };
+
+    /*
+     * Virtual context node - lightweight reference to parent
+     */
+    class virtual_ctx_node : public ctx_node_base
+    {
+    public:
+      // Constructor for virtual context nodes (reference to parent's context)
+      virtual_ctx_node(ctx_node_base& parent_node, int parent_offset)
+          : ctx_node_base(parent_node.ctx, parent_node.support_stream, parent_node.alloc_adapters)
+      {
+        // Increment parent's refcount since we're sharing its resources
+        parent_node.refcnt++;
+        virtual_parent_offset = parent_offset;
+      }
+
+      void finalize() override
+      {
+        // Virtual contexts don't perform finalization
+        // All work is handled by the parent context
+      }
+
+      void cleanup() override
+      {
+        // Virtual context cleanup is handled via refcounting in _pop_prologue
+        // No additional cleanup needed here
+      }
+
+      bool is_virtual() const override
+      {
+        return true;
+      }
+
+      int get_virtual_parent_offset() const
+      {
+        return virtual_parent_offset;
+      }
+
+    private:
+      int virtual_parent_offset = -1; // Offset of the parent context this virtual context references
     };
 
     // Configuration constants
@@ -559,12 +651,21 @@ public:
     impl(impl&&) noexcept            = delete;
     impl& operator=(impl&&) noexcept = delete;
 
+    void push_while(cudaGraphConditionalHandle* /*phandle_out*/,
+                    unsigned int /*defaultLaunchValue*/   = 0,
+                    unsigned int /*flags*/                = cudaGraphCondAssignDefault,
+                    const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+    {
+      // TODO create handle
+      push(loc, false, true);
+    }
+
     /**
      * @brief Create a new nested level
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(const _CUDA_VSTD::source_location& loc, bool is_root = false)
+    void push(const _CUDA_VSTD::source_location& loc, bool is_root = false, bool /*is_conditional*/ = false)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -592,8 +693,7 @@ public:
         }
 
         // Create virtual node that references parent's context
-        nodes[virtual_offset].emplace(parent_node);
-        nodes[virtual_offset]->virtual_parent_offset = head_offset;
+        nodes[virtual_offset].emplace(::std::make_unique<virtual_ctx_node>(*parent_node, head_offset));
 
         // Set up hierarchy relationship
         node_tree.set_parent(head_offset, virtual_offset);
@@ -620,7 +720,7 @@ public:
       // If there is no current context, this is the root context and we use a stream_ctx
       if (head_offset == -1)
       {
-        nodes[node_offset].emplace(stream_ctx(), nullptr, nullptr);
+        nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>(stream_ctx(), nullptr, nullptr));
 
         // root of the context
         root_offset = node_offset;
@@ -634,9 +734,10 @@ public:
 
         _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
         auto& parent_node = nodes[head_offset].value();
+        auto& parent_ctx  = parent_node->ctx;
 
         // Get a stream from previous context (we haven't pushed the new one yet)
-        cudaStream_t stream = parent_node.ctx.pick_stream();
+        cudaStream_t stream = parent_ctx.pick_stream();
 
         // We use an optional to either use an existing handle from the stack
         // of handles associated to that execution place, or create one if
@@ -644,7 +745,7 @@ public:
         // handle if we are not going to use it.
         ::std::optional<async_resources_handle> handle;
 
-        auto& handle_stack = async_handles[parent_node.ctx.default_exec_place()];
+        auto& handle_stack = async_handles[parent_ctx.default_exec_place()];
         if (handle_stack.empty())
         {
           handle.emplace();
@@ -655,10 +756,12 @@ public:
           handle_stack.pop();
         }
 
-        auto gctx = graph_ctx(stream, handle.value());
+        cudaGraph_t graph;
+        cuda_safe_call(cudaGraphCreate(&graph, 0));
+        auto gctx = graph_ctx(graph, stream, handle.value());
 
         // Useful for tools
-        gctx.set_parent_ctx(parent_node.ctx);
+        gctx.set_parent_ctx(parent_ctx);
         gctx.get_dot()->set_ctx_symbol("graph[" + ::std::string(loc.file_name()) + ":" + ::std::to_string(loc.line())
                                        + "(" + loc.function_name() + ")]");
 
@@ -666,14 +769,14 @@ public:
 
         gctx.update_uncached_allocator(wrapper->allocator());
 
-        nodes[node_offset].emplace(gctx, stream, wrapper);
+        nodes[node_offset].emplace(::std::make_unique<graph_ctx_node>(gctx, stream, wrapper));
 
         // Save the async handle to reuse it later if necessary
-        nodes[node_offset]->async_handle = mv(handle);
+        (*nodes[node_offset])->async_handle = mv(handle);
 
         if (display_graph_stats)
         {
-          nodes[node_offset]->callsite = loc;
+          (*nodes[node_offset])->callsite = loc;
         }
       }
 
@@ -692,15 +795,16 @@ public:
       auto& current_node = nodes[head_offset].value();
 
       // Handle virtual context cleanup
-      if (current_node.is_virtual)
+      if (current_node->is_virtual())
       {
         // Decrement parent's refcount (incremented when virtual context was created)
-        int parent_offset = current_node.virtual_parent_offset;
+        auto& virtual_node = static_cast<virtual_ctx_node&>(*current_node);
+        int parent_offset  = virtual_node.get_virtual_parent_offset();
         _CCCL_ASSERT(parent_offset != -1, "virtual context must have valid parent");
         _CCCL_ASSERT(nodes[parent_offset].has_value(), "virtual context parent must exist");
 
         auto& parent_node = nodes[parent_offset].value();
-        parent_node.refcnt--;
+        parent_node->refcnt--;
 
         // Clean up the virtual context node immediately
         nodes[head_offset].reset();
@@ -711,9 +815,10 @@ public:
         return;
       }
 
-      // Original logic for real contexts
-      current_node.refcnt--;
-      if (current_node.refcnt > 0)
+      // TODO clarify the intent here : if we have virtual nodes, they should not "pop" data, but release refcnts
+      // maybe... current_node->refcnt should be equivalent to is virtual ? Original logic for real contexts
+      current_node->refcnt--;
+      if (current_node->refcnt > 0)
       {
         return;
       }
@@ -724,7 +829,7 @@ public:
       // another logical data that was frozen in the parent context. The
       // unfreeze operation is delayed after finalizing the context, in the
       // pop_after_finalize stage.
-      for (auto& d_impl : current_node.pushed_data)
+      for (auto& d_impl : current_node->pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_before_finalize(head_offset);
@@ -737,47 +842,49 @@ public:
       int head_offset = get_head_offset();
 
       auto& current_node = nodes[head_offset].value();
+      auto& current_ctx  = current_node->ctx;
 
       // Make the async resource handle reusable on this execution place
-      auto& handle_stack = async_handles[current_node.ctx.default_exec_place()];
-      handle_stack.push(mv(current_node.async_handle.value()));
+      auto& handle_stack = async_handles[current_ctx.default_exec_place()];
+      handle_stack.push(mv(current_node->async_handle.value()));
 
       if (display_graph_stats)
       {
         // When a graph context is finalized, a CUDA graph is created, we here
         // retrieve some information about it, and relate it to the location in
         // sources of the context push() call.
-        executable_graph_cache_stat* stat = current_node.ctx.graph_get_cache_stat();
+        executable_graph_cache_stat* stat = current_ctx.graph_get_cache_stat();
         _CCCL_ASSERT(stat, "");
 
-        const auto& loc = current_node.callsite;
+        const auto& loc = current_node->callsite;
         stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
       }
 
       // To create prereqs that depend on this finalize() stage, we get the
       // stream used in this context, and insert events in it.
-      cudaStream_t stream = current_node.support_stream;
+      cudaStream_t stream = current_node->support_stream;
 
       int parent_offset = node_tree.get_parent(head_offset);
       _CCCL_ASSERT(parent_offset != -1, "internal error: no parent ctx");
 
       auto& parent_node = nodes[parent_offset].value();
+      auto& parent_ctx  = parent_node->ctx;
 
       // Create an event that depends on the completion of previous operations in the stream
-      event_list finalize_prereqs = parent_node.ctx.stream_to_event_list(stream, "finalized");
+      event_list finalize_prereqs = parent_ctx.stream_to_event_list(stream, "finalized");
 
       // Now that the context has been finalized, we can unfreeze data (unless
       // another sibling context has pushed it too)
-      for (auto& d_impl : current_node.pushed_data)
+      for (auto& d_impl : current_node->pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
         d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
       }
 
       // Destroy the resources used in the wrapper allocator (if any)
-      if (current_node.alloc_adapters)
+      if (current_node->alloc_adapters)
       {
-        current_node.alloc_adapters->clear();
+        current_node->alloc_adapters->clear();
       }
 
       // Destroy the current node
@@ -801,10 +908,13 @@ public:
 
       _pop_prologue();
 
-      // This will create an executable CUDA graph, and launch it
+      // Polymorphic finalization - no conditionals needed!
       int head_offset    = get_head_offset();
-      auto& current_node = nodes[head_offset].value();
-      current_node.ctx.finalize();
+      auto& current_node = *nodes[head_offset].value();
+
+      // Use polymorphic dispatch for context-specific finalization
+      current_node.finalize();
+      current_node.cleanup();
 
       // Release all resources acquired for the push now that we have executed the graph
       _pop_epilogue();
@@ -819,12 +929,13 @@ public:
 
       int head_offset    = get_head_offset();
       auto& current_node = nodes[head_offset].value();
-      _CCCL_ASSERT(current_node.refcnt == 0, "pop_prologue() can only be used on top context");
+      auto& current_ctx  = current_node->ctx;
+      _CCCL_ASSERT(current_node->refcnt == 0, "pop_prologue() can only be used on top context");
 
       // Create an executable graph
-      ::std::shared_ptr<cudaGraphExec_t> exec_g = current_node.ctx.to_graph_ctx().instantiate();
+      ::std::shared_ptr<cudaGraphExec_t> exec_g = current_ctx.to_graph_ctx().instantiate();
 
-      return ::std::make_pair(*exec_g, current_node.support_stream);
+      return ::std::make_pair(*exec_g, current_node->support_stream);
     }
 
     void pop_release_graph()
@@ -845,17 +956,17 @@ public:
     {
       _CCCL_ASSERT(root_offset != -1, "invalid state");
       _CCCL_ASSERT(nodes[root_offset].has_value(), "invalid state");
-      return nodes[root_offset].value().ctx;
+      return nodes[root_offset].value()->ctx;
     }
 
     const context& get_root_ctx() const
     {
       _CCCL_ASSERT(root_offset != -1, "invalid state");
       _CCCL_ASSERT(nodes[root_offset].has_value(), "invalid state");
-      return nodes[root_offset].value().ctx;
+      return nodes[root_offset].value()->ctx;
     }
 
-    ctx_node& get_node(int offset)
+    ::std::unique_ptr<ctx_node_base>& get_node(int offset)
     {
       _CCCL_ASSERT(offset != -1, "invalid value");
       _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
@@ -863,7 +974,7 @@ public:
       return nodes[offset].value();
     }
 
-    const ctx_node& get_node(int offset) const
+    const ::std::unique_ptr<ctx_node_base>& get_node(int offset) const
     {
       _CCCL_ASSERT(offset != -1, "invalid value");
       _CCCL_ASSERT(offset < int(nodes.size()), "invalid value");
@@ -873,12 +984,12 @@ public:
 
     context& get_ctx(int offset)
     {
-      return get_node(offset).ctx;
+      return get_node(offset)->ctx;
     }
 
     const context& get_ctx(int offset) const
     {
-      return get_node(offset).ctx;
+      return get_node(offset)->ctx;
     }
 
     /* Get the offset of the top context for the current thread */
@@ -929,7 +1040,7 @@ public:
       _CCCL_ASSERT(offset != -1, "invalid context offset");
       _CCCL_ASSERT(offset < int(nodes.size()), "context offset out of bounds");
       _CCCL_ASSERT(nodes[offset].has_value(), "context node doesn't exist");
-      return nodes[offset]->is_virtual;
+      return nodes[offset].value()->is_virtual();
     }
 
   private:
@@ -1012,7 +1123,7 @@ public:
     }
 
     // Actual state for each node (which organization is dictated by node_tree)
-    ::std::vector<::std::optional<ctx_node>> nodes;
+    ::std::vector<::std::optional<::std::unique_ptr<ctx_node_base>>> nodes;
 
     // Hierarchy of the context nodes
     node_hierarchy node_tree;
@@ -1146,6 +1257,14 @@ public:
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
     pimpl->push(loc);
+  }
+
+  void push_while(cudaGraphConditionalHandle* phandle_out,
+                  unsigned int defaultLaunchValue       = 0,
+                  unsigned int flags                    = cudaGraphCondAssignDefault,
+                  const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+  {
+    pimpl->push_while(phandle_out, defaultLaunchValue, flags, loc);
   }
 
   void pop()
@@ -1751,7 +1870,7 @@ private:
         parent_dnode.get_cnt--;
 
         sctx.get_node(ctx_offset)
-          .ctx.get_dot()
+          ->ctx.get_dot()
           ->ctx_add_output_id(parent_dnode.frozen_ld.value().unfreeze_fake_task_id());
       }
 
@@ -2051,7 +2170,7 @@ private:
         {
           // Transfer shared_ptr ownership to child context's retained_data vector.
           // The child context will keep impl_state alive until it's popped.
-          sctx.get_node(c).retain_data(impl_state);
+          sctx.get_node(c)->retain_data(impl_state);
         }
       }
 
@@ -2200,7 +2319,7 @@ private:
         // For virtual contexts, we don't create data nodes but still need to track
         // for proper cleanup. Add to pushed_data for lifecycle management.
         auto& to_node = sctx.get_node(ctx_offset);
-        to_node.track_pushed_data(impl_state);
+        to_node->track_pushed_data(impl_state);
         return;
       }
       _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data must have been pushed");
@@ -2208,8 +2327,8 @@ private:
       auto& to_node   = sctx.get_node(ctx_offset);
       auto& from_node = sctx.get_node(parent_offset);
 
-      context& to_ctx   = to_node.ctx;
-      context& from_ctx = from_node.ctx;
+      context& to_ctx   = to_node->ctx;
+      context& from_ctx = from_node->ctx;
 
       auto& from_data_node = impl_state->data_nodes[parent_offset].value();
 
@@ -2245,7 +2364,7 @@ private:
       auto& frozen_ld = from_data_node.frozen_ld.value();
 
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
-      cudaStream_t stream = to_node.support_stream;
+      cudaStream_t stream = to_node->support_stream;
 
       // Ensure there is a copy of the data in the data place, we keep a
       // reference count of each context using this frozen data so that we only
@@ -2266,7 +2385,7 @@ private:
 
       // Keep track of data that were pushed in this context.  This will be
       // used to pop data automatically when nested contexts are popped.
-      to_node.track_pushed_data(impl_state);
+      to_node->track_pushed_data(impl_state);
 
       // Create the node at the requested offset based on the logical data we
       // have just created from the data frozen in its parent.
