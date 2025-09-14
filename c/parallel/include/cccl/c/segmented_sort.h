@@ -31,6 +31,8 @@ typedef struct cccl_device_segmented_sort_build_result_t
   CUlibrary library;
   cccl_type_info key_type;
   cccl_type_info offset_type;
+  void* large_segments_selector_op_state;
+  void* small_segments_selector_op_state;
   CUkernel segmented_sort_fallback_kernel;
   CUkernel segmented_sort_kernel_small;
   CUkernel segmented_sort_kernel_large;

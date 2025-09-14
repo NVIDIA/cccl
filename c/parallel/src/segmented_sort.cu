@@ -151,6 +151,14 @@ std::string get_device_segmented_sort_kernel_large_name(
     offset_t); // 5
 }
 
+struct selector_state_t
+{
+  OffsetT threshold;
+  void* begin_offsets;
+  void* end_offsets;
+  cub::detail::segmented_sort::global_segment_offset_t base_segment_offset;
+};
+
 struct segmented_sort_kernel_source
 {
   cccl_device_segmented_sort_build_result_t& build;
@@ -179,14 +187,22 @@ struct segmented_sort_kernel_source
   indirect_arg_t LargeSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    cccl_op_t op = LargeSegmentsSelectorOp(offset, begin_offset_iterator, end_offset_iterator);
+    cccl_op_t op = LargeSegmentsSelectorOp(
+      offset,
+      begin_offset_iterator,
+      end_offset_iterator,
+      static_cast<selector_state_t*>(build.large_segments_selector_op_state));
     return indirect_arg_t{op};
   }
 
   indirect_arg_t SmallSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    cccl_op_t op = SmallSegmentsSelectorOp(offset, begin_offset_iterator, end_offset_iterator);
+    cccl_op_t op = SmallSegmentsSelectorOp(
+      offset,
+      begin_offset_iterator,
+      end_offset_iterator,
+      static_cast<selector_state_t*>(build.small_segments_selector_op_state));
     return indirect_arg_t{op};
   }
 
@@ -202,27 +218,30 @@ struct segmented_sort_kernel_source
     st->base_segment_offset = base_segment_offset;
   }
 
-  struct selector_state_t
+  static void initialize_state(
+    selector_state_t* state,
+    OffsetT offset,
+    indirect_iterator_t begin_offset_iterator,
+    indirect_iterator_t end_offset_iterator)
   {
-    OffsetT threshold;
-    void* begin_offsets;
-    void* end_offsets;
-    cub::detail::segmented_sort::global_segment_offset_t base_segment_offset;
-  };
+    state->threshold = offset;
+    // If offsets are raw device pointers, unwrap the stored pointer-to-pointer
+    // from the iterator state so device code can index it directly.
+    state->begin_offsets       = *static_cast<void**>(begin_offset_iterator.ptr);
+    state->end_offsets         = *static_cast<void**>(end_offset_iterator.ptr);
+    state->base_segment_offset = 0;
+  }
 
   // Return stateful cccl_op_t predicates equivalent to the CUB selectors above.
   // These embed C++ source for a device function and capture state (threshold and offset arrays).
   static cccl_op_t LargeSegmentsSelectorOp(
-    OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator)
+    OffsetT offset,
+    indirect_iterator_t begin_offset_iterator,
+    indirect_iterator_t end_offset_iterator,
+    selector_state_t* state)
   {
     // Persist state storage and code across the returned cccl_op_t lifetime
-    static selector_state_t state{};
-    state.threshold = offset;
-    // If offsets are raw device pointers, unwrap the stored pointer-to-pointer
-    // from the iterator state so device code can index it directly.
-    state.begin_offsets       = *static_cast<void**>(begin_offset_iterator.ptr);
-    state.end_offsets         = *static_cast<void**>(end_offset_iterator.ptr);
-    state.base_segment_offset = 0;
+    initialize_state(state, offset, begin_offset_iterator, end_offset_iterator);
 
     static std::string code;
     code = std::string{
@@ -256,20 +275,19 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
     op.code      = code.c_str();
     op.code_size = code.size();
     op.code_type = CCCL_OP_CPP_SOURCE;
-    op.size      = sizeof(state);
+    op.size      = sizeof(selector_state_t);
     op.alignment = alignof(selector_state_t);
-    op.state     = &state;
+    op.state     = state;
     return op;
   }
 
   static cccl_op_t SmallSegmentsSelectorOp(
-    OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator)
+    OffsetT offset,
+    indirect_iterator_t begin_offset_iterator,
+    indirect_iterator_t end_offset_iterator,
+    selector_state_t* state)
   {
-    static selector_state_t state{};
-    state.threshold           = offset;
-    state.begin_offsets       = *static_cast<void**>(begin_offset_iterator.ptr);
-    state.end_offsets         = *static_cast<void**>(end_offset_iterator.ptr);
-    state.base_segment_offset = 0;
+    initialize_state(state, offset, begin_offset_iterator, end_offset_iterator);
 
     static std::string code;
     code = std::string{
@@ -303,9 +321,9 @@ extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, cons
     op.code      = code.c_str();
     op.code_size = code.size();
     op.code_type = CCCL_OP_CPP_SOURCE;
-    op.size      = sizeof(state);
+    op.size      = sizeof(selector_state_t);
     op.alignment = alignof(selector_state_t);
-    op.state     = &state;
+    op.state     = state;
     return op;
   }
 };
@@ -634,11 +652,14 @@ CUresult cccl_device_segmented_sort_build(
     const std::string value_t =
       keys_only ? "cub::NullType" : cccl_type_enum_to_name<items_storage_t>(values_in_it.value_type.type);
 
+    auto* large_segments_selector_op_state = new segmented_sort::selector_state_t{};
+    auto* small_segments_selector_op_state = new segmented_sort::selector_state_t{};
+
     // Build selector operations as cccl_op_t and generate their functor wrappers
-    cccl_op_t large_selector_op =
-      segmented_sort::segmented_sort_kernel_source::LargeSegmentsSelectorOp(0, start_offset_it, end_offset_it);
-    cccl_op_t small_selector_op =
-      segmented_sort::segmented_sort_kernel_source::SmallSegmentsSelectorOp(0, start_offset_it, end_offset_it);
+    cccl_op_t large_selector_op = segmented_sort::segmented_sort_kernel_source::LargeSegmentsSelectorOp(
+      0, start_offset_it, end_offset_it, large_segments_selector_op_state);
+    cccl_op_t small_selector_op = segmented_sort::segmented_sort_kernel_source::SmallSegmentsSelectorOp(
+      0, start_offset_it, end_offset_it, small_segments_selector_op_state);
 
     cccl_type_info bool_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
     cccl_type_info u32_t{sizeof(::cuda::std::uint32_t), alignof(::cuda::std::uint32_t), cccl_type_enum::CCCL_UINT32};
@@ -858,10 +879,12 @@ struct device_three_way_partition_policy {{
     check(cuLibraryGetKernel(
       &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
 
-    build_ptr->cc          = cc;
-    build_ptr->cubin       = (void*) result.data.release();
-    build_ptr->cubin_size  = result.size;
-    build_ptr->key_type    = keys_in_it.value_type;
+    build_ptr->cc                               = cc;
+    build_ptr->large_segments_selector_op_state = large_segments_selector_op_state;
+    build_ptr->small_segments_selector_op_state = small_segments_selector_op_state;
+    build_ptr->cubin                            = (void*) result.data.release();
+    build_ptr->cubin_size                       = result.size;
+    build_ptr->key_type                         = keys_in_it.value_type;
     build_ptr->offset_type = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
     // Use the runtime policy extracted via from_json
     build_ptr->runtime_policy = new segmented_sort::segmented_sort_runtime_tuning_policy{
@@ -1023,7 +1046,11 @@ CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_res
     // allocation behind cubin is owned by unique_ptr with delete[] deleter now
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
 
-    // Clean up the runtime policy
+    // Clean up the selector op states
+    delete static_cast<segmented_sort::selector_state_t*>(build_ptr->large_segments_selector_op_state);
+    delete static_cast<segmented_sort::selector_state_t*>(build_ptr->small_segments_selector_op_state);
+
+    // Clean up the runtime policies
     delete static_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build_ptr->runtime_policy);
     delete static_cast<segmented_sort::partition_runtime_tuning_policy*>(build_ptr->partition_runtime_policy);
     check(cuLibraryUnload(build_ptr->library));
