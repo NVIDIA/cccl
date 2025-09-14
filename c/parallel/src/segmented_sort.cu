@@ -207,7 +207,7 @@ struct segmented_sort_kernel_source
     OffsetT threshold;
     const long long* begin_offsets;
     const long long* end_offsets;
-    long long base_segment_offset;
+    cub::detail::segmented_sort::global_segment_offset_t base_segment_offset;
   };
 
   // Return stateful cccl_op_t predicates equivalent to the CUB selectors above.
@@ -224,14 +224,18 @@ struct segmented_sort_kernel_source
 
     static std::string code;
     code = std::string{
-      R"XXX(#include <cuda/std/cstdint>
+      R"XXX(
+#include <cuda/std/cstdint>
+#include <cub/device/dispatch/kernels/segmented_sort.cuh>
+
+using cub::detail::segmented_sort::global_segment_offset_t;
 extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
 {
   struct state_t {
     long long threshold;
     const long long* begin_offsets;
     const long long* end_offsets;
-    long long base_segment_offset;
+    global_segment_offset_t base_segment_offset;
   };
 
   auto* st = static_cast<state_t*>(state_ptr);
@@ -267,14 +271,18 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
 
     static std::string code;
     code = std::string{
-      R"XXX(#include <cuda/std/cstdint>
+      R"XXX(
+#include <cuda/std/cstdint>
+#include <cub/device/dispatch/kernels/segmented_sort.cuh>
+
+using cub::detail::segmented_sort::global_segment_offset_t;
 extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
 {
   struct state_t {
     long long threshold;
     const long long* begin_offsets;
     const long long* end_offsets;
-    long long base_segment_offset;
+    global_segment_offset_t base_segment_offset;
   };
   auto* st = static_cast<state_t*>(state_ptr);
   using local_segment_index_t = ::cuda::std::uint32_t;
