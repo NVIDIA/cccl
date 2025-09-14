@@ -668,7 +668,6 @@ struct AgentTopK
       }
       else if (res == candidate_class::candidate)
       {
-        OffsetT new_idx     = in_idx_buf ? in_idx_buf[i] : i;
         OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
 
         if (back_pos < num_of_kth_needed)
@@ -677,6 +676,7 @@ struct AgentTopK
           d_keys_out[pos] = key;
           if constexpr (!KEYS_ONLY)
           {
+            OffsetT new_idx   = in_idx_buf ? in_idx_buf[i] : i;
             d_values_out[pos] = d_values_in[new_idx];
           }
         }
