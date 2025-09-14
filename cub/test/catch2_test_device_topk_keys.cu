@@ -9,6 +9,9 @@
 #include <thrust/memory.h>
 #include <thrust/sort.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
+#include <cuda/__execution/require.h>
 #include <cuda/iterator>
 
 #include <algorithm>
@@ -34,7 +37,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
   cudaStream_t stream = 0)
 {
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
-  auto env        = cuda::std::execution::env{stream_env};
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+  auto env = cuda::std::execution::env{stream_env, requirements};
 
   auto values_it = static_cast<cub::NullType*>(nullptr);
   return cub::detail::dispatch_topk_hub<SelectDirection>(

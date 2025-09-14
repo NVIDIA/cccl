@@ -20,6 +20,8 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_topk.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -47,11 +49,35 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
   NumOutItemsT k,
   EnvT env)
 {
+  // Offset type selection
   using offset_t = detail::choose_offset_t<NumItemsT>;
   using out_offset_t =
     ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(detail::choose_offset_t<NumOutItemsT>),
                                offset_t,
                                detail::choose_offset_t<NumOutItemsT>>;
+
+  // Query environment properties to determine if the user-requested configuration is supported
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                "Determinism should be used inside requires to have an effect.");
+  using requirements_t = ::cuda::std::execution::
+    __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+  using requested_determinism_t =
+    ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                ::cuda::execution::determinism::__get_determinism_t,
+                                                ::cuda::execution::determinism::run_to_run_t>;
+  using requested_order_t =
+    ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                ::cuda::execution::output_ordering::__get_output_ordering_t,
+                                                ::cuda::execution::output_ordering::sorted_t>;
+  constexpr auto is_determinism_not_guaranteed =
+    ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+  constexpr auto is_output_order_unsorted =
+    ::cuda::std::is_same_v<requested_order_t, ::cuda::execution::output_ordering::unsorted_t>;
+
+  // We only support the case where determinism is not guaranteed and output order is unsorted
+  static_assert(is_determinism_not_guaranteed && is_output_order_unsorted,
+                "cub::DeviceTopK only supports the case where determinism is not guaranteed and output order is "
+                "unsorted.");
 
   // Query relevant properties from the environment
   auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});

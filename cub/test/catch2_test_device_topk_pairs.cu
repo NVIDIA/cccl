@@ -34,7 +34,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_pairs(
   cudaStream_t stream = 0)
 {
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
-  auto env        = cuda::std::execution::env{stream_env};
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
+  auto env = cuda::std::execution::env{stream_env, requirements};
 
   return cub::detail::dispatch_topk_hub<SelectDirection>(
     d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
