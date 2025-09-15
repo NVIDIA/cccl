@@ -55,6 +55,6 @@ struct iterator_category_to_system
 };
 
 template <typename Category>
-using iterator_category_to_system_t = typename iterator_category_to_system<Category>::type;
+using iterator_category_to_system_t = decltype(cat_to_system_impl(Category{}));
 } // namespace detail
 THRUST_NAMESPACE_END
