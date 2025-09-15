@@ -358,7 +358,7 @@ public:
       virtual bool is_virtual() const
       {
         return false;
-      } // Default: most contexts are not virtual
+      }
 
       ctx_node_base(ctx_node_base&&) noexcept            = default;
       ctx_node_base& operator=(ctx_node_base&&) noexcept = default;
@@ -410,6 +410,10 @@ public:
 
       // The async resource handle used in this context
       ::std::optional<async_resources_handle> async_handle;
+
+      // Collection of events to start the context (based on the freeze
+      // operations to get data imported into the context)
+      event_list ctx_prereqs;
 
     protected:
       // If we want to keep the state of some logical data implementations until this node is popped
@@ -519,6 +523,21 @@ public:
     static constexpr int initial_node_pool_size       = 16;
     static constexpr size_t growth_factor_numerator   = 3;
     static constexpr size_t growth_factor_denominator = 2;
+
+    // Centralized method to grow context nodes to a certain size
+    void grow_context_nodes(int target_size,
+                            size_t factor_numerator   = growth_factor_numerator,
+                            size_t factor_denominator = growth_factor_denominator)
+    {
+      if (target_size < int(nodes.size()))
+      {
+        return; // Already large enough
+      }
+
+      size_t new_size =
+        ::std::max(static_cast<size_t>(target_size), nodes.size() * factor_numerator / factor_denominator);
+      nodes.resize(new_size);
+    }
 
     /* To describe the hierarchy of contexts, and the hierarchy of stackable
      * logical data which should match the structure of the context hierarchy,
@@ -679,18 +698,18 @@ public:
         // Create a virtual context node that shares execution with the parent
         // but maintains hierarchy for data management
         _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
-        auto& parent_node = nodes[head_offset].value();
 
         // Select the offset for the virtual node
         int virtual_offset = node_tree.get_avail_entry();
 
+        // Grow nodes if needed
         if (int(nodes.size()) <= virtual_offset)
         {
-          // Use exponential growth to reduce allocation overhead
-          size_t new_size = ::std::max(static_cast<size_t>(virtual_offset + 1),
-                                       nodes.size() * growth_factor_numerator / growth_factor_denominator);
-          nodes.resize(new_size);
+          grow_context_nodes(virtual_offset + 1);
         }
+
+        // Get parent_node reference AFTER potential resize to avoid dangling reference
+        auto& parent_node = nodes[head_offset].value();
 
         // Create virtual node that references parent's context
         nodes[virtual_offset].emplace(::std::make_unique<virtual_ctx_node>(*parent_node, head_offset));
@@ -708,10 +727,8 @@ public:
 
       if (int(nodes.size()) <= node_offset)
       {
-        // Use exponential growth to reduce allocation overhead
-        size_t new_size = ::std::max(
-          static_cast<size_t>(node_offset + 1), nodes.size() * growth_factor_numerator / growth_factor_denominator);
-        nodes.resize(new_size);
+        // Grow nodes if needed
+        grow_context_nodes(node_offset + 1);
       }
 
       // Ensure the node offset was unused
@@ -720,6 +737,9 @@ public:
       // If there is no current context, this is the root context and we use a stream_ctx
       if (head_offset == -1)
       {
+        //// TODO FIXME
+        //// _CCCL_ASSERT(nodes[node_offset]->ctx_prereqs.size() == 0, "root ctx nodes have no input deps");
+
         nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>(stream_ctx(), nullptr, nullptr));
 
         // root of the context
@@ -755,6 +775,10 @@ public:
           handle = mv(handle_stack.top());
           handle_stack.pop();
         }
+
+        // Make sure the stream to launch the graph depends on the completion
+        // of the events to import data
+        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), stream);
 
         cudaGraph_t graph;
         cuda_safe_call(cudaGraphCreate(&graph, 0));
@@ -2060,6 +2084,19 @@ private:
       friend impl;
 
     private:
+      // Centralized method to grow data nodes to a certain size
+      void grow_data_nodes(int target_size, size_t factor_numerator = 3, size_t factor_denominator = 2)
+      {
+        if (target_size < int(data_nodes.size()))
+        {
+          return; // Already large enough
+        }
+
+        size_t new_size =
+          ::std::max(static_cast<size_t>(target_size), data_nodes.size() * factor_numerator / factor_denominator);
+        data_nodes.resize(new_size);
+      }
+
       mutable stackable_ctx sctx;
 
       mutable ::std::vector<::std::optional<data_node>> data_nodes;
@@ -2103,7 +2140,7 @@ private:
       // Save the logical data at the base level
       if (data_root_offset >= int(impl_state->data_nodes.size()))
       {
-        impl_state->data_nodes.resize(data_root_offset + 1);
+        impl_state->grow_data_nodes(data_root_offset + 1);
       }
       _CCCL_ASSERT(!impl_state->data_nodes[data_root_offset].has_value(), "");
 
@@ -2258,71 +2295,41 @@ private:
     void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
     {
       int parent_offset = sctx.get_parent_offset(ctx_offset);
-      _CCCL_ASSERT(parent_offset != -1, "");
+
+      // Base case: if this is root context (no parent), data should already exist
+      if (parent_offset == -1)
+      {
+        _CCCL_ASSERT(ctx_offset < int(impl_state->data_nodes.size()) && impl_state->data_nodes[ctx_offset].has_value(),
+                     "Root context must already have data");
+        return;
+      }
 
       if (ctx_offset >= int(impl_state->data_nodes.size()))
       {
-        impl_state->data_nodes.resize(ctx_offset + 1);
+        impl_state->grow_data_nodes(ctx_offset + 1);
       }
 
       if (impl_state->data_nodes[ctx_offset].has_value())
       {
-        // If the logical data was already imported in this context, we just ensure the existing import was compatible
+        // Data already exists - ensure existing mode is compatible, no upgrades possible
         auto& existing_node = impl_state->data_nodes[ctx_offset].value();
-        _CCCL_ASSERT(access_mode_is_compatible(existing_node.effective_mode, m), "invalid access mode");
+        _CCCL_ASSERT(access_mode_is_compatible(existing_node.effective_mode, m), "Cannot change existing access mode");
         return;
       }
 
-      // Check if any ancestor context has this data pushed with an incompatible access mode
-      int ancestor_offset = parent_offset;
-      while (ancestor_offset != -1)
+      // Ancestor compatibility is now handled by recursive push calls
+
+      // Check if parent has data, if not push with max required mode
+      access_mode max_required_parent_mode =
+        (m == access_mode::write || m == access_mode::reduce) ? access_mode::write : access_mode::rw;
+
+      if (!impl_state->data_nodes[parent_offset].has_value())
       {
-        if (ancestor_offset < int(impl_state->data_nodes.size()) && impl_state->data_nodes[ancestor_offset].has_value())
-        {
-          auto& ancestor_node       = impl_state->data_nodes[ancestor_offset].value();
-          access_mode ancestor_mode = access_mode::none;
-
-          // Check for frozen data first (normal contexts)
-          if (ancestor_node.frozen_ld.has_value())
-          {
-            ancestor_mode = ancestor_node.frozen_ld.value().get_access_mode();
-          }
-          // For virtual contexts, check effective mode
-          else if (ancestor_node.effective_mode != access_mode::none)
-          {
-            ancestor_mode = ancestor_node.effective_mode;
-          }
-
-          if (ancestor_mode != access_mode::none && !access_mode_is_compatible(ancestor_mode, m))
-          {
-            fprintf(
-              stderr,
-              "Error: Invalid access mode escalation - ancestor at offset %d has mode %s, requesting %s at offset %d\n",
-              ancestor_offset,
-              access_mode_string(ancestor_mode),
-              access_mode_string(m),
-              ctx_offset);
-            abort();
-          }
-
-          if (ancestor_mode != access_mode::none)
-          {
-            break; // Found the ancestor with access mode info, no need to check further
-          }
-        }
-        ancestor_offset = sctx.get_parent_offset(ancestor_offset);
+        // RECURSIVE CALL: Ensure parent has data first
+        push(parent_offset, max_required_parent_mode, where);
       }
 
-      // Check if this is a virtual context - use lightweight reference instead of freeze/unfreeze
-      if (sctx.is_virtual_context(ctx_offset))
-      {
-        // For virtual contexts, we don't create data nodes but still need to track
-        // for proper cleanup. Add to pushed_data for lifecycle management.
-        auto& to_node = sctx.get_node(ctx_offset);
-        to_node->track_pushed_data(impl_state);
-        return;
-      }
-      _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data must have been pushed");
+      _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data should be available here");
 
       auto& to_node   = sctx.get_node(ctx_offset);
       auto& from_node = sctx.get_node(parent_offset);
@@ -2348,8 +2355,11 @@ private:
       }
       else
       {
-        // Verify that the frozen mode is compatible with the requested access mode
+        // Data is already frozen - this is an IMPLICIT push
+        // For implicit pushes, use conservative mode: write/rw unless specifically read-only
         access_mode existing_frozen_mode = from_data_node.frozen_ld.value().get_access_mode();
+
+        // Check if we need to upgrade the frozen mode for implicit push
         if (!access_mode_is_compatible(existing_frozen_mode, m))
         {
           fprintf(stderr,
@@ -2369,9 +2379,11 @@ private:
       // Ensure there is a copy of the data in the data place, we keep a
       // reference count of each context using this frozen data so that we only
       // unfreeze once possible.
-      T inst  = frozen_ld.get(where, stream);
-      auto ld = to_ctx.logical_data(inst, where);
+      ::std::pair<T, event_list> get_res = frozen_ld.get(where);
+      auto ld                            = to_ctx.logical_data(get_res.first, where);
       from_data_node.get_cnt++;
+
+      to_node->ctx_prereqs.merge(mv(get_res.second));
 
       if (!impl_state->symbol.empty())
       {
