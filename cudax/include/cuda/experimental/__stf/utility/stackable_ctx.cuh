@@ -24,6 +24,7 @@
 #endif // no system header
 
 #include <algorithm>
+#include <iostream>
 #include <shared_mutex>
 #include <stack>
 #include <thread>
@@ -343,9 +344,8 @@ public:
     class ctx_node_base
     {
     public:
-      ctx_node_base(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
-          : ctx(mv(ctx))
-          , support_stream(mv(support_stream))
+      ctx_node_base(cudaStream_t support_stream = nullptr, ::std::shared_ptr<stream_adapter> alloc_adapters = nullptr)
+          : support_stream(mv(support_stream))
           , alloc_adapters(mv(alloc_adapters))
           , refcnt(1)
       {}
@@ -426,7 +426,11 @@ public:
     class stream_ctx_node : public ctx_node_base
     {
     public:
-      using ctx_node_base::ctx_node_base; // Inherit constructors
+      // Default constructor that creates a stream context
+      stream_ctx_node()
+      {
+        ctx = stream_ctx();
+      }
 
       void finalize() override
       {
@@ -445,17 +449,138 @@ public:
     class graph_ctx_node : public ctx_node_base
     {
     public:
-      using ctx_node_base::ctx_node_base; // Inherit constructors
+      // Specialized constructor for graph contexts
+      graph_ctx_node(ctx_node_base* parent_node,
+                     async_resources_handle handle,
+                     const _CUDA_VSTD::source_location& loc,
+                     cudaGraphConditionalHandle* conditional_handle     = nullptr,
+                     enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile,
+                     unsigned int defaultLaunchValue                    = 1,
+                     unsigned int flags                                 = cudaGraphCondAssignDefault)
+      {
+        // Graph context nodes create and set up the internal CUDA graph
+        _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
+
+        auto& parent_ctx = parent_node->ctx;
+
+        // Get a stream from previous context
+        cudaStream_t stream = parent_ctx.pick_stream();
+        support_stream      = stream; // Update our stream
+
+        // Make sure the stream depends on completion of events to import data
+        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), stream);
+
+        // This will either be the entire graph or the parent graph containing the conditional node
+        cuda_safe_call(cudaGraphCreate(&graph, 0));
+
+        cudaGraph_t sub_graph;
+
+        // Create CUDA graph and graph context
+        if (conditional_handle != nullptr)
+        {
+          // Create the conditional handle and store it in the provided pointer
+          cuda_safe_call(cudaGraphConditionalHandleCreate(conditional_handle, graph, defaultLaunchValue, flags));
+
+          // Create conditional node parameters
+          cudaGraphNodeParams cParams = {};
+          cParams.type                = cudaGraphNodeTypeConditional;
+          cParams.conditional.handle  = *conditional_handle;
+          cParams.conditional.type    = conditional_type;
+          cParams.conditional.size    = 1;
+
+          // Add conditional node to parent graph
+          cudaGraphNode_t conditionalNode;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
+#else
+          cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
+#endif
+
+          // Get the body graph from the conditional node
+          sub_graph = cParams.conditional.phGraph_out[0];
+        }
+        else
+        {
+          // If there is no conditional node, the entire graph is the sub-graph
+          sub_graph = graph;
+        }
+
+        auto gctx = graph_ctx(sub_graph, stream, handle);
+
+        // Set up context properties
+        gctx.set_parent_ctx(parent_ctx);
+        gctx.get_dot()->set_ctx_symbol("graph[" + ::std::string(loc.file_name()) + ":" + ::std::to_string(loc.line())
+                                       + "(" + loc.function_name() + ")]");
+
+        // Create stream adapter and update allocator
+        alloc_adapters = ::std::make_shared<stream_adapter>(gctx, stream);
+        gctx.update_uncached_allocator(alloc_adapters->allocator());
+
+        // Set the context and save async handle
+        ctx          = gctx;
+        async_handle = mv(handle);
+      }
 
       void finalize() override
       {
         // Use finalize_as_graph pattern for explicit graph management
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
 
-        auto graph = ctx.to_graph_ctx().finalize_as_graph();
+        ctx.to_graph_ctx().finalize_as_graph();
 
-        // Create executable graph
-        cuda_safe_call(cudaGraphInstantiate(&graph_exec, *graph, nullptr, nullptr, 0));
+        // Debug: Print DOT output of the finalized graph
+        if (getenv("CUDASTF_DEBUG_STACKABLE_DOT"))
+        {
+          static int debug_graph_cnt = 0; // Warning: not thread-safe
+          ::std::string filename     = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
+          cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+          ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
+        }
+
+        // Create executable graph with enhanced error reporting
+#if _CCCL_CTK_AT_LEAST(11, 4)
+        cudaGraphInstantiateParams instantiate_params = {};
+        instantiate_params.flags                      = 0; // No special flags for now
+
+        cudaError_t instantiate_error = cudaGraphInstantiateWithParams(&graph_exec, graph, &instantiate_params);
+
+        if (instantiate_error != cudaSuccess)
+        {
+          cudaGraphNode_t error_node        = instantiate_params.errNode_out;
+          cudaGraphInstantiateResult result = instantiate_params.result_out;
+
+          ::std::cerr << "Error: Graph instantiation failed with error: " << cudaGetErrorString(instantiate_error)
+                      << " " << static_cast<int>(result) << ::std::endl;
+
+          if (error_node != nullptr)
+          {
+            cudaGraphNodeType node_type;
+            cudaError_t node_type_error = cudaGraphNodeGetType(error_node, &node_type);
+            if (node_type_error == cudaSuccess)
+            {
+              ::std::cerr << "Error: Failed at node of type: " << node_type << ::std::endl;
+            }
+            else
+            {
+              ::std::cerr << "Error: Failed at node (node type query failed: " << cudaGetErrorString(node_type_error)
+                          << ")" << ::std::endl;
+            }
+          }
+          else
+          {
+            fprintf(stderr, "error_node = nullptr\n");
+          }
+
+          if (result != cudaGraphInstantiateSuccess)
+          {
+            ::std::cerr << "Error: Instantiation result code: " << result << ::std::endl;
+          }
+          cuda_safe_call(instantiate_error); // This will throw/abort
+        }
+#else
+        // Fallback to basic instantiation for older CUDA versions
+        cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, nullptr, nullptr, 0));
+#endif
 
         // Launch the graph
         cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
@@ -472,10 +597,16 @@ public:
           cuda_safe_call(cudaGraphExecDestroy(graph_exec));
           graph_exec = nullptr;
         }
+
+        // Cleanup parent graph if it exists (conditional handle is automatically cleaned up)
+        _CCCL_ASSERT(graph != nullptr, "graph should have been created");
+        cuda_safe_call(cudaGraphDestroy(graph));
+        graph = nullptr;
       }
 
     private:
       cudaGraphExec_t graph_exec = nullptr;
+      cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
     };
 
     /*
@@ -484,12 +615,20 @@ public:
     class virtual_ctx_node : public ctx_node_base
     {
     public:
-      // Constructor for virtual context nodes (reference to parent's context)
-      virtual_ctx_node(ctx_node_base& parent_node, int parent_offset)
-          : ctx_node_base(parent_node.ctx, parent_node.support_stream, parent_node.alloc_adapters)
+      // Specialized constructor for virtual context nodes (reference to parent's context)
+      virtual_ctx_node(ctx_node_base* parent_node, int parent_offset)
+          : ctx_node_base(nullptr, nullptr)
       {
+        // Set up resource sharing with parent
+        _CCCL_ASSERT(parent_node != nullptr, "Virtual context must have a valid parent");
+        support_stream = parent_node->support_stream;
+        alloc_adapters = parent_node->alloc_adapters;
+
+        // Share parent's context
+        ctx = parent_node->ctx;
+
         // Increment parent's refcount since we're sharing its resources
-        parent_node.refcnt++;
+        parent_node->refcnt++;
         virtual_parent_offset = parent_offset;
       }
 
@@ -670,13 +809,23 @@ public:
     impl(impl&&) noexcept            = delete;
     impl& operator=(impl&&) noexcept = delete;
 
-    void push_while(cudaGraphConditionalHandle* /*phandle_out*/,
-                    unsigned int /*defaultLaunchValue*/   = 0,
-                    unsigned int /*flags*/                = cudaGraphCondAssignDefault,
-                    const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+    /**
+     * @brief Helper to get async handle from pool or create new one
+     */
+    template <typename ContextType>
+    async_resources_handle get_async_handle(const ContextType& parent_ctx)
     {
-      // TODO create handle
-      push(loc, false, true);
+      auto& handle_stack = async_handles[parent_ctx.default_exec_place()];
+      if (handle_stack.empty())
+      {
+        return async_resources_handle{}; // Create new one when pool is empty
+      }
+      else
+      {
+        auto handle = mv(handle_stack.top());
+        handle_stack.pop();
+        return handle;
+      }
     }
 
     /**
@@ -684,7 +833,12 @@ public:
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(const _CUDA_VSTD::source_location& loc, bool is_root = false, bool /*is_conditional*/ = false)
+    void push(const _CUDA_VSTD::source_location& loc,
+              bool is_root                                       = false,
+              cudaGraphConditionalHandle* conditional_handle     = nullptr,
+              enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile,
+              unsigned int defaultLaunchValue                    = 1,
+              unsigned int flags                                 = cudaGraphCondAssignDefault)
     {
       auto lock = acquire_exclusive_lock();
 
@@ -693,51 +847,48 @@ public:
       int head_offset  = is_root ? -1 : get_head_offset();
       int parent_depth = is_root ? -1 : int(node_tree.depth(head_offset));
 
-      if (parent_depth >= 1)
-      {
-        // Create a virtual context node that shares execution with the parent
-        // but maintains hierarchy for data management
-        _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
-
-        // Select the offset for the virtual node
-        int virtual_offset = node_tree.get_avail_entry();
-
-        // Grow nodes if needed
-        if (int(nodes.size()) <= virtual_offset)
-        {
-          grow_context_nodes(virtual_offset + 1);
-        }
-
-        // Get parent_node reference AFTER potential resize to avoid dangling reference
-        auto& parent_node = nodes[head_offset].value();
-
-        // Create virtual node that references parent's context
-        nodes[virtual_offset].emplace(::std::make_unique<virtual_ctx_node>(*parent_node, head_offset));
-
-        // Set up hierarchy relationship
-        node_tree.set_parent(head_offset, virtual_offset);
-
-        // Update the current context head to the virtual level
-        set_head_offset(virtual_offset);
-        return;
-      }
-
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
 
+      // Grow nodes if needed
       if (int(nodes.size()) <= node_offset)
       {
-        // Grow nodes if needed
         grow_context_nodes(node_offset + 1);
       }
 
       // Ensure the node offset was unused
       _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
 
-      // If there is no current context, this is the root context and we use a stream_ctx
-      if (head_offset == -1)
+      // Additional validation for push_while (when conditional_handle is provided)
+      if (conditional_handle != nullptr)
       {
-        nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>(stream_ctx(), nullptr, nullptr));
+        // push_while cannot be used as root context - must have a parent
+        _CCCL_ASSERT(head_offset != -1, "push_while cannot be used as root context - use push() for root");
+
+        // push_while is not for nested contexts - parent must be depth 0 (simple hierarchy)
+        _CCCL_ASSERT(parent_depth == 0, "push_while can only be used with depth 0 parent - not for nested contexts");
+      }
+
+      if (parent_depth >= 1)
+      {
+        // Create a virtual context node that shares execution with the parent
+        // but maintains hierarchy for data management
+        _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
+
+        // Get parent_node reference AFTER potential resize to avoid dangling reference
+        auto& parent_node = nodes[head_offset].value();
+
+        // Create virtual node that references parent's context
+        nodes[node_offset].emplace(::std::make_unique<virtual_ctx_node>(parent_node.get(), head_offset));
+
+        // Set up hierarchy relationship
+        node_tree.set_parent(head_offset, node_offset);
+      }
+      else if (head_offset == -1)
+      {
+        // If there is no current context, this is the root context and we use a stream_ctx
+        // Create stream context node
+        nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>());
 
         // root of the context
         root_offset = node_offset;
@@ -749,62 +900,43 @@ public:
         // Keep track of parenthood
         node_tree.set_parent(head_offset, node_offset);
 
-        _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
+        // Create graph context node
         auto& parent_node = nodes[head_offset].value();
         auto& parent_ctx  = parent_node->ctx;
+        auto handle       = get_async_handle(parent_ctx);
 
-        // Get a stream from previous context (we haven't pushed the new one yet)
-        cudaStream_t stream = parent_ctx.pick_stream();
-
-        // We use an optional to either use an existing handle from the stack
-        // of handles associated to that execution place, or create one if
-        // there is none available, but we do not want to create a new async
-        // handle if we are not going to use it.
-        ::std::optional<async_resources_handle> handle;
-
-        auto& handle_stack = async_handles[parent_ctx.default_exec_place()];
-        if (handle_stack.empty())
-        {
-          handle.emplace();
-        }
-        else
-        {
-          handle = mv(handle_stack.top());
-          handle_stack.pop();
-        }
-
-        // Make sure the stream to launch the graph depends on the completion
-        // of the events to import data
-        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), stream);
-
-        cudaGraph_t graph;
-        cuda_safe_call(cudaGraphCreate(&graph, 0));
-        auto gctx = graph_ctx(graph, stream, handle.value());
-
-        // Useful for tools
-        gctx.set_parent_ctx(parent_ctx);
-        gctx.get_dot()->set_ctx_symbol("graph[" + ::std::string(loc.file_name()) + ":" + ::std::to_string(loc.line())
-                                       + "(" + loc.function_name() + ")]");
-
-        auto wrapper = ::std::make_shared<stream_adapter>(gctx, stream);
-
-        gctx.update_uncached_allocator(wrapper->allocator());
-
-        nodes[node_offset].emplace(::std::make_unique<graph_ctx_node>(gctx, stream, wrapper));
-
-        auto& new_node = *nodes[node_offset].value();
-
-        // Save the async handle to reuse it later if necessary
-        new_node->async_handle = mv(handle);
-
-        if (display_graph_stats)
-        {
-          new_node->callsite = loc;
-        }
+        // Create graph context node with optional conditional support
+        nodes[node_offset].emplace(::std::make_unique<graph_ctx_node>(
+          parent_node.get(),
+          mv(handle),
+          loc,
+          conditional_handle, // Optional conditional handle (nullptr for regular graphs)
+          conditional_type, // Conditional type (ignored if handle is nullptr)
+          defaultLaunchValue, // Default launch value (ignored if handle is nullptr)
+          flags // Conditional flags (ignored if handle is nullptr)
+          ));
       }
 
-      // Update the current context head of the thread
+      // Handle stats and update head
+      if (display_graph_stats)
+      {
+        auto& new_node    = *nodes[node_offset].value();
+        new_node.callsite = loc;
+      }
+
+      // Update the current context head
       set_head_offset(node_offset);
+    }
+
+    void push_while(cudaGraphConditionalHandle* phandle_out,
+                    unsigned int defaultLaunchValue       = 0,
+                    unsigned int flags                    = cudaGraphCondAssignDefault,
+                    const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+    {
+      _CCCL_ASSERT(phandle_out != nullptr, "push_while requires non-null conditional handle output parameter");
+
+      // Call push with conditional parameters
+      push(loc, false, phandle_out, cudaGraphCondTypeWhile, defaultLaunchValue, flags);
     }
 
     // This method assumes that the mutex is already acquired in exclusive mode
