@@ -21,8 +21,6 @@
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
 
-#include <stdio.h> // printf
-
 #include "jit_templates/templates/input_iterator.h"
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
@@ -169,6 +167,66 @@ struct selector_state_t
   }
 };
 
+cccl_op_t make_segments_selector_op(
+  OffsetT offset,
+  cccl_iterator_t begin_offset_iterator,
+  cccl_iterator_t end_offset_iterator,
+  const char* selector_op_name,
+  const char* comparison)
+{
+  cccl_op_t selector_op{};
+  selector_state_t* selector_op_state = new selector_state_t{};
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  const std::string code = std::format(
+    R"XXX(
+#include <cuda/std/cstdint>
+#include <cub/device/dispatch/kernels/segmented_sort.cuh>
+
+using cub::detail::segmented_sort::local_segment_index_t;
+using cub::detail::segmented_sort::global_segment_offset_t;
+
+extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* result_ptr)
+{{
+  struct state_t {{
+    {1} threshold;
+    void* begin_offsets;
+    void* end_offsets;
+    global_segment_offset_t base_segment_offset;
+  }};
+
+  auto* st = static_cast<state_t*>(state_ptr);
+  const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
+  const {2} begin = static_cast<const {2}*>(st->begin_offsets)[st->base_segment_offset + sid];
+  const {3} end   = static_cast<const {3}*>(st->end_offsets)[st->base_segment_offset + sid];
+  const bool pred       = (end - begin) {4} st->threshold;
+  *reinterpret_cast<bool*>(result_ptr) = pred;
+}}
+)XXX",
+    selector_op_name,
+    offset_t,
+    cccl_type_enum_to_name(begin_offset_iterator.value_type.type),
+    cccl_type_enum_to_name(end_offset_iterator.value_type.type),
+    comparison);
+
+  selector_op.type = cccl_op_kind_t::CCCL_STATEFUL;
+  selector_op.name = selector_op_name;
+  // Allocate persistent storage for the generated source code
+  char* code_buf = new char[code.size() + 1];
+  std::memcpy(code_buf, code.c_str(), code.size() + 1);
+  selector_op.code      = code_buf;
+  selector_op.code_size = code.size();
+  selector_op.code_type = CCCL_OP_CPP_SOURCE;
+  selector_op.size      = sizeof(selector_state_t);
+  selector_op.alignment = alignof(selector_state_t);
+  selector_op.state     = selector_op_state;
+
+  selector_op_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
+
+  return selector_op;
+}
+
 struct segmented_sort_kernel_source
 {
   cccl_device_segmented_sort_build_result_t& build;
@@ -220,103 +278,6 @@ struct segmented_sort_kernel_source
   {
     auto* st                = reinterpret_cast<selector_state_t*>(selector.ptr);
     st->base_segment_offset = base_segment_offset;
-  }
-
-  // Return stateful cccl_op_t predicates equivalent to the CUB selectors above.
-  // These embed C++ source for a device function and capture state (threshold and offset arrays).
-  static cccl_op_t LargeSegmentsSelectorOp(
-    OffsetT offset,
-    indirect_iterator_t begin_offset_iterator,
-    indirect_iterator_t end_offset_iterator,
-    selector_state_t* state)
-  {
-    // Persist state storage and code across the returned cccl_op_t lifetime
-    state->initialize(offset, begin_offset_iterator, end_offset_iterator);
-
-    static std::string code;
-    code = std::string{
-      R"XXX(
-#include <cuda/std/cstdint>
-#include <cub/device/dispatch/kernels/segmented_sort.cuh>
-
-using cub::detail::segmented_sort::local_segment_index_t;
-using cub::detail::segmented_sort::global_segment_offset_t;
-
-extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
-{
-  struct state_t {
-    long long threshold;
-    void* begin_offsets;
-    void* end_offsets;
-    global_segment_offset_t base_segment_offset;
-  };
-
-  auto* st = static_cast<state_t*>(state_ptr);
-  const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
-  const long long begin = static_cast<const long*>(st->begin_offsets)[st->base_segment_offset + sid];
-  const long long end   = static_cast<const long*>(st->end_offsets)[st->base_segment_offset + sid];
-  const bool pred       = (end - begin) > st->threshold;
-  *reinterpret_cast<bool*>(result_ptr) = pred;
-}
-)XXX"};
-
-    cccl_op_t op{};
-    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
-    op.name      = "cccl_large_segments_selector_op";
-    op.code      = code.c_str();
-    op.code_size = code.size();
-    op.code_type = CCCL_OP_CPP_SOURCE;
-    op.size      = sizeof(selector_state_t);
-    op.alignment = alignof(selector_state_t);
-    op.state     = state;
-    return op;
-  }
-
-  static cccl_op_t SmallSegmentsSelectorOp(
-    OffsetT offset,
-    indirect_iterator_t begin_offset_iterator,
-    indirect_iterator_t end_offset_iterator,
-    selector_state_t* state)
-  {
-    state->initialize(offset, begin_offset_iterator, end_offset_iterator);
-
-    static std::string code;
-    code = std::string{
-      R"XXX(
-#include <cuda/std/cstdint>
-#include <cub/device/dispatch/kernels/segmented_sort.cuh>
-
-using cub::detail::segmented_sort::local_segment_index_t;
-using cub::detail::segmented_sort::global_segment_offset_t;
-
-extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
-{
-  struct state_t {
-    long long threshold;
-    void* begin_offsets;
-    void* end_offsets;
-    global_segment_offset_t base_segment_offset;
-  };
-  auto* st = static_cast<state_t*>(state_ptr);
-  const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
-  const long long begin = static_cast<const long*>(st->begin_offsets)[st->base_segment_offset + sid];
-  const long long end   = static_cast<const long*>(st->end_offsets)[st->base_segment_offset + sid];
-  const bool pred       = (end - begin) < st->threshold;
-
-  *reinterpret_cast<bool*>(result_ptr) = pred;
-}
-)XXX"};
-
-    cccl_op_t op{};
-    op.type      = cccl_op_kind_t::CCCL_STATEFUL;
-    op.name      = "cccl_small_segments_selector_op";
-    op.code      = code.c_str();
-    op.code_size = code.size();
-    op.code_type = CCCL_OP_CPP_SOURCE;
-    op.size      = sizeof(selector_state_t);
-    op.alignment = alignof(selector_state_t);
-    op.state     = state;
-    return op;
   }
 };
 
@@ -647,11 +608,10 @@ CUresult cccl_device_segmented_sort_build(
     auto* large_segments_selector_op_state = new segmented_sort::selector_state_t{};
     auto* small_segments_selector_op_state = new segmented_sort::selector_state_t{};
 
-    // Build selector operations as cccl_op_t and generate their functor wrappers
-    cccl_op_t large_selector_op = segmented_sort::segmented_sort_kernel_source::LargeSegmentsSelectorOp(
-      0, start_offset_it, end_offset_it, large_segments_selector_op_state);
-    cccl_op_t small_selector_op = segmented_sort::segmented_sort_kernel_source::SmallSegmentsSelectorOp(
-      0, start_offset_it, end_offset_it, small_segments_selector_op_state);
+    cccl_op_t large_selector_op = segmented_sort::make_segments_selector_op(
+      0, start_offset_it, end_offset_it, "cccl_large_segments_selector_op", ">");
+    cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
+      0, start_offset_it, end_offset_it, "cccl_small_segments_selector_op", "<");
 
     cccl_type_info bool_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
     cccl_type_info u32_t{sizeof(::cuda::std::uint32_t), alignof(::cuda::std::uint32_t), cccl_type_enum::CCCL_UINT32};
@@ -1041,6 +1001,9 @@ CUresult cccl_device_segmented_sort_cleanup(cccl_device_segmented_sort_build_res
     // Clean up the selector op states
     delete static_cast<segmented_sort::selector_state_t*>(build_ptr->large_segments_selector_op.state);
     delete static_cast<segmented_sort::selector_state_t*>(build_ptr->small_segments_selector_op.state);
+
+    delete[] const_cast<char*>(build_ptr->large_segments_selector_op.code);
+    delete[] const_cast<char*>(build_ptr->small_segments_selector_op.code);
 
     // Clean up the runtime policies
     delete static_cast<segmented_sort::segmented_sort_runtime_tuning_policy*>(build_ptr->runtime_policy);
