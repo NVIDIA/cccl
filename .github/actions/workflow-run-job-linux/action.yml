@@ -181,30 +181,27 @@ runs:
           )
         fi
 
-        # Configure the sccache client to use the build cluster
-        if test -n "${SCCACHE_DIST_TOKEN+x}"; then
-          if grep -q '"./ci/build_' <<< "$COMMAND"; then
-            extra_launch_args+=(
-              # Repopulate the cache
-              # --env "SCCACHE_RECACHE=1"
-              # Do not cache build products
-              # --env "SCCACHE_NO_CACHE=1"
-            )
-          fi
+        # if grep -q '"./ci/build_' <<< "$COMMAND"; then
+        #   extra_launch_args+=(
+        #     # Repopulate the cache
+        #     --env "SCCACHE_RECACHE=1"
+        #     # Do not cache build products
+        #     # --env "SCCACHE_NO_CACHE=1"
+        #   )
+        # fi
 
-          # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
-          # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
-          # and we'll OOM if we try to compile too many at once.
-          if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
-            if ! grep -q '_python.sh' <<< "$COMMAND"; then
-              extra_launch_args+=(
-                --env "PARALLEL_LEVEL=$(ulimit -Hn)"
-              )
-            else
-              extra_launch_args+=(
-                --env "PARALLEL_LEVEL=$(nproc --all)"
-              )
-            fi
+        # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
+        # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
+        # and we'll OOM if we try to compile too many at once.
+        if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
+          if ! grep -q '_python.sh' <<< "$COMMAND"; then
+            extra_launch_args+=(
+              --env "PARALLEL_LEVEL=$(ulimit -Hn)"
+            )
+          else
+            extra_launch_args+=(
+              --env "PARALLEL_LEVEL=$(nproc --all)"
+            )
           fi
         fi
 

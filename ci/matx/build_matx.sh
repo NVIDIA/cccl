@@ -93,7 +93,6 @@ cat $version_override_file
 # Configure and build
 rm -rf build
 
-SCCACHE_NO_DIST_COMPILE=1 \
 cmake \
   -B build -S MatX -G Ninja \
   "-DCMAKE_CUDA_ARCHITECTURES=75;80" \

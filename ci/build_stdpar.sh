@@ -25,7 +25,6 @@ cd "${workdir}"
 # Configure and build
 rm -rf build
 
-SCCACHE_NO_DIST_COMPILE=1 \
 cmake -B build -S . -G Ninja \
   -DCMAKE_CXX_STANDARD="${CXX_STANDARD}" \
   `# Explicitly compile for hopper since the CI machine does not have a gpu:` \
