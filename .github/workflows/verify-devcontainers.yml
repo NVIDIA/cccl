@@ -132,7 +132,7 @@ jobs:
       run: |
         echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
         echo "SCCACHE_REGION=us-east-2" >> $GITHUB_ENV
-        echo "SCCACHE_IDLE_TIMEOUT=32768" >> $GITHUB_ENV
+        echo "SCCACHE_IDLE_TIMEOUT=0" >> $GITHUB_ENV
         echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
         echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
 
@@ -142,6 +142,7 @@ jobs:
         push: never
         configFile: ${{ matrix.devcontainer.path }}
         env: |
+          SCCACHE_BUCKET=${{ env.SCCACHE_BUCKET }}
           SCCACHE_REGION=${{ env.SCCACHE_REGION }}
           AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}

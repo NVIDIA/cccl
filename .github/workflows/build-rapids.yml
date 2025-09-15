@@ -93,9 +93,10 @@ jobs:
           SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
           SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
           # Retry intermittent failures
-          SCCACHE_DIST_MAX_RETRIES: "9"
+          SCCACHE_DIST_MAX_RETRIES: "inf"
           # Never fallback to building locally, fail instead
           SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
+          SCCACHE_IDLE_TIMEOUT: 0
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
