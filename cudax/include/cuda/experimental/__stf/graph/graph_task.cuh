@@ -475,7 +475,7 @@ private:
   cudaGraph_t child_graph       = nullptr;
   bool must_destroy_child_graph = false;
 
-  cudaStream_t capture_stream;
+  cudaStream_t capture_stream = nullptr;
 
   /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */
