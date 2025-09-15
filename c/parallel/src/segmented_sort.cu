@@ -184,11 +184,11 @@ cccl_op_t make_segments_selector_op(
 #include <cuda/std/cstdint>
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
 
-using cub::detail::segmented_sort::local_segment_index_t;
-using cub::detail::segmented_sort::global_segment_offset_t;
-
 extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* result_ptr)
 {{
+  using cub::detail::segmented_sort::local_segment_index_t;
+  using cub::detail::segmented_sort::global_segment_offset_t;
+
   struct state_t {{
     {1} threshold;
     void* begin_offsets;
@@ -201,7 +201,7 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
   const {2} begin = static_cast<const {2}*>(st->begin_offsets)[st->base_segment_offset + sid];
   const {3} end   = static_cast<const {3}*>(st->end_offsets)[st->base_segment_offset + sid];
   const bool pred       = (end - begin) {4} st->threshold;
-  *reinterpret_cast<bool*>(result_ptr) = pred;
+  *static_cast<bool*>(result_ptr) = pred;
 }}
 )XXX",
     selector_op_name,
@@ -212,7 +212,7 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
 
   selector_op.type = cccl_op_kind_t::CCCL_STATEFUL;
   selector_op.name = selector_op_name;
-  // Allocate persistent storage for the generated source code
+  // Allocate persistent storage for the generated source code. TODO: can we use LTO-IR instead?
   char* code_buf = new char[code.size() + 1];
   std::memcpy(code_buf, code.c_str(), code.size() + 1);
   selector_op.code      = code_buf;
@@ -266,12 +266,6 @@ struct segmented_sort_kernel_source
     static_cast<selector_state_t*>(build.small_segments_selector_op.state)
       ->initialize(offset, begin_offset_iterator, end_offset_iterator);
     return indirect_arg_t(build.small_segments_selector_op);
-  }
-
-  void SetSegmentOffset(cccl_op_t& selector, long long base_segment_offset) const
-  {
-    auto* st                = reinterpret_cast<selector_state_t*>(selector.state);
-    st->base_segment_offset = base_segment_offset;
   }
 
   void SetSegmentOffset(indirect_arg_t& selector, long long base_segment_offset) const
@@ -562,27 +556,6 @@ CUresult cccl_device_segmented_sort_build(
         template_id<output_iterator_traits>(), values_out_it, values_in_it.value_type);
       values_out_iterator_name = vo_name;
       values_out_iterator_src  = vo_src;
-
-      // For STORAGE values, ensure pointer types in iterator names/sources use items_storage_t*
-      if (values_in_it.value_type.type == cccl_type_enum::CCCL_STORAGE)
-      {
-        auto replace_all = [](std::string& s, const std::string& from, const std::string& to) {
-          if (from.empty())
-          {
-            return;
-          }
-          size_t pos = 0;
-          while ((pos = s.find(from, pos)) != std::string::npos)
-          {
-            s.replace(pos, from.length(), to);
-            pos += to.length();
-          }
-        };
-        replace_all(values_in_iterator_src, "storage_t", "items_storage_t");
-        replace_all(values_out_iterator_src, "storage_t", "items_storage_t");
-        replace_all(values_in_iterator_name, "storage_t", "items_storage_t");
-        replace_all(values_out_iterator_name, "storage_t", "items_storage_t");
-      }
     }
     else
     {
@@ -613,14 +586,17 @@ CUresult cccl_device_segmented_sort_build(
     cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
       0, start_offset_it, end_offset_it, "cccl_small_segments_selector_op", "<");
 
-    cccl_type_info bool_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
-    cccl_type_info u32_t{sizeof(::cuda::std::uint32_t), alignof(::cuda::std::uint32_t), cccl_type_enum::CCCL_UINT32};
+    cccl_type_info selector_result_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
+    cccl_type_info selector_input_t{
+      sizeof(cub::detail::segmented_sort::local_segment_index_t),
+      alignof(cub::detail::segmented_sort::local_segment_index_t),
+      cccl_type_enum::CCCL_UINT32};
 
     const auto [large_selector_name, large_selector_src] = get_specialization<segmented_sort_large_selector_tag>(
-      template_id<user_operation_traits>(), large_selector_op, bool_t, u32_t);
+      template_id<user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
 
     const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
-      template_id<user_operation_traits>(), small_selector_op, bool_t, u32_t);
+      template_id<user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
 
     const std::string dependent_definitions_src = std::format(
       R"XXX(
@@ -667,7 +643,9 @@ struct __align__({3}) items_storage_t {{
       value_t); // 1
 
     static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
+#include <cub/device/dispatch/kernels/segmented_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 {0}
 {1}
@@ -695,8 +673,8 @@ struct __align__({3}) items_storage_t {{
       R"XXXX(cub::detail::three_way_partition::MakeThreeWayPartitionPolicyWrapper(cub::detail::three_way_partition::policy_hub<{0}, {1}>::MaxPolicy::ActivePolicy{{}}))XXXX";
     const auto partition_policy_wrapper_expr = std::format(
       partition_policy_wrapper_expr_tmpl,
-      "::cuda::std::uint32_t", // This is local_segment_index_t defined in segmented_sort.cuh
-      "::cuda::std::int32_t"); // This is per_partition_offset_t defined in segmented_sort.cuh
+      "cub::detail::segmented_sort::local_segment_index_t",
+      "cub::detail::three_way_partition::per_partition_offset_t");
 
     nlohmann::json partition_policy = get_policy(partition_policy_wrapper_expr, ptx_query_tu_src, ptx_args);
 

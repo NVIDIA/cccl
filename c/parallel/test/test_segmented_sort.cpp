@@ -456,8 +456,6 @@ C2H_TEST("SegmentedSort works with custom types as values", "[segmented_sort][cu
   const std::size_t n_segments   = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
   const std::size_t segment_size = GENERATE(1, 12, take(2, random(1 << 10, 1 << 12)));
 
-  std::cout << "n_segments: " << n_segments << ", segment_size: " << segment_size << std::endl;
-
   const std::size_t n_elems = n_segments * segment_size;
 
   // Generate primitive keys
