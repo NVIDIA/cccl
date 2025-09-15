@@ -18,6 +18,19 @@ TEST_CASE("iterator system propagation - any system", "[iterators]")
   STATIC_REQUIRE(cuda::std::is_same_v<thrust::iterator_system_t<decltype(zip_it)>, thrust::any_system_tag>);
 }
 
+TEST_CASE("iterator system propagation - host system", "[iterators]")
+{
+  [[maybe_unused]] auto h_vec    = thrust::host_vector<int>{};
+  [[maybe_unused]] auto h_vec_it = h_vec.begin();
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::iterator_system_t<decltype(h_vec_it)>, thrust::host_system_tag>);
+
+  [[maybe_unused]] auto transform_it = thrust::make_transform_iterator(h_vec_it, thrust::square<>{});
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::iterator_system_t<decltype(transform_it)>, thrust::host_system_tag>);
+
+  [[maybe_unused]] auto zip_it = thrust::make_zip_iterator(h_vec_it, transform_it);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::iterator_system_t<decltype(zip_it)>, thrust::host_system_tag>);
+}
+
 TEST_CASE("iterator system propagation - device system", "[iterators]")
 {
   [[maybe_unused]] auto d_vec    = thrust::device_vector<int>{};
