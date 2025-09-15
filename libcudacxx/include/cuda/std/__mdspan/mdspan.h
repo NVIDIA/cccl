@@ -96,8 +96,8 @@ public:
   using data_handle_type = typename accessor_type::data_handle_type;
   using reference        = typename accessor_type::reference;
   using __base           = __mdspan_ebco<typename accessor_type::data_handle_type,
-                               typename _LayoutPolicy::template mapping<_Extents>,
-                               _AccessorPolicy>;
+                                         typename _LayoutPolicy::template mapping<_Extents>,
+                                         _AccessorPolicy>;
 
   [[nodiscard]] _CCCL_API static constexpr rank_type rank() noexcept
   {
@@ -139,8 +139,8 @@ public:
   template <class... _OtherIndexTypes>
   static constexpr bool __can_construct_from_handle_and_variadic =
     (__mdspan_detail::__matches_dynamic_rank<extents_type, sizeof...(_OtherIndexTypes)>
-     || __mdspan_detail::__matches_static_rank<extents_type, sizeof...(_OtherIndexTypes)>) &&__mdspan_detail::
-      __all_convertible_to_index_type<index_type, _OtherIndexTypes...>
+     || __mdspan_detail::__matches_static_rank<extents_type, sizeof...(_OtherIndexTypes)>)
+    && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
     && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>;
 
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
