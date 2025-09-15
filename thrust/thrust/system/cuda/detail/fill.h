@@ -83,6 +83,7 @@ fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, cons
        count,
        (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
      throw_on_error(status, "fill_n: failed inside CUB");
+     throw_on_error(synchronize_optional(policy), "fill_n: failed to synchronize");
      return first + count;),
     (return thrust::fill_n(cvt_to_seq(derived_cast(policy)), first, count, value);));
 }
