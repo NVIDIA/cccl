@@ -28,23 +28,37 @@
 
 THRUST_NAMESPACE_BEGIN
 
+//! \addtogroup iterators
+//! \addtogroup iterator_traversal_tags Iterator Traversal Tags
+//! \ingroup iterators
+//! \{
+
 // define Boost's traversal tags
+
+//! Tag type for iterators allowing no traversal.
 struct no_traversal_tag
 {};
 
+//! Tag type for iterators allowing incrementable traversal.
 struct incrementable_traversal_tag : no_traversal_tag
 {};
 
+//! Tag type for iterators allowing single pass traversal.
 struct single_pass_traversal_tag : incrementable_traversal_tag
 {};
 
+//! Tag type for iterators allowing forward traversal.
 struct forward_traversal_tag : single_pass_traversal_tag
 {};
 
+//! Tag type for iterators allowing bidirectional traversal.
 struct bidirectional_traversal_tag : forward_traversal_tag
 {};
 
+//! Tag type for iterators allowing random access traversal.
 struct random_access_traversal_tag : bidirectional_traversal_tag
 {};
+
+//! \} // end iterator_traversal_tags
 
 THRUST_NAMESPACE_END

@@ -71,8 +71,8 @@ class _Histogram:
         num_levels = h_num_output_levels[0]
         row_stride_samples = num_samples
 
-        self.d_samples_cccl = cccl.to_cccl_iter(d_samples)
-        self.d_histogram_cccl = cccl.to_cccl_iter(d_histogram)
+        self.d_samples_cccl = cccl.to_cccl_input_iter(d_samples)
+        self.d_histogram_cccl = cccl.to_cccl_output_iter(d_histogram)
         self.h_num_output_levels_cccl = cccl.to_cccl_value(h_num_output_levels)
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)

@@ -323,7 +323,7 @@ def test_segmented_reduce_transform_output_iterator(floating_array):
     def sqrt(x):
         return x**0.5
 
-    d_out_it = parallel.TransformOutputIterator(d_output, sqrt)
+    d_out_it = parallel.TransformIterator(d_output, sqrt)
 
     parallel.segmented_reduce(
         d_input, d_out_it, start_offsets, end_offsets, parallel.OpKind.PLUS, h_init, 2

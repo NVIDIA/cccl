@@ -39,11 +39,11 @@
 
 #include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
-#include <cuda/std/array> // cuda::std::array
-#include <cuda/std/cstddef> // size_t
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
-#include <cuda/std/type_traits> // make_unsigned_t
-#include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 

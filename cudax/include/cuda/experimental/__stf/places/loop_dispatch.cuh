@@ -62,6 +62,7 @@ inline bool stackable_disabled()
   return disabled;
 }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /* TODO : introduce a policy to decide whether or not to use threads, and the thread-index mapping (currently random) */
 template <typename context_t, typename exec_place_t, bool use_threads = true>
 inline void loop_dispatch(
@@ -206,5 +207,6 @@ inline void loop_dispatch(context_t& ctx, size_t start, size_t end, ::std::funct
     loop_dispatch<context_t, exec_place_grid, use_threads>(ctx, exec_place::all_devices(), scope, start, end, mv(func));
   }
 }
+#endif // _CCCL_DOXYGEN_INVOKED
 
 } // end namespace cuda::experimental::stf

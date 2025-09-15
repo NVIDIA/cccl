@@ -27,8 +27,8 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_categories.h>
+#include <thrust/iterator/iterator_traversal_tags.h>
 
 THRUST_NAMESPACE_BEGIN
 

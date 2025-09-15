@@ -37,8 +37,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__utility/forward.h>
 
 CUB_NAMESPACE_BEGIN
 

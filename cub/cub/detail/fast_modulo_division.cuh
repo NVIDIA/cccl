@@ -40,12 +40,19 @@
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
 #include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
-#include <cuda/cmath> // cuda::std::ceil_div
-#include <cuda/std/bit> // cuda::std::has_single_bit
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
-#include <cuda/std/limits> // numeric_limits
-#include <cuda/std/type_traits> // ::cuda::std::is_integral
+#include <cuda/std/limits>
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
