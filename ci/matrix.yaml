@@ -67,6 +67,18 @@ workflows:
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
     # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
 
+  pull_request_fork:
+    # Runs on public github runners.
+    # Minimal single arch configs on current compilers to reduce expense. No GPUs available.
+    - {jobs: ['build'],          project: 'libcudacxx',      std: 'max', cxx: ['gcc', 'clang', 'msvc'], sm: '80'}
+    - {jobs: ['test_cpu'],       project: 'thrust',          std: 'max', cxx: ['gcc', 'clang', 'msvc'], sm: '80'}
+    - {jobs: ['build'],          project: 'cub',             std: 'max', cxx: ['gcc', 'clang', 'msvc'], sm: '80'}
+    - {jobs: ['build'],          project: 'cudax',           std: 'max', cxx: ['gcc', 'clang', 'msvc'], sm: '80'}
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
+    # Pinned to gcc13:
+    - {jobs: ['build'],          project: 'cccl_c_parallel', cxx: 'gcc13', sm: '80'}
+    - {jobs: ['build'],          project: 'python',          cxx: 'gcc13', py_version: '3.13', sm: '80'}
+
   nightly:
     # CTK 12.0 full matrix build: default projects
     - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
