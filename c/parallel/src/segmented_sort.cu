@@ -172,7 +172,11 @@ cccl_op_t make_segments_selector_op(
   cccl_iterator_t begin_offset_iterator,
   cccl_iterator_t end_offset_iterator,
   const char* selector_op_name,
-  const char* comparison)
+  const char* comparison,
+  const char** compile_args,
+  size_t num_compile_args,
+  const char** lto_opts,
+  size_t num_lto_opts)
 {
   cccl_op_t selector_op{};
   selector_state_t* selector_op_state = new selector_state_t{};
@@ -181,7 +185,6 @@ cccl_op_t make_segments_selector_op(
 
   const std::string code = std::format(
     R"XXX(
-#include <cuda/std/cstdint>
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
 
 extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* result_ptr)
@@ -212,12 +215,14 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
 
   selector_op.type = cccl_op_kind_t::CCCL_STATEFUL;
   selector_op.name = selector_op_name;
-  // Allocate persistent storage for the generated source code. TODO: can we use LTO-IR instead?
-  char* code_buf = new char[code.size() + 1];
-  std::memcpy(code_buf, code.c_str(), code.size() + 1);
-  selector_op.code      = code_buf;
-  selector_op.code_size = code.size();
-  selector_op.code_type = CCCL_OP_CPP_SOURCE;
+  auto [lto_size, lto_buf] =
+    begin_linking_nvrtc_program(static_cast<uint32_t>(num_lto_opts), lto_opts)
+      ->add_program(nvrtc_translation_unit{code.c_str(), selector_op_name})
+      ->compile_program({compile_args, num_compile_args})
+      ->get_program_ltoir();
+  selector_op.code      = lto_buf.release();
+  selector_op.code_size = lto_size;
+  selector_op.code_type = CCCL_OP_LTOIR;
   selector_op.size      = sizeof(selector_state_t);
   selector_op.alignment = alignof(selector_state_t);
   selector_op.state     = selector_op_state;
@@ -578,13 +583,27 @@ CUresult cccl_device_segmented_sort_build(
     const std::string value_t =
       keys_only ? "cub::NullType" : cccl_type_enum_to_name<items_storage_t>(values_in_it.value_type.type);
 
-    auto* large_segments_selector_op_state = new segmented_sort::selector_state_t{};
-    auto* small_segments_selector_op_state = new segmented_sort::selector_state_t{};
+    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+
+    constexpr size_t num_args  = 9;
+    const char* args[num_args] = {
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-std=c++20"};
+
+    constexpr size_t num_lto_args   = 2;
+    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     cccl_op_t large_selector_op = segmented_sort::make_segments_selector_op(
-      0, start_offset_it, end_offset_it, "cccl_large_segments_selector_op", ">");
+      0, start_offset_it, end_offset_it, "cccl_large_segments_selector_op", ">", args, num_args, lopts, num_lto_args);
     cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
-      0, start_offset_it, end_offset_it, "cccl_small_segments_selector_op", "<");
+      0, start_offset_it, end_offset_it, "cccl_small_segments_selector_op", "<", args, num_args, lopts, num_lto_args);
 
     cccl_type_info selector_result_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
     cccl_type_info selector_input_t{
@@ -628,7 +647,6 @@ struct __align__({3}) items_storage_t {{
       large_selector_src, // 10
       small_selector_src); // 11
 
-    // Runtime parameter tuning
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
 
     constexpr size_t ptx_num_args      = 5;
@@ -685,7 +703,6 @@ struct __align__({3}) items_storage_t {{
     const std::string three_way_partition_policy_delay_constructor =
       segmented_sort::get_three_way_partition_policy_delay_constructor(partition_policy);
 
-    // Inject delay constructor alias into the ThreeWayPartitionPolicy struct string
     const std::string injected_three_way_partition_policy_str =
       segmented_sort::inject_delay_constructor_into_three_way_policy(
         three_way_partition_policy_str, three_way_partition_policy_delay_constructor);
@@ -740,23 +757,6 @@ struct device_three_way_partition_policy {{
     std::string segmented_sort_kernel_large_lowered_name;
     std::string three_way_partition_init_kernel_lowered_name;
     std::string three_way_partition_kernel_lowered_name;
-
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
-
-    constexpr size_t num_args  = 9;
-    const char* args[num_args] = {
-      arch.c_str(),
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path,
-      "-rdc=true",
-      "-dlto",
-      "-DCUB_DISABLE_CDP",
-      "-std=c++20"};
-
-    constexpr size_t num_lto_args   = 2;
-    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     // Collect all LTO-IRs to be linked.
     nvrtc_linkable_list linkable_list;
