@@ -132,6 +132,28 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 
 struct DeviceTopK
 {
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //!
+  //! - @devicestorage
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MaxPairs` function to find the largest K
+  //! items
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-max-pairs-non-deterministic-unsorted
+  //!     :end-before: example-end topk-max-pairs-non-deterministic-unsorted
+  //!
+  //! @endrst
+  //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
   //!
@@ -151,8 +173,8 @@ struct DeviceTopK
   //! Type of variable k
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -167,8 +189,7 @@ struct DeviceTopK
   //!   Pointer to the corresponding input sequence of associated value items
   //!
   //! @param[out] d_values_out
-  //!   Pointer to the corresponding output sequence of associated
-  //!   value items
+  //!   Pointer to the corresponding output sequence of associated value items
   //!
   //! @param[in] num_items
   //!   Number of items to be processed
@@ -205,6 +226,28 @@ struct DeviceTopK
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //!
+  //! - @devicestorage
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MinPairs` function to find the lowest K
+  //! items
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-min-pairs-non-deterministic-unsorted
+  //!     :end-before: example-end topk-min-pairs-non-deterministic-unsorted
+  //!
+  //! @endrst
+  //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
   //!
@@ -278,6 +321,28 @@ struct DeviceTopK
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the largest K keys from an unordered input sequence of keys.
+  //!
+  //! - @devicestorage
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MinKeys` function to find the largest K
+  //! items
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-max-keys-non-deterministic-unsorted
+  //!     :end-before: example-end topk-max-keys-non-deterministic-unsorted
+  //!
+  //! @endrst
+  //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
   //!
@@ -342,6 +407,28 @@ struct DeviceTopK
       env);
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the lowest K keys from an unordered input sequence of keys.
+  //!
+  //! - @devicestorage
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use the `cub::DeviceTopK::MinKeys` function to find the lowest K
+  //! items
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-min-keys-non-deterministic-unsorted
+  //!     :end-before: example-end topk-min-keys-non-deterministic-unsorted
+  //!
+  //! @endrst
+  //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
   //!
