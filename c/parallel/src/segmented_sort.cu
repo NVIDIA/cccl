@@ -249,7 +249,9 @@ struct segmented_sort_kernel_source
 #include <cuda/std/cstdint>
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
 
+using cub::detail::segmented_sort::local_segment_index_t;
 using cub::detail::segmented_sort::global_segment_offset_t;
+
 extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
 {
   struct state_t {
@@ -260,7 +262,6 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
   };
 
   auto* st = static_cast<state_t*>(state_ptr);
-  using local_segment_index_t = ::cuda::std::uint32_t;
   const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
   const long long begin = static_cast<const long*>(st->begin_offsets)[st->base_segment_offset + sid];
   const long long end   = static_cast<const long*>(st->end_offsets)[st->base_segment_offset + sid];
@@ -295,7 +296,9 @@ extern "C" __device__ void cccl_large_segments_selector_op(void* state_ptr, cons
 #include <cuda/std/cstdint>
 #include <cub/device/dispatch/kernels/segmented_sort.cuh>
 
+using cub::detail::segmented_sort::local_segment_index_t;
 using cub::detail::segmented_sort::global_segment_offset_t;
+
 extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, const void* arg_ptr, void* result_ptr)
 {
   struct state_t {
@@ -305,7 +308,6 @@ extern "C" __device__ void cccl_small_segments_selector_op(void* state_ptr, cons
     global_segment_offset_t base_segment_offset;
   };
   auto* st = static_cast<state_t*>(state_ptr);
-  using local_segment_index_t = ::cuda::std::uint32_t;
   const local_segment_index_t sid = *static_cast<const local_segment_index_t*>(arg_ptr);
   const long long begin = static_cast<const long*>(st->begin_offsets)[st->base_segment_offset + sid];
   const long long end   = static_cast<const long*>(st->end_offsets)[st->base_segment_offset + sid];
