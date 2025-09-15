@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 namespace cuda::experimental::stf::reserved
