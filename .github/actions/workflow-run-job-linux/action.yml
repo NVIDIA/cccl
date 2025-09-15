@@ -187,7 +187,7 @@ runs:
             ${aws_arn:-} \
             --env "COMMAND=$COMMAND" \
             --env "CI=true" \
-            --env "SCCACHE_DIST_GH_SCOPES=" \
+            --env "SCCACHE_DIST_GH_SCOPES=read:org" \
             --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ENV=$GITHUB_ENV" \
             --env "GITHUB_SHA=$GITHUB_SHA" \

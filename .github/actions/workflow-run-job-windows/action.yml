@@ -131,7 +131,7 @@ runs:
           --env COMMAND='& ${{inputs.command}}' \
           --env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
           --env CI=true \
-          --env SCCACHE_DIST_GH_SCOPES= \
+          --env SCCACHE_DIST_GH_SCOPES=read:org \
           --env GH_TOKEN=${GH_TOKEN} \
           ${{ inputs.image }} \
           powershell -c "
