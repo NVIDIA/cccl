@@ -737,9 +737,6 @@ public:
       // If there is no current context, this is the root context and we use a stream_ctx
       if (head_offset == -1)
       {
-        //// TODO FIXME
-        //// _CCCL_ASSERT(nodes[node_offset]->ctx_prereqs.size() == 0, "root ctx nodes have no input deps");
-
         nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>(stream_ctx(), nullptr, nullptr));
 
         // root of the context
@@ -795,12 +792,14 @@ public:
 
         nodes[node_offset].emplace(::std::make_unique<graph_ctx_node>(gctx, stream, wrapper));
 
+        auto& new_node = *nodes[node_offset].value();
+
         // Save the async handle to reuse it later if necessary
-        (*nodes[node_offset])->async_handle = mv(handle);
+        new_node->async_handle = mv(handle);
 
         if (display_graph_stats)
         {
-          (*nodes[node_offset])->callsite = loc;
+          new_node->callsite = loc;
         }
       }
 
