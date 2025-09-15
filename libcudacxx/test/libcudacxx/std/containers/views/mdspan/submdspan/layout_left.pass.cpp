@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11, c++14
-
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;
