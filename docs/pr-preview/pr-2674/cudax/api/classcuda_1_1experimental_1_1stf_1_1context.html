@@ -2023,6 +2023,22 @@ By default, we select the current device, unless an affinity was set in the cont
 <p>This helper is intended to avoid creating CUDA streams manually. Using this stream after the context has been finalized is an undefined behaviour. </p>
 </dd></dl>
 
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf7context11get_backendEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1context_1a0ca2b438b4c54e3495b8f5f752d9733a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_backend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf7context11get_backendEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get a reference to the underlying untyped backend context. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Reference to the <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped"><span class="std std-ref">backend_ctx_untyped</span></a> base class from the variant payload </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf7context11get_backendEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1context_1a84da1d2ba103c959286585e5d3bc1773"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_backend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf7context11get_backendEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
 </div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
@@ -2257,6 +2273,8 @@ By default, we select the current device, unless an affinity was set in the cont
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf7context18default_exec_placeEv"><code class="docutils literal notranslate"><span class="pre">default_exec_place()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf7context12to_graph_ctxEv"><code class="docutils literal notranslate"><span class="pre">to_graph_ctx()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf7context11pick_streamEv"><code class="docutils literal notranslate"><span class="pre">pick_stream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf7context11get_backendEv"><code class="docutils literal notranslate"><span class="pre">get_backend()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf7context11get_backendEv"><code class="docutils literal notranslate"><span class="pre">get_backend()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf7context7payloadE"><code class="docutils literal notranslate"><span class="pre">payload</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDpEN4cuda12experimental3stf7context12unified_taskE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::context::unified_task</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf7context12unified_task12unified_taskE11stream_taskIDp4DepsE"><code class="docutils literal notranslate"><span class="pre">unified_task()</span></code></a></li>
