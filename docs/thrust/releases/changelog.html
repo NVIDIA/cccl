@@ -623,7 +623,11 @@
 
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">Thrust</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../developer_cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../releases.html">Releases</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">Changelog</a></li>
 <li class="toctree-l4"><a class="reference internal" href="versioning.html">Versioning</a></li>
@@ -2285,7 +2289,7 @@ solution. We will be dropping support for C++11 in the near future.</p></li>
 <li><p>NVIDIA/thrust#1159: CMake multi-config support, which allows multiple
 combinations of host and device systems to be built and tested at
 once. More details can be found here:
-<a class="reference internal" href="../developer_cmake_options.html#cmake-multi-config-options"><span class="std std-ref">Multi Config CMake Options</span></a></p></li>
+<a class="reference internal" href="../developer/cmake_options.html#cmake-multi-config-options"><span class="std std-ref">Multi Config CMake Options</span></a></p></li>
 <li><p>CMake refactoring:</p>
 <ul>
 <li><p>Added install targets to CMake builds.</p></li>
