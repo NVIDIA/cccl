@@ -93,7 +93,8 @@ inline constexpr bool is_iterator_category = is_host_iterator_category<T> || is_
 // Thrust's implementation of iterator_facade_default_category is slightly different from Boost's equivalent. Thrust
 // does not check is_convertible_v<Reference, ValueParam> because Reference may not be a complete type at this point,
 // and implementations of is_convertible_v typically require that both types be complete. Instead, it simply assumes
-// that if is_convertible_v<Traversal, single_pass_traversal_tag>, then the category is input_iterator_tag.
+// that if is_convertible_v<Traversal, single_pass_traversal_tag>, then the category is input_iterator_tag. Therefore,
+// the following iterator_facade_default_category_xxx meta functions come without Reference and ValueType parameters.
 
 // standard system iterators
 template <typename Traversal>
