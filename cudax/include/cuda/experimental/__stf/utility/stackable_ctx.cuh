@@ -1476,6 +1476,62 @@ public:
     stackable_ctx& ctx_;
   };
 
+  //! \brief RAII guard for while loop contexts with conditional graphs
+  //!
+  //! This guard automatically creates a while loop context using push_while() on construction
+  //! and calls pop() on destruction. It provides access to the conditional handle created.
+  class while_graph_scope_guard
+  {
+  public:
+    using context_type = stackable_ctx;
+
+    explicit while_graph_scope_guard(
+      stackable_ctx& ctx,
+      unsigned int defaultLaunchValue        = 0,
+      unsigned int flags                     = cudaGraphCondAssignDefault,
+      const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+        : ctx_(ctx)
+    {
+      ctx_.push_while(&conditional_handle_, defaultLaunchValue, flags, loc);
+    }
+
+    ~while_graph_scope_guard()
+    {
+      ctx_.pop();
+    }
+
+    //! \brief Get the conditional handle for this while loop
+    //! \return Pointer to the conditional handle created by push_while
+    cudaGraphConditionalHandle* get_conditional_handle()
+    {
+      return &conditional_handle_;
+    }
+
+    //! \brief Get the conditional handle value
+    //! \return The conditional handle value
+    cudaGraphConditionalHandle get_conditional_handle_value() const
+    {
+      return conditional_handle_;
+    }
+
+    //! \brief Get the conditional handle for controlling the while loop
+    //! \return The conditional handle value (cleaner API)
+    cudaGraphConditionalHandle cond_handle() const
+    {
+      return conditional_handle_;
+    }
+
+    // Non-copyable, non-movable (like std::lock_guard)
+    while_graph_scope_guard(const while_graph_scope_guard&)            = delete;
+    while_graph_scope_guard& operator=(const while_graph_scope_guard&) = delete;
+    while_graph_scope_guard(while_graph_scope_guard&&)                 = delete;
+    while_graph_scope_guard& operator=(while_graph_scope_guard&&)      = delete;
+
+  private:
+    stackable_ctx& ctx_;
+    cudaGraphConditionalHandle conditional_handle_{};
+  };
+
   //! \brief Create RAII scope that automatically handles push/pop
   //!
   //! Creates a graph_scope_guard object that calls push() on construction and pop() on destruction.
@@ -1487,6 +1543,35 @@ public:
   [[nodiscard]] auto graph_scope(const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
   {
     return graph_scope_guard(*this, loc);
+  }
+
+  //! \brief Create RAII scope for while loop contexts with conditional graphs
+  //!
+  //! Creates a while_graph_scope_guard object that calls push_while() on construction and pop() on destruction.
+  //! The [[nodiscard]] attribute ensures the returned object is stored (not discarded),
+  //! as discarding it would immediately call the destructor and pop() prematurely.
+  //!
+  //! Example usage:
+  //! ```cpp
+  //! stackable_ctx ctx;
+  //! {
+  //!   auto while_guard = ctx.while_graph_scope();
+  //!   // Tasks added here are part of the while loop body
+  //!   auto handle = while_guard.cond_handle();
+  //!   // Use handle to control while loop execution
+  //! } // Automatic pop() when while_guard goes out of scope
+  //! ```
+  //!
+  //! \param defaultLaunchValue Default launch value for the conditional node (default: 0)
+  //! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
+  //! \param loc Source location for debugging (defaults to call site)
+  //! \return while_graph_scope_guard object that manages the while context lifetime and provides access to the
+  //! conditional handle
+  [[nodiscard]] auto while_graph_scope(unsigned int defaultLaunchValue        = 0,
+                                       unsigned int flags                     = cudaGraphCondAssignDefault,
+                                       const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+  {
+    return while_graph_scope_guard(*this, defaultLaunchValue, flags, loc);
   }
 
   auto pop_extract_graph()

@@ -24,6 +24,7 @@ set(stf_example_codegen_sources
   cfd.cu
   custom_data_interface.cu
   fdtd_mgpu.cu
+  fdtd_while.cu
   frozen_data_init.cu
   graph_algorithms/degree_centrality.cu
   graph_algorithms/jaccard.cu
@@ -35,6 +36,7 @@ set(stf_example_codegen_sources
   jacobi.cu
   jacobi_pfor.cu
   jacobi_stackable.cu
+  jacobi_stackable_raii.cu
   launch_histogram.cu
   launch_scan.cu
   launch_sum.cu
