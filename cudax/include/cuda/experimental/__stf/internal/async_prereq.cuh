@@ -154,13 +154,13 @@ public:
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(backend_ctx_untyped&, reserved::event_vector&)
+  virtual bool factorize(const backend_ctx_untyped&, reserved::event_vector&)
   {
     return false;
   }
 
   // stream then depends on the list of events
-  virtual void sync_with_stream(backend_ctx_untyped&, event_list&, cudaStream_t) const
+  virtual void sync_with_stream(const backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
     fprintf(stderr, "Unsupported synchronization with stream.\n");
     abort();
@@ -228,7 +228,7 @@ public:
   /// Optimize the list to remove redundant entries which are either
   /// identical events, or events which are implicit from other events in the
   /// list.
-  void optimize(backend_ctx_untyped& bctx)
+  void optimize(const backend_ctx_untyped& bctx)
   {
     // No need to remove duplicates on a list that was already sanitized,
     // and that has not been modified since

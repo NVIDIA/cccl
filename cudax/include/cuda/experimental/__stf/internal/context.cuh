@@ -914,6 +914,31 @@ public:
     };
   }
 
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class from the variant payload
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& ctx) -> backend_ctx_untyped& {
+        return static_cast<backend_ctx_untyped&>(ctx);
+      },
+      payload);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](const auto& ctx) -> const backend_ctx_untyped& {
+        return static_cast<const backend_ctx_untyped&>(ctx);
+      },
+      payload);
+  }
+
 public:
   ::std::variant<stream_ctx, graph_ctx> payload;
 };
