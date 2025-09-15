@@ -3296,4 +3296,97 @@ UNITTEST("graph_scope iterative pattern like stackable2")
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
 
+//! \brief Helper function to repeat a body n times using while loop graphs
+//!
+//! This function encapsulates the common pattern of creating a counter-based while loop
+//! in CUDA STF. It automatically handles:
+//! - Creating and initializing a loop counter
+//! - Setting up the while graph scope
+//! - Decrementing the counter and controlling the loop continuation
+//!
+//! The returned object provides a scope where you can add tasks that will be repeated.
+//! Use the fluent interface with ->* to add your loop body. The body function is called
+//! once during graph construction to add tasks to the loop.
+//!
+//! \param ctx The stackable context to use for the loop
+//! \param n The number of iterations to perform
+//!
+//! Example usage:
+//! ```cpp
+//! stackable_ctx ctx;
+//! auto data = ctx.logical_data(...);
+//!
+//! repeat_n(ctx, 10)->*[&]() {
+//!   // Loop body - tasks added here will run 10 times
+//!   ctx.parallel_for(data.shape(), data.rw())->*[] __device__(size_t i, auto d) {
+//!     d(i) += 1.0;
+//!   };
+//! };
+//! ```
+class repeat_n_helper
+{
+private:
+  stackable_ctx& ctx_;
+  size_t n_;
+  unsigned int defaultLaunchValue_;
+  unsigned int flags_;
+
+public:
+  repeat_n_helper(
+    stackable_ctx& ctx, size_t n, unsigned int defaultLaunchValue = 0, unsigned int flags = cudaGraphCondAssignDefault)
+      : ctx_(ctx)
+      , n_(n)
+      , defaultLaunchValue_(defaultLaunchValue)
+      , flags_(flags)
+  {}
+
+  template <typename BodyFunc>
+  void operator->*(BodyFunc&& body)
+  {
+    // Early exit for zero iterations
+    if (n_ == 0)
+    {
+      return;
+    }
+
+    // Create counter for remaining iterations
+    auto counter_shape = shape_of<scalar_view<size_t>>();
+    auto lcounter      = ctx_.logical_data(counter_shape);
+
+    // Initialize counter
+    ctx_.parallel_for(box(1), lcounter.write())->*[=] __device__(size_t, auto counter) {
+      *counter = n_;
+    };
+
+    // Create while loop scope - RAII handles push_while/pop automatically
+    auto while_guard = ctx_.while_graph_scope(defaultLaunchValue_, flags_);
+
+    // Call user's body function - this is called once to construct the graph
+    body();
+
+    // Decrement counter and control loop continuation
+    auto handle = while_guard.cond_handle();
+    ctx_.parallel_for(box(1), lcounter.rw())->*[handle] __device__(size_t, auto counter) {
+      (*counter)--;
+      bool should_continue = (*counter > 0);
+      cudaGraphSetConditional(handle, should_continue);
+    };
+
+    // RAII: while_guard destructor automatically calls ctx.pop() when scope ends
+  }
+};
+
+//! \brief Create a repeat_n helper for fluent interface usage
+//!
+//! \param ctx The stackable context to use for the loop
+//! \param n The number of iterations to perform
+//! \param defaultLaunchValue Default launch value for the conditional node (default: 0)
+//! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
+//! \return repeat_n_helper object that supports ->* fluent interface
+inline repeat_n_helper repeat_n(
+  stackable_ctx& ctx, size_t n, unsigned int defaultLaunchValue = 0, unsigned int flags = cudaGraphCondAssignDefault)
+{
+  return repeat_n_helper(ctx, n, defaultLaunchValue, flags);
+}
+
 } // end namespace cuda::experimental::stf

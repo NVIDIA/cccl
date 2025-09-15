@@ -57,8 +57,6 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
-
-
   size_t iter = 0;
 
   auto lresidual = ctx.logical_data(shape_of<scalar_view<double>>());

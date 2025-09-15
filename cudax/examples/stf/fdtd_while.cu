@@ -14,8 +14,8 @@
  * @brief An example solving Maxwell equations in 3D using FDTD on multiple devices
  */
 
-#include <cuda/experimental/stf.cuh>
 #include <cuda/experimental/__stf/utility/stackable_ctx.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #include <stdlib.h>
 
@@ -143,8 +143,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   // Define the permittivity and permeability of the medium
   auto lepsilon = ctx.logical_data(data_shape);
   auto lmu      = ctx.logical_data(data_shape);
-  
-
 
   const double EPSILON = 8.85e-12; // Permittivity of free space
   const double MU      = 1.256e-6; // Permeability of free space
@@ -175,8 +173,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
             mu(i, j, k)      = MU;
           };
 
-
-
   // Set the source function at the center of the grid
 
   const size_t center_x = SIZE_X / 2;
@@ -190,80 +186,84 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   int iterations_per_graph = (output_freq == -1) ? timesteps : output_freq;
 
-  for (size_t n = 0; n < timesteps/iterations_per_graph; n++) {
-     fprintf(stderr, "WHILE BLAAAAA...\n");
-     // Counter for while loop iterations
-  auto counter_shape = shape_of<scalar_view<int>>();
-  auto lcounter = ctx.logical_data(counter_shape);
-       // Initialize counter
-  ctx.parallel_for(box(1), lcounter.write())->*[=] __device__(size_t, auto counter) {
-    *counter = iterations_per_graph;
-  };
-
-      auto while_guard = ctx.while_graph_scope(1, cudaGraphCondAssignDefault); // the arguments are the arguments we pass to cudaGraphCondHandleCreate
-      {
-    // Update the electric fields
-
-    // Update Ex
-    ctx.parallel_for(Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
-        Ex(i, j, k) = Ex(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
-      };
-
-    // Update Ey
-    ctx.parallel_for(Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
-        Ey(i, j, k) = Ey(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
-      };
-
-    // Update Ez
-    ctx.parallel_for(Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
-        Ez(i, j, k) = Ez(i, j, k)
-                    + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
-      };
-
-    // Add the source function at the center of the grid
-    ctx.parallel_for(source_s, lEz.rw())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-              Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
-            };
-
-    // Update the magnetic fields
-
-    // Update Hx
-    ctx.parallel_for(Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
-              Hx(i, j, k) = Hx(i, j, k)
-                          - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
-            };
-
-    // Update Hy
-    ctx.parallel_for(Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
-              Hy(i, j, k) = Hy(i, j, k)
-                          - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
-            };
-
-    // Update Hz
-    ctx.parallel_for(Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
-              Hz(i, j, k) = Hz(i, j, k)
-                          - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
-            };
-
-    auto handle = while_guard.cond_handle();
-    ctx.parallel_for(box(1), lcounter.rw())->*[handle] __device__(size_t, auto counter) {
-      (*counter)--;
-      bool should_continue = (*counter > 0);
-      cudaGraphSetConditional(handle, should_continue);
+  for (size_t n = 0; n < timesteps / iterations_per_graph; n++)
+  {
+    fprintf(stderr, "WHILE BLAAAAA...\n");
+    // Counter for while loop iterations
+    auto counter_shape = shape_of<scalar_view<int>>();
+    auto lcounter      = ctx.logical_data(counter_shape);
+    // Initialize counter
+    ctx.parallel_for(box(1), lcounter.write())->*[=] __device__(size_t, auto counter) {
+      *counter = iterations_per_graph;
     };
-    
+
+    auto while_guard = ctx.while_graph_scope(1, cudaGraphCondAssignDefault); // the arguments are the arguments we pass
+                                                                             // to cudaGraphCondHandleCreate
+    {
+      // Update the electric fields
+
+      // Update Ex
+      ctx.parallel_for(Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
+          ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
+                Ex(i, j, k) =
+                  Ex(i, j, k)
+                  + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
+              };
+
+      // Update Ey
+      ctx.parallel_for(Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
+          ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
+                Ey(i, j, k) =
+                  Ey(i, j, k)
+                  + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
+              };
+
+      // Update Ez
+      ctx.parallel_for(Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
+          ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
+                Ez(i, j, k) =
+                  Ez(i, j, k)
+                  + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
+              };
+
+      // Add the source function at the center of the grid
+      ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
+        Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
+      };
+
+      // Update the magnetic fields
+
+      // Update Hx
+      ctx.parallel_for(Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
+          ->*[=]
+        _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
+          Hx(i, j, k) =
+            Hx(i, j, k) - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
+        };
+
+      // Update Hy
+      ctx.parallel_for(Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
+          ->*[=]
+        _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
+          Hy(i, j, k) =
+            Hy(i, j, k) - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
+        };
+
+      // Update Hz
+      ctx.parallel_for(Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
+          ->*[=]
+        _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
+          Hz(i, j, k) =
+            Hz(i, j, k) - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
+        };
+
+      auto handle = while_guard.cond_handle();
+      ctx.parallel_for(box(1), lcounter.rw())->*[handle] __device__(size_t, auto counter) {
+        (*counter)--;
+        bool should_continue = (*counter > 0);
+        cudaGraphSetConditional(handle, should_continue);
+      };
+
     } // end of the while pattern
 
     if (output_freq > 0 && n % output_freq == 0)
