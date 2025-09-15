@@ -32,9 +32,9 @@ int main()
 
   // initialize data
   thrust::host_vector<int> host_array(R * C);
-  for (size_t i = 0; i < host_array.size(); i++)
+  for (auto& e : host_array)
   {
-    host_array[i] = dist(rng);
+    e = dist(rng);
   }
   thrust::device_vector<int> array = host_array;
 
@@ -53,10 +53,10 @@ int main()
     ::cuda::std::plus<int>());
 
   // print data
-  for (size_t i = 0; i < static_cast<size_t>(R); i++)
+  for (int i = 0; i < R; i++)
   {
     std::cout << "[ ";
-    for (size_t j = 0; j < static_cast<size_t>(C); j++)
+    for (int j = 0; j < C; j++)
     {
       std::cout << array[i * C + j] << " ";
     }

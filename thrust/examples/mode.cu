@@ -26,9 +26,9 @@ int main()
 
   // generate random data on the host
   thrust::host_vector<int> h_data(N);
-  for (size_t i = 0; i < h_data.size(); i++)
+  for (auto& e : h_data)
   {
-    h_data[i] = dist(rng);
+    e = dist(rng);
   }
 
   // transfer data to device

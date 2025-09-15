@@ -70,9 +70,9 @@ int main()
   thrust::host_vector<float> host_data(n);
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 10);
-  for (size_t i = 0; i < host_data.size(); i++)
+  for (auto& e : host_data)
   {
-    host_data[i] = static_cast<float>(dist(rng));
+    e = static_cast<float>(dist(rng));
   }
   thrust::device_vector<float> data = host_data;
 

@@ -58,9 +58,9 @@ int main()
 
   // initialize data on host
   thrust::host_vector<int> host_data(N);
-  for (size_t i = 0; i < host_data.size(); i++)
+  for (auto& e : host_data)
   {
-    host_data[i] = dist(rng);
+    e = dist(rng);
   }
   thrust::device_vector<int> data = host_data;
 
@@ -76,9 +76,9 @@ int main()
 
   // print results
   std::cout << "[ ";
-  for (size_t i = 0; i < data.size(); i++)
+  for (auto& e : host_data)
   {
-    std::cout << data[i] << " ";
+    std::cout << e << " ";
   }
   std::cout << "]" << std::endl;
 
