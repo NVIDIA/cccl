@@ -75,10 +75,9 @@ workflows:
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    # - TODO add sm90+ on clang20 (#3633)
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -157,10 +156,9 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    # - TODO add sm90+ on clang20 (#3633)
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -238,10 +236,9 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    # - TODO add sm90+ on clang20 (#3633)
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
