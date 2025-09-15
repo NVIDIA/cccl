@@ -28,7 +28,7 @@ template <typename Cat, typename Traversal>
 inline constexpr bool traversal_is =
   cuda::std::is_same_v<thrust::detail::iterator_category_to_traversal_t<Cat>, Traversal>;
 
-TEST_CASE("iterator_category_to_system", "[iterators]")
+TEST_CASE("iterator_category_to_traversal", "[iterators]")
 {
   STATIC_REQUIRE(traversal_is<thrust::input_device_iterator_tag, thrust::single_pass_traversal_tag>);
   STATIC_REQUIRE(traversal_is<thrust::output_device_iterator_tag, thrust::incrementable_traversal_tag>);
