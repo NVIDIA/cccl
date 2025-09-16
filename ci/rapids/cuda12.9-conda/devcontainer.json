@@ -1,14 +1,14 @@
 {
-  "image": "rapidsai/devcontainers:25.08-cpp-mambaforge-ubuntu22.04",
+  "image": "rapidsai/devcontainers:25.10-cpp-mambaforge-ubuntu22.04",
   "runArgs": [
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.08-cuda12.9-conda"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda12.9-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:25.8": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:25.10": {}
   },
   "overrideFeatureInstallOrder": [
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
@@ -43,7 +43,7 @@
   "initializeCommand": [
     "/bin/bash",
     "-c",
-    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,cugraph,cugraph-gnn}"
+    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cumlprims_mg,cuml,cugraph,cugraph-gnn}"
   ],
   "postCreateCommand": [
     "/bin/bash",
@@ -67,6 +67,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cudf,target=/home/coder/cudf,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/raft,target=/home/coder/raft,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuvs,target=/home/coder/cuvs,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cumlprims_mg,target=/home/coder/cuml,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuml,target=/home/coder/cuml,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph-gnn,target=/home/coder/cugraph-gnn,type=bind,consistency=consistent",
