@@ -213,8 +213,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<typename IterTraits::difference_type, int>);
   }
   { // Nothing to see here
-    using Iter       = cuda::counting_iterator<NotIncrementable>;
-    using IterTraits = Traits<Iter>;
+    using Iter = cuda::counting_iterator<NotIncrementable>;
     static_assert(!HasIteratorCategory<Iter>);
   }
   {
