@@ -13,6 +13,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/iterator>
 
 #include "test_macros.h"
 #include "types.h"
@@ -139,7 +140,8 @@ template <class T>
 _CCCL_CONCEPT HasIteratorCategory =
   _CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::ranges::iterator_t<T>::iterator_category));
 
-template <template <class> class Traits>
+// Note the variadic arguents avoid a bug with older clang
+template <template <class...> class Traits>
 __host__ __device__ void test()
 {
   {
@@ -232,9 +234,9 @@ __host__ __device__ void test()
 
 __host__ __device__ void test()
 {
-  test<::cuda::std::iterator_traits>();
+  test<cuda::std::iterator_traits>();
 #if !TEST_COMPILER(NVRTC)
-  test<::std::iterator_traits>();
+  test<std::iterator_traits>();
 #endif // !TEST_COMPILER(NVRTC)
 }
 
