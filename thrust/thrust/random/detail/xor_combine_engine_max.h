@@ -135,21 +135,23 @@ struct xor_combine_engine_max_aux_2
 {
   using constants = xor_combine_engine_max_aux_constants<result_type, a, b, d>;
 
-  static constexpr result_type
-    value = thrust::detail::eval_if <
-              // if k is odd...
-              constants::k % 2
-         == 1,
-    ::cuda::std::type_identity<
-      thrust::detail::integral_constant<result_type, xor_combine_engine_max_aux_case2<result_type, a, b, d>::value>>,
-    thrust::detail::eval_if <
-      // otherwise if a * 2^3 >= b, then case 3
-      a *constants::two_to_the_d >= b,
-    ::cuda::std::type_identity<
-      thrust::detail::integral_constant<result_type, xor_combine_engine_max_aux_case3<result_type, a, b, d>::value>>,
+  _CCCL_HOST_DEVICE static constexpr result_type compute_value()
+  {
+    // if k is odd...
+    if (constants::k % 2 == 1)
+    {
+      return xor_combine_engine_max_aux_case2<result_type, a, b, d>::value;
+    }
+    // otherwise if a * 2^3 >= b, then case 3
+    if (a * constants::two_to_the_d >= b)
+    {
+      return xor_combine_engine_max_aux_case3<result_type, a, b, d>::value;
+    }
     // otherwise, case 4
-    ::cuda::std::type_identity < thrust::detail::integral_constant < result_type,
-    xor_combine_engine_max_aux_case4<result_type, a, b, d>::value >>>> ::type::value;
+    return xor_combine_engine_max_aux_case4<result_type, a, b, d>::value;
+  }
+
+  static constexpr result_type value = compute_value();
 };
 
 template <typename result_type, result_type a, result_type b, int d, bool use_case1 = (a == 0) || (b < two_to_the_power(d))>
