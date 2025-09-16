@@ -57,6 +57,9 @@ struct iterator_category_to_traversal
                                 CategoryOrTraversal,
                                 decltype(cat_to_traversal_impl(CategoryOrTraversal{}))>;
 };
+
+template <typename CategoryOrTraversal>
+using iterator_category_to_traversal_t = typename iterator_category_to_traversal<CategoryOrTraversal>::type;
 } // namespace detail
 
 THRUST_NAMESPACE_END

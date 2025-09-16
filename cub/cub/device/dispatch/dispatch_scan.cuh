@@ -50,7 +50,6 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/kernels/scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>

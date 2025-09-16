@@ -7,8 +7,6 @@
 #include <iostream>
 #include <iterator>
 
-#include "include/host_device.h"
-
 // This example illustrates how to implement the SAXPY
 // operation (Y[i] = a * X[i] + Y[i]) using Thrust.
 // The saxpy_slow function demonstrates the most
@@ -55,13 +53,13 @@ void saxpy_slow(float A, thrust::device_vector<float>& X, thrust::device_vector<
 int main()
 {
   // initialize host arrays
-  float x[4] = {1.0, 1.0, 1.0, 1.0};
-  float y[4] = {1.0, 2.0, 3.0, 4.0};
+  thrust::host_vector<float> x{1.0, 1.0, 1.0, 1.0};
+  thrust::host_vector<float> y{1.0, 2.0, 3.0, 4.0};
 
   {
     // transfer to device
-    thrust::device_vector<float> X(x, x + 4);
-    thrust::device_vector<float> Y(y, y + 4);
+    thrust::device_vector<float> X(x);
+    thrust::device_vector<float> Y(y);
 
     // slow method
     saxpy_slow(2.0, X, Y);
@@ -69,8 +67,8 @@ int main()
 
   {
     // transfer to device
-    thrust::device_vector<float> X(x, x + 4);
-    thrust::device_vector<float> Y(y, y + 4);
+    thrust::device_vector<float> X(x);
+    thrust::device_vector<float> Y(y);
 
     // fast method
     saxpy_fast(2.0, X, Y);
