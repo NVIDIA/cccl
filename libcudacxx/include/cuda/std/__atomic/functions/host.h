@@ -37,14 +37,20 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 
 #if !_CCCL_COMPILER(NVRTC)
 
+// The compiler can provide 128b atomic support. Some onus on user to guarantee support.
 #  if _CCCL_HAS_BUILTIN_128_ATOMICS()
 #    define _LIBCUDACXX_INT128_WARN(TYPE)
+// The compiler supports 128b via libatomic or another API.
 #  elif _CCCL_HAS_LIBRARY_128_ATOMICS()
 #    define _LIBCUDACXX_INT128_WARN(TYPE)                                                                              \
       static_assert(sizeof(TYPE) < 16,                                                                                 \
                     "CCCL requires native support for 128 bit atomics. This cannot be determined statically, define "  \
                     "LIBCUDACXX_IGNORE_MISSING_BUILTIN_128_ATOMICS to ignore and acknowledge that runtime corruption " \
-                    "may occur by relying on libatomic for dispatch.");
+                    "may occur if libatomic does not use lock free atomics.");
+// The compiler does not provide support or proof of support. eg. msvc
+#  else
+#    define _LIBCUDACXX_INT128_WARN(TYPE) \
+      static_assert(sizeof(TYPE) < 16, "atomic_ref<T> where sizeof(T) > 8 is not supported on this sytem.");
 #  endif
 
 template <typename _Tp>
