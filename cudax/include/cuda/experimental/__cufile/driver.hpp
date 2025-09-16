@@ -22,13 +22,11 @@
 #include <cuda/experimental/__cufile/cufile.hpp>
 #include <cuda/experimental/__cufile/detail/enums.hpp>
 
-#include <memory>
 #include <string>
-#include <vector>
 
 #include <cufile.h>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 // no additional declarations
@@ -41,23 +39,63 @@ private:
 
 public:
   //! Initialize and get driver properties
-  driver_properties();
+  driver_properties()
+  {
+    CUfileError_t error = cuFileDriverGetProperties(&props_);
+    check_cufile_result(error, "cuFileDriverGetProperties");
+  }
 
   // NVFS Properties
-  unsigned int get_nvfs_major_version() const noexcept;
-  unsigned int get_nvfs_minor_version() const noexcept;
-  size_t get_poll_threshold_size() const noexcept;
-  size_t get_max_direct_io_size() const noexcept;
-  unsigned int get_status_flags() const noexcept;
-  unsigned int get_control_flags() const noexcept;
+  unsigned int get_nvfs_major_version() const noexcept
+  {
+    return props_.nvfs.major_version;
+  }
+  unsigned int get_nvfs_minor_version() const noexcept
+  {
+    return props_.nvfs.minor_version;
+  }
+  size_t get_poll_threshold_size() const noexcept
+  {
+    return props_.nvfs.poll_thresh_size;
+  }
+  size_t get_max_direct_io_size() const noexcept
+  {
+    return props_.nvfs.max_direct_io_size;
+  }
+  unsigned int get_status_flags() const noexcept
+  {
+    return props_.nvfs.dstatusflags;
+  }
+  unsigned int get_control_flags() const noexcept
+  {
+    return props_.nvfs.dcontrolflags;
+  }
 
   // Driver Properties
-  unsigned int get_feature_flags() const noexcept;
-  unsigned int get_max_device_cache_size() const noexcept;
-  unsigned int get_per_buffer_cache_size() const noexcept;
-  unsigned int get_max_pinned_memory_size() const noexcept;
-  unsigned int get_max_batch_io_size() const noexcept;
-  unsigned int get_max_batch_io_timeout_msecs() const noexcept;
+  unsigned int get_feature_flags() const noexcept
+  {
+    return props_.fflags;
+  }
+  unsigned int get_max_device_cache_size() const noexcept
+  {
+    return props_.max_device_cache_size;
+  }
+  unsigned int get_per_buffer_cache_size() const noexcept
+  {
+    return props_.per_buffer_cache_size;
+  }
+  unsigned int get_max_pinned_memory_size() const noexcept
+  {
+    return props_.max_device_pinned_mem_size;
+  }
+  unsigned int get_max_batch_io_size() const noexcept
+  {
+    return props_.max_batch_io_size;
+  }
+  unsigned int get_max_batch_io_timeout_msecs() const noexcept
+  {
+    return props_.max_batch_io_timeout_msecs;
+  }
 
   // Filesystem Support
   bool lustre_supported() const noexcept
@@ -124,325 +162,169 @@ public:
 };
 
 // Driver Management
-void driver_open();
-void driver_close();
-long driver_use_count();
-driver_properties get_driver_properties();
-int get_version();
-
-// Driver Configuration
-void set_poll_mode(bool enabled, size_t threshold_kb);
-void set_max_direct_io_size(size_t size_kb);
-void set_max_cache_size(size_t size_kb);
-void set_max_pinned_memory_size(size_t size_kb);
-
-// Parameter Management
-size_t get_parameter_size_t(CUFileSizeTConfigParameter_t param);
-bool get_parameter_bool(CUFileBoolConfigParameter_t param);
-::std::string get_parameter_string(CUFileStringConfigParameter_t param);
-
-void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value);
-void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value);
-void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value);
-
-// Statistics Management
-#ifdef CUfileStatsLevel1_t
-void set_stats_level(int level);
-int get_stats_level();
-void stats_start();
-void stats_stop();
-void stats_reset();
-CUfileStatsLevel1_t get_stats_l1();
-CUfileStatsLevel2_t get_stats_l2();
-CUfileStatsLevel3_t get_stats_l3();
-#endif
-
-#ifdef cuFileGetBARSizeInKB
-size_t get_bar_size_kb(int gpu_index);
-#endif
-
-// Capability Checking
-bool is_cufile_library_available() noexcept;
-bool is_cufile_available() noexcept;
-bool is_batch_api_available() noexcept;
-bool is_stream_api_available() noexcept;
-
-//! RAII wrapper for automatic driver management
-class driver_handle
-{
-public:
-  driver_handle()
-  {
-    cuda::experimental::cufile::driver_open();
-  }
-  ~driver_handle() noexcept
-  {
-    cuda::experimental::cufile::driver_close();
-  }
-
-  driver_handle(const driver_handle&)            = delete;
-  driver_handle& operator=(const driver_handle&) = delete;
-  driver_handle(driver_handle&&)                 = default;
-  driver_handle& operator=(driver_handle&&)      = default;
-};
-
-// ===================== Inline implementations =====================
-
-inline driver_properties::driver_properties()
-{
-  CUfileError_t error = cuFileDriverGetProperties(&props_);
-  detail::check_cufile_result(error, "cuFileDriverGetProperties");
-}
-
-inline unsigned int driver_properties::get_nvfs_major_version() const noexcept
-{
-  return props_.nvfs.major_version;
-}
-
-inline unsigned int driver_properties::get_nvfs_minor_version() const noexcept
-{
-  return props_.nvfs.minor_version;
-}
-
-inline size_t driver_properties::get_poll_threshold_size() const noexcept
-{
-  return props_.nvfs.poll_thresh_size;
-}
-
-inline size_t driver_properties::get_max_direct_io_size() const noexcept
-{
-  return props_.nvfs.max_direct_io_size;
-}
-
-inline unsigned int driver_properties::get_status_flags() const noexcept
-{
-  return props_.nvfs.dstatusflags;
-}
-
-inline unsigned int driver_properties::get_control_flags() const noexcept
-{
-  return props_.nvfs.dcontrolflags;
-}
-
-inline unsigned int driver_properties::get_feature_flags() const noexcept
-{
-  return props_.fflags;
-}
-
-inline unsigned int driver_properties::get_max_device_cache_size() const noexcept
-{
-  return props_.max_device_cache_size;
-}
-
-inline unsigned int driver_properties::get_per_buffer_cache_size() const noexcept
-{
-  return props_.per_buffer_cache_size;
-}
-
-inline unsigned int driver_properties::get_max_pinned_memory_size() const noexcept
-{
-  return props_.max_device_pinned_mem_size;
-}
-
-inline unsigned int driver_properties::get_max_batch_io_size() const noexcept
-{
-  return props_.max_batch_io_size;
-}
-
-inline unsigned int driver_properties::get_max_batch_io_timeout_msecs() const noexcept
-{
-  return props_.max_batch_io_timeout_msecs;
-}
-
-inline const CUfileDrvProps_t& driver_properties::get_raw_properties() const noexcept
-{
-  return props_;
-}
-
-// Driver Management
-inline void driver_open()
+void driver_open()
 {
   CUfileError_t error = cuFileDriverOpen();
-  detail::check_cufile_result(error, "cuFileDriverOpen");
+  check_cufile_result(error, "cuFileDriverOpen");
 }
-
-inline void driver_close()
+void driver_close()
 {
   CUfileError_t error = cuFileDriverClose();
-  detail::check_cufile_result(error, "cuFileDriverClose");
+  check_cufile_result(error, "cuFileDriverClose");
 }
-
-inline long driver_use_count()
+long driver_use_count()
 {
   return cuFileUseCount();
 }
-
-inline driver_properties get_driver_properties()
+driver_properties get_driver_properties()
 {
-  return driver_properties{}; // Will initialize in constructor
+  return driver_properties{};
 }
-
-inline int get_version()
+int get_version()
 {
   int version         = 0;
   CUfileError_t error = cuFileGetVersion(&version);
-  detail::check_cufile_result(error, "cuFileGetVersion");
+  check_cufile_result(error, "cuFileGetVersion");
   return version;
 }
 
 // Driver Configuration
-inline void set_poll_mode(bool enabled, size_t threshold_kb)
+void set_poll_mode(bool enabled, size_t threshold_kb)
 {
   CUfileError_t error = cuFileDriverSetPollMode(enabled, threshold_kb);
-  detail::check_cufile_result(error, "cuFileDriverSetPollMode");
+  check_cufile_result(error, "cuFileDriverSetPollMode");
 }
-
-inline void set_max_direct_io_size(size_t size_kb)
+void set_max_direct_io_size(size_t size_kb)
 {
   CUfileError_t error = cuFileDriverSetMaxDirectIOSize(size_kb);
-  detail::check_cufile_result(error, "cuFileDriverSetMaxDirectIOSize");
+  check_cufile_result(error, "cuFileDriverSetMaxDirectIOSize");
 }
-
-inline void set_max_cache_size(size_t size_kb)
+void set_max_cache_size(size_t size_kb)
 {
   CUfileError_t error = cuFileDriverSetMaxCacheSize(size_kb);
-  detail::check_cufile_result(error, "cuFileDriverSetMaxCacheSize");
+  check_cufile_result(error, "cuFileDriverSetMaxCacheSize");
 }
-
-inline void set_max_pinned_memory_size(size_t size_kb)
+void set_max_pinned_memory_size(size_t size_kb)
 {
   CUfileError_t error = cuFileDriverSetMaxPinnedMemSize(size_kb);
-  detail::check_cufile_result(error, "cuFileDriverSetMaxPinnedMemSize");
+  check_cufile_result(error, "cuFileDriverSetMaxPinnedMemSize");
 }
 
 // Parameter Management
-inline size_t get_parameter_size_t(CUFileSizeTConfigParameter_t param)
+size_t get_parameter_size_t(CUFileSizeTConfigParameter_t param)
 {
   size_t value;
   CUfileError_t error = cuFileGetParameterSizeT(param, &value);
-  detail::check_cufile_result(error, "cuFileGetParameterSizeT");
+  check_cufile_result(error, "cuFileGetParameterSizeT");
   return value;
 }
-
-inline bool get_parameter_bool(CUFileBoolConfigParameter_t param)
+bool get_parameter_bool(CUFileBoolConfigParameter_t param)
 {
   bool value;
   CUfileError_t error = cuFileGetParameterBool(param, &value);
-  detail::check_cufile_result(error, "cuFileGetParameterBool");
+  check_cufile_result(error, "cuFileGetParameterBool");
   return value;
 }
-
-inline ::std::string get_parameter_string(CUFileStringConfigParameter_t param)
+::std::string get_parameter_string(CUFileStringConfigParameter_t param)
 {
   char buffer[1024]; // Reasonable buffer size
   CUfileError_t error = cuFileGetParameterString(param, buffer, sizeof(buffer));
-  detail::check_cufile_result(error, "cuFileGetParameterString");
+  check_cufile_result(error, "cuFileGetParameterString");
   return ::std::string(buffer);
 }
 
-inline void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value)
+void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value)
 {
   CUfileError_t error = cuFileSetParameterSizeT(param, value);
-  detail::check_cufile_result(error, "cuFileSetParameterSizeT");
+  check_cufile_result(error, "cuFileSetParameterSizeT");
 }
-
-inline void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value)
+void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value)
 {
   CUfileError_t error = cuFileSetParameterBool(param, value);
-  detail::check_cufile_result(error, "cuFileSetParameterBool");
+  check_cufile_result(error, "cuFileSetParameterBool");
 }
-
-inline void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value)
+void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value)
 {
   CUfileError_t error = cuFileSetParameterString(param, value.c_str());
-  detail::check_cufile_result(error, "cuFileSetParameterString");
+  check_cufile_result(error, "cuFileSetParameterString");
 }
 
 // Statistics Management
 #ifdef CUfileStatsLevel1_t
-inline void set_stats_level(int level)
+void set_stats_level(int level)
 {
   CUfileError_t error = cuFileSetStatsLevel(level);
-  detail::check_cufile_result(error, "cuFileSetStatsLevel");
+  check_cufile_result(error, "cuFileSetStatsLevel");
 }
-
-inline int get_stats_level()
+int get_stats_level()
 {
   int level;
   CUfileError_t error = cuFileGetStatsLevel(&level);
-  detail::check_cufile_result(error, "cuFileGetStatsLevel");
+  check_cufile_result(error, "cuFileGetStatsLevel");
   return level;
 }
-
-inline void stats_start()
+void stats_start()
 {
   CUfileError_t error = cuFileStatsStart();
-  detail::check_cufile_result(error, "cuFileStatsStart");
+  check_cufile_result(error, "cuFileStatsStart");
 }
-
-inline void stats_stop()
+void stats_stop()
 {
   CUfileError_t error = cuFileStatsStop();
-  detail::check_cufile_result(error, "cuFileStatsStop");
+  check_cufile_result(error, "cuFileStatsStop");
 }
-
-inline void stats_reset()
+void stats_reset()
 {
   CUfileError_t error = cuFileStatsReset();
-  detail::check_cufile_result(error, "cuFileStatsReset");
+  check_cufile_result(error, "cuFileStatsReset");
 }
-
-inline CUfileStatsLevel1_t get_stats_l1()
+CUfileStatsLevel1_t get_stats_l1()
 {
   CUfileStatsLevel1_t stats;
   CUfileError_t error = cuFileGetStatsL1(&stats);
-  detail::check_cufile_result(error, "cuFileGetStatsL1");
+  check_cufile_result(error, "cuFileGetStatsL1");
   return stats;
 }
-
-inline CUfileStatsLevel2_t get_stats_l2()
+CUfileStatsLevel2_t get_stats_l2()
 {
   CUfileStatsLevel2_t stats;
   CUfileError_t error = cuFileGetStatsL2(&stats);
-  detail::check_cufile_result(error, "cuFileGetStatsL2");
+  check_cufile_result(error, "cuFileGetStatsL2");
   return stats;
 }
-
-inline CUfileStatsLevel3_t get_stats_l3()
+CUfileStatsLevel3_t get_stats_l3()
 {
   CUfileStatsLevel3_t stats;
   CUfileError_t error = cuFileGetStatsL3(&stats);
-  detail::check_cufile_result(error, "cuFileGetStatsL3");
+  check_cufile_result(error, "cuFileGetStatsL3");
   return stats;
 }
 #endif
 
 #ifdef cuFileGetBARSizeInKB
-inline size_t get_bar_size_kb(int gpu_index)
+size_t get_bar_size_kb(int gpu_index)
 {
   size_t bar_size;
   CUfileError_t error = cuFileGetBARSizeInKB(gpu_index, &bar_size);
-  detail::check_cufile_result(error, "cuFileGetBARSizeInKB");
+  check_cufile_result(error, "cuFileGetBARSizeInKB");
   return bar_size;
 }
 #endif
 
 // Capability Checking
-inline bool is_cufile_library_available() noexcept
+bool is_cufile_library_available() noexcept
 {
   int version         = 0;
   CUfileError_t error = cuFileGetVersion(&version);
   return (error.err == to_c_enum(cu_file_error::success));
 }
-
-inline bool is_cufile_available() noexcept
+bool is_cufile_available() noexcept
 {
   CUfileDrvProps_t props;
   CUfileError_t error = cuFileDriverGetProperties(&props);
   return (error.err == to_c_enum(cu_file_error::success));
 }
-
-inline bool is_batch_api_available() noexcept
+bool is_batch_api_available() noexcept
 {
   CUfileDrvProps_t props = {};
   CUfileError_t error    = cuFileDriverGetProperties(&props);
@@ -452,8 +334,7 @@ inline bool is_batch_api_available() noexcept
   }
   return (props.fflags & (1 << CU_FILE_BATCH_IO_SUPPORTED)) != 0;
 }
-
-inline bool is_stream_api_available() noexcept
+bool is_stream_api_available() noexcept
 {
   CUfileDrvProps_t props = {};
   CUfileError_t error    = cuFileDriverGetProperties(&props);
@@ -464,4 +345,98 @@ inline bool is_stream_api_available() noexcept
   return (props.fflags & (1 << CU_FILE_STREAMS_SUPPORTED)) != 0;
 }
 
-} // namespace cuda::experimental::cufile
+//! RAII wrapper for automatic driver management
+class driver_handle
+{
+public:
+  driver_handle()
+  {
+    cuda::experimental::io::driver_open();
+  }
+  ~driver_handle() noexcept
+  {
+    cuda::experimental::io::driver_close();
+  }
+
+  driver_handle(const driver_handle&)            = delete;
+  driver_handle& operator=(const driver_handle&) = delete;
+  driver_handle(driver_handle&&)                 = default;
+  driver_handle& operator=(driver_handle&&)      = default;
+};
+
+// ===================== Inline implementations =====================
+
+inline const CUfileDrvProps_t& driver_properties::get_raw_properties() const noexcept
+{
+  return props_;
+}
+
+// Statistics Management
+#ifdef CUfileStatsLevel1_t
+inline void set_stats_level(int level)
+{
+  CUfileError_t error = cuFileSetStatsLevel(level);
+  check_cufile_result(error, "cuFileSetStatsLevel");
+}
+
+inline int get_stats_level()
+{
+  int level;
+  CUfileError_t error = cuFileGetStatsLevel(&level);
+  check_cufile_result(error, "cuFileGetStatsLevel");
+  return level;
+}
+
+inline void stats_start()
+{
+  CUfileError_t error = cuFileStatsStart();
+  check_cufile_result(error, "cuFileStatsStart");
+}
+
+inline void stats_stop()
+{
+  CUfileError_t error = cuFileStatsStop();
+  check_cufile_result(error, "cuFileStatsStop");
+}
+
+inline void stats_reset()
+{
+  CUfileError_t error = cuFileStatsReset();
+  check_cufile_result(error, "cuFileStatsReset");
+}
+
+inline CUfileStatsLevel1_t get_stats_l1()
+{
+  CUfileStatsLevel1_t stats;
+  CUfileError_t error = cuFileGetStatsL1(&stats);
+  check_cufile_result(error, "cuFileGetStatsL1");
+  return stats;
+}
+
+inline CUfileStatsLevel2_t get_stats_l2()
+{
+  CUfileStatsLevel2_t stats;
+  CUfileError_t error = cuFileGetStatsL2(&stats);
+  check_cufile_result(error, "cuFileGetStatsL2");
+  return stats;
+}
+
+inline CUfileStatsLevel3_t get_stats_l3()
+{
+  CUfileStatsLevel3_t stats;
+  CUfileError_t error = cuFileGetStatsL3(&stats);
+  check_cufile_result(error, "cuFileGetStatsL3");
+  return stats;
+}
+#endif
+
+#ifdef cuFileGetBARSizeInKB
+inline size_t get_bar_size_kb(int gpu_index)
+{
+  size_t bar_size;
+  CUfileError_t error = cuFileGetBARSizeInKB(gpu_index, &bar_size);
+  check_cufile_result(error, "cuFileGetBARSizeInKB");
+  return bar_size;
+}
+#endif
+} // namespace cuda::experimental::io

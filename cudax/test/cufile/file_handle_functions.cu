@@ -27,7 +27,7 @@
 
 #include <unistd.h>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 namespace
@@ -42,14 +42,7 @@ struct driver_singleton
   }
 
 private:
-  driver_singleton()
-  {
-    driver_open();
-  }
-  ~driver_singleton()
-  {
-    driver_close();
-  }
+  driver_handle driver_handle_;
 };
 
 // Test configuration and setup
@@ -813,4 +806,4 @@ TEST_CASE("Large file operations", "[file_handle][large_files]")
   cleanup_test_environment();
 }
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io

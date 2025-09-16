@@ -13,7 +13,7 @@
 
 #include <cufile.h>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 //! @brief cuFile error codes (only success is defined by cuFile API)
@@ -208,4 +208,4 @@ inline CUfileOpError to_c_enum_from_result(ssize_t result)
   return static_cast<CUfileOpError>(result);
 }
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io

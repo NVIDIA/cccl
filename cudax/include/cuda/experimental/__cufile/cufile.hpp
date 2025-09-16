@@ -30,14 +30,8 @@
 #include <cufile.h>
 
 // CUDA Experimental cuFILE Library namespace
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
-// Forward declare driver API used by helpers below
-void driver_open();
-void driver_close();
-long driver_use_count();
-int get_version();
-
 // ================================================================================================
 // Error Handling
 // ================================================================================================
@@ -93,53 +87,15 @@ inline ssize_t check_cufile_result(ssize_t result, const ::std::string& operatio
   }
   return result;
 }
-
-//! Initialize the cuFILE library
-inline void initialize()
-{
-  driver_open();
-}
-
-//! Shutdown the cuFILE library
-inline void shutdown()
-{
-  driver_close();
-}
-
-//! Check if the cuFILE library is initialized
-inline bool is_initialized() noexcept
-{
-  return driver_use_count() > 0;
-}
-
-//! Get cuFILE library version information
-inline int get_cufile_version() noexcept
-{
-  return get_version();
-}
-
-namespace detail
-{
-inline void check_cufile_result(CUfileError_t error, const ::std::string& operation = "")
-{
-  ::cuda::experimental::cufile::check_cufile_result(error, operation);
-}
-
-inline ssize_t check_cufile_result(ssize_t result, const ::std::string& operation = "")
-{
-  return ::cuda::experimental::cufile::check_cufile_result(result, operation);
-}
-} // namespace detail
-
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io
 
 // ================================================================================================
 // Core Components
 // ================================================================================================
 
-#include <cuda/experimental/__cufile/batch_handle.hpp>
-#include <cuda/experimental/__cufile/buffer_handle.hpp>
+// #include <cuda/experimental/__cufile/batch_handle.hpp>
+// #include <cuda/experimental/__cufile/buffer_handle.hpp>
 #include <cuda/experimental/__cufile/driver.hpp>
-#include <cuda/experimental/__cufile/file_handle.hpp>
-#include <cuda/experimental/__cufile/stream_handle.hpp>
-#include <cuda/experimental/__cufile/utils.hpp>
+// #include <cuda/experimental/__cufile/file_handle.hpp>
+// #include <cuda/experimental/__cufile/stream_handle.hpp>
+// #include <cuda/experimental/__cufile/utils.hpp>

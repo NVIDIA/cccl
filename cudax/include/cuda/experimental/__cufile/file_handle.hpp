@@ -34,7 +34,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 class file_handle;
@@ -125,11 +125,11 @@ private:
   static int validate_fd_or_throw(int fd);
 };
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io
 
 // ===================== Inline implementations =====================
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 // Static method implementations
@@ -182,7 +182,7 @@ inline void file_handle_ref::register_file()
 
   CUfileHandle_t handle;
   CUfileError_t error = cuFileHandleRegister(&handle, &desc);
-  ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileHandleRegister");
+  check_cufile_result(error, "cuFileHandleRegister");
   cufile_handle_ = handle;
 }
 
@@ -280,7 +280,7 @@ inline size_t file_handle_ref::read(::cuda::std::span<T> buffer, off_t file_offs
   size_t size_bytes = buffer.size_bytes();
 
   ssize_t result = cuFileRead(cufile_handle_, buffer_ptr, size_bytes, file_offset, buffer_offset);
-  return static_cast<size_t>(detail::check_cufile_result(result, "cuFileRead"));
+  return static_cast<size_t>(check_cufile_result(result, "cuFileRead"));
 }
 
 template <typename T>
@@ -293,7 +293,7 @@ inline size_t file_handle_ref::write(::cuda::std::span<const T> buffer, off_t fi
   size_t size_bytes      = buffer.size_bytes();
 
   ssize_t result = cuFileWrite(cufile_handle_, buffer_ptr, size_bytes, file_offset, buffer_offset);
-  return static_cast<size_t>(detail::check_cufile_result(result, "cuFileWrite"));
+  return static_cast<size_t>(check_cufile_result(result, "cuFileWrite"));
 }
 
 template <typename T>
@@ -308,7 +308,7 @@ inline void file_handle_ref::read_async(
 
   CUfileError_t error =
     cuFileReadAsync(cufile_handle_, buffer_ptr, &size_bytes, &file_offset, &buffer_offset, &bytes_read, stream.get());
-  detail::check_cufile_result(error, "cuFileReadAsync");
+  check_cufile_result(error, "cuFileReadAsync");
 }
 
 template <typename T>
@@ -333,9 +333,9 @@ inline void file_handle_ref::write_async(
     &buffer_offset,
     &bytes_written,
     stream.get());
-  ::cuda::experimental::cufile::detail::check_cufile_result(error, "cuFileWriteAsync");
+  check_cufile_result(error, "cuFileWriteAsync");
 }
 
 // getters implemented inline in class
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io

@@ -23,7 +23,7 @@
 
 #include <functional>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 //! RAII wrapper for CUDA stream registration with cuFILE
@@ -53,7 +53,7 @@ public:
 inline stream_handle::stream_handle(cuda::stream_ref stream, unsigned int flags)
 {
   CUfileError_t error = cuFileStreamRegister(stream.get(), flags);
-  detail::check_cufile_result(error, "cuFileStreamRegister");
+  check_cufile_result(error, "cuFileStreamRegister");
   registered_stream_ = stream.get();
 }
 
@@ -96,4 +96,4 @@ inline bool stream_handle::is_valid() const noexcept
   return registered_stream_ != nullptr;
 }
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io

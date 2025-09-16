@@ -30,7 +30,7 @@
 
 #include <sys/types.h>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 //! Batch I/O operation descriptor using span
@@ -123,7 +123,7 @@ inline batch_handle::batch_handle(unsigned int max_operations)
     : max_operations_(max_operations)
 {
   CUfileError_t error = cuFileBatchIOSetUp(&handle_, max_operations);
-  detail::check_cufile_result(error, "cuFileBatchIOSetUp");
+  check_cufile_result(error, "cuFileBatchIOSetUp");
 }
 
 inline batch_handle::batch_handle(batch_handle&& other) noexcept
@@ -165,7 +165,7 @@ batch_handle::get_status(unsigned int min_completed, ::cuda::std::chrono::millis
 
   CUfileError_t error = cuFileBatchIOGetStatus(
     handle_, min_completed, &num_events, events.data(), timeout.count() > 0 ? &timeout_spec : nullptr);
-  detail::check_cufile_result(error, "cuFileBatchIOGetStatus");
+  check_cufile_result(error, "cuFileBatchIOGetStatus");
 
   ::std::vector<batch_io_result> results;
   results.reserve(num_events);
@@ -185,7 +185,7 @@ batch_handle::get_status(unsigned int min_completed, ::cuda::std::chrono::millis
 inline void batch_handle::cancel()
 {
   CUfileError_t error = cuFileBatchIOCancel(handle_);
-  detail::check_cufile_result(error, "cuFileBatchIOCancel");
+  check_cufile_result(error, "cuFileBatchIOCancel");
   handle_ = nullptr;
 }
 
@@ -222,7 +222,7 @@ inline void batch_handle::submit(const Handle& file_handle_ref,
   }
 
   CUfileError_t error = cuFileBatchIOSubmit(handle_, cufile_ops.size(), cufile_ops.data(), to_c_enum(flags));
-  detail::check_cufile_result(error, "cuFileBatchIOSubmit");
+  check_cufile_result(error, "cuFileBatchIOSubmit");
 }
 
 // Free function template implementations
@@ -242,4 +242,4 @@ make_write_operation(::cuda::std::span<const T> buffer, off_t file_offset, off_t
 
 // Free function templates are defined below; no separate declarations needed
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io

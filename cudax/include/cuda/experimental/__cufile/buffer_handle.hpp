@@ -25,7 +25,7 @@
 
 #include <functional>
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 //! RAII wrapper for GPU buffer registration
@@ -85,7 +85,7 @@ inline buffer_handle::buffer_handle(::cuda::std::span<T> buffer, cu_file_buf_reg
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), to_c_enum(flags));
-  detail::check_cufile_result(error, "cuFileBufRegister");
+  check_cufile_result(error, "cuFileBufRegister");
   registered_buffer_ = buffer_.data();
 }
 
@@ -96,7 +96,7 @@ inline buffer_handle::buffer_handle(::cuda::std::span<const T> buffer, cu_file_b
   static_assert(::cuda::std::is_trivially_copyable_v<T>, "Type must be trivially copyable for cuFile operations");
 
   CUfileError_t error = cuFileBufRegister(buffer_.data(), buffer_.size(), to_c_enum(flags));
-  detail::check_cufile_result(error, "cuFileBufRegister");
+  check_cufile_result(error, "cuFileBufRegister");
   registered_buffer_ = buffer_.data();
 }
 
@@ -176,4 +176,4 @@ inline bool buffer_handle::is_valid() const noexcept
   return registered_buffer_ != nullptr;
 }
 
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io
