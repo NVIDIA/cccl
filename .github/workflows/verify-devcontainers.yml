@@ -96,8 +96,13 @@ jobs:
   verify-devcontainers:
     name: ${{matrix.devcontainer.name}}
     needs: get-devcontainer-list
-    if: ${{ needs.get-devcontainer-list.outputs.skip != 'true' }}
-    runs-on: linux-amd64-cpu4
+    # Stop here on forks -- these jobs can OOM public runners.
+    if: >-
+      ${{
+        github.repository == 'NVIDIA/cccl' &&
+        needs.get-devcontainer-list.outputs.skip != 'true'
+      }}
+    runs-on: 'linux-amd64-cpu4'
     strategy:
       fail-fast: false
       matrix:

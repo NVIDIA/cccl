@@ -22,7 +22,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -31,10 +31,11 @@ jobs:
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
-          id:         "${{ matrix.id }}"
-          command:    "${{ matrix.command }}"
-          image:      "${{ matrix.image }}"
-          runner:     "${{ matrix.runner }}"
-          cuda:       "${{ matrix.cuda }}"
-          host:       "${{ matrix.host }}"
+          id:      ${{ matrix.id }}
+          command: ${{ matrix.command }}
+          image:   ${{ matrix.image }}
+          runner:  ${{ matrix.runner }}
+          cuda:    ${{ matrix.cuda }}
+          host:    ${{ matrix.host }}
           dist-token: "${{ secrets.SCCACHE_DIST_TOKEN }}"
+          github_token: ${{ github.repository != 'NVIDIA/cccl' && secrets.SCCACHE_AUTH_TOKEN || '' }}
