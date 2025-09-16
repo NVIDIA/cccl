@@ -8,9 +8,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
-
-#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
