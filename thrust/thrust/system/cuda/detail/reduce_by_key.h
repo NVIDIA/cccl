@@ -119,7 +119,7 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  static constexpr int MAX_INPUT_BYTES             = int{::cuda::std::max(sizeof(Key), sizeof(Value))};
+  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(int{sizeof(Key)}, int{sizeof(Value)});
   static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
   static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
   static constexpr int ITEMS_PER_THREAD =
