@@ -641,7 +641,6 @@ UNITTEST("dim4 very large total size")
 
   const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
   EXPECT(d.size() == expected_size);
-  EXPECT(expected_size >= (1ULL << 40)); // This is more than 1T elements (2^40)
 };
 
 UNITTEST("pos4 dim4 interaction")
