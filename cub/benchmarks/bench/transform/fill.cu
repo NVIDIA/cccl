@@ -21,7 +21,7 @@ struct return_constant
 };
 
 template <typename T>
-static void generate_(nvbench::state& state, nvbench::type_list<T>)
+static void fill(nvbench::state& state, nvbench::type_list<T>)
 {
   // A 32-bit offset type or the value 0 or 0xFF... have <1% performance impact
   using offset_t   = int64_t;
@@ -36,7 +36,7 @@ static void generate_(nvbench::state& state, nvbench::type_list<T>)
   bench_transform(state, ::cuda::std::tuple{}, out.begin(), n, return_constant<T>{value});
 }
 
-NVBENCH_BENCH_TYPES(generate_, NVBENCH_TYPE_AXES(integral_types))
-  .set_name("generate")
+NVBENCH_BENCH_TYPES(fill, NVBENCH_TYPE_AXES(integral_types))
+  .set_name("fill")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
