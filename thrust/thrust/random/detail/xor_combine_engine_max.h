@@ -28,6 +28,8 @@
 
 #include <thrust/detail/type_traits.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -49,7 +51,7 @@ _CCCL_HOST_DEVICE constexpr auto checked_lshift(UIntType lhs, UIntType rhs) -> U
 template <typename UIntType>
 _CCCL_HOST_DEVICE constexpr auto two_to_the_power(UIntType p) -> UIntType
 {
-  return checked_lshift(1, p);
+  return checked_lshift(UIntType{1}, p);
 }
 
 template <typename UIntType>
