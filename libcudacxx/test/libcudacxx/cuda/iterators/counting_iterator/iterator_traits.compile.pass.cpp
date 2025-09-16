@@ -17,6 +17,10 @@
 #include "test_macros.h"
 #include "types.h"
 
+#if !TEST_COMPILER(NVRTC)
+#  include <iterator>
+#endif // !TEST_COMPILER(NVRTC)
+
 struct Decrementable
 {
   using difference_type = int;
