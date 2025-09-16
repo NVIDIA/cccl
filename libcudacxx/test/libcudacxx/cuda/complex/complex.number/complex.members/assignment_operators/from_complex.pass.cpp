@@ -27,9 +27,11 @@ __host__ __device__ constexpr void test_assignment_from_complex()
   // 2. Test that the assignment is noexcept
   static_assert(noexcept(cuda::std::declval<cuda::complex<T>&>() = cuda::std::declval<const cuda::complex<U>&>()));
 
-  // 3. If T and U are the same, cuda::complex<U> is trivially assignable to cuda::complex<T>
-  static_assert(
-    !cuda::std::is_same_v<T, U> || cuda::std::is_trivially_assignable_v<cuda::complex<T>&, const cuda::complex<U>&>);
+  // 3. If T and U are the same type, test that cuda::complex<T> is trivially assignable from cuda::complex<U> if T is
+  // trivially assignable from U
+  static_assert(!cuda::std::is_same_v<T, U>
+                || (cuda::std::is_trivially_assignable_v<T&, const U&>
+                    == cuda::std::is_trivially_assignable_v<cuda::complex<T>&, const cuda::complex<U>&>) );
 
   const cuda::complex<U> u{U(1), U(2)};
   assert(u.real() == U(1));
