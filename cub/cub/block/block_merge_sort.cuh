@@ -383,7 +383,7 @@ public:
        int valid_items,
        KeyT oob_default)
   {
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // if last tile, find valid max_key
       // and fill the remaining keys with it
@@ -476,7 +476,7 @@ public:
         compare_op,
         oob_default);
 
-      if (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         Sync();
 
