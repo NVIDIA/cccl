@@ -53,7 +53,7 @@ private:
 template <typename BinaryFunction, typename System, typename DifferenceT>
 using make_tabulate_output_iterator_base =
   iterator_adaptor<tabulate_output_iterator<BinaryFunction, System, DifferenceT>,
-                   counting_iterator<DifferenceT, System>,
+                   counting_iterator<DifferenceT>,
                    void,
                    System,
                    use_default,
