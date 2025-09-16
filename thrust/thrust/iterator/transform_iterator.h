@@ -93,8 +93,8 @@ public:
     iterator_adaptor<transform_iterator<UnaryFunc, Iterator, Reference, Value>,
                      Iterator,
                      value_type,
-                     use_default,
-                     typename ::cuda::std::iterator_traits<Iterator>::iterator_category,
+                     use_default, // pick system from Iterator
+                     use_default, // pick traversal from Iterator
                      reference>;
 };
 

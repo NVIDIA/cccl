@@ -5,7 +5,20 @@ workflows:
   #
   # Example:
   # override:
-  #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16']}
+  #   # Full project build: slow, expensive
+  #   - { jobs: ['test'], project: 'thrust', std: 17, ctk: '12.X', cxx: ['gcc12', 'clang16'] }
+  #
+  #   # Build / run targeted tests: faster turnaround, less runner usage.
+  #   # Use project 'target'.
+  #   # args are passed to ci/util/build_and_test_targets.sh. See that script for available options.
+  #   - { jobs: ['run_cpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang', 'msvc'],
+  #       args: '--preset cub-cpp20 --build-targets "cub.cpp20.test.iterator"' }
+  #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtxa6000',
+  #       args: '--preset cub-cpp20 --build-targets "cub.cpp20.test.iterator" --ctest-targets "cub.cpp20.test.iterator"' }
+  #   - { jobs: ['run_cpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang', 'msvc'],
+  #       args: '--preset libcudacxx-cpp20 --lit-precompile-tests "cuda/utility/basic_any.pass.cpp"' }
+  #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtx2080',
+  #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
 
@@ -62,10 +75,9 @@ workflows:
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    # - TODO add sm90+ on clang20 (#3633)
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -144,10 +156,9 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    # - TODO add sm90+ on clang20 (#3633)
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -225,10 +236,9 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
-    # - TODO add sm90+ on clang20 (#3633)
-    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    - {jobs: ['build'], cudacxx: 'clang', ctk: '12.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # - CTK 13.X unsupported: https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11079#note_1692019
-    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80'}
+    # - {jobs: ['build'], cudacxx: 'clang', ctk: '13.X', std: 'all', cxx: 'clang', sm: '75;80;90;100'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
@@ -408,6 +418,10 @@ jobs:
   test_py_par:      { name: "Test cuda.cccl.parallel",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_parallel'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
 
+  # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
+  run_cpu: { gpu: false }
+  run_gpu: { gpu: true  }
+
   # Only used for generating devcontainers. No scripts actually exist for these:
   dc:     { gpu: false }
   dc_ext: { gpu: false, cuda_ext: true }
@@ -467,6 +481,16 @@ projects:
     name: 'CCCL C CUDASTF'
     stds: [20]
 
+  # Run specific build_and_test_targets.sh invocations across the CI matrix.
+  # Use the override workflow and supply arguments via the `args` tag.
+  # Example:
+  #   override:
+  #     - { jobs: ['run'], project: 'target', ctk: ['12.X', '13.X'], cxx: 'gcc', gpu: 'rtx2080',
+  #         args: '--preset cub-cpp20 --build-targets "cub.cpp20.test.iterator" --ctest-targets "cub.cpp20.test.iterator"' }
+  target:
+    name: 'Target'
+    stds: [17, 20]
+
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:
   v100:     { sm: 70 } # 32 GB,  40 runners
@@ -523,3 +547,7 @@ tags:
   # Additional CMake options to pass to the build.
   # If set, passed to script with `-cmake_options "<cmake_options>"`.
   cmake_options: { required: false }
+  # Additional arguments appended to the generated command.
+  # Typically used with the `target` project to forward options to
+  # ci/util/build_and_test_targets.sh, but works with all CI jobs.
+  args: { required: false, default: "" }
