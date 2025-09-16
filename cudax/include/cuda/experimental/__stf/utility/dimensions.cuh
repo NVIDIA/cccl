@@ -586,6 +586,117 @@ UNITTEST("mix of integrals and pairs")
   EXPECT(cnt == expected_cnt);
 };
 
+UNITTEST("pos4 large values")
+{
+  // Test that pos4 can handle values larger than int32 max (2^31-1 = 2,147,483,647)
+  const ssize_t large_positive = 5000000000LL; // 5 billion
+  const ssize_t large_negative = -3000000000LL; // -3 billion
+
+  pos4 p(large_positive, large_negative, large_positive + 1000, large_negative - 1000);
+
+  EXPECT(p.x == large_positive);
+  EXPECT(p.y == large_negative);
+  EXPECT(p.z == large_positive + 1000);
+  EXPECT(p.t == large_negative - 1000);
+
+  // Test accessors
+  EXPECT(p.get(0) == large_positive);
+  EXPECT(p.get(1) == large_negative);
+  EXPECT(p.get(2) == large_positive + 1000);
+  EXPECT(p.get(3) == large_negative - 1000);
+
+  // Test operator()
+  EXPECT(p(0) == large_positive);
+  EXPECT(p(1) == large_negative);
+};
+
+UNITTEST("dim4 large values")
+{
+  // Test that dim4 can handle values larger than uint32 max (2^32-1 = 4,294,967,295)
+  const size_t large_value = 6000000000ULL; // 6 billion
+
+  dim4 d(large_value, large_value + 1000, large_value + 2000, large_value + 3000);
+
+  EXPECT(d.x == large_value);
+  EXPECT(d.y == large_value + 1000);
+  EXPECT(d.z == large_value + 2000);
+  EXPECT(d.t == large_value + 3000);
+
+  // Test accessors
+  EXPECT(d.get(0) == large_value);
+  EXPECT(d.get(1) == large_value + 1000);
+  EXPECT(d.get(2) == large_value + 2000);
+  EXPECT(d.get(3) == large_value + 3000);
+
+  // Test operator()
+  EXPECT(d(0) == large_value);
+  EXPECT(d(1) == large_value + 1000);
+};
+
+UNITTEST("dim4 very large total size")
+{
+  // Test dimensions that would exceed 2^32 when multiplied
+  // 2000 * 2000 * 2000 * 64 = 1,024,000,000,000 = ~1T elements (2^40)
+  dim4 d(2000, 2000, 2000, 64);
+
+  const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
+  EXPECT(d.size() == expected_size);
+  EXPECT(expected_size >= (1ULL << 40)); // This is more than 1T elements (2^40)
+};
+
+UNITTEST("pos4 dim4 interaction")
+{
+  // Test get_index with large coordinates
+  const size_t large_dim = 100000; // 100K per dimension
+  dim4 d(large_dim, large_dim, large_dim, large_dim);
+
+  // Test position in the middle
+  pos4 p(50000, 50000, 50000, 50000);
+  size_t index = d.get_index(p);
+
+  // Verify index calculation
+  const size_t expected = 50000 + large_dim * (50000 + large_dim * (50000 + 50000 * large_dim));
+  EXPECT(index == expected);
+
+  // Test near the boundaries
+  pos4 p_max(static_cast<ssize_t>(large_dim - 1),
+             static_cast<ssize_t>(large_dim - 1),
+             static_cast<ssize_t>(large_dim - 1),
+             static_cast<ssize_t>(large_dim - 1));
+  size_t max_index = d.get_index(p_max);
+  EXPECT(max_index < d.size());
+};
+
+UNITTEST("dim4 comparison operators")
+{
+  dim4 d1(1000, 2000, 3000, 4000);
+  dim4 d2(1000, 2000, 3000, 4000);
+  dim4 d3(1000, 2000, 3000, 4001);
+
+  // Test equality
+  EXPECT(d1 == d2);
+  EXPECT(!(d1 == d3));
+
+  // Test lexicographical ordering
+  EXPECT(d1 < d3);
+  EXPECT(!(d3 < d1));
+};
+
+UNITTEST("pos4 comparison operators")
+{
+  pos4 p1(1000, -2000, 3000, -4000);
+  pos4 p2(1000, -2000, 3000, -4000);
+  pos4 p3(1000, -2000, 3000, -3999);
+
+  // Test equality
+  EXPECT(p1 == p2);
+  EXPECT(!(p1 == p3));
+
+  // Test lexicographical ordering
+  EXPECT(p1 < p3);
+  EXPECT(!(p3 < p1));
+};
+
 #endif // UNITTESTED_FILE
 
 // So that we can create unordered_map of pos4 entries

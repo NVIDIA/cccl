@@ -1495,6 +1495,53 @@ UNITTEST("grid exec place equality")
 
   EXPECT(all != repeated_dev0);
 };
+
+UNITTEST("pos4 dim4 handle large values beyond 32bit")
+{
+  // Test that pos4 and dim4 can handle values > 2^32 (4,294,967,296)
+  const size_t large_unsigned  = 6000000000ULL; // 6 billion
+  const ssize_t large_signed   = 5000000000LL; // 5 billion
+  const ssize_t negative_large = -3000000000LL; // -3 billion
+
+  // Test dim4 with large unsigned values (all same type for template deduction)
+  dim4 large_dim(large_unsigned, large_unsigned + size_t(1000));
+  EXPECT(large_dim.x == large_unsigned);
+  EXPECT(large_dim.y == large_unsigned + 1000);
+  EXPECT(large_dim.z == 1); // default
+  EXPECT(large_dim.t == 1); // default
+
+  // Test pos4 with large signed values (positive and negative, all same type)
+  pos4 large_pos(large_signed, negative_large);
+  EXPECT(large_pos.x == large_signed);
+  EXPECT(large_pos.y == negative_large);
+  EXPECT(large_pos.z == 0); // default
+  EXPECT(large_pos.t == 0); // default
+
+  // Test get_index calculation with large coordinates
+  dim4 dims(size_t(100000), size_t(100000)); // 100k x 100k = 10 billion elements
+  pos4 pos(ssize_t(50000), ssize_t(50000)); // Middle position
+
+  size_t index = dims.get_index(pos);
+  // Should be: 50000 + 100000 * 50000 = 5,000,050,000 (> 2^32)
+  const size_t expected_index = 50000ULL + 100000ULL * 50000ULL;
+  EXPECT(index == expected_index);
+  EXPECT(expected_index > (1ULL << 32)); // Verify it exceeds 2^32
+};
+
+UNITTEST("dim4 very large total size calculation")
+{
+  // Test that dim4.size() can handle products > 2^40 (1TB)
+  // 2000 x 2000 x 2000 x 64 = 1,024,000,000,000 elements = ~1TB of data
+  dim4 huge_dims(size_t(2000), size_t(2000), size_t(2000), size_t(64));
+
+  const size_t total_size    = huge_dims.size();
+  const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
+
+  EXPECT(total_size == expected_size);
+  EXPECT(expected_size >= (1ULL << 40)); // Verify >= 1TB (2^40)
+  EXPECT(expected_size > (1ULL << 32)); // Verify > 4GB (2^32)
+};
+
 #endif // UNITTESTED_FILE
 
 template <auto... spec>
