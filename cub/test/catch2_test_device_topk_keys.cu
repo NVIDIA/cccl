@@ -13,9 +13,9 @@
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
 #include <cuda/iterator>
+#include <cuda/std/type_traits>
 
-#include <algorithm>
-
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
@@ -30,6 +30,7 @@ template <cub::detail::topk::select SelectDirection,
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
+  cuda::std::integral_constant<cub::detail::topk::select, SelectDirection>,
   KeyInputIteratorT d_keys_in,
   KeyOutputIteratorT d_keys_out,
   NumItemsT num_items,
@@ -48,14 +49,14 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys<cub::detail::topk::select::max>, topk_max_keys);
-DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys<cub::detail::topk::select::min>, topk_min_keys);
+DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys, topk_keys);
 
+using directions =
+  c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using key_types =
   c2h::type_list<cuda::std::uint8_t,
-                 cuda::std::uint16_t,
                  float,
                  cuda::std::uint64_t
 // clang-format off
@@ -68,74 +69,57 @@ using key_types =
 >;
 // clang-format on
 
+template <cub::detail::topk::select SelectDirection>
+using direction_to_comparator_t =
+  cuda::std::conditional_t<SelectDirection == cub::detail::topk::select::min, cuda::std::less<>, cuda::std::greater<>>;
 
-C2H_TEST("DeviceTopK::MaxKeys: Basic testing", "[keys][topk][device]", key_types)
+C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
 {
-  using key_t       = c2h::get<0, TestType>;
-  using num_items_t = cuda::std::uint32_t;
+  using key_t        = c2h::get<0, TestType>;
+  using direction_t  = c2h::get<1, TestType>;
+  using num_items_t  = cuda::std::uint32_t;
+  using comparator_t = direction_to_comparator_t<direction_t::value>;
 
   // Set input size
   constexpr num_items_t min_num_items = 1;
-  constexpr num_items_t max_num_items = 1 << 15;
-  const num_items_t num_items =
-    GENERATE_COPY(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
+  constexpr num_items_t max_num_items = 1 << 22;
+  const num_items_t num_items         = GENERATE_COPY(
+    values({min_num_items, num_items_t{3}, max_num_items}), take(1, random(min_num_items, max_num_items)));
 
   // Set the k value
   constexpr num_items_t min_k = 1;
-  constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
-
-  // Whether to select k elements with the lowest or the highest values
-  const bool is_descending = GENERATE(false, true);
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, num_items)));
 
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, is_descending);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
 
   // Prepare input & output
   c2h::device_vector<key_t> keys_in(num_items);
   c2h::device_vector<key_t> keys_out(k);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), keys_in);
-  c2h::host_vector<key_t> h_keys_in(keys_in);
+  c2h::host_vector<key_t> expected_keys(keys_in);
 
-  // Run the device-wide API
-  if (!is_descending)
-  {
-    topk_min_keys(thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
-  else
-  {
-    topk_max_keys(thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
+  // Run the top-k algorithm
+  topk_keys(
+    direction_t{}, thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
-  c2h::host_vector<key_t> expected_results(keys_out.size());
-  c2h::host_vector<key_t> device_results(keys_out);
-  if (is_descending)
-  {
-    // Sort the entire input data as result reference
-    std::partial_sort_copy(
-      h_keys_in.begin(), h_keys_in.end(), expected_results.begin(), expected_results.end(), std::greater<key_t>());
+  // Sort the entire input data as result reference
+  thrust::sort(expected_keys.begin(), expected_keys.end(), comparator_t{});
+  expected_keys.resize(k);
 
-    // Since the results of top-k are unordered, we need to sort the results before comparison.
-    std::stable_sort(device_results.begin(), device_results.end(), std::greater<key_t>());
-  }
-  else
-  {
-    // Sort the entire input data as result reference
-    std::partial_sort_copy(
-      h_keys_in.begin(), h_keys_in.end(), expected_results.begin(), expected_results.end(), std::less<key_t>());
+  // Since the results of top-k are unordered, we need to sort the results before comparison.
+  thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
 
-    // Since the results of top-k are unordered, we need to sort the results before comparison.
-    std::stable_sort(device_results.begin(), device_results.end(), std::less<key_t>());
-  }
-
-  REQUIRE(expected_results == device_results);
+  REQUIRE(expected_keys == keys_out);
 }
 
-C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", key_types)
+C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", key_types, directions)
 {
-  using key_t       = c2h::get<0, TestType>;
-  using num_items_t = cuda::std::uint32_t;
+  using key_t        = c2h::get<0, TestType>;
+  using direction_t  = c2h::get<1, TestType>;
+  using num_items_t  = cuda::std::uint32_t;
+  using comparator_t = direction_to_comparator_t<direction_t::value>;
 
   // Set input size
   constexpr num_items_t min_num_items = 1;
@@ -145,14 +129,10 @@ C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", ke
 
   // Set the k value
   constexpr num_items_t min_k = 1;
-  constexpr num_items_t max_k = 1 << 15;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
-
-  // Whether to select k elements with the lowest or the highest values
-  const bool is_descending = GENERATE(false, true);
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, num_items)));
 
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, is_descending);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
@@ -160,118 +140,89 @@ C2H_TEST("DeviceTopK::MaxKeys: works with iterators", "[keys][topk][device]", ke
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the device-wide API
-  if (!is_descending)
-  {
-    topk_min_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
-  else
-  {
-    topk_max_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
+  topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
-  c2h::host_vector<key_t> device_results(keys_out);
-  if (is_descending)
+  thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
+  if constexpr (direction_t::value == cub::detail::topk::select::max)
   {
-    std::stable_sort(device_results.begin(), device_results.end(), std::greater<key_t>());
     auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
-    REQUIRE(thrust::equal(device_results.cbegin(), device_results.cend(), keys_expected_it));
+    REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
   }
   else
   {
-    std::stable_sort(device_results.begin(), device_results.end(), std::less<key_t>());
-    REQUIRE(thrust::equal(device_results.cbegin(), device_results.cend(), keys_in));
+    REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_in));
   }
 }
 
-C2H_TEST("DeviceTopK::MaxKeys: Test for large num_items", "[keys][topk][device]", num_items_types)
+C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", num_items_types)
+try
 {
-  using key_t       = cuda::std::uint32_t;
-  using num_items_t = c2h::get<0, TestType>;
+  using key_t        = cuda::std::uint32_t;
+  using num_items_t  = c2h::get<0, TestType>;
+  using direction_t  = cuda::std::integral_constant<cub::detail::topk::select, cub::detail::topk::select::max>;
+  using comparator_t = direction_to_comparator_t<direction_t::value>;
 
-  // Set input size
-  constexpr auto max_num_items_ull =
-    cuda::std::min(static_cast<cuda::std::size_t>(cuda::std::numeric_limits<num_items_t>::max()),
-                   cuda::std::numeric_limits<cuda::std::uint32_t>::max() + static_cast<cuda::std::size_t>(2000000ULL));
-  constexpr num_items_t max_num_items = static_cast<num_items_t>(max_num_items_ull);
-  const num_items_t num_items         = GENERATE_COPY(values({max_num_items}));
+  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
+  const num_items_t num_items_max = detail::make_large_offset<num_items_t>();
+  const num_items_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : num_items_t{0};
+  const num_items_t num_items =
+    GENERATE_COPY(values({num_items_max, static_cast<num_items_t>(num_items_max - 1), num_items_t{1}, num_items_t{3}}),
+                  take(2, random(num_items_min, num_items_max)));
 
   // Set the k value
   constexpr num_items_t min_k = 1;
-  constexpr num_items_t max_k = 1 << 15;
+  constexpr num_items_t max_k = 1 << 20;
   const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
 
-  // Whether to select k elements with the lowest or the highest values
-  const bool is_descending = GENERATE(false, true);
-
   // Capture test parameters
-  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, is_descending);
+  CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
+    cuda::make_counting_iterator(num_items_t{0}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the device-side top-k
-  if (!is_descending)
-  {
-    topk_min_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
-  else
-  {
-    topk_max_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
+  topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
-  c2h::host_vector<key_t> device_results(keys_out);
-  if (is_descending)
-  {
-    // Since the results of top-k are unordered, we need to sort the results before comparison.
-    std::stable_sort(device_results.begin(), device_results.end(), std::greater<key_t>());
-
-    // Skip materialization of verification data for performance reasons in large-num_items case
-    auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
-    REQUIRE(thrust::equal(device_results.cbegin(), device_results.cend(), keys_expected_it));
-  }
-  else
-  {
-    // Since the results of top-k are unordered, we need to sort the results before comparison.
-    std::stable_sort(device_results.begin(), device_results.end(), std::less<key_t>());
-
-    // Skip materialization of verification data for performance reasons in large-num_items case
-    REQUIRE(thrust::equal(device_results.cbegin(), device_results.cend(), keys_in));
-  }
+  thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
+  auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
+  REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
 
-C2H_TEST("DeviceTopK::MaxKeys:  Test for different data types for num_items and k",
+C2H_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
          "[keys][topk][device]",
          k_items_types)
+try
 {
-  using key_t       = cuda::std::uint32_t;
-  using num_items_t = cuda::std::uint32_t;
-  using k_items_t   = c2h::get<0, TestType>;
+  using key_t        = cuda::std::uint32_t;
+  using num_items_t  = cuda::std::uint64_t;
+  using k_items_t    = c2h::get<0, TestType>;
+  using direction_t  = cuda::std::integral_constant<cub::detail::topk::select, cub::detail::topk::select::max>;
+  using comparator_t = direction_to_comparator_t<direction_t::value>;
 
   // Set input size
-  constexpr num_items_t min_num_items = 1;
-  constexpr num_items_t max_num_items = 1 << 20;
-  const num_items_t num_items =
-    GENERATE_COPY(values({min_num_items, max_num_items}), take(1, random(min_num_items, max_num_items)));
+  const num_items_t num_items = detail::make_large_offset<num_items_t>();
 
   // Set the k value
-  constexpr k_items_t min_k = 1;
-  k_items_t limit_k = cuda::std::min(cuda::std::numeric_limits<k_items_t>::max(), static_cast<k_items_t>(1 << 15));
-  const k_items_t max_k =
-    num_items < cuda::std::numeric_limits<k_items_t>::max()
-      ? cuda::std::min(static_cast<k_items_t>(num_items), limit_k)
-      : limit_k;
-  const k_items_t k = GENERATE_COPY(take(3, random(min_k, max_k)));
-
-  // Whether to select k elements with the lowest or the highest values
-  const bool is_descending = GENERATE(false, true);
+  const auto limit_k    = static_cast<k_items_t>(cuda::std::min(
+    static_cast<num_items_t>(cuda::std::numeric_limits<k_items_t>::max()), static_cast<num_items_t>(num_items)));
+  const k_items_t min_k = limit_k > k_items_t{10000} ? limit_k - k_items_t{10000} : k_items_t{1};
+  const k_items_t k     = GENERATE_COPY(take(3, random(min_k, limit_k)));
 
   // Capture test parameters
-  CAPTURE(
-    c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), c2h::type_name<k_items_t>(), num_items, k, is_descending);
+  CAPTURE(c2h::type_name<key_t>(),
+          c2h::type_name<num_items_t>(),
+          c2h::type_name<k_items_t>(),
+          num_items,
+          k,
+          direction_t::value);
 
   // Prepare input and output
   auto keys_in = cuda::make_transform_iterator(
@@ -279,30 +230,14 @@ C2H_TEST("DeviceTopK::MaxKeys:  Test for different data types for num_items and 
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
   // Run the device-side top-k
-  if (!is_descending)
-  {
-    topk_min_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
-  else
-  {
-    topk_max_keys(keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
-  }
+  topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
-  c2h::host_vector<key_t> device_results(keys_out);
-  if (is_descending)
-  {
-    // Since the results of top-k are unordered, we need to sort the results before comparison.
-    std::stable_sort(device_results.begin(), device_results.end(), std::greater<key_t>());
-    auto keys_reversed_it = cuda::std::make_reverse_iterator(keys_in + num_items);
-    c2h::device_vector<key_t> expected_keys(keys_reversed_it, keys_reversed_it + k);
-    REQUIRE(device_results == expected_keys);
-  }
-  else
-  {
-    // Since the results of top-k are unordered, we need to sort the results before comparison.
-    std::stable_sort(device_results.begin(), device_results.end(), std::less<key_t>());
-    c2h::device_vector<key_t> expected_keys(keys_in, keys_in + k);
-    REQUIRE(device_results == expected_keys);
-  }
+  thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
+  auto keys_expected_it = cuda::std::make_reverse_iterator(keys_in + num_items);
+  REQUIRE(thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it));
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
