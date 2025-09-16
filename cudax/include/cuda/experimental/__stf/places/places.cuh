@@ -1538,7 +1538,6 @@ UNITTEST("dim4 very large total size calculation")
   const size_t expected_size = 2000ULL * 2000ULL * 2000ULL * 64ULL;
 
   EXPECT(total_size == expected_size);
-  EXPECT(expected_size >= (1ULL << 40)); // Verify >= 1TB (2^40)
 };
 
 #endif // UNITTESTED_FILE
