@@ -175,7 +175,7 @@ using __atomic_enable_if_not_native_arithmetic = enable_if_t<is_scalar_v<_Type> 
 
 template <class _Type>
 using __atomic_enable_if_not_native_minmax =
-  enable_if_t<(!is_integral_v<_Type> || is_scalar_v<_Type>) && (sizeof(_Type) == 16), bool>;
+  enable_if_t<!is_integral_v<_Type> || (is_scalar_v<_Type> && sizeof(_Type) == 16), bool>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

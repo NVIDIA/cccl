@@ -44,6 +44,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
+extern "C" _CCCL_DEVICE void __atomic_cas_128b_unsupported_before_SM_90();
+
 static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_device_tag)
@@ -1446,7 +1448,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1465,7 +1467,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1484,7 +1486,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1503,7 +1505,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1522,7 +1524,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1541,7 +1543,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1560,7 +1562,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1579,7 +1581,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1598,7 +1600,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1617,7 +1619,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1636,7 +1638,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1655,7 +1657,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1674,7 +1676,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1693,7 +1695,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1712,7 +1714,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1731,7 +1733,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1750,7 +1752,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1769,7 +1771,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1788,7 +1790,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -1807,7 +1809,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2053,7 +2055,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2072,7 +2074,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2091,7 +2093,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2110,7 +2112,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2129,7 +2131,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2148,7 +2150,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2167,7 +2169,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2186,7 +2188,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2205,7 +2207,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2224,7 +2226,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2243,7 +2245,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2262,7 +2264,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2281,7 +2283,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2300,7 +2302,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2319,7 +2321,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2338,7 +2340,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2357,7 +2359,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2376,7 +2378,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2395,7 +2397,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
@@ -2414,7 +2416,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   static_assert(__cccl_ptx_isa >= 840, "128b CAS is not supported until PTX ISA version 840");
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90, (),
-    NV_ANY_TARGET, (static_assert(false, "128b CAS is unsupported before SM 90");)
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
   )
   asm volatile(R"YYY(
     {
