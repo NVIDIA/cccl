@@ -1,5 +1,5 @@
 {
-  "image": "rapidsai/devcontainers:25.10-cpp-mambaforge-ubuntu22.04",
+  "image": "rapidsai/devcontainers:25.10-cpp-mambaforge-ubuntu24.04",
   "runArgs": [
     "--init",
     "--rm",
