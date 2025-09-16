@@ -63,6 +63,15 @@
 namespace cuda::experimental::stf
 {
 
+// Helper kernel for update_cond functionality - following parallel_for_scope pattern
+template <typename CondFunc, typename... Args>
+__global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, Args... args)
+{
+  // Direct call to the user's condition function - no lambda nesting
+  bool result = cond_func(args...);
+  cudaGraphSetConditional(conditional_handle, result);
+}
+
 template <typename T>
 class stackable_logical_data;
 
@@ -1521,7 +1530,67 @@ public:
       return conditional_handle_;
     }
 
-    // Non-copyable, non-movable (like std::lock_guard)
+    //! \brief Helper for updating while loop condition using a device lambda
+    //!
+    //! Creates a helper object that supports the fluent ->* interface.
+    //! The lambda should return true to continue the loop, false to exit.
+    //!
+    //! Example usage:
+    //! ```cpp
+    //! auto while_guard = ctx.while_graph_scope();
+    //!
+    //! // Simple condition check
+    //! while_guard.update_cond(counter.read())->*[] __device__(auto counter) {
+    //!   return *counter > 0; // Continue while counter > 0
+    //! };
+    //!
+    //! // Complex condition with multiple data
+    //! while_guard.update_cond(residual.read(), max_iter.read())->*[tol] __device__(auto residual, auto iter) {
+    //!   bool converged = (*residual < tol);
+    //!   bool max_reached = (*iter >= 1000);
+    //!   return !converged && !max_reached; // Continue until converged or max iterations
+    //! };
+    //! ```
+
+#if 0
+    template <typename... Args>
+    class update_cond_helper
+    {
+    public:
+      update_cond_helper(while_graph_scope_guard& guard, Args&&... args)
+        : guard_(guard), args_(args...)  // Simple copy, no forwarding to avoid member storage issues
+      {}
+
+      template <typename CondFunc>
+      void operator->*(CondFunc&& cond_func)
+      {
+        auto handle = guard_.conditional_handle_;
+
+        auto fn = [handle, cond_func = ::cuda::std::move(cond_func)] __device__(size_t, cuda::std::tuple<Args...> data_views) {
+          bool result = ::cuda::std:::apply(cond_func, data_views...);
+          cudaGraphSetConditional(handle, result);
+        };
+
+        // Use parallel_for with box(1) - single thread to evaluate condition
+        // Directly expand the tuple to avoid nested lambda issues
+        ::cuda::std::apply([cond_func = ::cuda::std::move(cond_func), handle](auto&&... deps) {
+          guard_.ctx_.parallel_for(box(1), deps...)->*fn;
+        }, args_);
+      }
+
+    private:
+      while_graph_scope_guard& guard_;
+      ::cuda::std::tuple<Args...> args_;
+    };
+
+    template <typename... Args>
+    auto update_cond(Args&&... args)
+    {
+      return update_cond_helper<Args...>(*this, args...);  // Simple copy instead of forwarding
+    }
+#endif
+
+    // Non-copyable, non-movable
     while_graph_scope_guard(const while_graph_scope_guard&)            = delete;
     while_graph_scope_guard& operator=(const while_graph_scope_guard&) = delete;
     while_graph_scope_guard(while_graph_scope_guard&&)                 = delete;

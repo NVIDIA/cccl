@@ -37,6 +37,7 @@ set(stf_example_codegen_sources
   jacobi_pfor.cu
   jacobi_stackable.cu
   jacobi_stackable_raii.cu
+  jacobi_update_cond.cu
   launch_histogram.cu
   launch_scan.cu
   launch_sum.cu
