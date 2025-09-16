@@ -17,7 +17,16 @@ if [ -z "$OLD_UID" ]; then
     exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 elif [ "$OLD_UID" = "$NEW_UID" ] && [ "$OLD_GID" = "$NEW_GID" ]; then
     echo "UIDs and GIDs are the same ($NEW_UID:$NEW_GID).";
-    exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
+    # Even when IDs match, ensure we execute as the non-root REMOTE_USER so
+    # gh and sccache use the mapped HOME (/home/coder) where ~/.aws is bind-mounted.
+    export VIRTUAL_ENV=;
+    export VIRTUAL_ENV_PROMPT=;
+    export HOME="$HOME_FOLDER";
+    export XDG_CACHE_HOME="$HOME_FOLDER/.cache";
+    export XDG_CONFIG_HOME="$HOME_FOLDER/.config";
+    export XDG_STATE_HOME="$HOME_FOLDER/.local/state";
+    export PYTHONHISTFILE="$HOME_FOLDER/.local/state/.python_history";
+    exec su -p "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 elif [ "$OLD_UID" != "$NEW_UID" ] && [ -n "$EXISTING_USER" ]; then
     echo "User with UID exists ($EXISTING_USER=$NEW_UID).";
     exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
