@@ -51,6 +51,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
 DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys<cub::detail::topk::select::max>, topk_max_keys);
 DECLARE_LAUNCH_WRAPPER(dispatch_topk_keys<cub::detail::topk::select::min>, topk_min_keys);
 
+using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
+using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using key_types =
   c2h::type_list<cuda::std::uint8_t,
                  cuda::std::uint16_t,
@@ -65,8 +67,8 @@ using key_types =
 #endif // TEST_BF_T()
 >;
 // clang-format on
-using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
-using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
+
+
 C2H_TEST("DeviceTopK::MaxKeys: Basic testing", "[keys][topk][device]", key_types)
 {
   using key_t       = c2h::get<0, TestType>;
