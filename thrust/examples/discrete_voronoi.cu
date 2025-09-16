@@ -139,7 +139,7 @@ void generate_random_sites(thrust::host_vector<int>& t, int Nb, int m, int n)
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, m * n - 1);
 
-  for (size_t k = 0; k < static_cast<size_t>(Nb); k++)
+  for (int k = 0; k < Nb; k++)
   {
     int index = dist(rng);
     t[index]  = index + 1;

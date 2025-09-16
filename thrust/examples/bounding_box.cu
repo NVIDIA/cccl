@@ -66,23 +66,6 @@ struct bbox_union
   }
 };
 
-// functor to generate random points
-struct random_point_generator
-{
-  mutable thrust::default_random_engine rng;
-  mutable thrust::uniform_real_distribution<float> u01;
-
-  random_point_generator()
-      : rng(0)
-      , u01(0.0f, 1.0f)
-  {}
-
-  __host__ __device__ point2d operator()() const
-  {
-    return point2d(u01(rng), u01(rng));
-  }
-};
-
 int main()
 {
   const size_t N = 40;
@@ -91,10 +74,13 @@ int main()
   thrust::device_vector<point2d> points(N);
 
   // generate some random points in the unit square
-  random_point_generator gen;
-  for (size_t i = 0; i < points.size(); ++i)
+  thrust::default_random_engine rng;
+  thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
+  for (size_t i = 0; i < N; i++)
   {
-    points[i] = gen();
+    float x   = u01(rng);
+    float y   = u01(rng);
+    points[i] = point2d(x, y);
   }
 
   // initial bounding box contains first point
