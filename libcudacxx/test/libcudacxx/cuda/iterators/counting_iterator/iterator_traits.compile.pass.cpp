@@ -166,13 +166,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
     static_assert(sizeof(typename IterTraits::difference_type) > sizeof(int));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
-    // If we're compiling for 32 bit or windows, int and long are the same size, so long long is the correct difference
-    // type.
-#if INTPTR_MAX == INT32_MAX || defined(_WIN32)
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long long>);
-#else
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long>);
-#endif
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
@@ -183,19 +177,19 @@ __host__ __device__ void test()
     // Same as below, if there is no type larger than long, we can just use that.
     static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long long>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
-    using Iter       = cuda::counting_iterator<long long>;
+    using Iter       = cuda::counting_iterator<cuda::std::ptrdiff_t>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
-    static_assert(cuda::std::same_as<typename IterTraits::value_type, long long>);
-    // No integer is larger than long long, so it is OK to use long long as the difference type here:
-    // https://eel.is/c++draft/range.iota.view#1.3
-    static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(long long));
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, cuda::std::ptrdiff_t>);
+    // No integer is larger than cuda::std::ptrdiff_t, so it is OK to use cuda::std::ptrdiff_t as the difference
+    // type here: https://eel.is/c++draft/range.iota.view#1.3
+    static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(cuda::std::ptrdiff_t));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long long>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
   }
   {
