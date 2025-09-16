@@ -64,7 +64,7 @@ echo "Building CUDA 13 wheel..."
       --env GITHUB_ACTIONS=${GITHUB_ACTIONS:-} \
       --env GITHUB_RUN_ID=${GITHUB_RUN_ID:-} \
       --env JOB_ID=${JOB_ID:-} \
-      rapidsai/ci-wheel:25.10-cuda13.0.0-rockylinux8-py${py_version} \
+      rapidsai/ci-wheel:25.10-cuda13.0.1-rockylinux8-py${py_version} \
       /workspace/ci/build_cuda_cccl_wheel.sh
 )
 
