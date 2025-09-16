@@ -340,7 +340,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" ctest -VV --output-on-failure --output-log "${ctest_log}" --preset=$PRESET --timeout 600 || status=$?
+    run_command "$GROUP_NAME" ctest --output-on-failure --output-log "${ctest_log}" --preset=$PRESET --timeout 600 || status=$?
     popd > /dev/null
 
     print_test_time_summary ${ctest_log}
