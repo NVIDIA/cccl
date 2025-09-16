@@ -43,14 +43,14 @@ public:
   /// Create a pos4 from its coordinates
   template <typename Integral>
   _CCCL_HOST_DEVICE constexpr explicit pos4(Integral x, Integral y = 0, Integral z = 0, Integral t = 0)
-      : x(static_cast<int>(x))
-      , y(static_cast<int>(y))
-      , z(static_cast<int>(z))
-      , t(static_cast<int>(t))
+      : x(static_cast<ssize_t>(x))
+      , y(static_cast<ssize_t>(y))
+      , z(static_cast<ssize_t>(z))
+      , t(static_cast<ssize_t>(t))
   {}
 
   /// Get the position along a specific axis
-  _CCCL_HOST_DEVICE constexpr int get(size_t axis_id) const
+  _CCCL_HOST_DEVICE constexpr ssize_t get(size_t axis_id) const
   {
     switch (axis_id)
     {
@@ -67,7 +67,7 @@ public:
   }
 
   /// Get the position along a specific axis
-  _CCCL_HOST_DEVICE constexpr int operator()(int axis_id) const
+  _CCCL_HOST_DEVICE constexpr ssize_t operator()(int axis_id) const
   {
     return get(axis_id);
   }
@@ -103,32 +103,81 @@ public:
                          + ::std::to_string(t) + ")");
   }
 
-  int x = 0;
-  int y = 0;
-  int z = 0;
-  int t = 0;
+  ssize_t x = 0;
+  ssize_t y = 0;
+  ssize_t z = 0;
+  ssize_t t = 0;
 };
 
 /**
  * @brief dim4 class defining the size of a multidimensional object (default value 1 in each axis)
  */
-class dim4 : public pos4
+class dim4
 {
 public:
   dim4() = default;
 
   /// Create a dim4 from its extents
-  _CCCL_HOST_DEVICE constexpr explicit dim4(int x, int y = 1, int z = 1, int t = 1)
-      : pos4(x, y, z, t)
+  template <typename Integral>
+  _CCCL_HOST_DEVICE constexpr explicit dim4(Integral x, Integral y = 1, Integral z = 1, Integral t = 1)
+      : x(static_cast<size_t>(x))
+      , y(static_cast<size_t>(y))
+      , z(static_cast<size_t>(z))
+      , t(static_cast<size_t>(t))
   {}
 
-  // TODO: could coords ever be negative? (if not, maybe they should be unsigned).
+  /// Get the dimension along a specific axis
+  _CCCL_HOST_DEVICE constexpr size_t get(size_t axis_id) const
+  {
+    switch (axis_id)
+    {
+      case 0:
+        return x;
+      case 1:
+        return y;
+      case 2:
+        return z;
+      default:
+        _CCCL_ASSERT(axis_id == 3, "Invalid axis");
+        return t;
+    }
+  }
+
+  /// Get the dimension along a specific axis
+  _CCCL_HOST_DEVICE constexpr size_t operator()(int axis_id) const
+  {
+    return get(axis_id);
+  }
+
   /// Get the total size (multiply all dimensions)
   _CCCL_HOST_DEVICE constexpr size_t size() const
   {
-    const ::std::ptrdiff_t result = ::std::ptrdiff_t(x) * y * z * t;
-    assert(result >= 0);
+    const size_t result = x * y * z * t;
     return result;
+  }
+
+  /// Comparison of two dim4 in lexicographical order
+  _CCCL_HOST_DEVICE constexpr bool operator<(const dim4& rhs) const
+  {
+    if (x != rhs.x)
+    {
+      return x < rhs.x;
+    }
+    if (y != rhs.y)
+    {
+      return y < rhs.y;
+    }
+    if (z != rhs.z)
+    {
+      return z < rhs.z;
+    }
+    return t < rhs.t;
+  }
+
+  /// Equality test between two dim4
+  _CCCL_HOST_DEVICE constexpr bool operator==(const dim4& rhs) const
+  {
+    return x == rhs.x && y == rhs.y && z == rhs.z && t == rhs.t;
   }
 
   /// Compute the dim4 class obtained by taking the minimum of two dim4 along each axis
@@ -140,12 +189,17 @@ public:
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
   _CCCL_HOST_DEVICE constexpr size_t get_index(const pos4& p) const
   {
-    assert(p.get(0) <= x);
-    assert(p.get(1) <= y);
-    assert(p.get(2) <= z);
-    assert(p.get(3) <= t);
-    size_t index = p.get(0) + x * (p.get(1) + y * (p.get(2) + p.get(3) * z));
-    return index;
+    const size_t px = static_cast<size_t>(p.get(0));
+    const size_t py = static_cast<size_t>(p.get(1));
+    const size_t pz = static_cast<size_t>(p.get(2));
+    const size_t pt = static_cast<size_t>(p.get(3));
+
+    _CCCL_ASSERT(p.get(0) >= 0 && px <= x, "invalid position");
+    _CCCL_ASSERT(p.get(1) >= 0 && py <= y, "invalid position");
+    _CCCL_ASSERT(p.get(2) >= 0 && pz <= z, "invalid position");
+    _CCCL_ASSERT(p.get(3) >= 0 && pt <= t, "invalid position");
+
+    return px + x * (py + y * (pz + pt * z));
   }
 
   /// Get the maximum dimension that is not 1
@@ -166,6 +220,18 @@ public:
 
     return 0;
   }
+
+  /// Convert the dim4 to a string
+  ::std::string to_string() const
+  {
+    return ::std::string("dim4(" + ::std::to_string(x) + "," + ::std::to_string(y) + "," + ::std::to_string(z) + ","
+                         + ::std::to_string(t) + ")");
+  }
+
+  size_t x = 1;
+  size_t y = 1;
+  size_t z = 1;
+  size_t t = 1;
 };
 
 /**
@@ -534,7 +600,12 @@ struct hash<pos4>
 
 // So that we can create maps of dim4 entries
 template <>
-struct hash<dim4> : hash<pos4>
-{};
+struct hash<dim4>
+{
+  ::std::size_t operator()(const dim4& s) const noexcept
+  {
+    return hash_all(s.x, s.y, s.z, s.t);
+  }
+};
 
 } // end namespace cuda::experimental::stf

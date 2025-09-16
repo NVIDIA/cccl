@@ -974,7 +974,7 @@ public:
       return dims;
     }
 
-    int get_dim(int axis_id) const
+    size_t get_dim(int axis_id) const
     {
       return dims.get(axis_id);
     }
@@ -1039,7 +1039,7 @@ public:
     return get_impl()->get_dims();
   }
 
-  int get_dim(int axis_id) const
+  size_t get_dim(int axis_id) const
   {
     return get_dims().get(axis_id);
   }
@@ -1230,13 +1230,13 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
 
-  for (int t = tile_id.t; t < g_dims.t; t += strides.t)
+  for (size_t t = static_cast<size_t>(tile_id.t); t < g_dims.t; t += strides.t)
   {
-    for (int z = tile_id.z; z < g_dims.z; z += strides.z)
+    for (size_t z = static_cast<size_t>(tile_id.z); z < g_dims.z; z += strides.z)
     {
-      for (int y = tile_id.y; y < g_dims.y; y += strides.y)
+      for (size_t y = static_cast<size_t>(tile_id.y); y < g_dims.y; y += strides.y)
       {
-        for (int x = tile_id.x; x < g_dims.x; x += strides.x)
+        for (size_t x = static_cast<size_t>(tile_id.x); x < g_dims.x; x += strides.x)
         {
           places.push_back(g.get_place(pos4(x, y, z, t)));
         }
@@ -1289,13 +1289,13 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
 
-  for (int t = begin_coords.t; t < end_coords.t; t++)
+  for (size_t t = static_cast<size_t>(begin_coords.t); t < end_coords.t; t++)
   {
-    for (int z = begin_coords.z; z < end_coords.z; z++)
+    for (size_t z = static_cast<size_t>(begin_coords.z); z < end_coords.z; z++)
     {
-      for (int y = begin_coords.y; y < end_coords.y; y++)
+      for (size_t y = static_cast<size_t>(begin_coords.y); y < end_coords.y; y++)
       {
-        for (int x = begin_coords.x; x < end_coords.x; x++)
+        for (size_t x = static_cast<size_t>(begin_coords.x); x < end_coords.x; x++)
         {
           places.push_back(g.get_place(pos4(x, y, z, t)));
         }
