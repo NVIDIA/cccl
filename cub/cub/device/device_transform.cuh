@@ -21,6 +21,20 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+template <typename T>
+struct __return_constant
+{
+  T value;
+
+  THRUST_DEVICE_FUNCTION auto operator()() const -> T
+  {
+    return value;
+  }
+};
+} // namespace detail
+
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
 struct DeviceTransform
@@ -223,19 +237,6 @@ public:
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 
-private:
-  template <typename T>
-  struct __return_constant
-  {
-    T value;
-
-    THRUST_DEVICE_FUNCTION auto operator()() const -> T
-    {
-      return value;
-    }
-  };
-
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -256,7 +257,7 @@ public:
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
-      __return_constant<Value>{::cuda::std::move(value)},
+      detail::__return_constant<Value>{::cuda::std::move(value)},
       stream);
   }
 
@@ -277,7 +278,8 @@ public:
       return cudaSuccess;
     }
 
-    return Generate(::cuda::std::move(output), num_items, __return_constant<Value>{::cuda::std::move(value)}, stream);
+    return Generate(
+      ::cuda::std::move(output), num_items, detail::__return_constant<Value>{::cuda::std::move(value)}, stream);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 
