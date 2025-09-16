@@ -9,16 +9,13 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cpu-only")]
-    [switch]$CPU_ONLY = $false
+    [switch]$CPU_ONLY = $false,
+    [Parameter(Mandatory = $false)]
+    [Alias("gpu-only")]
+    [switch]$GPU_ONLY = $false
 )
 
 $ErrorActionPreference = "Stop"
-
-# if not cpu-only, emit an error. GPU tests are not yet supported.
-if (-not $CPU_ONLY) {
-    Write-Error "Thrust tests require the -cpu-only flag"
-    exit 1
-}
 
 $CURRENT_PATH = Split-Path $pwd -leaf
 If($CURRENT_PATH -ne "ci") {
@@ -33,9 +30,17 @@ Invoke-Expression $build_command
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList $CXX_STANDARD, $CUDA_ARCH
 
-$PRESET = "thrust-cpu-cpp$CXX_STANDARD"
+if ($CPU_ONLY) {
+    $PRESETS = @("thrust-cpu-cpp$CXX_STANDARD")
+} elseif ($GPU_ONLY) {
+    $PRESETS = @("thrust-gpu-cpp$CXX_STANDARD")
+} else {
+    $PRESETS = @("thrust-cpp$CXX_STANDARD")
+}
 
-test_preset "Thrust" "$PRESET"
+foreach ($PRESET in $PRESETS) {
+    test_preset "Thrust ($PRESET)" "$PRESET"
+}
 
 If($CURRENT_PATH -ne "ci") {
     popd
