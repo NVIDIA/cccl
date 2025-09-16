@@ -32,7 +32,6 @@ __host__ __device__ void do_test()
 
 int main(int, char**)
 {
-  do_test<__int128_t>();
-  do_test<__uint128_t>();
+  NV_IF_TARGET(NV_IS_HOST, (do_test<__int128_t>(); do_test<__uint128_t>();))
   return 0;
 }

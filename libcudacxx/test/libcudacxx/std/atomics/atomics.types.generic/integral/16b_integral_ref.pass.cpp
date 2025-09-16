@@ -184,15 +184,8 @@ using cuda_atomic_ref = cuda::atomic_ref<T, Scope>;
 
 int main(int, char**)
 {
-  // this test would instantiate more cases than just the ones below
-  // but ptxas already consumes 5 GB of RAM while translating these
-  // so in the interest of not eating all memory, it's limited to the current set
-  //
-  // the per-function tests *should* cover the other codegen aspects of the
-  // code, and the cross between scopes and memory locations below should provide
-  // a *reasonable* subset of all the possible combinations to provide enough
-  // confidence that this all actually works
-
+  // Skip tests if PTX is insufficient
+#if __cccl_ptx_isa >= 840
   NV_DISPATCH_TARGET(
     NV_IS_HOST,
     (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
@@ -206,6 +199,7 @@ int main(int, char**)
 
      test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_device, global_memory_selector>();))
+#endif
 
   return 0;
 }
