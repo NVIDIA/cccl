@@ -37,50 +37,44 @@ if (LIBCUDACXX_ENABLE_CUDA)
 endif ()
 
 option(LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS "Enable libcu++ tests." ON)
-if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
-  enable_testing()
+if (NOT LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
+  return()
+endif()
 
-  find_package (Python COMPONENTS Interpreter)
-  if (NOT Python_Interpreter_FOUND)
-    message(FATAL_ERROR
-      "Failed to find python interpreter, which is required for running tests and "
-      "building a libcu++ static library.")
-  endif ()
+enable_testing()
 
-  # Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
-  include(GetHostTriple)
-  get_host_triple(LLVM_INFERRED_HOST_TRIPLE)
+# Create the compiler targets with the common compile flags
+include(cmake/LibcudacxxBuildCompilerTargets.cmake)
+libcudacxx_build_compiler_targets()
 
-  set(LLVM_HOST_TRIPLE "${LLVM_INFERRED_HOST_TRIPLE}" CACHE STRING
-      "Host on which LLVM binaries will run")
+# Test all public and internal headers
+include(cmake/LibcudacxxInternalHeaderTesting.cmake)
+include(cmake/LibcudacxxPublicHeaderTesting.cmake)
+include(cmake/LibcudacxxPublicHeaderTestingHost.cmake)
 
-  # By default, we target the host, but this can be overridden at CMake
-  # invocation time.
-  set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
-    "Default target for which LLVM will generate code." )
-  set(TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
-  message(STATUS "LLVM host triple: ${LLVM_HOST_TRIPLE}")
-  message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
-
-  set(LIT_EXTRA_ARGS "" CACHE STRING "Use for additional options (e.g. -j12)")
-  find_program(LLVM_DEFAULT_EXTERNAL_LIT lit)
-  set(LLVM_LIT_ARGS "-sv ${LIT_EXTRA_ARGS}")
-
-  set(LIBCUDACXX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-  add_subdirectory(test)
-
-  include(AddLLVM)
-  get_property(LLVM_LIT_TESTSUITES          GLOBAL PROPERTY LLVM_LIT_TESTSUITES)
-  get_property(LLVM_LIT_PARAMS              GLOBAL PROPERTY LLVM_LIT_PARAMS)
-  get_property(LLVM_LIT_DEPENDS             GLOBAL PROPERTY LLVM_LIT_DEPENDS)
-  get_property(LLVM_LIT_EXTRA_ARGS          GLOBAL PROPERTY LLVM_LIT_EXTRA_ARGS)
-  get_property(LLVM_ADDITIONAL_TEST_TARGETS GLOBAL PROPERTY LLVM_ADDITIONAL_TEST_TARGETS)
-  get_property(LLVM_ADDITIONAL_TEST_DEPENDS GLOBAL PROPERTY LLVM_ADDITIONAL_TEST_DEPENDS)
-  add_lit_target(check-all
-    "Running all regression tests"
-    ${LLVM_LIT_TESTSUITES}
-    PARAMS ${LLVM_LIT_PARAMS}
-    DEPENDS ${LLVM_LIT_DEPENDS} ${LLVM_ADDITIONAL_TEST_TARGETS}
-    ARGS ${LLVM_LIT_EXTRA_ARGS}
-  )
+find_package (Python COMPONENTS Interpreter)
+if (NOT Python_Interpreter_FOUND)
+  message(FATAL_ERROR
+    "Failed to find python interpreter, which is required for running tests and building a libcu++ static library.")
 endif ()
+
+# Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
+include(GetHostTriple)
+get_host_triple(LLVM_INFERRED_HOST_TRIPLE)
+
+set(LLVM_HOST_TRIPLE "${LLVM_INFERRED_HOST_TRIPLE}" CACHE STRING
+    "Host on which LLVM binaries will run")
+
+# By default, we target the host, but this can be overridden at CMake
+# invocation time.
+set(LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_HOST_TRIPLE}" CACHE STRING
+  "Default target for which LLVM will generate code." )
+set(TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
+message(STATUS "LLVM host triple: ${LLVM_HOST_TRIPLE}")
+message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
+
+set(LIT_EXTRA_ARGS "" CACHE STRING "Use for additional options (e.g. -j12)")
+find_program(LLVM_DEFAULT_EXTERNAL_LIT lit)
+set(LLVM_LIT_ARGS "-sv ${LIT_EXTRA_ARGS}")
+
+add_subdirectory(test)

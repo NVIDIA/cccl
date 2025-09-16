@@ -51,7 +51,8 @@
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 #include <nv/target>
 
@@ -599,6 +600,7 @@ struct ScanTileState;
  * that can be combined into one machine word that can be
  * read/written coherently in a single access.
  */
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document - causes Breathe/Sphinx parsing errors with nested templates
 template <typename T>
 struct ScanTileState<T, true>
 {
@@ -640,16 +642,8 @@ struct ScanTileState<T, true>
   /**
    * @brief Initializer
    *
-   * @param[in] num_tiles
-   *   Number of tiles
-   *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to \p temp_storage_bytes and no work is
-   * done.
-   *
-   * @param[in] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
   Init(int /*num_tiles*/, void* d_temp_storage, size_t /*temp_storage_bytes*/)
@@ -665,7 +659,7 @@ struct ScanTileState<T, true>
    *   Number of tiles
    *
    * @param[out] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
@@ -808,6 +802,7 @@ public:
     return tile_descriptor.value;
   }
 };
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * Tile status interface specialized for scan status and value types that
@@ -854,7 +849,7 @@ struct ScanTileState<T, false>
    *   done.
    *
    * @param[in] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   /// Initializer
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
@@ -885,7 +880,7 @@ struct ScanTileState<T, false>
    *   Number of tiles
    *
    * @param[out] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
@@ -1000,6 +995,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePai
  * Tile status interface for reduction by key, specialized for scan status and value types that
  * can be combined into one machine word that can be read/written coherently in a single access.
  */
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document - causes Breathe/Sphinx parsing errors with nested templates
 template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 {
@@ -1065,7 +1061,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    *   is written to \p temp_storage_bytes and no work is done.
    *
    * @param[in] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
   Init(int /*num_tiles*/, void* d_temp_storage, size_t /*temp_storage_bytes*/)
@@ -1081,7 +1077,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    *   Number of tiles
    *
    * @param[out] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
@@ -1180,15 +1176,16 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     value.key   = tile_descriptor.key;
   }
 };
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
- * Prefix call-back operator for coupling local block scan within a
+ * Prefix callback operator for coupling local block scan within a
  * block-cooperative scan
  ******************************************************************************/
 
 /**
- * Stateful block-scan prefix functor.  Provides the the running prefix for
- * the current tile by using the call-back warp to wait on on
+ * Stateful block-scan prefix functor.  Provides the running prefix for
+ * the current tile by using the callback warp to wait for
  * aggregates/prefixes from predecessor tiles to become available.
  *
  * @tparam DelayConstructorT

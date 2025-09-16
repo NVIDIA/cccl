@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_CONVERT_TO_INTEGRAL_H
-#define _LIBCUDACXX___UTILITY_CONVERT_TO_INTEGRAL_H
+#ifndef _CUDA_STD___UTILITY_CONVERT_TO_INTEGRAL_H
+#define _CUDA_STD___UTILITY_CONVERT_TO_INTEGRAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API constexpr int __convert_to_integral(int __val)
 {
@@ -94,8 +94,8 @@ _CCCL_API constexpr typename __sfinae_underlying_type<_Tp>::__promoted_type __co
   return __val;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_CONVERT_TO_INTEGRAL_H
+#endif // _CUDA_STD___UTILITY_CONVERT_TO_INTEGRAL_H

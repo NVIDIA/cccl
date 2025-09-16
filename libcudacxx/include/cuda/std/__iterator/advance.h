@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ADVANCE_H
-#define _LIBCUDACXX___ITERATOR_ADVANCE_H
+#ifndef _CUDA_STD___ITERATOR_ADVANCE_H
+#define _CUDA_STD___ITERATOR_ADVANCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,17 +31,17 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter,
           class _Distance,
-          class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
+          class _IntegralDistance = decltype(::cuda::std::__convert_to_integral(::cuda::std::declval<_Distance>())),
           class                   = enable_if_t<is_integral<_IntegralDistance>::value>>
 _CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
-  _Difference __n   = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
+  _Difference __n   = static_cast<_Difference>(::cuda::std::__convert_to_integral(__orig_n));
   if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
   {
     __i += __n;
@@ -73,12 +73,12 @@ _CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.advance]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__advance)
+_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__advance)
 struct __fn
 {
 private:
@@ -143,7 +143,7 @@ public:
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
     if constexpr (assignable_from<_Ip&, _Sp>)
     {
-      __i = _CUDA_VSTD::move(__bound_sentinel);
+      __i = ::cuda::std::move(__bound_sentinel);
     }
     // Otherwise, if `S` and `I` model `sized_sentinel_for<S, I>`,
     // equivalent to `ranges::advance(i, bound_sentinel - i)`.
@@ -214,15 +214,15 @@ public:
     _CCCL_UNREACHABLE();
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ADVANCE_H
+#endif // _CUDA_STD___ITERATOR_ADVANCE_H

@@ -4,12 +4,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_BACK_INSERT_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_BACK_INSERT_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_BACK_INSERT_ITERATOR_H
+#define _CUDA_STD___ITERATOR_BACK_INSERT_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT __back_insert_iterator
@@ -46,37 +46,45 @@ public:
   using reference         = void;
   using container_type    = _Container;
 
-  _CCCL_API inline constexpr explicit __back_insert_iterator(_Container& __x)
-      : container(_CUDA_VSTD::addressof(__x))
+  _CCCL_API constexpr explicit __back_insert_iterator(_Container& __x)
+      : container(::cuda::std::addressof(__x))
   {}
-  _CCCL_API inline constexpr __back_insert_iterator& operator=(const typename _Container::value_type& __value)
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr __back_insert_iterator& operator=(const typename _Container::value_type& __value)
   {
     container->push_back(__value);
     return *this;
   }
-  _CCCL_API inline constexpr __back_insert_iterator& operator=(typename _Container::value_type&& __value)
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr __back_insert_iterator& operator=(typename _Container::value_type&& __value)
   {
-    container->push_back(_CUDA_VSTD::move(__value));
+    container->push_back(::cuda::std::move(__value));
     return *this;
   }
-  _CCCL_API inline constexpr __back_insert_iterator& operator*() noexcept
-  {
-    return *this;
-  }
-  _CCCL_API inline constexpr const __back_insert_iterator& operator*() const noexcept
-  {
-    return *this;
-  }
-  _CCCL_API inline constexpr __back_insert_iterator& operator++() noexcept
-  {
-    return *this;
-  }
-  _CCCL_API inline constexpr __back_insert_iterator operator++(int) noexcept
+
+  [[nodiscard]] _CCCL_API constexpr __back_insert_iterator& operator*() noexcept
   {
     return *this;
   }
 
-  _CCCL_API inline constexpr _Container* __get_container() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const __back_insert_iterator& operator*() const noexcept
+  {
+    return *this;
+  }
+
+  _CCCL_API constexpr __back_insert_iterator& operator++() noexcept
+  {
+    return *this;
+  }
+
+  _CCCL_API constexpr __back_insert_iterator operator++(int) noexcept
+  {
+    return *this;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Container* __get_container() const noexcept
   {
     return container;
   }
@@ -85,9 +93,6 @@ public:
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT back_insert_iterator
-#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
-    : public iterator<output_iterator_tag, void, void, void, void>
-#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
 protected:
   _Container* container;
@@ -104,33 +109,40 @@ public:
   using reference      = void;
   using container_type = _Container;
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit back_insert_iterator(_Container& __x)
-      : container(_CUDA_VSTD::addressof(__x))
+  _CCCL_API constexpr explicit back_insert_iterator(_Container& __x)
+      : container(::cuda::std::addressof(__x))
   {}
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator=(const typename _Container::value_type& __value)
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr back_insert_iterator& operator=(const typename _Container::value_type& __value)
   {
     container->push_back(__value);
     return *this;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator=(typename _Container::value_type&& __value)
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr back_insert_iterator& operator=(typename _Container::value_type&& __value)
   {
-    container->push_back(_CUDA_VSTD::move(__value));
+    container->push_back(::cuda::std::move(__value));
     return *this;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator*()
-  {
-    return *this;
-  }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator++()
-  {
-    return *this;
-  }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 back_insert_iterator operator++(int)
+
+  [[nodiscard]] _CCCL_API constexpr back_insert_iterator& operator*() noexcept
   {
     return *this;
   }
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Container* __get_container() const
+  _CCCL_API constexpr back_insert_iterator& operator++() noexcept
+  {
+    return *this;
+  }
+
+  _CCCL_API constexpr back_insert_iterator operator++(int) noexcept
+  {
+    return *this;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr _Container* __get_container() const noexcept
   {
     return container;
   }
@@ -139,13 +151,13 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 back_insert_iterator<_Container> back_inserter(_Container& __x)
+[[nodiscard]] _CCCL_API constexpr back_insert_iterator<_Container> back_inserter(_Container& __x) noexcept
 {
   return back_insert_iterator<_Container>(__x);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_BACK_INSERT_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_BACK_INSERT_ITERATOR_H

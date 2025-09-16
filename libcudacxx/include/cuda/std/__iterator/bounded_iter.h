@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_BOUNDED_ITER_H
-#define _LIBCUDACXX___ITERATOR_BOUNDED_ITER_H
+#ifndef _CUDA_STD___ITERATOR_BOUNDED_ITER_H
+#define _CUDA_STD___ITERATOR_BOUNDED_ITER_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Iterator wrapper that carries the valid range it is allowed to access.
 //
@@ -80,7 +80,7 @@ private:
   // is, begin <= end).
   //
   // Since it is non-standard for iterators to have this constructor, __bounded_iter must
-  // be created via `_CUDA_VSTD::__make_bounded_iter`.
+  // be created via `::cuda::std::__make_bounded_iter`.
   _CCCL_API constexpr explicit __bounded_iter(_Iterator __current, _Iterator __begin, _Iterator __end)
       : __current_(__current)
       , __begin_(__begin)
@@ -106,7 +106,7 @@ public:
   {
     _CCCL_ASSERT(__in_bounds(__current_),
                  "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
-    return _CUDA_VSTD::__to_address(__current_);
+    return ::cuda::std::__to_address(__current_);
   }
 
   _CCCL_API constexpr reference operator[](difference_type __n) const noexcept
@@ -225,7 +225,7 @@ private:
 template <class _It>
 _CCCL_API constexpr __bounded_iter<_It> __make_bounded_iter(_It __it, _It __begin, _It __end)
 {
-  return __bounded_iter<_It>(_CUDA_VSTD::move(__it), _CUDA_VSTD::move(__begin), _CUDA_VSTD::move(__end));
+  return __bounded_iter<_It>(::cuda::std::move(__it), ::cuda::std::move(__begin), ::cuda::std::move(__end));
 }
 
 #if _CCCL_STD_VER <= 2017
@@ -243,12 +243,12 @@ struct pointer_traits<__bounded_iter<_Iterator>>
 
   _CCCL_API constexpr static element_type* to_address(pointer __it) noexcept
   {
-    return _CUDA_VSTD::__to_address(__it.__current_);
+    return ::cuda::std::__to_address(__it.__current_);
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_BOUNDED_ITER_H
+#endif // _CUDA_STD___ITERATOR_BOUNDED_ITER_H

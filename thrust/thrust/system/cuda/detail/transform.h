@@ -58,18 +58,6 @@ namespace cuda_cub
 {
 namespace __transform
 {
-struct no_stencil_tag
-{};
-
-struct always_true_predicate
-{
-  template <class T>
-  constexpr bool THRUST_DEVICE_FUNCTION operator()(T const&) const
-  {
-    return true;
-  }
-};
-
 template <class InputIt, class OutputIt, class StencilIt, class TransformOp, class Predicate>
 struct unary_transform_f
 {
@@ -79,107 +67,12 @@ struct unary_transform_f
   TransformOp op;
   Predicate pred;
 
-  THRUST_FUNCTION
-  unary_transform_f(InputIt input_, OutputIt output_, StencilIt stencil_, TransformOp op_, Predicate pred_)
-      : input(input_)
-      , output(output_)
-      , stencil(stencil_)
-      , op(op_)
-      , pred(pred_)
-  {}
-
   template <class Size>
   void THRUST_DEVICE_FUNCTION operator()(Size idx)
   {
     if (pred(raw_reference_cast(stencil[idx])))
     {
       output[idx] = op(raw_reference_cast(input[idx]));
-    }
-  }
-};
-
-template <class InputIt, class OutputIt, class TransformOp, class Predicate>
-struct unary_transform_f<InputIt, OutputIt, no_stencil_tag, TransformOp, Predicate>
-{
-  InputIt input;
-  OutputIt output;
-  TransformOp op;
-  Predicate pred;
-
-  THRUST_FUNCTION
-  unary_transform_f(InputIt input_, OutputIt output_, no_stencil_tag, TransformOp op_, Predicate pred_)
-      : input(input_)
-      , output(output_)
-      , op(op_)
-      , pred(pred_)
-  {}
-
-  template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
-  {
-    if (pred(raw_reference_cast(input[idx])))
-    {
-      output[idx] = op(raw_reference_cast(input[idx]));
-    }
-  }
-};
-
-template <class InputIt1, class InputIt2, class OutputIt, class StencilIt, class TransformOp, class Predicate>
-struct binary_transform_f
-{
-  InputIt1 input1;
-  InputIt2 input2;
-  OutputIt output;
-  StencilIt stencil;
-  TransformOp op;
-  Predicate pred;
-
-  THRUST_FUNCTION
-  binary_transform_f(
-    InputIt1 input1_, InputIt2 input2_, OutputIt output_, StencilIt stencil_, TransformOp op_, Predicate pred_)
-      : input1(input1_)
-      , input2(input2_)
-      , output(output_)
-      , stencil(stencil_)
-      , op(op_)
-      , pred(pred_)
-  {}
-
-  template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
-  {
-    if (pred(raw_reference_cast(stencil[idx])))
-    {
-      output[idx] = op(raw_reference_cast(input1[idx]), raw_reference_cast(input2[idx]));
-    }
-  }
-};
-
-template <class InputIt1, class InputIt2, class OutputIt, class TransformOp, class Predicate>
-struct binary_transform_f<InputIt1, InputIt2, OutputIt, no_stencil_tag, TransformOp, Predicate>
-{
-  InputIt1 input1;
-  InputIt2 input2;
-  OutputIt output;
-  TransformOp op;
-  Predicate pred;
-
-  THRUST_FUNCTION
-  binary_transform_f(
-    InputIt1 input1_, InputIt2 input2_, OutputIt output_, no_stencil_tag, TransformOp op_, Predicate pred_)
-      : input1(input1_)
-      , input2(input2_)
-      , output(output_)
-      , op(op_)
-      , pred(pred_)
-  {}
-
-  template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
-  {
-    if (pred(raw_reference_cast(input1[idx])))
-    {
-      output[idx] = op(raw_reference_cast(input1[idx]), raw_reference_cast(input2[idx]));
     }
   }
 };
@@ -187,7 +80,7 @@ struct binary_transform_f<InputIt1, InputIt2, OutputIt, no_stencil_tag, Transfor
 // EAN 2024-10-04: when force-inlined, gcc's optimizer will generate bad code
 // for this function:
 template <class Policy, class InputIt, class Size, class OutputIt, class StencilIt, class TransformOp, class Predicate>
-OutputIt _CCCL_HOST_DEVICE inline unary(
+OutputIt _CCCL_HOST_DEVICE unary_if_with_stencil(
   Policy& policy,
   InputIt items,
   OutputIt result,
@@ -206,6 +99,26 @@ OutputIt _CCCL_HOST_DEVICE inline unary(
   return result + num_items;
 }
 
+template <class InputIt1, class InputIt2, class OutputIt, class StencilIt, class TransformOp, class Predicate>
+struct binary_transform_f
+{
+  InputIt1 input1;
+  InputIt2 input2;
+  OutputIt output;
+  StencilIt stencil;
+  TransformOp op;
+  Predicate pred;
+
+  template <class Size>
+  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  {
+    if (pred(raw_reference_cast(stencil[idx])))
+    {
+      output[idx] = op(raw_reference_cast(input1[idx]), raw_reference_cast(input2[idx]));
+    }
+  }
+};
+
 // EAN 2024-10-04: when force-inlined, gcc's optimizer will generate bad code
 // for this function:
 template <class Policy,
@@ -216,7 +129,7 @@ template <class Policy,
           class StencilIt,
           class TransformOp,
           class Predicate>
-OutputIt _CCCL_HOST_DEVICE inline binary(
+OutputIt _CCCL_HOST_DEVICE binary_if_with_stencil(
   Policy& policy,
   InputIt1 items1,
   InputIt2 items2,
@@ -226,11 +139,6 @@ OutputIt _CCCL_HOST_DEVICE inline binary(
   TransformOp transform_op,
   Predicate predicate)
 {
-  if (num_items == 0)
-  {
-    return result;
-  }
-
   using binary_transform_t = binary_transform_f<InputIt1, InputIt2, OutputIt, StencilIt, TransformOp, Predicate>;
   cuda_cub::parallel_for(
     policy, binary_transform_t{items1, items2, result, stencil, transform_op, predicate}, num_items);
@@ -238,13 +146,19 @@ OutputIt _CCCL_HOST_DEVICE inline binary(
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
+template <class Derived,
+          class Offset,
+          class... InputIts,
+          class OutputIt,
+          class TransformOp,
+          class Predicate = cub::detail::transform::always_true_predicate>
 OutputIt THRUST_FUNCTION cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,
   OutputIt result,
   Offset num_items,
-  TransformOp transform_op)
+  TransformOp transform_op,
+  Predicate pred = {})
 {
   if (num_items == 0)
   {
@@ -252,18 +166,21 @@ OutputIt THRUST_FUNCTION cub_transform_many(
   }
 
   constexpr auto stable_address =
-    (::cuda::proclaims_copyable_arguments<TransformOp>::value)
+    (::cuda::proclaims_copyable_arguments<Predicate>::value && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
       ? cub::detail::transform::requires_stable_address::no
       : cub::detail::transform::requires_stable_address::yes;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (cub::detail::transform::
-       dispatch_t<stable_address, decltype(num_items_fixed), ::cuda::std::tuple<InputIts...>, OutputIt, TransformOp>::
-         dispatch),
+    (cub::detail::transform::dispatch_t<stable_address,
+                                        decltype(num_items_fixed),
+                                        ::cuda::std::tuple<InputIts...>,
+                                        OutputIt,
+                                        Predicate,
+                                        TransformOp>::dispatch),
     num_items,
-    (firsts, result, num_items_fixed, transform_op, cuda_cub::stream(policy)));
+    (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
   throw_on_error(status, "transform: failed inside CUB");
 
   status = cuda_cub::synchronize_optional(policy);
@@ -334,20 +251,43 @@ THRUST_FUNCTION OutputIt transform_if(
   TransformOp transform_op,
   Predicate predicate)
 {
-  return __transform::unary(
-    policy, first, result, ::cuda::std::distance(first, last), __transform::no_stencil_tag{}, transform_op, predicate);
+  THRUST_CDP_DISPATCH(
+    (return __transform::cub_transform_many(
+              policy,
+              ::cuda::std::make_tuple(first),
+              result,
+              ::cuda::std::distance(first, last),
+              transform_op,
+              predicate);),
+    (while (first != last) {
+      if (predicate(raw_reference_cast(*first)))
+      {
+        *result = transform_op(raw_reference_cast(*first));
+      }
+      ++first;
+      ++result;
+    } return result;));
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp, typename Predicate>
 THRUST_FUNCTION OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt first,
-  ::cuda::std::iter_difference_t<InputIt> count,
+  ::cuda::std::iter_difference_t<InputIt> num_items,
   OutputIt result,
   TransformOp transform_op,
   Predicate predicate)
 {
-  return __transform::unary(policy, first, result, count, __transform::no_stencil_tag{}, transform_op, predicate);
+  THRUST_CDP_DISPATCH((return __transform::cub_transform_many(
+                                policy, ::cuda::std::make_tuple(first), result, num_items, transform_op, predicate);),
+                      (for (decltype(num_items) i = 0; i < num_items; i++) {
+                        if (predicate(raw_reference_cast(*first)))
+                        {
+                          *result = transform_op(raw_reference_cast(*first));
+                        }
+                        ++first;
+                        ++result;
+                      } return result;));
 }
 
 //  one input data stream + stencil
@@ -362,7 +302,8 @@ THRUST_FUNCTION OutputIt transform_if(
   TransformOp transform_op,
   Predicate predicate)
 {
-  return __transform::unary(policy, first, result, ::cuda::std::distance(first, last), stencil, transform_op, predicate);
+  return __transform::unary_if_with_stencil(
+    policy, first, result, ::cuda::std::distance(first, last), stencil, transform_op, predicate);
 }
 
 template <typename Derived,
@@ -380,7 +321,7 @@ THRUST_FUNCTION OutputIt transform_if_n(
   TransformOp transform_op,
   Predicate predicate)
 {
-  return __transform::unary(policy, first, result, num_items, stencil, transform_op, predicate);
+  return __transform::unary_if_with_stencil(policy, first, result, num_items, stencil, transform_op, predicate);
 }
 
 // two input data streams
@@ -443,7 +384,7 @@ THRUST_FUNCTION OutputIt transform_if(
   BinaryTransformOp transform_op,
   Predicate predicate)
 {
-  return __transform::binary(
+  return __transform::binary_if_with_stencil(
     policy, first1, first2, result, ::cuda::std::distance(first1, last1), stencil, transform_op, predicate);
 }
 
@@ -464,7 +405,8 @@ THRUST_FUNCTION OutputIt transform_if_n(
   BinaryTransformOp transform_op,
   Predicate predicate)
 {
-  return __transform::binary(policy, first1, first2, result, num_items, stencil, transform_op, predicate);
+  return __transform::binary_if_with_stencil(
+    policy, first1, first2, result, num_items, stencil, transform_op, predicate);
 }
 
 } // namespace cuda_cub

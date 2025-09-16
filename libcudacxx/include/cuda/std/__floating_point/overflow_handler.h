@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_OVERFLOW_HANDLER_H
-#define _LIBCUDACXX___FLOATING_POINT_OVERFLOW_HANDLER_H
+#ifndef _CUDA_STD___FLOATING_POINT_OVERFLOW_HANDLER_H
+#define _CUDA_STD___FLOATING_POINT_OVERFLOW_HANDLER_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,7 +30,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class __fp_overflow_handler_kind
 {
@@ -53,17 +53,17 @@ struct __fp_overflow_handler<__fp_overflow_handler_kind::__no_sat>
 
     if constexpr (__fp_has_inf_v<__fmt>)
     {
-      return _CUDA_VSTD::__fp_inf<_Tp>();
+      return ::cuda::std::__fp_inf<_Tp>();
     }
     else if constexpr (__fp_has_nan_v<__fmt>)
     {
-      return _CUDA_VSTD::__fp_nan<_Tp>();
+      return ::cuda::std::__fp_nan<_Tp>();
     }
     else if constexpr (__fmt == __fp_format::__fp6_nv_e2m3 || __fmt == __fp_format::__fp6_nv_e3m2
                        || __fmt == __fp_format::__fp4_nv_e2m1)
     {
       // NaN is converted to positive max value
-      return _CUDA_VSTD::__fp_max<_Tp>();
+      return ::cuda::std::__fp_max<_Tp>();
     }
     else
     {
@@ -78,17 +78,17 @@ struct __fp_overflow_handler<__fp_overflow_handler_kind::__no_sat>
 
     if constexpr (__fp_has_inf_v<__fmt>)
     {
-      return _CUDA_VSTD::__fp_neg(_CUDA_VSTD::__fp_inf<_Tp>());
+      return ::cuda::std::__fp_neg(::cuda::std::__fp_inf<_Tp>());
     }
     else if constexpr (__fp_has_nan_v<__fmt>)
     {
-      return _CUDA_VSTD::__fp_neg(_CUDA_VSTD::__fp_nan<_Tp>());
+      return ::cuda::std::__fp_neg(::cuda::std::__fp_nan<_Tp>());
     }
     else if constexpr (__fmt == __fp_format::__fp6_nv_e2m3 || __fmt == __fp_format::__fp6_nv_e3m2
                        || __fmt == __fp_format::__fp4_nv_e2m1)
     {
       // NaN is converted to positive max value
-      return _CUDA_VSTD::__fp_max<_Tp>();
+      return ::cuda::std::__fp_max<_Tp>();
     }
     else
     {
@@ -105,13 +105,13 @@ struct __fp_overflow_handler<__fp_overflow_handler_kind::__sat_finite>
   template <class _Tp>
   [[nodiscard]] _CCCL_API static constexpr _Tp __handle_overflow() noexcept
   {
-    return _CUDA_VSTD::__fp_max<_Tp>();
+    return ::cuda::std::__fp_max<_Tp>();
   }
 
   template <class _Tp>
   [[nodiscard]] _CCCL_API static constexpr _Tp __handle_underflow() noexcept
   {
-    return _CUDA_VSTD::__fp_lowest<_Tp>();
+    return ::cuda::std::__fp_lowest<_Tp>();
   }
 };
 
@@ -132,8 +132,8 @@ inline constexpr bool __fp_is_overflow_handler_v<const volatile _Tp> = __fp_is_o
 template <__fp_overflow_handler_kind _Kind>
 inline constexpr bool __fp_is_overflow_handler_v<__fp_overflow_handler<_Kind>> = true;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FLOATING_POINT_OVERFLOW_HANDLER_H
+#endif // _CUDA_STD___FLOATING_POINT_OVERFLOW_HANDLER_H

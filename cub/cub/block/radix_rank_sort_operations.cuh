@@ -49,14 +49,18 @@
 
 #include <thrust/type_traits/integer_sequence.h>
 
-#include <cuda/bit>
-#include <cuda/functional>
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/__bit/bitfield.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
-#include <cuda/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -230,7 +234,7 @@ struct is_tuple_of_references_to_fundamental_types_t< //
 
 template <class KeyT, class DecomposerT>
 using decomposer_check_t =
-  is_tuple_of_references_to_fundamental_types_t<_CUDA_VSTD::invoke_result_t<DecomposerT, KeyT&>>;
+  is_tuple_of_references_to_fundamental_types_t<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>;
 
 template <class T>
 struct bit_ordered_conversion_policy_t

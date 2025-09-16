@@ -5,7 +5,7 @@
 
 from __future__ import annotations  # TODO: required for Python 3.7 docs env
 
-from typing import Callable
+from typing import Callable, Union
 
 import numba
 import numpy as np
@@ -18,6 +18,7 @@ from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
+from ..op import OpKind
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -36,18 +37,23 @@ class _Scan:
         self,
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
-        op: Callable,
+        op: Callable | OpKind,
         h_init: np.ndarray | GpuStruct,
         force_inclusive: bool,
     ):
-        self.d_in_cccl = cccl.to_cccl_iter(d_in)
-        self.d_out_cccl = cccl.to_cccl_iter(d_out)
+        self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+        self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)
         else:
             value_type = numba.typeof(h_init)
-        self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+
+        # For well-known operations, we don't need a signature
+        if isinstance(op, OpKind):
+            self.op_wrapper = cccl.to_cccl_op(op, None)
+        else:
+            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
         self.build_result = call_build(
             _bindings.DeviceScanBuildResult,
             self.d_in_cccl,
@@ -102,7 +108,7 @@ class _Scan:
 def make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     d_in_key = (
@@ -111,7 +117,14 @@ def make_cache_key(
     d_out_key = (
         d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
-    op_key = CachableFunction(op)
+
+    # Handle well-known operations differently
+    op_key: Union[tuple[str, int], CachableFunction]
+    if isinstance(op, OpKind):
+        op_key = (op.name, op.value)
+    else:
+        op_key = CachableFunction(op)
+
     h_init_key = h_init.dtype
     return (d_in_key, d_out_key, op_key, h_init_key)
 
@@ -122,24 +135,23 @@ def make_cache_key(
 def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``scan`` is used to compute an exclusive scan of a sequence of integers.
+        Below, ``make_exclusive_scan`` is used to create an exclusive scan object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin exclusive-scan-max
-          :end-before: example-end exclusive-scan-max
+          :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array that will store the result of the scan
-        op: Callable representing the binary operator to apply
+        op: Callable or OpKind representing the binary operator to apply
         init: Numpy array storing initial value of the scan
 
     Returns:
@@ -151,11 +163,32 @@ def make_exclusive_scan(
 def exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
     num_items: int,
     stream=None,
 ):
+    """
+    Performs device-wide exclusive scan.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``exclusive_scan`` is used to compute an exclusive scan with max operation.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/exclusive_scan.py
+            :language: python
+            :start-after: # example-begin
+
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array or iterator to store the result of the scan
+        op: Binary scan operator
+        h_init: Initial value for the scan
+        num_items: Number of items to scan
+        stream: CUDA stream for the operation (optional)
+    """
     scanner = make_exclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
@@ -168,24 +201,23 @@ def exclusive_scan(
 def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
 
     Example:
-        Below, ``scan`` is used to compute an inclusive scan of a sequence of integers.
+        Below, ``make_inclusive_scan`` is used to create an inclusive scan object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/test_scan_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan_object.py
           :language: python
-          :dedent:
-          :start-after: example-begin inclusive-scan-add
-          :end-before: example-end inclusive-scan-add
+          :start-after: # example-begin
+
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array that will store the result of the scan
-        op: Callable representing the binary operator to apply
+        op: Callable or OpKind representing the binary operator to apply
         init: Numpy array storing initial value of the scan
 
     Returns:
@@ -197,11 +229,32 @@ def make_inclusive_scan(
 def inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
-    op: Callable,
+    op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
     num_items: int,
     stream=None,
 ):
+    """
+    Performs device-wide inclusive scan.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``inclusive_scan`` is used to compute an inclusive scan (prefix sum).
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/scan/inclusive_scan.py
+            :language: python
+            :start-after: # example-begin
+
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array or iterator to store the result of the scan
+        op: Binary scan operator
+        h_init: Initial value for the scan
+        num_items: Number of items to scan
+        stream: CUDA stream for the operation (optional)
+    """
     scanner = make_inclusive_scan(d_in, d_out, op, h_init)
     tmp_storage_bytes = scanner(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)

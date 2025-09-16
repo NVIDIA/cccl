@@ -95,7 +95,7 @@ rm -rf build
 mkdir build
 cd build
 cmake -G Ninja ../MatX \
-  "-DCMAKE_CUDA_ARCHITECTURES=60;70;80" \
+  "-DCMAKE_CUDA_ARCHITECTURES=75;80" \
   "-DRAPIDS_CMAKE_CPM_OVERRIDE_VERSION_FILE=${version_override_file}" \
   -DMATX_BUILD_TESTS=ON \
   -DMATX_BUILD_EXAMPLES=ON \

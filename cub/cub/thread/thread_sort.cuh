@@ -40,7 +40,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
 

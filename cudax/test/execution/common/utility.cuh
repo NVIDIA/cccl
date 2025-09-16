@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 
 #include <cuda/experimental/execution.cuh>
@@ -116,24 +117,18 @@ struct string
 {
   string() = default;
 
-  _CCCL_HOST_DEVICE explicit string(char const* c)
-  {
-    std::size_t len = 0;
-    while (c[len++])
-      ;
-    char* tmp = str = new char[len];
-    while ((*tmp++ = *c++))
-      ;
-  }
+  _CCCL_HOST_DEVICE /*implicit*/ string(char const* c)
+      : len(cuda::std::char_traits<char>::length(c))
+      , str(cuda::std::char_traits<char>::copy(new char[len + 1], c, len + 1))
+  {}
 
   _CCCL_HOST_DEVICE string(string&& other) noexcept
-      : str(other.str)
-  {
-    other.str = nullptr;
-  }
+      : len(cuda::std::exchange(other.len, 0))
+      , str(cuda::std::exchange(other.str, nullptr))
+  {}
 
   _CCCL_HOST_DEVICE string(const string& other)
-      : string(string(other.str))
+      : string(string(other.c_str()))
   {}
 
   _CCCL_HOST_DEVICE ~string()
@@ -141,18 +136,31 @@ struct string
     delete[] str;
   }
 
+  _CCCL_HOST_DEVICE void swap(string& other) noexcept
+  {
+    cuda::std::swap(len, other.len);
+    cuda::std::swap(str, other.str);
+  }
+
+  _CCCL_HOST_DEVICE string& operator=(string other) noexcept
+  {
+    swap(other);
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE string operator+(string const& other) const
+  {
+    string result;
+    result.len = len + other.len;
+    result.str = new char[result.len + 1];
+    cuda::std::char_traits<char>::copy(result.str, str, len);
+    cuda::std::char_traits<char>::copy(result.str + len, other.str, other.len + 1);
+    return result;
+  }
+
   _CCCL_HOST_DEVICE friend bool operator==(const string& left, const string& right) noexcept
   {
-    char const* l = left.str;
-    char const* r = right.str;
-    while (*l && *r)
-    {
-      if (*l++ != *r++)
-      {
-        return false;
-      }
-    }
-    return *l == *r;
+    return left.size() == right.size() && cuda::std::char_traits<char>::compare(left.str, right.str, left.size()) == 0;
   }
 
   _CCCL_HOST_DEVICE friend bool operator!=(const string& left, const string& right) noexcept
@@ -166,7 +174,18 @@ struct string
     return os;
   }
 
+  _CCCL_HOST_DEVICE cuda::std::size_t size() const
+  {
+    return len;
+  }
+
+  _CCCL_HOST_DEVICE const char* c_str() const
+  {
+    return str;
+  }
+
 private:
+  cuda::std::size_t len{};
   char* str{};
 };
 
@@ -191,9 +210,6 @@ struct error_code
   std::errc ec;
 };
 
-// run_loop isn't supported on-device yet, so neither can sync_wait be.
-#if !defined(__CUDA_ARCH__)
-
 template <class Sndr, class... Values>
 void check_values(Sndr&& sndr, const Values&... values) noexcept
 {
@@ -216,36 +232,28 @@ void check_values(Sndr&& sndr, const Values&... values) noexcept
   }
 }
 
-#else // !defined(__CUDA_ARCH__)
-
-template <class Sndr, class... Values>
-void check_values(Sndr&& sndr, const Values&... values) noexcept
-{}
-
-#endif // !defined(__CUDA_ARCH__)
-
 template <class... Ts>
-using types = _CUDA_VSTD::__type_list<Ts...>;
+using types = ::cuda::std::__type_list<Ts...>;
 
 template <class... Values, class Sndr>
 _CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
-  using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, _CUDA_VSTD::__make_type_set>;
-  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>)
+  using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, ::cuda::std::__make_type_set>;
+  if constexpr (!::cuda::std::__type_set_eq_v<actual_t, Values...>)
   {
-    _CUDA_VSTD::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
-    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
+    ::cuda::std::__type_list<Values...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(::cuda::std::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
   }
 }
 
 template <class... Errors, class Sndr>
 _CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
-  using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, _CUDA_VSTD::__make_type_set>;
-  if constexpr (!_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>)
+  using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, ::cuda::std::__make_type_set>;
+  if constexpr (!::cuda::std::__type_set_eq_v<actual_t, Errors...>)
   {
-    _CUDA_VSTD::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
-    static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
+    ::cuda::std::__type_list<Errors...> hard_error = actual_t{}; // Force the compiler to tell us the types involved.
+    static_assert(::cuda::std::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
   }
 }
 
@@ -258,12 +266,12 @@ _CCCL_HOST_DEVICE void check_sends_stopped(Sndr&&) noexcept
 template <class Sndr, class... Ts>
 inline void wait_for_value(Sndr&& snd, Ts&&... val)
 {
-  _CUDA_VSTD::optional<_CUDA_VSTD::tuple<Ts...>> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd));
+  ::cuda::std::optional<::cuda::std::tuple<Ts...>> res = cudax_async::sync_wait(static_cast<Sndr&&>(snd));
   CHECK(res.has_value());
-  _CUDA_VSTD::tuple<Ts...> expected(static_cast<Ts&&>(val)...);
-  if constexpr (_CUDA_VSTD::tuple_size_v<_CUDA_VSTD::tuple<Ts...>> == 1)
+  ::cuda::std::tuple<Ts...> expected(static_cast<Ts&&>(val)...);
+  if constexpr (::cuda::std::tuple_size_v<::cuda::std::tuple<Ts...>> == 1)
   {
-    C2H_CHECK_TUPLE(_CUDA_VSTD::get<0>(res.value()) == _CUDA_VSTD::get<0>(expected));
+    C2H_CHECK_TUPLE(::cuda::std::get<0>(res.value()) == ::cuda::std::get<0>(expected));
   }
   else
   {

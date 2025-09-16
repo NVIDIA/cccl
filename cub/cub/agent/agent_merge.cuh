@@ -17,10 +17,9 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/util.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -64,10 +63,10 @@ struct agent_t
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;
 
-  using keys_load_it1  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt1>::type;
-  using keys_load_it2  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeysIt2>::type;
-  using items_load_it1 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt1>::type;
-  using items_load_it2 = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ItemsIt2>::type;
+  using keys_load_it1  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeysIt1>;
+  using keys_load_it2  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeysIt2>;
+  using items_load_it1 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt1>;
+  using items_load_it2 = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ItemsIt2>;
 
   using block_load_keys1  = typename BlockLoadType<Policy, keys_load_it1>::type;
   using block_load_keys2  = typename BlockLoadType<Policy, keys_load_it2>::type;

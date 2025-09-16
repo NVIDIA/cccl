@@ -9,19 +9,20 @@ Defined in ``<cuda/memory>`` header.
 
    enum class address_space
    {
-     global,
-     shared,
-     constant,
-     local,
-     grid_constant,
-     cluster_shared,
+     global,         // Global state space
+     shared,         // Shared state space
+     constant,       // Constant state space
+     local,          // Local state space
+     grid_constant,  // Kernel function parameter in the parameter state space
+     cluster_shared, // Cluster shared window within the shared state space
    };
+
+Enumeration of device address spaces to be used with the ``is_address_from()`` and ``is_object_from()`` functions. See `PTX ISA documentation for state spaces <https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces>`_ for more details.
 
 .. code:: cpp
 
-   template <typename T>
    [[nodiscard]] __device__ inline
-   bool is_address_from(const void* ptr, address_space space)
+   bool is_address_from(const volatile void* ptr, address_space space) noexcept; // (1)
 
 The function checks if a pointer ``ptr`` with a generic address is from a ``space`` address state space.
 
@@ -29,7 +30,7 @@ The function checks if a pointer ``ptr`` with a generic address is from a ``spac
 
    template <typename T>
    [[nodiscard]] __device__ inline
-   bool is_object_from(T& obj, address_space space)
+   bool is_object_from(T& obj, address_space space) noexcept; // (2)
 
 The function checks if an object ``obj`` with a generic address is from a ``space`` address state space.
 
@@ -37,17 +38,19 @@ Compared to the corresponding CUDA C functions ``__isGlobal()``, ``__isShared()`
 
 **Parameters**
 
-- ``ptr``: The pointer.
-- ``obj``: The object.
-- ``space``: The address space.
+- ``ptr``: The pointer. (1)
+- ``obj``: The object. (2)
+- ``space``: The address space. (1, 2)
 
 **Return value**
 
-- ``true`` if the pointer is from the specified address space, ``false`` otherwise.
+- ``true`` if the pointer/object is from the specified address space, ``false`` otherwise.
+
+*Note: If the device architecture doesn't support the requested address space, the function will always return ``false``.*
 
 **Preconditions**
 
-- ``ptr`` is not a null pointer.
+- ``ptr`` is not a null pointer. (1)
 
 **Performance considerations**
 

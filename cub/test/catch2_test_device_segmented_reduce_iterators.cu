@@ -85,14 +85,14 @@ C2H_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = ::cuda::std::plus<>;
+  using op_t   = cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, init_t>;
+  using accum_t = cuda::std::__accumulator_t<op_t, item_t, init_t>;
   c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(in_it, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
 

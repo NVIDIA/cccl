@@ -56,11 +56,12 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS
-#define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
+#ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
+#define _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH
 
 #include <cuda/std/__type_traits/type_list.h>
 
@@ -496,4 +496,4 @@ _CCCL_DEVICE auto index(const Unit&, const Level&)
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_HIERARCHY_LEVELS
+#endif // _CUDAX__HIERARCHY_HIERARCHY_LEVELS_CUH

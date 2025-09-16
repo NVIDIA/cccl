@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_DISTANCE_H
-#define _LIBCUDACXX___ITERATOR_DISTANCE_H
+#ifndef _CUDA_STD___ITERATOR_DISTANCE_H
+#define _CUDA_STD___ITERATOR_DISTANCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter>
@@ -58,12 +58,12 @@ distance(_InputIter __first, _InputIter __last)
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.distance]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__distance)
+_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__distance)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -103,24 +103,24 @@ struct __fn
   {
     if constexpr (sized_range<_Rp>)
     {
-      return static_cast<range_difference_t<_Rp>>(_CUDA_VRANGES::size(__r));
+      return static_cast<range_difference_t<_Rp>>(::cuda::std::ranges::size(__r));
     }
     else
     {
-      return operator()(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r));
+      return operator()(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
     }
     _CCCL_UNREACHABLE();
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto distance = __distance::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_DISTANCE_H
+#endif // _CUDA_STD___ITERATOR_DISTANCE_H

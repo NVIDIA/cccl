@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // <cuda/std/numbers>
 
 #include <cuda/std/numbers>
@@ -72,6 +75,9 @@ __host__ __device__ constexpr bool test()
 #if _LIBCUDACXX_HAS_NVBF16()
   test_type<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   return true;
 }

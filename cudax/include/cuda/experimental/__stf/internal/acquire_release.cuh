@@ -219,8 +219,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
  * and marks the task as finished.
  *
  * After calling this function, the task is considered "over" and is transitioned
- * from the `running` phase to the `finished` phase. All associated resources are unlocked
- * and post-submission hooks (if any) are executed.
+ * from the `running` phase to the `finished` phase. All associated resources are unlocked.
  *
  * @param ctx The context of the backend, which manages the execution environment.
  * @param done_prereqs A list of events that must be marked as complete before the task can be released.
@@ -236,7 +235,6 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
  * - Resets the execution context (device, SM affinity, etc.) to its previous state.
  * - Unlocks mutexes for the logical data that were locked during task execution.
  * - Releases any references to logical data, preventing potential memory leaks.
- * - Executes any post-submission hooks attached to the task.
  *
  * The function also interacts with tracing and debugging tools, marking
  * the task's completion and declaring the task as a prerequisite for future tasks in the trace.
@@ -313,16 +311,6 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   {
     dep.reset_logical_data();
   }
-
-  /* Execute hooks (if any) */
-  for (auto& hook : pimpl->post_submission_hooks)
-  {
-    hook();
-  }
-
-  // This will, in particular, release shared_ptr to logical data captured in
-  // the dependencies.
-  pimpl->post_submission_hooks.clear();
 
 #ifndef NDEBUG
   ctx.increment_finished_task_count();

@@ -78,6 +78,7 @@ jobs:
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -178,11 +179,13 @@ jobs:
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \
-            --env "AWS_REGION=$AWS_REGION" \
-            --env "SCCACHE_REGION=$AWS_REGION" \
-            --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
-            --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" \
-            --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
+            --env "AWS_REGION=${AWS_REGION:-}" \
+            --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
+            --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
+            --env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:-}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \

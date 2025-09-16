@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
-#define _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
+#ifndef _CUDA_STD___ITERATOR_MOVE_ITERATOR_H
+#define _CUDA_STD___ITERATOR_MOVE_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -38,13 +38,19 @@
 #include <cuda/std/__iterator/move_sentinel.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_convertible.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Iter, class = void>
@@ -67,7 +73,8 @@ concept __move_iter_comparable = requires {
 };
 
 template <class _Iter>
-inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+inline constexpr bool __noexcept_move_iter_iter_move =
+  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>()));
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -91,7 +98,8 @@ template <class _Iter, class _Sent>
 _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
-inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+inline constexpr bool __noexcept_move_iter_iter_move =
+  noexcept(::cuda::std::ranges::iter_move(::cuda::std::declval<const _Iter&>()));
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
@@ -136,171 +144,268 @@ public:
   using pointer         = _Iter;
   using reference       = iter_rvalue_reference_t<_Iter>;
 
-  _CCCL_API constexpr explicit move_iterator(_Iter __i)
-      : __current_(_CUDA_VSTD::move(__i))
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr explicit move_iterator(_Iter __i) noexcept(is_nothrow_move_constructible_v<_Iter>)
+      : __current_(::cuda::std::move(__i))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _It2 = _Iter)
+  _CCCL_REQUIRES(is_default_constructible_v<_It2>)
+  _CCCL_API constexpr move_iterator() noexcept(is_nothrow_default_constructible_v<_It2>)
+      : __current_()
+  {}
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES((!is_same_v<_Up, _Iter>) _CCCL_AND convertible_to<const _Up&, _Iter>)
+  _CCCL_API constexpr move_iterator(const move_iterator<_Up>& __u) noexcept(is_nothrow_convertible_v<const _Up&, _Iter>)
+      : __current_(__u.base())
+  {}
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES(
+    (!is_same_v<_Up, _Iter>) _CCCL_AND convertible_to<const _Up&, _Iter> _CCCL_AND assignable_from<_Iter&, const _Up&>)
+  _CCCL_API constexpr move_iterator&
+  operator=(const move_iterator<_Up>& __u) noexcept(is_nothrow_assignable_v<_Iter&, const _Up&>)
+  {
+    __current_ = __u.base();
+    return *this;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr const _Iter& base() const& noexcept
+  {
+    return __current_;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr _Iter base() &&
+  {
+    return ::cuda::std::move(__current_);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr reference operator*() const
+  {
+    return ::cuda::std::ranges::iter_move(__current_);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
+  {
+    return ::cuda::std::ranges::iter_move(__current_ + __n);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
+  {
+    return __current_;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr move_iterator& operator++()
   {
     ++__current_;
     return *this;
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX20 _CCCL_API constexpr pointer operator->() const
-  {
-    return __current_;
-  }
-
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_API constexpr move_iterator()
-    requires is_constructible_v<_Iter>
-      : __current_()
-  {}
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-  _CCCL_TEMPLATE(class _It2 = _Iter)
-  _CCCL_REQUIRES(is_constructible_v<_It2>)
-  _CCCL_API constexpr move_iterator()
-      : __current_()
-  {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!_IsSame<_Up, _Iter>::value) && convertible_to<const _Up&, _Iter>)
-  _CCCL_API constexpr move_iterator(const move_iterator<_Up>& __u)
-      : __current_(__u.base())
-  {}
-
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!_IsSame<_Up, _Iter>::value)
-                 && convertible_to<const _Up&, _Iter> && assignable_from<_Iter&, const _Up&>)
-  _CCCL_API constexpr move_iterator& operator=(const move_iterator<_Up>& __u)
-  {
-    __current_ = __u.base();
-    return *this;
-  }
-
-  _CCCL_API constexpr const _Iter& base() const& noexcept
-  {
-    return __current_;
-  }
-  _CCCL_API constexpr _Iter base() &&
-  {
-    return _CUDA_VSTD::move(__current_);
-  }
-
-  _CCCL_API constexpr reference operator*() const
-  {
-    return _CUDA_VRANGES::iter_move(__current_);
-  }
-  _CCCL_API constexpr reference operator[](difference_type __n) const
-  {
-    return _CUDA_VRANGES::iter_move(__current_ + __n);
-  }
-
-  _CCCL_TEMPLATE(class _It2 = _Iter)
-  _CCCL_REQUIRES(forward_iterator<_It2>)
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr auto operator++(int)
   {
-    move_iterator __tmp(*this);
-    ++__current_;
-    return __tmp;
+    if constexpr (forward_iterator<_Iter>)
+    {
+      move_iterator __tmp{*this};
+      ++__current_;
+      return __tmp;
+    }
+    else
+    {
+      ++__current_;
+    }
   }
 
-  _CCCL_TEMPLATE(class _It2 = _Iter)
-  _CCCL_REQUIRES((!forward_iterator<_It2>) )
-  _CCCL_API constexpr void operator++(int)
-  {
-    ++__current_;
-  }
-
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr move_iterator& operator--()
   {
     --__current_;
     return *this;
   }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr move_iterator operator--(int)
   {
-    move_iterator __tmp(*this);
+    move_iterator __tmp{*this};
     --__current_;
     return __tmp;
   }
-  _CCCL_API constexpr move_iterator operator+(difference_type __n) const
+
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr move_iterator operator+(difference_type __n) const
   {
-    return move_iterator(__current_ + __n);
+    return move_iterator{__current_ + __n};
   }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API friend constexpr move_iterator operator+(difference_type __n, const move_iterator& __x)
+  {
+    return move_iterator{__x.base() + __n};
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr move_iterator& operator+=(difference_type __n)
   {
     __current_ += __n;
     return *this;
   }
-  _CCCL_API constexpr move_iterator operator-(difference_type __n) const
+
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API constexpr move_iterator operator-(difference_type __n) const
   {
-    return move_iterator(__current_ - __n);
+    return move_iterator{__current_ - __n};
   }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator-(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(::cuda::std::declval<const _Iter&>() - ::cuda::std::declval<const _Iter2&>())
+  {
+    return __x.base() - __y.base();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr move_iterator& operator-=(difference_type __n)
   {
     __current_ -= __n;
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() == __y.base();
   }
 
 #if _CCCL_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() == __x.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() != __y.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
-  friend _CCCL_API constexpr bool operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() != __x.base();
   }
 #endif // _CCCL_STD_VER < 2020
 
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator==(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() == ::cuda::std::declval<const _Iter2&>()))
+  {
+    return __x.base() == __y.base();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() != ::cuda::std::declval<const _Iter2&>()))
+  {
+    return __x.base() != __y.base();
+  }
+
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Iter2)
+  _CCCL_REQUIRES(three_way_comparable_with<_Iter, _Iter2>)
+  [[nodiscard]] _CCCL_API friend constexpr compare_three_way_result_t<_Iter, _Iter2>
+  operator<=>(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+  {
+    return __x.base() <=> __y.base();
+  }
+
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator<(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() < ::cuda::std::declval<const _Iter2&>()))
+  {
+    return __x.base() < __y.base();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator>(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() > ::cuda::std::declval<const _Iter2&>()))
+  {
+    return __x.base() > __y.base();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator<=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() <= ::cuda::std::declval<const _Iter2&>()))
+  {
+    return __x.base() <= __y.base();
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Iter2>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator>=(const move_iterator& __x, const move_iterator<_Iter2>& __y)
+    -> decltype(static_cast<bool>(::cuda::std::declval<const _Iter&>() >= ::cuda::std::declval<const _Iter2&>()))
+  {
+    return __x.base() >= __y.base();
+  }
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
-  friend _CCCL_API constexpr iter_difference_t<_Iter>
+  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Iter>
   operator-(const move_sentinel<_Sent>& __x, const move_iterator& __y)
   {
     return __x.base() - __y.base();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sent)
   _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
-  friend _CCCL_API constexpr iter_difference_t<_Iter>
+  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_Iter>
   operator-(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() - __y.base();
   }
 
-  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
+  _CCCL_EXEC_CHECK_DISABLE
+  [[nodiscard]] _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter>
   iter_move(const move_iterator& __i) noexcept(__noexcept_move_iter_iter_move<_Iter>)
   {
-    return _CUDA_VRANGES::iter_move(__i.__current_);
+    return ::cuda::std::ranges::iter_move(__i.__current_);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter2>
   _CCCL_API friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
-    return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
@@ -313,88 +418,16 @@ struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 {};
 #endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr bool operator==(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-  return __x.base() == __y.base();
-}
-
-#if _CCCL_STD_VER <= 2017
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr bool operator!=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-  return __x.base() != __y.base();
-}
-#endif // _CCCL_STD_VER <= 2017
-
-#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-
-template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
-_CCCL_API constexpr auto operator<=>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-  -> compare_three_way_result_t<_Iter1, _Iter2>
-{
-  return __x.base() <=> __y.base();
-}
-
-#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr bool operator<(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-  return __x.base() < __y.base();
-}
-
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr bool operator>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-  return __x.base() > __y.base();
-}
-
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr bool operator<=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-  return __x.base() <= __y.base();
-}
-
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr bool operator>=(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-{
-  return __x.base() >= __y.base();
-}
-#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-
-template <class _Iter1, class _Iter2>
-_CCCL_API constexpr auto operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
-  -> decltype(__x.base() - __y.base())
-{
-  return __x.base() - __y.base();
-}
-
-#if _CCCL_HAS_CONCEPTS()
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Iter>
-_CCCL_API constexpr move_iterator<_Iter> operator+(iter_difference_t<_Iter> __n, const move_iterator<_Iter>& __x)
-  requires requires {
-    { __x.base() + __n } -> same_as<_Iter>;
-  }
+[[nodiscard]] _CCCL_API constexpr move_iterator<_Iter>
+make_move_iterator(_Iter __i) noexcept(is_nothrow_move_constructible_v<_Iter>)
 {
-  return __x + __n;
-}
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-template <class _Iter>
-_CCCL_API constexpr move_iterator<_Iter>
-operator+(typename move_iterator<_Iter>::difference_type __n, const move_iterator<_Iter>& __x)
-{
-  return move_iterator<_Iter>(__x.base() + __n);
-}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-
-template <class _Iter>
-_CCCL_API constexpr move_iterator<_Iter> make_move_iterator(_Iter __i)
-{
-  return move_iterator<_Iter>(_CUDA_VSTD::move(__i));
+  return move_iterator<_Iter>{::cuda::std::move(__i)};
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
+#endif // _CUDA_STD___ITERATOR_MOVE_ITERATOR_H

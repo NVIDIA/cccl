@@ -142,7 +142,7 @@ void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT 
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<T>, int> = 0>
+template <typename T, cuda::std::enable_if_t<cuda::std::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE_APPROX_EQ(expected_data, test_results);
@@ -151,7 +151,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, ::cuda::std::enable_if_t<!::cuda::std::is_floating_point_v<T>, int> = 0>
+template <typename T, cuda::std::enable_if_t<!cuda::std::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE(expected_data == test_results);
@@ -295,7 +295,7 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,
                 "Segmented tests must either be head or tail flags");
   using warp_seg_sum_t =
-    ::cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<type>, warp_seg_sum_head_t<type>>;
+    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<type>, warp_seg_sum_head_t<type>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -322,7 +322,7 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
     params::total_warps,
     params::logical_warp_threads,
     valid_items,
-    ::cuda::std::plus<type>{},
+    cuda::std::plus<type>{},
     h_out.begin());
 
   // Verify results
@@ -333,15 +333,15 @@ C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, 
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = ::cuda::minimum<>;
+  using red_op_t = cuda::minimum<>;
 
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,
                 "Segmented tests must either be head or tail flags");
   using warp_seg_reduction_t =
-    ::cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
-                     warp_seg_reduce_tail_t<type, red_op_t>,
-                     warp_seg_reduce_head_t<type, red_op_t>>;
+    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
+                   warp_seg_reduce_tail_t<type, red_op_t>,
+                   warp_seg_reduce_head_t<type, red_op_t>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);

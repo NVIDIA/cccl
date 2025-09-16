@@ -26,18 +26,17 @@ int main()
 
   // A CUDA stream on which to execute the reduction
   cudax::stream stream{cuda::devices[0]};
-
-  // An environment we use to pass all necessary information to the containers
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{cuda::devices[0]}, stream};
+  cudax::device_memory_resource mr{cuda::devices[0]};
 
   // Allocate input and output, but do not zero initialize output (`cudax::no_init`)
-  cudax::async_device_buffer<int> d_in{env, num_items, 1};
-  cudax::async_device_buffer<float> d_out{env, 1, cudax::no_init};
+  auto d_in  = cudax::make_async_buffer<int>(stream, mr, num_items, 1);
+  auto d_out = cudax::make_async_buffer<float>(stream, mr, 1, cudax::no_init);
 
+  // An environment we use to pass all necessary information to CUB
+  cudax::env_t<cuda::mr::device_accessible> env{mr, stream};
   cub::DeviceReduce::Reduce(d_in.begin(), d_out.begin(), num_items, cuda::std::plus{}, 0, env);
 
-  cudax::env_t<cuda::mr::host_accessible> host_env{cudax::pinned_memory_resource{}, stream};
-  cudax::async_host_buffer<float> h_out{host_env, d_out};
+  auto h_out = cudax::make_async_buffer<float>(stream, cudax::pinned_memory_resource{}, d_out);
 
   stream.sync();
 

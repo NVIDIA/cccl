@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___COMPLEX_INVERSE_TRIGONOMETRIC_FUNCTIONS_H
-#define _LIBCUDACXX___COMPLEX_INVERSE_TRIGONOMETRIC_FUNCTIONS_H
+#ifndef _CUDA_STD___COMPLEX_INVERSE_TRIGONOMETRIC_FUNCTIONS_H
+#define _CUDA_STD___COMPLEX_INVERSE_TRIGONOMETRIC_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -37,14 +37,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // asin
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> asin(const complex<_Tp>& __x)
 {
-  complex<_Tp> __z = _CUDA_VSTD::asinh(complex<_Tp>(-__x.imag(), __x.real()));
+  complex<_Tp> __z = ::cuda::std::asinh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
 }
 
@@ -54,13 +54,13 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> acos(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
-  if (_CUDA_VSTD::isinf(__x.real()))
+  if (::cuda::std::isinf(__x.real()))
   {
-    if (_CUDA_VSTD::isnan(__x.imag()))
+    if (::cuda::std::isnan(__x.imag()))
     {
       return complex<_Tp>(__x.imag(), __x.real());
     }
-    if (_CUDA_VSTD::isinf(__x.imag()))
+    if (::cuda::std::isinf(__x.imag()))
     {
       if (__x.real() < _Tp(0))
       {
@@ -70,32 +70,32 @@ template <class _Tp>
     }
     if (__x.real() < _Tp(0))
     {
-      return complex<_Tp>(__pi, _CUDA_VSTD::signbit(__x.imag()) ? -__x.real() : __x.real());
+      return complex<_Tp>(__pi, ::cuda::std::signbit(__x.imag()) ? -__x.real() : __x.real());
     }
-    return complex<_Tp>(_Tp(0), _CUDA_VSTD::signbit(__x.imag()) ? __x.real() : -__x.real());
+    return complex<_Tp>(_Tp(0), ::cuda::std::signbit(__x.imag()) ? __x.real() : -__x.real());
   }
-  if (_CUDA_VSTD::isnan(__x.real()))
+  if (::cuda::std::isnan(__x.real()))
   {
-    if (_CUDA_VSTD::isinf(__x.imag()))
+    if (::cuda::std::isinf(__x.imag()))
     {
       return complex<_Tp>(__x.real(), -__x.imag());
     }
     return complex<_Tp>(__x.real(), __x.real());
   }
-  if (_CUDA_VSTD::isinf(__x.imag()))
+  if (::cuda::std::isinf(__x.imag()))
   {
     return complex<_Tp>(__pi / _Tp(2), -__x.imag());
   }
-  if (__x.real() == _Tp(0) && (__x.imag() == _Tp(0) || _CUDA_VSTD::isnan(__x.imag())))
+  if (__x.real() == _Tp(0) && (__x.imag() == _Tp(0) || ::cuda::std::isnan(__x.imag())))
   {
     return complex<_Tp>(__pi / _Tp(2), -__x.imag());
   }
-  complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) - _Tp(1)));
-  if (_CUDA_VSTD::signbit(__x.imag()))
+  complex<_Tp> __z = ::cuda::std::log(__x + ::cuda::std::sqrt(::cuda::std::__sqr(__x) - _Tp(1)));
+  if (::cuda::std::signbit(__x.imag()))
   {
-    return complex<_Tp>(_CUDA_VSTD::abs(__z.imag()), _CUDA_VSTD::abs(__z.real()));
+    return complex<_Tp>(::cuda::std::abs(__z.imag()), ::cuda::std::abs(__z.real()));
   }
-  return complex<_Tp>(_CUDA_VSTD::abs(__z.imag()), -_CUDA_VSTD::abs(__z.real()));
+  return complex<_Tp>(::cuda::std::abs(__z.imag()), -::cuda::std::abs(__z.real()));
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
@@ -103,7 +103,7 @@ template <class _Tp>
 template <>
 _CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
+  return complex<__nv_bfloat16>{::cuda::std::acos(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
@@ -111,7 +111,7 @@ _CCCL_API inline complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 template <>
 _CCCL_API inline complex<__half> acos(const complex<__half>& __x)
 {
-  return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
+  return complex<__half>{::cuda::std::acos(complex<float>{__x})};
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
@@ -120,12 +120,12 @@ _CCCL_API inline complex<__half> acos(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> atan(const complex<_Tp>& __x)
 {
-  complex<_Tp> __z = _CUDA_VSTD::atanh(complex<_Tp>(-__x.imag(), __x.real()));
+  complex<_Tp> __z = ::cuda::std::atanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___COMPLEX_INVERSE_TRIGONOMETRIC_FUNCTIONS_H
+#endif // _CUDA_STD___COMPLEX_INVERSE_TRIGONOMETRIC_FUNCTIONS_H

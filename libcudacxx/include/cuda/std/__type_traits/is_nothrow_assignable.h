@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
@@ -50,7 +50,7 @@ struct __cccl_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
 
 template <class _Tp, class _Arg>
 struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
-    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())>
+    : public integral_constant<bool, noexcept(::cuda::std::declval<_Tp>() = ::cuda::std::declval<_Arg>())>
 {};
 
 template <class _Tp, class _Arg>
@@ -63,8 +63,8 @@ inline constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>
 
 #endif // !_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_NOTHROW_ASSIGNABLE_H

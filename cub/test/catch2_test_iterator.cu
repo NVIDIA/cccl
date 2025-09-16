@@ -44,7 +44,7 @@
 
 using scalar_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
-using types = ::cuda::std::__type_push_back<
+using types = cuda::std::__type_push_back<
   scalar_types,
   char2,
   short2,
@@ -115,8 +115,7 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(d_in == h_itrs[1]);
 }
 
-static_assert(
-  ::cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
+static_assert(cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
 
 // using cache_modifiers =
 //   c2h::enum_type_list<cub::CacheLoadModifier,
@@ -148,7 +147,7 @@ static_assert(
 template <typename T>
 struct transform_op_t
 {
-  _CCCL_HOST_DEVICE T operator()(T input) const
+  __host__ __device__ T operator()(T input) const
   {
     return input + input;
   }

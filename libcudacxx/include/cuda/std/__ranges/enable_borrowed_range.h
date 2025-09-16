@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H
-#define _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H
+#ifndef _CUDA_STD___RANGES_ENABLE_BORROWED_RANGE_H
+#define _CUDA_STD___RANGES_ENABLE_BORROWED_RANGE_H
 
 // These customization variables are used in <span> and <string_view>. The
 // separate header is used to avoid including the entire <ranges> header in
@@ -27,15 +27,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_RANGES
 
 // [range.range], ranges
 
 template <class>
 inline constexpr bool enable_borrowed_range = false;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H
+#endif // _CUDA_STD___RANGES_ENABLE_BORROWED_RANGE_H

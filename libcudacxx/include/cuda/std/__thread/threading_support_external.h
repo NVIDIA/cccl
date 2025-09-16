@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
-#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#define _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,16 +26,16 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API inline void __cccl_thread_yield();
 
-_CCCL_API inline void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns);
+_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns);
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 
-#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_EXTERNAL_H

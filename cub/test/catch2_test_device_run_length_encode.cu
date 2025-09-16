@@ -273,7 +273,7 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   c2h::device_vector<int> out_num_runs(1);
 
   c2h::device_vector<type> reference_unique = in;
-  in.front()                                = ::cuda::std::numeric_limits<type>::quiet_NaN();
+  in.front()                                = cuda::std::numeric_limits<type>::quiet_NaN();
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
@@ -297,17 +297,17 @@ try
   using offset_type     = typename c2h::get<0, TestType>;
   using run_length_type = offset_type;
 
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
 
   std::size_t random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
   random_range += (random_range % 2);
   const std::size_t num_items =
-    (sizeof(offset_type) == 8) ? uint32_max + random_range : ::cuda::std::numeric_limits<offset_type>::max();
+    (sizeof(offset_type) == 8) ? uint32_max + random_range : cuda::std::numeric_limits<offset_type>::max();
 
   auto counting_it = thrust::make_counting_iterator(offset_type{0});
 
   // We repeat each number once for the first <num_small_runs> number of items and all subsequent numbers twice
-  const std::size_t num_small_runs = ::cuda::std::min(uint32_max, num_items) - 4;
+  const std::size_t num_small_runs = cuda::std::min(uint32_max, num_items) - 4;
   const auto num_uniques           = static_cast<offset_type>(num_small_runs + (num_items - num_small_runs + 1) / 2);
   auto input_item_it               = thrust::make_transform_iterator(
     counting_it, repeat_item_gen_op<offset_type>{static_cast<offset_type>(num_small_runs)});
@@ -359,10 +359,10 @@ try
 
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), c2h::type_name<item_t>());
 
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
 
   constexpr std::size_t num_items =
-    (sizeof(offset_type) == 8) ? uint32_max + (1 << 22) : ::cuda::std::numeric_limits<offset_type>::max();
+    (sizeof(offset_type) == 8) ? uint32_max + (1 << 22) : cuda::std::numeric_limits<offset_type>::max();
 
   constexpr auto num_uniques                = offset_type{2};
   constexpr run_length_type first_run_size  = 200;

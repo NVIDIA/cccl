@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __completion_mechanism allows memcpy_async to report back what completion
 //! mechanism it used. This is necessary to determine in which way to synchronize
@@ -40,7 +40,7 @@ enum class __completion_mechanism
   __async_bulk_group     = 1 << 2,
 };
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

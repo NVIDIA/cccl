@@ -24,7 +24,7 @@ using types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
 template <typename Key,
           typename Offset,
-          typename CompareOp = ::cuda::std::less<Key>,
+          typename CompareOp = cuda::std::less<Key>,
           typename MergeKeys = decltype(::merge_keys)>
 void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = {}, MergeKeys merge_keys = ::merge_keys)
 {
@@ -72,7 +72,7 @@ try
   using offset_t = int64_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_int_max = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  const auto num_items_int_max = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   // Generate the input sizes to test for
   const offset_t num_items_lhs =
@@ -80,7 +80,7 @@ try
   const offset_t num_items_rhs =
     GENERATE_COPY(values({num_items_int_max + offset_t{1000000}, num_items_int_max, offset_t{3}}));
 
-  test_keys<key_t, offset_t>(num_items_lhs, num_items_rhs, ::cuda::std::less<>{});
+  test_keys<key_t, offset_t>(num_items_lhs, num_items_rhs, cuda::std::less<>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -101,7 +101,7 @@ C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
 using unordered_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 struct order
 {
-  _CCCL_HOST_DEVICE auto operator()(const unordered_t& a, const unordered_t& b) const -> bool
+  __host__ __device__ auto operator()(const unordered_t& a, const unordered_t& b) const -> bool
   {
     return a.key < b.key;
   }
@@ -126,7 +126,7 @@ template <typename Value>
 struct key_to_value
 {
   template <typename Key>
-  _CCCL_HOST_DEVICE auto operator()(const Key& k) const -> Value
+  __host__ __device__ auto operator()(const Key& k) const -> Value
   {
     Value v{};
     convert(k, v, 0);
@@ -134,19 +134,19 @@ struct key_to_value
   }
 
   template <typename Key>
-  _CCCL_HOST_DEVICE static void convert(const Key& k, Value& v, ...)
+  __host__ __device__ static void convert(const Key& k, Value& v, ...)
   {
     v = static_cast<Value>(k);
   }
 
   template <template <typename> class... Policies>
-  _CCCL_HOST_DEVICE static void convert(const c2h::custom_type_t<Policies...>& k, Value& v, int)
+  __host__ __device__ static void convert(const c2h::custom_type_t<Policies...>& k, Value& v, int)
   {
     v = static_cast<Value>(k.val);
   }
 
   template <typename Key, template <typename> class... Policies>
-  _CCCL_HOST_DEVICE static void convert(const Key& k, c2h::custom_type_t<Policies...>& v, int)
+  __host__ __device__ static void convert(const Key& k, c2h::custom_type_t<Policies...>& v, int)
   {
     v     = {};
     v.val = static_cast<decltype(v.val)>(k);
@@ -157,7 +157,7 @@ struct key_to_value
 template <typename Key,
           typename Value,
           typename Offset,
-          typename CompareOp  = ::cuda::std::less<Key>,
+          typename CompareOp  = cuda::std::less<Key>,
           typename MergePairs = decltype(::merge_pairs)>
 void test_pairs(
   Offset size1 = 200, Offset size2 = 625, CompareOp compare_op = {}, MergePairs merge_pairs = ::merge_pairs)
@@ -260,7 +260,7 @@ try
   using key_t     = char;
   using value_t   = char;
   const auto size = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-  test_pairs<key_t, value_t>(size, size, ::cuda::std::less<>{});
+  test_pairs<key_t, value_t>(size, size, cuda::std::less<>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -291,7 +291,7 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
     size2,
     result_keys_d.begin(),
     result_values_d.begin(),
-    ::cuda::std::less<key_t>{});
+    cuda::std::less<key_t>{});
 
   // check result
   c2h::host_vector<key_t> result_keys_h     = result_keys_d;

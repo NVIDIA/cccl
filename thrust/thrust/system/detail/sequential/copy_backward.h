@@ -27,11 +27,7 @@
 #endif // no system header
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -49,7 +45,5 @@ copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, Bidirec
   return result;
 }
 
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -85,8 +85,8 @@ CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
 
 C2H_TEST("InequalityWrapper", "[thread_operator]")
 {
-  ::cuda::std::equal_to<> wrapped_op{};
-  cub::InequalityWrapper<::cuda::std::equal_to<>> op{wrapped_op};
+  cuda::std::equal_to<> wrapped_op{};
+  cub::InequalityWrapper<cuda::std::equal_to<>> op{wrapped_op};
 
   constexpr int const_magic_val = 42;
   int magic_val                 = const_magic_val;

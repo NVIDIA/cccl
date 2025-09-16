@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
-#define _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
+#ifndef _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
+#define _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -53,12 +53,12 @@ protected:
   //! @returns true if \p __alignment is valid.
   [[nodiscard]] static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
-    return __alignment <= _CUDA_VMR::default_cuda_malloc_alignment
-        && (_CUDA_VMR::default_cuda_malloc_alignment % __alignment == 0);
+    return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
+        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
   }
 
 public:
-  __memory_resource_base(_CUDA_VSTD::nullptr_t) = delete;
+  __memory_resource_base(::cuda::std::nullptr_t) = delete;
 
   //! @brief  Constructs the __memory_resource_base from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
@@ -72,19 +72,20 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the CUDA API call.
   //! @returns Pointer to the newly allocated memory.
-  [[nodiscard]] void* allocate(const size_t __bytes, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+  [[nodiscard]] void* allocate_sync(const size_t __bytes,
+                                    const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+      ::cuda::std::__throw_invalid_argument(
         "Invalid alignment passed to "
-        "__memory_resource_base::allocate_async.");
+        "__memory_resource_base::allocate_sync.");
     }
 
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(
       ::cudaMallocFromPoolAsync,
-      "__memory_resource_base::allocate failed to allocate with cudaMallocFromPoolAsync",
+      "__memory_resource_base::allocate_sync failed to allocate with cudaMallocFromPoolAsync",
       &__ptr,
       __bytes,
       __pool_,
@@ -93,18 +94,19 @@ public:
     return __ptr;
   }
 
-  //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes  The number of bytes that was passed to the `allocate` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  //! @note The pointer passed to `deallocate` must not be in use in a stream. It is the caller's responsibility to
-  //! properly synchronize all relevant streams before calling `deallocate`.
-  void deallocate(
-    void* __ptr, const size_t, [[maybe_unused]] const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+  //! @brief deallocate_sync memory pointed to by \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`.
+  //! @param __bytes  The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
+  //! @note The pointer passed to `deallocate_sync` must not be in use in a stream. It is the caller's responsibility to
+  //! properly synchronize all relevant streams before calling `deallocate_sync`.
+  void deallocate_sync(
+    void* __ptr, const size_t, [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment),
+                 "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __cccl_allocation_stream().get());
+      ::cudaFreeAsync, "__memory_resource_base::deallocate_sync failed", __ptr, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
   }
 
@@ -115,16 +117,16 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  [[nodiscard]] void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes, const size_t __alignment)
   {
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+      ::cuda::std::__throw_invalid_argument(
         "Invalid alignment passed to "
-        "__memory_resource_base::allocate_async.");
+        "__memory_resource_base::allocate.");
     }
 
-    return allocate_async(__bytes, __stream);
+    return allocate(__stream, __bytes);
   }
 
   //! @brief Allocate device memory of size at least \p __bytes via cudaMallocFromPoolAsync.
@@ -132,12 +134,12 @@ public:
   //! @param __stream Stream on which to perform allocation.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  [[nodiscard]] void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(
       ::cudaMallocFromPoolAsync,
-      "__memory_resource_base::allocate_async failed to allocate with cudaMallocFromPoolAsync",
+      "__memory_resource_base::allocate failed to allocate with cudaMallocFromPoolAsync",
       &__ptr,
       __bytes,
       __pool_,
@@ -146,33 +148,33 @@ public:
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_async`
-  //! @param __bytes The number of bytes that was passed to the `allocate_async` call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the `allocate_async` call that returned \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   //! @param __stream A stream that has a stream ordering relationship with the stream used in the
-  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate_async</a> call
+  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
   //! that returned \p __ptr.
-  //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
-  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(
-    void* __ptr, const size_t __bytes, const size_t __alignment, [[maybe_unused]] const ::cuda::stream_ref __stream)
+  //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
+  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
+  void deallocate(
+    [[maybe_unused]] const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
-    deallocate_async(__ptr, __bytes, __stream);
+    deallocate(__stream, __ptr, __bytes);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_async`.
-  //! @param __bytes The number of bytes that was passed to the `allocate_async` call that returned \p __ptr.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __stream A stream that has a stream ordering relationship with the stream used in the
-  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate_async</a> call
+  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
   //! that returned \p __ptr.
-  //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
-  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(void* __ptr, size_t, const ::cuda::stream_ref __stream)
+  //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
+  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
+  void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t)
   {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "__memory_resource_base::deallocate_async failed", __ptr, __stream.get());
+    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __stream.get());
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied devices
@@ -257,4 +259,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
+#endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_CUH

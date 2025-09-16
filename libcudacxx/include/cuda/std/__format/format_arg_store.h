@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FORMAT_FORMAT_ARG_STORE_H
-#define _LIBCUDACXX___FORMAT_FORMAT_ARG_STORE_H
+#ifndef _CUDA_STD___FORMAT_FORMAT_ARG_STORE_H
+#define _CUDA_STD___FORMAT_FORMAT_ARG_STORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Arr, class _Elem>
 inline constexpr bool __is_bounded_array_of = false;
@@ -199,7 +199,7 @@ template <class _Context, class _Tp>
 _CCCL_API void __fmt_make_packed_storage_impl(
   uint64_t& __types, __basic_format_arg_value<_Context>*& __values, int& __shift, _Tp& __v) noexcept
 {
-  basic_format_arg<_Context> __arg = _CUDA_VSTD::__fmt_make_format_arg<_Context>(__v);
+  basic_format_arg<_Context> __arg = ::cuda::std::__fmt_make_format_arg<_Context>(__v);
   if (__shift != 0)
   {
     __types |= static_cast<uint64_t>(__arg.__type_) << __shift;
@@ -218,13 +218,13 @@ _CCCL_API void
 __fmt_make_packed_storage(uint64_t& __types, __basic_format_arg_value<_Context>* __values, _Args&... __args) noexcept
 {
   int __shift = 0;
-  (_CUDA_VSTD::__fmt_make_packed_storage_impl(__types, __values, __shift, __args), ...);
+  (::cuda::std::__fmt_make_packed_storage_impl(__types, __values, __shift, __args), ...);
 }
 
 template <class _Context, class... _Args>
 _CCCL_API void __fmt_store_basic_format_arg(basic_format_arg<_Context>* __data, _Args&... __args) noexcept
 {
-  ((*__data++ = _CUDA_VSTD::__fmt_make_format_arg<_Context>(__args)), ...);
+  ((*__data++ = ::cuda::std::__fmt_make_format_arg<_Context>(__args)), ...);
 }
 
 template <class _Context, size_t _Np>
@@ -253,27 +253,27 @@ struct __format_arg_store
   {
     if constexpr (sizeof...(_Args) != 0)
     {
-      if constexpr (_CUDA_VSTD::__fmt_use_packed_format_arg_store(sizeof...(_Args)))
+      if constexpr (::cuda::std::__fmt_use_packed_format_arg_store(sizeof...(_Args)))
       {
-        _CUDA_VSTD::__fmt_make_packed_storage(__storage.__types_, __storage.__values_, __args...);
+        ::cuda::std::__fmt_make_packed_storage(__storage.__types_, __storage.__values_, __args...);
       }
       else
       {
-        _CUDA_VSTD::__fmt_store_basic_format_arg(__storage.__args_, __args...);
+        ::cuda::std::__fmt_store_basic_format_arg(__storage.__args_, __args...);
       }
     }
   }
 
   using _Storage _CCCL_NODEBUG_ALIAS =
-    conditional_t<_CUDA_VSTD::__fmt_use_packed_format_arg_store(sizeof...(_Args)),
+    conditional_t<::cuda::std::__fmt_use_packed_format_arg_store(sizeof...(_Args)),
                   __packed_format_arg_store<_Context, sizeof...(_Args)>,
                   __unpacked_format_arg_store<_Context, sizeof...(_Args)>>;
 
   _Storage __storage;
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FORMAT_FORMAT_ARG_STORE_H
+#endif // _CUDA_STD___FORMAT_FORMAT_ARG_STORE_H

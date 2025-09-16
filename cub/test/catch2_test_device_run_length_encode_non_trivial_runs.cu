@@ -303,7 +303,7 @@ struct CustomDeviceRunLengthEncode
     cudaStream_t stream = 0)
   {
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
+    using EqualityOp = cuda::std::equal_to<>; // Default == operator
 
     return cub::DeviceRleDispatch<InputIteratorT,
                                   OffsetsOutputIteratorT,
@@ -397,8 +397,8 @@ try
   using offset_type     = typename c2h::get<0, TestType>;
   using run_length_type = offset_type;
 
-  ::cuda::std::size_t extra_items = GENERATE(take(1, random((1 << 20), (1 << 22))));
-  const auto num_items            = detail::make_large_offset<offset_type>(extra_items);
+  cuda::std::size_t extra_items = GENERATE(take(1, random((1 << 20), (1 << 22))));
+  const auto num_items          = detail::make_large_offset<offset_type>(extra_items);
   CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
 
   auto counting_it = cuda::make_counting_iterator(offset_type{0});

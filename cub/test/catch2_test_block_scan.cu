@@ -166,11 +166,11 @@ struct min_init_value_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{});
     }
   }
 };
@@ -183,11 +183,11 @@ struct min_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
+      scan.ExclusiveScan(thread_data, thread_data, cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
+      scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{});
     }
   }
 };
@@ -206,11 +206,11 @@ struct min_init_value_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, block_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, block_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -295,7 +295,7 @@ template <class T, scan_mode Mode>
 struct min_prefix_op_t
 {
   T m_prefix;
-  static constexpr T min_identity = ::cuda::std::numeric_limits<T>::max();
+  static constexpr T min_identity = cuda::std::numeric_limits<T>::max();
 
   struct block_prefix_op_t
   {
@@ -310,7 +310,7 @@ struct min_prefix_op_t
     __device__ T operator()(T block_aggregate)
     {
       T retval = (linear_tid == 0) ? prefix : min_identity;
-      prefix   = ::cuda::minimum<>{}(prefix, block_aggregate);
+      prefix   = cuda::minimum<>{}(prefix, block_aggregate);
       return retval;
     }
   };
@@ -323,11 +323,11 @@ struct min_prefix_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
+      scan.ExclusiveScan(thread_data, thread_data, cuda::minimum<>{}, prefix_op);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
+      scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{}, prefix_op);
     }
   }
 };

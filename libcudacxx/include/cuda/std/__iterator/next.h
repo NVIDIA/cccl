@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_NEXT_H
-#define _LIBCUDACXX___ITERATOR_NEXT_H
+#ifndef _CUDA_STD___ITERATOR_NEXT_H
+#define _CUDA_STD___ITERATOR_NEXT_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _InputIter)
 _CCCL_REQUIRES(__is_cpp17_input_iterator<_InputIter>::value)
@@ -39,16 +39,16 @@ next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
   _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
                "Attempt to next(it, n) with negative n on a non-bidirectional iterator");
 
-  _CUDA_VSTD::advance(__x, __n);
+  ::cuda::std::advance(__x, __n);
   return __x;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.next]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__next)
+_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__next)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -65,7 +65,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
-    _CUDA_VRANGES::advance(__x, __n);
+    ::cuda::std::ranges::advance(__x, __n);
     return __x;
   }
 
@@ -74,7 +74,7 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
   {
-    _CUDA_VRANGES::advance(__x, __bound_sentinel);
+    ::cuda::std::ranges::advance(__x, __bound_sentinel);
     return __x;
   }
 
@@ -83,19 +83,19 @@ struct __fn
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
-    _CUDA_VRANGES::advance(__x, __n, __bound_sentinel);
+    ::cuda::std::ranges::advance(__x, __n, __bound_sentinel);
     return __x;
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto next = __next::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_NEXT_H
+#endif // _CUDA_STD___ITERATOR_NEXT_H

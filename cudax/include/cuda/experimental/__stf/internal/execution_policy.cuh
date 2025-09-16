@@ -101,6 +101,17 @@ inline hw_scope operator&(const hw_scope& lhs, const hw_scope& rhs)
   return hw_scope(as_underlying(lhs) & as_underlying(rhs));
 }
 
+//! @brief Bitwise NOT operator for inverting a `hw_scope` value.
+//!
+//! This function performs a bitwise NOT operation on the underlying type of a `hw_scope` value.
+//! It is useful for computing the complement of a given scope, ensuring that only valid bits
+//! within the range of `hw_scope::all` are set in the result.
+//!
+//! @param s The hw_scope value to invert.
+//! @return A new hw_scope representing the bitwise complement of s, masked to valid bits.
+//!
+//! @note The function includes an assertion to ensure that s is within the allowed range.
+//!       Any bits beyond those represented by `hw_scope::all` are cleared in the result.
 inline hw_scope operator~(const hw_scope& s)
 {
   assert(as_underlying(s) <= as_underlying(hw_scope::all));
@@ -185,10 +196,10 @@ public:
    */
   template <typename... P>
   explicit thread_hierarchy_spec(const P&... p)
-      : inner(only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
-      , dynamic_width(only_convertible_or(decltype(dynamic_width)(), p...))
-      , sync_scope(only_convertible_or(hw_scope::all, p...))
-      , mem_bytes(only_convertible_or(mem(0), p...))
+      : inner(reserved::only_convertible_or(thread_hierarchy_spec<lower_levels...>(), p...))
+      , dynamic_width(reserved::only_convertible_or(decltype(dynamic_width)(), p...))
+      , sync_scope(reserved::only_convertible_or(hw_scope::all, p...))
+      , mem_bytes(reserved::only_convertible_or(mem(0), p...))
   {
     shuffled_args_check<P...>(inner, dynamic_width, sync_scope, mem_bytes);
     if constexpr (sizeof...(lower_levels) > 0)

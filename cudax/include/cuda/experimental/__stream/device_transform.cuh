@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM
-#define _CUDAX__STREAM_DEVICE_TRANSFORM
+#ifndef _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+#define _CUDAX__STREAM_DEVICE_TRANSFORM_CUH
+
 #include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -45,12 +46,12 @@ namespace __detail
 template <typename _Tp>
 _CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(__nothrow_movable<_Tp>) -> _Tp
 {
-  return _CUDA_VSTD::forward<_Tp>(__value);
+  return ::cuda::std::forward<_Tp>(__value);
 }
 } // namespace __detail
 
 template <typename _Tp>
-using __remove_rvalue_reference_t = decltype(__detail::__ixnay_xvalue(_CUDA_VSTD::declval<_Tp>()));
+using __remove_rvalue_reference_t = decltype(__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()));
 
 namespace __tfx
 {
@@ -78,11 +79,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   // transform_device_argument that are find-able by ADL.
   template <typename _Arg>
   using __transform_result_t = __remove_rvalue_reference_t<decltype(transform_device_argument(
-    ::cuda::stream_ref{::cudaStream_t{}}, _CUDA_VSTD::declval<_Arg>()))>;
+    ::cuda::stream_ref{::cudaStream_t{}}, ::cuda::std::declval<_Arg>()))>;
 
   template <typename _Arg>
   using __transformed_argument_t =
-    __remove_rvalue_reference_t<decltype(_CUDA_VSTD::declval<_Arg>().transformed_argument())>;
+    __remove_rvalue_reference_t<decltype(::cuda::std::declval<_Arg>().transformed_argument())>;
 
 #if _CCCL_COMPILER(MSVC)
   // MSVC has a bug where it rejects the use of an immovable type in a defaulted function
@@ -120,24 +121,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   //
   // but sadly that is not valid C++.
   _CCCL_TEMPLATE(typename _Stream, typename _Arg)
-  _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_Stream, ::cuda::stream_ref> _CCCL_AND(
-    !_CUDA_VSTD::is_reference_v<__transform_result_t<_Arg>>))
+  _CCCL_REQUIRES(::cuda::std::convertible_to<_Stream, ::cuda::stream_ref> _CCCL_AND(
+    !::cuda::std::is_reference_v<__transform_result_t<_Arg>>))
   [[nodiscard]] _CCCL_HOST_API auto
   operator()(_Stream&& __stream, _Arg&& __arg, __optional<__transform_result_t<_Arg>> __storage = {}) const
     -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (__is_instantiable_with_v<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return _CCCL_MOVE(__storage.__emplace_from([&] {
-               return transform_device_argument(__stream, _CUDA_VSTD::forward<_Arg>(__arg));
+               return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
              }))
         .transformed_argument();
     }
     else
     {
       return _CCCL_MOVE(__storage.__emplace_from([&] {
-        return transform_device_argument(__stream, _CUDA_VSTD::forward<_Arg>(__arg));
+        return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
       }));
     }
   }
@@ -146,31 +147,31 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
   // post-launch actions. (References types don't have ctors/dtors.) There is no need to
   // store the result of transform_device_argument.
   _CCCL_TEMPLATE(typename _Stream, typename _Arg)
-  _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_Stream, ::cuda::stream_ref> _CCCL_AND
-                   _CUDA_VSTD::is_reference_v<__transform_result_t<_Arg>>)
+  _CCCL_REQUIRES(::cuda::std::convertible_to<_Stream, ::cuda::stream_ref>
+                   _CCCL_AND ::cuda::std::is_reference_v<__transform_result_t<_Arg>>)
   [[nodiscard]] _CCCL_HOST_API auto operator()(_Stream&& __stream, _Arg&& __arg) const -> decltype(auto)
   {
     // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
-    if constexpr (__is_instantiable_with_v<__transformed_argument_t, __transform_result_t<_Arg>>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
-      return transform_device_argument(__stream, _CUDA_VSTD::forward<_Arg>(__arg)).transformed_argument();
+      return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
     }
     else
     {
-      return transform_device_argument(__stream, _CUDA_VSTD::forward<_Arg>(__arg));
+      return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
     }
   }
 
   template <typename _Arg>
-  [[nodiscard]] _CCCL_HOST_API auto operator()(_CUDA_VSTD::__ignore_t, _Arg&& __arg) const -> decltype(auto)
+  [[nodiscard]] _CCCL_HOST_API auto operator()(::cuda::std::__ignore_t, _Arg&& __arg) const -> decltype(auto)
   {
-    if constexpr (__is_instantiable_with_v<__transformed_argument_t, _Arg>)
+    if constexpr (__is_instantiable_with<__transformed_argument_t, _Arg>)
     {
-      return _CUDA_VSTD::forward<_Arg>(__arg).transformed_argument();
+      return ::cuda::std::forward<_Arg>(__arg).transformed_argument();
     }
     else
     {
-      return static_cast<_Arg>(_CUDA_VSTD::forward<_Arg>(__arg));
+      return static_cast<_Arg>(::cuda::std::forward<_Arg>(__arg));
     }
   }
 };
@@ -180,10 +181,10 @@ _CCCL_GLOBAL_CONSTANT auto device_transform = __tfx::__device_transform_t{};
 
 template <typename _Arg>
 using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
-  __remove_rvalue_reference_t<_CUDA_VSTD::__call_result_t<__tfx::__device_transform_t, ::cuda::stream_ref, _Arg>>;
+  __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__device_transform_t, ::cuda::stream_ref, _Arg>>;
 
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM
+#endif // !_CUDAX__STREAM_DEVICE_TRANSFORM_CUH

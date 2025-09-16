@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_SUBMDSPAN_HELPER_H
-#define _LIBCUDACXX___MDSPAN_SUBMDSPAN_HELPER_H
+#ifndef _CUDA_STD___MDSPAN_SUBMDSPAN_HELPER_H
+#define _CUDA_STD___MDSPAN_SUBMDSPAN_HELPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // [mdspan.sub.overview]-2.5
 template <class _IndexType, class... _SliceTypes>
@@ -102,7 +102,7 @@ _CCCL_REQUIRES(__integral_constant_like<_Tp>)
 template <class _IndexType, class _From>
 [[nodiscard]] _CCCL_API constexpr auto __index_cast(_From&& __from) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_integral, _From) && !_CCCL_TRAIT(is_same, _From, bool))
+  if constexpr (is_integral_v<_From> && !is_same_v<_From, bool>)
   {
     return __from;
   }
@@ -115,7 +115,7 @@ template <class _IndexType, class _From>
 template <size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr decltype(auto) __get_slice_at(_Slices&&... __slices) noexcept
 {
-  return _CUDA_VSTD::get<_Index>(_CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Slices>(__slices)...));
+  return ::cuda::std::get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
 }
 
 template <size_t _Index, class... _Slices>
@@ -124,23 +124,23 @@ using __get_slice_type = tuple_element_t<_Index, __tuple_types<_Slices...>>;
 template <class _IndexType, size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
 {
-  static_assert(_CCCL_TRAIT(is_signed, _IndexType) || _CCCL_TRAIT(is_unsigned, _IndexType),
+  static_assert(is_signed_v<_IndexType> || is_unsigned_v<_IndexType>,
                 "[mdspan.sub.helpers] mandates IndexType to be a signed or unsigned integral");
   using _SliceType                     = __get_slice_type<_Index, _Slices...>;
-  [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
+  [[maybe_unused]] _SliceType& __slice = ::cuda::std::__get_slice_at<_Index>(__slices...);
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
-    return _CUDA_VSTD::__index_cast<_IndexType>(__slice);
+    return ::cuda::std::__index_cast<_IndexType>(__slice);
   }
   else
   {
     if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::get<0>(__slice));
+      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::get<0>(__slice));
     }
     else if constexpr (__is_strided_slice<_SliceType>)
     {
-      return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice.offset));
+      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::__de_ice(__slice.offset));
     }
     else
     {
@@ -154,36 +154,36 @@ template <size_t _Index, class _Extents, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr typename _Extents::index_type
 __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
 {
-  static_assert(_CCCL_TRAIT(__mdspan_detail::__is_extents, _Extents),
+  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
                 "[mdspan.sub.helpers] mandates Extents to be a specialization of extents");
   using _IndexType                     = typename _Extents::index_type;
   using _SliceType                     = __get_slice_type<_Index, _Slices...>;
-  [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
+  [[maybe_unused]] _SliceType& __slice = ::cuda::std::__get_slice_at<_Index>(__slices...);
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
-    return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice) + 1);
+    return ::cuda::std::__index_cast<_IndexType>(::cuda::std::__de_ice(__slice) + 1);
   }
   else
   {
     if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::get<1>(__slice));
+      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::get<1>(__slice));
     }
     else if constexpr (__is_strided_slice<_SliceType>)
     {
-      return _CUDA_VSTD::__index_cast<_IndexType>(
-        _CUDA_VSTD::__de_ice(__slice.offset) * _CUDA_VSTD::__de_ice(__slice.extent));
+      return ::cuda::std::__index_cast<_IndexType>(
+        ::cuda::std::__de_ice(__slice.offset) * ::cuda::std::__de_ice(__slice.extent));
     }
     else
     {
-      return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
+      return ::cuda::std::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }
   _CCCL_UNREACHABLE();
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_HELPER_H
+#endif // _CUDA_STD___MDSPAN_SUBMDSPAN_HELPER_H

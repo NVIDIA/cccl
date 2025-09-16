@@ -1,7 +1,6 @@
 include(${CMAKE_SOURCE_DIR}/benchmarks/cmake/CCCLBenchmarkRegistry.cmake)
 
-# Defer dependencies collection to nvbench helper
-add_subdirectory(nvbench_helper)
+cccl_get_nvbench_helper()
 
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
@@ -71,7 +70,7 @@ function(add_bench target_name bench_name bench_src)
 
   add_executable(${bench_target} "${bench_src}")
   cccl_configure_target(${bench_target} DIALECT 17)
-  target_link_libraries(${bench_target} PRIVATE nvbench_helper nvbench::main)
+  target_link_libraries(${bench_target} PRIVATE cccl.nvbench_helper nvbench::main)
 endfunction()
 
 function(add_bench_dir bench_dir)

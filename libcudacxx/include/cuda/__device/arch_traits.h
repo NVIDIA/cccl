@@ -28,7 +28,7 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 namespace arch
 {
 
@@ -49,10 +49,12 @@ enum class id : int
   sm_90   = 90,
   sm_100  = 100,
   sm_103  = 103,
+  sm_110  = 110,
   sm_120  = 120,
   sm_90a  = 90 * __arch_specific_id_multiplier,
   sm_100a = 100 * __arch_specific_id_multiplier,
   sm_103a = 103 * __arch_specific_id_multiplier,
+  sm_110a = 110 * __arch_specific_id_multiplier,
   sm_120a = 120 * __arch_specific_id_multiplier,
 };
 
@@ -73,7 +75,7 @@ struct traits_t
   const int max_block_dim_z = 64;
 
   // Maximum x-dimension of a grid
-  const int max_grid_dim_x = cuda::std::numeric_limits<int32_t>::max();
+  const int max_grid_dim_x = ::cuda::std::numeric_limits<int32_t>::max();
 
   // Maximum y-dimension of a grid
   const int max_grid_dim_y = 64 * 1024 - 1;
@@ -427,6 +429,23 @@ template <>
 };
 
 template <>
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_110>()
+{
+  traits_t __traits                 = ::cuda::arch::traits<id::sm_100>();
+  __traits.arch_id                  = id::sm_110;
+  __traits.compute_capability_major = 11;
+  __traits.compute_capability_minor = 0;
+  __traits.compute_capability       = 110;
+  return __traits;
+};
+
+template <>
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_110a>()
+{
+  return ::cuda::arch::traits<id::sm_110>();
+};
+
+template <>
 [[nodiscard]] _CCCL_HOST_DEVICE inline constexpr traits_t traits<id::sm_120>()
 {
   traits_t __traits{};
@@ -488,6 +507,10 @@ inline constexpr int __highest_known_arch = 120;
       return ::cuda::arch::traits<id::sm_103>();
     case id::sm_103a:
       return ::cuda::arch::traits<id::sm_103a>();
+    case id::sm_110:
+      return ::cuda::arch::traits<id::sm_110>();
+    case id::sm_110a:
+      return ::cuda::arch::traits<id::sm_110a>();
     case id::sm_120:
       return ::cuda::arch::traits<id::sm_120>();
     case id::sm_120a:
@@ -522,6 +545,8 @@ _CCCL_API inline constexpr id __special_id_for_compute_capability(int value)
       return id::sm_100a;
     case 103:
       return id::sm_103a;
+    case 110:
+      return id::sm_110a;
     case 120:
       return id::sm_120a;
     default:
@@ -579,7 +604,7 @@ __arch_traits_might_be_unknown(int __device, unsigned int __compute_capability)
 }
 } // namespace arch
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 

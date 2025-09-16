@@ -639,6 +639,7 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
+ *  \param output An output iterator to write the result to.
  *  \param init The initial value.
  *  \param binary_op The binary function used to 'sum' values.
  *  \return The result of the reduction.

@@ -8,12 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_INTERNAL_STREAMS
-#define _CUDAX__STREAM_INTERNAL_STREAMS
+#ifndef _CUDAX__STREAM_INTERNAL_STREAMS_CUH
+#define _CUDAX__STREAM_INTERNAL_STREAMS_CUH
 
 #include <cuda/std/detail/__config>
-
-#include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stream/stream.cuh>
+
+#include <cuda_runtime_api.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -41,4 +41,4 @@ inline ::cuda::experimental::stream_ref __cccl_allocation_stream()
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_INTERNAL_STREAMS
+#endif // _CUDAX__STREAM_INTERNAL_STREAMS_CUH

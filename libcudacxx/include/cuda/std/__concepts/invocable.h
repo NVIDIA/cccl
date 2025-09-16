@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_INVOCABLE_H
-#define _LIBCUDACXX___CONCEPTS_INVOCABLE_H
+#ifndef _CUDA_STD___CONCEPTS_INVOCABLE_H
+#define _CUDA_STD___CONCEPTS_INVOCABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -35,8 +35,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Fn, class... _Args>
 concept invocable = requires(_Fn&& __fn, _Args&&... __args) {
-  _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__fn), _CUDA_VSTD::forward<_Args>(__args)...); // not required to be
-                                                                                               // equality preserving
+  ::cuda::std::__invoke(::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...); // not required to be
+                                                                                                  // equality preserving
 };
 
 // [concept.regular.invocable]
@@ -47,15 +47,15 @@ concept regular_invocable = invocable<_Fn, _Args...>;
 template <class _Fun, class... _Args>
 concept __invoke_constructible = requires(_Fun&& __fun, _Args&&... __args) {
   static_cast<remove_cvref_t<invoke_result_t<_Fun, _Args...>>>(
-    _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...));
+    ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...));
 };
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Fn, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(_Invocable_,
-                       requires(_Fn&& __fn, _Args&&... __args)(
-                         (_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__fn), _CUDA_VSTD::forward<_Args>(__args)...))));
+                       requires(_Fn&& __fn, _Args&&... __args)((::cuda::std::invoke(
+                         ::cuda::std::forward<_Fn>(__fn), ::cuda::std::forward<_Args>(__args)...))));
 
 template <class _Fn, class... _Args>
 _CCCL_CONCEPT invocable = _CCCL_FRAGMENT(_Invocable_, _Fn, _Args...);
@@ -67,14 +67,14 @@ template <class _Fun, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(
   __invoke_constructible_,
   requires(_Fun&& __fun, _Args&&... __args)((static_cast<remove_cvref_t<invoke_result_t<_Fun, _Args...>>>(
-    _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...)))));
+    ::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...)))));
 template <class _Fun, class... _Args>
 _CCCL_CONCEPT __invoke_constructible = _CCCL_FRAGMENT(__invoke_constructible_, _Fun, _Args...);
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_INVOCABLE_H
+#endif // _CUDA_STD___CONCEPTS_INVOCABLE_H

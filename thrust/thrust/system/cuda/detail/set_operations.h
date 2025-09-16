@@ -38,6 +38,9 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
+#  include <cub/block/block_load.cuh>
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
+
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
@@ -262,6 +265,10 @@ struct Tuning<core::detail::sm60, T, U>
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm60
 
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
+using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
+
 template <class KeysIt1,
           class KeysIt2,
           class ValuesIt1,
@@ -289,15 +296,15 @@ struct SetOpAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt1   = typename core::detail::LoadIterator<PtxPlan, KeysIt1>::type;
-    using KeysLoadIt2   = typename core::detail::LoadIterator<PtxPlan, KeysIt2>::type;
-    using ValuesLoadIt1 = typename core::detail::LoadIterator<PtxPlan, ValuesIt1>::type;
-    using ValuesLoadIt2 = typename core::detail::LoadIterator<PtxPlan, ValuesIt2>::type;
+    using KeysLoadIt1   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt1>;
+    using KeysLoadIt2   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt2>;
+    using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt1>;
+    using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt2>;
 
-    using BlockLoadKeys1   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt1>::type;
-    using BlockLoadKeys2   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt2>::type;
-    using BlockLoadValues1 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
-    using BlockLoadValues2 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
+    using BlockLoadKeys1   = BlockLoad<PtxPlan, KeysLoadIt1>;
+    using BlockLoadKeys2   = BlockLoad<PtxPlan, KeysLoadIt2>;
+    using BlockLoadValues1 = BlockLoad<PtxPlan, ValuesLoadIt1>;
+    using BlockLoadValues2 = BlockLoad<PtxPlan, ValuesLoadIt2>;
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
@@ -657,10 +664,10 @@ struct SetOpAgent
          std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
-        , keys1_in(core::detail::make_load_iterator(ptx_plan(), keys1_))
-        , keys2_in(core::detail::make_load_iterator(ptx_plan(), keys2_))
-        , values1_in(core::detail::make_load_iterator(ptx_plan(), values1_))
-        , values2_in(core::detail::make_load_iterator(ptx_plan(), values2_))
+        , keys1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys1_))
+        , keys2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys2_))
+        , values1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values1_))
+        , values2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values2_))
         , keys1_count(keys1_count_)
         , keys2_count(keys2_count_)
         , keys_out(keys_out_)

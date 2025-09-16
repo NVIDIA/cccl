@@ -18,7 +18,7 @@
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;
-  static_assert(cuda::mr::async_resource<cudax::shared_resource<TestResource>>);
+  static_assert(cuda::mr::resource<cudax::shared_resource<TestResource>>);
 
   SECTION("construct and destruct")
   {
@@ -76,7 +76,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("allocate and deallocate")
+  SECTION("allocate_sync and deallocate_sync")
   {
     Counts expected{};
     CHECK(this->counts == expected);
@@ -85,12 +85,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(bytes(50), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, bytes(50), align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -102,7 +102,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion to resource_ref")
+  SECTION("conversion to synchronous_resource_ref")
   {
     Counts expected{};
     {
@@ -110,14 +110,14 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      cudax::resource_ref<cudax::host_accessible> ref = mr;
+      cudax::synchronous_resource_ref<cudax::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(bytes(100), align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, bytes(0), align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }

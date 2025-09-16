@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_ALIGNED_STORAGE_H
-#define _LIBCUDACXX___TYPE_TRAITS_ALIGNED_STORAGE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_ALIGNED_STORAGE_H
+#define _CUDA_STD___TYPE_TRAITS_ALIGNED_STORAGE_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct __align_type
@@ -142,8 +142,8 @@ _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x4000);
 
 #undef _CREATE_ALIGNED_STORAGE_SPECIALIZATION
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_ALIGNED_STORAGE_H
+#endif // _CUDA_STD___TYPE_TRAITS_ALIGNED_STORAGE_H

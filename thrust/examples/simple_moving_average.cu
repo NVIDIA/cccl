@@ -1,5 +1,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
@@ -7,8 +8,6 @@
 
 #include <iomanip>
 #include <iostream>
-
-#include "include/host_device.h"
 
 // Efficiently computes the simple moving average (SMA) [1] of a data series
 // using a parallel prefix-sum or "scan" operation.
@@ -68,13 +67,14 @@ int main()
   size_t w = 4;
 
   // generate random data series
-  thrust::device_vector<float> data(n);
+  thrust::host_vector<float> host_data(n);
   thrust::default_random_engine rng;
   thrust::uniform_int_distribution<int> dist(0, 10);
-  for (size_t i = 0; i < n; i++)
+  for (auto& e : host_data)
   {
-    data[i] = static_cast<float>(dist(rng));
+    e = static_cast<float>(dist(rng));
   }
+  thrust::device_vector<float> data = host_data;
 
   // allocate storage for averages
   thrust::device_vector<float> averages(data.size() - (w - 1));
@@ -84,9 +84,9 @@ int main()
 
   // print data series
   std::cout << "data series: [ ";
-  for (size_t i = 0; i < data.size(); i++)
+  for (const auto& value : data)
   {
-    std::cout << data[i] << " ";
+    std::cout << value << " ";
   }
   std::cout << "]" << std::endl;
 

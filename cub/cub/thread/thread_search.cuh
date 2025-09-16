@@ -46,7 +46,8 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 #include <nv/target>
 
@@ -64,8 +65,8 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
   /// The value type of the input iterator
   using T = cub::detail::it_value_t<AIteratorT>;
 
-  OffsetT split_min = _CUDA_VSTD::max(diagonal - b_len, 0);
-  OffsetT split_max = _CUDA_VSTD::min(diagonal, a_len);
+  OffsetT split_min = ::cuda::std::max(diagonal - b_len, 0);
+  OffsetT split_max = ::cuda::std::min(diagonal, a_len);
 
   while (split_min < split_max)
   {
@@ -82,7 +83,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
     }
   }
 
-  path_coordinate.x = _CUDA_VSTD::min(split_min, a_len);
+  path_coordinate.x = ::cuda::std::min(split_min, a_len);
   path_coordinate.y = diagonal - split_min;
 }
 

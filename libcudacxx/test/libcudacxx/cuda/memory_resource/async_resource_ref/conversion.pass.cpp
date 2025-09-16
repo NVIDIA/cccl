@@ -27,11 +27,11 @@ struct Fake_alloc_base
 template <class PropA, class PropB>
 void test_conversion_from_async_resource_ref()
 {
-  async_resource<cuda::mr::host_accessible, PropA, PropB> input{42};
-  cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
+  test_resource<cuda::mr::host_accessible, PropA, PropB> input{42};
+  cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
 
   { // lvalue
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
+    cuda::mr::resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
 
     // Ensure that we properly "punch through" the resource_ref
     const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
@@ -40,17 +40,17 @@ void test_conversion_from_async_resource_ref()
     assert(fake_orig->static_vtable == fake_conv->static_vtable);
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate_async(0, 0, ::cudaStream_t{}) == ref.allocate_async(0, 0, ::cudaStream_t{}));
+    assert(input.allocate(::cudaStream_t{}, 0, 0) == ref.allocate(::cudaStream_t{}, 0, 0));
 
     // Ensure we are deallocating properly
     int expected_after_deallocate = 1337;
-    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, ::cudaStream_t{});
+    ref.deallocate(::cudaStream_t{}, static_cast<void*>(&expected_after_deallocate), 0, 0);
     assert(input._val == expected_after_deallocate);
   }
 
   { // prvalue
-    cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropB> ref{
-      cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
+    cuda::mr::resource_ref<cuda::mr::host_accessible, PropB> ref{
+      cuda::mr::resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
 
     // Ensure that we properly "punch through" the resource_ref
     const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
@@ -59,11 +59,11 @@ void test_conversion_from_async_resource_ref()
     assert(fake_orig->static_vtable == fake_conv->static_vtable);
 
     // Ensure that we properly pass on the allocate function
-    assert(input.allocate_async(0, 0, ::cudaStream_t{}) == ref.allocate_async(0, 0, ::cudaStream_t{}));
+    assert(input.allocate(::cudaStream_t{}, 0, 0) == ref.allocate(::cudaStream_t{}, 0, 0));
 
     // Ensure we are deallocating properly
     int expected_after_deallocate = 1337;
-    ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, ::cudaStream_t{});
+    ref.deallocate(::cudaStream_t{}, static_cast<void*>(&expected_after_deallocate), 0, 0);
     assert(input._val == expected_after_deallocate);
   }
 }

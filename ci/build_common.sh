@@ -45,6 +45,24 @@ function usage {
     exit 1
 }
 
+# Check for required dependencies
+function check_required_dependencies() {
+    local missing_deps=()
+
+    # Check for essential tools
+    local required_tools=("cmake" "git" "ninja" "nproc")
+    for tool in "${required_tools[@]}"; do
+        command -v "$tool" &>/dev/null || missing_deps+=("$tool")
+    done
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "❌ Error: Missing required dependencies:" >&2
+        printf "   • %s\n" "${missing_deps[@]}" >&2
+        echo >&2
+        exit 1
+    fi
+}
+
 # Parse options
 
 # Copy the args into a temporary array, since we will modify them and
@@ -75,9 +93,23 @@ while [ "${#args[@]}" -ne 0 ]; do
     esac
 done
 
-# Convert to full paths:
-HOST_COMPILER=$(which ${HOST_COMPILER})
-CUDA_COMPILER=$(which ${CUDA_COMPILER})
+# Convert to full paths and validate compilers exist:
+function validate_and_resolve_compiler() {
+    local compiler_name="$1"
+    local compiler_var="$2"
+    local compiler_path
+
+    compiler_path=$(which "${compiler_var}" 2>/dev/null)
+    if [ -z "$compiler_path" ]; then
+        echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
+        exit 1
+    fi
+
+    echo "$compiler_path"
+}
+
+HOST_COMPILER=$(validate_and_resolve_compiler "Host compiler" "${HOST_COMPILER}")
+CUDA_COMPILER=$(validate_and_resolve_compiler "CUDA compiler" "${CUDA_COMPILER}")
 
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
@@ -86,6 +118,9 @@ fi
 if [ $VERBOSE ]; then
     set -x
 fi
+
+# Check for required dependencies
+check_required_dependencies
 
 # Begin processing unsets after option parsing
 set -u
@@ -96,13 +131,26 @@ if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
 fi
 
-# Presets will be configured in this directory:
-BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
+mkdir -p ../build
+# Absolute path to cccl/build
+BUILD_ROOT=$(cd "../build" && pwd)
 
-# The most recent build will always be symlinked to cccl/build/latest
+# Absolute path to per-devcontainer build directory
+BUILD_DIR="$BUILD_ROOT/$CCCL_BUILD_INFIX"
+
+# The most recent devcontainer build dir will always be symlinked to cccl/build/latest
 mkdir -p $BUILD_DIR
-rm -f ../build/latest
-ln -sf $BUILD_DIR ../build/latest
+rm -f $BUILD_ROOT/latest
+ln -sf $BUILD_DIR $BUILD_ROOT/latest
+
+# The more recent preset build dir will always be symlinked to:
+# cccl/preset-latest
+function symlink_latest_preset {
+    local PRESET=$1
+    mkdir -p "$BUILD_DIR/$PRESET"
+    rm -f "$BUILD_ROOT/preset-latest"
+    ln -sf "$BUILD_DIR/$PRESET" "$BUILD_ROOT/preset-latest"
+}
 
 # Now that BUILD_DIR exists, use readlink to canonicalize the path:
 BUILD_DIR=$(readlink -f "${BUILD_DIR}")
@@ -192,6 +240,8 @@ function configure_preset()
     local CMAKE_OPTIONS=$3
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
+    symlink_latest_preset "$PRESET"
+
     pushd .. > /dev/null
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
       # Retry 5 times with 30 seconds between attempts to try to WAR network issues during CPM fetch on CI runners:
@@ -222,6 +272,8 @@ function build_preset() {
     local green="1;32"
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+
+    symlink_latest_preset "$PRESET"
 
     if $CONFIGURE_ONLY; then
         return 0
@@ -269,6 +321,8 @@ function test_preset()
     local BUILD_NAME=$1
     local PRESET=$2
     local GPU_REQUIRED=${3:-true}
+
+    symlink_latest_preset "$PRESET"
 
     if $CONFIGURE_ONLY; then
         return 0

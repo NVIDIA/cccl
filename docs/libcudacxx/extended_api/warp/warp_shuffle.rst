@@ -125,7 +125,7 @@ The functions allow to exchange data of any data size, including raw arrays, poi
 **Constrains**
 
 - ``Width`` must be a power of two in the range [1, 32]
-- ``T``: only ``void`` pointers are allowed to avoid bug-prone code
+- ``T``: all ``T`` are allowed except if ``T`` is a pointer, in which case it must be a ``void`` pointer to avoid bug-prone code
 
 **Preconditions**
 

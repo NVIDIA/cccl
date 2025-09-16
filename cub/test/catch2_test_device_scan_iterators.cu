@@ -84,8 +84,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("inclusive sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -102,8 +102,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("exclusive sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -120,13 +120,13 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("inclusive scan")
   {
-    using op_t    = ::cuda::minimum<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::minimum<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(
-      in_it, in_it + num_items, expected_result.begin(), op_t{}, ::cuda::std::numeric_limits<accum_t>::max());
+      in_it, in_it + num_items, expected_result.begin(), op_t{}, cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -139,8 +139,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("exclusive scan")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -157,8 +157,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("exclusive scan with future-init value")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     accum_t init_value{};
@@ -304,7 +304,7 @@ C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
 
   auto d_in_it  = thrust::raw_pointer_cast(d_input.data());
   auto d_out_it = thrust::raw_pointer_cast(d_output.data());
-  device_exclusive_scan(d_in_it, d_out_it, ::cuda::std::plus<>{}, init, num_items);
+  device_exclusive_scan(d_in_it, d_out_it, cuda::std::plus<>{}, init, num_items);
 
   REQUIRE(d_ok_count[0] == num_items);
 }

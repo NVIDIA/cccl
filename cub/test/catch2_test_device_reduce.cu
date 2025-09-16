@@ -141,13 +141,13 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 4
   SECTION("reduce")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
     output_t expected_result =
       static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
@@ -167,8 +167,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
     output_t expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
