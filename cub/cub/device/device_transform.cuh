@@ -182,7 +182,7 @@ struct DeviceTransform
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  Fill(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream = nullptr)
+  Generate(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream = nullptr)
   {
     return Transform(
       ::cuda::std::make_tuple(), ::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
@@ -191,13 +191,13 @@ struct DeviceTransform
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  Fill(void* d_temp_storage,
-       size_t& temp_storage_bytes,
-       RandomAccessIteratorOut output,
-       NumItemsT num_items,
-       Generator generator,
-       cudaStream_t stream = nullptr)
+  CUB_RUNTIME_FUNCTION static cudaError_t Generate(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Generator generator,
+    cudaStream_t stream = nullptr)
   {
     if (d_temp_storage == nullptr)
     {
@@ -205,7 +205,7 @@ struct DeviceTransform
       return cudaSuccess;
     }
 
-    return Fill(::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
+    return Generate(::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 
