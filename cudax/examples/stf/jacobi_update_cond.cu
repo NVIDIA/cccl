@@ -68,7 +68,7 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   {
-    auto while_guard = ctx.while_graph_scope(1, cudaGraphCondAssignDefault);
+    auto while_guard = ctx.while_graph_scope();
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>()))
         ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {

@@ -1639,12 +1639,12 @@ public:
   //! } // Automatic pop() when while_guard goes out of scope
   //! ```
   //!
-  //! \param defaultLaunchValue Default launch value for the conditional node (default: 0)
+  //! \param defaultLaunchValue Default launch value for the conditional node (default: 1)
   //! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
   //! \param loc Source location for debugging (defaults to call site)
   //! \return while_graph_scope_guard object that manages the while context lifetime and provides access to the
   //! conditional handle
-  [[nodiscard]] auto while_graph_scope(unsigned int defaultLaunchValue        = 0,
+  [[nodiscard]] auto while_graph_scope(unsigned int defaultLaunchValue        = 1,
                                        unsigned int flags                     = cudaGraphCondAssignDefault,
                                        const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
   {
