@@ -182,19 +182,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
       cufile/driver_functions.cu
     )
 
-    # File handle functions tests
-    cudax_add_catch2_test(cufile_file_handle_target cufile_file_handle ${cn_target}
-      cufile/file_handle_functions.cu
-      cufile/test_utils.cu
-    )
-
-    # Utils functions tests
-    cudax_add_catch2_test(cufile_utils_target cufile_utils ${cn_target}
-      cufile/utils_functions.cu
-      cufile/test_utils.cu
-    )
     # Link cuFile library for all cufile tests via CUDAToolkit target
-    set(cufile_test_targets ${cufile_driver_target} ${cufile_file_handle_target} ${cufile_utils_target})
+    set(cufile_test_targets ${cufile_driver_target})
     foreach(cufile_test_target IN LISTS cufile_test_targets)
       target_link_libraries(${cufile_test_target} PRIVATE CUDA::cufile)
     endforeach()

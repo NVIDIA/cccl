@@ -23,13 +23,8 @@
 
 #include <cuda_runtime.h>
 
-namespace cuda::experimental::cufile
-{
-
-namespace utils
-{
-
-//! Check if a pointer is GPU memory
+namespace cuda::experimental::io::utils
+{ //! Check if a pointer is GPU memory
 inline bool is_gpu_memory(const void* ptr)
 {
   cudaPointerAttributes attrs;
@@ -69,6 +64,4 @@ inline bool is_cufile_compatible(const void* ptr)
   return (attrs.type == cudaMemoryTypeDevice) || (attrs.type == cudaMemoryTypeHost);
 }
 
-} // namespace utils
-
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io::utils

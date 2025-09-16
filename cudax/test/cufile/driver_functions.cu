@@ -25,7 +25,7 @@ struct DisableLogging
 } s_disable_logging;
 } // namespace
 
-namespace cuda::experimental::cufile
+namespace cuda::experimental::io
 {
 
 TEST_CASE("Driver management functions", "[driver][management]")
@@ -313,4 +313,4 @@ TEST_CASE("Driver lifecycle integration", "[driver][integration]")
     REQUIRE(driver_use_count() == 0);
   }
 }
-} // namespace cuda::experimental::cufile
+} // namespace cuda::experimental::io

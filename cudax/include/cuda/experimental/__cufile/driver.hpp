@@ -162,25 +162,25 @@ public:
 };
 
 // Driver Management
-void driver_open()
+inline void driver_open()
 {
   CUfileError_t error = cuFileDriverOpen();
   check_cufile_result(error, "cuFileDriverOpen");
 }
-void driver_close()
+inline void driver_close()
 {
   CUfileError_t error = cuFileDriverClose();
   check_cufile_result(error, "cuFileDriverClose");
 }
-long driver_use_count()
+inline long driver_use_count()
 {
   return cuFileUseCount();
 }
-driver_properties get_driver_properties()
+inline driver_properties get_driver_properties()
 {
   return driver_properties{};
 }
-int get_version()
+inline int get_version()
 {
   int version         = 0;
   CUfileError_t error = cuFileGetVersion(&version);
@@ -189,43 +189,43 @@ int get_version()
 }
 
 // Driver Configuration
-void set_poll_mode(bool enabled, size_t threshold_kb)
+inline void set_poll_mode(bool enabled, size_t threshold_kb)
 {
   CUfileError_t error = cuFileDriverSetPollMode(enabled, threshold_kb);
   check_cufile_result(error, "cuFileDriverSetPollMode");
 }
-void set_max_direct_io_size(size_t size_kb)
+inline void set_max_direct_io_size(size_t size_kb)
 {
   CUfileError_t error = cuFileDriverSetMaxDirectIOSize(size_kb);
   check_cufile_result(error, "cuFileDriverSetMaxDirectIOSize");
 }
-void set_max_cache_size(size_t size_kb)
+inline void set_max_cache_size(size_t size_kb)
 {
   CUfileError_t error = cuFileDriverSetMaxCacheSize(size_kb);
   check_cufile_result(error, "cuFileDriverSetMaxCacheSize");
 }
-void set_max_pinned_memory_size(size_t size_kb)
+inline void set_max_pinned_memory_size(size_t size_kb)
 {
   CUfileError_t error = cuFileDriverSetMaxPinnedMemSize(size_kb);
   check_cufile_result(error, "cuFileDriverSetMaxPinnedMemSize");
 }
 
 // Parameter Management
-size_t get_parameter_size_t(CUFileSizeTConfigParameter_t param)
+inline size_t get_parameter_size_t(CUFileSizeTConfigParameter_t param)
 {
   size_t value;
   CUfileError_t error = cuFileGetParameterSizeT(param, &value);
   check_cufile_result(error, "cuFileGetParameterSizeT");
   return value;
 }
-bool get_parameter_bool(CUFileBoolConfigParameter_t param)
+inline bool get_parameter_bool(CUFileBoolConfigParameter_t param)
 {
   bool value;
   CUfileError_t error = cuFileGetParameterBool(param, &value);
   check_cufile_result(error, "cuFileGetParameterBool");
   return value;
 }
-::std::string get_parameter_string(CUFileStringConfigParameter_t param)
+inline ::std::string get_parameter_string(CUFileStringConfigParameter_t param)
 {
   char buffer[1024]; // Reasonable buffer size
   CUfileError_t error = cuFileGetParameterString(param, buffer, sizeof(buffer));
@@ -233,17 +233,17 @@ bool get_parameter_bool(CUFileBoolConfigParameter_t param)
   return ::std::string(buffer);
 }
 
-void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value)
+inline void set_parameter_size_t(CUFileSizeTConfigParameter_t param, size_t value)
 {
   CUfileError_t error = cuFileSetParameterSizeT(param, value);
   check_cufile_result(error, "cuFileSetParameterSizeT");
 }
-void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value)
+inline void set_parameter_bool(CUFileBoolConfigParameter_t param, bool value)
 {
   CUfileError_t error = cuFileSetParameterBool(param, value);
   check_cufile_result(error, "cuFileSetParameterBool");
 }
-void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value)
+inline void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::string& value)
 {
   CUfileError_t error = cuFileSetParameterString(param, value.c_str());
   check_cufile_result(error, "cuFileSetParameterString");
@@ -251,48 +251,48 @@ void set_parameter_string(CUFileStringConfigParameter_t param, const ::std::stri
 
 // Statistics Management
 #ifdef CUfileStatsLevel1_t
-void set_stats_level(int level)
+inline void set_stats_level(int level)
 {
   CUfileError_t error = cuFileSetStatsLevel(level);
   check_cufile_result(error, "cuFileSetStatsLevel");
 }
-int get_stats_level()
+inline int get_stats_level()
 {
   int level;
   CUfileError_t error = cuFileGetStatsLevel(&level);
   check_cufile_result(error, "cuFileGetStatsLevel");
   return level;
 }
-void stats_start()
+inline void stats_start()
 {
   CUfileError_t error = cuFileStatsStart();
   check_cufile_result(error, "cuFileStatsStart");
 }
-void stats_stop()
+inline void stats_stop()
 {
   CUfileError_t error = cuFileStatsStop();
   check_cufile_result(error, "cuFileStatsStop");
 }
-void stats_reset()
+inline void stats_reset()
 {
   CUfileError_t error = cuFileStatsReset();
   check_cufile_result(error, "cuFileStatsReset");
 }
-CUfileStatsLevel1_t get_stats_l1()
+inline CUfileStatsLevel1_t get_stats_l1()
 {
   CUfileStatsLevel1_t stats;
   CUfileError_t error = cuFileGetStatsL1(&stats);
   check_cufile_result(error, "cuFileGetStatsL1");
   return stats;
 }
-CUfileStatsLevel2_t get_stats_l2()
+inline CUfileStatsLevel2_t get_stats_l2()
 {
   CUfileStatsLevel2_t stats;
   CUfileError_t error = cuFileGetStatsL2(&stats);
   check_cufile_result(error, "cuFileGetStatsL2");
   return stats;
 }
-CUfileStatsLevel3_t get_stats_l3()
+inline CUfileStatsLevel3_t get_stats_l3()
 {
   CUfileStatsLevel3_t stats;
   CUfileError_t error = cuFileGetStatsL3(&stats);
@@ -302,7 +302,7 @@ CUfileStatsLevel3_t get_stats_l3()
 #endif
 
 #ifdef cuFileGetBARSizeInKB
-size_t get_bar_size_kb(int gpu_index)
+inline size_t get_bar_size_kb(int gpu_index)
 {
   size_t bar_size;
   CUfileError_t error = cuFileGetBARSizeInKB(gpu_index, &bar_size);
@@ -312,19 +312,19 @@ size_t get_bar_size_kb(int gpu_index)
 #endif
 
 // Capability Checking
-bool is_cufile_library_available() noexcept
+inline bool is_cufile_library_available() noexcept
 {
   int version         = 0;
   CUfileError_t error = cuFileGetVersion(&version);
   return (error.err == to_c_enum(cu_file_error::success));
 }
-bool is_cufile_available() noexcept
+inline bool is_cufile_available() noexcept
 {
   CUfileDrvProps_t props;
   CUfileError_t error = cuFileDriverGetProperties(&props);
   return (error.err == to_c_enum(cu_file_error::success));
 }
-bool is_batch_api_available() noexcept
+inline bool is_batch_api_available() noexcept
 {
   CUfileDrvProps_t props = {};
   CUfileError_t error    = cuFileDriverGetProperties(&props);
@@ -334,7 +334,7 @@ bool is_batch_api_available() noexcept
   }
   return (props.fflags & (1 << CU_FILE_BATCH_IO_SUPPORTED)) != 0;
 }
-bool is_stream_api_available() noexcept
+inline bool is_stream_api_available() noexcept
 {
   CUfileDrvProps_t props = {};
   CUfileError_t error    = cuFileDriverGetProperties(&props);
@@ -363,8 +363,6 @@ public:
   driver_handle(driver_handle&&)                 = default;
   driver_handle& operator=(driver_handle&&)      = default;
 };
-
-// ===================== Inline implementations =====================
 
 inline const CUfileDrvProps_t& driver_properties::get_raw_properties() const noexcept
 {
