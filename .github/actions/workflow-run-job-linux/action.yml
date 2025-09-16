@@ -249,8 +249,7 @@ runs:
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
-            -- ./ci.sh \
-          || exit_code=$?
+            -- ./ci.sh
         ) || exit_code=$?
 
         # Dump artifact matrix for upload step:
