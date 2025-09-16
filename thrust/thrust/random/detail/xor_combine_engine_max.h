@@ -38,7 +38,7 @@ THRUST_NAMESPACE_BEGIN
 namespace random::detail
 {
 template <typename UIntType>
-_CCCL_HOST_DEVICE constexpr auto checked_lshift(UIntType lhs, UIntType rhs) -> UIntType
+_CCCL_HOST_DEVICE constexpr auto lshift(UIntType lhs, UIntType rhs) -> UIntType
 {
   const bool shift_will_overflow = rhs >= ::cuda::std::numeric_limits<UIntType>::digits;
   if (shift_will_overflow)
@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE constexpr auto checked_lshift(UIntType lhs, UIntType rhs) -> U
 template <typename UIntType>
 _CCCL_HOST_DEVICE constexpr auto two_to_the_power(UIntType p) -> UIntType
 {
-  return checked_lshift(UIntType{1}, p);
+  return lshift(UIntType{1}, p);
 }
 
 template <typename UIntType>
@@ -71,7 +71,7 @@ class xor_combine_engine_max_aux_constants
 {
 public:
   static constexpr result_type two_to_the_d = two_to_the_power(d);
-  static constexpr result_type c            = checked_lshift(a, d);
+  static constexpr result_type c            = lshift(a, result_type(d));
   static constexpr result_type t            = ::cuda::std::max(c, b);
   static constexpr result_type u            = ::cuda::std::min(c, b);
   static constexpr result_type p            = log2(u);
@@ -126,7 +126,7 @@ struct xor_combine_engine_max_aux_case2
 template <typename result_type, result_type a, result_type b, int d>
 struct xor_combine_engine_max_aux_case1
 {
-  static constexpr result_type c     = lshift(a, d);
+  static constexpr result_type c     = lshift(a, result_type(d));
   static constexpr result_type value = c + b;
 };
 
@@ -171,13 +171,13 @@ struct xor_combine_engine_max
 {
   static constexpr size_t w = ::cuda::std::numeric_limits<result_type>::digits;
   static constexpr result_type m1 =
-    ::cuda::std::min(result_type(Engine1::max - Engine1::min), two_to_the_power(w - s1) - 1);
+    ::cuda::std::min(result_type(Engine1::max - Engine1::min), result_type(two_to_the_power(w - s1) - 1));
   static constexpr result_type m2 =
-    ::cuda::std::min(result_type(Engine2::max - Engine2::min), two_to_the_power(w - s2) - 1);
+    ::cuda::std::min(result_type(Engine2::max - Engine2::min), result_type(two_to_the_power(w - s2) - 1));
   static constexpr result_type s = s1 - s2;
   static constexpr result_type M = xor_combine_engine_max_aux<result_type, m1, m2, s>::value;
   // the value is M(m1,m2,s) lshift_w s2
-  static constexpr result_type value = checked_lshift(M, s2);
+  static constexpr result_type value = lshift(M, result_type(s2));
 };
 } // namespace random::detail
 
