@@ -168,6 +168,37 @@ UNITTEST("Composite data place equality")
   /* Different partitioning operator, same execution place */
   EXPECT(data_place::composite(P(), all) != data_place::composite(P2(), all));
 };
+
+UNITTEST("tiled partition with large data dimensions")
+{
+  // Test tiled partitioning with very large data sizes (> 2^32 elements)
+  const size_t large_dim      = 1000000; // 1M elements per dimension
+  const size_t total_elements = large_dim * large_dim; // 1 trillion elements
+  EXPECT(total_elements > (1ULL << 32)); // Verify > 4GB worth of elements
+
+  // Test get_executor with large coordinates
+  pos4 large_coords(500000, 750000); // Large position within the space
+  dim4 data_dims(large_dim, large_dim);
+  dim4 grid_dims(100, 100); // 100x100 tile grid
+
+  // Test tiled_partition executor mapping
+  pos4 tile_pos = tiled_partition<10000>::get_executor(large_coords, data_dims, grid_dims);
+
+  // Tile position should be within grid bounds
+  EXPECT(tile_pos.x >= 0);
+  EXPECT(static_cast<size_t>(tile_pos.x) < grid_dims.x);
+  EXPECT(tile_pos.y >= 0);
+  EXPECT(static_cast<size_t>(tile_pos.y) < grid_dims.y);
+  EXPECT(tile_pos.z == 0);
+  EXPECT(tile_pos.t == 0);
+
+  // Expected tile position: coords / tile_size
+  const size_t expected_tile_x = large_coords.x / 10000;
+  const size_t expected_tile_y = large_coords.y / 10000;
+  EXPECT(static_cast<size_t>(tile_pos.x) == expected_tile_x);
+  EXPECT(static_cast<size_t>(tile_pos.y) == expected_tile_y);
+};
+
 #endif // UNITTESTED_FILE
 
 } // namespace cuda::experimental::stf
