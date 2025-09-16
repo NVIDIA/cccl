@@ -211,6 +211,12 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   Generate(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream = nullptr)
   {
+    static_assert(::cuda::std::is_invocable_v<Generator>, "The passed generator must be a nullary function object");
+    static_assert(
+      ::cuda::std::is_assignable_v<detail::it_reference_t<RandomAccessIteratorOut>,
+                                   ::cuda::std::invoke_result_t<Generator>>,
+      "The return value of the generator's call operator must be assignable to the dereferenced output iterator");
+
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Generate");
     return TransformInternal(
       ::cuda::std::make_tuple(), ::cuda::std::move(output), num_items, ::cuda::std::move(generator), stream);
@@ -252,6 +258,9 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   Fill(RandomAccessIteratorOut output, NumItemsT num_items, Value value, cudaStream_t stream = nullptr)
   {
+    static_assert(::cuda::std::is_assignable_v<detail::it_reference_t<RandomAccessIteratorOut>, Value>,
+                  "The passed value must be assignable to the dereferenced output iterator");
+
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Fill");
     return TransformInternal(
       ::cuda::std::make_tuple(),
