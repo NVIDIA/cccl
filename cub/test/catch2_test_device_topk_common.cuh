@@ -3,8 +3,11 @@
 
 #pragma once
 
+#include <cub/device/dispatch/dispatch_topk.cuh> // topk::select::{min, max}
+
 #include <cuda/std/limits>
 
+// Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
 struct inc_t
 {
@@ -33,3 +36,7 @@ struct inc_t
     return static_cast<T>(value_increment * x);
   }
 };
+
+template <cub::detail::topk::select SelectDirection>
+using direction_to_comparator_t =
+  cuda::std::conditional_t<SelectDirection == cub::detail::topk::select::min, cuda::std::less<>, cuda::std::greater<>>;

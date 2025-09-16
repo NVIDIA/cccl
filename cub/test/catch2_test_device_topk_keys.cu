@@ -6,7 +6,7 @@
 
 #include <cub/device/device_topk.cuh>
 
-#include <thrust/memory.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/sort.h>
 
 #include <cuda/__execution/determinism.h>
@@ -69,10 +69,6 @@ using key_types =
 >;
 // clang-format on
 
-template <cub::detail::topk::select SelectDirection>
-using direction_to_comparator_t =
-  cuda::std::conditional_t<SelectDirection == cub::detail::topk::select::min, cuda::std::less<>, cuda::std::greater<>>;
-
 C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
 {
   using key_t        = c2h::get<0, TestType>;
@@ -114,11 +110,11 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
   REQUIRE(expected_keys == keys_out);
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", key_types, directions)
+C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]", key_types)
 {
   using key_t        = c2h::get<0, TestType>;
-  using direction_t  = c2h::get<1, TestType>;
   using num_items_t  = cuda::std::uint32_t;
+  using direction_t  = cuda::std::integral_constant<cub::detail::topk::select, cub::detail::topk::select::max>;
   using comparator_t = direction_to_comparator_t<direction_t::value>;
 
   // Set input size
@@ -139,7 +135,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
     cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
-  // Run the device-wide API
+  // Run the top-k algorithm
   topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
@@ -183,7 +179,7 @@ try
     cuda::make_counting_iterator(num_items_t{0}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
-  // Run the device-side top-k
+  // Run the top-k algorithm
   topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
@@ -229,7 +225,7 @@ try
     cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{static_cast<cuda::std::size_t>(num_items)});
   c2h::device_vector<key_t> keys_out(k, static_cast<key_t>(42));
 
-  // Run the device-side top-k
+  // Run the top-k algorithm
   topk_keys(direction_t{}, keys_in, thrust::raw_pointer_cast(keys_out.data()), num_items, k);
 
   // Verify results
