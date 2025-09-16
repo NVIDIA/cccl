@@ -1539,7 +1539,6 @@ UNITTEST("dim4 very large total size calculation")
 
   EXPECT(total_size == expected_size);
   EXPECT(expected_size >= (1ULL << 40)); // Verify >= 1TB (2^40)
-  EXPECT(expected_size > (1ULL << 32)); // Verify > 4GB (2^32)
 };
 
 #endif // UNITTESTED_FILE
