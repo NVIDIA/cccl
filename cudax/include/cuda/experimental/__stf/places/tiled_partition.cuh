@@ -169,34 +169,21 @@ UNITTEST("Composite data place equality")
   EXPECT(data_place::composite(P(), all) != data_place::composite(P2(), all));
 };
 
-UNITTEST("tiled partition with large data dimensions")
+UNITTEST("tiled partition with large 1D data")
 {
-  // Test tiled partitioning with very large data sizes (> 2^32 elements)
-  const size_t large_dim      = 1000000; // 1M elements per dimension
-  const size_t total_elements = large_dim * large_dim; // 1 trillion elements
-  EXPECT(total_elements > (1ULL << 32)); // Verify > 4GB worth of elements
+  const size_t large_1d_size = (1ULL << 36);
 
-  // Test get_executor with large coordinates
-  pos4 large_coords(500000, 750000); // Large position within the space
-  dim4 data_dims(large_dim, large_dim);
-  dim4 grid_dims(100, 100); // 100x100 tile grid
+  // Test coordinate that makes tiling calculation obvious
+  const size_t test_coord = (1ULL << 34);
+  pos4 large_coords(test_coord); // 1D coordinate
+  dim4 data_dims(large_1d_size); // 1D data space
+  dim4 grid_dims(32); // 32 places in grid
 
-  // Test tiled_partition executor mapping
-  pos4 tile_pos = tiled_partition<10000>::get_executor(large_coords, data_dims, grid_dims);
+  constexpr size_t tile_size = 1000;
 
-  // Tile position should be within grid bounds
-  EXPECT(tile_pos.x >= 0);
-  EXPECT(static_cast<size_t>(tile_pos.x) < grid_dims.x);
-  EXPECT(tile_pos.y >= 0);
-  EXPECT(static_cast<size_t>(tile_pos.y) < grid_dims.y);
-  EXPECT(tile_pos.z == 0);
-  EXPECT(tile_pos.t == 0);
+  pos4 tile_pos = tiled_partition<tile_size>::get_executor(large_coords, data_dims, grid_dims);
 
-  // Expected tile position: coords / tile_size
-  const size_t expected_tile_x = large_coords.x / 10000;
-  const size_t expected_tile_y = large_coords.y / 10000;
-  EXPECT(static_cast<size_t>(tile_pos.x) == expected_tile_x);
-  EXPECT(static_cast<size_t>(tile_pos.y) == expected_tile_y);
+  EXPECT(tile_pos.x == (test_coord / tile_size) % grid_dims.x);
 };
 
 #endif // UNITTESTED_FILE
