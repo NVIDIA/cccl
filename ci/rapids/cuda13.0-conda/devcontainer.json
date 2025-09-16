@@ -67,7 +67,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cudf,target=/home/coder/cudf,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/raft,target=/home/coder/raft,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuvs,target=/home/coder/cuvs,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/ci/rapids/.repos/cumlprims_mg,target=/home/coder/cuml,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cumlprims_mg,target=/home/coder/cumlprims_mg,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuml,target=/home/coder/cuml,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph-gnn,target=/home/coder/cugraph-gnn,type=bind,consistency=consistent",
