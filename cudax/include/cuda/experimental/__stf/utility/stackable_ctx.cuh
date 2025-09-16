@@ -63,6 +63,9 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved
+{
+
 // Helper kernel for update_cond functionality - following parallel_for_scope pattern
 template <typename CondFunc, typename... Args>
 __global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, Args... args)
@@ -71,6 +74,8 @@ __global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_h
   bool result = cond_func(args...);
   cudaGraphSetConditional(conditional_handle, result);
 }
+
+} // end namespace reserved
 
 template <typename T>
 class stackable_logical_data;
@@ -1530,6 +1535,42 @@ public:
       return conditional_handle_;
     }
 
+    template <typename... Deps>
+    class condition_update_scope
+    {
+    public:
+      condition_update_scope(stackable_ctx& ctx, cudaGraphConditionalHandle handle, Deps... deps)
+          : ctx_(ctx)
+          , handle_(handle)
+          , tdeps(mv(deps)...)
+      {}
+
+      // Helper to extract data_t from dependency types
+      template <typename T>
+      using data_t_of = typename T::data_t;
+
+      template <typename CondFunc>
+      void operator->*(CondFunc&& cond_func)
+      {
+        /* Build a cuda kernel from the deps then pass it a lambda that will
+         * configure a call to the condition_update_kernel kernel */
+        ::std::apply(
+          [this](auto&&... deps) {
+            return this->ctx_.cuda_kernel(deps...);
+          },
+          tdeps)
+            ->*[cond_func = mv(cond_func), h = handle_](data_t_of<Deps>... args) {
+                  return cuda_kernel_desc{
+                    reserved::condition_update_kernel<CondFunc, data_t_of<Deps>...>, 1, 1, 0, h, cond_func, args...};
+                };
+      }
+
+    private:
+      stackable_ctx& ctx_;
+      cudaGraphConditionalHandle handle_;
+      ::std::tuple<::std::decay_t<Deps>...> tdeps;
+    };
+
     //! \brief Helper for updating while loop condition using a device lambda
     //!
     //! Creates a helper object that supports the fluent ->* interface.
@@ -1551,44 +1592,11 @@ public:
     //!   return !converged && !max_reached; // Continue until converged or max iterations
     //! };
     //! ```
-
-#if 0
-    template <typename... Args>
-    class update_cond_helper
-    {
-    public:
-      update_cond_helper(while_graph_scope_guard& guard, Args&&... args)
-        : guard_(guard), args_(args...)  // Simple copy, no forwarding to avoid member storage issues
-      {}
-
-      template <typename CondFunc>
-      void operator->*(CondFunc&& cond_func)
-      {
-        auto handle = guard_.conditional_handle_;
-
-        auto fn = [handle, cond_func = ::cuda::std::move(cond_func)] __device__(size_t, cuda::std::tuple<Args...> data_views) {
-          bool result = ::cuda::std:::apply(cond_func, data_views...);
-          cudaGraphSetConditional(handle, result);
-        };
-
-        // Use parallel_for with box(1) - single thread to evaluate condition
-        // Directly expand the tuple to avoid nested lambda issues
-        ::cuda::std::apply([cond_func = ::cuda::std::move(cond_func), handle](auto&&... deps) {
-          guard_.ctx_.parallel_for(box(1), deps...)->*fn;
-        }, args_);
-      }
-
-    private:
-      while_graph_scope_guard& guard_;
-      ::cuda::std::tuple<Args...> args_;
-    };
-
     template <typename... Args>
     auto update_cond(Args&&... args)
     {
-      return update_cond_helper<Args...>(*this, args...);  // Simple copy instead of forwarding
+      return condition_update_scope(ctx_, cond_handle(), args...); // Simple copy instead of forwarding
     }
-#endif
 
     // Non-copyable, non-movable
     while_graph_scope_guard(const while_graph_scope_guard&)            = delete;
