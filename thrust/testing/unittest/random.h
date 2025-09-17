@@ -4,6 +4,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/random.h>
 
+#include <cuda/iterator>
+
 #include <limits>
 
 namespace unittest
@@ -69,8 +71,8 @@ THRUST_NS_QUALIFIER::host_vector<T> random_integers(const size_t N)
 {
   THRUST_NS_QUALIFIER::host_vector<T> vec(N);
   THRUST_NS_QUALIFIER::transform(
-    THRUST_NS_QUALIFIER::counting_iterator{0u},
-    THRUST_NS_QUALIFIER::counting_iterator{static_cast<unsigned int>(N)},
+    ::cuda::counting_iterator{0u},
+    ::cuda::counting_iterator{static_cast<unsigned int>(N)},
     vec.begin(),
     generate_random_integer<T>());
 
@@ -88,8 +90,8 @@ THRUST_NS_QUALIFIER::host_vector<T> random_samples(const size_t N)
 {
   THRUST_NS_QUALIFIER::host_vector<T> vec(N);
   THRUST_NS_QUALIFIER::transform(
-    THRUST_NS_QUALIFIER::counting_iterator{0u},
-    THRUST_NS_QUALIFIER::counting_iterator{static_cast<unsigned int>(N)},
+    ::cuda::counting_iterator{0u},
+    ::cuda::counting_iterator{static_cast<unsigned int>(N)},
     vec.begin(),
     generate_random_sample<T>());
 

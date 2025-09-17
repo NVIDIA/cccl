@@ -24,6 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#include <cuda/iterator>
+
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>
@@ -232,7 +234,7 @@ try
   c2h::device_vector<value_t> out_values(num_items);
 
   auto offsets = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(std::size_t{0}),
+    cuda::make_counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
   auto offsets_plus_1 = offsets + 1;
 

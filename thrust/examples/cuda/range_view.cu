@@ -1,8 +1,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/for_each.h>
-#include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/iterator>
 
 #include <iostream>
@@ -162,8 +162,8 @@ __host__ __device__ void saxpy(float A, View1 X, View2 Y, View3 Z)
   // Z = A * X + Y
   const int size = X.size();
   thrust::for_each(thrust::device,
-                   thrust::make_counting_iterator(0),
-                   thrust::make_counting_iterator(size),
+                   cuda::make_counting_iterator(0),
+                   cuda::make_counting_iterator(size),
                    saxpy_functor<View1, View2, View3>(A, X, Y, Z));
 }
 

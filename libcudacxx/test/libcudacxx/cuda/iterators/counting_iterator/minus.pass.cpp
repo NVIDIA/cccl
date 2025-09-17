@@ -20,14 +20,6 @@
 #include "test_macros.h"
 #include "types.h"
 
-// If we're compiling for 32 bit or windows, int and long are the same size, so long long is the correct difference
-// type.
-#if INTPTR_MAX == INT32_MAX || defined(_WIN32)
-using IntDiffT = long long;
-#else
-using IntDiffT = long;
-#endif
-
 __host__ __device__ constexpr bool test()
 {
   // <iterator> - difference_type
@@ -90,7 +82,7 @@ __host__ __device__ constexpr bool test()
       assert(iter2 - iter1 == -5);
 
       static_assert(noexcept(iter1 - iter2));
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
 
     { // When "_Start" is signed integer like.
@@ -101,7 +93,7 @@ __host__ __device__ constexpr bool test()
       assert(iter2 - iter1 == -5);
 
       static_assert(noexcept(iter1 - iter2));
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
 
     { // When "_Start" is not integer like.
