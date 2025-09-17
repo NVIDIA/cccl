@@ -24,8 +24,11 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/movable_box.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -72,6 +75,11 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
+
+  // Those are technically not to spec, but C++17 iterator_traits do not work properly with iterators that do not define
+  // all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using reference = _Tp;
+  using pointer   = void;
 
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constant_iterator()
@@ -140,7 +148,7 @@ public:
   //! @brief Decrements the stored index
   _CCCL_API constexpr constant_iterator& operator--() noexcept
   {
-    if constexpr (::cuda::std::is_signed_v<_Index>)
+    if constexpr (::cuda::std::is_signed_v<_Index> || !::cuda::std::is_integral_v<_Index>)
     {
       _CCCL_ASSERT(__index_ > 0, "The index must be greater than or equal to 0");
     }
@@ -161,9 +169,9 @@ public:
   //! @param __n The amount of elements to advance
   _CCCL_API constexpr constant_iterator& operator+=(difference_type __n) noexcept
   {
-    if constexpr (::cuda::std::is_signed_v<_Index>)
+    if constexpr (::cuda::std::is_signed_v<_Index> || !::cuda::std::is_integral_v<_Index>)
     {
-      _CCCL_ASSERT(__index_ + __n >= 0, "The index must be greater than or equal to 0");
+      _CCCL_ASSERT(__index_ + static_cast<_Index>(__n) >= 0, "The index must be greater than or equal to 0");
     }
     __index_ += static_cast<_Index>(__n);
     return *this;
@@ -280,10 +288,10 @@ _CCCL_HOST_DEVICE constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Inde
 //! @param __value The value to be stored
 //! @param __index The optional index representing the position in a sequence. Defaults to 0.
 //! @relates constant_iterator
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr auto make_constant_iterator(_Tp __value, ::cuda::std::ptrdiff_t __index = 0)
+template <class _Tp, class _Index = ::cuda::std::ptrdiff_t>
+[[nodiscard]] _CCCL_API constexpr auto make_constant_iterator(_Tp __value, _Index __index = 0)
 {
-  return constant_iterator<_Tp>{::cuda::std::move(__value), __index};
+  return constant_iterator<_Tp, _Index>{::cuda::std::move(__value), __index};
 }
 
 //! @} // end iterators

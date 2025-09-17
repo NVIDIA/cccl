@@ -8,7 +8,6 @@
 #include <thrust/fill.h>
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
@@ -582,9 +581,9 @@ struct offset_to_iterator_t
 template <class T>
 struct repeat_index_t
 {
-  __host__ __device__ __forceinline__ thrust::constant_iterator<T> operator()(std::size_t i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<T> operator()(std::size_t i)
   {
-    return thrust::constant_iterator<T>(static_cast<T>(i));
+    return cuda::constant_iterator<T>(static_cast<T>(i));
   }
 };
 

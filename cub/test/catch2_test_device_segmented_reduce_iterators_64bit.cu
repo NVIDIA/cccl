@@ -29,7 +29,7 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -71,7 +71,7 @@ C2H_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
   c2h::device_vector<offset_t> device_result(num_segments);
 
   // prepare device iterators
-  auto in_it        = thrust::make_constant_iterator(iterator_value);
+  auto in_it        = cuda::make_constant_iterator(iterator_value);
   auto d_offsets_it = thrust::raw_pointer_cast(segment_offsets.data());
   auto d_out_it     = thrust::raw_pointer_cast(device_result.data());
 

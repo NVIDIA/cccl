@@ -128,7 +128,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
   // Prepare input data
   value_t default_constant{};
   init_default_constant(default_constant);
-  auto values_in_it = thrust::make_constant_iterator(default_constant);
+  auto values_in_it = cuda::make_constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {

@@ -29,7 +29,6 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/sequence.h>
 
@@ -370,9 +369,9 @@ try
   constexpr run_length_type second_run_size = num_items - first_run_size;
 
   // First run is a small run of equal items
-  auto small_segment_it = thrust::make_constant_iterator(item_t{3});
+  auto small_segment_it = cuda::make_constant_iterator(item_t{3});
   // Second run is a very large run of equal items
-  auto large_segment_it = thrust::make_constant_iterator(item_t{42});
+  auto large_segment_it = cuda::make_constant_iterator(item_t{42});
   auto input_item_it    = detail::make_concat_iterators_op(small_segment_it, large_segment_it, first_run_size);
 
   // Allocate some memory for the results

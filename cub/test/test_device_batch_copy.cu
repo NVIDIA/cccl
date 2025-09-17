@@ -28,7 +28,6 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/logical.h>
@@ -164,9 +163,9 @@ template <typename AtomicT>
 struct RepeatIndex
 {
   template <typename OffsetT>
-  __host__ __device__ __forceinline__ thrust::constant_iterator<AtomicT> operator()(OffsetT i)
+  __host__ __device__ __forceinline__ cuda::constant_iterator<AtomicT> operator()(OffsetT i)
   {
-    return thrust::constant_iterator<AtomicT>(static_cast<AtomicT>(i));
+    return cuda::constant_iterator<AtomicT>(static_cast<AtomicT>(i));
   }
 };
 
@@ -327,7 +326,7 @@ void nontrivial_constructor_test()
 
   c2h::device_vector<iterator> b_iter{b.begin(), b.begin() + 1, b.begin() + 2};
 
-  auto sizes = thrust::make_constant_iterator(1);
+  auto sizes = cuda::make_constant_iterator(1);
 
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};

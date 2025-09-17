@@ -5,8 +5,7 @@
 
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
