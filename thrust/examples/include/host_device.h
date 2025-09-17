@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
 #if !_CCCL_HAS_CUDA_COMPILER()
 
 #  ifndef __host__

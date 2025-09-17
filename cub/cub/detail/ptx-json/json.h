@@ -32,9 +32,9 @@
 #include <cub/detail/ptx-json/string.h>
 #include <cub/detail/ptx-json/value.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 namespace ptx_json
 {
@@ -47,9 +47,10 @@ struct tagged_json<T, cuda::std::index_sequence<Is...>>
   template <typename V, typename = cuda::std::enable_if_t<is_object<V>::value || is_array<V>::value>>
   __noinline__ __device__ void operator=(V)
   {
-    asm volatile("cccl.ptx_json.begin(%0)\n\n" ::"C"(storage_helper<T.str[Is]...>::value) : "memory");
+    static constexpr char str[]{T.str[Is]...};
+    asm volatile("cccl.ptx_json.begin(%0)\n\n" ::"C"(str) : "memory");
     V::emit();
-    asm volatile("\ncccl.ptx_json.end(%0)" ::"C"(storage_helper<T.str[Is]...>::value) : "memory");
+    asm volatile("\ncccl.ptx_json.end(%0)" ::"C"(str) : "memory");
   }
 };
 

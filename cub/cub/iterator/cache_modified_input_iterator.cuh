@@ -49,8 +49,9 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/declval.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -126,11 +127,9 @@ public:
 #if _CCCL_COMPILER(NVRTC)
   using iterator_category = ::cuda::std::random_access_iterator_tag;
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-  using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-    THRUST_NS_QUALIFIER::device_system_tag,
-    THRUST_NS_QUALIFIER::random_access_traversal_tag,
-    value_type,
-    reference>::type;
+  using iterator_category =
+    THRUST_NS_QUALIFIER::detail::iterator_facade_category_t<THRUST_NS_QUALIFIER::device_system_tag,
+                                                            THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 #endif // _CCCL_COMPILER(NVRTC)
 
 public:

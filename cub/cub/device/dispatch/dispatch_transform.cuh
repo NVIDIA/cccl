@@ -27,18 +27,22 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/cmath>
-#include <cuda/memory>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 

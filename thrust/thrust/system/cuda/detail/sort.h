@@ -61,17 +61,6 @@
 #  include <cuda/cmath>
 #  include <cuda/std/cstdint>
 
-#  if _CCCL_HAS_NVFP16()
-#    include <cuda_fp16.h>
-#  endif // _CCCL_HAS_NVFP16()
-
-#  if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#    include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#  endif // _CCCL_HAS_NVBF16()
-
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {

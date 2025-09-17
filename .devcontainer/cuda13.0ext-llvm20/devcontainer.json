@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.10-cpp-llvm19-cuda12.9ext",
+  "image": "rapidsai/devcontainers:25.10-cpp-llvm20-cuda13.0ext",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9ext-llvm19"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0ext-llvm20"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -24,11 +24,11 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.9ext-llvm19",
-    "CCCL_CUDA_VERSION": "12.9",
+    "DEVCONTAINER_NAME": "cuda13.0ext-llvm20",
+    "CCCL_CUDA_VERSION": "13.0",
     "CCCL_HOST_COMPILER": "llvm",
-    "CCCL_HOST_COMPILER_VERSION": "19",
-    "CCCL_BUILD_INFIX": "cuda12.9ext-llvm19",
+    "CCCL_HOST_COMPILER_VERSION": "20",
+    "CCCL_BUILD_INFIX": "cuda13.0ext-llvm20",
     "CCCL_CUDA_EXTENDED": "true",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -62,5 +62,5 @@
       }
     }
   },
-  "name": "cuda12.9ext-llvm19"
+  "name": "cuda13.0ext-llvm20"
 }

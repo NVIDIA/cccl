@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -56,7 +55,12 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
 

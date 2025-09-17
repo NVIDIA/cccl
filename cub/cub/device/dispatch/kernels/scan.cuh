@@ -40,8 +40,6 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/util_macro.cuh>
 
-#include <cuda/std/type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
