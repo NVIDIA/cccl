@@ -113,7 +113,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
 {
   _CCCL_ASSERT(keys1_count >= 0, "");
   _CCCL_ASSERT(keys2_count >= 0, "");
-  _CCCL_ASSERT(keys1_count + keys2_count >= 0, "");
+
+  // TODO(bgruber): this assertion fails. Is this a problem?
+  // _CCCL_ASSERT(keys1_count + keys2_count > 0, "");
 
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
@@ -141,17 +143,23 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   }
 
   auto loop_body = [&](int item, auto last_iteration) {
-    const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
-    output[item]  = p ? key2 : key1;
-    indices[item] = p ? keys2_beg++ : keys1_beg++;
+    // FIXME(bgruber): is the condition correct, given that the two key ranges can be smaller than ITEMS_PER_THREAD?
+    // FIXME(bgruber): if we exhausted both key ranges, we increment keys1_beg beyond keys1_end
+    const bool use_key2 = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
+    output[item]        = use_key2 ? key2 : key1;
+    indices[item]       = use_key2 ? keys2_beg++ : keys1_beg++;
     if constexpr (!last_iteration)
     {
-      if (p)
+      if (use_key2)
       {
+        // FIXME(bgruber): this assertion fails and we access out of bounds
+        _CCCL_ASSERT(keys2_beg < keys2_end, "");
         key2 = keys_shared[keys2_beg];
       }
       else
       {
+        // FIXME(bgruber): this assertion fails and we access out of bounds
+        _CCCL_ASSERT(keys1_beg < keys1_end, "");
         key1 = keys_shared[keys1_beg];
       }
     }
@@ -246,8 +254,9 @@ private:
   /// Shared memory type required by this thread block
   union _TempStorage
   {
-    KeyT keys_shared[ITEMS_PER_TILE];
-    ValueT items_shared[ITEMS_PER_TILE];
+    // FIXME(bgruber): why do we need the +1?
+    KeyT keys_shared[ITEMS_PER_TILE + 1];
+    ValueT items_shared[ITEMS_PER_TILE + 1];
   }; // union TempStorage
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -512,13 +521,17 @@ public:
           keys2_count,
           diag,
           compare_op);
+        _CCCL_ASSERT(partition_diag >= 0 && partition_diag < valid_items, "");
 
         const int keys1_beg_loc   = keys1_beg + partition_diag;
         const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
         const int keys1_count_loc = keys1_end - keys1_beg_loc;
         const int keys2_count_loc = keys2_end - keys2_beg_loc;
         SerialMerge(
-          &temp_storage.keys_shared[0],
+          // TODO(bgruber): use the span with valid_items again
+          ::cuda::std::span<KeyT>(temp_storage.keys_shared, ITEMS_PER_TILE + 1),
+          //::cuda::std::span<KeyT>(temp_storage.keys_shared, valid_items),
+          //&temp_storage.keys_shared[0],
           keys1_beg_loc,
           keys2_beg_loc,
           keys1_count_loc,
