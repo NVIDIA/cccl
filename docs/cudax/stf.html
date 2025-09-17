@@ -3228,7 +3228,7 @@ when calling <code class="docutils literal notranslate"><span class="pre">get</s
 <span class="k">auto</span><span class="w"> </span><span class="n">dX1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frozen_ld</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">data_place</span><span class="o">::</span><span class="n">device</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">hX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frozen_ld</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">data_place</span><span class="o">::</span><span class="n">host</span><span class="p">(),</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
 
-<span class="n">fx</span><span class="p">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="n">stream</span><span class="p">);</span>
+<span class="n">frozen_ld</span><span class="p">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="n">stream</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>While data are frozen, it is still possible to launch tasks which access
@@ -3239,7 +3239,7 @@ until data is made is made modifiable again, after <code class="docutils literal
 <span class="k">auto</span><span class="w"> </span><span class="n">dX</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">frozen_ld</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">data_place</span><span class="o">::</span><span class="n">current_device</span><span class="p">(),</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
 <span class="c1">// kernel can modify dX</span>
 <span class="n">kernel</span><span class="o">&lt;&lt;&lt;</span><span class="p">...,</span><span class="w"> </span><span class="n">stream</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">dX</span><span class="p">);</span>
-<span class="n">fx</span><span class="p">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="n">stream</span><span class="p">);</span>
+<span class="n">frozen_ld</span><span class="p">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="n">stream</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>As shown above, it is also possible to create a modifiable frozen logical data,

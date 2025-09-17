@@ -1926,7 +1926,7 @@ when calling ``get``.
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
     auto hX = frozen_ld.get(data_place::host(), stream);
 
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 While data are frozen, it is still possible to launch tasks which access
 them. CUDASTF will allow tasks with a read access modes to run
@@ -1939,7 +1939,7 @@ until data is made is made modifiable again, after ``unfreeze``.
     auto dX = frozen_ld.get(data_place::current_device(), stream);
     // kernel can modify dX
     kernel<<<..., stream>>>(dX);
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 As shown above, it is also possible to create a modifiable frozen logical data,
 allowing an application to temporarily transfer ownership of the logical data
