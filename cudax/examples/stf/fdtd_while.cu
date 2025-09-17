@@ -201,8 +201,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
       *counter = iterations_per_graph;
     };
 
-    auto while_guard = ctx.while_graph_scope(1, cudaGraphCondAssignDefault); // the arguments are the arguments we pass
-                                                                             // to cudaGraphCondHandleCreate
+    auto while_guard = ctx.while_graph_scope();
     {
       // Update the electric fields
 

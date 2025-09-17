@@ -12,13 +12,13 @@
  * @file
  *
  * @brief FDTD example using the repeat_n helper function
- * 
+ *
  * This shows how to refactor the original fdtd_while.cu example
  * to use the new repeat_n helper for cleaner loop patterns.
  */
 
-#include <cuda/experimental/stf.cuh>
 #include <cuda/experimental/__stf/utility/stackable_ctx.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #include <stdlib.h>
 
@@ -117,36 +117,38 @@ int main(int argc, char** argv)
 
   {
     auto repeat_guard = ctx.repeat_graph_scope(timesteps);
-    
+
     // Update Ex
     ctx.parallel_for(Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
-              Ex(i, j, k) = Ex(i, j, k)
-                          + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
+        Ex(i, j, k) = Ex(i, j, k)
+                    + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
+      };
 
     // Update Ey
     ctx.parallel_for(Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
-              Ey(i, j, k) = Ey(i, j, k)
-                          + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
+        Ey(i, j, k) = Ey(i, j, k)
+                    + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
+      };
 
     // Update Ez
     ctx.parallel_for(Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
-              Ez(i, j, k) = Ez(i, j, k)
-                          + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
-            };
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
+        Ez(i, j, k) = Ez(i, j, k)
+                    + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
+      };
 
     // Add the source function at the center of the grid
     // Note: We could add a current iteration tracker if needed for time-dependent sources
-    ctx.parallel_for(source_s, lEz.rw())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
-              // For simplicity, using a constant source in this example
-              // In the full version, you'd want to track the current timestep
-              Ez(i, j, k) = Ez(i, j, k) + 0.1 * sin(0.1 * (i + j + k));
-            };
+    ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
+      // For simplicity, using a constant source in this example
+      // In the full version, you'd want to track the current timestep
+      Ez(i, j, k) = Ez(i, j, k) + 0.1 * sin(0.1 * (i + j + k));
+    };
 
     // Update Hx
     ctx.parallel_for(Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
@@ -181,4 +183,3 @@ int main(int argc, char** argv)
   return 0;
 #endif
 }
-

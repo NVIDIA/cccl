@@ -66,7 +66,7 @@ int main(int argc, char** argv)
   auto lresidual = ctx.logical_data(shape_of<scalar_view<double>>());
 
   {
-    auto while_guard = ctx.while_graph_scope(1, cudaGraphCondAssignDefault);
+    auto while_guard = ctx.while_graph_scope();
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))
         ->*[] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
