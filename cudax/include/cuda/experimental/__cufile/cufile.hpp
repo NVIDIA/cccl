@@ -9,9 +9,6 @@
 //===----------------------------------------------------------------------===//
 #pragma once
 
-// cufile.hpp — Modern C++ bindings for NVIDIA cuFILE (GPU Direct Storage)
-// Provides a clean interface that directly maps to the cuFILE C API.
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -29,7 +26,6 @@
 
 #include <cufile.h>
 
-// CUDA Experimental cuFILE Library namespace
 namespace cuda::experimental::io
 {
 // ================================================================================================
