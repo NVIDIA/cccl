@@ -1708,10 +1708,7 @@ public:
     size_t count,
     unsigned int defaultLaunchValue        = 1,
     unsigned int flags                     = cudaGraphCondAssignDefault,
-    const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
-  {
-    return repeat_graph_scope_guard(*this, count, defaultLaunchValue, flags);
-  }
+    const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current());
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   auto pop_extract_graph()
@@ -3465,47 +3462,42 @@ UNITTEST("graph_scope iterative pattern like stackable2")
 class repeat_graph_scope_guard
 {
 public:
+  template <typename CounterType>
+  static void init_counter_value(stackable_ctx& ctx, CounterType counter, size_t count)
+  {
+    ctx.parallel_for(box(1), counter.write())->*[count] __device__(size_t, auto counter) {
+      *counter = count;
+    };
+  }
+
+  template <typename CounterType>
+  static void setup_condition_update(stackable_ctx::while_graph_scope_guard& while_guard, CounterType counter)
+  {
+    while_guard.update_cond(counter.read())->*[] __device__(auto counter) {
+      (*counter)--;
+      return (*counter > 0);
+    };
+  }
+
   explicit repeat_graph_scope_guard(
     stackable_ctx& ctx,
     size_t count,
     unsigned int defaultLaunchValue = 1,
     unsigned int flags              = cudaGraphCondAssignDefault)
       : ctx_(ctx)
-      , while_guard_(ctx_, defaultLaunchValue, flags)
   {
-    if (count == 0)
-    {
-      // For zero iterations, we still need to set up the structures but ensure loop doesn't run
-      auto counter_shape = shape_of<scalar_view<size_t>>();
-      counter_           = ctx_.logical_data(counter_shape);
+    // Create counter logical data BEFORE starting while loop context
+    auto counter_shape = shape_of<scalar_view<size_t>>();
+    counter_           = ctx_.logical_data(counter_shape);
 
-      // Initialize counter to 0 (loop won't execute)
-      ctx_.parallel_for(box(1), counter_.write())->*[] __device__(size_t, auto counter) {
-        *counter = 0;
-      };
-    }
-    else
-    {
-      // Create counter for remaining iterations
-      auto counter_shape = shape_of<scalar_view<size_t>>();
-      counter_           = ctx_.logical_data(counter_shape);
+    // Initialize counter to the specified count
+    init_counter_value(ctx_, counter_, count);
 
-      // Initialize counter
-      ctx_.parallel_for(box(1), counter_.write())->*[count] __device__(size_t, auto counter) {
-        *counter = count;
-      };
-    }
-  }
+    // only create the while guard now - this starts the while loop context
+    while_guard_.emplace(ctx_, defaultLaunchValue, flags, _CUDA_VSTD::source_location::current());
 
-  ~repeat_graph_scope_guard()
-  {
-    // Decrement counter and control loop continuation using while_guard's API
-    while_guard_.update_cond(counter_)->*[] __device__(auto counter) {
-      (*counter)--;
-      return (*counter > 0);
-    };
-
-    // while_guard_ destructor will automatically call ctx_.pop()
+    // Set up the condition update logic
+    setup_condition_update(*while_guard_, counter_);
   }
 
   // Non-copyable, non-movable
@@ -3516,9 +3508,18 @@ public:
 
 private:
   stackable_ctx& ctx_;
-  while_graph_scope_guard while_guard_;
+  ::std::optional<stackable_ctx::while_graph_scope_guard> while_guard_;
   stackable_logical_data<scalar_view<size_t>> counter_;
 };
+
+// Implementation of repeat_graph_scope method - defined here after repeat_graph_scope_guard class is complete
+inline auto stackable_ctx::repeat_graph_scope(
+  size_t count, unsigned int defaultLaunchValue, unsigned int flags, const _CUDA_VSTD::source_location& loc)
+{
+  // Note: loc parameter is provided for API consistency but not currently used in repeat_graph_scope_guard
+  (void) loc; // Suppress unused parameter warning
+  return repeat_graph_scope_guard(*this, count, defaultLaunchValue, flags);
+}
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 } // end namespace cuda::experimental::stf
