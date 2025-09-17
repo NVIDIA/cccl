@@ -51,7 +51,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @addtogroup iterators
 //! @{
 
-template <class _Iter, class _Fn>
+template <class _Fn, class _Iter>
 class __transform_output_proxy
 {
 private:
@@ -138,7 +138,7 @@ public:
 //!
 //! }
 //! @endcode
-template <class _Iter, class _Fn>
+template <class _Fn, class _Iter>
 class transform_output_iterator
 {
   static_assert(::cuda::std::is_object_v<_Fn>,
@@ -439,10 +439,10 @@ public:
 //! @param __iter The iterator of the input range
 //! @param __fun The output function
 //! @relates transform_output_iterator
-template <class _Iter, class _Fn>
+template <class _Fn, class _Iter>
 [[nodiscard]] _CCCL_API constexpr auto make_transform_output_iterator(_Iter __iter, _Fn __fun)
 {
-  return transform_output_iterator<_Iter, _Fn>{__iter, __fun};
+  return transform_output_iterator<_Fn, _Iter>{__iter, __fun};
 }
 
 //! @}
