@@ -28,7 +28,7 @@ template <template <class...> class Traits>
 __host__ __device__ constexpr bool test()
 {
   {
-    using Iter       = cuda::transform_iterator<int*, Increment>;
+    using Iter       = cuda::transform_iterator<Increment, int*>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -38,7 +38,7 @@ __host__ __device__ constexpr bool test()
   }
   {
     // Member typedefs for random access iterator.
-    using Iter       = cuda::transform_iterator<random_access_iterator<int*>, Increment>;
+    using Iter       = cuda::transform_iterator<Increment, random_access_iterator<int*>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test()
   }
   {
     // Member typedefs for random access iterator, LWG3798 rvalue reference.
-    using Iter       = cuda::transform_iterator<random_access_iterator<int*>, IncrementRvalueRef>;
+    using Iter       = cuda::transform_iterator<IncrementRvalueRef, random_access_iterator<int*>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -58,7 +58,7 @@ __host__ __device__ constexpr bool test()
   }
   {
     // Member typedefs for random access iterator/not-lvalue-ref.
-    using Iter       = cuda::transform_iterator<random_access_iterator<int*>, PlusOneMutable>;
+    using Iter       = cuda::transform_iterator<PlusOneMutable, random_access_iterator<int*>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -68,7 +68,7 @@ __host__ __device__ constexpr bool test()
   }
   {
     // Member typedefs for bidirectional iterator.
-    using Iter       = cuda::transform_iterator<bidirectional_iterator<int*>, Increment>;
+    using Iter       = cuda::transform_iterator<Increment, bidirectional_iterator<int*>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -78,7 +78,7 @@ __host__ __device__ constexpr bool test()
   }
   {
     // Member typedefs for forward iterator.
-    using Iter       = cuda::transform_iterator<forward_iterator<int*>, Increment>;
+    using Iter       = cuda::transform_iterator<Increment, forward_iterator<int*>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -87,14 +87,14 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::__is_cpp17_forward_iterator<Iter>);
   }
   { // Nopthing to do here
-    using Iter = cuda::transform_iterator<cpp17_input_iterator<int*>, Increment>;
-    static_assert(!HasIterCategory<cpp17_input_iterator<int*>, Increment>);
+    using Iter = cuda::transform_iterator<Increment, cpp17_input_iterator<int*>>;
+    static_assert(!HasIterCategory<Increment, cpp17_input_iterator<int*>>);
     static_assert(cuda::std::__is_cpp17_input_iterator<Iter>);
   }
 
   {
     // Ensure we can work with other cuda iterators
-    using Iter       = cuda::transform_iterator<cuda::counting_iterator<int>, TimesTwo>;
+    using Iter       = cuda::transform_iterator<TimesTwo, cuda::counting_iterator<int>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
@@ -105,7 +105,7 @@ __host__ __device__ constexpr bool test()
 
   {
     // Ensure we can work with other cuda iterators
-    using Iter       = cuda::std::reverse_iterator<cuda::transform_iterator<cuda::counting_iterator<int>, TimesTwo>>;
+    using Iter       = cuda::std::reverse_iterator<cuda::transform_iterator<TimesTwo, cuda::counting_iterator<int>>>;
     using IterTraits = Traits<Iter>;
     static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
