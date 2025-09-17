@@ -58,101 +58,105 @@ enum class address_space
 //! @return `true` if the pointer is from the specified address space, `false` otherwise.
 [[nodiscard]] _CCCL_DEVICE_API inline bool is_address_from(const void* __ptr, address_space __space) noexcept
 {
-  _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
   _CCCL_ASSERT(::cuda::device::__cccl_is_valid_address_space(__space), "invalid address space");
-
   // NVCC and NVRTC < 12.3 have problems tracking the address space of pointers, fallback to inline PTX for them
   switch (__space)
   {
     case address_space::global:
+      _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
-    {
-      unsigned __ret;
-      asm volatile(
-        "{\n\t"
-        "  .reg .pred p;\n\t"
-        "  isspacep.global p, %1;\n\t"
-        "  selp.u32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__ret)
-        : "l"(__ptr));
-      return static_cast<bool>(__ret);
-    }
+      {
+        unsigned __ret;
+        asm volatile(
+          "{\n\t"
+          "  .reg .pred p;\n\t"
+          "  isspacep.global p, %1;\n\t"
+          "  selp.u32 %0, 1, 0, p;\n\t"
+          "}\n\t"
+          : "=r"(__ret)
+          : "l"(__ptr));
+        return static_cast<bool>(__ret);
+      }
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       return static_cast<bool>(::__isGlobal(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     case address_space::shared:
+      // smem can start at address 0x0 before sm_90
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (_CCCL_ASSERT(__ptr != nullptr, "invalid pointer");));
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
-    {
-      unsigned __ret;
-      asm volatile(
-        "{\n\t"
-        "  .reg .pred p;\n\t"
-        "  isspacep.shared p, %1;\n\t"
-        "  selp.u32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__ret)
-        : "l"(__ptr));
-      return static_cast<bool>(__ret);
-    }
+      {
+        unsigned __ret;
+        asm volatile(
+          "{\n\t"
+          "  .reg .pred p;\n\t"
+          "  isspacep.shared p, %1;\n\t"
+          "  selp.u32 %0, 1, 0, p;\n\t"
+          "}\n\t"
+          : "=r"(__ret)
+          : "l"(__ptr));
+        return static_cast<bool>(__ret);
+      }
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       return static_cast<bool>(::__isShared(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     case address_space::constant:
+      _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
-    {
-      unsigned __ret;
-      asm volatile(
-        "{\n\t"
-        "  .reg .pred p;\n\t"
-        "  isspacep.const p, %1;\n\t"
-        "  selp.u32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__ret)
-        : "l"(__ptr));
-      return static_cast<bool>(__ret);
-    }
+      {
+        unsigned __ret;
+        asm volatile(
+          "{\n\t"
+          "  .reg .pred p;\n\t"
+          "  isspacep.const p, %1;\n\t"
+          "  selp.u32 %0, 1, 0, p;\n\t"
+          "}\n\t"
+          : "=r"(__ret)
+          : "l"(__ptr));
+        return static_cast<bool>(__ret);
+      }
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       return static_cast<bool>(::__isConstant(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     case address_space::local:
+      _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
       // __isLocal is buggy, see https://github.com/NVIDIA/cccl/pull/4866#discussion_r2121772829
       // let's always use the inline PTX instead of the intrinsic
 #  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)
-    {
-      unsigned __ret;
-      asm volatile(
-        "{\n\t"
-        "  .reg .pred p;\n\t"
-        "  isspacep.local p, %1;\n\t"
-        "  selp.u32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__ret)
-        : "l"(__ptr));
-      return static_cast<bool>(__ret);
-    }
+      {
+        unsigned __ret;
+        asm volatile(
+          "{\n\t"
+          "  .reg .pred p;\n\t"
+          "  isspacep.local p, %1;\n\t"
+          "  selp.u32 %0, 1, 0, p;\n\t"
+          "}\n\t"
+          : "=r"(__ret)
+          : "l"(__ptr));
+        return static_cast<bool>(__ret);
+      }
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) vvv
       return static_cast<bool>(::__isLocal(__ptr));
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC) ^^^
     case address_space::grid_constant:
+      _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
 #  if _CCCL_HAS_GRID_CONSTANT()
 #    if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_70,
-        (unsigned __ret; asm volatile(
-           "{\n\t"
-           "  .reg .pred p;\n\t"
-           "  isspacep.param p, %1;\n\t"
-           "  selp.u32 %0, 1, 0, p;\n\t"
-           "}\n\t" : "=r"(__ret) : "l"(__ptr));
-         return static_cast<bool>(__ret);),
-        (return false;))
-    }
+      {
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_70,
+          (unsigned __ret; asm volatile(
+             "{\n\t"
+             "  .reg .pred p;\n\t"
+             "  isspacep.param p, %1;\n\t"
+             "  selp.u32 %0, 1, 0, p;\n\t"
+             "}\n\t" : "=r"(__ret) : "l"(__ptr));
+           return static_cast<bool>(__ret);),
+          (return false;))
+      }
 #    else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
           // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return static_cast<bool>(::__isGridConstant(__ptr));), (return false;))
@@ -161,19 +165,20 @@ enum class address_space
       return false;
 #  endif // ^^^ !_CCCL_HAS_GRID_CONSTANT() ^^^
     case address_space::cluster_shared:
+      _CCCL_ASSERT(__ptr != nullptr, "invalid pointer");
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
-    {
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_90,
-        (unsigned __ret; asm volatile(
-           "{\n\t"
-           "  .reg .pred p;\n\t"
-           "  isspacep.shared::cluster p, %1;\n\t"
-           "  selp.u32 %0, 1, 0, p;\n\t"
-           "}\n\t" : "=r"(__ret) : "l"(__ptr));
-         return static_cast<bool>(__ret);),
-        (return false;))
-    }
+      {
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_90,
+          (unsigned __ret; asm volatile(
+             "{\n\t"
+             "  .reg .pred p;\n\t"
+             "  isspacep.shared::cluster p, %1;\n\t"
+             "  selp.u32 %0, 1, 0, p;\n\t"
+             "}\n\t" : "=r"(__ret) : "l"(__ptr));
+           return static_cast<bool>(__ret);),
+          (return false;))
+      }
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return static_cast<bool>(::__isClusterShared(__ptr));), (return false;))
