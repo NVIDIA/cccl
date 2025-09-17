@@ -27,9 +27,10 @@
 #endif // no system header
 
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tuple.h>
+
+#include <cuda/__iterator/counting_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -68,11 +69,11 @@ public:
   };
 
 public:
-  using iterator = thrust::transform_iterator<head_flag_functor, thrust::counting_iterator<IndexType>>;
+  using iterator = thrust::transform_iterator<head_flag_functor, ::cuda::counting_iterator<IndexType>>;
 
   _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred = {})
       : m_begin(thrust::make_transform_iterator(
-          thrust::counting_iterator<IndexType>(0), head_flag_functor(first, binary_pred)))
+          ::cuda::counting_iterator<IndexType>(0), head_flag_functor(first, binary_pred)))
       , m_count(last - first)
   {}
 
