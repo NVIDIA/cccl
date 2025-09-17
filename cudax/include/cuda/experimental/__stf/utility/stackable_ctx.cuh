@@ -979,7 +979,7 @@ public:
     {
       _CCCL_ASSERT(phandle_out != nullptr, "push_while requires non-null conditional handle output parameter");
 
-      // Create config object and call push
+      // Create config object and call push.
       push_while_config config(phandle_out, cudaGraphCondTypeWhile, defaultLaunchValue, flags);
       push(loc, false, config);
     }
@@ -1672,6 +1672,45 @@ public:
                                        const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
   {
     return while_graph_scope_guard(*this, defaultLaunchValue, flags, loc);
+  }
+
+  //! \brief Create RAII scope for repeat loops with automatic counter management
+  //!
+  //! Creates a repeat_graph_scope_guard object that automatically manages the loop counter
+  //! and conditional logic. The [[nodiscard]] attribute ensures the returned object is stored,
+  //! as discarding it would immediately call the destructor and end the scope prematurely.
+  //!
+  //! This is a higher-level abstraction over while_graph_scope that automatically handles:
+  //! - Counter initialization and management
+  //! - Loop termination condition
+  //! - Integration with the while graph system
+  //!
+  //! Example usage:
+  //! ```cpp
+  //! stackable_ctx ctx;
+  //! auto data = ctx.logical_data(...);
+  //!
+  //! {
+  //!   auto guard = ctx.repeat_graph_scope(10);
+  //!   // Tasks added here will run 10 times
+  //!   ctx.parallel_for(data.shape(), data.rw())->*[] __device__(size_t i, auto d) {
+  //!     d(i) += 1.0;
+  //!   };
+  //! } // Automatic cleanup when guard goes out of scope
+  //! ```
+  //!
+  //! \param count Number of iterations to repeat
+  //! \param defaultLaunchValue Default launch value for the conditional node (default: 1)
+  //! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
+  //! \param loc Source location for debugging (defaults to call site)
+  //! \return repeat_graph_scope_guard object that manages the repeat loop lifetime
+  [[nodiscard]] auto repeat_graph_scope(
+    size_t count,
+    unsigned int defaultLaunchValue        = 1,
+    unsigned int flags                     = cudaGraphCondAssignDefault,
+    const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+  {
+    return repeat_graph_scope_guard(*this, count, defaultLaunchValue, flags);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
@@ -3398,98 +3437,88 @@ UNITTEST("graph_scope iterative pattern like stackable2")
 #endif // UNITTESTED_FILE
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
-//! \brief Helper function to repeat a body n times using while loop graphs
+//! \brief RAII guard for repeat loops with automatic counter management
 //!
-//! This function encapsulates the common pattern of creating a counter-based while loop
-//! in CUDA STF. It automatically handles:
+//! This class provides RAII semantics for repeat loops, automatically managing
+//! the counter and conditional logic. The loop body is executed in the scope
+//! between construction and destruction.
+//!
+//! It encapsulates the common pattern of creating a counter-based while loop
+//! in CUDA STF and automatically handles:
 //! - Creating and initializing a loop counter
 //! - Setting up the while graph scope
 //! - Decrementing the counter and controlling the loop continuation
-//!
-//! The returned object provides a scope where you can add tasks that will be repeated.
-//! Use the fluent interface with ->* to add your loop body. The body function is called
-//! once during graph construction to add tasks to the loop.
-//!
-//! \param ctx The stackable context to use for the loop
-//! \param n The number of iterations to perform
 //!
 //! Example usage:
 //! ```cpp
 //! stackable_ctx ctx;
 //! auto data = ctx.logical_data(...);
 //!
-//! repeat_n(ctx, 10)->*[&]() {
-//!   // Loop body - tasks added here will run 10 times
+//! {
+//!   auto guard = ctx.repeat_graph_scope(10);
+//!   // Tasks added here will run 10 times
 //!   ctx.parallel_for(data.shape(), data.rw())->*[] __device__(size_t i, auto d) {
 //!     d(i) += 1.0;
 //!   };
-//! };
+//! } // Automatic scope cleanup
 //! ```
-class repeat_n_helper
+class repeat_graph_scope_guard
 {
+public:
+  explicit repeat_graph_scope_guard(
+    stackable_ctx& ctx,
+    size_t count,
+    unsigned int defaultLaunchValue = 1,
+    unsigned int flags              = cudaGraphCondAssignDefault)
+      : ctx_(ctx)
+      , while_guard_(ctx_, defaultLaunchValue, flags)
+  {
+    if (count == 0)
+    {
+      // For zero iterations, we still need to set up the structures but ensure loop doesn't run
+      auto counter_shape = shape_of<scalar_view<size_t>>();
+      counter_           = ctx_.logical_data(counter_shape);
+
+      // Initialize counter to 0 (loop won't execute)
+      ctx_.parallel_for(box(1), counter_.write())->*[] __device__(size_t, auto counter) {
+        *counter = 0;
+      };
+    }
+    else
+    {
+      // Create counter for remaining iterations
+      auto counter_shape = shape_of<scalar_view<size_t>>();
+      counter_           = ctx_.logical_data(counter_shape);
+
+      // Initialize counter
+      ctx_.parallel_for(box(1), counter_.write())->*[count] __device__(size_t, auto counter) {
+        *counter = count;
+      };
+    }
+  }
+
+  ~repeat_graph_scope_guard()
+  {
+    // Decrement counter and control loop continuation using while_guard's API
+    while_guard_.update_cond(counter_)->*[] __device__(auto counter) {
+      (*counter)--;
+      return (*counter > 0);
+    };
+
+    // while_guard_ destructor will automatically call ctx_.pop()
+  }
+
+  // Non-copyable, non-movable
+  repeat_graph_scope_guard(const repeat_graph_scope_guard&)            = delete;
+  repeat_graph_scope_guard& operator=(const repeat_graph_scope_guard&) = delete;
+  repeat_graph_scope_guard(repeat_graph_scope_guard&&)                 = delete;
+  repeat_graph_scope_guard& operator=(repeat_graph_scope_guard&&)      = delete;
+
 private:
   stackable_ctx& ctx_;
-  size_t n_;
-  unsigned int defaultLaunchValue_;
-  unsigned int flags_;
-
-public:
-  repeat_n_helper(
-    stackable_ctx& ctx, size_t n, unsigned int defaultLaunchValue = 0, unsigned int flags = cudaGraphCondAssignDefault)
-      : ctx_(ctx)
-      , n_(n)
-      , defaultLaunchValue_(defaultLaunchValue)
-      , flags_(flags)
-  {}
-
-  template <typename BodyFunc>
-  void operator->*(BodyFunc&& body)
-  {
-    // Early exit for zero iterations
-    if (n_ == 0)
-    {
-      return;
-    }
-
-    // Create counter for remaining iterations
-    auto counter_shape = shape_of<scalar_view<size_t>>();
-    auto lcounter      = ctx_.logical_data(counter_shape);
-
-    // Initialize counter
-    ctx_.parallel_for(box(1), lcounter.write())->*[=, n = n_] __device__(size_t, auto counter) {
-      *counter = n;
-    };
-
-    // Create while loop scope - RAII handles push_while/pop automatically
-    auto while_guard = ctx_.while_graph_scope(defaultLaunchValue_, flags_);
-
-    // Call user's body function - this is called once to construct the graph
-    body();
-
-    // Decrement counter and control loop continuation
-    auto handle = while_guard.cond_handle();
-    ctx_.parallel_for(box(1), lcounter.rw())->*[handle] __device__(size_t, auto counter) {
-      (*counter)--;
-      bool should_continue = (*counter > 0);
-      cudaGraphSetConditional(handle, should_continue);
-    };
-
-    // RAII: while_guard destructor automatically calls ctx.pop() when scope ends
-  }
+  while_graph_scope_guard while_guard_;
+  stackable_logical_data<scalar_view<size_t>> counter_;
 };
-
-//! \brief Create a repeat_n helper for fluent interface usage
-//!
-//! \param ctx The stackable context to use for the loop
-//! \param n The number of iterations to perform
-//! \param defaultLaunchValue Default launch value for the conditional node (default: 0)
-//! \param flags Conditional flags for the while loop (default: cudaGraphCondAssignDefault)
-//! \return repeat_n_helper object that supports ->* fluent interface
-inline repeat_n_helper repeat_n(
-  stackable_ctx& ctx, size_t n, unsigned int defaultLaunchValue = 0, unsigned int flags = cudaGraphCondAssignDefault)
-{
-  return repeat_n_helper(ctx, n, defaultLaunchValue, flags);
-}
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 } // end namespace cuda::experimental::stf
