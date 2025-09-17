@@ -140,7 +140,7 @@ template <class T>
 _CCCL_CONCEPT HasIteratorCategory =
   _CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::ranges::iterator_t<T>::iterator_category));
 
-// Note the variadic arguents avoid a bug with older clang
+// Note the variadic arguments avoid a bug with older clang
 template <template <class...> class Traits>
 __host__ __device__ void test()
 {
