@@ -10,6 +10,7 @@
 
 #include <cuda/iterator>
 
+#include "test_iterators.h"
 #include "test_macros.h"
 #include "types.h"
 
@@ -20,18 +21,36 @@
 template <template <class...> class Traits>
 __host__ __device__ void test()
 {
-  using Iter       = cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>;
-  using IterTraits = Traits<Iter>;
+  {
+    using Iter       = cuda::transform_input_output_iterator<PlusOne, TimesTwo, int*>;
+    using IterTraits = Traits<Iter>;
 
-  static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::output_iterator_tag>);
-  static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
-  static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
-  static_assert(cuda::std::same_as<typename IterTraits::pointer, void>);
-  static_assert(
-    cuda::std::same_as<typename IterTraits::reference, cuda::__transform_input_output_proxy<int*, PlusOne, TimesTwo>>);
-  static_assert(cuda::std::input_or_output_iterator<cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>>);
-  static_assert(cuda::std::output_iterator<cuda::transform_input_output_iterator<int*, PlusOne, TimesTwo>, int>);
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::output_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::pointer, void>);
+    static_assert(
+      cuda::std::same_as<typename IterTraits::reference, cuda::__transform_input_output_proxy<PlusOne, TimesTwo, int*>>);
+    static_assert(cuda::std::input_or_output_iterator<Iter>);
+    static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+  }
+
+  {
+    using Iter       = cuda::transform_input_output_iterator<PlusOne, TimesTwo, random_access_iterator<int*>>;
+    using IterTraits = Traits<Iter>;
+
+    static_assert(cuda::std::same_as<typename IterTraits::iterator_category, cuda::std::output_iterator_tag>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<typename IterTraits::value_type, int>);
+    static_assert(cuda::std::same_as<typename IterTraits::pointer, void>);
+    static_assert(
+      cuda::std::same_as<typename IterTraits::reference,
+                         cuda::__transform_input_output_proxy<PlusOne, TimesTwo, random_access_iterator<int*>>>);
+    static_assert(cuda::std::input_or_output_iterator<Iter>);
+    static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::__is_cpp17_random_access_iterator<Iter>);
+  }
 }
 
 __host__ __device__ void test()
