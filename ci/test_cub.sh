@@ -134,6 +134,9 @@ if $COMPUTE_SANITIZER; then
 fi
 
 for PRESET in ${PRESETS[@]}; do
+  if [[ -n "${GITHUB_ACTIONS:+x}" ]]; then
+    configure_preset "CUB" "$PRESET" ""
+  fi
   test_preset "CUB (${PRESET})" ${PRESET}
 done
 
