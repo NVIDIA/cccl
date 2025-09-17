@@ -1121,32 +1121,6 @@ public:
       _pop_epilogue();
     }
 
-    ::std::pair<cudaGraphExec_t, cudaStream_t> pop_extract_graph()
-    {
-      // This will acquire the lock, but not release it
-      lock_exclusive();
-
-      _pop_prologue();
-
-      int head_offset    = get_head_offset();
-      auto& current_node = nodes[head_offset].value();
-      auto& current_ctx  = current_node->ctx;
-      _CCCL_ASSERT(current_node->refcnt == 0, "pop_prologue() can only be used on top context");
-
-      // Create an executable graph
-      ::std::shared_ptr<cudaGraphExec_t> exec_g = current_ctx.to_graph_ctx().instantiate();
-
-      return ::std::make_pair(*exec_g, current_node->support_stream);
-    }
-
-    void pop_release_graph()
-    {
-      // The lock was already taken in pop_prologue
-      _pop_epilogue();
-
-      unlock_exclusive();
-    }
-
     // Offset of the root context
     int get_root_offset() const
     {
@@ -1710,16 +1684,6 @@ public:
     unsigned int flags                     = cudaGraphCondAssignDefault,
     const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current());
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
-
-  auto pop_extract_graph()
-  {
-    return pimpl->pop_extract_graph();
-  }
-
-  void pop_release_graph()
-  {
-    return pimpl->pop_release_graph();
-  }
 
   template <typename T>
   auto logical_data(shape_of<T> s)

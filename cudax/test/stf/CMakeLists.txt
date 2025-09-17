@@ -56,8 +56,6 @@ set(stf_test_sources
   local_stf/stackable_move.cu
   local_stf/stackable_nested_lib.cu
   local_stf/stackable_nested.cu
-  local_stf/stackable_extract_graph.cu
-  local_stf/fdtd_stackable.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
   local_stf/stackable_write_back.cu
