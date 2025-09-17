@@ -43,8 +43,8 @@ fi
 find_and_copy_job_artifact_from() {
   root="$1"
   name="$2"
-  if find "$root"/ -maxdepth 1 -name "$name" -type f -printf '' -quit 2>/dev/null; then
-    find "$root"/ -maxdepth 1 -name "$name" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
+  if find "$root"/ -maxdepth 4 -name "$name" -type f -printf '' -quit 2>/dev/null; then
+    find "$root"/ -maxdepth 4 -name "$name" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
   else
     echo "No file matching '$name' found in '$root'."
     return 1
