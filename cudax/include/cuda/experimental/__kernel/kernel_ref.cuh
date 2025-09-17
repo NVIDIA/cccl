@@ -25,22 +25,20 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/string_view>
 
-#include <string>
+#include <cuda/experimental/__kernel/concepts.cuh>
+#include <cuda/experimental/__kernel/traits.cuh>
 
 #include <cuda.h>
 
 namespace cuda::experimental
 {
 
-//! @brief A non-owning representation of a CUDA kernel
+//! @brief A non-owning representation of a CUDA kernel.
 //!
-//! @tparam _Signature The signature of the kernel
-//!
-//! @note The return type of the kernel must be `void`
+//! @tparam _Signature The signature of the kernel in the form `void(Args...)` where `Args...` are the argument types.
 template <class _Signature>
 class kernel_ref
 {
@@ -51,8 +49,8 @@ class kernel_ref
 template <class... _Args>
 class kernel_ref<void(_Args...)>
 {
-  static_assert((true && ... && ::cuda::std::is_trivially_copyable_v<_Args>),
-                "All kernel_ref argument types must be trivially copyable.");
+  static_assert((true && ... && (kernel_argument<_Args> || proclaim_kernel_argument_v<_Args>) ),
+                "All kernel_ref argument types must be valid kernel arguments.");
 
 public:
 #if _CCCL_CTK_BELOW(12, 1)
