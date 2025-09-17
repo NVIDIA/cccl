@@ -197,8 +197,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
           set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
         endif()
       endif()
-      # Disable build cluster for fail tests...?
-      set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_DIST_COMPILE=1)
     else()
       # Add to the active configuration's meta target
       add_dependencies(${config_meta_target} ${test_target})
@@ -218,6 +216,9 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
     endif()
   endif() # Not catch2 test
+
+  # Disable build caching for compile tests
+  set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_CACHE=1)
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
