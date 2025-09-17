@@ -1594,7 +1594,7 @@ a single string buffer.</p>
 <span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="n">d_gather_index</span><span class="p">;</span><span class="w">       </span><span class="c1">// e.g., [2, 1, 4, 3, 0]</span>
 
 <span class="c1">// Initialize an iterator that returns d_gather_index[i] when the i-th item is dereferenced</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">gather_iterator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">make_permutation_iterator</span><span class="p">(</span><span class="n">thrust</span><span class="o">::</span><span class="n">make_counting_iterator</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">gather_iterator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">make_permutation_iterator</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">make_counting_iterator</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
 <span class="n">d_gather_index</span><span class="p">);</span>
 
 <span class="c1">// Returns pointers to the input buffer for each string</span>
@@ -1607,7 +1607,7 @@ a single string buffer.</p>
 <span class="n">GetStringItemSize</span><span class="p">{</span><span class="n">d_string_offsets_old</span><span class="p">});</span>
 
 <span class="c1">// Returns pointers to the output buffer for each string</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">str_ptrs_out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">make_transform_iterator</span><span class="p">(</span><span class="n">thrust</span><span class="o">::</span><span class="n">make_counting_iterator</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">str_ptrs_out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">make_transform_iterator</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">make_counting_iterator</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
 <span class="w">                                                    </span><span class="n">GetPtrToStringItem</span><span class="p">{</span><span class="n">d_string_data_out</span><span class="p">,</span>
 <span class="n">d_string_offsets_new</span><span class="p">});</span>
 

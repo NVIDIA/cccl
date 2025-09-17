@@ -1600,7 +1600,7 @@
 <span class="kt">uint32_t</span><span class="w"> </span><span class="o">*</span><span class="n">d_offsets</span><span class="p">;</span><span class="w">          </span><span class="c1">// e.g., [0, 2, 5, 6, 9, 14]</span>
 
 <span class="c1">// Returns a constant iterator to the element of the i-th run</span>
-<span class="n">thrust</span><span class="o">::</span><span class="n">counting_iterator</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">iota</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">cuda</span><span class="o">::</span><span class="n">counting_iterator</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">iota</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">iterators_in</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">make_transform_iterator</span><span class="p">(</span><span class="n">iota</span><span class="p">,</span><span class="w"> </span><span class="n">GetIteratorToRange</span><span class="p">{</span><span class="n">d_data_in</span><span class="p">});</span>
 
 <span class="c1">// Returns the run length of the i-th run</span>
