@@ -21,8 +21,9 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-   - { jobs: ['run_gpu'], project: 'target', ctk: ['13.X'], cxx: ['gcc'], gpu: 'l4',
-       args: '--preset cub-cpp20 --ctest-targets "cub.cpp20.test.device_radix_sort_decomposer_fail.lid_0"' }
+    # Build and test CUB on current CTK:
+    - {jobs: ['build'],                                              project: 'cub', std: 'max', cxx: ['gcc']}
+    - {jobs: ['test_nolid', 'test_lid0', 'test_lid1',  'test_lid2'], project: 'cub', std: 'max', cxx: ['gcc'], gpu: 'l4'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
