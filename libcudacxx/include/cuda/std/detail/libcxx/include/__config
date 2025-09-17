@@ -155,6 +155,9 @@ extern "C++" {
 #  elif _CCCL_COMPILER(GCC)
 #    define _CCCL_HAS_BUILTIN_128_ATOMICS() 0
 #    define _CCCL_HAS_LIBRARY_128_ATOMICS() 1
+#  else
+#    define _CCCL_HAS_BUILTIN_128_ATOMICS() 0
+#    define _CCCL_HAS_LIBRARY_128_ATOMICS() 0
 #  endif
 
 #  define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
