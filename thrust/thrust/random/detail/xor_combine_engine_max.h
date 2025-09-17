@@ -143,12 +143,15 @@ struct xor_combine_engine_max_aux_2
       return xor_combine_engine_max_aux_case2<result_type, a, b, d>::value;
     }
     // otherwise if a * 2^3 >= b, then case 3
-    if constexpr (a * constants::two_to_the_d >= b)
+    else if constexpr (a * constants::two_to_the_d >= b)
     {
       return xor_combine_engine_max_aux_case3<result_type, a, b, d>::value;
     }
-    // otherwise, case 4
-    return xor_combine_engine_max_aux_case4<result_type, a, b, d>::value;
+    else
+    {
+      // otherwise, case 4
+      return xor_combine_engine_max_aux_case4<result_type, a, b, d>::value;
+    }
   }
 
   static constexpr result_type value = compute_value();
