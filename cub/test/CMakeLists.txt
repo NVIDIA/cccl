@@ -197,6 +197,8 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
           set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
         endif()
       endif()
+      # Disable build cluster for fail tests...?
+      set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_DIST_COMPILE=1)
     else()
       # Add to the active configuration's meta target
       add_dependencies(${config_meta_target} ${test_target})
