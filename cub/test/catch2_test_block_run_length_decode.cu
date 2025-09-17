@@ -330,7 +330,7 @@ void TestAlgorithmSpecialisation()
   constexpr uint32_t THREADS_PER_BLOCK = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
   constexpr uint32_t RUNS_PER_BLOCK    = RUNS_PER_THREAD * THREADS_PER_BLOCK;
 
-  using RunItemT      = int;
+  using RunItemT      = float;
   using RunLengthT    = uint32_t;
   using ItemItT       = cuda::counting_iterator<RunItemT>;
   using RunLengthsItT = thrust::transform_iterator<ModOp, cuda::counting_iterator<RunLengthT>>;
