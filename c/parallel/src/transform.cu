@@ -301,8 +301,12 @@ struct __align__({3}) output_storage_t {{
           [[fallthrough]];
         case transform::cdt::Algorithm::ublkcp:
           return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
+        default:
+          _CCCL_UNREACHABLE();
+          // Appease NVCC's #940-D on Windows
+          ::std::abort();
+          return {};
       }
-      _CCCL_UNREACHABLE();
     }();
 
     std::string final_src = std::format(
@@ -543,8 +547,12 @@ struct __align__({5}) output_storage_t {{
           [[fallthrough]];
         case transform::cdt::Algorithm::ublkcp:
           return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
+        default:
+          _CCCL_UNREACHABLE();
+          // Appease NVCC's #940-D on Windows
+          ::std::abort();
+          return {};
       }
-      _CCCL_UNREACHABLE();
     }();
 
     std::string final_src = std::format(
