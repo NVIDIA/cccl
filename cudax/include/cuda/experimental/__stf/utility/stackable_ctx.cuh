@@ -550,8 +550,8 @@ public:
           // Get the body graph from the conditional node
           sub_graph = cParams.conditional.phGraph_out[0];
         }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
         else
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
         {
           // If there is no conditional node, the entire graph is the sub-graph
           sub_graph = graph;
