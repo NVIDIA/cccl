@@ -34,50 +34,109 @@ namespace cuda::experimental::io
 namespace __detail
 {
 
-// Base template for driver parameter attributes
-template <auto _Param, typename _Type>
-struct __driver_param_impl
+// Unified attribute base and fetchers
+template <class _Fetcher>
+struct __driver_attr
 {
-  using type = _Type;
-
-  [[nodiscard]] constexpr auto operator()() const
+  using type = decltype(::cuda::std::declval<_Fetcher>()());
+  [[nodiscard]] type operator()() const
   {
-    return static_cast<type>(_get_parameter_value());
-  }
-
-private:
-  [[nodiscard]] auto _get_parameter_value() const
-  {
-    if constexpr (::cuda::std::is_same_v<type, size_t>)
-    {
-      size_t value;
-      CUfileError_t error = cuFileGetParameterSizeT(static_cast<CUFileSizeTConfigParameter_t>(_Param), &value);
-      check_cufile_result(error, "cuFileGetParameterSizeT");
-      return value;
-    }
-    else if constexpr (::cuda::std::is_same_v<type, bool>)
-    {
-      bool value;
-      CUfileError_t error = cuFileGetParameterBool(static_cast<CUFileBoolConfigParameter_t>(_Param), &value);
-      check_cufile_result(error, "cuFileGetParameterBool");
-      return value;
-    }
-    else
-    {
-      static_assert(::cuda::std::is_same_v<type, void>, "Unsupported parameter type");
-    }
+    return _Fetcher{}();
   }
 };
 
-// Template for size_t parameters
 template <auto _Param>
-struct __driver_param_size_t : __driver_param_impl<_Param, size_t>
-{};
+struct __param_size_t_fetcher
+{
+  size_t operator()() const
+  {
+    size_t value{};
+    CUfileError_t error = cuFileGetParameterSizeT(static_cast<CUFileSizeTConfigParameter_t>(_Param), &value);
+    check_cufile_result(error, "cuFileGetParameterSizeT");
+    return value;
+  }
+};
 
-// Template for bool parameters
 template <auto _Param>
-struct __driver_param_bool : __driver_param_impl<_Param, bool>
-{};
+struct __param_bool_fetcher
+{
+  bool operator()() const
+  {
+    bool value{};
+    CUfileError_t error = cuFileGetParameterBool(static_cast<CUFileBoolConfigParameter_t>(_Param), &value);
+    check_cufile_result(error, "cuFileGetParameterBool");
+    return value;
+  }
+};
+
+// query CUfileDrvProps_t once and apply accessor
+template <class _Accessor>
+inline auto __query_driver_property(_Accessor __accessor)
+{
+  CUfileDrvProps_t __props{};
+  CUfileError_t __error = cuFileDriverGetProperties(&__props);
+  check_cufile_result(__error, "cuFileDriverGetProperties");
+  return __accessor(__props);
+}
+
+// Property fetcher: Accessor must be a stateless functor
+//   auto operator()(const CUfileDrvProps_t&) -> Return
+template <class _Accessor>
+struct __props_fetcher
+{
+  auto operator()() const
+  {
+    return __query_driver_property(_Accessor{});
+  }
+};
+
+// Accessors for common property patterns
+struct __nvfs_major_accessor
+{
+  unsigned int operator()(const CUfileDrvProps_t& __p) const
+  {
+    return __p.nvfs.major_version;
+  }
+};
+struct __nvfs_minor_accessor
+{
+  unsigned int operator()(const CUfileDrvProps_t& __p) const
+  {
+    return __p.nvfs.minor_version;
+  }
+};
+struct __feature_flags_accessor
+{
+  unsigned int operator()(const CUfileDrvProps_t& __p) const
+  {
+    return __p.fflags;
+  }
+};
+
+template <unsigned int _Bit>
+struct __status_flag_accessor
+{
+  bool operator()(const CUfileDrvProps_t& __p) const
+  {
+    return (__p.nvfs.dstatusflags & (1u << _Bit)) != 0u;
+  }
+};
+template <unsigned int _Bit>
+struct __control_flag_accessor
+{
+  bool operator()(const CUfileDrvProps_t& __p) const
+  {
+    return (__p.nvfs.dcontrolflags & (1u << _Bit)) != 0u;
+  }
+};
+template <unsigned int _Bit>
+struct __feature_flag_accessor
+{
+  bool operator()(const CUfileDrvProps_t& __p) const
+  {
+    return (__p.fflags & (1u << _Bit)) != 0u;
+  }
+};
 
 } // namespace __detail
 
@@ -92,213 +151,123 @@ namespace driver_attributes
 // ----------------------
 // Parameters (SizeT)
 // ----------------------
-using profile_stats_t = __detail::__driver_param_size_t<CUFILE_PARAM_PROFILE_STATS>;
+using profile_stats_t = __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROFILE_STATS>>;
 static constexpr profile_stats_t profile_stats{};
-using execution_max_io_queue_depth_t = __detail::__driver_param_size_t<CUFILE_PARAM_EXECUTION_MAX_IO_QUEUE_DEPTH>;
+using execution_max_io_queue_depth_t =
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_EXECUTION_MAX_IO_QUEUE_DEPTH>>;
 static constexpr execution_max_io_queue_depth_t execution_max_io_queue_depth{};
-using execution_max_io_threads_t = __detail::__driver_param_size_t<CUFILE_PARAM_EXECUTION_MAX_IO_THREADS>;
+using execution_max_io_threads_t =
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_EXECUTION_MAX_IO_THREADS>>;
 static constexpr execution_max_io_threads_t execution_max_io_threads{};
 using execution_min_io_threshold_size_kb_t =
-  __detail::__driver_param_size_t<CUFILE_PARAM_EXECUTION_MIN_IO_THRESHOLD_SIZE_KB>;
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_EXECUTION_MIN_IO_THRESHOLD_SIZE_KB>>;
 static constexpr execution_min_io_threshold_size_kb_t execution_min_io_threshold_size_kb{};
 using execution_max_request_parallelism_t =
-  __detail::__driver_param_size_t<CUFILE_PARAM_EXECUTION_MAX_REQUEST_PARALLELISM>;
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_EXECUTION_MAX_REQUEST_PARALLELISM>>;
 static constexpr execution_max_request_parallelism_t execution_max_request_parallelism{};
 using properties_max_direct_io_size_kb_t =
-  __detail::__driver_param_size_t<CUFILE_PARAM_PROPERTIES_MAX_DIRECT_IO_SIZE_KB>;
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROPERTIES_MAX_DIRECT_IO_SIZE_KB>>;
 static constexpr properties_max_direct_io_size_kb_t properties_max_direct_io_size_kb{};
 using properties_max_device_cache_size_kb_t =
-  __detail::__driver_param_size_t<CUFILE_PARAM_PROPERTIES_MAX_DEVICE_CACHE_SIZE_KB>;
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROPERTIES_MAX_DEVICE_CACHE_SIZE_KB>>;
 static constexpr properties_max_device_cache_size_kb_t properties_max_device_cache_size_kb{};
 using properties_per_buffer_cache_size_kb_t =
-  __detail::__driver_param_size_t<CUFILE_PARAM_PROPERTIES_PER_BUFFER_CACHE_SIZE_KB>;
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROPERTIES_PER_BUFFER_CACHE_SIZE_KB>>;
 static constexpr properties_per_buffer_cache_size_kb_t properties_per_buffer_cache_size_kb{};
 using properties_max_device_pinned_mem_size_kb_t =
-  __detail::__driver_param_size_t<CUFILE_PARAM_PROPERTIES_MAX_DEVICE_PINNED_MEM_SIZE_KB>;
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROPERTIES_MAX_DEVICE_PINNED_MEM_SIZE_KB>>;
 static constexpr properties_max_device_pinned_mem_size_kb_t properties_max_device_pinned_mem_size_kb{};
-using properties_io_batchsize_t = __detail::__driver_param_size_t<CUFILE_PARAM_PROPERTIES_IO_BATCHSIZE>;
+using properties_io_batchsize_t =
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROPERTIES_IO_BATCHSIZE>>;
 static constexpr properties_io_batchsize_t properties_io_batchsize{};
-using pollthreshold_size_kb_t = __detail::__driver_param_size_t<CUFILE_PARAM_POLLTHRESHOLD_SIZE_KB>;
+using pollthreshold_size_kb_t =
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_POLLTHRESHOLD_SIZE_KB>>;
 static constexpr pollthreshold_size_kb_t pollthreshold_size_kb{};
-using properties_batch_io_timeout_ms_t = __detail::__driver_param_size_t<CUFILE_PARAM_PROPERTIES_BATCH_IO_TIMEOUT_MS>;
+using properties_batch_io_timeout_ms_t =
+  __detail::__driver_attr<__detail::__param_size_t_fetcher<CUFILE_PARAM_PROPERTIES_BATCH_IO_TIMEOUT_MS>>;
 static constexpr properties_batch_io_timeout_ms_t properties_batch_io_timeout_ms{};
 
 // ----------------------
 // Parameters (Bool)
 // ----------------------
-using properties_use_poll_mode_t = __detail::__driver_param_bool<CUFILE_PARAM_PROPERTIES_USE_POLL_MODE>;
+using properties_use_poll_mode_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_PROPERTIES_USE_POLL_MODE>>;
 static constexpr properties_use_poll_mode_t properties_use_poll_mode{};
-using properties_allow_compat_mode_t = __detail::__driver_param_bool<CUFILE_PARAM_PROPERTIES_ALLOW_COMPAT_MODE>;
+using properties_allow_compat_mode_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_PROPERTIES_ALLOW_COMPAT_MODE>>;
 static constexpr properties_allow_compat_mode_t properties_allow_compat_mode{};
-using force_compat_mode_t = __detail::__driver_param_bool<CUFILE_PARAM_FORCE_COMPAT_MODE>;
+using force_compat_mode_t = __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_FORCE_COMPAT_MODE>>;
 static constexpr force_compat_mode_t force_compat_mode{};
-using fs_misc_api_check_aggressive_t = __detail::__driver_param_bool<CUFILE_PARAM_FS_MISC_API_CHECK_AGGRESSIVE>;
+using fs_misc_api_check_aggressive_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_FS_MISC_API_CHECK_AGGRESSIVE>>;
 static constexpr fs_misc_api_check_aggressive_t fs_misc_api_check_aggressive{};
-using execution_parallel_io_t = __detail::__driver_param_bool<CUFILE_PARAM_EXECUTION_PARALLEL_IO>;
+using execution_parallel_io_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_EXECUTION_PARALLEL_IO>>;
 static constexpr execution_parallel_io_t execution_parallel_io{};
-using profile_nvtx_t = __detail::__driver_param_bool<CUFILE_PARAM_PROFILE_NVTX>;
+using profile_nvtx_t = __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_PROFILE_NVTX>>;
 static constexpr profile_nvtx_t profile_nvtx{};
-using properties_allow_system_memory_t = __detail::__driver_param_bool<CUFILE_PARAM_PROPERTIES_ALLOW_SYSTEM_MEMORY>;
+using properties_allow_system_memory_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_PROPERTIES_ALLOW_SYSTEM_MEMORY>>;
 static constexpr properties_allow_system_memory_t properties_allow_system_memory{};
-using use_pcip2pdma_t = __detail::__driver_param_bool<CUFILE_PARAM_USE_PCIP2PDMA>;
+using use_pcip2pdma_t = __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_USE_PCIP2PDMA>>;
 static constexpr use_pcip2pdma_t use_pcip2pdma{};
-using prefer_io_uring_t = __detail::__driver_param_bool<CUFILE_PARAM_PREFER_IO_URING>;
+using prefer_io_uring_t = __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_PREFER_IO_URING>>;
 static constexpr prefer_io_uring_t prefer_io_uring{};
-using force_odirect_mode_t = __detail::__driver_param_bool<CUFILE_PARAM_FORCE_ODIRECT_MODE>;
+using force_odirect_mode_t = __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_FORCE_ODIRECT_MODE>>;
 static constexpr force_odirect_mode_t force_odirect_mode{};
-using skip_topology_detection_t = __detail::__driver_param_bool<CUFILE_PARAM_SKIP_TOPOLOGY_DETECTION>;
+using skip_topology_detection_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_SKIP_TOPOLOGY_DETECTION>>;
 static constexpr skip_topology_detection_t skip_topology_detection{};
-using stream_memops_bypass_t = __detail::__driver_param_bool<CUFILE_PARAM_STREAM_MEMOPS_BYPASS>;
+using stream_memops_bypass_t =
+  __detail::__driver_attr<__detail::__param_bool_fetcher<CUFILE_PARAM_STREAM_MEMOPS_BYPASS>>;
 static constexpr stream_memops_bypass_t stream_memops_bypass{};
 
 // ----------------------
 // Properties via cuFileDriverGetProperties
 // ----------------------
 // Fetch properties from cuFileDriverGetProperties and extract specific fields
-struct nvfs_major_version_t
-{
-  using type = unsigned int;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return props.nvfs.major_version;
-  }
-};
+using nvfs_major_version_t = __detail::__driver_attr<__detail::__props_fetcher<__detail::__nvfs_major_accessor>>;
 static constexpr nvfs_major_version_t nvfs_major_version{};
 
-struct nvfs_minor_version_t
-{
-  using type = unsigned int;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return props.nvfs.minor_version;
-  }
-};
+using nvfs_minor_version_t = __detail::__driver_attr<__detail::__props_fetcher<__detail::__nvfs_minor_accessor>>;
 static constexpr nvfs_minor_version_t nvfs_minor_version{};
 
-struct feature_flags_t
-{
-  using type = unsigned int;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return props.fflags;
-  }
-};
+using feature_flags_t = __detail::__driver_attr<__detail::__props_fetcher<__detail::__feature_flags_accessor>>;
 static constexpr feature_flags_t feature_flags{};
 
 // Filesystem support (from dstatusflags)
-struct lustre_supported_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.nvfs.dstatusflags & (1 << CU_FILE_LUSTRE_SUPPORTED)) != 0;
-  }
-};
+using lustre_supported_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__status_flag_accessor<CU_FILE_LUSTRE_SUPPORTED>>>;
 static constexpr lustre_supported_t lustre_supported{};
 
-struct nfs_supported_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.nvfs.dstatusflags & (1 << CU_FILE_NFS_SUPPORTED)) != 0;
-  }
-};
+using nfs_supported_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__status_flag_accessor<CU_FILE_NFS_SUPPORTED>>>;
 static constexpr nfs_supported_t nfs_supported{};
 
-struct nvme_supported_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.nvfs.dstatusflags & (1 << CU_FILE_NVME_SUPPORTED)) != 0;
-  }
-};
+using nvme_supported_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__status_flag_accessor<CU_FILE_NVME_SUPPORTED>>>;
 static constexpr nvme_supported_t nvme_supported{};
 
 // Feature flags (fflags)
-struct dynamic_routing_supported_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.fflags & (1 << CU_FILE_DYN_ROUTING_SUPPORTED)) != 0;
-  }
-};
+using dynamic_routing_supported_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__feature_flag_accessor<CU_FILE_DYN_ROUTING_SUPPORTED>>>;
 static constexpr dynamic_routing_supported_t dynamic_routing_supported{};
 
-struct batch_io_supported_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.fflags & (1 << CU_FILE_BATCH_IO_SUPPORTED)) != 0;
-  }
-};
+using batch_io_supported_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__feature_flag_accessor<CU_FILE_BATCH_IO_SUPPORTED>>>;
 static constexpr batch_io_supported_t batch_io_supported{};
 
-struct streams_supported_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.fflags & (1 << CU_FILE_STREAMS_SUPPORTED)) != 0;
-  }
-};
+using streams_supported_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__feature_flag_accessor<CU_FILE_STREAMS_SUPPORTED>>>;
 static constexpr streams_supported_t streams_supported{};
 
 // Control flags (dcontrolflags)
-struct use_poll_mode_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.nvfs.dcontrolflags & (1 << CU_FILE_USE_POLL_MODE)) != 0;
-  }
-};
+using use_poll_mode_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__control_flag_accessor<CU_FILE_USE_POLL_MODE>>>;
 static constexpr use_poll_mode_t use_poll_mode{};
 
-struct allow_compat_mode_t
-{
-  using type = bool;
-  type operator()() const
-  {
-    CUfileDrvProps_t props{};
-    CUfileError_t error = cuFileDriverGetProperties(&props);
-    check_cufile_result(error, "cuFileDriverGetProperties");
-    return (props.nvfs.dcontrolflags & (1 << CU_FILE_ALLOW_COMPAT_MODE)) != 0;
-  }
-};
+using allow_compat_mode_t =
+  __detail::__driver_attr<__detail::__props_fetcher<__detail::__control_flag_accessor<CU_FILE_ALLOW_COMPAT_MODE>>>;
 static constexpr allow_compat_mode_t allow_compat_mode{};
 } // namespace driver_attributes
 
