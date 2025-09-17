@@ -505,7 +505,7 @@ public:
       graph_ctx_node(ctx_node_base* parent_node,
                      async_resources_handle handle,
                      const _CUDA_VSTD::source_location& loc,
-                     const push_while_config& config = push_while_config{})
+                     [[maybe_unused]] const push_while_config& config = push_while_config{})
       {
         // Graph context nodes create and set up the internal CUDA graph
         _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
