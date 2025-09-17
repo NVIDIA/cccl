@@ -25,6 +25,7 @@ set(stf_example_codegen_sources
   custom_data_interface.cu
   fdtd_mgpu.cu
   fdtd_while.cu
+  fdtd_repeat_n.cu
   frozen_data_init.cu
   graph_algorithms/degree_centrality.cu
   graph_algorithms/jaccard.cu
