@@ -149,8 +149,8 @@ private:
   {
     for (int offset = linear_tid * minimum_align; offset < num_bytes; offset += block_threads * minimum_align)
     {
-      const auto thread_src = gmem_src + offset;
-      const auto thread_dst = smem_dst + offset;
+      [[maybe_unused]] const auto thread_src = gmem_src + offset;
+      [[maybe_unused]] const auto thread_dst = smem_dst + offset;
 // LDGSTS borrowed from cuda::memcpy_async, assumes 16 byte alignment to avoid L1 (.cg)
 #if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) // WAR for compiler state space issues
       NV_IF_TARGET(NV_PROVIDES_SM_80,
@@ -365,7 +365,7 @@ public:
   _CCCL_HOST_DEVICE static constexpr int SharedBufferAlignBytes()
   {
     static_assert(::cuda::std::is_trivially_copyable_v<T>);
-    return (::cuda::std::max) (int{alignof(T)}, minimum_align);
+    return (::cuda::std::max)(int{alignof(T)}, minimum_align);
   }
 
   //! @brief Returns the size needed for the shared memory destination buffer.
