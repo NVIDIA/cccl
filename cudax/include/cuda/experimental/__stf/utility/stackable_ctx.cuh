@@ -1524,6 +1524,7 @@ public:
     stackable_ctx& ctx_;
   };
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
   //! \brief RAII guard for while loop contexts with conditional graphs
   //!
   //! This guard automatically creates a while loop context using push_while() on construction
@@ -1548,7 +1549,6 @@ public:
       ctx_.pop();
     }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
     //! \brief Get the conditional handle for controlling the while loop
     //! \return The conditional handle value
     cudaGraphConditionalHandle cond_handle() const
@@ -1618,7 +1618,6 @@ public:
     {
       return condition_update_scope(ctx_, cond_handle(), args...); // Simple copy instead of forwarding
     }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
     // Non-copyable, non-movable
     while_graph_scope_guard(const while_graph_scope_guard&)            = delete;
@@ -1630,6 +1629,7 @@ public:
     stackable_ctx& ctx_;
     cudaGraphConditionalHandle conditional_handle_{};
   };
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   //! \brief Create RAII scope that automatically handles push/pop
   //!
@@ -3355,7 +3355,7 @@ UNITTEST("graph_scope multiple sequential scopes")
   ctx.finalize();
 };
 
-UNITTEST("graph_scope with temporary data")
+inline void test_graph_scope_with_tmp()
 {
   stackable_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
@@ -3388,7 +3388,12 @@ UNITTEST("graph_scope with temporary data")
   ctx.finalize();
 };
 
-UNITTEST("graph_scope iterative pattern like stackable2")
+UNITTEST("graph_scope with temporary data")
+{
+  test_graph_scope_with_tmp();
+}
+
+inline void test_graph_scope()
 {
   stackable_ctx ctx;
 
@@ -3404,7 +3409,7 @@ UNITTEST("graph_scope iterative pattern like stackable2")
   // Test iterative pattern: {tmp = a, a++; tmp*=2; a+=tmp} using graph_scope RAII
   for (size_t iter = 0; iter < 3; iter++) // Use fewer iterations for faster testing
   {
-    auto graph = ctx.graph_scope(); // RAII: automatic push/pop (like stackable2.cu)
+    auto graph = ctx.graph_scope(); // RAII: automatic push/pop
 
     auto tmp = ctx.logical_data(lA.shape()).set_symbol("tmp");
 
@@ -3429,6 +3434,11 @@ UNITTEST("graph_scope iterative pattern like stackable2")
 
   ctx.finalize();
 };
+
+UNITTEST("graph_scope iterative pattern")
+{
+  test_graph_scope();
+}
 
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
