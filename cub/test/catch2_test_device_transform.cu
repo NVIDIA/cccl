@@ -8,7 +8,6 @@
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
@@ -29,6 +28,7 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
 
 using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
@@ -70,7 +70,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
   CAPTURE(c2h::type_name<offset_t>());
   const auto num_items = detail::make_large_offset<offset_t>();
 
-  auto in_it              = thrust::make_counting_iterator(offset_t{0});
+  auto in_it              = cuda::make_counting_iterator(offset_t{0});
   auto expected_result_it = in_it;
 
   // Prepare helper to check results
@@ -90,9 +90,9 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
   CAPTURE(c2h::type_name<offset_t>());
   const offset_t num_items = detail::make_large_offset<offset_t>();
 
-  auto a_it               = thrust::make_counting_iterator(offset_t{0});
+  auto a_it               = cuda::make_counting_iterator(offset_t{0});
   auto b_it               = thrust::make_constant_iterator(offset_t{42});
-  auto expected_result_it = thrust::make_counting_iterator(offset_t{42});
+  auto expected_result_it = cuda::make_counting_iterator(offset_t{42});
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_items);
@@ -371,11 +371,22 @@ struct give_me_five
   }
 };
 
+C2H_TEST("DeviceTransform::Generate", "[device][transform]")
+{
+  const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  generate(result.begin(), num_items, give_me_five{});
+
+  // compute reference and verify
+  c2h::device_vector<int> reference(num_items, 5);
+  REQUIRE(reference == result);
+}
+
 C2H_TEST("DeviceTransform::Fill", "[device][transform]")
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<int> result(num_items, thrust::no_init);
-  fill(result.begin(), num_items, give_me_five{});
+  fill(result.begin(), num_items, 5);
 
   // compute reference and verify
   c2h::device_vector<int> reference(num_items, 5);
@@ -386,8 +397,8 @@ C2H_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  thrust::counting_iterator<type> a{0};
-  thrust::counting_iterator<type> b{10};
+  cuda::counting_iterator<type> a{0};
+  cuda::counting_iterator<type> b{10};
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
   transform_many(cuda::std::make_tuple(a, b), result.begin(), num_items, cuda::std::plus<type>{});
@@ -431,7 +442,7 @@ C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][tran
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  thrust::counting_iterator<type> a{0};
+  cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 

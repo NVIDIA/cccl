@@ -4,7 +4,7 @@
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda12.9-conda",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.10-cuda13.0-conda",
     "--ulimit",
     "nofile=500000"
   ],
@@ -33,7 +33,7 @@
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "SCCACHE_VERSION": "rapids",
     "CUDAARCHS": "75-real",
-    "CUDA_VERSION": "12.9",
+    "CUDA_VERSION": "13.0",
     "DEFAULT_CONDA_ENV": "rapids",
     "PYTHONSAFEPATH": "1",
     "PYTHONUNBUFFERED": "1",
@@ -57,7 +57,7 @@
   "initializeCommand": [
     "/bin/bash",
     "-c",
-    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,cugraph,cugraph-gnn}"
+    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cumlprims_mg,cuml,cugraph,cugraph-gnn}"
   ],
   "postCreateCommand": [
     "/bin/bash",
@@ -81,6 +81,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cudf,target=/home/coder/cudf,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/raft,target=/home/coder/raft,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuvs,target=/home/coder/cuvs,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/ci/rapids/.repos/cumlprims_mg,target=/home/coder/cumlprims_mg,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuml,target=/home/coder/cuml,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph-gnn,target=/home/coder/cugraph-gnn,type=bind,consistency=consistent",

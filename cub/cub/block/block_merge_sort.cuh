@@ -383,7 +383,7 @@ public:
        int valid_items,
        KeyT oob_default)
   {
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // if last tile, find valid max_key
       // and fill the remaining keys with it
@@ -417,8 +417,8 @@ public:
     for (int target_merged_threads_number = 2; target_merged_threads_number <= NUM_THREADS;
          target_merged_threads_number *= 2)
     {
-      int merged_threads_number = target_merged_threads_number / 2;
-      int mask                  = target_merged_threads_number - 1;
+      const int merged_threads_number = target_merged_threads_number / 2;
+      const int mask                  = target_merged_threads_number - 1;
 
       Sync();
 
@@ -435,23 +435,23 @@ public:
 
       int indices[ITEMS_PER_THREAD];
 
-      int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
-      int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
-      int size  = ITEMS_PER_THREAD * merged_threads_number;
+      const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
+      const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
+      const int size  = ITEMS_PER_THREAD * merged_threads_number;
 
-      int thread_idx_in_thread_group_being_merged = mask & linear_tid;
+      const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      const int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      int keys1_beg = (::cuda::std::min) (valid_items, start);
-      int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
-      int keys2_beg = keys1_end;
-      int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
+      const int keys1_beg = (::cuda::std::min) (valid_items, start);
+      const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
+      const int keys2_beg = keys1_end;
+      const int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
 
-      int keys1_count = keys1_end - keys1_beg;
-      int keys2_count = keys2_end - keys2_beg;
+      const int keys1_count = keys1_end - keys1_beg;
+      const int keys2_count = keys2_end - keys2_beg;
 
-      int partition_diag = MergePath(
+      const int partition_diag = MergePath(
         &temp_storage.keys_shared[keys1_beg],
         &temp_storage.keys_shared[keys2_beg],
         keys1_count,
@@ -459,12 +459,12 @@ public:
         diag,
         compare_op);
 
-      int keys1_beg_loc   = keys1_beg + partition_diag;
-      int keys1_end_loc   = keys1_end;
-      int keys2_beg_loc   = keys2_beg + diag - partition_diag;
-      int keys2_end_loc   = keys2_end;
-      int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
-      int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
+      const int keys1_beg_loc   = keys1_beg + partition_diag;
+      const int keys1_end_loc   = keys1_end;
+      const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
+      const int keys2_end_loc   = keys2_end;
+      const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
+      const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
       SerialMerge(
         &temp_storage.keys_shared[0],
         keys1_beg_loc,
@@ -476,7 +476,7 @@ public:
         compare_op,
         oob_default);
 
-      if (!KEYS_ONLY)
+      if constexpr (!KEYS_ONLY)
       {
         Sync();
 
