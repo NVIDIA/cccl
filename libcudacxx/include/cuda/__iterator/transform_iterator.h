@@ -173,6 +173,11 @@ public:
     ::cuda::std::remove_cvref_t<::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iter>>>;
   using difference_type = ::cuda::std::iter_difference_t<_Iter>;
 
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using pointer   = void;
+  using reference = value_type;
+
   //! @brief Default constructs a @c transform_iterator with a value initialized iterator and functor
 #if _CCCL_HAS_CONCEPTS()
   _CCCL_EXEC_CHECK_DISABLE
