@@ -129,6 +129,7 @@ runs:
         #! /usr/bin/env bash
 
         set -euo pipefail
+        ulimit -n $(ulimit -Hn)
 
         # Need this for git to trust the docker-mounted workspace:
         git config --global --add safe.directory "$(pwd)"
