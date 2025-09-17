@@ -795,7 +795,7 @@ public:
     auto dplace = sub_exec_place.affine_data_place();
 
     // Get backend context and stream once
-    cudaStream_t stream = {};
+    [[maybe_unused]] cudaStream_t stream;
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       stream = t.get_stream();
