@@ -1811,6 +1811,13 @@ public:
 
 public:
   // Wrapper task that wraps the underlying task and handles deferred data pushes
+  //
+  // There is a significant complication with dynamic tasks where we can add
+  // deps dynamically because one may have a write-only access on a logical
+  // data, and then a read-only access on the same logical data which will be
+  // transformed to a rw access: it is thus not possible to eagerly import
+  // logical data from a parent context, and we have to entirely defer the
+  // creation of the task until we know all dependencies.
   template <typename UnderlyingTask>
   class stackable_wrapper_task
   {
