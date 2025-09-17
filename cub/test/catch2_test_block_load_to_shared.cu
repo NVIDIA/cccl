@@ -55,7 +55,7 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
   constexpr int tile_size             = ItemsPerThread * ThreadsInBlock;
   constexpr int buffer_align          = block_load2sh_t::template SharedBufferAlignBytes<T>();
   constexpr int buffer_size           = block_load2sh_t::template SharedBufferSizeBytes<T>(tile_size);
-  constexpr int total_smem            = ::cuda::round_up(sizeof(storage_t), buffer_align) + buffer_size;
+  constexpr int total_smem            = ::cuda::round_up(int{sizeof(storage_t)}, buffer_align) + buffer_size;
   constexpr bool sufficient_resources = total_smem <= cub::detail::max_smem_per_block;
   CAPTURE(ThreadsInBlock, ItemsPerThread, sufficient_resources, c2h::type_name<T>());
 
