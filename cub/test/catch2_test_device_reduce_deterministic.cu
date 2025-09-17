@@ -157,7 +157,8 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
   c2h::device_vector<type> d_output(1);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
-  cub::DeviceReduce::Reduce(d_input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+  auto error = cub::DeviceReduce::Reduce(d_input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
+  REQUIRE(error == cudaSuccess);
 
   // expected sum must be zero, as there would be equal number of positive and negative values
   // in the input and they will cancel each other out
