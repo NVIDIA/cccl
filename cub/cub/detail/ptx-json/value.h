@@ -29,6 +29,7 @@
 
 #include <cub/detail/ptx-json/string.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
