@@ -240,6 +240,33 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
             init_t,
             accumulator_t>)};
     }
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
+    {
+      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
+      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
+        decltype(d_in),
+        decltype(raw_ptr),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>;
+
+      REQUIRE(
+        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
+    }
     else
     {
       using policy_t              = cub::detail::rfa::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
@@ -298,7 +325,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   using op_t          = cuda::std::plus<>;
   using num_items_t   = int;
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
-  using transform_t   = ::cuda::std::identity;
+  using transform_t   = cuda::std::identity;
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
@@ -338,6 +365,33 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
             op_t,
             init_t,
             accumulator_t>)};
+    }
+    else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
+    {
+      using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
+      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
+        decltype(d_in),
+        decltype(raw_ptr),
+        offset_t,
+        op_t,
+        init_t,
+        accumulator_t,
+        transform_t>;
+
+      REQUIRE(cudaSuccess
+              == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}));
+
+      return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
+        cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
+          policy_t,
+          decltype(d_in),
+          decltype(raw_ptr),
+          offset_t,
+          op_t,
+          init_t,
+          accumulator_t,
+          transform_t>)};
     }
     else
     {
