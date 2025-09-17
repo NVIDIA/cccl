@@ -582,21 +582,6 @@ void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFro
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-template <typename _Tp>
-struct __fill_value_generator
-{
-  _Tp __value;
-
-  __fill_value_generator(_Tp __value) noexcept
-      : __value(__value)
-  {}
-
-  __device__ inline _Tp operator()() const noexcept
-  {
-    return __value;
-  }
-};
-
 //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
 //! @param __first Pointer to the first element to be initialized.
 //! @param __count The number of elements to be initialized.
@@ -624,7 +609,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     {
 #if _CCCL_HAS_CUDA_COMPILER()
       ::cuda::experimental::__ensure_current_device __guard(__stream);
-      ::cub::DeviceTransform::Fill(__first, __count, __fill_value_generator<_Tp>{__value}, __stream.get());
+      ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #else
       static_assert(0, "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
 #endif
