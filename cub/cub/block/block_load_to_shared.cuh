@@ -365,7 +365,7 @@ public:
   _CCCL_HOST_DEVICE static constexpr int SharedBufferAlignBytes()
   {
     static_assert(::cuda::std::is_trivially_copyable_v<T>);
-    return (::cuda::std::max)(int{alignof(T)}, minimum_align);
+    return (::cuda::std::max) (int{alignof(T)}, minimum_align);
   }
 
   //! @brief Returns the size needed for the shared memory destination buffer.
