@@ -30,8 +30,9 @@
 #include <cub/device/device_segmented_reduce.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+
+#include <cuda/iterator>
 
 #include <cstdint>
 

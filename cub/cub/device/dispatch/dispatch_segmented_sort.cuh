@@ -47,10 +47,10 @@
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -475,7 +475,7 @@ struct DispatchSegmentedSort
         cub::DevicePartition::IfNoNVTX(
           nullptr,
           three_way_partition_temp_storage_bytes,
-          THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
+          ::cuda::counting_iterator<local_segment_index_t>(0),
           large_and_medium_segments_indices.get(),
           small_segments_indices.get(),
           medium_indices_iterator,
@@ -748,7 +748,7 @@ private:
       error = CubDebug(cub::DevicePartition::IfNoNVTX(
         device_partition_temp_storage.get(),
         three_way_partition_temp_storage_bytes,
-        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
+        ::cuda::counting_iterator<local_segment_index_t>(0),
         large_and_medium_segments_indices.get(),
         small_segments_indices.get(),
         medium_indices_iterator,

@@ -1,6 +1,8 @@
 #include <thrust/count.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>
@@ -107,8 +109,8 @@ DECLARE_UNITTEST(TestCountDispatchImplicit);
 
 void TestCountWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::counting_iterator<long long> begin(1);
+  cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   long long result = thrust::count(thrust::device, begin, end, (1ll << magnitude) - 17);

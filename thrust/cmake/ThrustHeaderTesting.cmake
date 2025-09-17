@@ -148,6 +148,9 @@ function(thrust_add_header_test thrust_target label definitions)
       endif()
     endif()
 
+    # We are deprecating some thrust features, so disable deprecation warnings
+    target_compile_definitions(${headertest_target} PRIVATE CCCL_IGNORE_DEPRECATED_API)
+
     add_dependencies(thrust.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})
   endforeach()
