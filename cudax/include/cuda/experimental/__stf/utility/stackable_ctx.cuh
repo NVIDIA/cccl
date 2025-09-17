@@ -3366,32 +3366,26 @@ inline void test_graph_scope_with_tmp()
     // Create temporary data in nested context
     auto temp = ctx.logical_data(shape_of<slice<int>>(1024));
 
-    ctx.task(temp.write(), lA.read())->*[](cudaStream_t stream, auto temp, auto a) {
+    ctx.parallel_for(lA.shape(), temp.write(), lA.read())->*[](size_t i, auto temp, auto a) {
       // Copy data and modify
-      for (int i = 0; i < 1024; i++)
-      {
-        temp.data_handle()[i] = a.data_handle()[i] * 2;
-      }
+      temp(i) = a(i) * 2;
     };
 
-    ctx.task(lA.write(), temp.read())->*[](cudaStream_t stream, auto a, auto temp) {
+    ctx.parallel_for(lA.shape(), lA.write(), temp.read())->*[](size_t i, auto a, auto temp) {
       // Copy back
-      for (int i = 0; i < 1024; i++)
-      {
-        a.data_handle()[i] = temp.data_handle()[i] + 1;
-      }
+      a(i) = temp(i) + 1;
     };
 
     // temp automatically cleaned up when scope ends
   }
 
   ctx.finalize();
-};
+}
 
 UNITTEST("graph_scope with temporary data")
 {
   test_graph_scope_with_tmp();
-}
+};
 
 inline void test_graph_scope()
 {
@@ -3433,12 +3427,12 @@ inline void test_graph_scope()
   }
 
   ctx.finalize();
-};
+}
 
 UNITTEST("graph_scope iterative pattern")
 {
   test_graph_scope();
-}
+};
 
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
