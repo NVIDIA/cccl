@@ -886,8 +886,8 @@ public:
      * head_offset is the offset of thread's current top context (-1 if none)
      */
     void push(const _CUDA_VSTD::source_location& loc,
-              bool is_root                    = false,
-              const push_while_config& config = push_while_config{})
+              bool is_root                                     = false,
+              [[maybe_unused]] const push_while_config& config = push_while_config{})
     {
       auto lock = acquire_exclusive_lock();
 

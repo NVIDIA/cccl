@@ -16,8 +16,9 @@
  * for automatic push/pop management in nested contexts.
  */
 
-#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 #include <cuda/experimental/stf.cuh>
+
+#include "cuda/experimental/__stf/utility/stackable_ctx.cuh"
 
 using namespace cuda::experimental::stf;
 
