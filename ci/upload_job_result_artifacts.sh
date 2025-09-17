@@ -41,12 +41,12 @@ fi
 
 # Finds a matching file in the root and copies it to the artifact directory.
 find_and_copy_job_artifact_from() {
-  directory="$1"
-  pattern="$2"
-  if find "$directory"/ -name "$pattern" -type f -printf '' -quit 2>/dev/null; then
-    find "$directory"/ -name "$pattern" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
+  root="$1"
+  name="$2"
+  if find "$root"/ -maxdepth 1 -name "$name" -type f -printf '' -quit 2>/dev/null; then
+    find "$root"/ -maxdepth 1 -name "$name" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
   else
-    echo "No file matching '$pattern' found in '$directory'."
+    echo "No file matching '$name' found in '$root'."
     return 1
   fi
 }
