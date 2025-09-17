@@ -155,7 +155,7 @@ runs:
           echo -e "::endgroup::"
         fi
 
-        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code
 
         exit $exit_code
         EOF
@@ -263,7 +263,6 @@ runs:
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
             --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
-            --env SCCACHE_ERROR_LOG=/home/coder/cccl/.cache/sccache.log \
             --env "JOB_ID=$JOB_ID" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
