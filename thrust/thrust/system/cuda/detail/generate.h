@@ -44,6 +44,7 @@ generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Gener
        count,
        (::cuda::std::tuple<>{}, result, count_fixed, Predicate{}, generator, cuda_cub::stream(policy)));
      throw_on_error(status, "generate_n: failed inside CUB");
+     throw_on_error(synchronize_optional(policy), "generate_n: failed to synchronize");
      return result + count;),
     (return thrust::generate_n(cvt_to_seq(derived_cast(policy)), result, count, generator);));
 }

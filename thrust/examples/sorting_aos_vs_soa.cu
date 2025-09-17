@@ -5,7 +5,6 @@
 
 #include <assert.h>
 
-#include "include/host_device.h"
 #include "include/timer.h"
 
 // This examples compares sorting performance using Array of Structures (AoS)
@@ -35,9 +34,9 @@ void initialize_keys(thrust::device_vector<int>& keys)
 
   thrust::host_vector<int> h_keys(keys.size());
 
-  for (size_t i = 0; i < h_keys.size(); i++)
+  for (auto& e : h_keys)
   {
-    h_keys[i] = dist(rng);
+    e = dist(rng);
   }
 
   keys = h_keys;
