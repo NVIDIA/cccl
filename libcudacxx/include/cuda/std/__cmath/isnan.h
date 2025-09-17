@@ -21,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__floating_point/mask.h>
+#include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_CUDA_COMPILER(NVRTC)
 #  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#endif // _CCCL_CUDA_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -158,11 +158,12 @@ template <class _Tp>
 #if _CCCL_HAS_FLOAT128()
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISNAN)
-  return _CCCL_BUILTIN_ISNAN(__x);
-#  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
-  return ::cuda::std::__isnan_impl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
+  // __builtin_isnan is not efficient
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization flags
+  }
+  return __x != __x;
 }
 #endif // _CCCL_HAS_FLOAT128()
 
