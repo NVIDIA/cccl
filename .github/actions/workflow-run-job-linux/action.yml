@@ -130,8 +130,6 @@ runs:
 
         set -euo pipefail
 
-        ulimit -n $(ulimit -Hn)
-        sccache --stop-server >/dev/null 2>&1
         # Need this for git to trust the docker-mounted workspace:
         git config --global --add safe.directory "$(pwd)"
 
