@@ -377,7 +377,7 @@ struct device_transform_policy {{
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
 
-    build_ptr->loaded_bytes_per_iteration = input_it.value_type.size;
+    build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
@@ -621,7 +621,7 @@ struct device_transform_policy {{
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
     check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
 
-    build_ptr->loaded_bytes_per_iteration = (input1_it.value_type.size + input2_it.value_type.size);
+    build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
