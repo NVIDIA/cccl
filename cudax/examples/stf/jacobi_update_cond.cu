@@ -25,9 +25,9 @@ int main(int argc, char** argv)
 {
   stackable_ctx ctx;
 
-  size_t n   = 4096;
-  size_t m   = 4096;
-  double tol = 0.1;
+  size_t n     = 4096;
+  size_t m     = 4096;
+  double tol   = 0.1;
   int max_iter = 1000;
 
   if (argc > 2)
