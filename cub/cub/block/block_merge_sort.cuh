@@ -99,7 +99,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 //! used.
 //! \param output The output array
 //! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
-template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <bool IS_FULL_TILE, typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -113,6 +113,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
 {
   _CCCL_ASSERT(keys1_count >= 0, "");
   _CCCL_ASSERT(keys2_count >= 0, "");
+  if constexpr (IS_FULL_TILE)
+  {
+    _CCCL_ASSERT(keys1_count + keys2_count >= ITEMS_PER_THREAD, "");
+  }
 
   // TODO(bgruber): this assertion fails. Is this a problem?
   // _CCCL_ASSERT(keys1_count + keys2_count > 0, "");
@@ -173,7 +177,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   loop_body(ITEMS_PER_THREAD - 1, ::cuda::std::true_type{});
 }
 
-template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <bool IS_FULL_TILE, typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
@@ -184,7 +188,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   int (&indices)[ITEMS_PER_THREAD],
   CompareOp compare_op)
 {
-  SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
+  SerialMerge<IS_FULL_TILE>(
+    keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
 }
 
 /**
@@ -501,13 +506,14 @@ public:
         const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
         const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
         const int size  = ITEMS_PER_THREAD * merged_threads_number;
+        _CCCL_ASSERT(start < valid_items, "");
 
         const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
         // TODO(bgruber): optimization: checking against valid_items should only be needed when IS_LAST_TILE is true
         const int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-        const int keys1_beg = (::cuda::std::min) (valid_items, start);
+        const int keys1_beg = start; // (::cuda::std::min) (valid_items, start);
         const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
         const int keys2_beg = keys1_end;
         const int keys2_end = (::cuda::std::min) (valid_items, keys2_beg + size);
@@ -527,7 +533,7 @@ public:
         const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
         const int keys1_count_loc = keys1_end - keys1_beg_loc;
         const int keys2_count_loc = keys2_end - keys2_beg_loc;
-        SerialMerge(
+        SerialMerge<!IS_LAST_TILE>(
           // TODO(bgruber): use the span with valid_items again
           ::cuda::std::span<KeyT>(temp_storage.keys_shared, ITEMS_PER_TILE + 1),
           //::cuda::std::span<KeyT>(temp_storage.keys_shared, valid_items),
