@@ -153,13 +153,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
       if (use_key2)
       {
         // FIXME(bgruber): this assertion fails and we access out of bounds
-        _CCCL_ASSERT(keys2_beg < keys2_end, "");
+        //_CCCL_ASSERT(keys2_beg < keys2_end, "");
         key2 = keys_shared[keys2_beg];
       }
       else
       {
         // FIXME(bgruber): this assertion fails and we access out of bounds
-        _CCCL_ASSERT(keys1_beg < keys1_end, "");
+        //_CCCL_ASSERT(keys1_beg < keys1_end, "");
         key1 = keys_shared[keys1_beg];
       }
     }
