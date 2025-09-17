@@ -41,21 +41,21 @@ fi
 
 # Finds a matching file in the root and copies it to the artifact directory.
 find_and_copy_job_artifact_from() {
-  filename="$1"
-  root="$2"
-  filepath="$(find "$root" -name "$filename" -print -quit)"
-  if [[ -z "$filepath" ]]; then
-    echo "$filename does not exist in repo directory."
+  directory="$1"
+  pattern="$2"
+  if find "$directory"/ -name "$pattern" -type f -printf '' -quit 2>/dev/null; then
+    find "$directory"/ -name "$pattern" -type f -print0 | xargs -0 -P4 -I% cp -v % "$job_artifacts"/
+  else
+    echo "No file matching '$pattern' found in '$directory'."
     return 1
   fi
-  cp -v "$filepath" "$job_artifacts/"
 }
 
-find_and_copy_job_artifact_from "sccache*.log" /tmp/ || : # Nonfatal if not found
-find_and_copy_job_artifact_from "sccache_stats.json" build/ || : # Nonfatal if not found
-find_and_copy_job_artifact_from ".ninja_log"  build/ || : # Nonfatal if not found
-find_and_copy_job_artifact_from "build.ninja"  build/ || : # Nonfatal if not found
-find_and_copy_job_artifact_from "rules.ninja"  build/ || : # Nonfatal if not found
-find_and_copy_job_artifact_from "ctest.log"  build/ || : # Nonfatal if not found
+find_and_copy_job_artifact_from /tmp  "sccache*.log"       || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "sccache_stats.json" || : # Nonfatal if not found
+find_and_copy_job_artifact_from build ".ninja_log"         || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "build.ninja"        || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "rules.ninja"        || : # Nonfatal if not found
+find_and_copy_job_artifact_from build "ctest.log"          || : # Nonfatal if not found
 
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
