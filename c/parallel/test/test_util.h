@@ -208,6 +208,42 @@ cccl_type_info get_type_info()
   return info;
 }
 
+std::string type_enum_to_name(cccl_type_enum type)
+{
+  switch (type)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "char";
+    case cccl_type_enum::CCCL_INT16:
+      return "short";
+    case cccl_type_enum::CCCL_INT32:
+      return "int";
+    case cccl_type_enum::CCCL_INT64:
+      return "long long";
+    case cccl_type_enum::CCCL_UINT8:
+      return "unsigned char";
+    case cccl_type_enum::CCCL_UINT16:
+      return "unsigned short";
+    case cccl_type_enum::CCCL_UINT32:
+      return "unsigned int";
+    case cccl_type_enum::CCCL_UINT64:
+      return "unsigned long long";
+#if _CCCL_HAS_NVFP16()
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "__half";
+#endif
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "float";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "double";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+
+  return "";
+}
+
 // TOOD: using more than than one `op` in the same TU will fail because
 // of the lack of name mangling. Ditto for all `get_*_op` functions.
 inline std::string get_reduce_op(cccl_type_enum t)
@@ -614,40 +650,27 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
   return "";
 }
 
-std::string type_enum_to_name(cccl_type_enum type)
+inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type_enum t, int compare_to)
 {
-  switch (type)
-  {
-    case cccl_type_enum::CCCL_INT8:
-      return "::cuda::std::int8_t";
-    case cccl_type_enum::CCCL_INT16:
-      return "::cuda::std::int16_t";
-    case cccl_type_enum::CCCL_INT32:
-      return "::cuda::std::int32_t";
-    case cccl_type_enum::CCCL_INT64:
-      return "::cuda::std::int64_t";
-    case cccl_type_enum::CCCL_UINT8:
-      return "::cuda::std::uint8_t";
-    case cccl_type_enum::CCCL_UINT16:
-      return "::cuda::std::uint16_t";
-    case cccl_type_enum::CCCL_UINT32:
-      return "::cuda::std::uint32_t";
-    case cccl_type_enum::CCCL_UINT64:
-      return "::cuda::std::uint64_t";
-#if _CCCL_HAS_NVFP16()
-    case cccl_type_enum::CCCL_FLOAT16:
-      return "__half";
-#endif
-    case cccl_type_enum::CCCL_FLOAT32:
-      return "float";
-    case cccl_type_enum::CCCL_FLOAT64:
-      return "double";
-
-    default:
-      throw std::runtime_error("Unsupported type");
-  }
-
-  return "";
+  const std::string less_op_src = std::format(
+    "#include <cuda_fp16.h>\n"
+    "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
+    "  {0}* x = reinterpret_cast<{0}*>(x_void); "
+    "  bool* out = reinterpret_cast<bool*>(out_void); "
+    "  *out = *x < static_cast<{0}>({1}); "
+    "}}",
+    type_enum_to_name(t),
+    compare_to);
+  const std::string greater_or_equal_op_src = std::format(
+    "#include <cuda_fp16.h>\n"
+    "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
+    "  {0}* x = reinterpret_cast<{0}*>(x_void); "
+    "  bool* out = reinterpret_cast<bool*>(out_void); "
+    "  *out = *x >= static_cast<{0}>({1}); "
+    "}}",
+    type_enum_to_name(t),
+    compare_to);
+  return {std::move(less_op_src), std::move(greater_or_equal_op_src)};
 }
 
 template <class T>
