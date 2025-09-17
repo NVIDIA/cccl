@@ -112,7 +112,7 @@ runs:
         CI: true
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
-        COMMAND: "${{inputs.command}} --verbose"
+        COMMAND: "${{inputs.command}}"
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
