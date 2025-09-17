@@ -138,12 +138,12 @@ struct xor_combine_engine_max_aux_2
   _CCCL_HOST_DEVICE static constexpr result_type compute_value()
   {
     // if k is odd...
-    if (constants::k % 2 == 1)
+    if constexpr (constants::k % 2 == 1)
     {
       return xor_combine_engine_max_aux_case2<result_type, a, b, d>::value;
     }
     // otherwise if a * 2^3 >= b, then case 3
-    if (a * constants::two_to_the_d >= b)
+    if constexpr (a * constants::two_to_the_d >= b)
     {
       return xor_combine_engine_max_aux_case3<result_type, a, b, d>::value;
     }
