@@ -263,6 +263,46 @@ private:
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
   }
 
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename T,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t reduce_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    ::cuda::execution::determinism::not_guaranteed_t,
+    cudaStream_t stream)
+  {
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+
+    using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
+
+    using transform_t     = ::cuda::std::identity;
+    using reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
+    using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using dispatch_t = detail::
+      DispatchReduceNondeterministic<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, transform_t, policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+      static_cast<offset_t>(num_items),
+      reduction_op,
+      init,
+      stream);
+  }
+
 public:
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
@@ -1030,7 +1070,8 @@ public:
 
     using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-    using InitT = OutputT;
+    using InitT    = OutputT;
+    using limits_t = ::cuda::std::numeric_limits<InitT>;
 
     // Query the required temporary storage size
     cudaError_t error = reduce_impl<tuning_t>(
@@ -1041,7 +1082,7 @@ public:
       num_items,
       ::cuda::minimum<>{},
       ::cuda::std::identity{},
-      InitT{},
+      limits_t::max(),
       determinism_t{},
       stream.get());
     if (error != cudaSuccess)
@@ -1065,7 +1106,7 @@ public:
       num_items,
       ::cuda::minimum<>{},
       ::cuda::std::identity{},
-      InitT{},
+      limits_t::max(),
       determinism_t{},
       stream.get());
 
