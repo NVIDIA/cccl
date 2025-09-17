@@ -48,7 +48,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <class _Iter, class _Fn>
+template <class _Fn, class _Iter>
 class __transform_output_proxy
 {
 private:
@@ -136,7 +136,7 @@ public:
 //!
 //! }
 //! @endcode
-template <class _Iter, class _Fn>
+template <class _Fn, class _Iter>
 class transform_output_iterator
 {
   static_assert(_CUDA_VSTD::is_object_v<_Fn>, "cuda::transform_output_iterator requires that _Fn is a function object");
@@ -437,16 +437,14 @@ public:
   }
 };
 
-//! @brief make_transform_output_iterator creates a \p transform_output_iterator from an \c _Iter and a \c _Fn.
-//!
-//! @param __iter The \c Iterator pointing to the input range of the newly created \p transform_output_iterator.
-//! @param __fun The \c _Fn used to transform the range pointed to by @param __iter in the newly created
-//! @p transform_output_iterator.
-//! @return A new \p transform_output_iterator which transforms the range at @param __iter by @param __fun.
-template <class _Iter, class _Fn>
+//! @brief Creates a @c transform_output_iterator from an iterator and an output function.
+//! @param __iter The iterator of the input range
+//! @param __fun The output function
+//! @relates transform_output_iterator
+template <class _Fn, class _Iter>
 [[nodiscard]] _CCCL_API constexpr auto make_transform_output_iterator(_Iter __iter, _Fn __fun)
 {
-  return transform_output_iterator<_Iter, _Fn>{__iter, __fun};
+  return transform_output_iterator<_Fn, _Iter>{__iter, __fun};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

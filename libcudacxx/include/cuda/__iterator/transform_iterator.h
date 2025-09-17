@@ -51,8 +51,8 @@ template <class, class, class = void>
 struct __transform_iterator_category_base
 {};
 
-template <class _Iter, class _Fn>
-struct __transform_iterator_category_base<_Iter, _Fn, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::forward_iterator<_Iter>>>
+template <class _Fn, class _Iter>
+struct __transform_iterator_category_base<_Fn, _Iter, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::forward_iterator<_Iter>>>
 {
   using _Cat = typename _CUDA_VSTD::iterator_traits<_Iter>::iterator_category;
 
@@ -145,8 +145,8 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //!   return 0;
 //! }
 //! @endcode
-template <class _Iter, class _Fn>
-class transform_iterator : public __transform_iterator_category_base<_Iter, _Fn>
+template <class _Fn, class _Iter>
+class transform_iterator : public __transform_iterator_category_base<_Fn, _Iter>
 {
   static_assert(_CUDA_VSTD::is_object_v<_Fn>, "cuda::transform_iterator requires that _Fn is a function object");
   static_assert(_CUDA_VSTD::regular_invocable<_Fn&, _CUDA_VSTD::iter_reference_t<_Iter>>,
@@ -446,16 +446,14 @@ public:
   }
 };
 
-//! @brief make_transform_iterator creates a \p transform_iterator from an \c _Iter and a \c _Fn.
-//!
-//! @param __iter The \c Iterator pointing to the input range of the newly created \p transform_iterator.
-//! @param __fun The \c _Fn used to transform the range pointed to by @param __iter in the newly created
-//! \p transform_iterator.
-//! @return A new \p transform_iterator which transforms the range at @param __iter by @param __fun.
-template <class _Iter, class _Fn>
+//! @brief Creates a @c transform_iterator from a base iterator and a functor
+//! @param __iter The iterator of the input range
+//! @param __fun The functor used to transform the input range
+//! @relates transform_iterator
+template <class _Fn, class _Iter>
 [[nodiscard]] _CCCL_API constexpr auto make_transform_iterator(_Iter __iter, _Fn __fun)
 {
-  return transform_iterator<_Iter, _Fn>{__iter, __fun};
+  return transform_iterator<_Fn, _Iter>{__iter, __fun};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

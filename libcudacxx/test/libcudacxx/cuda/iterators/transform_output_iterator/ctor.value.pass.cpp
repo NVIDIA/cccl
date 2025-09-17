@@ -35,7 +35,7 @@ __host__ __device__ constexpr bool test()
     static_assert(!noexcept(cuda::transform_output_iterator{random_access_iterator{buffer + 2}, func}));
 #endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
     static_assert(
-      cuda::std::is_same_v<decltype(iter), cuda::transform_output_iterator<random_access_iterator<int*>, Fn>>);
+      cuda::std::is_same_v<decltype(iter), cuda::transform_output_iterator<Fn, random_access_iterator<int*>>>);
   }
 
   { // CTAD
@@ -45,11 +45,11 @@ __host__ __device__ constexpr bool test()
     assert(buffer[2] == 3 + 1);
     buffer[2] = 2;
     static_assert(noexcept(cuda::transform_output_iterator{buffer + 2, func}));
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::transform_output_iterator<int*, Fn>>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::transform_output_iterator<Fn, int*>>);
   }
 
   {
-    cuda::transform_output_iterator<random_access_iterator<int*>, Fn> iter{random_access_iterator{buffer + 2}, func};
+    cuda::transform_output_iterator<Fn, random_access_iterator<int*>> iter{random_access_iterator{buffer + 2}, func};
     assert(base(iter.base()) == buffer + 2);
     *iter = 3;
     assert(buffer[2] == 3 + 1);
@@ -57,17 +57,17 @@ __host__ __device__ constexpr bool test()
 #if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
     // The test iterators are not `is_nothrow_move_constructible`
     static_assert(!noexcept(
-      cuda::transform_output_iterator<random_access_iterator<int*>, Fn>{random_access_iterator{buffer + 2}, func}));
-#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
+      cuda::transform_output_iterator<Fn, random_access_iterator<int*>>{random_access_iterator{buffer + 2}, func}));
+#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
   }
 
   {
-    cuda::transform_output_iterator<int*, Fn> iter{buffer + 2, func};
+    cuda::transform_output_iterator<Fn, int*> iter{buffer + 2, func};
     assert(iter.base() == buffer + 2);
     *iter = 3;
     assert(buffer[2] == 3 + 1);
     buffer[2] = 2;
-    static_assert(noexcept(cuda::transform_output_iterator<int*, Fn>{buffer + 2, func}));
+    static_assert(noexcept(cuda::transform_output_iterator<Fn, int*>{buffer + 2, func}));
   }
 
   return true;
