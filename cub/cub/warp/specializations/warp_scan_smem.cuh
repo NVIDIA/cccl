@@ -49,10 +49,12 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/type_traits>
-#include <cuda/utility>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

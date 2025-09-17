@@ -5,9 +5,9 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
-#include <iostream>
+#include <cuda/iterator>
 
-#include "include/host_device.h"
+#include <iostream>
 
 // convert a linear index to a row index
 template <typename T>
@@ -33,11 +33,12 @@ int main()
   thrust::uniform_int_distribution<int> dist(10, 99);
 
   // initialize data
-  thrust::device_vector<int> array(R * C);
-  for (size_t i = 0; i < array.size(); i++)
+  thrust::host_vector<int> host_array(R * C);
+  for (auto& e : host_array)
   {
-    array[i] = dist(rng);
+    e = dist(rng);
   }
+  thrust::device_vector<int> array = host_array;
 
   // allocate storage for row sums and indices
   thrust::device_vector<int> row_sums(R);
@@ -45,8 +46,8 @@ int main()
 
   // compute row sums by summing values with equal row indices
   thrust::reduce_by_key(
-    thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(C)),
-    thrust::make_transform_iterator(thrust::counting_iterator<int>(0), linear_index_to_row_index<int>(C)) + (R * C),
+    thrust::make_transform_iterator(cuda::counting_iterator<int>(0), linear_index_to_row_index<int>(C)),
+    thrust::make_transform_iterator(cuda::counting_iterator<int>(0), linear_index_to_row_index<int>(C)) + (R * C),
     array.begin(),
     row_indices.begin(),
     row_sums.begin(),

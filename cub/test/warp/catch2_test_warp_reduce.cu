@@ -28,9 +28,9 @@
  * Constants
  **********************************************************************************************************************/
 
-inline constexpr int warp_size        = 32;
-inline constexpr auto total_warps     = 4u;
-inline constexpr int items_per_thread = 4;
+inline constexpr int warp_size            = 32;
+inline constexpr auto total_warps         = 4u;
+inline constexpr int num_items_per_thread = 4;
 
 /***********************************************************************************************************************
  * Kernel
@@ -78,10 +78,10 @@ __global__ void warp_reduce_kernel(T* input, T* output, ReductionOp reduction_op
 template <unsigned LogicalWarpThreads, typename T, typename ReductionOp>
 __global__ void warp_reduce_multiple_items_kernel(T* input, T* output, ReductionOp reduction_op)
 {
-  T thread_data[items_per_thread];
-  for (int i = 0; i < items_per_thread; ++i)
+  T thread_data[num_items_per_thread];
+  for (int i = 0; i < num_items_per_thread; ++i)
   {
-    thread_data[i] = input[threadIdx.x * items_per_thread + i];
+    thread_data[i] = input[threadIdx.x * num_items_per_thread + i];
   }
   warp_reduce_function<LogicalWarpThreads>(thread_data, output, reduction_op);
 }
@@ -193,7 +193,7 @@ void compute_host_reference(
   int logical_warps,
   int logical_warp_threads,
   int items_per_logical_warp = 0,
-  int items_per_thread1      = 1)
+  int items_per_thread       = 1)
 {
   const auto identity    = identity_v<predefined_op, T>;
   items_per_logical_warp = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
@@ -201,8 +201,8 @@ void compute_host_reference(
   {
     for (int j = 0; j < logical_warps; ++j)
     {
-      auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread1;
-      auto end                     = start + items_per_logical_warp * items_per_thread1;
+      auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread;
+      auto end                     = start + items_per_logical_warp * items_per_thread;
       h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
     }
   }
@@ -210,11 +210,11 @@ void compute_host_reference(
 
 _CCCL_DIAG_POP
 
-std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned items_per_thread1 = 1)
+std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned items_per_thread = 1)
 {
   bool is_power_of_two = cuda::std::has_single_bit(logical_warp_threads);
   auto logical_warps   = is_power_of_two ? warp_size / logical_warp_threads : 1;
-  auto input_size      = total_warps * warp_size * items_per_thread1;
+  auto input_size      = total_warps * warp_size * items_per_thread;
   auto output_size     = total_warps * logical_warps;
   return {input_size, output_size, logical_warps};
 }
@@ -335,7 +335,7 @@ C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
   using T                                       = c2h::get<0, TestType>;
   using predefined_op                           = c2h::get<1, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<2, TestType>::value;
-  auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads, items_per_thread);
+  auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads, num_items_per_thread);
   CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), logical_warp_threads);
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
@@ -344,6 +344,6 @@ C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
 
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
-  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, items_per_thread);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, num_items_per_thread);
   verify_results(h_out, d_out);
 }

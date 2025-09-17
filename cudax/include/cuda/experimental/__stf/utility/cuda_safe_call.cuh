@@ -90,7 +90,6 @@ inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 /**
  * @brief Exception type across CUDA, CUBLAS, and CUSOLVER.
  *
- * @paragraph example Example
  * @snippet this cuda_exception
  */
 class cuda_exception : public ::std::exception
@@ -274,7 +273,6 @@ UNITTEST("first_param")
  * @param status status value, usually the result of a CUDA API call
  * @param loc location of the call, defaulted
  *
- * @paragraph example Example
  * @snippet this cuda_safe_call
  */
 template <typename T>
@@ -315,7 +313,6 @@ UNITTEST("cuda_safe_call")
  * same way `cuda_safe_call` would be called). For example, `cuda_try(cudaCreateStream(&stream))` is equivalent to
  * `cudaCreateStream(&stream)`, with the note that the former call throws an exception in case of error.
  *
- * @paragraph example Example
  * @snippet this cuda_try1
  */
 template <typename Status>
@@ -370,7 +367,6 @@ UNITTEST("cuda_try1")
  *
  * Limitations: Does not work with overloaded functions.
  *
- * @paragraph example Example
  * @snippet this cuda_try2
  */
 template <auto fun, typename... Ps>

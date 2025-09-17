@@ -47,10 +47,11 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 

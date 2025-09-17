@@ -20,6 +20,13 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  github_token:
+    description: >-
+      Optional GitHub PAT with at least gist, repo (read), and read:org scopes
+      to enable sccache S3 auth on forks. Typically supplied via the
+      'SCCACHE_AUTH_TOKEN' repository secret in forks.
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -50,6 +57,7 @@ runs:
       run: |
         echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
     - name: Get AWS credentials for sccache bucket
+      if: ${{ github.repository == 'NVIDIA/cccl' }}
       uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -81,7 +89,7 @@ runs:
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ inputs.github_token != '' && inputs.github_token || github.token }}
         CI: true
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
@@ -94,6 +102,9 @@ runs:
         #! /usr/bin/env bash
 
         set -euo pipefail
+
+        # Need this for git to trust the docker-mounted workspace:
+        git config --global --add safe.directory "$(pwd)"
 
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
@@ -141,11 +152,18 @@ runs:
         chmod 0600 "${aws_dir}/credentials"
         chmod 0664 "${aws_dir}/config"
 
+        # Clear the ARN when using the pre-minted aws creds on the main repo.
+        # Leave this on forks, as they'll need it to authenticate using the
+        # devcontainer-utils scripting via GH_TOKEN.
+        if [[ "$GITHUB_REPOSITORY" == "NVIDIA/cccl" ]]; then
+          set aws_arn="--env AWS_ROLE_ARN="
+        fi
+
         declare -a gpu_request=()
 
         # Explicitly pass which GPU to use if on a GPU runner
         if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
         fi
 
         # If the image contains "cudaXX.Yext"...
@@ -166,9 +184,11 @@ runs:
             --host $JOB_HOST \
             ${cuda_ext_request:-} \
             "${gpu_request[@]}" \
-            --env "AWS_ROLE_ARN=" \
+            ${aws_arn:-} \
             --env "COMMAND=$COMMAND" \
-            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "CI=true" \
+            --env "SCCACHE_DIST_GH_SCOPES=read:org" \
+            --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ENV=$GITHUB_ENV" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_PATH=$GITHUB_PATH" \
@@ -179,9 +199,8 @@ runs:
             --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-            --env "GH_TOKEN=${{ github.token }}" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
-            --env "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" \
+            --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
             --env "JOB_ID=$JOB_ID" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \

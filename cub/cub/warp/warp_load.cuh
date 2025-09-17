@@ -46,7 +46,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
 

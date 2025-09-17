@@ -22,12 +22,20 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
-#include <cuda/std/array>
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed_integer.h>
+#include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/functional>
-#include <cuda/std/mdspan>
-#include <cuda/std/span>
-#include <cuda/std/type_traits> // is_same_v
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -170,10 +178,10 @@ inline constexpr bool is_any_short2_v = is_any_short2_impl_v<::cuda::std::remove
 // - promote small integer types to their corresponding 32-bit promotion type
 // - address the incompatibility between linux/windows for int/long
 template <typename T>
-using signed_promotion_t = ::cuda::std::_If<
+using signed_promotion_t = ::cuda::std::conditional_t<
   ::cuda::std::__cccl_is_signed_integer_v<T> && sizeof(T) <= sizeof(int),
   int,
-  ::cuda::std::_If<::cuda::std::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
+  ::cuda::std::conditional_t<::cuda::std::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
 
 } // namespace detail
 CUB_NAMESPACE_END

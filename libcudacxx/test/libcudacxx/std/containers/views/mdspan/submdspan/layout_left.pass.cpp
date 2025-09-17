@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// nvbug5272086
-// UNSUPPORTED: msvc
-
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;

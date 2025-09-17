@@ -2,14 +2,13 @@
 #include <thrust/functional.h>
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
 
+#include <cuda/iterator>
+
 #include <iomanip>
 #include <iostream>
-
-#include "include/host_device.h"
 
 // This example computes a summed area table using segmented scan
 // http://en.wikipedia.org/wiki/Summed_area_table
@@ -52,7 +51,7 @@ struct row_index
 template <typename T>
 void transpose(size_t m, size_t n, thrust::device_vector<T>& src, thrust::device_vector<T>& dst)
 {
-  thrust::counting_iterator<size_t> indices(0);
+  cuda::counting_iterator<size_t> indices(0);
 
   thrust::gather(thrust::make_transform_iterator(indices, transpose_index(n, m)),
                  thrust::make_transform_iterator(indices, transpose_index(n, m)) + dst.size(),
@@ -64,7 +63,7 @@ void transpose(size_t m, size_t n, thrust::device_vector<T>& src, thrust::device
 template <typename T>
 void scan_horizontally(size_t n, thrust::device_vector<T>& d_data)
 {
-  thrust::counting_iterator<size_t> indices(0);
+  cuda::counting_iterator<size_t> indices(0);
 
   thrust::inclusive_scan_by_key(
     thrust::make_transform_iterator(indices, row_index(n)),
