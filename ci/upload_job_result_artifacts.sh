@@ -58,7 +58,4 @@ find_and_copy_job_artifact_from "build.ninja"  build/ || : # Nonfatal if not fou
 find_and_copy_job_artifact_from "rules.ninja"  build/ || : # Nonfatal if not found
 find_and_copy_job_artifact_from "ctest.log"  build/ || : # Nonfatal if not found
 
-echo "Artifact 'zz_jobs-$job_id' files:"
-ls -all "$job_artifacts/"
-
 ci/util/artifacts/upload/register.sh "zz_jobs-$job_id" "$jobs_artifact_dir"
