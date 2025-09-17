@@ -23,6 +23,10 @@ using namespace cuda::experimental::stf;
 
 int main(int argc, char** argv)
 {
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  return 0;
+#else
   stackable_ctx ctx;
 
   size_t n     = 4096;
@@ -99,4 +103,5 @@ int main(int argc, char** argv)
   printf("Elapsed time: %f ms\n", elapsedTime);
 
   return 0;
+#endif
 }

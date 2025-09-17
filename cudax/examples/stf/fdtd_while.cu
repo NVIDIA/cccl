@@ -105,6 +105,10 @@ _CCCL_DEVICE double Source(double t, double x, double y, double z)
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
 #if !_CCCL_COMPILER(MSVC)
+#  if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  return 0;
+#  else
   stackable_ctx ctx;
 
   // Initialize the time loop
@@ -281,5 +285,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   }
 
   ctx.finalize();
+#  endif // _CCCL_CTK_AT_LEAST(12, 4)
 #endif // !_CCCL_COMPILER(MSVC)
 }

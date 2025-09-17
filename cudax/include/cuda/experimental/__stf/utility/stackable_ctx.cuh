@@ -66,7 +66,9 @@ namespace cuda::experimental::stf
 namespace reserved
 {
 
-// Helper kernel for update_cond functionality - following parallel_for_scope pattern
+#if _CCCL_CTK_AT_LEAST(12, 4)
+// This kernel is used by the update_cond method to update the conditional handle. The device function passed as an
+// argument returns a boolean value which defines the new value of the conditional handle.
 template <typename CondFunc, typename... Args>
 __global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_handle, CondFunc cond_func, Args... args)
 {
@@ -74,6 +76,7 @@ __global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_h
   bool result = cond_func(args...);
   cudaGraphSetConditional(conditional_handle, result);
 }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 } // end namespace reserved
 
@@ -82,6 +85,41 @@ class stackable_logical_data;
 
 template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep;
+
+//! \brief Configuration class for push_while operations
+//!
+//! This class encapsulates the parameters needed for conditional graph nodes.
+//! When CUDA 12.4+ is not available, it becomes effectively empty.
+struct push_while_config
+{
+#if _CCCL_CTK_AT_LEAST(12, 4)
+  cudaGraphConditionalHandle* conditional_handle     = nullptr;
+  enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile;
+  unsigned int defaultLaunchValue                    = 1;
+  unsigned int flags                                 = cudaGraphCondAssignDefault;
+
+  push_while_config() = default;
+
+  push_while_config(cudaGraphConditionalHandle* handle,
+                    enum cudaGraphConditionalNodeType type = cudaGraphCondTypeWhile,
+                    unsigned int launch_value              = 1,
+                    unsigned int condition_flags           = cudaGraphCondAssignDefault)
+      : conditional_handle(handle)
+      , conditional_type(type)
+      , defaultLaunchValue(launch_value)
+      , flags(condition_flags)
+  {}
+
+#else
+  // Empty implementation for pre-CUDA 12.4
+  push_while_config() = default;
+
+  // Constructor that ignores parameters for compatibility
+  template <typename... Args>
+  push_while_config(Args&&...)
+  {}
+#endif
+};
 
 namespace reserved
 {
@@ -463,14 +501,11 @@ public:
     class graph_ctx_node : public ctx_node_base
     {
     public:
-      // Specialized constructor for graph contexts
+      // Constructor for graph contexts with optional conditional support via config
       graph_ctx_node(ctx_node_base* parent_node,
                      async_resources_handle handle,
                      const _CUDA_VSTD::source_location& loc,
-                     cudaGraphConditionalHandle* conditional_handle     = nullptr,
-                     enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile,
-                     unsigned int defaultLaunchValue                    = 1,
-                     unsigned int flags                                 = cudaGraphCondAssignDefault)
+                     const push_while_config& config = push_while_config{})
       {
         // Graph context nodes create and set up the internal CUDA graph
         _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
@@ -489,30 +524,33 @@ public:
 
         cudaGraph_t sub_graph;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
         // Create CUDA graph and graph context
-        if (conditional_handle != nullptr)
+        if (config.conditional_handle != nullptr)
         {
           // Create the conditional handle and store it in the provided pointer
-          cuda_safe_call(cudaGraphConditionalHandleCreate(conditional_handle, graph, defaultLaunchValue, flags));
+          cuda_safe_call(cudaGraphConditionalHandleCreate(
+            config.conditional_handle, graph, config.defaultLaunchValue, config.flags));
 
           // Create conditional node parameters
           cudaGraphNodeParams cParams = {};
           cParams.type                = cudaGraphNodeTypeConditional;
-          cParams.conditional.handle  = *conditional_handle;
-          cParams.conditional.type    = conditional_type;
+          cParams.conditional.handle  = *config.conditional_handle;
+          cParams.conditional.type    = config.conditional_type;
           cParams.conditional.size    = 1;
 
           // Add conditional node to parent graph
           cudaGraphNode_t conditionalNode;
-#if _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
-#else
+#  else
           cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
-#endif
+#  endif
 
           // Get the body graph from the conditional node
           sub_graph = cParams.conditional.phGraph_out[0];
         }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
         else
         {
           // If there is no conditional node, the entire graph is the sub-graph
@@ -848,11 +886,8 @@ public:
      * head_offset is the offset of thread's current top context (-1 if none)
      */
     void push(const _CUDA_VSTD::source_location& loc,
-              bool is_root                                       = false,
-              cudaGraphConditionalHandle* conditional_handle     = nullptr,
-              enum cudaGraphConditionalNodeType conditional_type = cudaGraphCondTypeWhile,
-              unsigned int defaultLaunchValue                    = 1,
-              unsigned int flags                                 = cudaGraphCondAssignDefault)
+              bool is_root                    = false,
+              const push_while_config& config = push_while_config{})
     {
       auto lock = acquire_exclusive_lock();
 
@@ -873,8 +908,9 @@ public:
       // Ensure the node offset was unused
       _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
       // Additional validation for push_while (when conditional_handle is provided)
-      if (conditional_handle != nullptr)
+      if (config.conditional_handle != nullptr)
       {
         // push_while cannot be used as root context - must have a parent
         _CCCL_ASSERT(head_offset != -1, "push_while cannot be used as root context - use push() for root");
@@ -882,6 +918,7 @@ public:
         // push_while is not for nested contexts - parent must be depth 0 (simple hierarchy)
         _CCCL_ASSERT(parent_depth == 0, "push_while can only be used with depth 0 parent - not for nested contexts");
       }
+#endif
 
       if (parent_depth >= 1)
       {
@@ -920,15 +957,7 @@ public:
         auto handle       = get_async_handle(parent_ctx);
 
         // Create graph context node with optional conditional support
-        nodes[node_offset].emplace(::std::make_unique<graph_ctx_node>(
-          parent_node.get(),
-          mv(handle),
-          loc,
-          conditional_handle, // Optional conditional handle (nullptr for regular graphs)
-          conditional_type, // Conditional type (ignored if handle is nullptr)
-          defaultLaunchValue, // Default launch value (ignored if handle is nullptr)
-          flags // Conditional flags (ignored if handle is nullptr)
-          ));
+        nodes[node_offset].emplace(::std::make_unique<graph_ctx_node>(parent_node.get(), mv(handle), loc, config));
       }
 
       // Handle stats and update head
@@ -942,6 +971,7 @@ public:
       set_head_offset(node_offset);
     }
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
     void push_while(cudaGraphConditionalHandle* phandle_out,
                     unsigned int defaultLaunchValue       = 0,
                     unsigned int flags                    = cudaGraphCondAssignDefault,
@@ -949,9 +979,11 @@ public:
     {
       _CCCL_ASSERT(phandle_out != nullptr, "push_while requires non-null conditional handle output parameter");
 
-      // Call push with conditional parameters
-      push(loc, false, phandle_out, cudaGraphCondTypeWhile, defaultLaunchValue, flags);
+      // Create config object and call push
+      push_while_config config(phandle_out, cudaGraphCondTypeWhile, defaultLaunchValue, flags);
+      push(loc, false, config);
     }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
     // This method assumes that the mutex is already acquired in exclusive mode
     void _pop_prologue()
@@ -1428,6 +1460,7 @@ public:
     pimpl->push(loc);
   }
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
   void push_while(cudaGraphConditionalHandle* phandle_out,
                   unsigned int defaultLaunchValue       = 0,
                   unsigned int flags                    = cudaGraphCondAssignDefault,
@@ -1435,6 +1468,7 @@ public:
   {
     pimpl->push_while(phandle_out, defaultLaunchValue, flags, loc);
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   void pop()
   {
@@ -1514,22 +1548,9 @@ public:
       ctx_.pop();
     }
 
-    //! \brief Get the conditional handle for this while loop
-    //! \return Pointer to the conditional handle created by push_while
-    cudaGraphConditionalHandle* get_conditional_handle()
-    {
-      return &conditional_handle_;
-    }
-
-    //! \brief Get the conditional handle value
-    //! \return The conditional handle value
-    cudaGraphConditionalHandle get_conditional_handle_value() const
-    {
-      return conditional_handle_;
-    }
-
+#if _CCCL_CTK_AT_LEAST(12, 4)
     //! \brief Get the conditional handle for controlling the while loop
-    //! \return The conditional handle value (cleaner API)
+    //! \return The conditional handle value
     cudaGraphConditionalHandle cond_handle() const
     {
       return conditional_handle_;
@@ -1597,6 +1618,7 @@ public:
     {
       return condition_update_scope(ctx_, cond_handle(), args...); // Simple copy instead of forwarding
     }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
     // Non-copyable, non-movable
     while_graph_scope_guard(const while_graph_scope_guard&)            = delete;
@@ -1622,6 +1644,7 @@ public:
     return graph_scope_guard(*this, loc);
   }
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
   //! \brief Create RAII scope for while loop contexts with conditional graphs
   //!
   //! Creates a while_graph_scope_guard object that calls push_while() on construction and pop() on destruction.
@@ -1650,6 +1673,7 @@ public:
   {
     return while_graph_scope_guard(*this, defaultLaunchValue, flags, loc);
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   auto pop_extract_graph()
   {
@@ -3373,6 +3397,7 @@ UNITTEST("graph_scope iterative pattern like stackable2")
 #  endif // __CUDACC__
 #endif // UNITTESTED_FILE
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
 //! \brief Helper function to repeat a body n times using while loop graphs
 //!
 //! This function encapsulates the common pattern of creating a counter-based while loop
@@ -3431,8 +3456,8 @@ public:
     auto lcounter      = ctx_.logical_data(counter_shape);
 
     // Initialize counter
-    ctx_.parallel_for(box(1), lcounter.write())->*[=] __device__(size_t, auto counter) {
-      *counter = n_;
+    ctx_.parallel_for(box(1), lcounter.write())->*[=, n = n_] __device__(size_t, auto counter) {
+      *counter = n;
     };
 
     // Create while loop scope - RAII handles push_while/pop automatically
@@ -3465,5 +3490,6 @@ inline repeat_n_helper repeat_n(
 {
   return repeat_n_helper(ctx, n, defaultLaunchValue, flags);
 }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 } // end namespace cuda::experimental::stf
