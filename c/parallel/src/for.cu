@@ -42,12 +42,25 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunct
     return error;
   }
 
+  if (num_items > static_cast<size_t>(std::numeric_limits<int32_t>::max()))
+  {
+    return cudaErrorInvalidValue;
+  }
+
   auto for_kernel_state = make_for_kernel_state(op, d_in);
 
   void* args[] = {&num_items, for_kernel_state.get()};
 
-  int thread_count = 256;
-  int block_count  = (num_items + 511) / 512;
+  const unsigned int thread_count = 256;
+  const size_t items_per_block    = 512;
+  const size_t block_sz           = (num_items + (items_per_block - 1)) / items_per_block;
+
+  if (block_sz > std::numeric_limits<unsigned int>::max())
+  {
+    return cudaErrorInvalidValue;
+  }
+  const unsigned int block_count = static_cast<unsigned int>(block_sz);
+
   check(cuLaunchKernel(static_kernel, block_count, 1, 1, thread_count, 1, 1, 0, stream, args, 0));
 
   // Check for failure to launch
