@@ -961,9 +961,6 @@ public:
 
         // push_while cannot be used as root context - must have a parent
         _CCCL_ASSERT(head_offset != -1, "push_while cannot be used as root context - use push() for root");
-
-        // push_while is not for nested contexts yet - parent must be depth 0 (simple hierarchy)
-        _CCCL_ASSERT(parent_depth == 0, "push_while can only be used with depth 0 parent - not for nested contexts");
       }
 #endif
 
