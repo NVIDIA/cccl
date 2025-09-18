@@ -7,10 +7,9 @@
 #include <thrust/copy.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
-
-#include <cuda/iterator>
 
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
@@ -129,7 +128,7 @@ try
   c2h::device_vector<data_t> d_in(num_items);
   c2h::device_vector<data_t> d_out(num_items, 42);
 
-  auto input_data_it = cuda::make_counting_iterator(data_t{42});
+  auto input_data_it = thrust::make_counting_iterator(data_t{42});
   thrust::copy(input_data_it, input_data_it + num_items, d_in.begin());
 
   const auto num_buffers = 1;
@@ -193,7 +192,7 @@ try
   prepend_n_constants_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{
     d_buffer_srcs, nullptr, num_empty_buffers};
   auto d_buffer_srcs_skipped =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
+    thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
 
   // Prepare d_buffer_dsts
   offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
@@ -204,11 +203,11 @@ try
   prepend_n_constants_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{
     d_buffer_dsts, nullptr, num_empty_buffers};
   auto d_buffer_dsts_skipped =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);
+    thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);
 
   // Return 0 for the first num_empty_buffers and only the actual buffer sizes for the rest
   auto d_buffer_sizes_skipped = thrust::make_transform_iterator(
-    cuda::make_counting_iterator(buffer_offset_t{0}),
+    thrust::make_counting_iterator(buffer_offset_t{0}),
     prepend_n_constants_op<decltype(d_buffer_sizes.cbegin()), buffer_size_t>{
       d_buffer_sizes.cbegin(), buffer_size_t{0}, num_empty_buffers});
 

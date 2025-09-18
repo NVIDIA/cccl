@@ -94,7 +94,7 @@ struct DeviceMemcpy
   //!    uint32_t *d_gather_index;       // e.g., [2, 1, 4, 3, 0]
   //!
   //!    // Initialize an iterator that returns d_gather_index[i] when the i-th item is dereferenced
-  //!    auto gather_iterator = thrust::make_permutation_iterator(cuda::make_counting_iterator(0),
+  //!    auto gather_iterator = thrust::make_permutation_iterator(thrust::make_counting_iterator(0),
   //!    d_gather_index);
   //!
   //!    // Returns pointers to the input buffer for each string
@@ -107,7 +107,7 @@ struct DeviceMemcpy
   //!    GetStringItemSize{d_string_offsets_old});
   //!
   //!    // Returns pointers to the output buffer for each string
-  //!    auto str_ptrs_out = thrust::make_transform_iterator(cuda::make_counting_iterator(0),
+  //!    auto str_ptrs_out = thrust::make_transform_iterator(thrust::make_counting_iterator(0),
   //!                                                        GetPtrToStringItem{d_string_data_out,
   //!    d_string_offsets_new});
   //!

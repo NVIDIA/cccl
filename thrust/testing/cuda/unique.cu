@@ -1,8 +1,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/unique.h>
-
-#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -395,7 +394,7 @@ void TestUniqueWithMagnitude(int magnitude)
 
   // Prepare input
   offset_t num_items = offset_t{1ull} << magnitude;
-  cuda::counting_iterator<offset_t> begin(offset_t{0});
+  thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + num_items;
   ASSERT_EQUAL(static_cast<offset_t>(cuda::std::distance(begin, end)), num_items);
 
@@ -429,7 +428,7 @@ void TestUniqueWithCustomEqualityOp()
   using T      = Vector::value_type;
 
   auto constexpr num_items = 1000;
-  auto data                = cuda::make_counting_iterator(T{0});
+  auto data                = thrust::make_counting_iterator(T{0});
 
   thrust::device_vector<::cuda::std::uint32_t> error_counter(1, 0);
   auto const error_counter_ptr = thrust::raw_pointer_cast(error_counter.data());

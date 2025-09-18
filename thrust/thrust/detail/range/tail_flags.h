@@ -26,11 +26,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/tuple.h>
-
-#include <cuda/__iterator/counting_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -73,20 +72,22 @@ public:
     }
   };
 
+  using counting_iterator = thrust::counting_iterator<IndexType>;
+
 public:
-  using iterator = thrust::transform_iterator<tail_flag_functor, ::cuda::counting_iterator<IndexType>>;
+  using iterator = thrust::transform_iterator<tail_flag_functor, counting_iterator>;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE tail_flags(RandomAccessIterator first, RandomAccessIterator last)
       : m_begin(
-          thrust::make_transform_iterator(::cuda::counting_iterator<IndexType>(0), tail_flag_functor(first, last)))
+          thrust::make_transform_iterator(thrust::counting_iterator<IndexType>(0), tail_flag_functor(first, last)))
       , m_end(m_begin + (last - first))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE tail_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
       : m_begin(thrust::make_transform_iterator(
-          ::cuda::counting_iterator<IndexType>(0), tail_flag_functor(first, last, binary_pred)))
+          thrust::counting_iterator<IndexType>(0), tail_flag_functor(first, last, binary_pred)))
       , m_end(m_begin + (last - first))
   {}
 
