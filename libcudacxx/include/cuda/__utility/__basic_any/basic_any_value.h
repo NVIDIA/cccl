@@ -31,6 +31,7 @@
 #include <cuda/__utility/__basic_any/storage.h>
 #include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -47,15 +48,34 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// constructible_from using list initialization syntax.
 // clang-format off
+// constructible_from using list initialization syntax.
 template <class _Tp, class... _Args>
 _CCCL_CONCEPT __list_initializable_from =
   _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)
   (
     _Tp{static_cast<_Args&&>(__args)...}
   );
+
+template <class _Tp, class... _Args>
+_CCCL_CONCEPT __initializable_from =
+  ::cuda::std::constructible_from<_Tp, _Args...> ||
+  __list_initializable_from<_Tp, _Args...>;
+
+template <class _Tp, class... _Args>
+_CCCL_CONCEPT __nothrow_list_initializable_from =
+  _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)
+  (
+    noexcept(_Tp{static_cast<_Args&&>(__args)...})
+  );
 // clang-format on
+
+template <class _Tp, class... _Args>
+_CCCL_CONCEPT __nothrow_initializable_from =
+  __initializable_from<_Tp, _Args...>
+  && (::cuda::std::constructible_from<_Tp, _Args...>
+        ? ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>
+        : __nothrow_list_initializable_from<_Tp, _Args...>);
 
 //!
 //! __basic_any
@@ -97,9 +117,9 @@ public:
   //! \pre `_Tp` must satisfy the requirements of `_Interface`.
   //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
-  _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
+  _CCCL_REQUIRES(__initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
   _CCCL_API explicit __basic_any(::cuda::std::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
-    __is_small<_Up>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Args...>)
+    __is_small<_Up>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
   {
     __emplace<_Up>(static_cast<_Args&&>(__args)...);
   }
@@ -109,14 +129,13 @@ public:
   //! \pre `_Tp` must satisfy the requirements of `_Interface`.
   //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = ::cuda::std::decay_t<_Tp>, class... _Args)
-  _CCCL_REQUIRES(__list_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...> _CCCL_AND
-                   __satisfies<_Tp, _Interface>)
+  _CCCL_REQUIRES(
+    __initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
   _CCCL_API explicit __basic_any(
     ::cuda::std::in_place_type_t<_Tp>,
     ::cuda::std::initializer_list<_Up> __il,
     _Args&&... __args) noexcept(__is_small<_Vp>(__size_, __align_)
-                                && ::cuda::std::
-                                  is_nothrow_constructible_v<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
+                                && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
   {
     __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
   }
@@ -312,9 +331,10 @@ public:
   //! \pre `_Tp` must satisfy the requirements of `_Interface`.
   //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
-  _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...>)
-  _CCCL_API auto emplace(_Args&&... __args) noexcept(
-    __is_small<_Up>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Args...>) -> _Up&
+  _CCCL_REQUIRES(__initializable_from<_Up, _Args...>)
+  _CCCL_API auto
+  emplace(_Args&&... __args) noexcept(__is_small<_Up>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
+    -> _Up&
   {
     reset();
     return __emplace<_Up>(static_cast<_Args&&>(__args)...);
@@ -325,10 +345,10 @@ public:
   //! \pre `_Tp` must satisfy the requirements of `_Interface`.
   //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = ::cuda::std::decay_t<_Tp>, class... _Args)
-  _CCCL_REQUIRES(__list_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
+  _CCCL_REQUIRES(__initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
   _CCCL_API auto emplace(::cuda::std::initializer_list<_Up> __il, _Args&&... __args) noexcept(
     __is_small<_Vp>(__size_, __align_)
-    && ::cuda::std::is_nothrow_constructible_v<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>) -> _Vp&
+    && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>) -> _Vp&
   {
     reset();
     return __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
@@ -408,13 +428,34 @@ private:
   _CCCL_API auto __emplace(_Args&&... __args) noexcept(
     __is_small<_Tp>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Tp, _Args...>) -> _Tp&
   {
+    using __pointer_t = _Tp*;
     if constexpr (__is_small<_Tp>(__size_, __align_))
     {
-      ::new (__buffer_) _Tp{static_cast<_Args&&>(__args)...};
+      // in-place construction
+      if constexpr (::cuda::std::constructible_from<_Tp, _Args...>)
+      {
+        // Prefer direct non-list initialization if possible.
+        ::new (__buffer_) _Tp(static_cast<_Args&&>(__args)...);
+      }
+      else
+      {
+        // Otherwise, fall back to direct list initialization.
+        ::new (__buffer_) _Tp{static_cast<_Args&&>(__args)...};
+      }
     }
     else
     {
-      ::new (__buffer_)::cuda::std::type_identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
+      // heap allocation
+      if constexpr (::cuda::std::constructible_from<_Tp, _Args...>)
+      {
+        // Prefer direct non-list initialization if possible.
+        ::new (__buffer_) __pointer_t{new _Tp(static_cast<_Args&&>(__args)...)};
+      }
+      else
+      {
+        // Otherwise, fall back to direct list initialization.
+        ::new (__buffer_) __pointer_t{new _Tp{static_cast<_Args&&>(__args)...}};
+      }
     }
 
     __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
