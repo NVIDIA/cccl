@@ -2,10 +2,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
-
-#include <cuda/iterator>
 
 #include <iostream>
 
@@ -36,7 +35,7 @@ public:
     }
   };
 
-  using CountingIterator    = typename cuda::counting_iterator<difference_type>;
+  using CountingIterator    = typename thrust::counting_iterator<difference_type>;
   using TransformIterator   = typename thrust::transform_iterator<repeat_functor, CountingIterator>;
   using PermutationIterator = typename thrust::permutation_iterator<Iterator, TransformIterator>;
 

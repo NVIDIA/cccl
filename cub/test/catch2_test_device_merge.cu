@@ -5,9 +5,8 @@
 
 #include <cub/device/device_merge.cuh>
 
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
-
-#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -277,8 +276,8 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
   const offset_t size2    = 634;
   const auto values_start = 123456789;
 
-  auto key_it   = cuda::counting_iterator<key_t>{};
-  auto value_it = cuda::counting_iterator<key_t>{values_start};
+  auto key_it   = thrust::counting_iterator<key_t>{};
+  auto value_it = thrust::counting_iterator<key_t>{values_start};
 
   // compute CUB result
   c2h::device_vector<key_t> result_keys_d(size1 + size2);

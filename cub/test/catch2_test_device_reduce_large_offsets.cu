@@ -6,7 +6,8 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <cuda/iterator>
+#include <thrust/iterator/counting_iterator.h>
+
 #include <cuda/std/__algorithm_>
 
 #include <cstdint>
@@ -77,7 +78,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     take(2, random(num_items_min, num_items_max)));
 
   // Input data
-  const auto index_it = cuda::make_counting_iterator(index_t{});
+  const auto index_it = thrust::make_counting_iterator(index_t{});
 
   SECTION("reduce")
   {

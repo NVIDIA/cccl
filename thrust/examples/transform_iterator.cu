@@ -1,9 +1,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
-
-#include <cuda/iterator>
 
 #include <iostream>
 #include <iterator>
@@ -96,7 +95,7 @@ int main()
 
   ////
   // combine transform_iterator with other fancy iterators like counting_iterator
-  using CountingIterator        = cuda::counting_iterator<int>;
+  using CountingIterator        = thrust::counting_iterator<int>;
   using ClampedCountingIterator = thrust::transform_iterator<clamp<int>, CountingIterator>;
 
   CountingIterator count_begin(0);
