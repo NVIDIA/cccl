@@ -189,9 +189,9 @@ std_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp second_
   return result;
 }
 
-template <typename KeyT, typename NumSelectedT, typename TagT>
+template <typename OperationT, typename KeyT, typename NumSelectedT, typename TagT>
 three_way_partition_result_t<KeyT>
-c_parallel_partition(operation_t first_selector, operation_t second_selector, const std::vector<KeyT>& input)
+c_parallel_partition(OperationT first_selector, OperationT second_selector, const std::vector<KeyT>& input)
 {
   std::size_t num_items = input.size();
 
@@ -294,7 +294,7 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   using key_t          = T::KeyT;
   using num_selected_t = T::NumSelectedT;
 
-  auto [less_op_src, greater_or_equal_op_src] = get_three_way_partition_ops(get_type_info<key_t>().type, 42);
+  auto [less_op_src, greater_or_equal_op_src] = get_three_way_partition_ops(get_type_info<key_t>().type, 21);
   operation_t less_op                         = make_operation("less_op", less_op_src);
   operation_t greater_or_equal_op             = make_operation("greater_op", greater_or_equal_op_src);
 
@@ -302,14 +302,205 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   const std::vector<int> input_int = generate<int>(num_items);
   const std::vector<key_t> input(input_int.begin(), input_int.end());
 
-  auto c_parallel_result = c_parallel_partition<key_t, num_selected_t, ThreeWayPartition_PrimitiveTypes_Fixture_Tag>(
-    less_op, greater_or_equal_op, input);
-  auto std_result = std_partition(less_than_t<key_t>{key_t{42}}, greater_or_equal_t<key_t>{key_t{42}}, input);
+  auto c_parallel_result =
+    c_parallel_partition<operation_t, key_t, num_selected_t, ThreeWayPartition_PrimitiveTypes_Fixture_Tag>(
+      less_op, greater_or_equal_op, input);
+  auto std_result = std_partition(less_than_t<key_t>{key_t{21}}, greater_or_equal_t<key_t>{key_t{21}}, input);
 
   REQUIRE(c_parallel_result == std_result);
 }
 
-// stateful operations test
-// custom types test
-// iterator test
-// well-known operations
+struct selector_state_t
+{
+  int comparison_value;
+};
+
+struct ThreeWayPartition_StatefulOperations_Fixture_Tag;
+C2H_TEST("ThreeWayPartition works with stateful operations", "[three_way_partition]")
+{
+  using key_t          = int;
+  using num_selected_t = int;
+
+  selector_state_t op_state                      = {21};
+  stateful_operation_t<selector_state_t> less_op = make_operation(
+    "less_op",
+    "struct selector_state_t { int comparison_value; };\n"
+    "extern \"C\" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
+    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
+    "  *static_cast<int*>(x_ptr) < state->comparison_value;\n"
+    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;\n"
+    "}",
+    op_state);
+  stateful_operation_t<selector_state_t> greater_or_equal_op = make_operation(
+    "greater_or_equal_op",
+    "struct selector_state_t { int comparison_value; };\n"
+    "extern \"C\" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
+    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
+    "  *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
+    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
+    "}",
+    op_state);
+
+  const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
+  const std::vector<int> input_int = generate<int>(num_items);
+  const std::vector<key_t> input(input_int.begin(), input_int.end());
+
+  auto c_parallel_result =
+    c_parallel_partition<stateful_operation_t<selector_state_t>,
+                         key_t,
+                         num_selected_t,
+                         ThreeWayPartition_StatefulOperations_Fixture_Tag>(less_op, greater_or_equal_op, input);
+  auto std_result = std_partition(less_than_t<key_t>{key_t{21}}, greater_or_equal_t<key_t>{key_t{21}}, input);
+
+  REQUIRE(c_parallel_result == std_result);
+}
+
+struct ThreeWayPartition_CustomTypes_Fixture_Tag;
+C2H_TEST("ThreeWayPartition works with custom types", "[three_way_partition]")
+{
+  struct pair_type
+  {
+    int a;
+    size_t b;
+
+    bool operator==(const pair_type& other) const
+    {
+      return a == other.a && b == other.b;
+    }
+  };
+
+  struct custom_greater_or_equal_t
+  {
+    int compare;
+
+    explicit __host__ custom_greater_or_equal_t(int compare)
+        : compare(compare)
+    {}
+
+    __device__ bool operator()(const pair_type& a) const
+    {
+      return a.a >= compare;
+    }
+  };
+
+  struct custom_less_than_t
+  {
+    int compare;
+
+    explicit __host__ custom_less_than_t(int compare)
+        : compare(compare)
+    {}
+
+    __device__ bool operator()(const pair_type& a) const
+    {
+      return a.a < compare;
+    }
+  };
+
+  using key_t          = pair_type;
+  using num_selected_t = int;
+
+  const int comparison_value = 21;
+
+  operation_t less_op = make_operation(
+    "less_op",
+    std::format("struct pair_type {{ int a; size_t b; }};"
+                "extern \"C\" __device__ void less_op(void* x_ptr, void* out_ptr) {{ "
+                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
+                "  bool* out = static_cast<bool*>(out_ptr); "
+                "  *out = x->a < {0}; "
+                "}}",
+                comparison_value));
+  operation_t greater_or_equal_op = make_operation(
+    "greater_or_equal_op",
+    std::format("struct pair_type {{ int a; size_t b; }};"
+                "extern \"C\" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{ "
+                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
+                "  bool* out = static_cast<bool*>(out_ptr); "
+                "  *out = x->a >= {0}; "
+                "}}",
+                comparison_value));
+
+  const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
+  const std::vector<int> input_int = generate<int>(num_items);
+  std::vector<key_t> input(num_items);
+  std::transform(input_int.begin(), input_int.end(), input.begin(), [](const int& x) {
+    return key_t{static_cast<int>(x), static_cast<size_t>(x)};
+  });
+
+  auto c_parallel_result =
+    c_parallel_partition<operation_t, key_t, num_selected_t, ThreeWayPartition_CustomTypes_Fixture_Tag>(
+      less_op, greater_or_equal_op, input);
+  auto std_result =
+    std_partition(custom_less_than_t{comparison_value}, custom_greater_or_equal_t{comparison_value}, input);
+
+  REQUIRE(c_parallel_result == std_result);
+}
+
+struct ThreeWayPartition_Iterators_Fixture_Tag;
+C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
+{
+  using key_t          = int;
+  using num_selected_t = int;
+
+  const std::size_t num_items    = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
+  const std::vector<key_t> input = generate<key_t>(num_items);
+  pointer_t<key_t> input_ptr(input);
+  pointer_t<key_t> first_part_output_ptr(num_items);
+  pointer_t<key_t> second_part_output_ptr(num_items);
+  pointer_t<key_t> unselected_output_ptr(num_items);
+  pointer_t<num_selected_t> num_selected_output_ptr(2);
+
+  iterator_t<key_t, random_access_iterator_state_t<key_t>> input_it =
+    make_random_access_iterator<key_t>(iterator_kind::INPUT, "int", "in");
+  input_it.state.data = input_ptr.ptr;
+
+  iterator_t<key_t, random_access_iterator_state_t<key_t>> first_part_output_it =
+    make_random_access_iterator<key_t>(iterator_kind::OUTPUT, "int", "first_part_output");
+  first_part_output_it.state.data = first_part_output_ptr.ptr;
+
+  iterator_t<key_t, random_access_iterator_state_t<key_t>> second_part_output_it =
+    make_random_access_iterator<key_t>(iterator_kind::OUTPUT, "int", "second_part_output");
+  second_part_output_it.state.data = second_part_output_ptr.ptr;
+
+  iterator_t<key_t, random_access_iterator_state_t<key_t>> unselected_output_it =
+    make_random_access_iterator<key_t>(iterator_kind::OUTPUT, "int", "unselected_output");
+  unselected_output_it.state.data = unselected_output_ptr.ptr;
+
+  iterator_t<key_t, random_access_iterator_state_t<key_t>> num_selected_output_it =
+    make_random_access_iterator<key_t>(iterator_kind::OUTPUT, "int", "num_selected_output");
+  num_selected_output_it.state.data = num_selected_output_ptr.ptr;
+
+  auto [less_op_src, greater_or_equal_op_src] = get_three_way_partition_ops(get_type_info<key_t>().type, 21);
+  operation_t less_op                         = make_operation("less_op", less_op_src);
+  operation_t greater_or_equal_op             = make_operation("greater_op", greater_or_equal_op_src);
+
+  auto& build_cache    = get_cache<ThreeWayPartition_Iterators_Fixture_Tag>();
+  const auto& test_key = make_key<key_t, num_selected_t>();
+
+  three_way_partition(
+    input_it,
+    first_part_output_it,
+    second_part_output_it,
+    unselected_output_it,
+    num_selected_output_it,
+    less_op,
+    greater_or_equal_op,
+    num_items,
+    build_cache,
+    test_key);
+
+  std::vector<key_t> first_part_output(first_part_output_ptr);
+  std::vector<key_t> second_part_output(second_part_output_ptr);
+  std::vector<key_t> unselected_output(unselected_output_ptr);
+  std::vector<num_selected_t> num_selected(num_selected_output_ptr);
+
+  auto std_result = std_partition(less_than_t<key_t>{key_t{21}}, greater_or_equal_t<key_t>{key_t{21}}, input);
+
+  REQUIRE(first_part_output == std_result.first_part);
+  REQUIRE(second_part_output == std_result.second_part);
+  REQUIRE(unselected_output == std_result.unselected);
+  REQUIRE(num_selected[0] == std_result.num_items_in_first_part);
+  REQUIRE(num_selected[1] == std_result.num_items_in_second_part);
+  REQUIRE(static_cast<int>(num_items) - num_selected[0] - num_selected[1] == std_result.num_unselected_items);
+}

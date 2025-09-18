@@ -817,7 +817,7 @@ static cccl_op_t make_well_known_binary_operation()
   return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
-static cccl_op_t make_well_known_binary_predicate()
+static cccl_op_t make_well_known_less_binary_predicate()
 {
   return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
@@ -825,6 +825,11 @@ static cccl_op_t make_well_known_binary_predicate()
 static cccl_op_t make_well_known_unique_binary_predicate()
 {
   return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
+}
+
+static cccl_op_t make_well_known_greater_equal_binary_predicate()
+{
+  return {cccl_op_kind_t::CCCL_GREATER_EQUAL, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr};
 }
 
 template <class ValueT, class StateT>
