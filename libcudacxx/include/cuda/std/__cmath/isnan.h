@@ -158,12 +158,16 @@ template <class _Tp>
 #if _CCCL_HAS_FLOAT128()
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
-  // __builtin_isnan is not efficient
+  // __builtin_isnan is not efficient for __float128, prefer __nv_fp128_isnan at run-time
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization flags
   }
+#  if defined(_CCCL_BUILTIN_ISNAN)
+  return _CCCL_BUILTIN_ISNAN(__x);
+#  else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return __x != __x;
+#  endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 #endif // _CCCL_HAS_FLOAT128()
 
