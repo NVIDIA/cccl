@@ -2,10 +2,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
-
-#include <cuda/iterator>
 
 #include <iomanip>
 #include <iostream>
@@ -77,7 +76,7 @@ int main()
   thrust::sort_by_key(bucket_indices.begin(), bucket_indices.end(), points.begin());
 
   // find the beginning of each bucket's list of points
-  cuda::counting_iterator<unsigned int> search_begin(0);
+  thrust::counting_iterator<unsigned int> search_begin(0);
   thrust::lower_bound(
     bucket_indices.begin(), bucket_indices.end(), search_begin, search_begin + w * h, bucket_begin.begin());
 

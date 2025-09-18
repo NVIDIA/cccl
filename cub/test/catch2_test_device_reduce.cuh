@@ -35,7 +35,6 @@
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
-#include <cuda/iterator>
 
 #include <nv/target>
 
@@ -341,7 +340,7 @@ void compute_segmented_problem_reference(
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it = h_offsets.cbegin();
   auto seg_sizes_it =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
       return offsets_it[i + 1] - offsets_it[i];
     });
   std::size_t num_segments = h_offsets.size() - 1;
@@ -365,7 +364,7 @@ void compute_segmented_problem_reference(
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it = h_offsets.cbegin();
   auto seg_sizes_it =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
       return offsets_it[i + 1] - offsets_it[i];
     });
   std::size_t num_segments = h_offsets.size() - 1;

@@ -7,11 +7,10 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/transform.h>
-
-#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -157,7 +156,7 @@ try
   // Prepare d_range_srcs
   offset_to_constant_it<std::uint8_t> offset_to_index_op{};
   auto d_range_srcs =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(range_offset_t{0}), offset_to_index_op);
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), offset_to_index_op);
 
   // Prepare d_range_dsts
   offset_to_transform_it<std::uint8_t*> dst_transform_op{
@@ -194,7 +193,7 @@ try
   byte_offset_t num_items              = large_target_copy_size;
 
   // Input iterator for the items of a single range
-  auto input_data_it = cuda::make_counting_iterator(data_t{42});
+  auto input_data_it = thrust::make_counting_iterator(data_t{42});
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_items);
@@ -255,10 +254,10 @@ try
   prepend_n_constants_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
     d_range_sizes.cbegin(), range_size_t{0}, num_empty_ranges};
   auto d_range_sizes_it_skipped =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
 
   // Iterator to be used to provide input data
-  auto in_it = thrust::make_transform_iterator(cuda::make_counting_iterator(item_offset_t{42}), mod_n<item_t>{200});
+  auto in_it = thrust::make_transform_iterator(thrust::make_counting_iterator(item_offset_t{42}), mod_n<item_t>{200});
   using range_it_t = decltype(in_it);
 
   // Generate the offsets into in_it from range_sizes
@@ -274,7 +273,7 @@ try
   prepend_n_constants_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{
     d_ranges_src_it, in_it, num_empty_ranges};
   auto d_ranges_src_it_skipped =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(range_offset_t{0}), src_skip_first_n_op);
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), src_skip_first_n_op);
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_total_items);
@@ -287,7 +286,7 @@ try
   prepend_n_constants_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
     ranges_dst_it, check_result_it, num_empty_ranges};
   auto d_ranges_dst_it_skipped =
-    thrust::make_transform_iterator(cuda::make_counting_iterator(range_offset_t{0}), dst_skip_first_n_op);
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), dst_skip_first_n_op);
 
   // Invoke device-side algorithm
   copy_batched(d_ranges_src_it_skipped, d_ranges_dst_it_skipped, d_range_sizes_it_skipped, num_ranges);

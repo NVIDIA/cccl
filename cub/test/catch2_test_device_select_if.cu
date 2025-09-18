@@ -32,13 +32,13 @@
 
 #include <thrust/distance.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/offset_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/iterator>
 #include <cuda/std/limits>
 
 #include <algorithm>
@@ -355,7 +355,7 @@ try
     take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
 
   // Input
-  auto in = cuda::make_counting_iterator(static_cast<type>(0));
+  auto in = thrust::make_counting_iterator(static_cast<type>(0));
 
   // Needs to be device accessible
   c2h::device_vector<offset_t> num_selected_out(1, 0);
@@ -404,7 +404,7 @@ try
   static constexpr offset_t mod = 200;
   static constexpr offset_t div = 1000000000;
   auto in                       = thrust::make_transform_iterator(
-    cuda::make_counting_iterator(offset_t{0}), modx_and_add_divy<offset_t, type>{mod, div});
+    thrust::make_counting_iterator(offset_t{0}), modx_and_add_divy<offset_t, type>{mod, div});
 
   // Prepare output
   c2h::device_vector<type> out(num_items);

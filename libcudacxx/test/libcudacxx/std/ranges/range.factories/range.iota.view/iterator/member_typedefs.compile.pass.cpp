@@ -137,7 +137,13 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, int>);
     static_assert(sizeof(Iter::difference_type) > sizeof(int));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    // If we're compiling for 32 bit or windows, int and long are the same size, so long long is the correct difference
+    // type.
+#if INTPTR_MAX == INT32_MAX || defined(_WIN32)
+    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
+#else
+    static_assert(cuda::std::same_as<Iter::difference_type, long>);
+#endif
     unused(io);
   }
   {
@@ -149,20 +155,20 @@ __host__ __device__ void test()
     // Same as below, if there is no type larger than long, we can just use that.
     static_assert(sizeof(Iter::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
     unused(io);
   }
   {
-    const cuda::std::ranges::iota_view<cuda::std::ptrdiff_t> io(0);
+    const cuda::std::ranges::iota_view<long long> io(0);
     using Iter = decltype(io.begin());
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
-    static_assert(cuda::std::same_as<Iter::value_type, cuda::std::ptrdiff_t>);
-    // No integer is larger than cuda::std::ptrdiff_t, so it is OK to use cuda::std::ptrdiff_t as the difference type
-    // here: https://eel.is/c++draft/range.iota.view#1.3
-    static_assert(sizeof(Iter::difference_type) >= sizeof(cuda::std::ptrdiff_t));
+    static_assert(cuda::std::same_as<Iter::value_type, long long>);
+    // No integer is larger than long long, so it is OK to use long long as the difference type here:
+    // https://eel.is/c++draft/range.iota.view#1.3
+    static_assert(sizeof(Iter::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
     unused(io);
   }
   {

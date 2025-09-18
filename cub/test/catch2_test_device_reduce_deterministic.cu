@@ -32,12 +32,10 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/sequence.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
-#include <cuda/iterator>
 
 #include <numeric>
 
@@ -153,7 +151,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with la
     ::cuda::std::negate<type>{});
 
   cyclic_chunk_accessor<type, decltype(d_chunk.data())> wrapper{d_chunk.data(), chunk_size};
-  auto d_input = thrust::make_transform_iterator(cuda::counting_iterator<size_t>{}, wrapper);
+  auto d_input = thrust::make_transform_iterator(thrust::counting_iterator<size_t>{}, wrapper);
   c2h::device_vector<type> d_output(1);
 
   const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
@@ -280,7 +278,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   const int num_items = 1 << 10;
 
-  using input_it_t = cuda::counting_iterator<int>;
+  using input_it_t = thrust::counting_iterator<int>;
   auto input       = input_it_t(1);
   c2h::device_vector<type> d_output(1);
 
