@@ -121,7 +121,7 @@ def ReverseIterator(sequence):
 
 
 def TransformIterator(it, op):
-    """Returns an Iterator representing a transformed sequence of values.
+    """An iterator that applies a user-defined unary function to the elements of an underlying iterator as they are read.
 
     Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html)
 
@@ -133,8 +133,8 @@ def TransformIterator(it, op):
             :language: python
             :start-after: # example-begin
     Args:
-        it: The iterator object to be transformed
-        op: The transform operation
+        it: The underlying iterator
+        op: The unary operation to be applied to values as they are read from ``it``
 
     Returns:
         A ``TransformIterator`` object to transform the items in ``it`` using ``op``
@@ -143,7 +143,7 @@ def TransformIterator(it, op):
 
 
 def TransformOutputIterator(it, op):
-    """Returns an Iterator representing a transformed sequence of values.
+    """An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.
 
     Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
 
@@ -154,6 +154,13 @@ def TransformOutputIterator(it, op):
         .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/iterator/transform_output_iterator.py
             :language: python
             :start-after: # example-begin
+
+    Args:
+        it: The underlying iterator
+        op: The operation to be applied to values before they are written to ``it``
+
+    Returns:
+        A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
     return make_transform_iterator(it, op, "output")
 
