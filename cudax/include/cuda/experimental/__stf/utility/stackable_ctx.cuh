@@ -412,6 +412,11 @@ public:
         return false;
       }
 
+      virtual cudaGraph_t get_graph() const
+      {
+        return nullptr;
+      }
+
       ctx_node_base(ctx_node_base&&) noexcept            = default;
       ctx_node_base& operator=(ctx_node_base&&) noexcept = default;
 
@@ -510,22 +515,42 @@ public:
         // Graph context nodes create and set up the internal CUDA graph
         _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
 
-        auto& parent_ctx = parent_node->ctx;
+        auto& parent_ctx         = parent_node->ctx;
+        cudaGraph_t parent_graph = parent_node->get_graph();
 
-        // Get a stream from previous context
-        cudaStream_t stream = parent_ctx.pick_stream();
-        support_stream      = stream; // Update our stream
+        /* The parent is either a stream_ctx, or a graph itself. If this is a graph, we either add a new child graph, or
+         * a conditional node. */
 
-        // Make sure the stream depends on completion of events to import data
-        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), stream);
+        if (parent_graph)
+        {
+          nested_graph = true;
+          if (config.conditional_handle != nullptr)
+          {
+            // We will add a conditional node to an existing graph, we do not create a new graph.
+            fprintf(stderr, "PUSHING CTX : graph context parent => create cond graph node\n");
+            graph = parent_graph;
+          }
+          else
+          {
+            fprintf(stderr, "PUSHING CTX : graph context parent => create child graph node\n");
 
-        // This will either be the entire graph or the parent graph containing the conditional node
-        cuda_safe_call(cudaGraphCreate(&graph, 0));
+            cuda_safe_call(cudaGraphCreate(&graph, 0));
 
-        cudaGraph_t sub_graph;
+            cudaGraphNode_t n;
+            cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, graph));
+          }
+        }
+        else
+        {
+          fprintf(stderr, "PUSHING CTX : stream context parent => create new graph\n");
+          cuda_safe_call(cudaGraphCreate(&graph, 0));
+        }
+
+        // This is the graph which will be used by our STF context. If we need
+        // to use a conditional node later, will will change that value.
+        cudaGraph_t sub_graph = graph;
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
-        // Create CUDA graph and graph context
         if (config.conditional_handle != nullptr)
         {
           // Create the conditional handle and store it in the provided pointer
@@ -550,12 +575,14 @@ public:
           // Get the body graph from the conditional node
           sub_graph = cParams.conditional.phGraph_out[0];
         }
-        else
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
-        {
-          // If there is no conditional node, the entire graph is the sub-graph
-          sub_graph = graph;
-        }
+
+        // Get a stream from previous context
+        cudaStream_t stream = parent_ctx.pick_stream();
+        support_stream      = stream; // Update our stream
+
+        // Make sure the stream depends on completion of events to import data
+        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), stream);
 
         auto gctx = graph_ctx(sub_graph, stream, handle);
 
@@ -588,6 +615,20 @@ public:
           cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0));
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
         }
+
+        // This was either a new graph (with a stream_ctx parent) or a nested
+        // graph ctx node. If this was a nested context, we do not need to
+        // instantiate and launch, but we need to enforce dependencies by
+        // adding input deps
+        if (nested_graph)
+        {
+          fprintf(stderr, "TODO nested contexts are WIP\n");
+          abort();
+          return;
+        }
+
+        // Since this is not a nested context, we had to create a new graph for
+        // this, and we have to launch it after instantiating it.
 
         // Create executable graph with enhanced error reporting
 #if _CCCL_CTK_AT_LEAST(11, 4)
@@ -656,9 +697,15 @@ public:
         graph = nullptr;
       }
 
+      cudaGraph_t get_graph() const override
+      {
+        return graph;
+      }
+
     private:
       cudaGraphExec_t graph_exec = nullptr;
       cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
+      bool nested_graph = false;
     };
 
     /*
@@ -893,8 +940,7 @@ public:
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
-      int head_offset  = is_root ? -1 : get_head_offset();
-      int parent_depth = is_root ? -1 : int(node_tree.depth(head_offset));
+      int head_offset = is_root ? -1 : get_head_offset();
 
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
@@ -912,15 +958,27 @@ public:
       // Additional validation for push_while (when conditional_handle is provided)
       if (config.conditional_handle != nullptr)
       {
+        int parent_depth = is_root ? -1 : int(node_tree.depth(head_offset));
+
         // push_while cannot be used as root context - must have a parent
         _CCCL_ASSERT(head_offset != -1, "push_while cannot be used as root context - use push() for root");
 
-        // push_while is not for nested contexts - parent must be depth 0 (simple hierarchy)
+        // push_while is not for nested contexts yet - parent must be depth 0 (simple hierarchy)
         _CCCL_ASSERT(parent_depth == 0, "push_while can only be used with depth 0 parent - not for nested contexts");
       }
 #endif
 
-      if (parent_depth >= 1)
+      if (head_offset == -1)
+      {
+        // If there is no current context, this is the root context and we use a stream_ctx
+        // Create stream context node
+        nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>());
+
+        // root of the context
+        root_offset = node_offset;
+      }
+#if 0
+      else if (parent_depth >= 1)
       {
         // Create a virtual context node that shares execution with the parent
         // but maintains hierarchy for data management
@@ -935,19 +993,11 @@ public:
         // Set up hierarchy relationship
         node_tree.set_parent(head_offset, node_offset);
       }
-      else if (head_offset == -1)
-      {
-        // If there is no current context, this is the root context and we use a stream_ctx
-        // Create stream context node
-        nodes[node_offset].emplace(::std::make_unique<stream_ctx_node>());
-
-        // root of the context
-        root_offset = node_offset;
-      }
+#endif
       else
       {
         // In the current implementation, depth > 1 is using a no-op for push/pop
-        _CCCL_ASSERT(parent_depth == 0, "invalid state");
+        ///   _CCCL_ASSERT(parent_depth == 0, "invalid state");
         // Keep track of parenthood
         node_tree.set_parent(head_offset, node_offset);
 
