@@ -1,0 +1,14 @@
+[
+  {
+    "error_short": "error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "pattern_type": "build",
+    "pattern_name": "nvcc error",
+    "rel_filepath": "d.cu",
+    "filename": "d.cu",
+    "error_line": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks",
+    "error_context": "d.cu(4): error: this is a very long error message that should be truncated to ensure that the summary does not exceed the limit and still has balanced backticks\na.cu(3): error: expected a \";\"\n  }\n  ^\n\n1 error detected in the compilation of \"a.cu\".",
+    "line": "4",
+    "location": "d.cu:4",
+    "summary": "`d.cu:4`: `error: this is a very long error message that should be truncated...`"
+  }
+]
