@@ -1,8 +1,7 @@
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
-
-#include <cuda/iterator>
 
 #include <cmath>
 #include <iomanip>
@@ -67,7 +66,11 @@ int main()
   int M = 30000;
 
   float estimate = thrust::transform_reduce(
-    cuda::counting_iterator<int>(0), cuda::counting_iterator<int>(M), estimate_pi(), 0.0f, ::cuda::std::plus<float>());
+    thrust::counting_iterator<int>(0),
+    thrust::counting_iterator<int>(M),
+    estimate_pi(),
+    0.0f,
+    ::cuda::std::plus<float>());
   estimate /= M;
 
   std::cout << std::setprecision(3);

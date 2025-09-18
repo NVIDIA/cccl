@@ -1,9 +1,8 @@
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
-
-#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -395,7 +394,7 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   // Size of each key group
   const std::int64_t key_size = num_items / num_unique_keys;
 
-  using counting_it      = cuda::counting_iterator<std::int64_t>;
+  using counting_it      = thrust::counting_iterator<std::int64_t>;
   using transform_key_it = thrust::transform_iterator<div_op, counting_it>;
   using transform_val_it = thrust::transform_iterator<mod_op, counting_it>;
 

@@ -8,8 +8,6 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
-#include <cuda/iterator>
-
 #include <algorithm>
 #include <limits>
 #include <map>
@@ -526,7 +524,7 @@ void TestFunctionIsBijectionBase(size_t m)
   }
   ASSERT_LEQUAL(total_length, (std::max) (m * 2, size_t(16))); // Check the rounded up size is at most double the input
 
-  auto device_result_it = thrust::make_transform_iterator(cuda::make_counting_iterator(T(0)), device_f);
+  auto device_result_it = thrust::make_transform_iterator(thrust::make_counting_iterator(T(0)), device_f);
 
   thrust::device_vector<T> unpermuted(total_length, T(0));
 
@@ -537,7 +535,7 @@ void TestFunctionIsBijectionBase(size_t m)
                   unpermuted.begin());
 
   // Check every index is in the result, if any are missing then the function was not a bijection over [0,m)
-  ASSERT_EQUAL(true, thrust::equal(unpermuted.begin(), unpermuted.end(), cuda::make_counting_iterator(T(0))));
+  ASSERT_EQUAL(true, thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
 }
 template <typename T>
 void TestFunctionIsBijection(size_t m)

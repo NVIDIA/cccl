@@ -1,9 +1,9 @@
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 #include <thrust/transform_reduce.h>
 
-#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>
@@ -246,9 +246,9 @@ template <typename Vector>
 void TestPermutationIteratorWithCountingIterator()
 {
   using T      = typename Vector::value_type;
-  using diff_t = typename cuda::counting_iterator<T>::difference_type;
+  using diff_t = typename thrust::counting_iterator<T>::difference_type;
 
-  cuda::counting_iterator<T> input(0), index(0);
+  thrust::counting_iterator<T> input(0), index(0);
 
   // test copy()
   {
