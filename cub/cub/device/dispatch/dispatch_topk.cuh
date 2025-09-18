@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/**
- * @file
- *   cub::DeviceTopK provides device-wide, parallel operations for finding the K largest (or smallest) items
- * from sequences of unordered data items residing within device-accessible memory.
- */
+//! @file
+//! cub::DeviceTopK provides device-wide, parallel operations for finding the K largest (or smallest) items
+//! from sequences of unordered data items residing within device-accessible memory.
 
 #pragma once
 
@@ -37,7 +35,19 @@ namespace detail::topk
 template <class KeyT>
 constexpr int calc_bits_per_pass()
 {
-  return sizeof(KeyT) == 1 ? 8 : sizeof(KeyT) == 2 ? 11 : sizeof(KeyT) == 4 ? 11 : sizeof(KeyT) == 8 ? 11 : 8;
+  switch (sizeof(KeyT))
+  {
+    case 1:
+      return 8;
+    case 2:
+      return 11;
+    case 4:
+      return 11;
+    case 8:
+      return 11;
+    default:
+      return 8;
+  }
 }
 
 template <class KeyInT>
@@ -46,7 +56,8 @@ struct sm90_tuning
   static constexpr int threads = 512; // Number of threads per block
 
   static constexpr int nominal_4b_items_per_thread = 4;
-  static constexpr int items = ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / (int) sizeof(KeyInT)));
+  static constexpr int items =
+    ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT))));
   // Try to load 16 Bytes per thread. (int64(items=2);int32(items=4);int16(items=8)).
 
   static constexpr int BITS_PER_PASS = detail::topk::calc_bits_per_pass<KeyInT>();
@@ -60,13 +71,14 @@ struct device_topk_policy_hub
   struct DefaultTuning
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 4;
-    static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
-      NOMINAL_4B_ITEMS_PER_THREAD, ::cuda::std::max(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / (int) sizeof(KeyInT))));
+    static constexpr int ITEMS_PER_THREAD =
+      ::cuda::std::min(NOMINAL_4B_ITEMS_PER_THREAD,
+                       ::cuda::std::max(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / static_cast<int>(sizeof(KeyInT)))));
 
     static constexpr int BITS_PER_PASS = detail::topk::calc_bits_per_pass<KeyInT>();
 
     using topk_policy_t =
-      AgentTopKPolicy<512, ITEMS_PER_THREAD, BITS_PER_PASS, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
+      detail::topk::AgentTopKPolicy<512, ITEMS_PER_THREAD, BITS_PER_PASS, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct Policy350
@@ -78,7 +90,11 @@ struct device_topk_policy_hub
   {
     using tuning = detail::topk::sm90_tuning<KeyInT>;
     using topk_policy_t =
-      AgentTopKPolicy<tuning::threads, tuning::items, tuning::BITS_PER_PASS, tuning::load_algorithm, BLOCK_SCAN_WARP_SCANS>;
+      detail::topk::AgentTopKPolicy<tuning::threads,
+                                    tuning::items,
+                                    tuning::BITS_PER_PASS,
+                                    tuning::load_algorithm,
+                                    BLOCK_SCAN_WARP_SCANS>;
   };
 
   using max_policy = Policy900;
@@ -497,7 +513,8 @@ struct DispatchTopK : SelectedPolicy
   int ptx_version;
 
   using key_in_t                  = detail::it_value_t<KeyInputIteratorT>;
-  static constexpr bool keys_only = ::cuda::std::is_same<ValueInputIteratorT, NullType*>::value;
+  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
+
   /*
    *
    * @param[in] d_temp_storage

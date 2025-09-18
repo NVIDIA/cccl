@@ -17,9 +17,10 @@
 #include <cub/device/device_topk.cuh>
 #include <cub/util_allocator.cuh>
 
-#include <algorithm>
+#include <thrust/host_vector.h>
 
-#include <stdio.h>
+#include <algorithm>
+#include <cstdio>
 
 #include "../../test/test_util.h"
 
@@ -35,6 +36,7 @@ CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 //---------------------------------------------------------------------
 // Test generation
 //---------------------------------------------------------------------
+
 /**
  * Simple key-value pairing for floating point types.
  * Treats positive and negative zero as equivalent.
@@ -54,6 +56,7 @@ struct Pair
     return res;
   }
 };
+
 /**
  * Initialize key-value sorting problem.
  */
@@ -93,6 +96,7 @@ void Initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_re
   delete[] h_pairs;
   delete[] h_reference_pairs;
 }
+
 /**
  *  In some case the results of topK is unordered. Sort the results to compare with groundtruth.
  */
@@ -154,12 +158,19 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Allocate host arrays
-  float* h_keys           = new float[num_items];
-  float* h_reference_keys = new float[k];
-  float* h_res_keys       = new float[k];
-  int* h_values           = new int[num_items];
-  int* h_reference_values = new int[k];
-  int* h_res_values       = new int[k];
+  thrust::host_vector<float> h_keys_vector(num_items);
+  thrust::host_vector<float> h_reference_keys_vector(k);
+  thrust::host_vector<float> h_res_keys_vector(k);
+  thrust::host_vector<int> h_values_vector(num_items);
+  thrust::host_vector<int> h_reference_values_vector(k);
+  thrust::host_vector<int> h_res_values_vector(k);
+
+  float* h_keys           = thrust::raw_pointer_cast(h_keys_vector.data());
+  float* h_reference_keys = thrust::raw_pointer_cast(h_reference_keys_vector.data());
+  float* h_res_keys       = thrust::raw_pointer_cast(h_res_keys_vector.data());
+  int* h_values           = thrust::raw_pointer_cast(h_values_vector.data());
+  int* h_reference_values = thrust::raw_pointer_cast(h_reference_values_vector.data());
+  int* h_res_values       = thrust::raw_pointer_cast(h_res_values_vector.data());
 
   // Initialize problem and solution on host
   Initialize(h_keys, h_values, h_reference_keys, h_reference_values, num_items, k);
@@ -218,36 +229,6 @@ int main(int argc, char** argv)
   AssertEquals(0, compare);
 
   // Cleanup
-  if (h_keys)
-  {
-    delete[] h_keys;
-    h_keys = nullptr;
-  }
-  if (h_reference_keys)
-  {
-    delete[] h_reference_keys;
-    h_reference_keys = nullptr;
-  }
-  if (h_res_keys)
-  {
-    delete[] h_res_keys;
-    h_res_keys = nullptr;
-  }
-  if (h_values)
-  {
-    delete[] h_values;
-    h_values = nullptr;
-  }
-  if (h_reference_values)
-  {
-    delete[] h_reference_values;
-    h_reference_values = nullptr;
-  }
-  if (h_res_values)
-  {
-    delete[] h_res_values;
-    h_res_values = nullptr;
-  }
   if (d_keys_in)
   {
     CubDebugExit(g_allocator.DeviceFree(d_keys_in));

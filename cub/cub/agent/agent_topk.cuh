@@ -1,11 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/**
- * \file
- * cub::AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in device-wide topK.
- */
-
+//! @file
+//! cub::AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in device-wide topK.
 #pragma once
 
 #include <cub/config.cuh>
@@ -26,6 +23,9 @@
 #include <cuda/atomic>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail::topk
+{
 
 /**
  * Parameterizable tuning policy type for AgentTopK
@@ -73,8 +73,6 @@ struct AgentTopKPolicy
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
 
-namespace detail::topk
-{
 template <typename KeyInT, typename OffsetT, typename OutOffsetT>
 struct alignas(128) Counter
 {

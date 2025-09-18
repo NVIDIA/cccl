@@ -142,10 +142,10 @@ C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_typ
     c2h::type_name<key_t>(), c2h::type_name<value_t>(), c2h::type_name<num_items_t>(), num_items, k, direction_t::value);
 
   // Allocate device memory
-  c2h::device_vector<key_t> keys_in(num_items);
-  c2h::device_vector<key_t> keys_out(k);
-  c2h::device_vector<value_t> values_in(num_items);
-  c2h::device_vector<value_t> values_out(k);
+  c2h::device_vector<key_t> keys_in(num_items, thrust::no_init);
+  c2h::device_vector<key_t> keys_out(k, thrust::no_init);
+  c2h::device_vector<value_t> values_in(num_items, thrust::no_init);
+  c2h::device_vector<value_t> values_out(k, thrust::no_init);
 
   // Initialize input data
   const int num_key_seeds   = 1;

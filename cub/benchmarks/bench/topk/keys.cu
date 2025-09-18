@@ -30,13 +30,13 @@ struct policy_hub_t
     static constexpr int BITS_PER_PASS          = cub::detail::topk::calc_bits_per_pass<KeyInT>();
     static constexpr int COEFFICIENT_FOR_BUFFER = 128;
 
-    using TopKPolicyT =
-      cub::AgentTopKPolicy<TUNE_THREADS_PER_BLOCK,
-                           ITEMS_PER_THREAD,
-                           BITS_PER_PASS,
-                           COEFFICIENT_FOR_BUFFER,
-                           TUNE_LOAD_ALGORITHM,
-                           cub::BLOCK_SCAN_WARP_SCANS>;
+    using TopKPolicyT = cub::detail::topk::AgentTopKPolicy<
+      TUNE_THREADS_PER_BLOCK,
+      ITEMS_PER_THREAD,
+      BITS_PER_PASS,
+      COEFFICIENT_FOR_BUFFER,
+      TUNE_LOAD_ALGORITHM,
+      cub::BLOCK_SCAN_WARP_SCANS>;
   };
 
   using MaxPolicy = policy_t;
@@ -50,31 +50,23 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
   using key_output_it_t = KeyT*;
   using offset_t        = cub::detail::choose_offset_t<OffsetT>;
   using out_offset_t =
-    ::cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
-                               offset_t,
-                               cub::detail::choose_offset_t<OutOffsetT>>;
+    cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
+                             offset_t,
+                             cub::detail::choose_offset_t<OutOffsetT>>;
 
+  using dispatch_t = cub::detail::topk::DispatchTopK<
+    key_input_it_t,
+    key_output_it_t,
+    cub::NullType*,
+    cub::NullType*,
+    offset_t,
+    out_offset_t,
+    cub::detail::topk::select::max
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<KeyT, OffsetT>;
-  using dispatch_t = cub::detail::topk::DispatchTopK<
-    key_input_it_t,
-    key_output_it_t,
-    cub::NullType*,
-    cub::NullType*,
-    offset_t,
-    out_offset_t,
-    cub::detail::topk::select::max,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::detail::topk::DispatchTopK<
-    key_input_it_t,
-    key_output_it_t,
-    cub::NullType*,
-    cub::NullType*,
-    offset_t,
-    out_offset_t,
-    cub::detail::topk::select::max>;
-#endif // TUNE_BASE
+    ,
+    policy_hub_t<KeyT, OffsetT>
+#endif // !TUNE_BASE
+    >;
 
   // Retrieve axis parameters
   const auto elements          = static_cast<size_t>(state.get_int64("Elements{io}"));
@@ -88,10 +80,10 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     return;
   }
 
-  thrust::device_vector<KeyT> in_keys  = generate(elements, entropy);
-  thrust::device_vector<KeyT> out_keys = generate(selected_elements);
-  key_input_it_t d_keys_in             = thrust::raw_pointer_cast(in_keys.data());
-  key_output_it_t d_keys_out           = thrust::raw_pointer_cast(out_keys.data());
+  thrust::device_vector<KeyT> in_keys = generate(elements, entropy);
+  thrust::device_vector<KeyT> out_keys(selected_elements);
+  key_input_it_t d_keys_in   = thrust::raw_pointer_cast(in_keys.data());
+  key_output_it_t d_keys_out = thrust::raw_pointer_cast(out_keys.data());
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(selected_elements, "NumSelectedElements");
@@ -110,7 +102,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     elements,
     selected_elements,
     0);
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   // run the algorithm

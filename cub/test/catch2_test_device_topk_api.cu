@@ -67,7 +67,7 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
   cub::DeviceTopK::MaxKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, requirements);
 
   // Allocate temporary storage
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
   cub::DeviceTopK::MaxKeys(
     thrust::raw_pointer_cast(temp_storage.data()),
