@@ -265,8 +265,9 @@ workflows:
     # Clang20+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang20.
     - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
     - {jobs: ['dc_ext'], ctk: [        '12.9', '13.0'], cxx: ['gcc14', 'clang20']}
-    # 12.X python images, pinned at gcc13 for consistency, as 12.5 / 12.6 don't support newer gcc.
-    - {jobs: ['dc'], ctk: ['12.5', '12.6', '12.8', '12.9', '13.0'], cxx: 'gcc13'}
+    # 12.0 python image, pinned at gcc13 for simplicity. CTK 12.0 doesn't really play nice with gcc13, but
+    # that doesn't matter for running python tests.
+    - {jobs: ['dc'], ctk: ['12.0'], cxx: 'gcc13'}
     # NVHPC
     - {jobs: ['dc'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev'}
     - {jobs: ['dc'], cxx: 'nvhpc',      ctk: 'nvhpc'}
