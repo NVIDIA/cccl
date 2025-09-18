@@ -48,12 +48,15 @@
 
 CUB_NAMESPACE_BEGIN
 
-// This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
-// * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
-//   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
-//   Symposium (IPDPS), 2012
-// * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
-//   https://arxiv.org/abs/1406.2628
+//! Computes the intersection of the diagonal \c diag with the merge path in the merge matrix of two input sequences.
+//! This implements the DiagonalIntersection algorithm from Merge-Path. Additional details can be found in:
+//! * S. Odeh, O. Green, Z. Mwassi, O. Shmueli, Y. Birk, "Merge Path - Parallel Merging Made Simple", Multithreaded
+//!   Architectures and Applications (MTAAP) Workshop, IEEE 26th International Parallel & Distributed Processing
+//!   Symposium (IPDPS), 2012
+//! * S. Odeh, O. Green, Y. Birk, "Merge Path - A Visually Intuitive Approach to Parallel Merging", 2014, URL:
+//!   https://arxiv.org/abs/1406.2628
+//! \returns The number of elements merged from the first sequence at the intersection of the diagonal with the merge
+//! path. The number of elements merged from the second sequence is \c diag minus the returned value.
 template <typename KeyIt1, typename KeyIt2, typename OffsetT, typename BinaryPred>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
@@ -79,6 +82,15 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   return keys1_begin;
 }
 
+//! Merges elements from two sorted sequences
+//! \tparam ITEMS_PER_THREAD The number of elements to merge and write to \c output
+//! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
+//! \param keys1_beg The index into \c keys_shared where the first sequence starts
+//! \param keys2_beg The index into \c keys_shared where the second sequence starts
+//! \param keys1_count The maximum number of keys to read from the first sequence
+//! \param keys2_count The maximum number of keys to read from the first sequence
+//! \param output The output array
+//! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
 template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
@@ -91,6 +103,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
+  // TODO(bgruber): consider adding this assertion:
+  // if constexpr (IsFullTile) _CCCL_ASSERT(keys1_count + keys2_count >= ITEMS_PER_THREAD, "");
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
 
