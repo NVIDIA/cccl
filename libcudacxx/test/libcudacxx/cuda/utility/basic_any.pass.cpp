@@ -60,6 +60,28 @@ struct iderived : cuda::__basic_interface<iderived, cuda::__extends<ibase<>, cud
   using overrides = cuda::__overrides_for<T, &T::bar>;
 };
 
+struct Immovable
+{
+  Immovable()                     = default;
+  Immovable(Immovable&&) noexcept = delete;
+};
+
+template <class Fn>
+struct EmplaceFrom
+{
+  using type = cuda::std::invoke_result_t<Fn>;
+
+  _CCCL_HOST_DEVICE operator type() &&
+  {
+    return cuda::std::move(fn)();
+  }
+
+  Fn fn;
+};
+
+template <class Fn>
+_CCCL_HOST_DEVICE EmplaceFrom(Fn) -> EmplaceFrom<Fn>;
+
 template <bool Small>
 struct SmallOrLarge
 {
@@ -578,6 +600,15 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     any_regular a = ref;
     a             = ref;
   }
+
+  _CCCL_HOST_DEVICE void test_basic_any_test_for_emplacing_immovable_object()
+  {
+    // Can emplace an immovable object into a basic_any:
+    cuda::__basic_any<iempty<>> a{cuda::std::in_place_type<Immovable>, EmplaceFrom{[] {
+                                    return Immovable{};
+                                  }}};
+    assert(a.has_value());
+  }
 };
 
 template <class TestType>
@@ -596,6 +627,7 @@ _CCCL_HOST_DEVICE void test_basic_any()
   test.test_cuda_dynamic_any_cast();
   test.test_equality_comparable();
   test.test_basic_any_test_for_ambiguous_conversions();
+  test.test_basic_any_test_for_emplacing_immovable_object();
 }
 
 int main(int, char**)
