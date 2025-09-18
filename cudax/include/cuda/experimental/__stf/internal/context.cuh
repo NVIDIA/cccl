@@ -432,6 +432,14 @@ public:
     };
   }
 
+  size_t stage() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.stage();
+    };
+  }
+
   /**
    * @brief Returns the number of tasks created since the context was created or since the last fence (if any)
    */

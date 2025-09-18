@@ -404,8 +404,8 @@ public:
       virtual ~ctx_node_base() = default;
 
       // Virtual methods for context-specific behavior
-      virtual void finalize() = 0;
-      virtual void cleanup()  = 0;
+      virtual event_list finalize() = 0;
+      virtual void cleanup()        = 0;
       virtual bool is_virtual() const
       {
         return false;
@@ -447,6 +447,7 @@ public:
         pushed_data.push_back(mv(data_impl));
       }
 
+      ctx_node_base* parent_ctx_node = nullptr;
       context ctx;
       cudaStream_t support_stream;
       // A wrapper to forward allocations from a node to its parent node (none is used at the root level)
@@ -482,9 +483,11 @@ public:
         ctx = stream_ctx();
       }
 
-      void finalize() override
+      event_list finalize() override
       {
+        // This is blocking so there is no dependency in event_list
         ctx.finalize();
+        return event_list{};
       }
 
       void cleanup() override
@@ -508,7 +511,6 @@ public:
         // Graph context nodes create and set up the internal CUDA graph
         _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
 
-        auto& parent_ctx         = parent_node->ctx;
         cudaGraph_t parent_graph = parent_node->get_graph();
 
         /* The parent is either a stream_ctx, or a graph itself. If this is a graph, we either add a new child graph, or
@@ -531,8 +533,10 @@ public:
 
             cuda_safe_call(cudaGraphCreate(&graph, 0));
 
-            cudaGraphNode_t n;
-            cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, graph));
+            // This child graph will be added later to the graph
+            output_node = nullptr;
+            //            cudaGraphNode_t n;
+            //            cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, graph));
           }
         }
         else
@@ -569,17 +573,28 @@ public:
 
           // Get the body graph from the conditional node
           sub_graph = cParams.conditional.phGraph_out[0];
+
+          output_node = conditionalNode;
         }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
+        auto& parent_ctx = parent_node->ctx;
+
         // Get a stream from previous context
-        cudaStream_t stream = parent_ctx.pick_stream();
-        support_stream      = stream; // Update our stream
+        if (nested_graph)
+        {
+          // Reuse the support stream of the parent ctx node
+          support_stream = parent_node->support_stream;
+        }
+        else
+        {
+          support_stream = parent_ctx.pick_stream();
+        }
 
         // Make sure the stream depends on completion of events to import data
-        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), stream);
+        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), support_stream);
 
-        auto gctx = graph_ctx(sub_graph, stream, handle);
+        auto gctx = graph_ctx(sub_graph, support_stream, handle);
 
         // Set up context properties
         gctx.set_parent_ctx(parent_ctx);
@@ -587,15 +602,17 @@ public:
                                        + "(" + loc.function_name() + ")]");
 
         // Create stream adapter and update allocator
-        alloc_adapters = ::std::make_shared<stream_adapter>(gctx, stream);
+        // Note that nested contexts use their own allocator as well, but use the same support stream...
+        alloc_adapters = ::std::make_shared<stream_adapter>(gctx, support_stream);
         gctx.update_uncached_allocator(alloc_adapters->allocator());
 
         // Set the context and save async handle
-        ctx          = gctx;
-        async_handle = mv(handle);
+        ctx             = gctx;
+        parent_ctx_node = parent_node;
+        async_handle    = mv(handle);
       }
 
-      void finalize() override
+      event_list finalize() override
       {
         // Use finalize_as_graph pattern for explicit graph management
         _CCCL_ASSERT(ctx.is_graph_ctx(), "graph_ctx_node must contain a graph context");
@@ -611,6 +628,8 @@ public:
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
         }
 
+        auto& parent_ctx = parent_ctx_node->ctx;
+
         // This was either a new graph (with a stream_ctx parent) or a nested
         // graph ctx node. If this was a nested context, we do not need to
         // instantiate and launch, but we need to enforce dependencies by
@@ -618,8 +637,24 @@ public:
         if (nested_graph)
         {
           fprintf(stderr, "TODO nested contexts are WIP\n");
-          abort();
-          return;
+          // TODO add ctx prereqs as input of the graph
+          //          abort();
+          // TODO
+          cudaGraph_t support_graph = parent_ctx.graph();
+          size_t graph_stage        = parent_ctx.stage();
+
+          // We have deferred the creation of the node until now
+          if (output_node == nullptr)
+          {
+            cudaGraphNode_t n;
+            cuda_safe_call(cudaGraphAddChildGraphNode(&n, support_graph, nullptr, 0, graph));
+            output_node = n;
+          }
+
+          fprintf(stderr, "GRAPH EVENT from output_node %p\n", output_node);
+          auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
+
+          return event_list(mv(output_node_event));
         }
 
         // Since this is not a nested context, we had to create a new graph for
@@ -672,6 +707,10 @@ public:
 
         // Launch the graph
         cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
+
+        // Create an event that depends on the completion of previous operations in the stream
+        event_list finalize_prereqs = parent_ctx.stream_to_event_list(support_stream, "finalized");
+        return finalize_prereqs;
       }
 
       void cleanup() override
@@ -712,6 +751,8 @@ public:
       cudaGraphExec_t graph_exec = nullptr;
       cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
       bool nested_graph = false;
+      cudaGraphNode_t output_node = nullptr; // If we have a nested graph, this is the node that correspond to the
+                                             // context in the parent CUDA graph
     };
 
     // Configuration constants
@@ -734,6 +775,7 @@ public:
       nodes.resize(new_size);
     }
 
+    // TODO this could be a standalone class when we split this header ...
     /* To describe the hierarchy of contexts, and the hierarchy of stackable
      * logical data which should match the structure of the context hierarchy,
      * this class describes a tree using a vector of offsets. Every node has an
@@ -999,8 +1041,11 @@ public:
     }
 
     // This method assumes that the mutex is already acquired in exclusive mode
-    void _pop_epilogue()
+    // The event_list correspond to the prereqs after we have finalized (eg.
+    // launch a graph in a stream, or the child node)
+    void _pop_epilogue(event_list& finalize_prereqs)
     {
+      fprintf(stderr, "_pop_epilogue()\n");
       int head_offset = get_head_offset();
 
       auto& current_node = nodes[head_offset].value();
@@ -1022,18 +1067,11 @@ public:
         stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
       }
 
-      // To create prereqs that depend on this finalize() stage, we get the
-      // stream used in this context, and insert events in it.
-      cudaStream_t stream = current_node->support_stream;
-
       int parent_offset = node_tree.get_parent(head_offset);
       _CCCL_ASSERT(parent_offset != -1, "internal error: no parent ctx");
 
       auto& parent_node = nodes[parent_offset].value();
       auto& parent_ctx  = parent_node->ctx;
-
-      // Create an event that depends on the completion of previous operations in the stream
-      event_list finalize_prereqs = parent_ctx.stream_to_event_list(stream, "finalized");
 
       // Now that the context has been finalized, we can unfreeze data (unless
       // another sibling context has pushed it too)
@@ -1075,11 +1113,11 @@ public:
       auto& current_node = *nodes[head_offset].value();
 
       // Use polymorphic dispatch for context-specific finalization
-      current_node.finalize();
+      event_list finalize_prereqs = current_node.finalize();
       current_node.cleanup();
 
       // Release all resources acquired for the push now that we have executed the graph
-      _pop_epilogue();
+      _pop_epilogue(finalize_prereqs);
     }
 
     // Offset of the root context
@@ -2195,10 +2233,13 @@ private:
 
         dnode.unfreeze_prereqs.merge(finalize_prereqs);
 
+        fprintf(stderr, "pop_after_finalize ... dnode.get_cnt %d\n", dnode.get_cnt);
+
         // Only unfreeze if there are no other subcontext still using it
         _CCCL_ASSERT(dnode.get_cnt >= 0, "get_cnt should never be negative");
         if (dnode.get_cnt == 0)
         {
+          fprintf(stderr, "UNFREEZE with parent offset %d\n", parent_offset);
           dnode.frozen_ld.value().unfreeze(dnode.unfreeze_prereqs);
           dnode.frozen_ld.reset();
         }
@@ -2635,6 +2676,7 @@ private:
       // Freeze the logical data of the parent node if it wasn't yet
       if (!from_data_node.frozen_ld.has_value())
       {
+        fprintf(stderr, "FREEZE in ctx offset %d\n", ctx_offset);
         from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, where, false /* not a user freeze */);
         from_data_node.get_cnt   = 0;
       }
@@ -2664,6 +2706,7 @@ private:
       // Ensure there is a copy of the data in the data place, we keep a
       // reference count of each context using this frozen data so that we only
       // unfreeze once possible.
+      fprintf(stderr, "GET in ctx offset %d\n", ctx_offset);
       ::std::pair<T, event_list> get_res = frozen_ld.get(where);
       auto ld                            = to_ctx.logical_data(get_res.first, where);
       from_data_node.get_cnt++;
