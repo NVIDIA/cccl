@@ -172,7 +172,7 @@ struct DeviceCopy
     OutputIt output_it,
     SizeIteratorT sizes,
     ::cuda::std::int64_t num_ranges,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
 
@@ -193,14 +193,19 @@ struct DeviceCopy
             typename E_Out,
             typename L_Out,
             typename A_Out>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   Copy(void* d_temp_storage,
        size_t& temp_storage_bytes,
        ::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
        ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
-       cudaStream_t stream = nullptr)
+       ::cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
+    if (mdspan_in.extents() != mdspan_out.extents())
+    {
+      _CCCL_ASSERT(false, "mdspan extents must be equal");
+      return CubDebug(::cudaErrorInvalidValue);
+    }
     if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = 1;

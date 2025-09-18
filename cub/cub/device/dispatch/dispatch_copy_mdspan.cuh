@@ -47,27 +47,19 @@ template <typename T_In,
           typename E_Out,
           typename L_Out,
           typename A_Out>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
      ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
-     cudaStream_t stream)
+     ::cudaStream_t stream)
 {
-  _CCCL_ASSERT(mdspan_in.extents() == mdspan_out.extents(), "mdspan extents must be equal");
-  if (mdspan_in.extents() != mdspan_out.extents())
-  {
-    return CubDebug(cudaErrorInvalidValue);
-  }
   if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive())
   {
     return cub::DeviceTransform::Transform(
       mdspan_in.data_handle(), mdspan_out.data_handle(), mdspan_in.size(), ::cuda::std::identity{}, stream);
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
-  else
-  {
-    CopyMdspan mdspan_copy{mdspan_in, mdspan_out};
-    return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), mdspan_copy, stream);
-  }
+  // Compatible layouts could use more efficient iteration patterns
+  return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), CopyMdspan{mdspan_in, mdspan_out}, stream);
 }
 
 } // namespace detail::copy_mdspan
