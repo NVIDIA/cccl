@@ -399,7 +399,6 @@ public:
       ctx_node_base(cudaStream_t support_stream = nullptr, ::std::shared_ptr<stream_adapter> alloc_adapters = nullptr)
           : support_stream(mv(support_stream))
           , alloc_adapters(mv(alloc_adapters))
-          , refcnt(1)
       {}
 
       virtual ~ctx_node_base() = default;
@@ -458,12 +457,6 @@ public:
 
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
-
-      // When we call ctx.push() in a nested way, we might not actually create
-      // nested CUDA graphs and implement nested push/pop as no-ops. We thus
-      // keep track of the number of users of a context node to properly
-      // implement the push/pop semantic in this scenario.
-      int refcnt;
 
       // The async resource handle used in this context
       ::std::optional<async_resources_handle> async_handle;
@@ -683,6 +676,17 @@ public:
 
       void cleanup() override
       {
+        // TODO if nested: transfer resources to parent context ?
+        if (nested_graph)
+        {
+          // TODO transfer resources if doable (or better)
+
+          // TODO do we need to destroy some graph ?
+
+          fprintf(stderr, "TODO: implement cleanup() for nested graph ctx nodes\n");
+          return;
+        }
+
         // Release context resources after graph execution
         ctx.release_resources(support_stream);
 
@@ -708,55 +712,6 @@ public:
       cudaGraphExec_t graph_exec = nullptr;
       cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
       bool nested_graph = false;
-    };
-
-    /*
-     * Virtual context node - lightweight reference to parent
-     */
-    class virtual_ctx_node : public ctx_node_base
-    {
-    public:
-      // Specialized constructor for virtual context nodes (reference to parent's context)
-      virtual_ctx_node(ctx_node_base* parent_node, int parent_offset)
-          : ctx_node_base(nullptr, nullptr)
-      {
-        // Set up resource sharing with parent
-        _CCCL_ASSERT(parent_node != nullptr, "Virtual context must have a valid parent");
-        support_stream = parent_node->support_stream;
-        alloc_adapters = parent_node->alloc_adapters;
-
-        // Share parent's context
-        ctx = parent_node->ctx;
-
-        // Increment parent's refcount since we're sharing its resources
-        parent_node->refcnt++;
-        virtual_parent_offset = parent_offset;
-      }
-
-      void finalize() override
-      {
-        // Virtual contexts don't perform finalization
-        // All work is handled by the parent context
-      }
-
-      void cleanup() override
-      {
-        // Virtual context cleanup is handled via refcounting in _pop_prologue
-        // No additional cleanup needed here
-      }
-
-      bool is_virtual() const override
-      {
-        return true;
-      }
-
-      int get_virtual_parent_offset() const
-      {
-        return virtual_parent_offset;
-      }
-
-    private:
-      int virtual_parent_offset = -1; // Offset of the parent context this virtual context references
     };
 
     // Configuration constants
@@ -979,23 +934,6 @@ public:
         // root of the context
         root_offset = node_offset;
       }
-#if 0
-      else if (parent_depth >= 1)
-      {
-        // Create a virtual context node that shares execution with the parent
-        // but maintains hierarchy for data management
-        _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
-
-        // Get parent_node reference AFTER potential resize to avoid dangling reference
-        auto& parent_node = nodes[head_offset].value();
-
-        // Create virtual node that references parent's context
-        nodes[node_offset].emplace(::std::make_unique<virtual_ctx_node>(parent_node.get(), head_offset));
-
-        // Set up hierarchy relationship
-        node_tree.set_parent(head_offset, node_offset);
-      }
-#endif
       else
       {
         // In the current implementation, depth > 1 is using a no-op for push/pop
@@ -1046,35 +984,6 @@ public:
       _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
 
       auto& current_node = nodes[head_offset].value();
-
-      // Handle virtual context cleanup
-      if (current_node->is_virtual())
-      {
-        // Decrement parent's refcount (incremented when virtual context was created)
-        auto& virtual_node = static_cast<virtual_ctx_node&>(*current_node);
-        int parent_offset  = virtual_node.get_virtual_parent_offset();
-        _CCCL_ASSERT(parent_offset != -1, "virtual context must have valid parent");
-        _CCCL_ASSERT(nodes[parent_offset].has_value(), "virtual context parent must exist");
-
-        auto& parent_node = nodes[parent_offset].value();
-        parent_node->refcnt--;
-
-        // Clean up the virtual context node immediately
-        nodes[head_offset].reset();
-        node_tree.discard_node(head_offset);
-
-        // Return to parent context
-        set_head_offset(parent_offset);
-        return;
-      }
-
-      // TODO clarify the intent here : if we have virtual nodes, they should not "pop" data, but release refcnts
-      // maybe... current_node->refcnt should be equivalent to is virtual ? Original logic for real contexts
-      current_node->refcnt--;
-      if (current_node->refcnt > 0)
-      {
-        return;
-      }
 
       // Automatically pop data if needed. This will destroy the logical data
       // created within the context that is being destroyed. Unless using "non
