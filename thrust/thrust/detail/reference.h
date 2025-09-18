@@ -156,11 +156,8 @@ public:
    */
   _CCCL_HOST_DEVICE void swap(derived_type other)
   {
-    // Avoid default-constructing a system; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system = nullptr;
-    swap(system, other);
+    iterator_system_t<pointer> system;
+    swap(&system, other);
   }
 
   _CCCL_HOST_DEVICE pointer operator&() const
@@ -172,11 +169,8 @@ public:
   // about what system the object is on.
   _CCCL_HOST_DEVICE operator value_type() const
   {
-    // Avoid default-constructing a system; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system = nullptr;
-    return convert_to_value_type(system);
+    iterator_system_t<pointer> system;
+    return convert_to_value_type(&system);
   }
 
   _CCCL_HOST_DEVICE derived_type& operator++()
@@ -347,12 +341,9 @@ private:
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE void assign_from(OtherPointer src) const
   {
-    // Avoid default-constructing systems; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system0      = nullptr;
-    typename thrust::iterator_system<OtherPointer>::type* system1 = nullptr;
-    assign_from(system0, system1, src);
+    iterator_system_t<pointer> system0;
+    iterator_system_t<OtherPointer> system1;
+    assign_from(&system0, &system1, src);
   }
 
   template <typename System, typename OtherPointer>
