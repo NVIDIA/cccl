@@ -524,6 +524,7 @@ public:
         if (parent_graph)
         {
           nested_graph = true;
+#if _CCCL_CTK_AT_LEAST(12, 4)
           if (config.conditional_handle != nullptr)
           {
             // We will add a conditional node to an existing graph, we do not create a new graph.
@@ -531,6 +532,7 @@ public:
             graph = parent_graph;
           }
           else
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
           {
             fprintf(stderr, "PUSHING CTX : graph context parent => create child graph node\n");
 
