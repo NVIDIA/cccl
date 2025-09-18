@@ -87,8 +87,10 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 //! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
 //! \param keys1_beg The index into \c keys_shared where the first sequence starts
 //! \param keys2_beg The index into \c keys_shared where the second sequence starts
-//! \param keys1_count The maximum number of keys to read from the first sequence
-//! \param keys2_count The maximum number of keys to read from the first sequence
+//! \param keys1_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
+//! \param keys2_count The maximum number of keys to merge from the first sequence. One more item may be read but is not
+//! used.
 //! \param output The output array
 //! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
 template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
