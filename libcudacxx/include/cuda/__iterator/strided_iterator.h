@@ -69,6 +69,11 @@ public:
   using value_type        = ::cuda::std::iter_value_t<_Iter>;
   using difference_type   = ::cuda::std::iter_difference_t<_Iter>;
 
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using reference = value_type;
+  using pointer   = void;
+
   //! @brief value-initializes both the base iterator and stride
   //! @note _Iter must be default initializable because it is a random_access_iterator and thereby semiregular
   //!       _Stride must be integer-like or integral_constant_like which requires default constructability
