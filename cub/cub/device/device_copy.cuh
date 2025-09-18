@@ -41,11 +41,13 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
+#include <cub/device/dispatch/dispatch_copy_mdspan.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/mdspan>
 
 CUB_NAMESPACE_BEGIN
 
@@ -181,6 +183,30 @@ struct DeviceCopy
 
     return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, BlockOffsetT, CopyAlg::Copy>::Dispatch(
       d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
+  }
+
+  template <typename T_In,
+            typename E_In,
+            typename L_In,
+            typename A_In,
+            typename T_Out,
+            typename E_Out,
+            typename L_Out,
+            typename A_Out>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Copy(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       ::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
+       ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
+       cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Copy");
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return detail::copy_mdspan::copy(mdspan_in, mdspan_out, stream);
   }
 };
 
