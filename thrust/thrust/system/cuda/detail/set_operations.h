@@ -42,7 +42,6 @@
 #  include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/extrema.h>
@@ -221,23 +220,18 @@ struct PtxPolicy
 template <class Arch, class T, class U>
 struct Tuning;
 
-namespace mpl = thrust::detail::mpl::math;
-
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
   enum
   {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
+    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
     COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
     NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
+    ITEMS_PER_THREAD            = ::cuda::std::min(
+      NOMINAL_4B_ITEMS_PER_THREAD,
+      ::cuda::std::max(
+        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
   };
 
   using type =
@@ -249,16 +243,13 @@ struct Tuning<core::detail::sm60, T, U>
 {
   enum
   {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
+    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
     COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
     NOMINAL_4B_ITEMS_PER_THREAD = 19,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
+    ITEMS_PER_THREAD            = ::cuda::std::min(
+      NOMINAL_4B_ITEMS_PER_THREAD,
+      ::cuda::std::max(
+        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
   };
 
   using type =
