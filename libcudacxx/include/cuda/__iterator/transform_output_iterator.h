@@ -148,7 +148,14 @@ public:
   _Iter __current_{};
   ::cuda::std::ranges::__movable_box<_Fn> __func_{};
 
-  using iterator_concept  = ::cuda::std::output_iterator_tag;
+  using iterator_concept = ::cuda::std::conditional_t<
+    ::cuda::std::random_access_iterator<_Iter>,
+    ::cuda::std::random_access_iterator_tag,
+    ::cuda::std::conditional_t<::cuda::std::bidirectional_iterator<_Iter>,
+                               ::cuda::std::bidirectional_iterator_tag,
+                               ::cuda::std::conditional_t<::cuda::std::forward_iterator<_Iter>,
+                                                          ::cuda::std::forward_iterator_tag,
+                                                          ::cuda::std::output_iterator_tag>>>;
   using iterator_category = ::cuda::std::output_iterator_tag;
   using difference_type   = ::cuda::std::iter_difference_t<_Iter>;
   using value_type        = void;

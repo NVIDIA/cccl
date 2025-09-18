@@ -224,6 +224,10 @@ public:
   using reference        = __tuple_or_pair<::cuda::std::iter_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;
 
+  // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
+  // define all 5 aliases, see https://en.cppreference.com/w/cpp/iterator/iterator_traits.html
+  using pointer = void;
+
   template <class... _OtherIters>
   static constexpr bool __all_convertible =
     (::cuda::std::convertible_to<_OtherIters, _Iterators> && ...)
