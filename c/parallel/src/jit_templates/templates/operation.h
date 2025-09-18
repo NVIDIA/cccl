@@ -85,7 +85,7 @@ struct user_operation_traits
   using operator_builder = std::string (*)(cuda::std::span<std::string_view>, const char*, const char*);
   using argument_matcher = operator_builder (*)(cuda::std::span<cccl_type_enum>, std::string_view);
 
-  static std::string unary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name)
+  static std::string unary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name_)
   {
     return std::format(
       R"(
@@ -97,14 +97,14 @@ __device__ {1} operator{2}(const {3} & arg)
   return ret;
 }}
                        )",
-      name, // 0
+      name_, // 0
       types[0], // 1
       symbol, // 2
       types[1] // 3
     );
   }
 
-  static std::string binary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name)
+  static std::string binary_builder(cuda::std::span<std::string_view> types, const char* symbol, const char* name_)
   {
     return std::format(
       R"(
@@ -116,25 +116,25 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return ret;
 }}
                        )",
-      name, // 0
+      name_, // 0
       types[0], // 1
       symbol, // 2
       types[1] // 3
     );
   }
 
-  static operator_builder unary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder unary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 2)
     {
-      throw std::runtime_error(
-        std::format("c.parallel: well-known operation '{}' expected 1 argument, received {}.", name, types.size() - 1));
+      throw std::runtime_error(std::format(
+        "c.parallel: well-known operation '{}' expected 1 argument, received {}.", name_, types.size() - 1));
     }
     if (types[0] != types[1])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to return its argument type ({}), but returns {}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[0])));
     }
@@ -142,19 +142,19 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return unary_builder;
   }
 
-  static operator_builder binary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder binary_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 3)
     {
       throw std::runtime_error(std::format(
-        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name, types.size() - 1));
+        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name_, types.size() - 1));
     }
     if (types[1] != types[2])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to have matching argument types, but has argument types {} and "
         "{}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[2])));
     }
@@ -162,7 +162,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to return its argument type ({}), but returns {}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[0])));
     }
@@ -170,37 +170,37 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     return binary_builder;
   }
 
-  static operator_builder unary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder unary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 2)
     {
-      throw std::runtime_error(
-        std::format("c.parallel: well-known operation '{}' expected 1 argument, received {}.", name, types.size() - 1));
+      throw std::runtime_error(std::format(
+        "c.parallel: well-known operation '{}' expected 1 argument, received {}.", name_, types.size() - 1));
     }
     if (types[0] != cccl_type_enum::CCCL_BOOLEAN)
     {
       throw std::runtime_error(
         std::format("c.parallel: well-known operation '{}' expected to return boolean, but returns {}.",
-                    name,
+                    name_,
                     cccl_type_enum_to_name(types[0])));
     }
 
     return unary_builder;
   }
 
-  static operator_builder binary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name)
+  static operator_builder binary_predicate_matcher(cuda::std::span<cccl_type_enum> types, std::string_view name_)
   {
     if (types.size() != 3)
     {
       throw std::runtime_error(std::format(
-        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name, types.size() - 1));
+        "c.parallel: well-known operation '{}' expected 2 arguments, received {}.", name_, types.size() - 1));
     }
     if (types[1] != types[2])
     {
       throw std::runtime_error(std::format(
         "c.parallel: well-known operation '{}' expected to have matching argument types, but has argument types {} and "
         "{}.",
-        name,
+        name_,
         cccl_type_enum_to_name(types[1]),
         cccl_type_enum_to_name(types[2])));
     }
@@ -208,7 +208,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     {
       throw std::runtime_error(
         std::format("c.parallel: well-known operation '{}' expected to return boolean, but returns {}.",
-                    name,
+                    name_,
                     cccl_type_enum_to_name(types[0])));
     }
 
