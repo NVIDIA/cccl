@@ -433,6 +433,11 @@ struct dispatch_t<StableAddress,
       return config.error();
     }
 
+    // On Windows, the second line in each of these `if CUB_DETAIL_CONSTEXPR_ISH`
+    // blocks results in `warning C4702: unreachable code`.
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4702)
+
     auto can_vectorize = false;
     // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == wrapped_policy.Algorithm())
@@ -452,6 +457,16 @@ struct dispatch_t<StableAddress,
         ipt_found = true;
       }
     }
+
+    // The dummy semi-colon trailing the _CCCL_DIAG_POP is, annoyingly, required
+    // to prevent the code autoformatter from indenting the next `if (!ipt_found)`
+    // line.  (Note that if the semi-colon is placed immediately after the
+    // `_CCCL_DIAG_POP`--where any sane person would place it--the pragma fails
+    // to suppress the warning, so it needs to be in this precise position to
+    // appease all these fickle actors.)
+    _CCCL_DIAG_POP // 4702
+      ;
+
     if (!ipt_found)
     {
       // otherwise, set up the prefetch kernel
