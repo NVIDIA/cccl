@@ -306,16 +306,13 @@ public:
 
           // Create task with original arguments
           auto task = [&]() {
-            // For virtual contexts, we need to use the real context for execution
-            int exec_offset = sctx_.resolve_to_real_context(offset_);
             if constexpr (sizeof...(initial_args) > 0)
             {
-              // Use real context offset for execution but keep offset_ for dependencies
-              return sctx_.get_ctx(exec_offset).task(initial_args.to_task_dep_with_offset(offset_)...);
+              return sctx_.get_ctx(offset_).task(initial_args.to_task_dep_with_offset(offset_)...);
             }
             else
             {
-              return sctx_.get_ctx(exec_offset).task();
+              return sctx_.get_ctx(offset_).task();
             }
           }();
 
@@ -406,10 +403,6 @@ public:
       // Virtual methods for context-specific behavior
       virtual event_list finalize() = 0;
       virtual void cleanup()        = 0;
-      virtual bool is_virtual() const
-      {
-        return false;
-      }
 
       virtual cudaGraph_t get_graph() const
       {
@@ -1179,23 +1172,6 @@ public:
       head_map[::std::this_thread::get_id()] = offset;
     }
 
-    // Helper method to traverse virtual contexts and find the real execution context
-    int resolve_to_real_context(int start_offset) const
-    {
-      int current_offset = start_offset;
-      while (is_virtual_context(current_offset))
-      {
-        current_offset = get_parent_offset(current_offset);
-      }
-      return current_offset;
-    }
-
-    // Get the current head offset and resolve it to the real context in one call
-    int get_head_real_offset() const
-    {
-      return resolve_to_real_context(get_head_offset());
-    }
-
     int get_parent_offset(int offset) const
     {
       _CCCL_ASSERT(offset != -1, "invalid node offset for parent lookup");
@@ -1206,14 +1182,6 @@ public:
     {
       _CCCL_ASSERT(parent != -1, "invalid parent offset for children lookup");
       return node_tree.get_children(parent);
-    }
-
-    bool is_virtual_context(int offset) const
-    {
-      _CCCL_ASSERT(offset != -1, "invalid context offset");
-      _CCCL_ASSERT(offset < int(nodes.size()), "context offset out of bounds");
-      _CCCL_ASSERT(nodes[offset].has_value(), "context node doesn't exist");
-      return nodes[offset].value()->is_virtual();
     }
 
   private:
@@ -1377,11 +1345,6 @@ public:
     return pimpl->get_children_offsets(parent);
   }
 
-  bool is_virtual_context(int offset) const
-  {
-    return pimpl->is_virtual_context(offset);
-  }
-
   context& get_root_ctx()
   {
     return pimpl->get_root_ctx();
@@ -1410,16 +1373,6 @@ public:
   int get_head_offset() const
   {
     return pimpl->get_head_offset();
-  }
-
-  int resolve_to_real_context(int offset) const
-  {
-    return pimpl->resolve_to_real_context(offset);
-  }
-
-  int get_head_real_offset() const
-  {
-    return pimpl->get_head_real_offset();
   }
 
   void set_head_offset(int offset)
@@ -1987,8 +1940,7 @@ public:
     int offset = get_head_offset();
     process_pack(offset, pack...);
 
-    // For virtual contexts, we need to use the real context for execution
-    return get_ctx(get_head_real_offset()).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(get_head_offset()).parallel_for(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -1999,8 +1951,7 @@ public:
     int offset = get_head_offset();
     process_pack(offset, pack...);
 
-    // For virtual contexts, we need to use the real context for execution
-    return get_ctx(get_head_real_offset()).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(get_head_offset()).cuda_kernel(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   template <typename... Pack>
@@ -2011,8 +1962,7 @@ public:
     int offset = get_head_offset();
     process_pack(offset, pack...);
 
-    // For virtual contexts, we need to use the real context for execution
-    return get_ctx(get_head_real_offset()).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(get_head_offset()).cuda_kernel_chain(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 #endif
 
@@ -2024,16 +1974,14 @@ public:
     int offset = get_head_offset();
     process_pack(offset, pack...);
 
-    // For virtual contexts, we need to use the real context for execution
-    return get_ctx(get_head_real_offset()).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    return get_ctx(get_head_offset()).host_launch(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   auto fence()
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).fence();
+    return get_ctx(get_head_offset()).fence();
   }
 
   template <typename T>
@@ -2041,16 +1989,16 @@ public:
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).wait(ldata.get_ld(exec_offset));
+    int offset = get_head_offset();
+    return get_ctx(offset).wait(ldata.get_ld(offset));
   }
 
   auto get_dot()
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).get_dot();
+    int offset = get_head_offset();
+    return get_ctx(offset).get_dot();
   }
 
   template <typename... Pack>
@@ -2061,56 +2009,55 @@ public:
     int offset = get_head_offset();
     process_pack(offset, pack...);
 
-    // For virtual contexts, we need to use the real context for execution
-    get_ctx(get_head_real_offset()).push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
+    get_ctx(offset).push_affinity(reserved::to_task_dep(::std::forward<Pack>(pack))...);
   }
 
   void pop_affinity() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    get_ctx(exec_offset).pop_affinity();
+    int offset = get_head_offset();
+    get_ctx(offset).pop_affinity();
   }
 
   auto& current_affinity() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).current_affinity();
+    int offset = get_head_offset();
+    return get_ctx(offset).current_affinity();
   }
 
   const exec_place& current_exec_place() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).current_exec_place();
+    int offset = get_head_offset();
+    return get_ctx(offset).current_exec_place();
   }
 
   auto& async_resources() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).async_resources();
+    int offset = get_head_offset();
+    return get_ctx(offset).async_resources();
   }
 
   auto dot_section(::std::string symbol) const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).dot_section(mv(symbol));
+    int offset = get_head_offset();
+    return get_ctx(offset).dot_section(mv(symbol));
   }
 
   size_t task_count() const
   {
     auto lock = pimpl->acquire_shared_lock();
 
-    int exec_offset = get_head_real_offset();
-    return get_ctx(exec_offset).task_count();
+    int offset = get_head_offset();
+    return get_ctx(offset).task_count();
   }
 
   void finalize()
@@ -2200,13 +2147,6 @@ private:
 
           _CCCL_ASSERT(!data_nodes[ctx_offset].value().frozen_ld.has_value(), "internal error");
           data_nodes[ctx_offset].reset();
-        }
-
-        // For virtual contexts, we skipped the get_cnt++ increment in push(),
-        // so we should also skip the get_cnt-- decrement here to maintain balance
-        if (sctx.is_virtual_context(ctx_offset))
-        {
-          return;
         }
 
         // Unfreezing data will create a dependency which we need to track to
@@ -2372,16 +2312,8 @@ private:
       // to push data in read only, if appropriate.
       void mark_access(int offset, access_mode m)
       {
-        // For virtual contexts, traverse up to find the real context
-        int actual_offset = offset;
-        while (sctx.is_virtual_context(actual_offset))
-        {
-          actual_offset = sctx.get_parent_offset(actual_offset);
-        }
-
-        _CCCL_ASSERT(actual_offset != -1 && data_nodes[actual_offset].has_value(),
-                     "Failed to find data node for mark_access");
-        data_nodes[actual_offset].value().effective_mode |= m;
+        _CCCL_ASSERT(offset != -1 && data_nodes[offset].has_value(), "Failed to find data node for mark_access");
+        data_nodes[offset].value().effective_mode |= m;
       }
 
       bool is_frozen(int offset) const
@@ -2559,22 +2491,14 @@ private:
 
     const auto& get_ld(int offset) const
     {
-      // For virtual contexts, traverse up to find the context with imported data
-      int data_offset = resolve_to_data_context(offset);
-
-      _CCCL_ASSERT(data_offset != -1 && impl_state->was_imported(data_offset),
-                   "Failed to find imported data for virtual context");
-      return impl_state->get_data_node(data_offset).ld;
+      _CCCL_ASSERT(offset != -1 && impl_state->was_imported(offset), "Failed to find imported data");
+      return impl_state->get_data_node(offset).ld;
     }
 
     auto& get_ld(int offset)
     {
-      // For virtual contexts, traverse up to find the context with imported data
-      int data_offset = resolve_to_data_context(offset);
-
-      _CCCL_ASSERT(data_offset != -1 && impl_state->was_imported(data_offset),
-                   "Failed to find imported data for virtual context");
-      return impl_state->get_data_node(data_offset).ld;
+      _CCCL_ASSERT(offset != -1 && impl_state->was_imported(offset), "Failed to find imported data");
+      return impl_state->get_data_node(offset).ld;
     }
 
     int get_data_root_offset() const
@@ -2585,35 +2509,6 @@ private:
     int get_unique_id() const
     {
       return impl_state->get_unique_id();
-    }
-
-    // Helper method to traverse virtual contexts and find the context with imported data
-    int resolve_to_data_context(int start_offset) const
-    {
-      int current_offset = start_offset;
-      while (current_offset != -1 && !impl_state->was_imported(current_offset))
-      {
-        if (sctx.is_virtual_context(current_offset))
-        {
-          current_offset = sctx.get_parent_offset(current_offset);
-        }
-        else
-        {
-          break; // Non-virtual context without data - this shouldn't happen
-        }
-      }
-      return current_offset;
-    }
-
-    // Helper method to traverse virtual contexts and find the real execution context
-    int resolve_to_real_context(int start_offset) const
-    {
-      int current_offset = start_offset;
-      while (sctx.is_virtual_context(current_offset))
-      {
-        current_offset = sctx.get_parent_offset(current_offset);
-      }
-      return current_offset;
     }
 
     /* Import data into the ctx at this offset */
@@ -2964,13 +2859,6 @@ public:
     {
       // Always validate access modes - find the actual parent with frozen data
       int parent_offset = sctx.get_parent_offset(ctx_offset);
-
-      // For virtual contexts, traverse up to find the context with actual frozen data
-      while (parent_offset != -1 && sctx.is_virtual_context(parent_offset))
-      {
-        parent_offset = sctx.get_parent_offset(parent_offset);
-      }
-
       if (parent_offset != -1 && pimpl->is_frozen(parent_offset))
       {
         access_mode parent_frozen_mode = pimpl->get_frozen_mode(parent_offset);
@@ -3018,9 +2906,7 @@ public:
     }
 
     // use the affine data place for the current default place
-    // For virtual contexts, use the parent's execution place
-    int exec_ctx_offset = pimpl->resolve_to_real_context(ctx_offset);
-    auto where          = sctx.get_ctx(exec_ctx_offset).default_exec_place().affine_data_place();
+    auto where = sctx.get_ctx(ctx_offset).default_exec_place().affine_data_place();
 
     // push along the path
     while (!path.empty())
