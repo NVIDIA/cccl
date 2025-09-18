@@ -30,11 +30,10 @@
 #include <cub/device/device_select.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-
-#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -179,7 +178,7 @@ C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique_by_key(
-    cuda::counting_iterator<type>(0),
+    thrust::counting_iterator<type>(0),
     vals_in.begin(),
     thrust::discard_iterator<>(),
     vals_out.begin(),
@@ -415,7 +414,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
   c2h::device_vector<val_type> vals_out(num_items);
   c2h::gen(C2H_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
 
-  auto vals_it = thrust::make_transform_iterator(cuda::make_counting_iterator(0U), index_to_huge_type_op_t<val_type>{});
+  auto vals_it =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(0U), index_to_huge_type_op_t<val_type>{});
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -457,8 +457,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit 
   c2h::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
   c2h::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
 
-  auto keys_in   = thrust::make_transform_iterator(cuda::make_counting_iterator(0ULL), index_to_value_t<type>{});
-  auto values_in = cuda::make_counting_iterator(0ULL);
+  auto keys_in   = thrust::make_transform_iterator(thrust::make_counting_iterator(0ULL), index_to_value_t<type>{});
+  auto values_in = thrust::make_counting_iterator(0ULL);
   c2h::device_vector<type> keys_out(reference_keys.size());
   c2h::device_vector<index_type> values_out(reference_values.size());
 
@@ -483,8 +483,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-b
 
   constexpr std::size_t num_items = 4400000000ULL;
 
-  auto keys_in   = cuda::make_counting_iterator(0ULL);
-  auto values_in = cuda::make_counting_iterator(0ULL);
+  auto keys_in   = thrust::make_counting_iterator(0ULL);
+  auto values_in = thrust::make_counting_iterator(0ULL);
 
   // Needs to be device accessible
   c2h::device_vector<index_type> num_selected_out(1, 0);
@@ -511,8 +511,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works with a custom equality operator", "[de
   using index_type  = std::int64_t;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  auto keys_in        = cuda::make_counting_iterator(static_cast<type>(0));
-  auto values_in      = cuda::make_counting_iterator(0ULL);
+  auto keys_in        = thrust::make_counting_iterator(static_cast<type>(0));
+  auto values_in      = thrust::make_counting_iterator(0ULL);
   c2h::device_vector<type> keys_out(num_items);
   c2h::device_vector<val_type> vals_out(num_items);
 

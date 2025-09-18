@@ -5,10 +5,9 @@
 
 #include <thrust/for_each.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
-
-#include <cuda/iterator>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
@@ -98,8 +97,8 @@ void gen_custom_type_state(
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
   float* d_in = generator.prepare_random_generator(seed, elements * 2);
   thrust::for_each(device_policy,
-                   ::cuda::counting_iterator<std::size_t>{0},
-                   ::cuda::counting_iterator<std::size_t>{elements},
+                   thrust::counting_iterator<std::size_t>{0},
+                   thrust::counting_iterator<std::size_t>{elements},
                    random_to_custom_t{d_in, d_out, element_size});
 }
 
@@ -122,7 +121,7 @@ struct offset_to_iterator_t
   std::size_t element_size;
 
   __host__
-    __device__ __forceinline__ thrust::transform_iterator<spaced_out_it_op<T>, ::cuda::counting_iterator<std::size_t>>
+    __device__ __forceinline__ thrust::transform_iterator<spaced_out_it_op<T>, thrust::counting_iterator<std::size_t>>
     operator()(std::size_t offset) const
   {
     // The pointer to the beginning of this "buffer" (aka a series of same "keys")
@@ -130,7 +129,7 @@ struct offset_to_iterator_t
 
     // We need to make sure that the i-th element within this "buffer" is spaced out by
     // `element_size`
-    auto counting_it = ::cuda::make_counting_iterator(std::size_t{0});
+    auto counting_it = thrust::make_counting_iterator(std::size_t{0});
     spaced_out_it_op<T> space_out_op{base_ptr, element_size};
     return thrust::make_transform_iterator(counting_it, space_out_op);
   }
@@ -178,7 +177,7 @@ void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d
   OffsetT total_segments   = static_cast<OffsetT>(segment_offsets.size() - 1);
   const OffsetT* d_offsets = segment_offsets.data();
 
-  ::cuda::counting_iterator<int> iota(0);
+  thrust::counting_iterator<int> iota(0);
   offset_to_iterator_t<KeyT> dst_transform_op{reinterpret_cast<char*>(d_out), element_size};
 
   auto d_range_srcs  = thrust::make_transform_iterator(iota, repeat_index_t<KeyT>{});
@@ -204,8 +203,8 @@ void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d
   // TODO(bgruber): implement and *test* a non-CUB version, here is a sketch:
   // thrust::for_each(
   //   thrust::device,
-  //   ::cuda::counting_iterator<OffsetT>{0},
-  //   ::cuda::counting_iterator<OffsetT>{total_segments},
+  //   thrust::counting_iterator<OffsetT>{0},
+  //   thrust::counting_iterator<OffsetT>{total_segments},
   //   [&](OffsetT i) {
   //     const auto value = d_range_srcs[i];
   //     const auto start = d_range_sizes[i];

@@ -7,8 +7,6 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
-#include <cuda/iterator>
-
 #include <unittest/unittest.h>
 
 template <typename Vector>
@@ -304,8 +302,8 @@ void TestMergeByKeyFromCuDFDremel()
   thrust::merge_by_key(
     transformed_empties,
     transformed_empties + empties_size,
-    cuda::make_counting_iterator(0),
-    cuda::make_counting_iterator(curr_rep_values_size),
+    thrust::make_counting_iterator(0),
+    thrust::make_counting_iterator(curr_rep_values_size),
     input_parent_zip_it,
     input_child_zip_it,
     thrust::make_discard_iterator(),

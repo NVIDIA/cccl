@@ -57,9 +57,8 @@ T _CCCL_HOST_DEVICE inner_product(
   ReduceOp reduce_op,
   ProductOp product_op)
 {
-  const auto n = ::cuda::std::distance(first1, last1);
-  const auto first =
-    thrust::make_transform_iterator(thrust::make_zip_iterator(first1, first2), thrust::make_zip_function(product_op));
+  const auto n     = ::cuda::std::distance(first1, last1);
+  const auto first = make_transform_iterator(make_zip_iterator(first1, first2), make_zip_function(product_op));
   return cuda_cub::reduce_n(policy, first, n, init, reduce_op);
 }
 

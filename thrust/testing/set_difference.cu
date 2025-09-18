@@ -4,8 +4,6 @@
 #include <thrust/set_operations.h>
 #include <thrust/sort.h>
 
-#include <cuda/iterator>
-
 #include <unittest/unittest.h>
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -177,9 +175,9 @@ DECLARE_VARIABLE_UNITTEST(TestSetDifferenceMultiset);
 #if !_CCCL_COMPILER(MSVC)
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
-  cuda::counting_iterator<long long> begin(0);
-  cuda::counting_iterator<long long> end        = begin + (1ll << magnitude);
-  cuda::counting_iterator<long long> end_longer = end + 1;
+  thrust::counting_iterator<long long> begin(0);
+  thrust::counting_iterator<long long> end        = begin + (1ll << magnitude);
+  thrust::counting_iterator<long long> end_longer = end + 1;
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_vector<long long> result;
