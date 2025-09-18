@@ -87,7 +87,8 @@ struct agent_t
     typename block_store_keys::TempStorage store_keys;
     typename block_store_items::TempStorage store_items;
 
-    // TODO(bgruber): Fix SerialMerge and drop the + 1
+    // TODO(bgruber): We could change SerialMerge to avoid reading one item out of bounds and drop the + 1 here. But
+    // that would introduce more branches. Needs benchmarking
     key_type keys_shared[items_per_tile + 1];
     item_type items_shared[items_per_tile + 1];
   };

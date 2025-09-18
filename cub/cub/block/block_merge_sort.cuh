@@ -103,8 +103,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   CompareOp compare_op,
   KeyT oob_default)
 {
-  // TODO(bgruber): consider adding this assertion:
-  // if constexpr (IsFullTile) _CCCL_ASSERT(keys1_count + keys2_count >= ITEMS_PER_THREAD, "");
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
 
