@@ -94,6 +94,7 @@ def test_three_way_partition_basic(dtype, num_items):
         d_num_selected,
         less_than_op,
         greater_equal_op,
+        num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -140,6 +141,7 @@ def test_three_way_partition_empty():
         d_num_selected,
         less_than_op,
         greater_equal_op,
+        0,
     )
 
     np.testing.assert_array_equal(d_num_selected.get(), np.array([0, 0]))
@@ -178,6 +180,7 @@ def test_three_way_partition_with_iterators():
         d_num_selected,
         less_than_op,
         greater_equal_op,
+        num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -237,6 +240,7 @@ def test_three_way_partition_struct_type():
         d_num_selected,
         less_than_op,
         greater_equal_op,
+        num_items,
     )
 
     num_selected = d_num_selected.get()
@@ -284,6 +288,7 @@ def test_three_way_partition_with_stream(cuda_stream):
         d_num_selected,
         less_than_op,
         greater_equal_op,
+        num_items,
         stream=cuda_stream,
     )
 

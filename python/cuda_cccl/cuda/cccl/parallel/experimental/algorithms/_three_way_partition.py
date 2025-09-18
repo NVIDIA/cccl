@@ -117,6 +117,7 @@ class _ThreeWayPartition:
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
+        num_items: int,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
@@ -143,6 +144,7 @@ class _ThreeWayPartition:
             self.d_num_selected_out_cccl,
             self.select_first_part_op_wrapper,
             self.select_second_part_op_wrapper,
+            num_items,
             stream_handle,
         )
         return temp_storage_bytes
@@ -199,6 +201,7 @@ def three_way_partition(
     d_num_selected_out: DeviceArrayLike | IteratorBase,
     select_first_part_op: Callable,
     select_second_part_op: Callable,
+    num_items: int,
     stream=None,
 ):
     """
@@ -221,6 +224,8 @@ def three_way_partition(
         d_num_selected_out: Device array to store the number of items selected. The total number of items selected by ``select_first_part_op`` and ``select_second_part_op`` is stored in ``d_num_selected_out[0]`` and ``d_num_selected_out[1]``, respectively.
         select_first_part_op: Callable representing the unary operator to select the first part
         select_second_part_op: Callable representing the unary operator to select the second part
+        num_items: Number of items to partition
+        stream: CUDA stream for the operation (optional)
     """
     partitioner = make_three_way_partition(
         d_in,
@@ -238,8 +243,8 @@ def three_way_partition(
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
-        select_first_part_op,
-        select_second_part_op,
+        num_items,
+        stream,
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     partitioner(
@@ -249,7 +254,6 @@ def three_way_partition(
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
-        select_first_part_op,
-        select_second_part_op,
+        num_items,
         stream,
     )
