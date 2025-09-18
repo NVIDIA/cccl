@@ -532,6 +532,15 @@ CUresult cccl_device_segmented_sort_build(
     return CUDA_ERROR_UNKNOWN;
   }
 
+  if (cccl_iterator_kind_t::CCCL_POINTER != start_offset_it.type
+      || cccl_iterator_kind_t::CCCL_POINTER != end_offset_it.type)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_segmented_sort_build(): start_offset_it and end_offset_it must be a pointer\n ");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
   try
   {
     const char* name = "device_segmented_sort";
