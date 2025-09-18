@@ -107,7 +107,7 @@ struct agent_t
   KeysOutputIt keys_out;
   ItemsOutputIt items_out;
   CompareOp compare_op;
-  Offset* merge_partitions;
+  Offset* key1_beg_offsets;
 
   template <bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset tile_base, int num_remaining)
@@ -124,8 +124,8 @@ struct agent_t
     }
 
     // compute bounding box for keys1 & keys2
-    const Offset keys1_beg = merge_partitions[tile_idx + 0];
-    const Offset keys1_end = merge_partitions[tile_idx + 1];
+    const Offset keys1_beg = key1_beg_offsets[tile_idx + 0];
+    const Offset keys1_end = key1_beg_offsets[tile_idx + 1];
     const Offset keys2_beg = diag0 - keys1_beg;
     const Offset keys2_end = diag1 - keys1_end;
 
