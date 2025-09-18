@@ -78,6 +78,7 @@ jobs:
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@v4
+        if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -89,24 +90,23 @@ jobs:
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
-          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.08"}'
-          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.45"}'
+          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.10"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.46"}'
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
           # Start the ssh-agent and add the repo deploy keys
           if ! pgrep ssh-agent >/dev/null 2>&1; then eval "$(ssh-agent -s)"; fi
-          ssh-add - <<< '${{ secrets.RAPIDSAI_CUMLPRIMS_DEPLOY_KEY }}'
           devcontainer-utils-init-ssh-deploy-keys || true
           exec "$@"
           EOF
@@ -178,11 +178,13 @@ jobs:
             --env "CCCL_TAG=${CCCL_TAG}" \
             --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env "AWS_ROLE_ARN=" \
-            --env "AWS_REGION=$AWS_REGION" \
-            --env "SCCACHE_REGION=$AWS_REGION" \
-            --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
-            --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" \
-            --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
+            --env "AWS_REGION=${AWS_REGION:-}" \
+            --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
+            --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
+            --env "SCCACHE_S3_NO_CREDENTIALS=${SCCACHE_S3_NO_CREDENTIALS:-}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \

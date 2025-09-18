@@ -9,6 +9,7 @@ The Continuous Integration (CI) process for CCCL ensures code quality and compat
 CCCL's CI jobs use the same Development Containers as described in the [Dev Container setup](.devcontainer/README.md). Follow the instructions in that guide to set up a development container with the same environment as CI.
 
 ### Matrix Testing
+
 To ensure compatibility across various setups, CI tests are performed across a broad matrix of:
 
 - CUDA versions
@@ -33,11 +34,10 @@ These commands can be combined with the [override matrix](#temporarily-overridin
   - `[skip-matrix]`: Skip all build and test jobs specified in `ci/matrix.yaml`.
   - `[skip-vdc]`: Skip all "Validate Devcontainer" jobs.
   - `[skip-docs]`: Skip the documentation verification build.
-  - `[skip-rapids]`: Skip all RAPIDS canary builds.
   - `[skip-matx]`: Skip all MatX canary builds.
-  - **Example:** `git commit -m "Fix RAPIDS failures [skip-matrix][skip-vdc][skip-docs][skip-matx]"`
+  - **Example:** `git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-matx]"`
 
-- `[workflow:<workflow>]`:  Execute jobs from the named workflow. Example: `[workflow:nightly]` runs all jobs defined in `matrix.yaml`'s `workflows.nightly` list.
+- `[test-rapids]`: Opt‑in to run RAPIDS canary builds alongside CCCL CI.
 
 ### Temporarily Overriding the Pull Request Matrix
 
@@ -53,13 +53,31 @@ The override matrix can be combined with the `[skip-<...>]` commands detailed in
 
 Example:
 
-```
+```yaml
 workflows:
   override:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'all', cxx: ['msvc14.39', 'gcc10', 'clang14']}
   pull_request:
     - <...>
 ```
+
+### Running PR CI with sccache on Personal CCCL Forks
+
+> 💡 This section only applies to the uncommon case of wanting to run CI in a pull request made to a github fork of `NVIDIA/cccl`. **This is not applicable to the common case of creating a PR against the main `NVIDIA/cccl` repo.**
+
+Pull requests opened against a Github fork of CCCL run CI on GitHub‑hosted, CPU-only runners with a reduced job matrix. Authorized NVIDIA developers can enable compiler caching via sccache for forked PRs by adding a GitHub Personal Access Token (PAT) as a secret on your fork:
+
+1. Create a PAT:
+   - Generate a PAT (classic) in your GitHub account with the following minimum scopes: `repo` (read), `read:org`, and `gist`.
+   - A fine‑grained PAT with equivalent read access also works.
+2. Add the secret on your fork:
+   - Navigate to `Settings → Secrets and variables → Actions` on your fork.
+   - Add a new Repository secret named `SCCACHE_AUTH_TOKEN` and paste the PAT value.
+3. Create a pull request to an up-to-date `main` branch of your github fork.
+   - This will automatically start the PR workflow on GH-hosted runners for users with appropriate access to your fork.
+4. Verify that the job results show sccache hits on our S3 bucket.
+
+For local development, you can also share cache with CI by following the guidance in [Accelerating Build Times with `sccache`](#accelerating-build-times-with-sccache).
 
 ### Accelerating Build Times with `sccache`
 
@@ -84,6 +102,7 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
     CI jobs use the build and test scripts found in the `ci/` directory.
 
     Example:
+
     ```bash
     ./ci/build_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
     ./ci/test_cub.sh <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>
@@ -124,7 +143,7 @@ Git is now configured to sign commits with your ssh key.
 
 To complete the process, upload the public key to your [Github Signing Keys](https://github.com/settings/keys) in your browser or using the `gh` CLI tool:
 
-```
+```bash
 gh ssh-key add ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub --type signing
 ```
 

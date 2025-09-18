@@ -136,16 +136,10 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr mdspan(const mdspan&) = default;
   _CCCL_HIDE_FROM_ABI constexpr mdspan(mdspan&&)      = default;
 
-  template <size_t _Size>
-  static constexpr bool __matches_dynamic_rank = (_Size == extents_type::rank_dynamic());
-
-  template <size_t _Size>
-  static constexpr bool __matches_static_rank =
-    (_Size == extents_type::rank()) && (_Size != extents_type::rank_dynamic());
-
   template <class... _OtherIndexTypes>
   static constexpr bool __can_construct_from_handle_and_variadic =
-    (__matches_dynamic_rank<sizeof...(_OtherIndexTypes)> || __matches_static_rank<sizeof...(_OtherIndexTypes)>)
+    (__mdspan_detail::__matches_dynamic_rank<extents_type, sizeof...(_OtherIndexTypes)>
+     || __mdspan_detail::__matches_static_rank<extents_type, sizeof...(_OtherIndexTypes)>)
     && __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>
     && is_constructible_v<mapping_type, extents_type> && is_default_constructible_v<accessor_type>;
 
@@ -162,25 +156,29 @@ public:
     && is_default_constructible_v<accessor_type>;
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
+                   __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_static_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_static_rank<extents_type, _Size> _CCCL_AND
+                   __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_dynamic_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
+                   __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
   {}
 
   _CCCL_TEMPLATE(class _OtherIndexType, size_t _Size)
-  _CCCL_REQUIRES(__matches_static_rank<_Size> _CCCL_AND __is_constructible_from_index_type<_OtherIndexType>)
+  _CCCL_REQUIRES(__mdspan_detail::__matches_static_rank<extents_type, _Size> _CCCL_AND
+                   __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
       : __base(::cuda::std::move(__p), extents_type{__exts})
   {}

@@ -15,7 +15,7 @@ int main()
   // device_ptr supports pointer arithmetic
   thrust::device_ptr<int> first = d_ptr;
   thrust::device_ptr<int> last  = d_ptr + 10;
-  std::cout << "device array contains " << (last - first) << " values\n";
+  std::cout << "device array contains " << cuda::std::distance(first, last) << " values\n";
 
   // algorithms work as expected
   thrust::sequence(first, last);
