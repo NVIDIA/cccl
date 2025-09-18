@@ -1955,3 +1955,140 @@ cdef class DeviceHistogramBuildResult:
 
     def _get_cubin(self):
         return self.build_data.cubin[:self.build_data.cubin_size]
+
+
+# ----------------------------------
+# DeviceThreeWayPartitionBuildResult
+# ----------------------------------
+cdef extern from "cccl/c/three_way_partition.h":
+    cdef struct cccl_device_three_way_partition_build_result_t 'cccl_device_three_way_partition_build_result_t':
+        const char* cubin
+        size_t cubin_size
+
+    cdef CUresult cccl_device_three_way_partition_build(
+        cccl_device_three_way_partition_build_result_t *build_ptr,
+        cccl_iterator_t d_in,
+        cccl_iterator_t d_first_part_out,
+        cccl_iterator_t d_second_part_out,
+        cccl_iterator_t d_unselected_out,
+        cccl_iterator_t d_num_selected_out,
+        cccl_op_t select_first_part_op,
+        cccl_op_t select_second_part_op,
+        int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    CUresult cccl_device_three_way_partition(
+        cccl_device_three_way_partition_build_result_t build,
+        void* d_temp_storage,
+        size_t* temp_storage_bytes,
+        cccl_iterator_t d_in,
+        cccl_iterator_t d_first_part_out,
+        cccl_iterator_t d_second_part_out,
+        cccl_iterator_t d_unselected_out,
+        cccl_iterator_t d_num_selected_out,
+        cccl_op_t select_first_part_op,
+        cccl_op_t select_second_part_op,
+        int64_t num_items,
+        CUstream stream
+    ) nogil
+
+    cdef CUresult cccl_device_three_way_partition_cleanup(
+        cccl_device_three_way_partition_build_result_t *build_ptr
+    ) nogil
+
+
+cdef class DeviceThreeWayPartitionBuildResult:
+    cdef cccl_device_three_way_partition_build_result_t build_data
+
+    def __dealloc__(DeviceThreeWayPartitionBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_three_way_partition_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during three_way_partition result cleanup")
+
+
+    def __cinit__(
+        DeviceThreeWayPartitionBuildResult self,
+        Iterator d_in,
+        Iterator d_first_part_out,
+        Iterator d_second_part_out,
+        Iterator d_unselected_out,
+        Iterator d_num_selected_out,
+        Op select_first_part_op,
+        Op select_second_part_op,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        memset(&self.build_data, 0, sizeof(cccl_device_three_way_partition_build_result_t))
+        with nogil:
+            status = cccl_device_three_way_partition_build(
+                &self.build_data,
+                d_in.iter_data,
+                d_first_part_out.iter_data,
+                d_second_part_out.iter_data,
+                d_unselected_out.iter_data,
+                d_num_selected_out.iter_data,
+                select_first_part_op.op_data,
+                select_second_part_op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed building three_way_partition, error code: {status}"
+            )
+
+    cpdef int compute(
+        DeviceThreeWayPartitionBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_in,
+        Iterator d_first_part_out,
+        Iterator d_second_part_out,
+        Iterator d_unselected_out,
+        Iterator d_num_selected_out,
+        Op select_first_part_op,
+        Op select_second_part_op,
+        size_t num_items,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_three_way_partition(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_first_part_out.iter_data,
+                d_second_part_out.iter_data,
+                d_unselected_out.iter_data,
+                d_num_selected_out.iter_data,
+                select_first_part_op.op_data,
+                select_second_part_op.op_data,
+                <uint64_t>num_items,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing three_way_partition, error code: {status}"
+            )
+        return storage_sz
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
