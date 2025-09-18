@@ -43,7 +43,6 @@
 #  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #  include <cub/util_type.cuh>
 
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
 #  include <thrust/functional.h>

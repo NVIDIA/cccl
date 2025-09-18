@@ -46,7 +46,6 @@
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
@@ -60,6 +59,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/iterator>
 
@@ -93,8 +94,6 @@ template <>
 struct is_true<true> : thrust::detail::true_type
 {};
 
-namespace mpl = thrust::detail::mpl::math;
-
 template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD                   = 1,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
@@ -120,22 +119,15 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  enum
-  {
-    MAX_INPUT_BYTES      = mpl::max<size_t, sizeof(Key), sizeof(Value)>::value,
-    COMBINED_INPUT_BYTES = sizeof(Key) + sizeof(Value),
-
-    NOMINAL_4B_ITEMS_PER_THREAD = 9,
-
-    ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
-        ? 9
-        : mpl::min<
-            int,
-            NOMINAL_4B_ITEMS_PER_THREAD,
-            mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
-              value>::value,
-  };
+  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(int{sizeof(Key)}, int{sizeof(Value)});
+  static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
+  static constexpr int ITEMS_PER_THREAD =
+    (MAX_INPUT_BYTES <= 8)
+      ? 9
+      : ::cuda::std::min(
+          NOMINAL_4B_ITEMS_PER_THREAD,
+          ::cuda::std::max(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
