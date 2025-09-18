@@ -9,8 +9,6 @@
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/sort.h>
 
-#include <cuda/__iterator/counting_iterator.h>
-
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
@@ -105,7 +103,7 @@ generate_lhs_rhs(std::size_t num_items_lhs, std::size_t num_items_rhs, bit_entro
   // selected for lhs and *all* items after the pivot point.
   constexpr std::size_t num_pivot_points = 1;
   thrust::device_vector<offset_t> pivot_point(num_pivot_points);
-  auto counting_it = ::cuda::make_counting_iterator(offset_t{0});
+  auto counting_it = thrust::make_counting_iterator(offset_t{0});
   thrust::copy_if(
     counting_it,
     counting_it + elements,
