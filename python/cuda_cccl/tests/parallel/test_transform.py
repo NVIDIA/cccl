@@ -28,13 +28,8 @@ def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=
 
 
 def test_unary_transform(input_array):
-    import numpy as np
-
     if input_array.dtype == np.float16:
         pytest.skip("float16 is not supported with custom operators")
-
-    # example-begin transform-unary
-    import numpy as np
 
     def op(a):
         return a + 1
@@ -48,17 +43,11 @@ def test_unary_transform(input_array):
     expected = unary_transform_host(d_in.get(), op)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
-    # example-end transform-unary
 
 
 def test_binary_transform(input_array):
-    import numpy as np
-
     if input_array.dtype == np.float16:
         pytest.skip("float16 is not supported with custom operators")
-
-    # example-begin transform-binary
-    import numpy as np
 
     def op(a, b):
         return a + b
@@ -73,7 +62,6 @@ def test_binary_transform(input_array):
     expected = binary_transform_host(d_in1.get(), d_in2.get(), op)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
-    # example-end transform-binary
 
 
 def test_unary_transform_struct_type():

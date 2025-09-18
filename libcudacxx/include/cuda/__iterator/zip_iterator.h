@@ -48,6 +48,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! @addtogroup iterators
+//! @{
+
 template <class... _Iterators>
 struct __tuple_or_pair_impl
 {
@@ -123,6 +126,57 @@ _CCCL_API constexpr auto __get_zip_view_iterator_tag()
   _CCCL_UNREACHABLE();
 }
 
+//! @brief @c zip_iterator is an iterator which represents a @c tuple of iterators. This iterator is useful for creating
+//! a virtual array of structures while achieving the same performance and bandwidth as the structure of arrays idiom.
+//! @c zip_iterator also facilitates kernel fusion by providing a convenient means of amortizing the execution of the
+//! same operation over multiple ranges.
+//!
+//! The following code snippet demonstrates how to create a @c zip_iterator which represents the result of "zipping"
+//! multiple ranges together.
+//!
+//! @code
+//! #include <cuda/iterator>
+//! #include <thrust/device_vector.h>
+//!
+//! thrust::device_vector<int> int_v{0, 1, 2};
+//! thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
+//! thrust::device_vector<char> char_v{'a', 'b', 'c'};
+//!
+//! cuda::zip_iterator iter{int_v.begin(), float_v.begin(), char_v.begin()};
+//!
+//! *iter;   // returns (0, 0.0f, 'a')
+//! iter[0]; // returns (0, 0.0f, 'a')
+//! iter[1]; // returns (1, 1.0f, 'b')
+//! iter[2]; // returns (2, 2.0f, 'c')
+//!
+//! cuda::std::get<0>(iter[2]); // returns 2
+//! cuda::std::get<1>(iter[0]); // returns 0.0f
+//! cuda::std::get<2>(iter[1]); // returns 'b'
+//!
+//! // iter[3] is an out-of-bounds error
+//! @endcode
+//!
+//! This example shows how to use @c zip_iterator to copy multiple ranges with a single call to @c thrust::copy.
+//!
+//! @code
+//! #include <cuda/iterator>
+//! #include <thrust/device_vector.h>
+//!
+//! int main()
+//! {
+//!   thrust::device_vector<int> int_in{0, 1, 2}, int_out(3);
+//!   thrust::device_vector<float> float_in{0.0f, 10.0f, 20.0f}, float_out(3);
+//!
+//!   thrust::copy(cuda::zip_iterator{int_in.begin(), float_in.begin()},
+//!                cuda::zip_iterator{int_in.end(),   float_in.end()},
+//!                cuda::zip_iterator{int_out.begin(),float_out.begin()});
+//!
+//!   // int_out is now [0, 1, 2]
+//!   // float_out is now [0.0f, 10.0f, 20.0f]
+//!
+//!   return 0;
+//! }
+//! @endcode
 template <class... _Iterators>
 class zip_iterator : public __zv_iter_category_base<_Iterators...>
 {
@@ -142,17 +196,25 @@ class zip_iterator : public __zv_iter_category_base<_Iterators...>
   }
 
 public:
+  //! @brief Default-constructs a @c zip_iterator by defaulting all stored iterators
+  _CCCL_HIDE_FROM_ABI zip_iterator() = default;
+
+  //! @brief Constructs a @c zip_iterator from a tuple of iterators
+  //! @param __iters A tuple or pair of iterators
   _CCCL_API constexpr explicit zip_iterator(__tuple_or_pair<_Iterators...> __iters)
       : __current_(::cuda::std::move(__iters))
   {}
 
-  // We want to use the simpler `pair` if possible, but still want to be able to construct from a 2 element tuple
+  //! @brief Constructs a @c zip_iterator from a tuple of iterators
+  //! @param __iters A tuple of iterators
   _CCCL_TEMPLATE(size_t _NumIterators = sizeof...(_Iterators))
   _CCCL_REQUIRES((_NumIterators == 2))
   _CCCL_API constexpr explicit zip_iterator(::cuda::std::tuple<_Iterators...> __iters)
       : __current_(::cuda::std::get<0>(::cuda::std::move(__iters)), ::cuda::std::get<1>(::cuda::std::move(__iters)))
   {}
 
+  //! @brief Constructs a @c zip_iterator from variadic set of iterators
+  //! @param __iters The input iterators
   _CCCL_API constexpr explicit zip_iterator(_Iterators... __iters)
       : __current_(::cuda::std::move(__iters)...)
   {}
@@ -162,17 +224,17 @@ public:
   using reference        = __tuple_or_pair<::cuda::std::iter_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;
 
-  _CCCL_HIDE_FROM_ABI zip_iterator() = default;
-
   template <class... _OtherIters>
   static constexpr bool __all_convertible =
     (::cuda::std::convertible_to<_OtherIters, _Iterators> && ...)
     && !(::cuda::std::is_same_v<_Iterators, _OtherIters> && ...);
 
+  //! @brief Converts a different @c zip_iterator
+  //! @param __iter The other @c zip_iterator
   _CCCL_TEMPLATE(class... _OtherIters)
   _CCCL_REQUIRES((sizeof...(_OtherIters) == sizeof...(_Iterators)) _CCCL_AND __all_convertible<_OtherIters...>)
-  _CCCL_API constexpr zip_iterator(zip_iterator<_OtherIters...> __i)
-      : __current_(::cuda::std::move(__i.__current_))
+  _CCCL_API constexpr zip_iterator(zip_iterator<_OtherIters...> __iter)
+      : __current_(::cuda::std::move(__iter.__current_))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -182,10 +244,34 @@ public:
     return reference{*__iters...};
   }
 
+  //! @brief Dereferences the @c zip_iterator
+  //! @returns A tuple of references obtained by referencing every stored iterator
   [[nodiscard]] _CCCL_API constexpr auto operator*() const
     noexcept(noexcept(::cuda::std::apply(__zip_op_star, __current_)))
   {
     return ::cuda::std::apply(__zip_op_star, __current_);
+  }
+
+  struct __zip_op_index
+  {
+    difference_type __n;
+
+    _CCCL_EXEC_CHECK_DISABLE
+    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
+      noexcept(noexcept(reference{__iters[::cuda::std::iter_difference_t<_Iterators>(__n)]...}))
+    {
+      return reference{__iters[::cuda::std::iter_difference_t<_Iterators>(__n)]...};
+    }
+  };
+
+  //! @brief Subscripts the @c zip_iterator with an offset
+  //! @param __n The additional offset
+  //! @returns A tuple of references obtained by subscripting every stored iterator
+  _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
+  _CCCL_REQUIRES(_Constraints::__all_random_access)
+  _CCCL_API constexpr auto operator[](difference_type __n) const
+  {
+    return ::cuda::std::apply(__zip_op_index{__n}, __current_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -194,12 +280,15 @@ public:
     ((void) ++__iters, ...);
   }
 
+  //! @brief Increments all stored iterators
   _CCCL_API constexpr zip_iterator& operator++() noexcept(noexcept(::cuda::std::apply(__zip_op_increment, __current_)))
   {
     ::cuda::std::apply(__zip_op_increment, __current_);
     return *this;
   }
 
+  //! @brief Increments all stored iterators
+  //! @returns A copy of the original @c zip_iterator if possible
   _CCCL_API constexpr auto operator++(int)
   {
     if constexpr (__zip_iter_constraints<_Iterators...>::__all_forward)
@@ -220,6 +309,7 @@ public:
     ((void) --__iters, ...);
   }
 
+  //! @brief Decrements all stored iterators
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_bidirectional)
   _CCCL_API constexpr zip_iterator& operator--() noexcept(noexcept(::cuda::std::apply(__zip_op_decrement, __current_)))
@@ -228,6 +318,7 @@ public:
     return *this;
   }
 
+  //! @brief Decrements all stored iterators
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_bidirectional)
   _CCCL_API constexpr zip_iterator operator--(int)
@@ -249,6 +340,8 @@ public:
     }
   };
 
+  //! @brief Increments all stored iterators by a given number of elements
+  //! @param __n The number of elements to increment
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr zip_iterator& operator+=(difference_type __n)
@@ -269,6 +362,8 @@ public:
     }
   };
 
+  //! @brief Decrements all stored iterators by a given number of elements
+  //! @param __n The number of elements to decrement
   _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
   _CCCL_REQUIRES(_Constraints::__all_random_access)
   _CCCL_API constexpr zip_iterator& operator-=(difference_type __n)
@@ -277,132 +372,38 @@ public:
     return *this;
   }
 
-  struct __zip_op_index
-  {
-    difference_type __n;
-
-    _CCCL_EXEC_CHECK_DISABLE
-    [[nodiscard]] _CCCL_API constexpr reference operator()(const _Iterators&... __iters) const
-      noexcept(noexcept(reference{__iters[::cuda::std::iter_difference_t<_Iterators>(__n)]...}))
-    {
-      return reference{__iters[::cuda::std::iter_difference_t<_Iterators>(__n)]...};
-    }
-  };
-
-  _CCCL_TEMPLATE(class _Constraints = __zip_iter_constraints<_Iterators...>)
-  _CCCL_REQUIRES(_Constraints::__all_random_access)
-  _CCCL_API constexpr auto operator[](difference_type __n) const
-  {
-    return ::cuda::std::apply(__zip_op_index{__n}, __current_);
-  }
-
-  struct __zip_op_eq
-  {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t... _Indices>
-    _CCCL_API constexpr bool operator()(const __tuple_or_pair<_Iterators...>& __iters1,
-                                        const __tuple_or_pair<_Iterators...>& __iters2,
-                                        ::cuda::std::index_sequence<_Indices...>) const
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
-    {
-      return ((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...);
-    }
-  };
-
+  //! @brief Returns a copy of a @c zip_iterator incremented by a given number of elements
+  //! @param __iter The @c zip_iterator to increment
+  //! @param __n The number of elements to increment
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator==(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
-  {
-    if constexpr (_Constraints::__all_bidirectional)
-    {
-      return __n.__current_ == __y.__current_;
-    }
-    else
-    {
-      return __zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
-    }
-    _CCCL_UNREACHABLE();
-  }
-
-#if _CCCL_STD_VER <= 2017
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator!=(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
-  {
-    if constexpr (_Constraints::__all_bidirectional)
-    {
-      return __n.__current_ != __y.__current_;
-    }
-    else
-    {
-      return !__zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
-    }
-    _CCCL_UNREACHABLE();
-  }
-#endif // _CCCL_STD_VER <= 2017
-
-#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator<=>(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access&& _Constraints::__all_three_way_comparable)
-  {
-    return __n.__current_ <=> __y.__current_;
-  }
-
-#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator<(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
-  {
-    return __n.__current_ < __y.__current_;
-  }
-
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator>(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
-  {
-    return __y < __n;
-  }
-
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator<=(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
-  {
-    return !(__y < __n);
-  }
-
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator>=(const zip_iterator& __n, const zip_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
-  {
-    return !(__n < __y);
-  }
-#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-
-  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator+(const zip_iterator& __i, difference_type __n)
+  _CCCL_API friend constexpr auto operator+(const zip_iterator& __iter, difference_type __n)
     _CCCL_TRAILING_REQUIRES(zip_iterator)(_Constraints::__all_random_access)
   {
-    auto __r = __i;
-    __r += __n;
-    return __r;
+    auto __rhs = __iter;
+    __rhs += __n;
+    return __rhs;
   }
 
+  //! @brief Returns a copy of a @c zip_iterator incremented by a given number of elements
+  //! @param __n The number of elements to increment
+  //! @param __iter The @c zip_iterator to increment
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator+(difference_type __n, const zip_iterator& __i)
+  _CCCL_API friend constexpr auto operator+(difference_type __n, const zip_iterator& __iter)
     _CCCL_TRAILING_REQUIRES(zip_iterator)(_Constraints::__all_random_access)
   {
-    return __i + __n;
+    return __iter + __n;
   }
 
+  //! @brief Returns a copy of a @c zip_iterator decremented by a given number of elements
+  //! @param __n The number of elements to decrement
+  //! @param __iter The @c zip_iterator to decrement
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto operator-(const zip_iterator& __i, difference_type __n)
+  _CCCL_API friend constexpr auto operator-(const zip_iterator& __iter, difference_type __n)
     _CCCL_TRAILING_REQUIRES(zip_iterator)(_Constraints::__all_random_access)
   {
-    auto __r = __i;
-    __r -= __n;
-    return __r;
+    auto __rhs = __iter;
+    __rhs -= __n;
+    return __rhs;
   }
 
   struct __zip_op_minus
@@ -446,12 +447,105 @@ public:
     }
   };
 
+  //! @brief Returns the distance between two @c zip_iterators
+  //! @returns The minimal distance between any of the stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator-(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(difference_type)(_Constraints::__all_sized_sentinel)
   {
     return __zip_apply(__zip_op_minus{}, __n.__current_, __y.__current_);
   }
+
+  struct __zip_op_eq
+  {
+    _CCCL_EXEC_CHECK_DISABLE
+    template <size_t... _Indices>
+    _CCCL_API constexpr bool operator()(const __tuple_or_pair<_Iterators...>& __iters1,
+                                        const __tuple_or_pair<_Iterators...>& __iters2,
+                                        ::cuda::std::index_sequence<_Indices...>) const
+      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
+    {
+      return ((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...);
+    }
+  };
+
+  //! @brief Compares two @c zip_iterator for equality by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator==(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
+  {
+    if constexpr (_Constraints::__all_bidirectional)
+    {
+      return __n.__current_ == __y.__current_;
+    }
+    else
+    {
+      return __zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
+    }
+    _CCCL_UNREACHABLE();
+  }
+
+#if _CCCL_STD_VER <= 2017
+  //! @brief Compares two @c zip_iterator for inequality by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator!=(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_equality_comparable)
+  {
+    if constexpr (_Constraints::__all_bidirectional)
+    {
+      return __n.__current_ != __y.__current_;
+    }
+    else
+    {
+      return !__zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
+    }
+    _CCCL_UNREACHABLE();
+  }
+#endif // _CCCL_STD_VER <= 2017
+
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+  //! @brief Three-way compares two @c zip_iterator by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator<=>(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access&& _Constraints::__all_three_way_comparable)
+  {
+    return __n.__current_ <=> __y.__current_;
+  }
+
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+
+  //! @brief Compares two @c zip_iterator for less than by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator<(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
+  {
+    return __n.__current_ < __y.__current_;
+  }
+
+  //! @brief Compares two @c zip_iterator for greater than by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator>(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
+  {
+    return __y < __n;
+  }
+
+  //! @brief Compares two @c zip_iterator for less equal by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator<=(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
+  {
+    return !(__y < __n);
+  }
+
+  //! @brief Compares two @c zip_iterator for greater equal by comparing the tuple of stored iterators
+  template <class _Constraints = __zip_iter_constraints<_Iterators...>>
+  _CCCL_API friend constexpr auto operator>=(const zip_iterator& __n, const zip_iterator& __y)
+    _CCCL_TRAILING_REQUIRES(bool)(_Constraints::__all_random_access)
+  {
+    return !(__n < __y);
+  }
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   using __iter_move_ret = __tuple_or_pair<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
 
@@ -462,11 +556,13 @@ public:
     return __iter_move_ret{::cuda::std::ranges::iter_move(__iters)...};
   }
 
+  //! @brief Applies `iter_move` by applying it to all stored iterators
   // MSVC falls over its feet if this is not a template
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
-  _CCCL_API friend constexpr auto iter_move(const zip_iterator& __i) noexcept(_Constraints::__all_nothrow_iter_movable)
+  _CCCL_API friend constexpr auto
+  iter_move(const zip_iterator& __iter) noexcept(_Constraints::__all_nothrow_iter_movable)
   {
-    return ::cuda::std::apply(__zip_iter_move, __i.__current_);
+    return ::cuda::std::apply(__zip_iter_move, __iter.__current_);
   }
 
   template <class... _OtherIterators>
@@ -485,12 +581,13 @@ public:
     }
   };
 
+  //! @brief Applies `iter_swap` to two @c zip_iterator by applying it to all stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto
-  iter_swap(const zip_iterator& __l, const zip_iterator& __r) noexcept(_Constraints::__all_noexcept_swappable)
+  iter_swap(const zip_iterator& __lhs, const zip_iterator& __rhs) noexcept(_Constraints::__all_noexcept_swappable)
     _CCCL_TRAILING_REQUIRES(void)(_Constraints::__all_indirectly_swappable)
   {
-    return __zip_apply(__zip_op_iter_swap{}, __l.__current_, __r.__current_);
+    return __zip_apply(__zip_op_iter_swap{}, __lhs.__current_, __rhs.__current_);
   }
 };
 
@@ -503,25 +600,23 @@ _CCCL_HOST_DEVICE zip_iterator(::cuda::std::pair<_Iterator1, _Iterator2>) -> zip
 template <class... _Iterators>
 _CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
 
-//! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
-//!
-//! \param t The \p tuple of iterators to copy.
-//! \return A newly created \p zip_iterator which zips the iterators encapsulated in \p t.
+//! @brief Creates a @c zip_iterator from a tuple of iterators.
+//! @param __t The tuple of iterators to wrap
 template <typename... Iterators>
-_CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tuple<Iterators...> t)
+_CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tuple<Iterators...> __t)
 {
-  return zip_iterator<Iterators...>{::cuda::std::move(t)};
+  return zip_iterator<Iterators...>{::cuda::std::move(__t)};
 }
 
-//! \p make_zip_iterator creates a \p zip_iterator from iterators.
-//!
-//! \param its The iterators to copy.
-//! \return A newly created \p zip_iterator which zips the iterators.
+//! @brief Creates a @c zip_iterator from a variadic number of iterators.
+//! @param __iters The iterators to wrap
 template <typename... Iterators>
-_CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... its)
+_CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __iters)
 {
-  return zip_iterator<Iterators...>{::cuda::std::move(its)...};
+  return zip_iterator<Iterators...>{::cuda::std::move(__iters)...};
 }
+
+//! @}
 
 _CCCL_END_NAMESPACE_CUDA
 

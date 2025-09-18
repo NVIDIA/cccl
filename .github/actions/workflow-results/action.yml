@@ -171,7 +171,8 @@ runs:
         header: ci-results
         number: ${{ inputs.pr_number }}
         path: pr_comment.md
-        recreate: true
+        hide_and_recreate: true
+        hide_classify: "OUTDATED"
 
     - name: Check for workflow success
       id: check-workflow

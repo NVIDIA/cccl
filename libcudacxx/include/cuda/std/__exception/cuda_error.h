@@ -109,10 +109,14 @@ private:
   [[maybe_unused]] const char* __api                  = nullptr,
   [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
+#  if _CCCL_CUDA_COMPILATION()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (::cudaGetLastError(); // clear CUDA error state
                      throw ::cuda::cuda_error(__status, __msg, __api, __loc);), //
                     (::cuda::std::terminate();))
+#  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+  throw ::cuda::cuda_error(__status, __msg, __api, __loc);
+#  endif // !_CCCL_CUDA_COMPILATION()
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 class cuda_error

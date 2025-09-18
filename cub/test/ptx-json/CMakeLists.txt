@@ -3,6 +3,11 @@ if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   return()
 endif()
 
+if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+  message(STATUS "Skipping ptx-json tests for clang-cuda.")
+  return()
+endif()
+
 set(is_20_available FALSE)
 foreach(cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(dialect ${cub_target} DIALECT)

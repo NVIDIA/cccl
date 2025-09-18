@@ -11,7 +11,6 @@
 #include <cuda/experimental/__stf/places/blocked_partition.cuh>
 #include <cuda/experimental/__stf/places/cyclic_shape.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
-#include <cuda/experimental/__stf/utility/stopwatch.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <stdio.h>
@@ -70,7 +69,10 @@ int main(int argc, char** argv)
 
   const char* const method = argc >= 2 ? argv[1] : "launch-partition";
 
-  stopwatch sw(stopwatch::autostart, ctx.fence());
+  cudaEvent_t start, stop;
+  cuda_safe_call(cudaEventCreate(&start));
+  cuda_safe_call(cudaEventCreate(&stop));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   if (strcmp(method, "launch-partition") == 0)
   {
@@ -117,9 +119,15 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  sw.stop(ctx.fence());
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 
-  printf("Method: %s, elapsed: %f ms\n", argv[1], sw.elapsed().count());
+  float elapsed_ms;
+  cuda_safe_call(cudaEventElapsedTime(&elapsed_ms, start, stop));
+
+  cuda_safe_call(cudaEventDestroy(start));
+  cuda_safe_call(cudaEventDestroy(stop));
+
+  printf("Method: %s, elapsed: %f ms\n", argv[1], elapsed_ms);
 }

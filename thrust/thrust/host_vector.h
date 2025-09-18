@@ -40,9 +40,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup container_classes Container Classes
- *  \addtogroup host_containers Host Containers
- *  \ingroup container_classes
+/*! \addtogroup containers Containers
  *  \{
  */
 

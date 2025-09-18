@@ -47,6 +47,22 @@ namespace reserved
 {
 using unique_id_t = unique_id<event>;
 
+//!
+//! Generates the next unique identifier for asynchronous prerequisite events in DOT.
+//!
+//! This function provides monotonically increasing unique IDs that are used to:
+//! - Establish ordering relationships between events in the task graph
+//! - Enable proper dependency tracking in asynchronous execution
+//! - Support event comparison and sorting operations
+//! - Facilitate debugging and visualization of event dependencies
+//!
+//! \return A unique integer identifier that is guaranteed to be larger than any previously returned ID
+//!
+inline int get_next_prereq_unique_id()
+{
+  return int(unique_id<event>::next_id());
+}
+
 using event_vector = small_vector<event, 7>;
 static_assert(sizeof(event_vector) == 120);
 } // namespace reserved

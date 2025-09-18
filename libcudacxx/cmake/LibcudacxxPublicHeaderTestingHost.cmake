@@ -13,6 +13,17 @@ file(GLOB public_headers_host_only
   RELATIVE "${libcudacxx_SOURCE_DIR}/include"
   CONFIGURE_DEPENDS
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
+  # Add some files we expect to work in host only compilation
+  "${libcudacxx_SOURCE_DIR}/include/cuda/bit"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/cmath"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/functional"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/iterator"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/mdspan"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/memory"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/numeric"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/type_traits"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/utility"
+  "${libcudacxx_SOURCE_DIR}/include/cuda/version"
 )
 
 function(libcudacxx_create_public_header_test_host header_name, headertest_src)

@@ -49,7 +49,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
@@ -116,7 +117,7 @@ public:
   {}
 
   /**
-   * @brief Dispatch initializer. To be called prior prior to kernel launch.
+   * @brief Dispatch initializer. To be called prior to kernel launch.
    *
    * @param num_items_
    *   Total number of input items

@@ -15,9 +15,13 @@
 #include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/thread/thread_operators.cuh> // is_cuda_minimum_maximum_v
 
-#include <cuda/std/cmath> // isnan
-#include <cuda/std/limits> // numeric_limits
-#include <cuda/type_traits> // is_floating_point_v
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 

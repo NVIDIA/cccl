@@ -32,11 +32,7 @@
 #include <thrust/zip_function.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
+namespace system::detail::generic
 {
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
@@ -72,7 +68,5 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   return thrust::transform_reduce(exec, first, last, thrust::make_zip_function(binary_op2), init, binary_op1);
 } // end inner_product()
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

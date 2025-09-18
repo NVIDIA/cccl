@@ -14,7 +14,6 @@ from .._utils.protocols import get_dtype
 from ..struct import gpu_struct_from_numba_types
 from ._iterators import (
     IteratorBase,
-    IteratorIOKind,
     IteratorKind,
     pointer,
 )
@@ -97,7 +96,9 @@ def {func_name}(context, struct_ptr_type):
     # intrinsics defined above.
     for i, it in enumerate(iterators):
         globals()[f"advance_{i}"] = cuda.jit(it.advance, device=True)
-        globals()[f"dereference_{i}"] = cuda.jit(it.dereference, device=True)
+        globals()[f"dereference_{i}"] = cuda.jit(
+            it.input_dereference, device=True
+        )  # only input_dereference for now
 
     # Generate the advance method, which advances each input iterator:
     advance_lines = []  # lines of code for the advance method
@@ -178,7 +179,6 @@ def make_zip_iterator(*iterators):
                 cvalue=cvalue,
                 state_type=state_type,
                 value_type=value_type,
-                iterator_io=IteratorIOKind.INPUT,  # ZipIterator is input-only for now
             )
             self.kind_ = self.__class__.iterator_kind_type(
                 (value_type, *kinds), self.state_type
@@ -193,15 +193,7 @@ def make_zip_iterator(*iterators):
             return advance_func
 
         @property
-        def dereference(self):
+        def input_dereference(self):
             return dereference_func
-
-        @staticmethod
-        def input_advance(state, distance):
-            return advance_func(state, distance)
-
-        @staticmethod
-        def input_dereference(state, result):
-            return dereference_func(state, result)
 
     return ZipIterator(processed_iterators)
