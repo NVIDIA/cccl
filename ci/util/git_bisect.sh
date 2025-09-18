@@ -35,6 +35,7 @@ Build / Test Options:
   --lit-tests STR            Space-separated libcudacxx lit test paths to execute (optional)
                               e.g. 'cuda/utility/basic_any.pass.cpp'
   --custom-test-cmd CMD     Custom command run after build and tests (optional)
+  --repeat N               Re-run the build/test for passing commits N times (default: 1)
 USAGE
 }
 
@@ -58,6 +59,7 @@ SUMMARY_FILE=""
 CMAKE_OPTIONS=""
 CONFIGURE_OVERRIDE=""
 CUSTOM_TEST_CMD=""
+REPEAT=1
 
 # Basic arg parser (keep simple, no extras)
 while [[ $# -gt 0 ]]; do
@@ -74,6 +76,7 @@ while [[ $# -gt 0 ]]; do
     --configure-override) CONFIGURE_OVERRIDE="${2:-}"; shift 2 ;;
     --summary-file)  SUMMARY_FILE="${2:-}"; shift 2 ;;
     --custom-test-cmd) CUSTOM_TEST_CMD="${2:-}"; shift 2 ;;
+    --repeat)        REPEAT="${2:-}"; shift 2 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
   esac
 done
@@ -92,6 +95,10 @@ if [[ -n "${CONFIGURE_OVERRIDE}" ]]; then
     echo "::warning:: --cmake-options ignored due to --configure-override" >&2
   fi
 fi
+
+# Ensure the checkout has complete history and tags:
+git fetch --unshallow > /dev/null 2>&1 || :
+git fetch --tags > /dev/null 2>&1 || :
 
 # Resolve good and bad refs
 good_ref="${GOOD_REF}"
@@ -152,6 +159,30 @@ tmp_runner="$(mktemp /tmp/build-and-test-XXXXXX.sh)"
 cp "${ci_dir}/util/build_and_test_targets.sh" "${tmp_runner}"
 chmod +x "${tmp_runner}"
 
+# If --repeat > 1, wrap the runner to repeat successful runs to detect flakiness.
+bisect_runner="${tmp_runner}"
+if [[ "${REPEAT}" =~ ^[0-9]+$ ]] && [[ "${REPEAT}" -gt 1 ]]; then
+  tmp_repeat="$(mktemp /tmp/build-and-test-repeat-XXXXXX.sh)"
+  cat > "${tmp_repeat}" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+attempts=${REPEAT}
+for ((i=1; i<=attempts; ++i)); do
+  echo "::group::✅ build_and_test attempt \${i}/${REPEAT}"
+  "${tmp_runner}" "\$@" || {
+    echo "Attempt \${i} failed; marking commit as bad."
+    exit 1
+  }
+  echo "::endgroup::"
+done
+exit 0
+EOF
+  chmod +x "${tmp_repeat}"
+  bisect_runner="${tmp_repeat}"
+  echo "Repeating successful runs ${REPEAT} times to check for flakiness."
+fi
+
 # Writer that always prints to stdout and tees to file if provided
 write_summary() {
   if [[ -n "${SUMMARY_FILE}" ]]; then
@@ -169,10 +200,11 @@ echo "::group::⚙️ Starting git bisect"
 (set -x; git bisect start "$bad_sha" "$good_sha")
 echo "::endgroup::"
 
-bisect_log="$(mktemp /tmp/git-bisect-run-XXXXXX.log)"
+bisect_log="$(mktemp /tmp/git-bisect-log-XXXXXX.log)"
+bisect_output="$(mktemp /tmp/git-bisect-output-XXXXXX.log)"
 (
   set -x
-  git bisect run "${tmp_runner}" \
+  git bisect run "${bisect_runner}" \
     --preset "${PRESET}" \
     --build-targets "${BUILD_TARGETS}" \
     --ctest-targets "${CTEST_TARGETS}" \
@@ -181,12 +213,13 @@ bisect_log="$(mktemp /tmp/git-bisect-run-XXXXXX.log)"
     --cmake-options "${CMAKE_OPTIONS}" \
     --configure-override "${CONFIGURE_OVERRIDE}" \
     --custom-test-cmd "${CUSTOM_TEST_CMD}" \
-    | tee "${bisect_log}" || :
+    | tee "${bisect_output}" || :
+  git bisect log | tee "${bisect_log}" || :
   git bisect reset || :
 )
 
-if grep -q " is the first bad commit" "${bisect_log}"; then
-  bad_commit=$(awk '/ is the first bad commit/ {print $1}' "${bisect_log}")
+if grep -q " is the first bad commit" "${bisect_output}"; then
+  bad_commit=$(awk '/ is the first bad commit/ {print $1}' "${bisect_output}")
   echo -e "\e[1;32mFound bad commit in $(elapsed_time): $bad_commit\e[0m"
   found=true
 else
@@ -258,7 +291,12 @@ if [[ "${found}" == "true" ]]; then
     echo '```'
     git show "$bad_commit" --stat
     echo '```'
-
+    echo
+    echo "### 🪵 Bisect Log"
+    echo
+    echo '```'
+    cat "${bisect_log}"
+    echo '```'
   ) | write_summary
 else
   (
@@ -272,6 +310,12 @@ else
     fi
     echo
     print_repro
+    echo
+    echo "### 🪵 Bisect Log"
+    echo
+    echo '```'
+    cat "${bisect_log}"
+    echo '```'
   ) | write_summary
   exit 1
 fi

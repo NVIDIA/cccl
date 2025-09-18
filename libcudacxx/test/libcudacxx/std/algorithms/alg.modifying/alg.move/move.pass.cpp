@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: msvc && nvcc-12.0
+
 // <algorithm>
 
 // template<InputIterator InIter, typename OutIter>
