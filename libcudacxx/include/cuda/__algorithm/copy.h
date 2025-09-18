@@ -33,11 +33,40 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! @brief Source access order for copy_bytes
+enum class source_access_order
+{
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  //! @brief Access source in stream order
+  stream = cudaMemcpySrcAccessOrderStream,
+  //! @brief Access source during the copy call, source can be destroyed after the API returns
+  during_api_call = cudaMemcpySrcAccessOrderDuringApiCall,
+  //! @brief Access source in any order, the order can change across CUDA releases
+  any = cudaMemcpySrcAccessOrderAny,
+#  else
+  any = 0x3,
+#  endif // _CCCL_CTK_BELOW(13, 0)
+};
+
+//! @brief Configuration for copy_bytes
+struct copy_configuration
+{
+  //! @brief Source memory location hint for copy_bytes, used only for managed memory
+  memory_location src_location_hint = {};
+  //! @brief Destination memory location hint for copy_bytes, used only for managed memory
+  memory_location dst_location_hint = {};
+  //! @brief Source access order for copy_bytes
+  source_access_order src_access_order = source_access_order::any;
+};
+
 namespace __detail
 {
 template <typename _SrcTy, typename _DstTy>
-_CCCL_HOST_API void
-__copy_bytes_impl(stream_ref __stream, ::cuda::std::span<_SrcTy> __src, ::cuda::std::span<_DstTy> __dst)
+_CCCL_HOST_API void __copy_bytes_impl(
+  stream_ref __stream,
+  ::cuda::std::span<_SrcTy> __src,
+  ::cuda::std::span<_DstTy> __dst,
+  [[maybe_unused]] copy_configuration __config)
 {
   static_assert(!::cuda::std::is_const_v<_DstTy>, "Copy destination can't be const");
   static_assert(::cuda::std::is_trivially_copyable_v<_SrcTy> && ::cuda::std::is_trivially_copyable_v<_DstTy>);
@@ -46,8 +75,25 @@ __copy_bytes_impl(stream_ref __stream, ::cuda::std::span<_SrcTy> __src, ::cuda::
   {
     ::cuda::std::__throw_invalid_argument("Copy destination is too small to fit the source data");
   }
+  if (__src.size_bytes() == 0)
+  {
+    return;
+  }
 
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  CUmemcpyAttributes __attributes = {};
+  __attributes.srcAccessOrder     = static_cast<::CUmemcpySrcAccessOrder>(__config.src_access_order);
+  __attributes.srcLocHint.id      = __config.src_location_hint.id;
+  __attributes.srcLocHint.type    = static_cast<::CUmemLocationType>(__config.src_location_hint.type);
+  __attributes.dstLocHint.id      = __config.dst_location_hint.id;
+  __attributes.dstLocHint.type    = static_cast<::CUmemLocationType>(__config.dst_location_hint.type);
+
+  ::cuda::__ensure_current_context guard(__stream);
+  _CUDA_DRIVER::__memcpyAsyncWithAttributes(
+    __dst.data(), __src.data(), __src.size_bytes(), __stream.get(), __attributes);
+#  else
   ::cuda::__driver::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
+#  endif // _CCCL_CTK_BELOW(13, 0)
 }
 
 template <typename _SrcElem,
@@ -58,9 +104,11 @@ template <typename _SrcElem,
           typename _DstExtents,
           typename _DstLayout,
           typename _DstAccessor>
-_CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
-                                      ::cuda::std::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
-                                      ::cuda::std::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
+_CCCL_HOST_API void __copy_bytes_impl(
+  stream_ref __stream,
+  ::cuda::std::mdspan<_SrcElem, _SrcExtents, _SrcLayout, _SrcAccessor> __src,
+  ::cuda::std::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst,
+  copy_configuration __config)
 {
   static_assert(::cuda::std::is_constructible_v<_DstExtents, _SrcExtents>,
                 "Multidimensional copy requires both source and destination extents to be compatible");
@@ -81,7 +129,8 @@ _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
     ::cuda::std::span(__src.data_handle(), __src.mapping().required_span_size()),
-    ::cuda::std::span(__dst.data_handle(), __dst.mapping().required_span_size()));
+    ::cuda::std::span(__dst.data_handle(), __dst.mapping().required_span_size()),
+    __config);
 }
 } // namespace __detail
 
@@ -98,14 +147,16 @@ _CCCL_HOST_API void __copy_bytes_impl(stream_ref __stream,
 //! @param __stream Stream that the copy should be inserted into
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
+//! @param __config Configuration for the copy
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
 _CCCL_REQUIRES(__spannable<_SrcTy> _CCCL_AND __spannable<_DstTy>)
-_CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
+_CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
     ::cuda::std::span(::cuda::std::forward<_SrcTy>(__src)),
-    ::cuda::std::span(::cuda::std::forward<_DstTy>(__dst)));
+    ::cuda::std::span(::cuda::std::forward<_DstTy>(__dst)),
+    __config);
 }
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided
@@ -124,14 +175,16 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 //! @param __stream Stream that the copy should be inserted into
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
+//! @param __config Configuration for the copy
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
 _CCCL_REQUIRES(__mdspannable<_SrcTy> _CCCL_AND __mdspannable<_DstTy>)
-_CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
+_CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
     ::cuda::__as_mdspan(::cuda::std::forward<_SrcTy>(__src)),
-    ::cuda::__as_mdspan(::cuda::std::forward<_DstTy>(__dst)));
+    ::cuda::__as_mdspan(::cuda::std::forward<_DstTy>(__dst)),
+    __config);
 }
 
 _CCCL_END_NAMESPACE_CUDA
