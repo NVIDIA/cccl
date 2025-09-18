@@ -36,24 +36,27 @@ int main()
   // Create logical data
   auto ldata = ctx.logical_data(make_slice(data.data(), sz));
 
-  auto liter1     = ctx.logical_data(shape_of<scalar_view<int>>());
-  auto liter2     = ctx.logical_data(shape_of<scalar_view<int>>());
-
-  // Initialize iteration counter
-  ctx.parallel_for(box(1), liter1.write(),  liter2.write())->*[] __device__(size_t, auto iter1, auto iter2) {
-    *iter1 = 0;
-    *iter2 = 0;
-  };
+  auto liter1 = ctx.logical_data(shape_of<scalar_view<int>>());
+  auto liter2 = ctx.logical_data(shape_of<scalar_view<int>>());
 
   int max_iter1 = 3;
   int max_iter2 = 3;
 
   // First scope with first context push and first data push
   {
+    // Initialize iteration counter
+    ctx.parallel_for(box(1), liter1.write())->*[] __device__(size_t, auto iter1) {
+      *iter1 = 0;
+    };
+
     auto while_guard_1 = ctx.while_graph_scope();
 
     // NESTED second scope with second context push and second data push
     {
+      ctx.parallel_for(box(1), liter2.write())->*[] __device__(size_t, auto iter2) {
+        *iter2 = 0;
+      };
+
       auto while_guard_2 = ctx.while_graph_scope();
 
       // Now do the parallel_for operation - double each element
@@ -65,7 +68,6 @@ int main()
         bool max_reached = ((*iter2)++ >= max_iter2);
         return !max_reached; // Continue if not converged and under limit
       };
-
     }
 
     while_guard_1.update_cond(liter1.rw())->*[max_iter1] __device__(auto iter1) {

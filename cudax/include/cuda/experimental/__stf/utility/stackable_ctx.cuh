@@ -511,7 +511,7 @@ public:
         // Graph context nodes create and set up the internal CUDA graph
         _CCCL_ASSERT(parent_node != nullptr, "Graph context must have a valid parent");
 
-        cudaGraph_t parent_graph = parent_node->get_graph();
+        cudaGraph_t parent_graph = parent_node->ctx.graph();
 
         /* The parent is either a stream_ctx, or a graph itself. If this is a graph, we either add a new child graph, or
          * a conditional node. */
@@ -563,6 +563,7 @@ public:
           cParams.conditional.type    = config.conditional_type;
           cParams.conditional.size    = 1;
 
+          fprintf(stderr, "ADD CONDITIONAL NODE in graph %p (this %p)\n", graph, this);
           // Add conditional node to parent graph
           cudaGraphNode_t conditionalNode;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -715,6 +716,7 @@ public:
 
       void cleanup() override
       {
+        return;
         // TODO if nested: transfer resources to parent context ?
         if (nested_graph)
         {

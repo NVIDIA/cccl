@@ -55,7 +55,7 @@ int main()
 {
   stackable_ctx sctx;
 
-  size_t sz = 1024;
+  size_t sz = 4;
   ::std::vector<int> X(sz), Y(sz);
 
   ::std::vector<stackable_logical_data<slice<int>>> vecx, vecy;
