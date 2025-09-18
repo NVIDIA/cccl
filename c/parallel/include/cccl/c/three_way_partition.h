@@ -79,7 +79,7 @@ CCCL_C_API CUresult cccl_device_three_way_partition(
   cccl_iterator_t d_num_selected_out,
   cccl_op_t select_first_part_op,
   cccl_op_t select_second_part_op,
-  int64_t num_items,
+  uint64_t num_items,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_three_way_partition_cleanup(cccl_device_three_way_partition_build_result_t* bld_ptr);
