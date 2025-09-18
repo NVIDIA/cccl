@@ -64,7 +64,10 @@ template <class _Tp, enable_if_t<!is_arithmetic_v<_Tp>, int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess");
+#if _CCCL_COMPILER(GCC, >=, 8)
+  // GCC starting with GCC8 warns about our extended floating point types having protected data members
+  _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
+#endif
   _Tp __temp{};
   ::cuda::std::memcpy(&__temp, &__val, sizeof(_Tp));
   return __temp;
