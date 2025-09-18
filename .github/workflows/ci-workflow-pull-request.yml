@@ -24,7 +24,15 @@ on:
   push:
     branches:
       - "pull-request/[0-9]+"
-  pull_request:
+  # Disabling the pull_request trigger to avoid double runs on NVIDIA/cccl.
+  # This was added to support CI on forks, but would launch two runs on
+  # NVIDIA/cccl: one for the push to the copy-pr-bot branch, and one for
+  # the pull_request event.
+  # Since the CI job gates branch protection checks and the pull_request
+  # trigger causes that job to be skipped (which counts as "success" for GHA branch
+  # protections...), PRs could be merged regardless of the real 'on-push' workflow status.
+  #
+  # pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}

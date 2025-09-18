@@ -39,14 +39,10 @@
 #if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
+#  include <thrust/distance.h>
+#  include <thrust/iterator/counting_iterator.h>
 #  include <thrust/iterator/transform_iterator.h>
-#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
-
-#  include <cuda/__iterator/counting_iterator.h>
-#  include <cuda/std/__algorithm/min.h>
-#  include <cuda/std/__functional/not_fn.h>
-#  include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -66,6 +62,7 @@ InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first,
 }; // namespace cuda_cub
 THRUST_NAMESPACE_END
 
+#  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -219,10 +216,10 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   // https://github.com/NVIDIA/cccl/issues/3594. The problem does not occur with nvcc, so we could not add a test :/
   using XfrmIterator = __find_if::transform_input_iterator_t<bool, InputIt, Predicate>;
   // using XfrmIterator  = transform_iterator<Predicate, InputIt>;
-  using IteratorTuple = thrust::tuple<XfrmIterator, ::cuda::counting_iterator<Size>>;
+  using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator<Size>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), ::cuda::counting_iterator<Size>(0));
+  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator<Size>(0));
 
   ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
   ZipIterator end   = begin + num_items;
