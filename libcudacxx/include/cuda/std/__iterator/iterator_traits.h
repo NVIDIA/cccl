@@ -807,18 +807,24 @@ _CCCL_CONCEPT __has_iterator_concept_convertible_to = _CCCL_REQUIRES_EXPR((_Iter
   (typename(typename _Iter::iterator_concept), requires(is_convertible_v<typename _Iter::iterator_concept, _Tag>));
 
 template <class _Iter>
-inline constexpr bool __is_cpp17_input_iterator = __has_iterator_category_convertible_to<_Iter, input_iterator_tag>;
+inline constexpr bool __is_cpp17_input_iterator =
+  __has_iterator_category_convertible_to<_Iter, input_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, input_iterator_tag>;
 
 template <class _Iter>
-inline constexpr bool __is_cpp17_forward_iterator = __has_iterator_category_convertible_to<_Iter, forward_iterator_tag>;
+inline constexpr bool __is_cpp17_forward_iterator =
+  __has_iterator_category_convertible_to<_Iter, forward_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, forward_iterator_tag>;
 
 template <class _Iter>
 inline constexpr bool __is_cpp17_bidirectional_iterator =
-  __has_iterator_category_convertible_to<_Iter, bidirectional_iterator_tag>;
+  __has_iterator_category_convertible_to<_Iter, bidirectional_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, bidirectional_iterator_tag>;
 
 template <class _Iter>
 inline constexpr bool __is_cpp17_random_access_iterator =
-  __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>;
+  __has_iterator_category_convertible_to<_Iter, random_access_iterator_tag>
+  || __has_iterator_concept_convertible_to<_Iter, random_access_iterator_tag>;
 
 // __is_cpp17_contiguous_iterator determines if an iterator is known by
 // libc++ to be contiguous, either because it advertises itself as such
