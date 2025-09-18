@@ -20,7 +20,7 @@ requires-python = ">=3.10"
 dependencies = [
   "numba>=0.60.0",
   "numpy",
-  "cuda-pathfinder>=1.1.0",
+  "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "numba-cuda>=0.18.0",
 ]
@@ -31,15 +31,13 @@ readme = { file = "README.md", content-type = "text/markdown" }
 [project.optional-dependencies]
 cu12 = [
   "cuda-bindings>=12.9.1,<13.0.0",
-  "cuda-toolkit[nvrtc,nvjitlink]==12.*",
-  "nvidia-cuda-runtime-cu12",
-  "nvidia-cuda-nvcc-cu12",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==12.*",
+  "numba-cuda[cu12]",
 ]
 cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
-  "cuda-toolkit[nvrtc,nvjitlink]==13.*",
-  "nvidia-cuda-runtime-cu13",
-  "nvidia-cuda-nvcc-cu13",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==13.*",
+  "numba-cuda[cu13]",
 ]
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
