@@ -28,9 +28,9 @@
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-#if !_CCCL_CUDA_COMPILER(NVRTC)
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
 #  include <math.h>
-#endif // _CCCL_CUDA_COMPILER(NVRTC)
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/prologue.h>
 
