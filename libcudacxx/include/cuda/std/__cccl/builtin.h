@@ -531,10 +531,6 @@
 #  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_object)
 
-#if _CCCL_CHECK_BUILTIN(is_pod) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_POD(...) __is_pod(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_pod) && gcc >= 4.3
-
 // Disabled due to libstdc++ conflict
 #if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
 #  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
