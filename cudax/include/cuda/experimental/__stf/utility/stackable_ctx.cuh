@@ -524,12 +524,18 @@ public:
           {
             fprintf(stderr, "PUSHING CTX : graph context parent => create child graph node\n");
 
-            cuda_safe_call(cudaGraphCreate(&graph, 0));
+            cudaGraph_t dummy_graph;
+            cuda_safe_call(cudaGraphCreate(&dummy_graph, 0));
 
             // This child graph will be added later to the graph
-            output_node = nullptr;
-            //            cudaGraphNode_t n;
-            //            cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, graph));
+            cudaGraphNode_t n;
+            cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, dummy_graph));
+
+            // Get the graph described by the child, not the graph that was
+            // cloned into the child graph node so that changes are reflected
+            // in it.
+            cuda_safe_call(cudaGraphChildGraphNodeGetGraph(n, &graph));
+            output_node = n;
           }
         }
         else
@@ -636,14 +642,6 @@ public:
           // TODO
           cudaGraph_t support_graph = parent_ctx.graph();
           size_t graph_stage        = parent_ctx.stage();
-
-          // We have deferred the creation of the node until now
-          if (output_node == nullptr)
-          {
-            cudaGraphNode_t n;
-            cuda_safe_call(cudaGraphAddChildGraphNode(&n, support_graph, nullptr, 0, graph));
-            output_node = n;
-          }
 
           fprintf(stderr, "GRAPH EVENT from output_node %p\n", output_node);
           auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
