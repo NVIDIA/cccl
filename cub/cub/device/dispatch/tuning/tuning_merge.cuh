@@ -71,7 +71,17 @@ struct policy_hub
       agent_policy_t<512, Nominal4BItemsToItems<tune_type>(15), LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE>;
   };
 
-  using max_policy = policy600;
+  struct policy800 : ChainedPolicy<800, policy800, policy600>
+  {
+    using merge_policy =
+      agent_policy_t<512,
+                     Nominal4BItemsToItems<tune_type>(15),
+                     LOAD_DEFAULT,
+                     BLOCK_STORE_WARP_TRANSPOSE,
+                     /* UseBlockLoadToShared = */ true>;
+  };
+
+  using max_policy = policy800;
 };
 } // namespace merge
 } // namespace detail
