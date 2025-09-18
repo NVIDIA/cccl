@@ -142,7 +142,7 @@ struct DeviceScan
             typename NumItemsT,
             ::cuda::execution::determinism::__determinism_t Determinism,
             ForceInclusive EnforceInclusive = ForceInclusive::No>
-  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_tuning_env(
+  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -213,7 +213,7 @@ struct DeviceScan
     using tuning_t = _CUDA_STD_EXEC::__query_result_or_t<EnvT, _CUDA_EXEC::__get_tuning_t, _CUDA_STD_EXEC::env<>>;
 
     // Query the required temporary storage size
-    cudaError_t error = scan_impl_tuning_env<tuning_t>(
+    cudaError_t error = scan_impl_determinism<tuning_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
 
     if (error != cudaSuccess)
@@ -229,7 +229,7 @@ struct DeviceScan
     }
 
     // Run the algorithm
-    error = scan_impl_tuning_env<tuning_t>(
+    error = scan_impl_determinism<tuning_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
