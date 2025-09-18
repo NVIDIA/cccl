@@ -15,10 +15,9 @@
 
 #include <thrust/detail/config.h>
 
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
-
-#include <cuda/__iterator/counting_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -54,7 +53,7 @@ private:
 template <typename BinaryFunction, typename System, typename DifferenceT>
 using make_tabulate_output_iterator_base =
   iterator_adaptor<tabulate_output_iterator<BinaryFunction, System, DifferenceT>,
-                   ::cuda::counting_iterator<DifferenceT>,
+                   counting_iterator<DifferenceT>,
                    void,
                    System,
                    use_default,

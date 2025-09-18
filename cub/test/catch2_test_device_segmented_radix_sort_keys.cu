@@ -35,7 +35,6 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -494,7 +493,7 @@ try
   verification_helper.prepare_input_data(in_keys);
 
   auto offsets = thrust::make_transform_iterator(
-    cuda::make_counting_iterator(std::size_t{0}),
+    thrust::make_counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
   sort_keys(

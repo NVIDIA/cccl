@@ -35,8 +35,6 @@
 #include <thrust/sequence.h>
 #include <thrust/tuple.h>
 
-#include <cuda/iterator>
-
 #include <algorithm>
 #include <cstdint>
 #include <limits>
@@ -207,7 +205,7 @@ try
 {
   // Range segment data (their offsets and sizes)
   c2h::host_vector<RangeSizeT> h_range_sizes(num_ranges);
-  cuda::counting_iterator<RangeOffsetT> iota(0);
+  thrust::counting_iterator<RangeOffsetT> iota(0);
   auto d_range_srcs = thrust::make_transform_iterator(iota, RepeatIndex<AtomicT>{});
   c2h::host_vector<ByteOffsetT> h_offsets(num_ranges + 1);
 

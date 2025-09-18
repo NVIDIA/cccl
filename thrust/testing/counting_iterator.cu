@@ -1,5 +1,3 @@
-#define CCCL_IGNORE_DEPRECATED_API
-
 #include <thrust/binary_search.h>
 #include <thrust/distance.h>
 #include <thrust/iterator/counting_iterator.h>

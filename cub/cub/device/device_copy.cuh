@@ -102,7 +102,7 @@ struct DeviceCopy
   //!    uint32_t *d_offsets;          // e.g., [0, 2, 5, 6, 9, 14]
   //!
   //!    // Returns a constant iterator to the element of the i-th run
-  //!    cuda::counting_iterator<uint32_t> iota(0);
+  //!    thrust::counting_iterator<uint32_t> iota(0);
   //!    auto iterators_in = thrust::make_transform_iterator(iota, GetIteratorToRange{d_data_in});
   //!
   //!    // Returns the run length of the i-th run

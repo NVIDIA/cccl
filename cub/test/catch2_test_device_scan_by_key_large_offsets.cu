@@ -29,10 +29,6 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/iterator/transform_iterator.h>
-
-#include <cuda/iterator>
-
 #include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
@@ -116,7 +112,7 @@ try
 
   // Prepare input (generate a series of: 0, 1, 2, ..., <segment_size-1>,  1, 1, 2, ..., <segment_size-1>, 2, 1, ...)
   const index_t segment_size = GENERATE_COPY(values({offset_t{1000}, offset_t{1}}));
-  auto index_it              = cuda::make_counting_iterator(index_t{});
+  auto index_it              = thrust::make_counting_iterator(index_t{});
   auto keys_it               = thrust::make_transform_iterator(index_it, div_op<key_t>{segment_size});
   auto items_it              = thrust::make_transform_iterator(index_it, mod_op<item_t>{segment_size});
 

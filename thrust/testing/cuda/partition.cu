@@ -1,11 +1,9 @@
 #include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/partition.h>
 
-#include <cuda/iterator>
-
+#include "thrust/detail/raw_pointer_cast.h"
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -618,8 +616,9 @@ void TestPartitionIfWithMagnitude(int magnitude)
 
   // Prepare input
   offset_t num_items = offset_t{1ull} << magnitude;
-  cuda::counting_iterator<offset_t> begin(offset_t{0});
+  thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + num_items;
+  thrust::counting_iterator<offset_t> stencil(offset_t{0});
   ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
 
   // Run algorithm on large number of items
