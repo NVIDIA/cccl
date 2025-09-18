@@ -76,6 +76,13 @@ __global__ void condition_update_kernel(cudaGraphConditionalHandle conditional_h
   bool result = cond_func(args...);
   cudaGraphSetConditional(conditional_handle, result);
 }
+
+template <bool value>
+__global__ void condition_reset(cudaGraphConditionalHandle conditional_handle)
+{
+  //  printf("RESET CONDITION to %d\n", !!value);
+  cudaGraphSetConditional(conditional_handle, value);
+}
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 } // end namespace reserved
@@ -527,7 +534,7 @@ public:
             cudaGraph_t dummy_graph;
             cuda_safe_call(cudaGraphCreate(&dummy_graph, 0));
 
-            // This child graph will be added later to the graph
+            // The dependencies to this child graph will be added later
             cudaGraphNode_t n;
             cuda_safe_call(cudaGraphAddChildGraphNode(&n, parent_graph, nullptr, 0, dummy_graph));
 
@@ -535,6 +542,7 @@ public:
             // cloned into the child graph node so that changes are reflected
             // in it.
             cuda_safe_call(cudaGraphChildGraphNodeGetGraph(n, &graph));
+            input_node  = n;
             output_node = n;
           }
         }
@@ -574,7 +582,24 @@ public:
           // Get the body graph from the conditional node
           sub_graph = cParams.conditional.phGraph_out[0];
 
-          output_node = conditionalNode;
+          // XXX if we ever reexecute that graph again, the conditional handle
+          // will have been set to false when we get out of the loop, so we
+          // reset it here, until CUDA provides a way to do that automatically
+          // (if ever possible)
+          cudaKernelNodeParams kconfig;
+          kconfig.gridDim        = 1;
+          kconfig.blockDim       = 1;
+          kconfig.extra          = nullptr;
+          kconfig.func           = (void*) reserved::condition_reset<true>;
+          void* kconfig_args[1]  = {const_cast<void*>(static_cast<const void*>(config.conditional_handle))};
+          kconfig.kernelParams   = kconfig_args;
+          kconfig.sharedMemBytes = 0;
+
+          cudaGraphNode_t reset_node;
+          cuda_safe_call(cudaGraphAddKernelNode(&reset_node, graph, &conditionalNode, 1, &kconfig));
+
+          input_node  = conditionalNode;
+          output_node = reset_node;
         }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
@@ -590,9 +615,6 @@ public:
         {
           support_stream = parent_ctx.pick_stream();
         }
-
-        // Make sure the stream depends on completion of events to import data
-        parent_node->ctx_prereqs.sync_with_stream(parent_ctx.get_backend(), support_stream);
 
         auto gctx = graph_ctx(sub_graph, support_stream, handle);
 
@@ -642,6 +664,21 @@ public:
           // TODO
           cudaGraph_t support_graph = parent_ctx.graph();
           size_t graph_stage        = parent_ctx.stage();
+
+          // Add dependencies from the get operations to the graph node that
+          // corresponds to the child graph or conditional node
+          ::std::vector<cudaGraphNode_t> ctx_ready_nodes =
+            reserved::join_with_graph_nodes(parent_ctx.get_backend(), ctx_prereqs, graph_stage);
+          if (!ctx_ready_nodes.empty())
+          {
+#if _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_safe_call(cudaGraphAddDependencies(
+              support_graph, ctx_ready_nodes.data(), &input_node, nullptr, ctx_ready_nodes.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+            cuda_safe_call(
+              cudaGraphAddDependencies(support_graph, ctx_ready_nodes.data(), &input_node, ctx_ready_nodes.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+          }
 
           fprintf(stderr, "GRAPH EVENT from output_node %p\n", output_node);
           auto output_node_event = reserved::graph_event(output_node, graph_stage, support_graph);
@@ -697,6 +734,9 @@ public:
         cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, nullptr, nullptr, 0));
 #endif
 
+        // Make sure we launch after the "get" operations are done
+        ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);
+
         // Launch the graph
         cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
 
@@ -707,7 +747,6 @@ public:
 
       void cleanup() override
       {
-        return;
         // TODO if nested: transfer resources to parent context ?
         if (nested_graph)
         {
@@ -744,8 +783,10 @@ public:
       cudaGraphExec_t graph_exec = nullptr;
       cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
       bool nested_graph = false;
-      cudaGraphNode_t output_node = nullptr; // If we have a nested graph, this is the node that correspond to the
-                                             // context in the parent CUDA graph
+      // If we have a nested graph input and output node correspond to the nodes on which to enforce input or output
+      // deps (they can be the same)
+      cudaGraphNode_t input_node  = nullptr;
+      cudaGraphNode_t output_node = nullptr;
     };
 
     // Configuration constants
