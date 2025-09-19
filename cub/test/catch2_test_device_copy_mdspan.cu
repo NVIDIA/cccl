@@ -45,14 +45,16 @@ C2H_TEST("DeviceCopy::Copy: 1D, 2D, 4D contiguous mdspan", "[copy][mdspan]")
   REQUIRE(d_input == d_output);
   thrust::fill(d_output.begin(), d_output.end(), 42);
 
-  auto d_mdspan_in2  = cuda::std::mdspan(thrust::raw_pointer_cast(d_input.data()), dims_2d_t{100, 100});
-  auto d_mdspan_out2 = cuda::std::mdspan(thrust::raw_pointer_cast(d_output.data()), dims_2d_t{100, 100});
+  using mdspan_2d_left_t = cuda::std::mdspan<int, dims_2d_t, cuda::std::layout_left>;
+  auto d_mdspan_in2      = cuda::std::mdspan(thrust::raw_pointer_cast(d_input.data()), dims_2d_t{100, 100});
+  auto d_mdspan_out2     = mdspan_2d_left_t(thrust::raw_pointer_cast(d_output.data()), dims_2d_t{100, 100});
   device_copy_mdspan(d_mdspan_in2, d_mdspan_out2);
   REQUIRE(d_input == d_output);
   thrust::fill(d_output.begin(), d_output.end(), 42);
 
-  auto mdspan_in3  = cuda::std::mdspan(thrust::raw_pointer_cast(d_input.data()), dims_4d_t{10, 10, 10, 10});
-  auto mdspan_out3 = cuda::std::mdspan(thrust::raw_pointer_cast(d_output.data()), dims_4d_t{10, 10, 10, 10});
+  using mdspan_4d_left_t = cuda::std::mdspan<int, dims_4d_t, cuda::std::layout_left>;
+  auto mdspan_in3        = cuda::std::mdspan(thrust::raw_pointer_cast(d_input.data()), dims_4d_t{10, 10, 10, 10});
+  auto mdspan_out3       = mdspan_4d_left_t(thrust::raw_pointer_cast(d_output.data()), dims_4d_t{10, 10, 10, 10});
   device_copy_mdspan(mdspan_in3, mdspan_out3);
   REQUIRE(d_input == d_output);
 }
@@ -75,8 +77,8 @@ C2H_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]")
   using cuda::std::layout_stride;
   using mdspan_strided_2d = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
 
-  layout_stride::mapping map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
-  layout_stride::mapping map_out{dims_2d_t{100, 100}, cuda::std::array{220, 2}};
+  layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
+  layout_stride::mapping<dims_2d_t> map_out{dims_2d_t{100, 100}, cuda::std::array{220, 2}};
   auto d_mdspan_in  = mdspan_strided_2d(thrust::raw_pointer_cast(d_input.data()), map_in);
   auto d_mdspan_out = mdspan_strided_2d(thrust::raw_pointer_cast(d_output.data()), map_out);
   device_copy_mdspan(d_mdspan_in, d_mdspan_out);
@@ -109,7 +111,7 @@ C2H_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdsp
   using cuda::std::layout_stride;
   using mdspan_strided_2d    = cuda::std::mdspan<int, dims_2d_t, layout_stride>;
   using mdspan_contiguous_2d = cuda::std::mdspan<int, dims_2d_t>;
-  layout_stride::mapping map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
+  layout_stride::mapping<dims_2d_t> map_in{dims_2d_t{100, 100}, cuda::std::array{2, 220}};
   auto d_mdspan_in  = mdspan_strided_2d(thrust::raw_pointer_cast(d_input.data()), map_in);
   auto d_mdspan_out = mdspan_contiguous_2d(thrust::raw_pointer_cast(d_output.data()), dims_2d_t{100, 100});
   device_copy_mdspan(d_mdspan_in, d_mdspan_out);
