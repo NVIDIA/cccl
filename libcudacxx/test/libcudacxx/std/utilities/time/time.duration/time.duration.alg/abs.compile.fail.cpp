@@ -3,26 +3,26 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
-// round
+// ceil
 
-// template <class ToDuration, class Rep, class Period>
-//   ToDuration
-//   round(const duration<Rep, Period>& d);
+// template <class Rep, class Period>
+//   constexpr duration<Rep, Period> abs(duration<Rep, Period> d)
 
-// ToDuration shall be an instantiation of duration.
-
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
+// This function shall not participate in overload resolution unless numeric_limits<Rep>::is_signed is true.
 
 #include <cuda/std/chrono>
 
+using unsigned_secs = cuda::std::chrono::duration<unsigned>;
+
 int main(int, char**)
 {
-  cuda::std::chrono::round<int>(cuda::std::chrono::milliseconds(3));
+  cuda::std::chrono::abs(unsigned_secs(0));
 
   return 0;
 }

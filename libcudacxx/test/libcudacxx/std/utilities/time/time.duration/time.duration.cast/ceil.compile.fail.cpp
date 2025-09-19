@@ -3,27 +3,25 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // ceil
 
-// template <class Rep, class Period>
-//   constexpr duration<Rep, Period> abs(duration<Rep, Period> d)
+// template <class ToDuration, class Rep, class Period>
+//   ToDuration
+//   ceil(const duration<Rep, Period>& d);
 
-// This function shall not participate in overload resolution unless numeric_limits<Rep>::is_signed is true.
-
-// .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
+// ToDuration shall be an instantiation of duration.
 
 #include <cuda/std/chrono>
 
-typedef cuda::std::chrono::duration<unsigned> unsigned_secs;
-
 int main(int, char**)
 {
-  cuda::std::chrono::abs(unsigned_secs(0));
+  cuda::std::chrono::ceil<int>(cuda::std::chrono::milliseconds(3));
 
   return 0;
 }

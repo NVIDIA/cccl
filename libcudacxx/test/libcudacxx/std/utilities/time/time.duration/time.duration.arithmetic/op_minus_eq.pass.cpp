@@ -3,43 +3,35 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
-// constexpr duration& operator+=(const duration& d); // constexpr in C++17
+// duration& operator-=(const duration& d);
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_constexpr()
+__host__ __device__ constexpr bool test()
 {
   cuda::std::chrono::seconds s(3);
-  s += cuda::std::chrono::seconds(2);
-  if (s.count() != 5)
-  {
-    return false;
-  }
-  s += cuda::std::chrono::minutes(2);
-  return s.count() == 125;
+  s -= cuda::std::chrono::seconds(2);
+  assert(s.count() == 1);
+  s -= cuda::std::chrono::minutes(2);
+  assert(s.count() == -119);
+  return true;
 }
 
 int main(int, char**)
 {
-  {
-    cuda::std::chrono::seconds s(3);
-    s += cuda::std::chrono::seconds(2);
-    assert(s.count() == 5);
-    s += cuda::std::chrono::minutes(2);
-    assert(s.count() == 125);
-  }
-
-  static_assert(test_constexpr(), "");
+  test();
+  static_assert(test());
 
   return 0;
 }

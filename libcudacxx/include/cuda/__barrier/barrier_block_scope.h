@@ -34,6 +34,7 @@
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__barrier/poll_tester.h>
+#include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__new_>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
