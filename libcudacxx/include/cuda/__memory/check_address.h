@@ -43,10 +43,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 [[nodiscard]] _CCCL_DEVICE_API inline bool
 __is_smem_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
 {
-  // __is_ptr_valid is used to skip the nullptr assertion in is_address_from()
-  bool __is_ptr_valid = true; // SM < 90
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (__is_ptr_valid = __ptr != nullptr;));
-  if (!__is_ptr_valid || !::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
+  // __is_smem_valid_ptr is used to skip the nullptr assertion in is_address_from()
+  if (!::cuda::device::__is_smem_valid_ptr(__ptr)
+      || !::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::shared))
   {
     return false;
   }
