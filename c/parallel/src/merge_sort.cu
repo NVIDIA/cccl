@@ -123,8 +123,8 @@ std::string get_iterator_name(cccl_iterator_t iterator, merge_sort_iterator_t wh
 
 merge_sort_runtime_tuning_policy get_policy(int cc, uint64_t key_size)
 {
-  merge_sort_tuning_t chain[] = {
-    {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
+  merge_sort_tuning_t chain[]            = {{60, 256, nominal_4b_items_to_items(17, static_cast<int>(key_size))},
+                                            {35, 256, nominal_4b_items_to_items(11, static_cast<int>(key_size))}};
   auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
