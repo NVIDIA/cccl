@@ -48,9 +48,7 @@ CCCL_C_API CUresult cccl_device_segmented_sort_build(
   cccl_device_segmented_sort_build_result_t* build,
   cccl_sort_order_t sort_order,
   cccl_iterator_t d_keys_in,
-  cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
-  cccl_iterator_t d_values_out,
   cccl_iterator_t begin_offset_in,
   cccl_iterator_t end_offset_in,
   int cc_major,
@@ -60,6 +58,22 @@ CCCL_C_API CUresult cccl_device_segmented_sort_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
+// Extended version with build configuration (mirrors radix_sort build_ex)
+CCCL_C_API CUresult cccl_device_segmented_sort_build_ex(
+  cccl_device_segmented_sort_build_result_t* build,
+  cccl_sort_order_t sort_order,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t begin_offset_in,
+  cccl_iterator_t end_offset_in,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
 CCCL_C_API CUresult cccl_device_segmented_sort(
   cccl_device_segmented_sort_build_result_t build,
   void* d_temp_storage,
@@ -68,8 +82,8 @@ CCCL_C_API CUresult cccl_device_segmented_sort(
   cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
   cccl_iterator_t d_values_out,
-  int64_t num_items,
-  int64_t num_segments,
+  uint64_t num_items,
+  uint64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   bool is_overwrite_okay,

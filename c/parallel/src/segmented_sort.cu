@@ -35,6 +35,7 @@
 #include <nlohmann/json.hpp>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <util/build_utils.h>
 
 struct device_segmented_sort_policy;
 struct device_three_way_partition_policy;
@@ -498,13 +499,11 @@ struct segmented_sort_end_offset_iterator_tag;
 struct segmented_sort_large_selector_tag;
 struct segmented_sort_small_selector_tag;
 
-CUresult cccl_device_segmented_sort_build(
+CUresult cccl_device_segmented_sort_build_ex(
   cccl_device_segmented_sort_build_result_t* build_ptr,
   cccl_sort_order_t sort_order,
   cccl_iterator_t keys_in_it,
-  cccl_iterator_t keys_out_it,
   cccl_iterator_t values_in_it,
-  cccl_iterator_t values_out_it,
   cccl_iterator_t start_offset_it,
   cccl_iterator_t end_offset_it,
   int cc_major,
@@ -512,22 +511,15 @@ CUresult cccl_device_segmented_sort_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path)
+  const char* ctk_path,
+  cccl_build_config* config)
 {
   CUresult error = CUDA_SUCCESS;
 
-  if (keys_in_it.value_type.type != keys_out_it.value_type.type)
+  if (cccl_iterator_kind_t::CCCL_POINTER != keys_in_it.type || cccl_iterator_kind_t::CCCL_POINTER != values_in_it.type)
   {
     fflush(stderr);
-    printf("\nERROR in cccl_device_segmented_sort_build(): keys_in_it and keys_out_it must have the same type\n ");
-    fflush(stdout);
-    return CUDA_ERROR_UNKNOWN;
-  }
-
-  if (values_in_it.value_type.type != values_out_it.value_type.type)
-  {
-    fflush(stderr);
-    printf("\nERROR in cccl_device_segmented_sort_build(): values_in_it and values_out_it must have the same type\n ");
+    printf("\nERROR in cccl_device_segmented_sort_build(): keys_in_it and values_in_it must be a pointer\n ");
     fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
@@ -550,14 +542,9 @@ CUresult cccl_device_segmented_sort_build(
     const auto [keys_in_iterator_name, keys_in_iterator_src] =
       get_specialization<segmented_sort_keys_input_iterator_tag>(template_id<input_iterator_traits>(), keys_in_it);
 
-    const auto [keys_out_iterator_name, keys_out_iterator_src] =
-      get_specialization<segmented_sort_keys_output_iterator_tag>(
-        template_id<output_iterator_traits>(), keys_out_it, keys_out_it.value_type);
-
     const bool keys_only = values_in_it.type == cccl_iterator_kind_t::CCCL_POINTER && values_in_it.state == nullptr;
 
     std::string values_in_iterator_name, values_in_iterator_src;
-    std::string values_out_iterator_name, values_out_iterator_src;
 
     if (!keys_only)
     {
@@ -565,18 +552,11 @@ CUresult cccl_device_segmented_sort_build(
         template_id<input_iterator_traits>(), values_in_it);
       values_in_iterator_name = vi_name;
       values_in_iterator_src  = vi_src;
-
-      const auto [vo_name, vo_src] = get_specialization<segmented_sort_values_output_iterator_tag>(
-        template_id<output_iterator_traits>(), values_out_it, values_in_it.value_type);
-      values_out_iterator_name = vo_name;
-      values_out_iterator_src  = vo_src;
     }
     else
     {
-      values_in_iterator_name  = "cub::NullType*";
-      values_out_iterator_name = "cub::NullType*";
-      values_in_iterator_src   = "";
-      values_out_iterator_src  = "";
+      values_in_iterator_name = "cub::NullType*";
+      values_in_iterator_src  = "";
     }
 
     const auto [start_offset_iterator_name, start_offset_iterator_src] =
@@ -594,8 +574,7 @@ CUresult cccl_device_segmented_sort_build(
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 9;
-    const char* args[num_args] = {
+    std::vector<const char*> args = {
       arch.c_str(),
       cub_path,
       thrust_path,
@@ -606,13 +585,31 @@ CUresult cccl_device_segmented_sort_build(
       "-DCUB_DISABLE_CDP",
       "-std=c++20"};
 
+    cccl::detail::extend_args_with_build_config(args, config);
+
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
     cccl_op_t large_selector_op = segmented_sort::make_segments_selector_op(
-      0, start_offset_it, end_offset_it, "cccl_large_segments_selector_op", ">", args, num_args, lopts, num_lto_args);
+      0,
+      start_offset_it,
+      end_offset_it,
+      "cccl_large_segments_selector_op",
+      ">",
+      args.data(),
+      args.size(),
+      lopts,
+      num_lto_args);
     cccl_op_t small_selector_op = segmented_sort::make_segments_selector_op(
-      0, start_offset_it, end_offset_it, "cccl_small_segments_selector_op", "<", args, num_args, lopts, num_lto_args);
+      0,
+      start_offset_it,
+      end_offset_it,
+      "cccl_small_segments_selector_op",
+      "<",
+      args.data(),
+      args.size(),
+      lopts,
+      num_lto_args);
 
     cccl_type_info selector_result_t{sizeof(bool), alignof(bool), cccl_type_enum::CCCL_BOOLEAN};
     cccl_type_info selector_input_t{
@@ -640,21 +637,17 @@ struct __align__({3}) items_storage_t {{
 {7}
 {8}
 {9}
-{10}
-{11}
 )XXX",
       keys_in_it.value_type.size, // 0
       keys_in_it.value_type.alignment, // 1
       values_in_it.value_type.size, // 2
       values_in_it.value_type.alignment, // 3
       keys_in_iterator_src, // 4
-      keys_out_iterator_src, // 5
-      values_in_iterator_src, // 6
-      values_out_iterator_src, // 7
-      start_offset_iterator_src, // 8
-      end_offset_iterator_src, // 9
-      large_selector_src, // 10
-      small_selector_src); // 11
+      values_in_iterator_src, // 5
+      start_offset_iterator_src, // 6
+      end_offset_iterator_src, // 7
+      large_selector_src, // 8
+      small_selector_src); // 9
 
     const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
 
@@ -773,11 +766,9 @@ struct device_three_way_partition_policy {{
 
     // add iterator definitions
     appender.add_iterator_definition(keys_in_it);
-    appender.add_iterator_definition(keys_out_it);
     if (!keys_only)
     {
       appender.add_iterator_definition(values_in_it);
-      appender.add_iterator_definition(values_out_it);
     }
     appender.add_iterator_definition(start_offset_it);
     appender.add_iterator_definition(end_offset_it);
@@ -793,7 +784,7 @@ struct device_three_way_partition_policy {{
         ->add_expression({segmented_sort_kernel_large_name})
         ->add_expression({three_way_partition_init_kernel_name})
         ->add_expression({three_way_partition_kernel_name})
-        ->compile_program({args, num_args})
+        ->compile_program({args.data(), args.size()})
         ->get_name({segmented_sort_fallback_kernel_name, segmented_sort_fallback_kernel_lowered_name})
         ->get_name({segmented_sort_kernel_small_name, segmented_sort_kernel_small_lowered_name})
         ->get_name({segmented_sort_kernel_large_name, segmented_sort_kernel_large_lowered_name})
@@ -843,6 +834,36 @@ struct device_three_way_partition_policy {{
   return error;
 }
 
+CUresult cccl_device_segmented_sort_build(
+  cccl_device_segmented_sort_build_result_t* build_ptr,
+  cccl_sort_order_t sort_order,
+  cccl_iterator_t keys_in_it,
+  cccl_iterator_t values_in_it,
+  cccl_iterator_t start_offset_it,
+  cccl_iterator_t end_offset_it,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path)
+{
+  return cccl_device_segmented_sort_build_ex(
+    build_ptr,
+    sort_order,
+    keys_in_it,
+    values_in_it,
+    start_offset_it,
+    end_offset_it,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
+}
+
 template <cub::SortOrder Order>
 CUresult cccl_device_segmented_sort_impl(
   cccl_device_segmented_sort_build_result_t build,
@@ -852,14 +873,22 @@ CUresult cccl_device_segmented_sort_impl(
   cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
   cccl_iterator_t d_values_out,
-  int64_t num_items,
-  int64_t num_segments,
+  uint64_t num_items,
+  uint64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   bool is_overwrite_okay,
   int* selector,
   CUstream stream)
 {
+  if (selector == nullptr)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_segmented_sort(): selector cannot be nullptr\n");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
   try
@@ -911,12 +940,8 @@ CUresult cccl_device_segmented_sort_impl(
         /* partition_policy */
         *reinterpret_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
 
-    if (selector != nullptr)
-    {
-      *selector = d_keys_double_buffer.selector;
-    }
-
-    error = static_cast<CUresult>(exec_status);
+    *selector = d_keys_double_buffer.selector;
+    error     = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {
@@ -943,8 +968,8 @@ CUresult cccl_device_segmented_sort(
   cccl_iterator_t d_keys_out,
   cccl_iterator_t d_values_in,
   cccl_iterator_t d_values_out,
-  int64_t num_items,
-  int64_t num_segments,
+  uint64_t num_items,
+  uint64_t num_segments,
   cccl_iterator_t start_offset_in,
   cccl_iterator_t end_offset_in,
   bool is_overwrite_okay,
