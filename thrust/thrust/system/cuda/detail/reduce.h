@@ -253,7 +253,7 @@ struct ReduceAgent
     template <class Iterator>
     static THRUST_DEVICE_FUNCTION bool is_aligned(Iterator d_in, thrust::detail::true_type /* can_vectorize */)
     {
-      return ::cuda::std::is_sufficiently_aligned<sizeof(Vector)>(d_in);
+      return ::cuda::std::is_sufficiently_aligned<alignof(Vector)>(d_in);
     }
 
     // Whether or not the input is aligned with the vector type

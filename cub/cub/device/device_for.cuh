@@ -138,7 +138,7 @@ private:
       using wrapped_op_t =
         detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<RandomAccessOrContiguousIteratorT>>;
 
-      if (::cuda::std::is_sufficiently_aligned<sizeof(typename wrapped_op_t::vector_t)>(unwrapped_first))
+      if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
       { // Vectorize loads
         const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 

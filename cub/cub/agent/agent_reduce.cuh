@@ -274,7 +274,7 @@ struct AgentReduceImpl
   {
     if constexpr (AttemptVectorization)
     {
-      return ::cuda::std::is_sufficiently_aligned<sizeof(VectorT)>(d_in);
+      return ::cuda::std::is_sufficiently_aligned<alignof(VectorT)>(d_in);
     }
     else
     {
