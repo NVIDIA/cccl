@@ -161,7 +161,8 @@ template <class _Tp>
   // __builtin_isnan is not efficient for __float128, prefer __nv_fp128_isnan at run-time
   if (!::cuda::std::__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization flags
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization
+                                                                        // flags
   }
 #  if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
