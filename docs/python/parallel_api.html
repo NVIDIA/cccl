@@ -3277,9 +3277,8 @@ representing the sequence <code class="docutils literal notranslate"><span class
 <dl class="py function">
 <dt class="sig sig-object py" id="cuda.cccl.parallel.experimental.iterators.TransformIterator">
 <span class="sig-prename descclassname"><span class="pre">cuda.cccl.parallel.experimental.iterators.</span></span><span class="sig-name descname"><span class="pre">TransformIterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">it</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.cccl.parallel.experimental.iterators.TransformIterator" title="Link to this definition">#</a></dt>
-<dd><p>Returns an Iterator representing a transformed sequence of values.</p>
-<p>Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html) and
-[thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).</p>
+<dd><p>An iterator that applies a user-defined unary function to the elements of an underlying iterator as they are read.</p>
+<p>Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html)</p>
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">TransformIterator</span></code> composed with a <code class="docutils literal notranslate"><span class="pre">CountingIterator</span></code>
 to transform the input before performing a reduction.</p>
@@ -3324,17 +3323,36 @@ to transform the input before performing a reduction.</p>
 <span class="k">assert</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected_output</span>
 </pre></div>
 </div>
-<p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">TransformIterator</span></code> to transform the output
-of a reduction before writing to an output array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>it</strong> – The iterator object to be transformed</p></li>
-<li><p><strong>op</strong> – The transform operation</p></li>
+<li><p><strong>it</strong> – The underlying iterator</p></li>
+<li><p><strong>op</strong> – The unary operation to be applied to values as they are read from <code class="docutils literal notranslate"><span class="pre">it</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">TransformIterator</span></code> object to transform the items in <code class="docutils literal notranslate"><span class="pre">it</span></code> using <code class="docutils literal notranslate"><span class="pre">op</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.cccl.parallel.experimental.iterators.TransformOutputIterator">
+<span class="sig-prename descclassname"><span class="pre">cuda.cccl.parallel.experimental.iterators.</span></span><span class="sig-name descname"><span class="pre">TransformOutputIterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">it</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.cccl.parallel.experimental.iterators.TransformOutputIterator" title="Link to this definition">#</a></dt>
+<dd><p>An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.</p>
+<p>Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).</p>
+<p class="rubric">Example</p>
+<p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">TransformOutputIterator</span></code> to transform the output
+of a reduction before writing to an output array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>it</strong> – The underlying iterator</p></li>
+<li><p><strong>op</strong> – The operation to be applied to values before they are written to <code class="docutils literal notranslate"><span class="pre">it</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">TransformOutputIterator</span></code> object that applies <code class="docutils literal notranslate"><span class="pre">op</span></code> to transform values before writing them to <code class="docutils literal notranslate"><span class="pre">it</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3601,6 +3619,7 @@ the smallest and the largest absolute values:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.CountingIterator"><code class="docutils literal notranslate"><span class="pre">CountingIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.ReverseIterator"><code class="docutils literal notranslate"><span class="pre">ReverseIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.TransformIterator"><code class="docutils literal notranslate"><span class="pre">TransformIterator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.TransformOutputIterator"><code class="docutils literal notranslate"><span class="pre">TransformOutputIterator()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.cccl.parallel.experimental.iterators.ZipIterator"><code class="docutils literal notranslate"><span class="pre">ZipIterator()</span></code></a></li>
 </ul>
 </li>
